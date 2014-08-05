@@ -1,37 +1,38 @@
+"""
+Classes that are LLVM values: Value, Constant, Instructions...
+"""
+
 from __future__ import print_function, absolute_import
 from weakref import WeakSet
-import io
 
-from . import lltypes
-from purellvmpy.core import _utils
+from . import types, _utils
 
 
 class Value(object):
     name_prefix = '%'
-    nested_scope = False
     deduplicate_name = True
+    nested_scope = False
 
     def __init__(self, parent, type, name):
         assert parent is not None
         self.parent = parent
         self.type = type
-        self.name_manager = (_utils.NameManager()
-                             if self.nested_scope
-                             else self.parent.name_manager)
+        pscope = self.parent.scope
+        self.scope = pscope.get_child() if self.nested_scope else pscope
         self._name = None
         self.name = name
         self.users = WeakSet()
 
     def __str__(self):
-        with io.StringIO() as buf:
-            if self.type == lltypes.VoidType():
+        with _utils.StringIO() as buf:
+            if self.type == types.VoidType():
                 self.descr(buf)
                 return buf.getvalue().rstrip()
             else:
                 name = self.get_reference()
                 self.descr(buf)
                 descr = buf.getvalue().rstrip()
-                return "%(name)s = %(descr)s" % locals()
+                return "{name} = {descr}".format(**locals())
 
     def descr(self, buf):
         raise NotImplementedError
@@ -43,10 +44,9 @@ class Value(object):
     @name.setter
     def name(self, name):
         if self.deduplicate_name:
-            name = self.name_manager.deduplicate(name)
-        if name in self.name_manager:
-            print(self.name_manager.used)
-            raise NameError("Duplicated name '%s'" % name)
+            name = self.scope.deduplicate(name)
+        else:
+            self.scope.register(name)
         self._name = name
 
     def get_reference(self):
@@ -56,6 +56,7 @@ class Value(object):
 class GlobalValue(Value):
     name_prefix = '@'
     deduplicate_name = False
+    nested_scope = True
 
 
 class AttributeSet(set):
@@ -91,7 +92,7 @@ class FunctionAttributes(AttributeSet):
     def __repr__(self):
         attrs = list(self)
         if self.alignstack:
-            attrs.append('alignstack(%u)' % self.alignstack)
+            attrs.append('alignstack({:u})'.format(self.alignstack))
         return ', '.join(attrs)
 
 
@@ -99,7 +100,6 @@ class Function(GlobalValue):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
-    nested_scope = True
 
     def __init__(self, module, ftype, name):
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
@@ -130,8 +130,7 @@ class Function(GlobalValue):
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
         attrs = self.attributes
-        prototype = "%(state)s %(retty)s %(name)s(%(args)s) %(attrs)s" % \
-                    locals()
+        prototype = "{state} {retty} {name}({args}) {attrs}".format(**locals())
         print(prototype, file=buf)
 
     def descr_body(self, buf):
@@ -139,7 +138,7 @@ class Function(GlobalValue):
         Describe of the body of the function.
         """
         for blk in self.blocks:
-            print("%s:" % blk.name, file=buf)
+            print("{}:".format(blk.name), file=buf)
             for instr in blk.instructions:
                 print('  ', end='', file=buf)
                 print(instr, file=buf)
@@ -156,7 +155,7 @@ class Function(GlobalValue):
             print('}', file=buf)
 
     def __str__(self):
-        with io.StringIO() as buf:
+        with _utils.StringIO() as buf:
             self.descr(buf)
             return buf.getvalue()
 
@@ -173,12 +172,12 @@ class Argument(Value):
         self.attributes = ArgumentAttributes()
 
     def __str__(self):
-        return "%s %s" % (self.type, self.get_reference())
+        return "{} {}".format(self.type, self.get_reference())
 
 
 class Block(Value):
     def __init__(self, parent, name=''):
-        super(Block, self).__init__(parent, lltypes.LabelType(), name=name)
+        super(Block, self).__init__(parent, types.LabelType(), name=name)
         self.instructions = []
         self.terminator = None
 
@@ -200,7 +199,7 @@ class Instruction(Value):
         opname = self.opname
         operands = ', '.join(op.get_reference() for op in self.operands)
         typ = self.type
-        print("%(opname)s %(typ)s %(operands)s" % locals(), file=buf)
+        print("{opname} {typ} {operands}".format(**locals()), file=buf)
 
 
 class Terminator(Instruction):
@@ -212,20 +211,20 @@ class Terminator(Instruction):
         return object.__new__(cls)
 
     def __init__(self, parent, opname, operands, name=''):
-        super(Terminator, self).__init__(parent, lltypes.VoidType(), opname,
+        super(Terminator, self).__init__(parent, types.VoidType(), opname,
                                          operands,
                                          name=name)
 
     def descr(self, buf):
         opname = self.opname
-        operands = ', '.join("%s %s" % (op.type, op.get_reference())
+        operands = ', '.join("{} {}".format(op.type, op.get_reference())
                              for op in self.operands)
-        print("%(opname)s %(operands)s" % locals(), file=buf)
+        print("{opname} {operands}".format(**locals()), file=buf)
 
 
 class Ret(Terminator):
     def descr(self, buf):
-        msg = "ret %s %s" % (
+        msg = "ret {} {}".format(
             self.return_type, self.return_value.get_reference())
         print(msg, file=buf)
 
@@ -244,13 +243,13 @@ class Constant(object):
     """
 
     def __init__(self, typ, constant):
-        assert not isinstance(typ, lltypes.VoidType)
+        assert not isinstance(typ, types.VoidType)
         self.type = typ
         self.constant = constant
         self.users = WeakSet()
 
     def __str__(self):
-        return "%s %s" % (self.type, self.constant)
+        return "{} {}".format(self.type, self.constant)
 
     def get_reference(self):
         return str(self.constant)
@@ -263,15 +262,14 @@ class CompareInstr(Instruction):
 
     def __init__(self, parent, op, lhs, rhs, name=''):
         assert op in self.VALID_OP
-        super(CompareInstr, self).__init__(parent, lltypes.IntType(1),
+        super(CompareInstr, self).__init__(parent, types.IntType(1),
                                            self.OPNAME, [lhs, rhs], name=name)
         self.op = op
 
     def descr(self, buf):
-        print("icmp %s %s %s, %s" % (self.op,
-                                     self.operands[0].type,
-                                     self.operands[0].get_reference(),
-                                     self.operands[1].get_reference()),
+        print("icmp {} {} {}, {}".format(self.op, self.operands[0].type,
+                                         self.operands[0].get_reference(),
+                                         self.operands[1].get_reference()),
               file=buf)
 
 
@@ -318,9 +316,10 @@ class CastInstr(Instruction):
         super(CastInstr, self).__init__(parent, typ, op, [val], name=name)
 
     def descr(self, buf):
-        print("%s %s %s to %s" % (self.opname, self.operands[0].type,
-                                  self.operands[0].get_reference(),
-                                  self.type),
+        print("{} {} {} to {}".format(self.opname,
+                                      self.operands[0].type,
+                                      self.operands[0].get_reference(),
+                                      self.type),
               file=buf)
 
 
@@ -331,18 +330,19 @@ class LoadInstr(Instruction):
 
     def descr(self, buf):
         [val] = self.operands
-        print("load %s %s" % (val.type, val.get_reference()), file=buf)
+        print("load {} {}".format(val.type, val.get_reference()), file=buf)
 
 
 class StoreInstr(Instruction):
     def __init__(self, parent, val, ptr):
-        super(StoreInstr, self).__init__(parent, lltypes.VoidType(), "store",
+        super(StoreInstr, self).__init__(parent, types.VoidType(), "store",
                                          [val, ptr])
 
     def descr(self, buf):
         val, ptr = self.operands
-        print("store %s %s, %s %s" % (val.type, val.get_reference(),
-                                      ptr.type, ptr.get_reference()), file=buf)
+        print("store {} {}, {} {}".format(val.type, val.get_reference(),
+                                          ptr.type, ptr.get_reference()),
+              file=buf)
 
 
 class AllocaInstr(Instruction):
@@ -352,8 +352,10 @@ class AllocaInstr(Instruction):
                                           operands, name)
 
     def descr(self, buf):
-        print("%s %s" % (self.opname, self.type.pointee), file=buf, end='')
+        print("{} {}".format(self.opname, self.type.pointee),
+              file=buf, end='')
         if self.operands:
-            print(", %s %s" % (self.operands[0].type,
-                               self.operands[0].get_reference()), file=buf)
+            print(", {} {}".format(self.operands[0].type,
+                                   self.operands[0].get_reference()),
+                  file=buf)
 

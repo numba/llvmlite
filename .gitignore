@@ -1,3 +1,4 @@
 *.pyc
 *.pyd
 *.so
+*.dylib

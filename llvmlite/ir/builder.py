@@ -1,7 +1,6 @@
 from __future__ import print_function, absolute_import
 import functools
-from . import lltypes
-from purellvmpy.core import llvalues
+from . import types, values
 
 _CMP_MAP = {
     '>': 'gt',
@@ -13,7 +12,7 @@ _CMP_MAP = {
 }
 
 
-def _binop(opname, cls=llvalues.Instruction):
+def _binop(opname, cls=values.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, lhs, rhs, name=''):
@@ -27,7 +26,7 @@ def _binop(opname, cls=llvalues.Instruction):
     return wrap
 
 
-def _castop(opname, cls=llvalues.CastInstr):
+def _castop(opname, cls=values.CastInstr):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, val, typ, name=''):
@@ -69,7 +68,7 @@ class IRBuilder(object):
         self._anchor = len(block.instructions)
 
     def constant(self, typ, val):
-        return llvalues.Constant(typ, val)
+        return values.Constant(typ, val)
 
     def _insert(self, instr):
         self._block.instructions.insert(self._anchor, instr)
@@ -112,7 +111,7 @@ class IRBuilder(object):
         op = _CMP_MAP[cmpop]
         if cmpop not in ('==', '!='):
             op = 's' + op
-        instr = llvalues.ICMPInstr(self.function, op, lhs, rhs, name=name)
+        instr = values.ICMPInstr(self.function, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -120,7 +119,7 @@ class IRBuilder(object):
         op = _CMP_MAP[cmpop]
         if cmpop not in ('==', '!='):
             op = 'u' + op
-        instr = llvalues.ICMPInstr(self.function, op, lhs, rhs, name=name)
+        instr = values.ICMPInstr(self.function, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -129,7 +128,7 @@ class IRBuilder(object):
             op = 'o' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = llvalues.FCMPInstr(self.function, op, lhs, rhs, name=name)
+        instr = values.FCMPInstr(self.function, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -138,7 +137,7 @@ class IRBuilder(object):
             op = 'u' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = llvalues.FCMPInstr(self.function, op, lhs, rhs, name=name)
+        instr = values.FCMPInstr(self.function, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -195,22 +194,22 @@ class IRBuilder(object):
         assert count is None or count > 0
         if count is None:
             pass
-        elif not isinstance(count, llvalues.Value):
+        elif not isinstance(count, values.Value):
             # If it is not a Value instance,
             # assume to be a python number.
-            count = llvalues.Constant(lltypes.IntType(32), int(count))
+            count = values.Constant(types.IntType(32), int(count))
 
-        al = llvalues.AllocaInstr(self.function, typ, count, name)
+        al = values.AllocaInstr(self.function, typ, count, name)
         self._insert(al)
         return al
 
     def load(self, ptr, name=''):
-        ld = llvalues.LoadInstr(self.function, ptr, name)
+        ld = values.LoadInstr(self.function, ptr, name)
         self._insert(ld)
         return ld
 
     def store(self, val, ptr):
-        st = llvalues.StoreInstr(self.function, val, ptr)
+        st = values.StoreInstr(self.function, val, ptr)
         self._insert(st)
         return st
 
@@ -221,22 +220,22 @@ class IRBuilder(object):
     def jump(self, target):
         """Jump to target
         """
-        term = llvalues.Terminator(self.function, "br", [target])
+        term = values.Terminator(self.function, "br", [target])
         self._set_terminator(term)
         return term
 
     def branch(self, cond, truebr, falsebr):
         """Branch conditionally
         """
-        term = llvalues.Terminator(self.function, "br", [cond, truebr,
-                                                         falsebr])
+        term = values.Terminator(self.function, "br", [cond, truebr,
+                                                       falsebr])
         self._set_terminator(term)
         return term
 
     def ret_void(self):
-        return self._set_terminator(llvalues.Terminator(self.function,
-                                                        "ret void", ()))
+        return self._set_terminator(values.Terminator(self.function,
+                                                      "ret void", ()))
 
     def ret(self, value):
-        return self._set_terminator(llvalues.Terminator(self.function, "ret",
-                                                        [value]))
+        return self._set_terminator(values.Terminator(self.function, "ret",
+                                                      [value]))

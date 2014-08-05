@@ -1,4 +1,4 @@
-import purellvmpy.core as ll
+import llvmlite.ir as ll
 
 fntype = ll.FunctionType(ll.IntType(32), ll.IntType(32), ll.IntType(32))
 

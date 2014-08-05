@@ -1,3 +1,7 @@
+"""
+Classes that are LLVM types
+"""
+
 from __future__ import print_function, absolute_import
 
 
@@ -80,3 +84,55 @@ class IntType(Type):
         else:
             return False
 
+
+class FloatType(Type):
+    def __str__(self):
+        return 'float'
+
+
+class DoubleType(Type):
+    def __str__(self):
+        return 'double'
+
+
+class StructType(Type):
+    def __len__(self):
+        assert not self.is_opaque
+        return len(self.elements)
+
+    def __iter__(self):
+        assert not self.is_opaque
+        return iter(self.elements)
+
+    @property
+    def is_opaque(self):
+        return self.elements is None
+
+
+class LiteralStructType(StructType):
+    def __init__(self, elems):
+        self.elements = tuple(elems)
+
+    def __str__(self):
+        return '{%s}' % ', '.join(map(str, self.elems))
+
+    def __eq__(self, other):
+        if isinstance(other, LiteralStructType):
+            return self.elements == other.elements
+
+
+class IdentifiedStructType(StructType):
+    def __init__(self, context, name):
+        """Do not use this directly
+        """
+        assert name
+        self.context = context
+        self.name = name
+        self.elements = None
+
+    def __str__(self):
+        return '%%%s' % self.name
+
+    def __eq__(self, other):
+        if isinstance(other, IdentifiedStructType):
+            return self.name == other.name

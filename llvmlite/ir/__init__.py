@@ -2,7 +2,7 @@
 This subpackage implements the LLVM IR classes in pure python
 """
 
-from .lltypes import *
-from .llvalues import *
-from .llmodule import *
+from .types import *
+from .values import *
+from .module import *
 from .builder import *
