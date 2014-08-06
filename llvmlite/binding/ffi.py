@@ -15,7 +15,7 @@ LLVMPassManagerRef = _make_opaque_ref("LLVMPassManager")
 LLVMTargetDataRef = _make_opaque_ref("LLVMTargetData")
 LLVMTargetLibraryInfoRef = _make_opaque_ref(("LLVMTargetLibraryInfo"))
 
-lib = ctypes.CDLL('ffi/libllvmlite.dylib')
+lib = ctypes.CDLL('/Users/sklam/dev/llvmlite/ffi/libllvmlite.dylib')
 
 
 class OutputString(object):

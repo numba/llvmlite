@@ -8,6 +8,19 @@ from weakref import WeakSet
 from . import types, _utils
 
 
+def _wrapname(x):
+    return '"{}"'.format(x).replace(' ', '_')
+
+
+class ConstOpMixin(object):
+    def bitcast(self, typ):
+        if typ == self.type:
+            return self
+        op = "bitcast ({} {} to {})".format(self.type, self.get_reference(),
+                                            typ)
+        return ConstOp(typ, op)
+
+
 class Value(object):
     name_prefix = '%'
     deduplicate_name = True
@@ -50,13 +63,43 @@ class Value(object):
         self._name = name
 
     def get_reference(self):
-        return self.name_prefix + self.name
+        return self.name_prefix + _wrapname(self.name)
 
 
-class GlobalValue(Value):
+class GlobalValue(Value, ConstOpMixin):
     name_prefix = '@'
     deduplicate_name = False
-    nested_scope = True
+
+
+class GlobalVariable(GlobalValue):
+    def __init__(self, module, typ, name):
+        super(GlobalVariable, self).__init__(module, typ.as_pointer(),
+                                             name=name)
+        self.gtype = typ
+        self.initializer = None
+        self.global_constant = False
+        self.parent.add_global(self)
+
+    def descr(self, buf):
+        if self.global_constant:
+            kind = 'constant'
+        else:
+            kind = 'global'
+
+        if not self.global_constant:
+            linkage = 'external'
+        else:
+            linkage = ''
+
+        print("{} {} {} ".format(linkage, kind, self.gtype), file=buf,
+              end='')
+
+        if self.initializer is not None:
+            print(self.initializer.get_reference(), file=buf, end='')
+        # else:
+        #     print('undef', file=buf, end='')
+
+        print(file=buf)
 
 
 class AttributeSet(set):
@@ -100,14 +143,24 @@ class Function(GlobalValue):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
+    nested_scope = True
 
     def __init__(self, module, ftype, name):
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
         self.ftype = ftype
         self.blocks = []
         self.attributes = FunctionAttributes()
-        self.args = [Argument(self, i, t) for i, t in enumerate(ftype.args)]
+        self.args = tuple([Argument(self, i, t)
+                           for i, t in enumerate(ftype.args)])
         self.parent.add_global(self)
+
+    @property
+    def module(self):
+        return self.parent
+
+    @property
+    def entry_basic_block(self):
+        return self.blocks[0]
 
     def append_basic_block(self, name=''):
         blk = Block(parent=self, name=name)
@@ -130,7 +183,9 @@ class Function(GlobalValue):
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
         attrs = self.attributes
-        prototype = "{state} {retty} {name}({args}) {attrs}".format(**locals())
+        vararg = ', ...' if self.ftype.var_arg else ''
+        prototype = "{state} {retty} {name}({args}{vararg}) {attrs}".format(
+             **locals())
         print(prototype, file=buf)
 
     def descr_body(self, buf):
@@ -159,6 +214,10 @@ class Function(GlobalValue):
             self.descr(buf)
             return buf.getvalue()
 
+    @property
+    def is_declaration(self):
+        return len(self.blocks) == 0
+
 
 class ArgumentAttributes(AttributeSet):
     _known = frozenset([])  # TODO
@@ -185,10 +244,15 @@ class Block(Value):
     def is_terminated(self):
         return self.terminator is not None
 
+    @property
+    def function(self):
+        return self.parent
+
 
 class Instruction(Value):
     def __init__(self, parent, typ, opname, operands, name=''):
         super(Instruction, self).__init__(parent, typ, name=name)
+        assert isinstance(parent, Block)
         self.opname = opname
         self.operands = operands
 
@@ -202,18 +266,36 @@ class Instruction(Value):
         print("{opname} {typ} {operands}".format(**locals()), file=buf)
 
 
+class CallInstr(Instruction):
+    def __init__(self, parent, func, args, name=''):
+        super(CallInstr, self).__init__(parent, func.ftype.return_type, "call",
+                                        [func] + list(args), name=name)
+        self.args = args
+        self.callee = func
+
+    def descr(self, buf):
+        args = ', '.join('{} {}'.format(a.type, a.get_reference())
+                         for a in self.args)
+        fnty = self.callee.ftype
+        print("call {} {}({})".format(fnty.as_pointer(),
+                                      self.callee.get_reference(),
+                                      args),
+              file=buf)
+
+
 class Terminator(Instruction):
-    def __new__(cls, parent, opname, operands, name=''):
+    def __new__(cls, parent, opname, *args):
         if opname == 'ret':
             cls = Ret
+        elif opname == 'switch':
+            cls = SwitchInstr
         else:
             cls = Terminator
         return object.__new__(cls)
 
-    def __init__(self, parent, opname, operands, name=''):
+    def __init__(self, parent, opname, operands):
         super(Terminator, self).__init__(parent, types.VoidType(), opname,
-                                         operands,
-                                         name=name)
+                                         operands)
 
     def descr(self, buf):
         opname = self.opname
@@ -237,7 +319,7 @@ class Ret(Terminator):
         return self.operands[0].type
 
 
-class Constant(object):
+class Constant(ConstOpMixin):
     """
     Constant values
     """
@@ -249,11 +331,38 @@ class Constant(object):
         self.users = WeakSet()
 
     def __str__(self):
-        return "{} {}".format(self.type, self.constant)
+        return '{} {}'.format(self.type, self.get_reference())
 
     def get_reference(self):
-        return str(self.constant)
+        if isinstance(self.constant, str):
+            val = 'c"{}"'.format(self.constant)
+        elif self.constant is None:
+            val = self.type.null
+        elif isinstance(self.constant, (tuple, list)):
+            val = "[{}]".format(', '.join(map(lambda x: "{} {}".format(x.type,
+                                                                       x.get_reference()),
+                                              self.constant)))
+        else:
+            val = str(self.constant)
+        return val
 
+    @classmethod
+    def literal_struct(cls, elems):
+        tys = [el.type for el in elems]
+        return cls(types.LiteralStructType(tys), elems)
+
+
+class ConstOp(object):
+    def __init__(self, typ, op):
+        self.type = typ
+        self.op = op
+        self.users = WeakSet()
+
+    def __str__(self):
+        return "{}".format(self.op)
+
+    def get_reference(self):
+        return str(self)
 
 class CompareInstr(Instruction):
     # Define the following in subclasses
@@ -359,3 +468,45 @@ class AllocaInstr(Instruction):
                                    self.operands[0].get_reference()),
                   file=buf)
 
+
+class SwitchInstr(Terminator):
+    def __init__(self, parent, opname, val, default):
+        super(SwitchInstr, self).__init__(parent, opname, [val])
+        self.value = val
+        self.default = default
+        self.cases = []
+
+    def add_case(self, val, blk):
+        assert isinstance(blk, Block)
+        self.cases.append((val, blk))
+
+    def descr(self, buf):
+        cases = ["{} {}, label {}".format(val.type, val.get_reference(),
+                                          blk.get_reference())
+                 for val, blk in self.cases]
+        print("switch {} {}, label {} [{}]".format(self.value.type,
+                                             self.value.get_reference(),
+                                             self.default.get_reference(),
+                                             ' '.join(cases)),
+              file=buf)
+
+
+class GEPInstr(Instruction):
+    def __init__(self, parent, ptr, indices, name):
+        typ = ptr.type
+        for i in indices:
+            typ = typ.gep(i)
+
+        typ = typ.as_pointer()
+        super(GEPInstr, self).__init__(parent, typ, "getelementptr",
+                                       [ptr] + list(indices), name=name)
+        self.pointer = ptr
+        self.indices = indices
+
+    def descr(self, buf):
+        indices = ['{} {}'.format(i.type, i.get_reference())
+                   for i in self.indices]
+        print("getelementptr {} {}, {}".format(self.pointer.type,
+                                               self.pointer.get_reference(),
+                                               ', '.join(indices)),
+              file=buf)

@@ -4,9 +4,18 @@ Classes that are LLVM types
 
 from __future__ import print_function, absolute_import
 
+_type_state = iter(range(50))
+_type_enum = lambda: next(_type_state)
+
+TYPE_UNKNOWN = _type_enum()
+TYPE_POINTER = _type_enum()
+TYPE_STRUCT = _type_enum()
+
 
 class Type(object):
     is_pointer = False
+
+    kind = TYPE_UNKNOWN
 
     def __repr__(self):
         return "<%s %s>" % (type(self), str(self))
@@ -31,6 +40,8 @@ class LabelType(Type):
 
 class PointerType(Type):
     is_pointer = True
+    kind = TYPE_POINTER
+    null = 'null'
 
     def __init__(self, pointee):
         assert not isinstance(pointee, VoidType)
@@ -45,6 +56,9 @@ class PointerType(Type):
         else:
             return False
 
+    def gep(self, i):
+        return self.pointee
+
 
 class VoidType(Type):
     def __str__(self):
@@ -55,13 +69,17 @@ class VoidType(Type):
 
 
 class FunctionType(Type):
-    def __init__(self, return_type, *args):
+    def __init__(self, return_type, *args, var_arg=False):
         self.return_type = return_type
         self.args = args
+        self.var_arg = var_arg
 
     def __str__(self):
         strargs = ', '.join(str(a) for a in self.args)
-        return '%s (%s)' % (self.return_type, strargs)
+        if self.var_arg:
+            return '{} ({}, ...)'.format(self.return_type, strargs)
+        else:
+            return '{} ({})'.format(self.return_type, strargs)
 
     def __eq__(self, other):
         if isinstance(other, FunctionType):
@@ -72,6 +90,8 @@ class FunctionType(Type):
 
 
 class IntType(Type):
+    null = '0'
+
     def __init__(self, bits):
         self.bits = bits
 
@@ -95,7 +115,21 @@ class DoubleType(Type):
         return 'double'
 
 
+class ArrayType(Type):
+    def __init__(self, element, count):
+        self.element = element
+        self.count = count
+
+    def __len__(self):
+        return self.count
+
+    def __str__(self):
+        return '[{:d} x {}]'.format(self.count, self.element)
+
+
 class StructType(Type):
+    kind = TYPE_STRUCT
+
     def __len__(self):
         assert not self.is_opaque
         return len(self.elements)
@@ -114,11 +148,16 @@ class LiteralStructType(StructType):
         self.elements = tuple(elems)
 
     def __str__(self):
-        return '{%s}' % ', '.join(map(str, self.elems))
+        return '{%s}' % ', '.join(map(str, self.elements))
 
     def __eq__(self, other):
         if isinstance(other, LiteralStructType):
             return self.elements == other.elements
+
+    def gep(self, i):
+        if not isinstance(i.type, IntType):
+            raise TypeError(i.type)
+        return self.elements[i.constant]
 
 
 class IdentifiedStructType(StructType):
@@ -136,3 +175,6 @@ class IdentifiedStructType(StructType):
     def __eq__(self, other):
         if isinstance(other, IdentifiedStructType):
             return self.name == other.name
+
+
+

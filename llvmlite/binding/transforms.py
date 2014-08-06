@@ -10,25 +10,25 @@ def create_pass_manager_builder():
 
 class PassManagerBuilder(ffi.ObjectRef):
     def set_opt(self, level):
-        ffi.lib.LLVMPY_PassManagerBuilderSetOptLevel(level)
+        ffi.lib.LLVMPY_PassManagerBuilderSetOptLevel(self, level)
         return self
 
     def set_size(self, level):
-        ffi.lib.LLVMPY_PassManagerBuilderSetSizeLevel(level)
+        ffi.lib.LLVMPY_PassManagerBuilderSetSizeLevel(self, level)
         return self
 
     def set_inline(self, threshold):
-        ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(threshold)
+        ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(self, threshold)
         return self
 
     def disable_unit_at_a_time(self, disable=True):
-        ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnitAtATime(disable)
+        ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnitAtATime(self, disable)
 
     def disable_unroll_loops(self, disable=True):
-        ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops(disable)
+        ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops(self, disable)
 
     def disable_simplify_lib_calls(self, disable=True):
-        ffi.lib.LLVMPY_PassManagerBuilderSetDisableSimplifyLibCalls(disable)
+        ffi.lib.LLVMPY_PassManagerBuilderSetDisableSimplifyLibCalls(self, disable)
 
     def _populate_module_pm(self, pm):
         ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager(self, pm)

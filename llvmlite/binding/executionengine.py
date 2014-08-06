@@ -82,3 +82,4 @@ ffi.lib.LLVMPY_GetPointerToGlobal.restype = c_void_p
 ffi.lib.LLVMPY_AddGlobalMapping.argtypes = [ffi.LLVMExecutionEngineRef,
                                             ffi.LLVMValueRef,
                                             c_void_p]
+

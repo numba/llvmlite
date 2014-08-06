@@ -17,7 +17,7 @@ def _binop(opname, cls=values.Instruction):
         @functools.wraps(fn)
         def wrapped(self, lhs, rhs, name=''):
             assert lhs.type == rhs.type, "Operands must be the same type"
-            instr = cls(self.function, lhs.type, opname, (lhs, rhs), name)
+            instr = cls(self.block, lhs.type, opname, (lhs, rhs), name)
             self._insert(instr)
             return instr
 
@@ -30,7 +30,7 @@ def _castop(opname, cls=values.CastInstr):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, val, typ, name=''):
-            instr = cls(self.function, opname, val, typ, name)
+            instr = cls(self.block, opname, val, typ, name)
             self._insert(instr)
             return instr
 
@@ -48,15 +48,22 @@ class IRBuilder(object):
     def block(self):
         return self._block
 
+    basic_block = block
+
     @property
     def function(self):
         return self.block.parent
 
     def position_before(self, instr):
-        self._anchor = max(0, self._block.instructions.find(instr) - 1)
+        self._block = instr.parent
+        if instr is self.block.terminator:
+            self._anchor = len(self.block.instructions)
+        else:
+            self._anchor = max(0, self._block.instructions.index(instr) - 1)
 
     def position_after(self, instr):
-        self._anchor = min(self._block.instructions.find(instr) + 1,
+        self._block = instr.parent
+        self._anchor = min(self._block.instructions.index(instr) + 1,
                            len(self._block.instructions))
 
     def position_at_start(self, block):
@@ -103,6 +110,26 @@ class IRBuilder(object):
     def sdiv(self, lhs, rhs, name=''):
         pass
 
+    @_binop('or')
+    def or_(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('and')
+    def and_(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('xor')
+    def xor(self, lhs, rhs, name=''):
+        pass
+
+    #
+    # Unary APIs
+    #
+
+    def not_(self, value, name=''):
+        return self.xor(value, values.Constant(value.type, -1), name=name)
+
+
     #
     # Comparions APIs
     #
@@ -111,7 +138,7 @@ class IRBuilder(object):
         op = _CMP_MAP[cmpop]
         if cmpop not in ('==', '!='):
             op = 's' + op
-        instr = values.ICMPInstr(self.function, op, lhs, rhs, name=name)
+        instr = values.ICMPInstr(self.block, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -119,7 +146,7 @@ class IRBuilder(object):
         op = _CMP_MAP[cmpop]
         if cmpop not in ('==', '!='):
             op = 'u' + op
-        instr = values.ICMPInstr(self.function, op, lhs, rhs, name=name)
+        instr = values.ICMPInstr(self.block, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -128,7 +155,7 @@ class IRBuilder(object):
             op = 'o' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = values.FCMPInstr(self.function, op, lhs, rhs, name=name)
+        instr = values.FCMPInstr(self.block, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -137,7 +164,7 @@ class IRBuilder(object):
             op = 'u' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = values.FCMPInstr(self.function, op, lhs, rhs, name=name)
+        instr = values.FCMPInstr(self.block, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -186,6 +213,14 @@ class IRBuilder(object):
     def sitofp(self, value, typ, name=''):
         pass
 
+    @_castop('ptrtoint')
+    def ptrtoint(self, value, typ, name=''):
+        pass
+
+    @_castop('inttoptr')
+    def inttoptr(self, value, typ, name=''):
+        pass
+
     #
     # Memory APIs
     #
@@ -199,17 +234,17 @@ class IRBuilder(object):
             # assume to be a python number.
             count = values.Constant(types.IntType(32), int(count))
 
-        al = values.AllocaInstr(self.function, typ, count, name)
+        al = values.AllocaInstr(self.block, typ, count, name)
         self._insert(al)
         return al
 
     def load(self, ptr, name=''):
-        ld = values.LoadInstr(self.function, ptr, name)
+        ld = values.LoadInstr(self.block, ptr, name)
         self._insert(ld)
         return ld
 
     def store(self, val, ptr):
-        st = values.StoreInstr(self.function, val, ptr)
+        st = values.StoreInstr(self.block, val, ptr)
         self._insert(st)
         return st
 
@@ -217,25 +252,46 @@ class IRBuilder(object):
     # Terminators APIs
     #
 
-    def jump(self, target):
+    def switch(self, val, elseblk):
+        swt = values.Terminator(self.block, 'switch', val, elseblk)
+        self._set_terminator(swt)
+        return swt
+
+    def branch(self, target):
         """Jump to target
         """
-        term = values.Terminator(self.function, "br", [target])
+        term = values.Terminator(self.block, "br", [target])
         self._set_terminator(term)
         return term
 
-    def branch(self, cond, truebr, falsebr):
+    def cbranch(self, cond, truebr, falsebr):
         """Branch conditionally
         """
-        term = values.Terminator(self.function, "br", [cond, truebr,
-                                                       falsebr])
+        term = values.Terminator(self.block, "br", [cond, truebr, falsebr])
         self._set_terminator(term)
         return term
 
     def ret_void(self):
-        return self._set_terminator(values.Terminator(self.function,
+        return self._set_terminator(values.Terminator(self.block,
                                                       "ret void", ()))
 
     def ret(self, value):
-        return self._set_terminator(values.Terminator(self.function, "ret",
+        return self._set_terminator(values.Terminator(self.block, "ret",
                                                       [value]))
+
+    # Call APIs
+
+    def call(self, fn, args, name=''):
+        inst = values.CallInstr(self.block, fn, args, name=name)
+        self._insert(inst)
+        return inst
+
+    # GEP APIs
+
+    def gep(self, ptr, *indices, name=''):
+        if len(indices) == 1 and isinstance(indices, (tuple, list)):
+            indices = indices[0]
+
+        instr = values.GEPInstr(self.block, ptr, indices, name=name)
+        self._insert(instr)
+        return instr
