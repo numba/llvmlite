@@ -1,13 +1,3 @@
-//    LLVMPassManagerBuilderRef 	LLVMPassManagerBuilderCreate (void)
-//    void 	LLVMPassManagerBuilderDispose (LLVMPassManagerBuilderRef PMB)
-//    void 	LLVMPassManagerBuilderSetOptLevel (LLVMPassManagerBuilderRef PMB, unsigned OptLevel)
-//    void 	LLVMPassManagerBuilderSetSizeLevel (LLVMPassManagerBuilderRef PMB, unsigned SizeLevel)
-//    void 	LLVMPassManagerBuilderSetDisableUnitAtATime (LLVMPassManagerBuilderRef PMB, LLVMBool Value)
-//    void 	LLVMPassManagerBuilderSetDisableUnrollLoops (LLVMPassManagerBuilderRef PMB, LLVMBool Value)
-//    void 	LLVMPassManagerBuilderSetDisableSimplifyLibCalls (LLVMPassManagerBuilderRef PMB, LLVMBool Value)
-//    void 	LLVMPassManagerBuilderUseInlinerWithThreshold (LLVMPassManagerBuilderRef PMB, unsigned Threshold)
-//    void 	LLVMPassManagerBuilderPopulateFunctionPassManager (LLVMPassManagerBuilderRef PMB, LLVMPassManagerRef PM)
-//    void 	LLVMPassManagerBuilderPopulateModulePassManager (LLVMPassManagerBuilderRef PMB, LLVMPassManagerRef PM)
 //    void 	LLVMPassManagerBuilderPopulateLTOPassManager (LLVMPassManagerBuilderRef PMB, LLVMPassManagerRef PM, LLVMBool Internalize, LLVMBool RunInliner)
 
 
@@ -35,6 +25,59 @@ LLVMPY_PassManagerBuilderPopulateModulePassManager(
 {
     LLVMPassManagerBuilderPopulateModulePassManager(PMB, PM);
 }
+
+void
+LLVMPY_PassManagerBuilderSetOptLevel(LLVMPassManagerBuilderRef PMB,
+                                  unsigned OptLevel)
+{
+    LLVMPassManagerBuilderSetOptLevel(PMB, OptLevel);
+}
+
+void
+LLVMPY_PassManagerBuilderSetSizeLevel(LLVMPassManagerBuilderRef PMB,
+                                   unsigned SizeLevel)
+{
+    LLVMPassManagerBuilderSetSizeLevel(PMB, SizeLevel);
+}
+
+void
+LLVMPY_PassManagerBuilderSetDisableUnitAtATime(LLVMPassManagerBuilderRef PMB,
+                                            int Value)
+{
+    LLVMPassManagerBuilderSetDisableUnitAtATime(PMB, Value);
+}
+
+void
+LLVMPY_PassManagerBuilderSetDisableUnrollLoops(LLVMPassManagerBuilderRef PMB,
+                                            LLVMBool Value)
+{
+    LLVMPassManagerBuilderSetDisableUnrollLoops(PMB, Value);
+}
+
+
+void
+LLVMPY_PassManagerBuilderSetDisableSimplifyLibCalls(
+                                    LLVMPassManagerBuilderRef PMB,
+                                    int Value)
+{
+    LLVMPassManagerBuilderSetDisableSimplifyLibCalls(PMB, Value);
+}
+
+void
+LLVMPY_PassManagerBuilderUseInlinerWithThreshold(LLVMPassManagerBuilderRef PMB,
+                                                 unsigned Threshold)
+{
+    LLVMPassManagerBuilderUseInlinerWithThreshold(PMB, Threshold);
+}
+
+void
+LLVMPY_PassManagerBuilderPopulateFunctionPassManager(
+                                        LLVMPassManagerBuilderRef PMB,
+                                        LLVMPassManagerRef PM)
+{
+    LLVMPassManagerBuilderPopulateFunctionPassManager(PMB, PM);
+}
+
 
 
 } // end extern "C"

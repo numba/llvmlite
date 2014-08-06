@@ -11,12 +11,6 @@ def link_in_mcjit():
     ffi.lib.LLVMPY_LinkInMCJIT()
 
 
-def get_default_triple():
-    with ffi.OutputString() as out:
-        ffi.lib.LLVMPY_GetDefaultTargetTriple(out)
-        return str(out)
-
-
 def create_jit_compiler(module, opt=2):
     """Create an ExecutionEngine for a module
     """
@@ -88,5 +82,3 @@ ffi.lib.LLVMPY_GetPointerToGlobal.restype = c_void_p
 ffi.lib.LLVMPY_AddGlobalMapping.argtypes = [ffi.LLVMExecutionEngineRef,
                                             ffi.LLVMValueRef,
                                             c_void_p]
-
-ffi.lib.LLVMPY_GetDefaultTargetTriple.argtypes = [POINTER(c_char_p)]

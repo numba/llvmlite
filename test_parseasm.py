@@ -19,8 +19,12 @@ mod.verify()
 print(repr(mod))
 print(mod)
 
-pmb = llvm.create_pass_manager_builder()
-pmb.close()
+with llvm.create_module_pass_manager() as pm:
+    with llvm.create_pass_manager_builder() as pmb:
+        pmb.populate(pm)
+    pm.run(mod)
+
+print(mod)
 
 ee = llvm.create_jit_compiler(mod)
 func = mod.get_function(name="foo")

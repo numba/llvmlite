@@ -39,6 +39,12 @@ class ModuleRef(ffi.ObjectRef):
             if ffi.lib.LLVMPY_VerifyModule(self, outmsg):
                 raise RuntimeError(outmsg)
 
+    @property
+    def data_layout(self):
+        ffi.lib.LLVMPY_GetDataLayout(self)
+
+    target_data = data_layout
+
 # =============================================================================
 # Set function FFI
 
@@ -61,3 +67,6 @@ ffi.lib.LLVMPY_GetNamedFunction.restype = ffi.LLVMValueRef
 ffi.lib.LLVMPY_VerifyModule.argtypes = [ffi.LLVMModuleRef,
                                         POINTER(c_char_p)]
 ffi.lib.LLVMPY_VerifyModule.restype = c_bool
+
+ffi.lib.LLVMPY_GetDataLayout = [ffi.LLVMModuleRef,
+                                POINTER(c_char_p)]

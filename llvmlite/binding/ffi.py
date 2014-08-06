@@ -12,6 +12,8 @@ LLVMValueRef = _make_opaque_ref("LLVMValue")
 LLVMExecutionEngineRef = _make_opaque_ref("LLVMExecutionEngine")
 LLVMPassManagerBuilderRef = _make_opaque_ref("LLVMPassManagerBuilder")
 LLVMPassManagerRef = _make_opaque_ref("LLVMPassManager")
+LLVMTargetDataRef = _make_opaque_ref("LLVMTargetData")
+LLVMTargetLibraryInfoRef = _make_opaque_ref(("LLVMTargetLibraryInfo"))
 
 lib = ctypes.CDLL('ffi/libllvmlite.dylib')
 
@@ -46,6 +48,17 @@ class ObjectRef(object):
     """
 
     def __init__(self, ptr):
+        if ptr is None:
+            raise ValueError("NULL pointer")
         self._ptr = ptr
         self._as_parameter_ = ptr
+
+    def __enter__(self):
+        assert hasattr(self, "close")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 

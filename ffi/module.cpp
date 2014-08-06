@@ -38,6 +38,13 @@ LLVMPY_VerifyModule(LLVMModuleRef M, char **OutMsg)
     return LLVMVerifyModule(M, LLVMPrintMessageAction, OutMsg);
 }
 
+void
+LLVMPY_GetDataLayout(LLVMModuleRef M,
+                     const char **DL)
+{
+    *DL = LLVMGetDataLayout(M);
+}
+
 
 } // end extern "C"
 

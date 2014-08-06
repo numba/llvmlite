@@ -1,7 +1,6 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/Initialization.h"
 #include "llvm-c/Target.h"
-#include "llvm/Support/Host.h"
 
 #include "core.h"
 
@@ -45,14 +44,6 @@ INIT(NativeTarget)
 //INIT(NativeDisassembler)
 
 #undef INIT
-
-
-void
-LLVMPY_GetDefaultTargetTriple(const char **Out){
-    using namespace llvm;
-    *Out = LLVMPY_CreateString(sys::getDefaultTargetTriple().c_str());
-}
-
 
 
 } // end extern "C"
