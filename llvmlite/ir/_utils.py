@@ -44,7 +44,6 @@ class NameScope(object):
             ident = self._basenamemap.get(basename, 1)
             self._basenamemap[basename] = ident + 1
             name = "%s.%u" % (basename, ident)
-        self.register(name)
         return name
 
     def get_child(self):

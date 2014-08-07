@@ -22,7 +22,6 @@ class Module(object):
     def global_variables(self):
         return self.globals.values()
 
-
     def add_global(self, globalvalue):
         """Add a global value
         """
@@ -33,7 +32,7 @@ class Module(object):
     def get_unique_name(self, name=''):
         """Util for getting a unique name.
         """
-        return self.name_manager.deduplicate(name)
+        return self.scope.deduplicate(name)
 
     def __repr__(self):
         body = '\n'.join(str(self.globals[k]) for k in self._sequence)

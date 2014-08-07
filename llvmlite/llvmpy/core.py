@@ -113,15 +113,13 @@ class Module(ir.Module):
             return ir.Function(self, fnty, name)
 
     def verify(self):
-        print("=" * 80)
-        print(self)
         llvm.parse_assembly(str(self))
 
     def add_function(self, fnty, name):
         return ir.Function(self, fnty, name)
 
     def add_global_variable(self, ty, name):
-        return ir.GlobalVariable(self, ty, name)
+        return ir.GlobalVariable(self, ty, self.get_unique_name(name))
 
     def get_global_variable_named(self, name):
         try:

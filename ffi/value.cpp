@@ -25,12 +25,18 @@ LLVMPY_PrintValueToString(LLVMValueRef Val,
 }
 
 
-void
-LLVMPY_GetValueName(LLVMValueRef Val, const char** outstr)
+const char *
+LLVMPY_GetValueName(LLVMValueRef Val)
 {
-    *outstr = LLVMGetValueName(Val);
+    return LLVMGetValueName(Val);
 }
 
+
+LLVMModuleRef
+LLVMPY_GetGlobalParent(LLVMValueRef Val)
+{
+    return LLVMGetGlobalParent(Val);
+}
 
 } // end extern "C"
 

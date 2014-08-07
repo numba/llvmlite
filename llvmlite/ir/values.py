@@ -96,7 +96,7 @@ class GlobalVariable(GlobalValue):
 
         if self.initializer is not None:
             print(self.initializer.get_reference(), file=buf, end='')
-        # else:
+            # else:
         #     print('undef', file=buf, end='')
 
         print(file=buf)
@@ -162,6 +162,10 @@ class Function(GlobalValue):
     def entry_basic_block(self):
         return self.blocks[0]
 
+    @property
+    def basic_blocks(self):
+        return self.blocks
+
     def append_basic_block(self, name=''):
         blk = Block(parent=self, name=name)
         self.blocks.append(blk)
@@ -185,7 +189,7 @@ class Function(GlobalValue):
         attrs = self.attributes
         vararg = ', ...' if self.ftype.var_arg else ''
         prototype = "{state} {retty} {name}({args}{vararg}) {attrs}".format(
-             **locals())
+            **locals())
         print(prototype, file=buf)
 
     def descr_body(self, buf):
@@ -364,6 +368,7 @@ class ConstOp(object):
     def get_reference(self):
         return str(self)
 
+
 class CompareInstr(Instruction):
     # Define the following in subclasses
     OPNAME = 'invalid-compare'
@@ -485,9 +490,9 @@ class SwitchInstr(Terminator):
                                           blk.get_reference())
                  for val, blk in self.cases]
         print("switch {} {}, label {} [{}]".format(self.value.type,
-                                             self.value.get_reference(),
-                                             self.default.get_reference(),
-                                             ' '.join(cases)),
+                                                   self.value.get_reference(),
+                                                   self.default.get_reference(),
+                                                   ' '.join(cases)),
               file=buf)
 
 
@@ -510,3 +515,19 @@ class GEPInstr(Instruction):
                                                self.pointer.get_reference(),
                                                ', '.join(indices)),
               file=buf)
+
+
+class PhiInstr(Instruction):
+    def __init__(self, parent, typ, name):
+        super(PhiInstr, self).__init__(parent, typ, "phi", (), name=name)
+        self.incomings = []
+
+    def descr(self, buf):
+        incs = ', '.join('[{}, {}]'.format(v.get_reference(),
+                                                 b.get_reference())
+                         for v, b in self.incomings)
+        print("phi {} {}".format(self.type, incs), file=buf)
+
+    def add_incoming(self, value, block):
+        assert isinstance(block, Block)
+        self.incomings.append((value, block))

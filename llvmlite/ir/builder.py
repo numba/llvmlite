@@ -295,3 +295,11 @@ class IRBuilder(object):
         instr = values.GEPInstr(self.block, ptr, indices, name=name)
         self._insert(instr)
         return instr
+
+    # PHI APIs
+
+    def phi(self, typ, name=''):
+        inst = values.PhiInstr(self.block, typ, name=name)
+        self._insert(inst)
+        return inst
+

@@ -20,7 +20,6 @@ def create_jit_compiler(module, opt=2):
                                             outerr):
             raise RuntimeError(str(outerr))
 
-    print(engine.contents)
     return ExecutionEngine(engine)
 
 
