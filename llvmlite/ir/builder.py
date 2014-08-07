@@ -288,10 +288,7 @@ class IRBuilder(object):
 
     # GEP APIs
 
-    def gep(self, ptr, *indices, name=''):
-        if len(indices) == 1 and isinstance(indices, (tuple, list)):
-            indices = indices[0]
-
+    def gep(self, ptr, indices, name=''):
         instr = values.GEPInstr(self.block, ptr, indices, name=name)
         self._insert(instr)
         return instr

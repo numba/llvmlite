@@ -69,9 +69,9 @@ class VoidType(Type):
 
 
 class FunctionType(Type):
-    def __init__(self, return_type, *args, var_arg=False):
+    def __init__(self, return_type, args, var_arg=False):
         self.return_type = return_type
-        self.args = args
+        self.args = tuple(args)
         self.var_arg = var_arg
 
     def __str__(self):

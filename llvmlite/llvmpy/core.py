@@ -54,7 +54,7 @@ class Type(object):
 
     @staticmethod
     def function(res, args, var_arg=False):
-        return ir.FunctionType(res, *args, var_arg=var_arg)
+        return ir.FunctionType(res, args, var_arg=var_arg)
 
     @staticmethod
     def struct(members):

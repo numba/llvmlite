@@ -42,6 +42,8 @@ class OutputString(object):
     def __bool__(self):
         return bool(self.pointer)
 
+    __nonzero__ = __bool__
+
 
 class ObjectRef(object):
     """Weak reference to LLVM objects
