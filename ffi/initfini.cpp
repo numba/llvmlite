@@ -18,7 +18,7 @@ INIT(ObjCARCOpts)
 INIT(Vectorization)
 INIT(InstCombine)
 INIT(IPO)
-INIT(Instrumentation)
+// INIT(Instrumentation)
 INIT(Analysis)
 INIT(IPA)
 INIT(CodeGen)
@@ -35,13 +35,13 @@ LLVMPY_Shutdown(){
 // Target Initialization
 #define INIT(F) void LLVMPY_Initialize ## F() { LLVMInitialize ## F (); }
 
-INIT(AllTargetInfos)
-INIT(AllTargets)
-INIT(AllTargetMCs)
+//INIT(AllTargetInfos)
+//INIT(AllTargets)
+//INIT(AllTargetMCs)
 INIT(NativeTarget)
-//INIT(NativeAsmParser)
-//INIT(NativeAsmPrinter)
-//INIT(NativeDisassembler)
+INIT(NativeAsmParser)
+INIT(NativeAsmPrinter)
+INIT(NativeDisassembler)
 
 #undef INIT
 

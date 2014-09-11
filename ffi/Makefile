@@ -1,7 +1,7 @@
-CXXFLAGS = `llvm-config --cppflags`
+CXX = clang++
+CXXFLAGS = `llvm-config --cxxflags`
 LDFLAGS = `llvm-config --ldflags`
-LIBS = `llvm-config --libs all`
-CXX = clang++ -stdlib=libstdc++ -mmacosx-version-min=10.6
+LIBS = `llvm-config --system-libs --libs all`
 SRC = assembly.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp
 OUTPUT = libllvmlite.dylib
