@@ -77,9 +77,9 @@ class FunctionType(Type):
     def __str__(self):
         strargs = ', '.join(str(a) for a in self.args)
         if self.var_arg:
-            return '{} ({}, ...)'.format(self.return_type, strargs)
+            return '{0} ({1}, ...)'.format(self.return_type, strargs)
         else:
-            return '{} ({})'.format(self.return_type, strargs)
+            return '{0} ({1})'.format(self.return_type, strargs)
 
     def __eq__(self, other):
         if isinstance(other, FunctionType):
@@ -124,7 +124,7 @@ class ArrayType(Type):
         return self.count
 
     def __str__(self):
-        return '[{:d} x {}]'.format(self.count, self.element)
+        return '[{0:d} x {1}]'.format(self.count, self.element)
 
 
 class StructType(Type):

@@ -14,7 +14,7 @@ def parse_assembly(llvmir):
         module = ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg)
         if errmsg:
             ffi.lib.LLVMPY_DisposeModule(module)
-            raise RuntimeError("LLVM IR parsing error\n{}".format(errmsg))
+            raise RuntimeError("LLVM IR parsing error\n{0}".format(errmsg))
     return ModuleRef(module)
 
 

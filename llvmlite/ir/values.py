@@ -9,15 +9,15 @@ from . import types, _utils
 
 
 def _wrapname(x):
-    return '"{}"'.format(x).replace(' ', '_')
+    return '"{0}"'.format(x).replace(' ', '_')
 
 
 class ConstOpMixin(object):
     def bitcast(self, typ):
         if typ == self.type:
             return self
-        op = "bitcast ({} {} to {})".format(self.type, self.get_reference(),
-                                            typ)
+        op = "bitcast ({0} {1} to {2})".format(self.type, self.get_reference(),
+                                               typ)
         return ConstOp(typ, op)
 
 
@@ -91,7 +91,7 @@ class GlobalVariable(GlobalValue):
         else:
             linkage = ''
 
-        print("{} {} {} ".format(linkage, kind, self.gtype), file=buf,
+        print("{0} {1} {2} ".format(linkage, kind, self.gtype), file=buf,
               end='')
 
         if self.initializer is not None:
@@ -197,7 +197,7 @@ class Function(GlobalValue):
         Describe of the body of the function.
         """
         for blk in self.blocks:
-            print("{}:".format(blk.name), file=buf)
+            print("{0}:".format(blk.name), file=buf)
             for instr in blk.instructions:
                 print('  ', end='', file=buf)
                 print(instr, file=buf)
@@ -235,7 +235,7 @@ class Argument(Value):
         self.attributes = ArgumentAttributes()
 
     def __str__(self):
-        return "{} {}".format(self.type, self.get_reference())
+        return "{0} {1}".format(self.type, self.get_reference())
 
 
 class Block(Value):
@@ -278,12 +278,12 @@ class CallInstr(Instruction):
         self.callee = func
 
     def descr(self, buf):
-        args = ', '.join('{} {}'.format(a.type, a.get_reference())
+        args = ', '.join('{0} {1}'.format(a.type, a.get_reference())
                          for a in self.args)
         fnty = self.callee.ftype
-        print("call {} {}({})".format(fnty.as_pointer(),
-                                      self.callee.get_reference(),
-                                      args),
+        print("call {0} {1}({2})".format(fnty.as_pointer(),
+                                         self.callee.get_reference(),
+                                         args),
               file=buf)
 
 
@@ -303,14 +303,14 @@ class Terminator(Instruction):
 
     def descr(self, buf):
         opname = self.opname
-        operands = ', '.join("{} {}".format(op.type, op.get_reference())
+        operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
                              for op in self.operands)
         print("{opname} {operands}".format(**locals()), file=buf)
 
 
 class Ret(Terminator):
     def descr(self, buf):
-        msg = "ret {} {}".format(
+        msg = "ret {0} {1}".format(
             self.return_type, self.return_value.get_reference())
         print(msg, file=buf)
 
@@ -335,17 +335,18 @@ class Constant(ConstOpMixin):
         self.users = WeakSet()
 
     def __str__(self):
-        return '{} {}'.format(self.type, self.get_reference())
+        return '{0} {1}'.format(self.type, self.get_reference())
 
     def get_reference(self):
         if isinstance(self.constant, str):
-            val = 'c"{}"'.format(self.constant)
+            val = 'c"{0}"'.format(self.constant)
         elif self.constant is None:
             val = self.type.null
         elif isinstance(self.constant, (tuple, list)):
-            val = "[{}]".format(', '.join(map(lambda x: "{} {}".format(x.type,
-                                                                       x.get_reference()),
-                                              self.constant)))
+            val = "[{0}]".format(', '.join(map(lambda x: "{0} {1}".format(x
+                                                                          .type,
+                                                                          x.get_reference()),
+                                               self.constant)))
         else:
             val = str(self.constant)
         return val
@@ -363,7 +364,7 @@ class ConstOp(object):
         self.users = WeakSet()
 
     def __str__(self):
-        return "{}".format(self.op)
+        return "{0}".format(self.op)
 
     def get_reference(self):
         return str(self)
@@ -381,9 +382,9 @@ class CompareInstr(Instruction):
         self.op = op
 
     def descr(self, buf):
-        print("icmp {} {} {}, {}".format(self.op, self.operands[0].type,
-                                         self.operands[0].get_reference(),
-                                         self.operands[1].get_reference()),
+        print("icmp {0} {1} {2}, {3}".format(self.op, self.operands[0].type,
+                                             self.operands[0].get_reference(),
+                                             self.operands[1].get_reference()),
               file=buf)
 
 
@@ -430,10 +431,10 @@ class CastInstr(Instruction):
         super(CastInstr, self).__init__(parent, typ, op, [val], name=name)
 
     def descr(self, buf):
-        print("{} {} {} to {}".format(self.opname,
-                                      self.operands[0].type,
-                                      self.operands[0].get_reference(),
-                                      self.type),
+        print("{0} {1} {2} to {3}".format(self.opname,
+                                          self.operands[0].type,
+                                          self.operands[0].get_reference(),
+                                          self.type),
               file=buf)
 
 
@@ -444,7 +445,7 @@ class LoadInstr(Instruction):
 
     def descr(self, buf):
         [val] = self.operands
-        print("load {} {}".format(val.type, val.get_reference()), file=buf)
+        print("load {0} {1}".format(val.type, val.get_reference()), file=buf)
 
 
 class StoreInstr(Instruction):
@@ -454,8 +455,8 @@ class StoreInstr(Instruction):
 
     def descr(self, buf):
         val, ptr = self.operands
-        print("store {} {}, {} {}".format(val.type, val.get_reference(),
-                                          ptr.type, ptr.get_reference()),
+        print("store {0} {1}, {2} {3}".format(val.type, val.get_reference(),
+                                              ptr.type, ptr.get_reference()),
               file=buf)
 
 
@@ -466,11 +467,11 @@ class AllocaInstr(Instruction):
                                           operands, name)
 
     def descr(self, buf):
-        print("{} {}".format(self.opname, self.type.pointee),
+        print("{0} {1}".format(self.opname, self.type.pointee),
               file=buf, end='')
         if self.operands:
-            print(", {} {}".format(self.operands[0].type,
-                                   self.operands[0].get_reference()),
+            print(", {0} {1}".format(self.operands[0].type,
+                                     self.operands[0].get_reference()),
                   file=buf)
 
 
@@ -486,13 +487,13 @@ class SwitchInstr(Terminator):
         self.cases.append((val, blk))
 
     def descr(self, buf):
-        cases = ["{} {}, label {}".format(val.type, val.get_reference(),
-                                          blk.get_reference())
+        cases = ["{0} {1}, label {2}".format(val.type, val.get_reference(),
+                                             blk.get_reference())
                  for val, blk in self.cases]
-        print("switch {} {}, label {} [{}]".format(self.value.type,
-                                                   self.value.get_reference(),
-                                                   self.default.get_reference(),
-                                                   ' '.join(cases)),
+        print("switch {0} {1}, label {2} [{3}]".format(self.value.type,
+                                                       self.value.get_reference(),
+                                                       self.default.get_reference(),
+                                                       ' '.join(cases)),
               file=buf)
 
 
@@ -509,11 +510,11 @@ class GEPInstr(Instruction):
         self.indices = indices
 
     def descr(self, buf):
-        indices = ['{} {}'.format(i.type, i.get_reference())
+        indices = ['{0} {1}'.format(i.type, i.get_reference())
                    for i in self.indices]
-        print("getelementptr {} {}, {}".format(self.pointer.type,
-                                               self.pointer.get_reference(),
-                                               ', '.join(indices)),
+        print("getelementptr {0} {1}, {2}".format(self.pointer.type,
+                                                  self.pointer.get_reference(),
+                                                  ', '.join(indices)),
               file=buf)
 
 
@@ -523,10 +524,10 @@ class PhiInstr(Instruction):
         self.incomings = []
 
     def descr(self, buf):
-        incs = ', '.join('[{}, {}]'.format(v.get_reference(),
-                                                 b.get_reference())
+        incs = ', '.join('[{0}, {1}]'.format(v.get_reference(),
+                                             b.get_reference())
                          for v, b in self.incomings)
-        print("phi {} {}".format(self.type, incs), file=buf)
+        print("phi {0} {1}".format(self.type, incs), file=buf)
 
     def add_incoming(self, value, block):
         assert isinstance(block, Block)

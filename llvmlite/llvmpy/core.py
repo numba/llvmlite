@@ -1,8 +1,10 @@
 from llvmlite import ir
 from llvmlite import binding as llvm
 
+
 class LLVMException(Exception):
     pass
+
 
 _icmp_ct = iter(range(20))
 _icmp_get = lambda: next(_icmp_ct)
@@ -27,7 +29,6 @@ INTR_COS = "llvm.cos"
 
 TYPE_STRUCT = ir.TYPE_STRUCT
 TYPE_POINTER = ir.TYPE_POINTER
-
 
 _linkage_ct = iter(range(20))
 _linkage_get = lambda: next(_linkage_ct)
@@ -88,7 +89,7 @@ class Constant(object):
 
     @staticmethod
     def stringz(string):
-        text = r"{}\00".format(repr(string)[1:-1])
+        text = r"{0}\00".format(repr(string)[1:-1])
         n = len(string) + 1
         return ir.Constant(ir.ArrayType(ir.IntType(8), n), text)
 
