@@ -1,6 +1,8 @@
 from llvmlite import ir
 from llvmlite import binding as llvm
 
+CallOrInvokeInstruction = ir.CallInstr
+
 
 class LLVMException(Exception):
     pass
@@ -30,11 +32,10 @@ INTR_COS = "llvm.cos"
 TYPE_STRUCT = ir.TYPE_STRUCT
 TYPE_POINTER = ir.TYPE_POINTER
 
-_linkage_ct = iter(range(20))
-_linkage_get = lambda: next(_linkage_ct)
+LINKAGE_INTERNAL = 'internal'
+LINKAGE_LINKONCE_ODR = 'linkonce_odr'
 
-LINKAGE_INTERNAL = _linkage_get()
-
+ATTR_NO_CAPTURE = 'nocapture'
 
 class Type(object):
     @staticmethod
@@ -60,6 +61,10 @@ class Type(object):
     @staticmethod
     def struct(members):
         return ir.LiteralStructType(members)
+
+    @staticmethod
+    def array(element, count):
+        return ir.ArrayType(element, count)
 
     @staticmethod
     def void():
@@ -88,6 +93,10 @@ class Constant(object):
         return ir.Constant(ty, None)
 
     @staticmethod
+    def undef(ty):
+        return ir.Constant(ty, ir.Undefined)
+
+    @staticmethod
     def stringz(string):
         text = r"{0}\00".format(repr(string)[1:-1])
         n = len(string) + 1
@@ -100,6 +109,7 @@ class Constant(object):
     @staticmethod
     def bitcast(const, typ):
         return const.bitcast(typ)
+
 
 
 class Module(ir.Module):
@@ -157,3 +167,15 @@ class Builder(ir.IRBuilder):
         n is ignored
         """
         return super(Builder, self).switch(val, elseblk)
+
+
+class MetaDataString(ir.MetaDataString):
+    @staticmethod
+    def get(module, text):
+        return MetaDataString(module, text)
+
+
+class MetaData(ir.MetaData):
+    @staticmethod
+    def get(module, values):
+        return module.add_metadata(values)

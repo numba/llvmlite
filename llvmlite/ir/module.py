@@ -13,6 +13,10 @@ class Module(object):
         self.triple = 'unknown-unknown-unknown'
         self._sequence = []
 
+    def add_metadata(self, operands):
+        n = len(self.metadata)
+        return values.MetaData(self, operands, name=str(n))
+
     @property
     def functions(self):
         return [v for v in self.globals.values()

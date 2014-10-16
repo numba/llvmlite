@@ -49,6 +49,8 @@ class ExecutionEngine(ffi.ObjectRef):
             raise ValueError("Cannot find given global value")
         return ptr
 
+    get_pointer_to_function = get_pointer_to_global
+
     def add_global_mapping(self, gv, addr):
         ffi.lib.LLVMPY_AddGlobalMapping(self, gv, addr)
 

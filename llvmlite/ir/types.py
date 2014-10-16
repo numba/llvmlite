@@ -10,6 +10,7 @@ _type_enum = lambda: next(_type_state)
 TYPE_UNKNOWN = _type_enum()
 TYPE_POINTER = _type_enum()
 TYPE_STRUCT = _type_enum()
+TYPE_METADATA = _type_enum()
 
 
 class Type(object):
@@ -28,6 +29,16 @@ class Type(object):
 
     def __ne__(self, other):
         return not (self == other)
+
+
+class MetaData(object):
+    kind = TYPE_METADATA
+
+    def __str__(self):
+        return "metadata"
+
+    def as_pointer(self):
+        raise TypeError
 
 
 class LabelType(Type):
@@ -93,19 +104,20 @@ class IntType(Type):
     null = '0'
 
     def __init__(self, bits):
-        self.bits = bits
+        self.width = int(bits)
 
     def __str__(self):
-        return 'i%u' % (self.bits,)
+        return 'i%u' % (self.width,)
 
     def __eq__(self, other):
         if isinstance(other, IntType):
-            return self.bits == other.bits
+            return self.width == other.width
         else:
             return False
 
-
 class FloatType(Type):
+    null = '0.0'
+
     def __str__(self):
         return 'float'
 
@@ -115,16 +127,42 @@ class DoubleType(Type):
         return 'double'
 
 
+class _Repeat(object):
+    def __init__(self, value, size):
+        self.value = value
+        self.size = size
+
+    def __len__(self):
+        return self.size
+
+    def __getitem__(self, item):
+        if 0 <= item < self.size:
+            return self.value
+        else:
+            raise IndexError(item)
+
+
 class ArrayType(Type):
     def __init__(self, element, count):
         self.element = element
         self.count = count
+
+    @property
+    def elements(self):
+        return _Repeat(self.element, self.count)
 
     def __len__(self):
         return self.count
 
     def __str__(self):
         return '[{0:d} x {1}]'.format(self.count, self.element)
+
+    def __eq__(self, other):
+        if isinstance(other, ArrayType):
+            return self.element == other.element and self.count == other.count
+
+    def gep(self, i):
+        return self.element
 
 
 class StructType(Type):

@@ -8,6 +8,10 @@ from weakref import WeakSet
 from . import types, _utils
 
 
+class Undefined(object):
+    pass
+
+
 def _wrapname(x):
     return '"{0}"'.format(x).replace(' ', '_')
 
@@ -58,17 +62,53 @@ class Value(object):
     def name(self, name):
         if self.deduplicate_name:
             name = self.scope.deduplicate(name)
-        else:
-            self.scope.register(name)
+
+        self.scope.register(name)
         self._name = name
 
     def get_reference(self):
         return self.name_prefix + _wrapname(self.name)
 
 
+class MetaDataString(Value):
+    def __init__(self, parent, string):
+        super(MetaDataString, self).__init__(parent, types.MetaData, name="")
+        self.string = string
+
+    def descr(self, buf):
+        print("!\"{0}\"".format(self.string), file=buf)
+
+    def get_reference(self):
+        return "metadata !\"{0}\"".format(self.string)
+
+    def __str__(self):
+        return self.get_reference()
+
+
+class MetaData(Value):
+    name_prefix = '!'
+
+    def __init__(self, parent, values, name):
+        super(MetaData, self).__init__(parent, types.MetaData, name=name)
+        self.operands = tuple(values)
+        parent.metadata.append(self)
+
+    @property
+    def operand_count(self):
+        return len(self.operands)
+
+    def descr(self, buf):
+        operands = ', '.join(str(op) for op in self.operands)
+        print("metadata !{{ {operands} }}".format(operands=operands), file=buf)
+
+
 class GlobalValue(Value, ConstOpMixin):
     name_prefix = '@'
     deduplicate_name = False
+
+    def __init__(self, *args, **kwargs):
+        super(GlobalValue, self).__init__(*args, **kwargs)
+        self.linkage = ''
 
 
 class GlobalVariable(GlobalValue):
@@ -188,7 +228,9 @@ class Function(GlobalValue):
         name = self.get_reference()
         attrs = self.attributes
         vararg = ', ...' if self.ftype.var_arg else ''
-        prototype = "{state} {retty} {name}({args}{vararg}) {attrs}".format(
+        linkage = self.linkage
+        prototype = "{state} {linkage} {retty} {name}({args}{vararg}) {attrs}"\
+            .format(
             **locals())
         print(prototype, file=buf)
 
@@ -197,14 +239,7 @@ class Function(GlobalValue):
         Describe of the body of the function.
         """
         for blk in self.blocks:
-            print("{0}:".format(blk.name), file=buf)
-            for instr in blk.instructions:
-                print('  ', end='', file=buf)
-                print(instr, file=buf)
-
-            if blk.is_terminated:
-                print('  ', end='', file=buf)
-                print(blk.terminator, file=buf)
+            blk.descr(buf)
 
     def descr(self, buf):
         self.descr_prototype(buf)
@@ -224,7 +259,7 @@ class Function(GlobalValue):
 
 
 class ArgumentAttributes(AttributeSet):
-    _known = frozenset([])  # TODO
+    _known = frozenset(['nocapture'])  # TODO
 
 
 class Argument(Value):
@@ -235,7 +270,11 @@ class Argument(Value):
         self.attributes = ArgumentAttributes()
 
     def __str__(self):
-        return "{0} {1}".format(self.type, self.get_reference())
+        return "{0} {1} {2}".format(self.type, ' '.join(self.attributes),
+                                    self.get_reference())
+
+    def add_attribute(self, attr):
+        self.attributes.add(attr)
 
 
 class Block(Value):
@@ -252,6 +291,12 @@ class Block(Value):
     def function(self):
         return self.parent
 
+    def descr(self, buf):
+        print("{0}:".format(self.name), file=buf)
+        for instr in self.instructions:
+            print('  ', end='', file=buf)
+            print(instr, file=buf)
+
 
 class Instruction(Value):
     def __init__(self, parent, typ, opname, operands, name=''):
@@ -263,11 +308,28 @@ class Instruction(Value):
         for op in self.operands:
             op.users.add(self)
 
+        self.metadata = {}
+
+    def _stringify_metatdata(self):
+        buf = []
+
+        if self.metadata:
+            for k, v in self.metadata.items():
+                buf.append("!{0} {1}".format(k, v.get_reference()))
+            return ', ' + ', '.join(buf)
+        else:
+            return ''
+
+    def set_metadata(self, name, node):
+        self.metadata[name] = node
+
     def descr(self, buf):
         opname = self.opname
         operands = ', '.join(op.get_reference() for op in self.operands)
         typ = self.type
-        print("{opname} {typ} {operands}".format(**locals()), file=buf)
+        metadata = self._stringify_metatdata()
+        print("{opname} {typ} {operands}{metadata}".format(**locals()),
+              file=buf)
 
 
 class CallInstr(Instruction):
@@ -276,6 +338,11 @@ class CallInstr(Instruction):
                                         [func] + list(args), name=name)
         self.args = args
         self.callee = func
+
+    @property
+    def called_function(self):
+        """Alias for llvmpy"""
+        return self.callee
 
     def descr(self, buf):
         args = ', '.join('{0} {1}'.format(a.type, a.get_reference())
@@ -300,12 +367,13 @@ class Terminator(Instruction):
     def __init__(self, parent, opname, operands):
         super(Terminator, self).__init__(parent, types.VoidType(), opname,
                                          operands)
+        self.metadata = {}
 
     def descr(self, buf):
         opname = self.opname
         operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
                              for op in self.operands)
-        print("{opname} {operands}".format(**locals()), file=buf)
+        print("{opname} {operands} ".format(**locals()), file=buf, end='')
 
 
 class Ret(Terminator):
@@ -342,11 +410,13 @@ class Constant(ConstOpMixin):
             val = 'c"{0}"'.format(self.constant)
         elif self.constant is None:
             val = self.type.null
+        elif self.constant is Undefined:
+            val = "undef"
         elif isinstance(self.constant, (tuple, list)):
-            val = "[{0}]".format(', '.join(map(lambda x: "{0} {1}".format(x
-                                                                          .type,
-                                                                          x.get_reference()),
-                                               self.constant)))
+            val = "[{0}]".format(
+                ', '.join(map(lambda x: "{0} {1}".format(x.type,
+                                                         x.get_reference()),
+                              self.constant)))
         else:
             val = str(self.constant)
         return val
@@ -368,6 +438,23 @@ class ConstOp(object):
 
     def get_reference(self):
         return str(self)
+
+
+class SelectInstr(Instruction):
+    def __init__(self, parent, cond, lhs, rhs, name=''):
+        assert lhs.type == rhs.type
+        super(SelectInstr, self).__init__(parent, lhs.type, "select",
+                                          [cond, lhs, rhs], name=name)
+        self.cond = cond
+        self.lhs = lhs
+        self.rhs = rhs
+
+    def descr(self, buf):
+        print("select {0} {1}, {2} {3}, {4} {5}".format(
+            self.cond.type, self.cond.get_reference(),
+            self.lhs.type, self.lhs.get_reference(),
+            self.rhs.type, self.rhs.get_reference()),
+              file=buf)
 
 
 class CompareInstr(Instruction):
@@ -498,7 +585,7 @@ class SwitchInstr(Terminator):
 
 
 class GEPInstr(Instruction):
-    def __init__(self, parent, ptr, indices, name):
+    def __init__(self, parent, ptr, indices, inbounds, name):
         typ = ptr.type
         for i in indices:
             typ = typ.gep(i)
@@ -508,13 +595,15 @@ class GEPInstr(Instruction):
                                        [ptr] + list(indices), name=name)
         self.pointer = ptr
         self.indices = indices
+        self.inbounds = inbounds
 
     def descr(self, buf):
         indices = ['{0} {1}'.format(i.type, i.get_reference())
                    for i in self.indices]
-        print("getelementptr {0} {1}, {2}".format(self.pointer.type,
-                                                  self.pointer.get_reference(),
-                                                  ', '.join(indices)),
+        inbounds = "inbounds" if self.inbounds else ""
+        print("getelementptr {0} {1} {2}, {3}".format(
+            inbounds, self.pointer.type, self.pointer.get_reference(),
+            ', '.join(indices)),
               file=buf)
 
 
@@ -532,3 +621,57 @@ class PhiInstr(Instruction):
     def add_incoming(self, value, block):
         assert isinstance(block, Block)
         self.incomings.append((value, block))
+
+
+class ExtractValue(Instruction):
+    def __init__(self, parent, agg, indices, name=''):
+        typ = agg.type
+        for i in indices:
+            typ = typ.elements[i]
+
+        super(ExtractValue, self).__init__(parent, typ, "extractvalue",
+                                           [agg], name=name)
+
+        self.aggregate = agg
+        self.indices = indices
+
+    def descr(self, buf):
+        indices = [str(i) for i in self.indices]
+
+        print("extractvalue {0} {1}, {2}".format(self.aggregate.type,
+                                                 self.aggregate.get_reference(),
+                                                 ', '.join(indices)),
+              file=buf)
+
+
+class InsertValue(Instruction):
+    def __init__(self, parent, agg, elem, indices, name=''):
+        typ = agg.type
+        for i in indices:
+            typ = typ.elements[i]
+        assert elem.type == typ
+        super(InsertValue, self).__init__(parent, agg.type, "insertvalue",
+                                           [agg, elem], name=name)
+
+        self.aggregate = agg
+        self.value = elem
+        self.indices = indices
+
+    def descr(self, buf):
+        indices = [str(i) for i in self.indices]
+
+        print("insertvalue {0} {1}, {2} {3}, {4}".format(
+            self.aggregate.type, self.aggregate.get_reference(),
+            self.value.type, self.value.get_reference(),
+            ', '.join(indices)),
+              file=buf)
+
+
+class Unreachable(Instruction):
+    def __init__(self, parent):
+        super(Unreachable, self).__init__(parent, types.VoidType(),
+                                          "unreachable", (), name='')
+
+    def descr(self, buf):
+        print(self.opname, file=buf)
+

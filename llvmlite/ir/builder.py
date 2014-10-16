@@ -26,10 +26,25 @@ def _binop(opname, cls=values.Instruction):
     return wrap
 
 
+def _uniop(opname, cls=values.Instruction):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, operand, name=''):
+            instr = cls(self.block, operand.type, opname, [operand], name)
+            self._insert(instr)
+            return instr
+
+        return wrapped
+
+    return wrap
+
+
 def _castop(opname, cls=values.CastInstr):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, val, typ, name=''):
+            if val.type == typ:
+                return val
             instr = cls(self.block, opname, val, typ, name)
             self._insert(instr)
             return instr
@@ -56,10 +71,10 @@ class IRBuilder(object):
 
     def position_before(self, instr):
         self._block = instr.parent
-        if instr is self.block.terminator:
-            self._anchor = len(self.block.instructions)
-        else:
-            self._anchor = max(0, self._block.instructions.index(instr) - 1)
+        # if instr is self.block.terminator:
+        #     self._anchor = len(self.block.instructions)
+        # else:
+        self._anchor = max(0, self._block.instructions.index(instr))
 
     def position_after(self, instr):
         self._block = instr.parent
@@ -83,6 +98,7 @@ class IRBuilder(object):
 
     def _set_terminator(self, term):
         assert not self.block.is_terminated
+        self._insert(term)
         self.block.terminator = term
         return term
 
@@ -94,12 +110,24 @@ class IRBuilder(object):
     def add(self, lhs, rhs, name=''):
         pass
 
+    @_binop('fadd')
+    def fadd(self, lhs, rhs, name=''):
+        pass
+
     @_binop('sub')
     def sub(self, lhs, rhs, name=''):
         pass
 
+    @_binop('fsub')
+    def fsub(self, lhs, rhs, name=''):
+        pass
+
     @_binop('mul')
     def mul(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('fmul')
+    def fmul(self, lhs, rhs, name=''):
         pass
 
     @_binop('udiv')
@@ -108,6 +136,22 @@ class IRBuilder(object):
 
     @_binop('sdiv')
     def sdiv(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('fdiv')
+    def fdiv(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('urem')
+    def urem(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('srem')
+    def srem(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('frem')
+    def frem(self, lhs, rhs, name=''):
         pass
 
     @_binop('or')
@@ -129,6 +173,8 @@ class IRBuilder(object):
     def not_(self, value, name=''):
         return self.xor(value, values.Constant(value.type, -1), name=name)
 
+    def neg(self, value, name=''):
+        return self.sub(values.Constant(value.type, 0), value, name=name)
 
     #
     # Comparions APIs
@@ -168,6 +214,10 @@ class IRBuilder(object):
         self._insert(instr)
         return instr
 
+    def select(self, cond, lhs, rhs, name=''):
+        instr = values.SelectInstr(self.block, cond, lhs, rhs, name=name)
+        self._insert(instr)
+        return instr
 
     #
     # Cast APIs
@@ -225,16 +275,20 @@ class IRBuilder(object):
     # Memory APIs
     #
 
-    def alloca(self, typ, count=None, name=''):
-        assert count is None or count > 0
-        if count is None:
+    def alloca(self, typ, size=None, name=''):
+        if isinstance(size, values.Constant):
+            assert isinstance(size.type, types.IntType)
+            size = size.constant
+
+        assert size is None or size > 0
+        if size is None:
             pass
-        elif not isinstance(count, values.Value):
+        elif not isinstance(size, values.Value):
             # If it is not a Value instance,
             # assume to be a python number.
-            count = values.Constant(types.IntType(32), int(count))
+            size = values.Constant(types.IntType(32), int(size))
 
-        al = values.AllocaInstr(self.block, typ, count, name)
+        al = values.AllocaInstr(self.block, typ, size, name)
         self._insert(al)
         return al
 
@@ -288,8 +342,25 @@ class IRBuilder(object):
 
     # GEP APIs
 
-    def gep(self, ptr, indices, name=''):
-        instr = values.GEPInstr(self.block, ptr, indices, name=name)
+    def gep(self, ptr, indices, inbounds=False, name=''):
+        instr = values.GEPInstr(self.block, ptr, indices,
+                                inbounds=inbounds, name=name)
+        self._insert(instr)
+        return instr
+
+    # Aggregate APIs
+
+    def extract_value(self, agg, idx, name=''):
+        if not isinstance(idx, (tuple, list)):
+            idx = [idx]
+        instr = values.ExtractValue(self.block, agg, idx, name='')
+        self._insert(instr)
+        return instr
+
+    def insert_value(self, agg, elem, idx, name=''):
+        if not isinstance(idx, (tuple, list)):
+            idx = [idx]
+        instr = values.InsertValue(self.block, agg, elem, idx, name='')
         self._insert(instr)
         return instr
 
@@ -300,3 +371,7 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
+    # Special API
+    def unreachable(self):
+        inst = values.Unreachable(self.block)
+        self._set_terminator(inst)
