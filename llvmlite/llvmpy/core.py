@@ -8,7 +8,7 @@ class LLVMException(Exception):
     pass
 
 
-_icmp_ct = iter(range(20))
+_icmp_ct = iter(range(40))
 _icmp_get = lambda: next(_icmp_ct)
 
 ICMP_EQ = _icmp_get()
@@ -21,6 +21,22 @@ ICMP_ULT = _icmp_get()
 ICMP_ULE = _icmp_get()
 ICMP_UGT = _icmp_get()
 ICMP_UGE = _icmp_get()
+
+FCMP_OEQ = _icmp_get()
+FCMP_OGT = _icmp_get()
+FCMP_OGE = _icmp_get()
+FCMP_OLT = _icmp_get()
+FCMP_OLE = _icmp_get()
+FCMP_ONE = _icmp_get()
+FCMP_ORD = _icmp_get()
+
+FCMP_UEQ = _icmp_get()
+FCMP_UGT = _icmp_get()
+FCMP_UGE = _icmp_get()
+FCMP_ULT = _icmp_get()
+FCMP_ULE = _icmp_get()
+FCMP_UNE = _icmp_get()
+FCMP_UNO = _icmp_get()
 
 INTR_FABS = "llvm.fabs"
 INTR_EXP = "llvm.exp"
@@ -36,6 +52,7 @@ LINKAGE_INTERNAL = 'internal'
 LINKAGE_LINKONCE_ODR = 'linkonce_odr'
 
 ATTR_NO_CAPTURE = 'nocapture'
+
 
 class Type(object):
     @staticmethod
@@ -110,6 +127,9 @@ class Constant(object):
     def bitcast(const, typ):
         return const.bitcast(typ)
 
+    @staticmethod
+    def inttoptr(const, typ):
+        return const.inttoptr(typ)
 
 
 class Module(ir.Module):
@@ -161,6 +181,28 @@ class Builder(ir.IRBuilder):
             return self.icmp_unsigned(umap[pred], lhs, rhs, name=name)
         else:
             return self.icmp_signed(smap[pred], lhs, rhs, name=name)
+
+    def fcmp(self, pred, lhs, rhs, name=''):
+        omap = {FCMP_OEQ: '==',
+                FCMP_OGT: '>',
+                FCMP_OGE: '>=',
+                FCMP_OLT: '<',
+                FCMP_OLE: '<=',
+                FCMP_ONE: '!=',
+                FCMP_ORD: 'ord'}
+
+        umap = {FCMP_UEQ: '==',
+                FCMP_UGT: '>',
+                FCMP_UGE: '>=',
+                FCMP_ULT: '<',
+                FCMP_ULE: '<=',
+                FCMP_UNE: '!=',
+                FCMP_UNO: 'uno'}
+
+        if pred in umap:
+            return self.fcmp_unordered(umap[pred], lhs, rhs, name=name)
+        else:
+            return self.fcmp_ordered(omap[pred], lhs, rhs, name=name)
 
     def switch(self, val, elseblk, n):
         """

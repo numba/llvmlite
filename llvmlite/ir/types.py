@@ -104,7 +104,8 @@ class IntType(Type):
     null = '0'
 
     def __init__(self, bits):
-        self.width = int(bits)
+        assert isinstance(bits, int)
+        self.width = bits
 
     def __str__(self):
         return 'i%u' % (self.width,)
@@ -115,16 +116,25 @@ class IntType(Type):
         else:
             return False
 
+
 class FloatType(Type):
     null = '0.0'
 
     def __str__(self):
         return 'float'
 
+    def __eq__(self, other):
+        return isinstance(other, type(self))
+
 
 class DoubleType(Type):
+    null = '0.0'
+
     def __str__(self):
         return 'double'
+
+    def __eq__(self, other):
+        return isinstance(other, type(self))
 
 
 class _Repeat(object):
@@ -182,6 +192,8 @@ class StructType(Type):
 
 
 class LiteralStructType(StructType):
+    null = 'zeroinitializer'
+
     def __init__(self, elems):
         self.elements = tuple(elems)
 

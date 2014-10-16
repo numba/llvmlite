@@ -21,6 +21,10 @@ class ValueRef(ffi.ObjectRef):
     def name(self):
         return ffi.lib.LLVMPY_GetValueName(self)
 
+    @property
+    def type(self):
+        return ffi.lib.LLVMPY_TypeOf(self)
+
 # FFI
 
 ffi.lib.LLVMPY_PrintValueToString.argtypes = [
@@ -33,3 +37,6 @@ ffi.lib.LLVMPY_GetGlobalParent.restype = ffi.LLVMModuleRef
 
 ffi.lib.LLVMPY_GetValueName.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetValueName.restype = c_char_p
+
+ffi.lib.LLVMPY_TypeOf.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_TypeOf.restype = ffi.LLVMTypeRef

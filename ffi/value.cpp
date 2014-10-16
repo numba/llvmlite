@@ -38,6 +38,12 @@ LLVMPY_GetGlobalParent(LLVMValueRef Val)
     return LLVMGetGlobalParent(Val);
 }
 
+LLVMTypeRef
+LLVMPY_TypeOf(LLVMValueRef Val)
+{
+    return LLVMTypeOf(Val);
+}
+
 } // end extern "C"
 
 

@@ -111,5 +111,10 @@ LLVMPY_AddGlobalMapping(LLVMExecutionEngineRef EE,
     LLVMAddGlobalMapping(EE, Global, Addr);
 }
 
+LLVMTargetDataRef
+LLVMPY_GetExecutionEngineTargetData(LLVMExecutionEngineRef EE)
+{
+    return LLVMGetExecutionEngineTargetData(EE);
+}
 
 } // end extern "C"

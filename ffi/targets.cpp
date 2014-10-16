@@ -47,4 +47,10 @@ LLVMPY_DisposeTargetData(LLVMTargetDataRef TD)
 }
 
 
+unsigned long long
+LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
+{
+    return LLVMABISizeOfType(TD, Ty);
+}
+
 } // end extern "C"

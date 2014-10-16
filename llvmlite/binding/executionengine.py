@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
 from ctypes import byref, POINTER, c_char_p, c_bool, c_uint, c_void_p
-from . import ffi
+from . import ffi, targets
 
 
 def link_in_jit():
@@ -65,6 +65,11 @@ class ExecutionEngine(ffi.ObjectRef):
             if ffi.lib.LLVMPY_RemoveModule(self, module, outerr):
                 raise RuntimeError(outerr)
 
+    @property
+    def target_data(self):
+        td = ffi.lib.LLVMPY_GetExecutionEngineTargetData(self)
+        return targets.TargetData(td)
+
     def close(self):
         ffi.lib.LLVMPY_DisposeExecutionEngine(self)
 
@@ -112,3 +117,8 @@ ffi.lib.LLVMPY_AddGlobalMapping.argtypes = [ffi.LLVMExecutionEngineRef,
                                             c_void_p]
 
 ffi.lib.LLVMPY_FinalizeObject.argtypes = [ffi.LLVMExecutionEngineRef]
+
+ffi.lib.LLVMPY_GetExecutionEngineTargetData.argtypes = [
+    ffi.LLVMExecutionEngineRef
+]
+ffi.lib.LLVMPY_GetExecutionEngineTargetData.restype = ffi.LLVMTargetDataRef

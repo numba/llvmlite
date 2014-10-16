@@ -24,6 +24,14 @@ class ConstOpMixin(object):
                                                typ)
         return ConstOp(typ, op)
 
+    def inttoptr(self, typ):
+        assert isinstance(self.type, types.IntType)
+        assert isinstance(typ, types.PointerType)
+        op = "inttoptr ({0} {1} to {2})".format(self.type,
+                                                self.get_reference(),
+                                                typ)
+        return ConstOp(typ, op)
+
 
 class Value(object):
     name_prefix = '%'
@@ -229,7 +237,7 @@ class Function(GlobalValue):
         attrs = self.attributes
         vararg = ', ...' if self.ftype.var_arg else ''
         linkage = self.linkage
-        prototype = "{state} {linkage} {retty} {name}({args}{vararg}) {attrs}"\
+        prototype = "{state} {linkage} {retty} {name}({args}{vararg}) {attrs}" \
             .format(
             **locals())
         print(prototype, file=buf)
@@ -417,6 +425,8 @@ class Constant(ConstOpMixin):
                 ', '.join(map(lambda x: "{0} {1}".format(x.type,
                                                          x.get_reference()),
                               self.constant)))
+        elif isinstance(self.type, (types.FloatType, types.DoubleType)):
+            return str(float(self.constant))
         else:
             val = str(self.constant)
         return val
@@ -469,9 +479,10 @@ class CompareInstr(Instruction):
         self.op = op
 
     def descr(self, buf):
-        print("icmp {0} {1} {2}, {3}".format(self.op, self.operands[0].type,
-                                             self.operands[0].get_reference(),
-                                             self.operands[1].get_reference()),
+        print("{0} {1} {2} {3}, {4}".format(self.OPNAME, self.op,
+                                            self.operands[0].type,
+                                            self.operands[0].get_reference(),
+                                            self.operands[1].get_reference()),
               file=buf)
 
 
@@ -651,7 +662,7 @@ class InsertValue(Instruction):
             typ = typ.elements[i]
         assert elem.type == typ
         super(InsertValue, self).__init__(parent, agg.type, "insertvalue",
-                                           [agg, elem], name=name)
+                                          [agg, elem], name=name)
 
         self.aggregate = agg
         self.value = elem

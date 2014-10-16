@@ -36,6 +36,12 @@ class ModuleRef(ffi.ObjectRef):
             raise NameError(name)
         return ValueRef(p)
 
+    def get_global_variable(self, name):
+        p = ffi.lib.LLVMPY_GetNamedGobalVariable(self, name.encode('utf8'))
+        if not p:
+            raise NameError(name)
+        return ValueRef(p)
+
     def verify(self):
         with ffi.OutputString() as outmsg:
             if ffi.lib.LLVMPY_VerifyModule(self, outmsg):
@@ -72,3 +78,6 @@ ffi.lib.LLVMPY_VerifyModule.restype = c_bool
 
 ffi.lib.LLVMPY_GetDataLayout = [ffi.LLVMModuleRef,
                                 POINTER(c_char_p)]
+
+ffi.lib.LLVMPY_GetNamedGobalVariable.argtypes = [ffi.LLVMModuleRef, c_char_p]
+ffi.lib.LLVMPY_GetNamedGobalVariable.restype = ffi.LLVMValueRef

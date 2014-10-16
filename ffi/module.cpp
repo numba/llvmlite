@@ -31,6 +31,14 @@ LLVMPY_GetNamedFunction(LLVMModuleRef M,
     return LLVMGetNamedFunction(M, Name);
 }
 
+LLVMValueRef
+LLVMPY_GetNamedGobalVariable(LLVMModuleRef M,
+                             const char *Name)
+{
+    using namespace llvm;
+    return wrap(unwrap(M)->getGlobalVariable(Name));
+}
+
 
 int
 LLVMPY_VerifyModule(LLVMModuleRef M, char **OutMsg)
@@ -44,6 +52,8 @@ LLVMPY_GetDataLayout(LLVMModuleRef M,
 {
     *DL = LLVMGetDataLayout(M);
 }
+
+
 
 
 } // end extern "C"
