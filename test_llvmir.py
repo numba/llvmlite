@@ -1,6 +1,6 @@
 import llvmlite.ir as ll
 
-fntype = ll.FunctionType(ll.IntType(32), ll.IntType(32), ll.IntType(32))
+fntype = ll.FunctionType(ll.IntType(32), [ll.IntType(32), ll.IntType(32)])
 
 module = ll.Module()
 
@@ -25,7 +25,7 @@ builder.position_at_end(bb_block)
 bb_exit = func.append_basic_block()
 
 pred = builder.trunc(addinstr, ll.IntType(1))
-builder.branch(pred, bb_block, bb_exit)
+builder.cbranch(pred, bb_block, bb_exit)
 
 builder.position_at_end(bb_exit)
 builder.ret(myint)

@@ -35,9 +35,9 @@ LLVMPY_Shutdown(){
 // Target Initialization
 #define INIT(F) void LLVMPY_Initialize ## F() { LLVMInitialize ## F (); }
 
-//INIT(AllTargetInfos)
-//INIT(AllTargets)
-//INIT(AllTargetMCs)
+INIT(AllTargetInfos)
+INIT(AllTargets)
+INIT(AllTargetMCs)
 INIT(NativeTarget)
 INIT(NativeAsmParser)
 INIT(NativeAsmPrinter)

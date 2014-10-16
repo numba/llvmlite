@@ -32,6 +32,8 @@ class ModuleRef(ffi.ObjectRef):
 
     def get_function(self, name):
         p = ffi.lib.LLVMPY_GetNamedFunction(self, name.encode('utf8'))
+        if not p:
+            raise NameError(name)
         return ValueRef(p)
 
     def verify(self):

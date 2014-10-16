@@ -13,6 +13,10 @@ def initialize_native_target():
     ffi.lib.LLVMPY_InitializeNativeTarget()
 
 
+def initialize_native_asmprinter():
+    ffi.lib.LLVMPY_InitializeNativeAsmPrinter()
+
+
 def initialize_all_target_infos():
     ffi.lib.LLVMPY_InitializeAllTargetInfos()
 

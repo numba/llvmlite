@@ -62,5 +62,7 @@ class ObjectRef(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __bool__(self):
+        return bool(self._ptr)
 
-
+    __nonzero__ = __bool__

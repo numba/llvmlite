@@ -1,5 +1,7 @@
 #include "core.h"
 #include "llvm-c/ExecutionEngine.h"
+#include "llvm/IR/Module.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include <cstdio>
 
 extern "C" {
@@ -35,6 +37,13 @@ LLVMPY_RemoveModule(LLVMExecutionEngineRef EE,
    return LLVMRemoveModule(EE, M, &M, OutError);
 }
 
+void
+LLVMPY_FinalizeObject(LLVMExecutionEngineRef EE)
+{
+    llvm::unwrap(EE)->finalizeObject();
+}
+
+
 int
 LLVMPY_CreateJITCompiler(LLVMExecutionEngineRef *OutEE,
                          LLVMModuleRef M,
@@ -44,14 +53,48 @@ LLVMPY_CreateJITCompiler(LLVMExecutionEngineRef *OutEE,
     return LLVMCreateJITCompilerForModule(OutEE, M, OptLevel, OutError);
 }
 
-//int
-//LLVMPY_CreateMCJITCompiler(LLVMExecutionEngineRef *OutEE,
-//                           LLVMModuleRef M,
-//                           unsigned OptLevel,
-//                           char **OutError)
-//{
-//    return LLVMCreateMCJITCompilerForModule(OutEE, M, OptLevel, OutError);
-//}
+int
+LLVMPY_CreateMCJITCompilerCustom(LLVMExecutionEngineRef *OutEE,
+                                 LLVMModuleRef M,
+                                 int Opt,
+                                 const char *RelocModel,
+                                 int EmitDebug,
+                                 char **OutError)
+{
+    llvm::EngineBuilder eb(llvm::unwrap(M));
+    std::string err;
+    eb.setErrorStr(&err);
+    eb.setEngineKind(llvm::EngineKind::JIT);
+    eb.setOptLevel((llvm::CodeGenOpt::Level)Opt);
+
+    std::string rm = RelocModel;
+    if (rm == "static") {
+        eb.setRelocationModel(llvm::Reloc::Default);
+    } else if (rm == "pic") {
+        eb.setRelocationModel(llvm::Reloc::PIC_);
+    } else if (rm == "dynamicnopic") {
+        eb.setRelocationModel(llvm::Reloc::DynamicNoPIC);
+    }
+
+    llvm::TargetOptions options;
+    options.JITEmitDebugInfo = (bool)EmitDebug;
+    options.TrapUnreachable = true;
+//    options.NoFramePointerElim = true;
+//    options.PrintMachineCode = false;
+
+    eb.setTargetOptions(options);
+
+    llvm::ExecutionEngine *engine = eb.create();
+
+    if (!engine) {
+        *OutError = strdup(err.c_str());
+        return 1;
+    } else {
+        *OutEE = llvm::wrap(engine);
+        return 0;
+    }
+}
+
 
 void*
 LLVMPY_GetPointerToGlobal(LLVMExecutionEngineRef EE,
@@ -67,5 +110,6 @@ LLVMPY_AddGlobalMapping(LLVMExecutionEngineRef EE,
 {
     LLVMAddGlobalMapping(EE, Global, Addr);
 }
+
 
 } // end extern "C"

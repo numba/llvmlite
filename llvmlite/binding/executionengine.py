@@ -23,6 +23,20 @@ def create_jit_compiler(module, opt=2):
     return ExecutionEngine(engine)
 
 
+def create_mcjit_compiler(module, opt=2, relocmodel='', emitdebug=False):
+    """Create a MCJIT ExecutionEngine
+    """
+    engine = ffi.LLVMExecutionEngineRef()
+    with ffi.OutputString() as outerr:
+        if ffi.lib.LLVMPY_CreateMCJITCompilerCustom(
+                byref(engine), module, int(opt),
+                str(relocmodel).lower().encode('ascii'),
+                int(bool(emitdebug)), outerr):
+            raise RuntimeError(str(outerr))
+
+    return ExecutionEngine(engine)
+
+
 class ExecutionEngine(ffi.ObjectRef):
     """An ExecutionEngine owns all Modules associated with it.
     Deleting the engine will remove all associated modules.
@@ -40,6 +54,9 @@ class ExecutionEngine(ffi.ObjectRef):
 
     def add_module(self, module):
         ffi.lib.LLVMPY_AddModule(self, module)
+
+    def finalize_object(self):
+        ffi.lib.LLVMPY_FinalizeObject(self)
 
     def remove_module(self, module):
         with ffi.OutputString() as outerr:
@@ -62,6 +79,16 @@ ffi.lib.LLVMPY_CreateJITCompiler.argtypes = [
 ]
 ffi.lib.LLVMPY_CreateJITCompiler.restype = c_bool
 
+ffi.lib.LLVMPY_CreateMCJITCompilerCustom.argtypes = [
+    POINTER(ffi.LLVMExecutionEngineRef),
+    ffi.LLVMModuleRef,
+    c_uint,
+    c_char_p,
+    c_uint,
+    POINTER(c_char_p),
+]
+ffi.lib.LLVMPY_CreateMCJITCompilerCustom.restype = c_bool
+
 ffi.lib.LLVMPY_RemoveModule.argtypes = [
     ffi.LLVMExecutionEngineRef,
     ffi.LLVMModuleRef,
@@ -82,3 +109,4 @@ ffi.lib.LLVMPY_AddGlobalMapping.argtypes = [ffi.LLVMExecutionEngineRef,
                                             ffi.LLVMValueRef,
                                             c_void_p]
 
+ffi.lib.LLVMPY_FinalizeObject.argtypes = [ffi.LLVMExecutionEngineRef]
