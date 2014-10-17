@@ -35,7 +35,8 @@ class EngineBuilder(object):
         return TargetMachine()
 
     def create(self, tm):
-        return llvm.create_jit_compiler(self.module, opt=self._opt)
+        return llvm.create_mcjit_compiler(self.module, opt=self._opt)
+
 
 class TargetMachine(object):
     def __init__(self):

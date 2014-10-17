@@ -15,11 +15,12 @@ class ValueRef(ffi.ObjectRef):
     def module(self):
         """Only valid for global value
         """
-        return ffi.lib.LLVMPY_GetGlobalParent(self)
+        from . import ModuleRef
+        return ModuleRef(ffi.lib.LLVMPY_GetGlobalParent(self))
 
     @property
     def name(self):
-        return ffi.lib.LLVMPY_GetValueName(self)
+        return ffi.lib.LLVMPY_GetValueName(self).decode('utf8')
 
     @property
     def type(self):

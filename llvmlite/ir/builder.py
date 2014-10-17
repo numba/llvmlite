@@ -108,6 +108,18 @@ class IRBuilder(object):
     # Arithmetic APIs
     #
 
+    @_binop('shl')
+    def shl(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('lshr')
+    def lshr(self, lhs, rhs, name=''):
+        pass
+
+    @_binop('ashr')
+    def ashr(self, lhs, rhs, name=''):
+        pass
+
     @_binop('add')
     def add(self, lhs, rhs, name=''):
         pass

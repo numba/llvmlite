@@ -44,6 +44,9 @@ INTR_LOG = "llvm.log"
 INTR_LOG10 = "llvm.log10"
 INTR_SIN = "llvm.sin"
 INTR_COS = "llvm.cos"
+INTR_POWI = 'llvm.powi'
+INTR_POW = 'llvm.pow'
+INTR_FLOOR = 'llvm.floor'
 
 TYPE_STRUCT = ir.TYPE_STRUCT
 TYPE_POINTER = ir.TYPE_POINTER
@@ -90,6 +93,13 @@ class Type(object):
 
 class Constant(object):
     @staticmethod
+    def all_ones(ty):
+        if isinstance(ty, ir.IntType):
+            return Constant.int(ty, int('1' * ty.width, 2))
+        else:
+            raise NotImplementedError(ty)
+
+    @staticmethod
     def int(ty, n):
         return ir.Constant(ty, n)
 
@@ -115,9 +125,11 @@ class Constant(object):
 
     @staticmethod
     def stringz(string):
-        text = r"{0}\00".format(repr(string)[1:-1])
-        n = len(string) + 1
-        return ir.Constant(ir.ArrayType(ir.IntType(8), n), text)
+        n = (len(string) + 1)
+        buf = bytearray((' ' * n).encode('ascii'))
+        buf[-1] = 0
+        buf[:-1] = string.encode('utf-8')
+        return ir.Constant(ir.ArrayType(ir.IntType(8), n), buf)
 
     @staticmethod
     def array(typ, val):
@@ -157,6 +169,12 @@ class Module(ir.Module):
             return self.globals[name]
         except KeyError:
             raise LLVMException(name)
+
+
+class Function(ir.Function):
+    @staticmethod
+    def intrinsic(module, intrinsic, tys):
+        return module.declare_intrinsic(intrinsic, tys)
 
 
 class Builder(ir.IRBuilder):

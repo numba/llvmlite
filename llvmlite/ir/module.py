@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from . import context, values
+from . import context, values, types
 
 
 class Module(object):
@@ -37,6 +37,23 @@ class Module(object):
         """Util for getting a unique name.
         """
         return self.scope.deduplicate(name)
+
+    def declare_intrinsic(self, intrinsic, tys):
+        name = '.'.join([intrinsic, '.'.join(t.intrinsic_name for t in tys)])
+        if name in self.globals:
+            return self.globals[name]
+        else:
+            if len(tys) == 1:
+                if intrinsic == 'llvm.powi':
+                    fnty = types.FunctionType(tys[0], [tys[0],
+                                                       types.IntType(32)])
+                elif intrinsic == 'llvm.pow':
+                    fnty = types.FunctionType(tys[0], tys*2)
+                else:
+                    fnty = types.FunctionType(tys[0], tys)
+            else:
+                raise NotImplementedError(name)
+            return values.Function(self, fnty, name=name)
 
     def __repr__(self):
         body = '\n'.join(str(self.globals[k]) for k in self._sequence)

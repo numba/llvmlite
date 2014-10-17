@@ -15,6 +15,7 @@ TYPE_METADATA = _type_enum()
 
 class Type(object):
     is_pointer = False
+    null = 'zeroinitializer'
 
     kind = TYPE_UNKNOWN
 
@@ -119,6 +120,7 @@ class IntType(Type):
 
 class FloatType(Type):
     null = '0.0'
+    intrinsic_name = 'f32'
 
     def __str__(self):
         return 'float'
@@ -129,6 +131,7 @@ class FloatType(Type):
 
 class DoubleType(Type):
     null = '0.0'
+    intrinsic_name = 'f64'
 
     def __str__(self):
         return 'double'

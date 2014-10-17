@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
 from ctypes import c_char_p, byref, POINTER, c_bool
-from . import ffi
+from . import ffi, link_modules
 from .value import ValueRef
 
 
@@ -50,6 +50,10 @@ class ModuleRef(ffi.ObjectRef):
     @property
     def data_layout(self):
         ffi.lib.LLVMPY_GetDataLayout(self)
+
+    def link_in(self, other, preserve=False):
+        link_modules(self, other, preserve)
+
 
     target_data = data_layout
 

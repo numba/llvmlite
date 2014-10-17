@@ -4,8 +4,25 @@ Classes that are LLVM values: Value, Constant, Instructions...
 
 from __future__ import print_function, absolute_import
 from weakref import WeakSet
-
+import string
+import struct
 from . import types, _utils
+
+_VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
+                frozenset(map(ord, string.digits)))
+
+
+def _escape_string(text):
+    buf = []
+    for ch in text:
+        if ch in _VALID_CHARS:
+            buf.append(chr(ch))
+        else:
+            ashex = hex(ch)[2:]
+            if len(ashex) == 1:
+                ashex = '0' + ashex
+            buf.append('\\' + ashex)
+    return ''.join(buf)
 
 
 class Undefined(object):
@@ -342,8 +359,8 @@ class Instruction(Value):
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name=''):
-        super(CallInstr, self).__init__(parent, func.ftype.return_type, "call",
-                                        [func] + list(args), name=name)
+        super(CallInstr, self).__init__(parent, func.type.pointee.return_type,
+                                        "call", [func] + list(args), name=name)
         self.args = args
         self.callee = func
 
@@ -355,7 +372,7 @@ class CallInstr(Instruction):
     def descr(self, buf):
         args = ', '.join('{0} {1}'.format(a.type, a.get_reference())
                          for a in self.args)
-        fnty = self.callee.ftype
+        fnty = self.callee.type.pointee
         print("call {0} {1}({2})".format(fnty.as_pointer(),
                                          self.callee.get_reference(),
                                          args),
@@ -399,6 +416,25 @@ class Ret(Terminator):
         return self.operands[0].type
 
 
+def _as_float(value):
+    """Truncate to single-precision float
+    """
+    return struct.unpack('f', struct.pack('f', value))[0]
+
+
+def _format_float(value, packfmt, unpackfmt, numdigits):
+    raw = struct.pack(packfmt, float(value))
+    intrep = struct.unpack(unpackfmt, raw)[0]
+    out = '{{0:#{0}x}}'.format(numdigits).format(intrep)
+    return out
+
+
+def _special_float_value(val):
+    if val == val:
+        return val == float('+inf') or val == float('-inf')
+    return False
+
+
 class Constant(ConstOpMixin):
     """
     Constant values
@@ -414,19 +450,30 @@ class Constant(ConstOpMixin):
         return '{0} {1}'.format(self.type, self.get_reference())
 
     def get_reference(self):
-        if isinstance(self.constant, str):
-            val = 'c"{0}"'.format(self.constant)
+        if isinstance(self.constant, bytearray):
+            val = 'c"{0}"'.format(_escape_string(self.constant))
+
         elif self.constant is None:
             val = self.type.null
+
         elif self.constant is Undefined:
             val = "undef"
-        elif isinstance(self.constant, (tuple, list)):
-            val = "[{0}]".format(
-                ', '.join(map(lambda x: "{0} {1}".format(x.type,
-                                                         x.get_reference()),
-                              self.constant)))
+
+        elif isinstance(self.type, types.ArrayType):
+            fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
+            val = "[{0}]".format(', '.join(map(fmter, self.constant)))
+
+        elif isinstance(self.type, types.StructType):
+            fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
+            val = "{{{0}}}".format(', '.join(map(fmter, self.constant)))
+
         elif isinstance(self.type, (types.FloatType, types.DoubleType)):
-            return str(float(self.constant))
+            if isinstance(self.type, types.FloatType):
+                val = _as_float(self.constant)
+            else:
+                val = self.constant
+            val = _format_float(val, 'd', 'Q', 16)
+
         else:
             val = str(self.constant)
         return val

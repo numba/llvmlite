@@ -3,7 +3,8 @@ CXXFLAGS = `llvm-config --cxxflags`
 LDFLAGS = `llvm-config --ldflags`
 LIBS = `llvm-config --system-libs --libs all`
 SRC = assembly.cpp core.cpp initfini.cpp module.cpp value.cpp \
-	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp
+	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
+	  linker.cpp
 OUTPUT = libllvmlite.dylib
 
 all: $(SRC)
