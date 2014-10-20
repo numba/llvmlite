@@ -24,6 +24,7 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def type(self):
+        # XXX what does this return?
         return ffi.lib.LLVMPY_TypeOf(self)
 
 # FFI

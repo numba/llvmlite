@@ -11,11 +11,11 @@ def parse_assembly(llvmir):
     context = ffi.lib.LLVMPY_GetGlobalContext()
     strbuf = c_char_p(llvmir.encode('utf8'))
     with ffi.OutputString() as errmsg:
-        module = ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg)
+        mod = ModuleRef(ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg))
         if errmsg:
-            ffi.lib.LLVMPY_DisposeModule(module)
+            mod.close()
             raise RuntimeError("LLVM IR parsing error\n{0}".format(errmsg))
-    return ModuleRef(module)
+    return mod
 
 
 class ModuleRef(ffi.ObjectRef):

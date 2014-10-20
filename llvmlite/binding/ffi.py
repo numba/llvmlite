@@ -83,6 +83,7 @@ class ObjectRef(object):
     def close(self):
         del self._as_parameter_
         self._closed = True
+        self._ptr = None
 
     def __enter__(self):
         assert hasattr(self, "close")
@@ -93,5 +94,12 @@ class ObjectRef(object):
 
     def __bool__(self):
         return bool(self._ptr)
+
+    def __eq__(self, other):
+        return (type(self) is type(other) and self._ptr is not None
+                and self._ptr == other._ptr)
+
+    def __ne__(self, other):
+        return not (self == other)
 
     __nonzero__ = __bool__

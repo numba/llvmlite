@@ -11,8 +11,20 @@ asm_sum = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
 
+    @glob = global i32 0, align 4
+
     define i32 @sum(i32 %.1, i32 %.2) {{
       %.3 = add i32 %.1, %.2
+      ret i32 %.3
+    }}
+    """
+
+asm_mul = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define i32 @mul(i32 %.1, i32 %.2) {{
+      %.3 = mul i32 %.1, %.2
       ret i32 %.3
     }}
     """
@@ -110,7 +122,7 @@ class TestModuleRef(TestCase):
 
     def test_verify(self):
         # Verify successful
-        mod = self.module(asm_sum)
+        mod = self.module()
         self.assertIs(mod.verify(), None)
         # Verify failed
         mod = self.module(asm_verification_fail)
@@ -118,6 +130,30 @@ class TestModuleRef(TestCase):
             mod.verify()
         s = str(cm.exception)
         self.assertIn("%.bug = add i32 1, %.bug", s)
+
+    def test_get_function(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        self.assertIsInstance(fn, llvm.ValueRef)
+        self.assertEqual(fn.name, "sum")
+
+        with self.assertRaises(NameError):
+            mod.get_function("foo")
+
+    def test_get_global_variable(self):
+        mod = self.module()
+        gv = mod.get_global_variable("glob")
+        self.assertIsInstance(gv, llvm.ValueRef)
+        self.assertEqual(gv.name, "glob")
+
+        with self.assertRaises(NameError):
+            mod.get_global_variable("bar")
+
+    def test_link_in(self):
+        dest = self.module()
+        src = self.module(asm_mul)
+        dest.link_in(src)
+        dest.get_function("mul")
 
 
 if __name__ == "__main__":
