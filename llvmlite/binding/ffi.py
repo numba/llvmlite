@@ -28,16 +28,28 @@ else:
     lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.so'))
 
 
+class _DeadPointer(object):
+    """
+    Dummy class to make error messages more helpful.
+    """
+
+
 class OutputString(object):
     """Object for managing output string memory
     """
+    _as_parameter_ = _DeadPointer()
 
-    def __init__(self):
-        self.pointer = ctypes.c_char_p(None)
-        self._as_parameter_ = ctypes.byref(self.pointer)
+    def __init__(self, owned=True):
+        self._ptr = ctypes.c_char_p(None)
+        self._as_parameter_ = ctypes.byref(self._ptr)
+        self._owned = owned
 
     def close(self):
-        lib.LLVMPY_DisposeString(self.pointer)
+        if self._ptr is not None:
+            if self._owned:
+                lib.LLVMPY_DisposeString(self._ptr)
+            self._ptr = None
+            del self._as_parameter_
 
     def __enter__(self):
         return self
@@ -45,12 +57,18 @@ class OutputString(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __del__(self):
+        self.close()
+
     def __str__(self):
-        assert self.pointer.value is not None
-        return self.pointer.value.decode('utf8')
+        if self._ptr is None:
+            return "<dead OutputString>"
+        s = self._ptr.value
+        assert s is not None
+        return s.decode('utf8')
 
     def __bool__(self):
-        return bool(self.pointer)
+        return bool(self._ptr)
 
     __nonzero__ = __bool__
 
@@ -58,12 +76,23 @@ class OutputString(object):
 class ObjectRef(object):
     """Weak reference to LLVM objects
     """
+    _closed = False
+    _as_parameter_ = _DeadPointer()
 
     def __init__(self, ptr):
         if ptr is None:
             raise ValueError("NULL pointer")
         self._ptr = ptr
         self._as_parameter_ = ptr
+
+    def close(self):
+        del self._as_parameter_
+        self._closed = True
+        self._ptr = None
+
+    def detach(self):
+        del self._as_parameter_
+        self._closed = True
 
     def __enter__(self):
         assert hasattr(self, "close")
@@ -72,7 +101,17 @@ class ObjectRef(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __del__(self):
+        self.close()
+
     def __bool__(self):
         return bool(self._ptr)
+
+    def __eq__(self, other):
+        return (type(self) is type(other) and self._ptr is not None
+                and self._ptr == other._ptr)
+
+    def __ne__(self, other):
+        return not (self == other)
 
     __nonzero__ = __bool__

@@ -26,8 +26,11 @@ Old llvmpy (https://github.com/llvmpy/llvmpy) binding exposes a lot of LLVM but 
 The LLVM binding is optional.  It is only necessary if ``llvmlite.binding`` is used.  Note: ``llvmlite.llvmpy.*`` depends on ``llvmlite.binding``.
 
 Steps:
- - Run `make` in "llvmlite/ffi" 
+ - Run `make` in "llvmlite/ffi"
 
+## Run tests
+
+Run `python runtests.py`.
 
 ### Install Python extension
 

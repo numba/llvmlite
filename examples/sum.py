@@ -1,6 +1,24 @@
-import llvmlite.ir as ll
+from ctypes import CFUNCTYPE, c_int, POINTER
+import sys
+try:
+    from time import perf_counter as time
+except ImportError:
+    from time import time
+
+import numpy as np
+
 import faulthandler; faulthandler.enable()
 
+import llvmlite.ir as ll
+import llvmlite.binding as llvm
+
+
+llvm.initialize()
+llvm.initialize_native_target()
+llvm.initialize_native_asmprinter()
+
+
+t1 = time()
 
 fnty = ll.FunctionType(ll.IntType(32), [ll.IntType(32).as_pointer(),
                                         ll.IntType(32)])
@@ -38,29 +56,33 @@ builder.cbranch(cond, bb_loop, bb_exit)
 builder.position_at_end(bb_exit)
 builder.ret(added)
 
-print(module)
+strmod = str(module)
 
-import llvmlite.binding as llvm
-from ctypes import CFUNCTYPE, c_int, POINTER
-import numpy as np
+t2 = time()
 
+print("generate IR:", t2-t1)
 
-llvm.initialize()
-llvm.initialize_native_target()
-llvm.initialize_native_asmprinter()
+t3 = time()
 
 module.triple = llvm.get_default_triple()
-llmod = llvm.parse_assembly(str(module))
+llmod = llvm.parse_assembly(strmod)
 
-# print(llmod)
+t4 = time()
+
+print("parse assembly:", t4-t3)
+
+print(llmod)
+
+t5 = time()
 
 with llvm.create_mcjit_compiler(llmod) as ee:
-
     # ee.add_module(llmod)
     ee.finalize_object()
 
     cfptr = ee.get_pointer_to_global(llmod.get_function('sum'))
 
+    t6 = time()
+    print("JIT compile:", t6 - t5)
 
     cfunc = CFUNCTYPE(c_int, POINTER(c_int), c_int)(cfptr)
 
