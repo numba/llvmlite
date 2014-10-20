@@ -175,6 +175,12 @@ class Module(ir.Module):
         except KeyError:
             raise LLVMException(name)
 
+    def get_or_insert_named_metadata(self, name):
+        try:
+            return self.get_named_metadata(name)
+        except KeyError:
+            return self.add_named_metadata(name)
+
 
 class Function(ir.Function):
     @staticmethod
@@ -244,3 +250,9 @@ class MetaData(ir.MetaData):
     @staticmethod
     def get(module, values):
         return module.add_metadata(values)
+
+
+class InlineAsm(ir.InlineAsm):
+    @staticmethod
+    def get(*args, **kwargs):
+        return InlineAsm(*args, **kwargs)

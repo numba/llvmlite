@@ -56,7 +56,6 @@ class ConstOpMixin(object):
         for i in indices:
             outtype = outtype.gep(i)
 
-
         strindices = ["{0} {1}".format(idx.type, idx.get_reference())
                       for idx in indices]
 
@@ -110,27 +109,47 @@ class Value(object):
     def get_reference(self):
         return self.name_prefix + _wrapname(self.name)
 
+    @property
+    def function_type(self):
+        if isinstance(self.type, types.PointerType):
+            ty = self.type.pointee
+        if isinstance(ty, types.FunctionType):
+            return ty
+        else:
+            raise TypeError(self.type)
+
 
 class MetaDataString(Value):
     def __init__(self, parent, string):
-        super(MetaDataString, self).__init__(parent, types.MetaData, name="")
+        super(MetaDataString, self).__init__(parent, types.MetaData(), name="")
         self.string = string
 
     def descr(self, buf):
-        print("!\"{0}\"".format(self.string), file=buf)
+        print("metadata !\"{0}\"".format(self.string), file=buf)
 
     def get_reference(self):
-        return "metadata !\"{0}\"".format(self.string)
+        return "!\"{0}\"".format(self.string)
 
     def __str__(self):
         return self.get_reference()
+
+
+class NamedMetaData(object):
+    name_prefix = '!'
+
+    def __init__(self, parent):
+        self.parent = parent
+        self.operands = []
+
+    def add(self, md):
+        self.operands.append(md)
 
 
 class MetaData(Value):
     name_prefix = '!'
 
     def __init__(self, parent, values, name):
-        super(MetaData, self).__init__(parent, types.MetaData, name=name)
+        super(MetaData, self).__init__(parent, types.MetaData(), name=name)
         self.operands = tuple(values)
         parent.metadata.append(self)
 
@@ -139,8 +158,12 @@ class MetaData(Value):
         return len(self.operands)
 
     def descr(self, buf):
-        operands = ', '.join(str(op) for op in self.operands)
+        operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
+                             for op in self.operands)
         print("metadata !{{ {operands} }}".format(operands=operands), file=buf)
+
+    def get_reference(self):
+        return self.name_prefix + str(self.name)
 
 
 class GlobalValue(Value, ConstOpMixin):
@@ -376,7 +399,7 @@ class Instruction(Value):
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name=''):
-        super(CallInstr, self).__init__(parent, func.type.pointee.return_type,
+        super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
         self.args = args
         self.callee = func
@@ -389,8 +412,8 @@ class CallInstr(Instruction):
     def descr(self, buf):
         args = ', '.join('{0} {1}'.format(a.type, a.get_reference())
                          for a in self.args)
-        fnty = self.callee.type.pointee
-        print("call {0} {1}({2})".format(fnty.as_pointer(),
+        fnty = self.callee.type
+        print("call {0} {1}({2})".format(fnty,
                                          self.callee.get_reference(),
                                          args),
               file=buf)
@@ -749,4 +772,29 @@ class Unreachable(Instruction):
 
     def descr(self, buf):
         print(self.opname, file=buf)
+
+
+class InlineAsm(object):
+    def __init__(self, ftype, asm, constraint, side_effect=False):
+        self.type = ftype.return_type
+        self.function_type = ftype
+        self.users = set()
+        self.asm = asm
+        self.constraint = constraint
+        self.side_effect = side_effect
+
+    def descr(self, buf):
+        sideeffect = 'sideeffect' if self.side_effect else ''
+        fmt = "asm {sideeffect} \"{asm}\", \"{constraint}\""
+        print(fmt.format(sideeffect=sideeffect, asm=self.asm,
+                         constraint=self.constraint),
+              file=buf, end='')
+
+    def get_reference(self):
+        with _utils.StringIO() as buf:
+            self.descr(buf)
+            return buf.getvalue()
+
+    def __str__(self):
+        return "{0} {1}".format(self.type, self.get_reference())
 

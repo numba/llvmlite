@@ -8,6 +8,7 @@ class Module(object):
         self.name = name   # name is for debugging/informational
         self.globals = {}
         self.metadata = []
+        self.data_layout = ""
         self.namedmetadata = {}
         self.scope = context.scope.get_child()
         self.triple = 'unknown-unknown-unknown'
@@ -16,6 +17,14 @@ class Module(object):
     def add_metadata(self, operands):
         n = len(self.metadata)
         return values.MetaData(self, operands, name=str(n))
+
+    def add_named_metadata(self, name):
+        nmd = values.NamedMetaData(self)
+        self.namedmetadata[name] = nmd
+        return nmd
+
+    def get_named_metadata(self, name):
+        return self.namedmetadata[name]
 
     @property
     def functions(self):
@@ -57,7 +66,24 @@ class Module(object):
 
     def __repr__(self):
         body = '\n'.join(str(self.globals[k]) for k in self._sequence)
+        nmdbuf = []
+        for k, v in self.namedmetadata.items():
+
+            nmdbuf.append("!{name} = !{{ {operands} }}".format(
+                name=k, operands=','.join(i.get_reference()
+                                          for i in v.operands)))
+
+        mdbuf = []
+        for md in self.metadata:
+            mdbuf.append(str(md))
+
         fmt = ('; ModuleID = "{name}"\n'
-               'target triple = "{triple}"\n\n'
-               '{body}')
-        return fmt.format(name=self.name, triple=self.triple, body=body)
+               'target triple = "{triple}"\n'
+               'target datalayout = "{data}"\n'
+               '\n'
+               '{body}\n'
+               '{md}\n'
+               '{nmd}\n')
+        return fmt.format(name=self.name, triple=self.triple, body=body,
+                          nmd='\n'.join(nmdbuf), md='\n'.join(mdbuf),
+                          data=self.data_layout)
