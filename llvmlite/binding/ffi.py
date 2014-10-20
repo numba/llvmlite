@@ -17,6 +17,9 @@ LLVMPassManagerBuilderRef = _make_opaque_ref("LLVMPassManagerBuilder")
 LLVMPassManagerRef = _make_opaque_ref("LLVMPassManager")
 LLVMTargetDataRef = _make_opaque_ref("LLVMTargetData")
 LLVMTargetLibraryInfoRef = _make_opaque_ref(("LLVMTargetLibraryInfo"))
+LLVMTargetRef = _make_opaque_ref(("LLVMTarget"))
+LLVMTargetMachineRef = _make_opaque_ref(("LLVMTargetMachine"))
+LLVMMemoryBufferRef = _make_opaque_ref(("LLVMMemoryBuffer"))
 
 ffi_dir = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ffi')
@@ -78,7 +81,8 @@ class ObjectRef(object):
     """
     _closed = False
     _as_parameter_ = _DeadPointer()
-
+    __slots__ = '_ptr', '_as_parameter_'
+    
     def __init__(self, ptr):
         if ptr is None:
             raise ValueError("NULL pointer")

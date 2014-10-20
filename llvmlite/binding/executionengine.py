@@ -73,7 +73,7 @@ class ExecutionEngine(ffi.ObjectRef):
     def remove_module(self, module):
         with ffi.OutputString() as outerr:
             if ffi.lib.LLVMPY_RemoveModule(self, module, outerr):
-                raise RuntimeError(outerr)
+                raise RuntimeError(str(outerr))
 
     @property
     def target_data(self):

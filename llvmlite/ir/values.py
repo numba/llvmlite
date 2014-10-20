@@ -49,6 +49,22 @@ class ConstOpMixin(object):
                                                 typ)
         return ConstOp(typ, op)
 
+    def gep(self, indices):
+        assert isinstance(self.type, types.PointerType)
+
+        outtype = self.type
+        for i in indices:
+            outtype = outtype.gep(i)
+
+
+        strindices = ["{0} {1}".format(idx.type, idx.get_reference())
+                      for idx in indices]
+
+        op = "getelementptr ({0} {1}, {2})".format(self.type,
+                                                   self.get_reference(),
+                                                   ', '.join(strindices))
+        return ConstOp(outtype.as_pointer(), op)
+
 
 class Value(object):
     name_prefix = '%'
@@ -151,10 +167,11 @@ class GlobalVariable(GlobalValue):
         else:
             kind = 'global'
 
-        if not self.global_constant:
+        if not self.linkage:
+            # Default to external linkage
             linkage = 'external'
         else:
-            linkage = ''
+            linkage = self.linkage
 
         print("{0} {1} {2} ".format(linkage, kind, self.gtype), file=buf,
               end='')
