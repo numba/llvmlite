@@ -30,7 +30,7 @@ Steps:
 
 ## Run tests
 
-Run `python -m unittest discover`.
+Run `python runtests.py`.
 
 ### Install Python extension
 
