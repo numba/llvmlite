@@ -46,6 +46,9 @@ class ExecutionEngine(ffi.ObjectRef):
     """
 
     def __init__(self, ptr, module):
+        """
+        Module ownership is transferred to the EE
+        """
         self._modules = set([module])
         module.detach()
         ffi.ObjectRef.__init__(self, ptr)
@@ -65,7 +68,7 @@ class ExecutionEngine(ffi.ObjectRef):
 
     def add_module(self, module):
         """
-        Ownership of moulde is transferred to the execution engine
+        Ownership of module is transferred to the execution engine
         """
         ffi.lib.LLVMPY_AddModule(self, module)
         self._modules.add(module)
@@ -76,7 +79,7 @@ class ExecutionEngine(ffi.ObjectRef):
 
     def remove_module(self, module):
         """
-        Ownership of moudule is returned
+        Ownership of module is returned
         """
         with ffi.OutputString() as outerr:
             if ffi.lib.LLVMPY_RemoveModule(self, module, outerr):
@@ -93,7 +96,7 @@ class ExecutionEngine(ffi.ObjectRef):
 
     def close(self):
         if not self._closed:
-            # All owned modules will be disposed along with the engine
+            # The modules will be cleaned up by the EE
             ffi.lib.LLVMPY_DisposeExecutionEngine(self)
             ffi.ObjectRef.close(self)
 

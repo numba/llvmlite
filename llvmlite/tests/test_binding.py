@@ -136,6 +136,10 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(NameError):
             mod.get_function("foo")
 
+        # Check that fn keeps the module instance alive
+        del mod
+        str(fn.module)
+
     def test_get_global_variable(self):
         mod = self.module()
         gv = mod.get_global_variable("glob")
@@ -144,6 +148,10 @@ class TestModuleRef(BaseTest):
 
         with self.assertRaises(NameError):
             mod.get_global_variable("bar")
+
+        # Check that gv keeps the module instance alive
+        del mod
+        str(gv.module)
 
     def test_link_in(self):
         dest = self.module()
@@ -168,6 +176,36 @@ class JITTestMixin(object):
         ee = self.jit(self.module())
         ee.close()
         ee.close()
+        with self.assertRaises(ctypes.ArgumentError):
+            ee.finalize_object()
+
+    def test_with(self):
+        ee = self.jit(self.module())
+        with ee:
+            pass
+        with ee:
+            pass
+        with self.assertRaises(ctypes.ArgumentError):
+            ee.finalize_object()
+
+    def test_add_module(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        self.assertFalse(mod.closed)
+        ee.close()
+        self.assertTrue(mod.closed)
+
+    def test_remove_module(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        ee.remove_module(mod)
+        with self.assertRaises(KeyError):
+            ee.remove_module(mod)
+        self.assertFalse(mod.closed)
+        ee.close()
+        self.assertFalse(mod.closed)
 
 
 class TestMCJit(BaseTest, JITTestMixin):

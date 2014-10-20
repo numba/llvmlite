@@ -89,13 +89,15 @@ class ObjectRef(object):
         self._as_parameter_ = ptr
 
     def close(self):
-        if not self._closed:
-            del self._as_parameter_
-            self._closed = True
-            self._ptr = None
+        self.detach()
 
     def detach(self):
         self._closed = True
+        self._ptr = None
+
+    @property
+    def closed(self):
+        return self._closed
 
     def reattach(self):
         assert self._closed
@@ -113,13 +115,6 @@ class ObjectRef(object):
 
     def __bool__(self):
         return bool(self._ptr)
-
-    def __eq__(self, other):
-        return (type(self) is type(other) and self._ptr is not None
-                and self._ptr == other._ptr)
-
-    def __ne__(self, other):
-        return not (self == other)
 
     __nonzero__ = __bool__
 
