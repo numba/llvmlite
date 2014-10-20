@@ -1,4 +1,6 @@
 import ctypes
+import os
+import sys
 
 
 def _make_opaque_ref(name):
@@ -16,7 +18,14 @@ LLVMPassManagerRef = _make_opaque_ref("LLVMPassManager")
 LLVMTargetDataRef = _make_opaque_ref("LLVMTargetData")
 LLVMTargetLibraryInfoRef = _make_opaque_ref(("LLVMTargetLibraryInfo"))
 
-lib = ctypes.CDLL('/Users/sklam/dev/llvmlite/ffi/libllvmlite.dylib')
+ffi_dir = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ffi')
+
+if sys.platform == 'darwin':
+    lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.dylib'))
+else:
+    assert os.name == 'posix'
+    lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.so'))
 
 
 class OutputString(object):
