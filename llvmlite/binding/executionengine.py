@@ -42,12 +42,12 @@ def create_mcjit_compiler(module, opt=2, relocmodel='default', emitdebug=False):
 class ExecutionEngine(ffi.ObjectRef):
     """An ExecutionEngine owns all Modules associated with it.
     Deleting the engine will remove all associated modules.
-    It is an error to delete the associated mdoules.
+    It is an error to delete the associated modules.
     """
 
     def __init__(self, ptr, module):
-        # Keep the module alive for ownership
-        self._module = module
+        self._modules = set([module])
+        module.detach()
         ffi.ObjectRef.__init__(self, ptr)
 
     def get_pointer_to_global(self, gv):
@@ -64,26 +64,36 @@ class ExecutionEngine(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddGlobalMapping(self, gv, addr)
 
     def add_module(self, module):
-        # XXX ownership of module
+        """
+        Ownership of moulde is transferred to the execution engine
+        """
         ffi.lib.LLVMPY_AddModule(self, module)
+        self._modules.add(module)
+        module.detach()
 
     def finalize_object(self):
         ffi.lib.LLVMPY_FinalizeObject(self)
 
     def remove_module(self, module):
+        """
+        Ownership of moudule is returned
+        """
         with ffi.OutputString() as outerr:
             if ffi.lib.LLVMPY_RemoveModule(self, module, outerr):
                 raise RuntimeError(str(outerr))
+        self._modules.remove(module)
+        module.reattach()
 
     @property
     def target_data(self):
         td = ffi.lib.LLVMPY_GetExecutionEngineTargetData(self)
-        return targets.TargetData(td)
+        ret = targets.TargetData(td)
+        ret.detach()
+        return ret
 
     def close(self):
         if not self._closed:
-            # The module will be cleaned up by the EE
-            self._module.detach()
+            # All owned modules will be disposed along with the engine
             ffi.lib.LLVMPY_DisposeExecutionEngine(self)
             ffi.ObjectRef.close(self)
 

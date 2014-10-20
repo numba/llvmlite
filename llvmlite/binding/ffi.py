@@ -81,8 +81,7 @@ class ObjectRef(object):
     """
     _closed = False
     _as_parameter_ = _DeadPointer()
-    __slots__ = '_ptr', '_as_parameter_'
-    
+
     def __init__(self, ptr):
         if ptr is None:
             raise ValueError("NULL pointer")
@@ -90,13 +89,17 @@ class ObjectRef(object):
         self._as_parameter_ = ptr
 
     def close(self):
-        del self._as_parameter_
-        self._closed = True
-        self._ptr = None
+        if not self._closed:
+            del self._as_parameter_
+            self._closed = True
+            self._ptr = None
 
     def detach(self):
-        del self._as_parameter_
         self._closed = True
+
+    def reattach(self):
+        assert self._closed
+        self._closed = False
 
     def __enter__(self):
         assert hasattr(self, "close")
@@ -119,3 +122,6 @@ class ObjectRef(object):
         return not (self == other)
 
     __nonzero__ = __bool__
+
+    def __hash__(self):
+        return hash(ctypes.cast(self._ptr, ctypes.c_void_p).value)

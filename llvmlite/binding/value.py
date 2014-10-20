@@ -29,7 +29,10 @@ _REVLINKAGE = dict((v, k) for k, v in LINKAGE.items())
 class ValueRef(ffi.ObjectRef):
     """A weak reference to a LLVM value.
     """
-    __slots__ = ()
+
+    def __init__(self, ptr, module=None):
+        ffi.ObjectRef.__init__(self, ptr)
+        self._module = module
 
     def __str__(self):
         with ffi.OutputString() as outstr:
@@ -40,9 +43,10 @@ class ValueRef(ffi.ObjectRef):
     def module(self):
         """Only valid for global value
         """
-        from . import ModuleRef
-
-        return ModuleRef(ffi.lib.LLVMPY_GetGlobalParent(self))
+        if self._module is not None:
+            return self._module
+        else:
+            raise TypeError("Does not have a Module parent")
 
     @property
     def name(self):

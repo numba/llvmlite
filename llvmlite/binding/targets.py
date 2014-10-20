@@ -76,7 +76,7 @@ class Target(ffi.ObjectRef):
 
 class TargetMachine(ffi.ObjectRef):
     def close(self):
-        ffi.LLVMPY_DisposeTargetMachine(self)
+        ffi.lib.LLVMPY_DisposeTargetMachine(self)
 
     def emit_object(self, module):
         return self.emit_to_memory(module, use_object=True)

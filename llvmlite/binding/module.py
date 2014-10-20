@@ -36,13 +36,13 @@ class ModuleRef(ffi.ObjectRef):
         p = ffi.lib.LLVMPY_GetNamedFunction(self, name.encode('utf8'))
         if not p:
             raise NameError(name)
-        return ValueRef(p)
+        return ValueRef(p, module=self)
 
     def get_global_variable(self, name):
         p = ffi.lib.LLVMPY_GetNamedGlobalVariable(self, name.encode('utf8'))
         if not p:
             raise NameError(name)
-        return ValueRef(p)
+        return ValueRef(p, module=self)
 
     def verify(self):
         with ffi.OutputString() as outmsg:
@@ -58,6 +58,8 @@ class ModuleRef(ffi.ObjectRef):
 
     def link_in(self, other, preserve=False):
         link_modules(self, other, preserve)
+        if not preserve:
+            other.detach()
 
 
     target_data = data_layout
