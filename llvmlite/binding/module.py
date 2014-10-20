@@ -28,7 +28,7 @@ class ModuleRef(ffi.ObjectRef):
             return str(outstr)
 
     def close(self):
-        if not self._closed:
+        if not self._detached:
             ffi.lib.LLVMPY_DisposeModule(self)
             ffi.ObjectRef.close(self)
 

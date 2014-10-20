@@ -81,10 +81,10 @@ class ExecutionEngine(ffi.ObjectRef):
         """
         Ownership of module is returned
         """
+        self._modules.remove(module)
         with ffi.OutputString() as outerr:
             if ffi.lib.LLVMPY_RemoveModule(self, module, outerr):
                 raise RuntimeError(str(outerr))
-        self._modules.remove(module)
         module.reattach()
 
     @property
@@ -97,6 +97,8 @@ class ExecutionEngine(ffi.ObjectRef):
     def close(self):
         if not self._closed:
             # The modules will be cleaned up by the EE
+            for mod in self._modules:
+                mod.close_detached()
             ffi.lib.LLVMPY_DisposeExecutionEngine(self)
             ffi.ObjectRef.close(self)
 

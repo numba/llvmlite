@@ -80,6 +80,7 @@ class ObjectRef(object):
     """Weak reference to LLVM objects
     """
     _closed = False
+    _detached = False
     _as_parameter_ = _DeadPointer()
 
     def __init__(self, ptr):
@@ -90,18 +91,32 @@ class ObjectRef(object):
 
     def close(self):
         self.detach()
+        self._closed = True
+        del self._as_parameter_
+
+    def close_detached(self):
+        """For informing a detached object that it is being closed by a owning
+        entity.
+        """
+        assert self._detached
+        self._closed = True
+        del self._as_parameter_
 
     def detach(self):
-        self._closed = True
-        self._ptr = None
+        self._detached = True
 
     @property
     def closed(self):
         return self._closed
 
+    @property
+    def detached(self):
+        return self._detached
+
     def reattach(self):
-        assert self._closed
-        self._closed = False
+        assert self._detached
+        assert not self._closed
+        self._detached = True
 
     def __enter__(self):
         assert hasattr(self, "close")

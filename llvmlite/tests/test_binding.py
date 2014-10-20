@@ -193,6 +193,7 @@ class JITTestMixin(object):
         mod = self.module(asm_mul)
         ee.add_module(mod)
         self.assertFalse(mod.closed)
+        self.assertTrue(mod.detached)
         ee.close()
         self.assertTrue(mod.closed)
 
