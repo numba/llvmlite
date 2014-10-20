@@ -4,9 +4,11 @@ from . import ffi
 
 
 def link_modules(dst, src, preserve):
+    dst.verify()
+    src.verify()
     with ffi.OutputString() as outerr:
         if ffi.lib.LLVMPY_LinkModules(dst, src, int(preserve), outerr):
-            raise RuntimeError(outerr)
+            raise RuntimeError(str(outerr))
 
 
 ffi.lib.LLVMPY_LinkModules.argtypes = [

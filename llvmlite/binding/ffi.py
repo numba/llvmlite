@@ -17,6 +17,9 @@ LLVMPassManagerBuilderRef = _make_opaque_ref("LLVMPassManagerBuilder")
 LLVMPassManagerRef = _make_opaque_ref("LLVMPassManager")
 LLVMTargetDataRef = _make_opaque_ref("LLVMTargetData")
 LLVMTargetLibraryInfoRef = _make_opaque_ref(("LLVMTargetLibraryInfo"))
+LLVMTargetRef = _make_opaque_ref(("LLVMTarget"))
+LLVMTargetMachineRef = _make_opaque_ref(("LLVMTargetMachine"))
+LLVMMemoryBufferRef = _make_opaque_ref(("LLVMMemoryBuffer"))
 
 ffi_dir = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ffi')
@@ -77,6 +80,7 @@ class ObjectRef(object):
     """Weak reference to LLVM objects
     """
     _closed = False
+    _detached = False
     _as_parameter_ = _DeadPointer()
 
     def __init__(self, ptr):
@@ -87,15 +91,32 @@ class ObjectRef(object):
 
     def close(self):
         self.detach()
+        self._closed = True
+        del self._as_parameter_
+
+    def close_detached(self):
+        """For informing a detached object that it is being closed by a owning
+        entity.
+        """
+        assert self._detached
+        self._closed = True
+        del self._as_parameter_
 
     def detach(self):
-        del self._as_parameter_
-        self._closed = True
-        self._ptr = None
+        self._detached = True
 
     @property
     def closed(self):
         return self._closed
+
+    @property
+    def detached(self):
+        return self._detached
+
+    def reattach(self):
+        assert self._detached
+        assert not self._closed
+        self._detached = True
 
     def __enter__(self):
         assert hasattr(self, "close")
@@ -111,3 +132,6 @@ class ObjectRef(object):
         return bool(self._ptr)
 
     __nonzero__ = __bool__
+
+    def __hash__(self):
+        return hash(ctypes.cast(self._ptr, ctypes.c_void_p).value)

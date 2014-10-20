@@ -1,7 +1,10 @@
 from llvmlite import binding as llvm
 
+RELOC_PIC = 'pic'
+
 # Initialize native target
 llvm.initialize_native_target()
+llvm.initialize_native_asmprinter()
 
 
 def dylib_add_symbol(name, addr):
@@ -39,8 +42,20 @@ class EngineBuilder(object):
 
 
 class TargetMachine(object):
-    def __init__(self):
+    def __init__(self, cpu='', features='', opt=2, reloc='default',
+                 codemodel='default'):
         self.triple = llvm.get_default_triple()
+        self.target = llvm.Target.from_triple(self.triple)
+        self._tm = self.target.create_target_machine(self.triple, cpu,
+                                                     features, opt, reloc,
+                                                     codemodel)
 
+    @staticmethod
+    def new(*args, **kwargs):
+        return TargetMachine(*args, **kwargs)
 
+    def emit_object(self, module):
+        return self._tm.emit_object(module)
 
+    def emit_assembly(self, module):
+        return self._tm.emit_assembly(module).decode('ascii')

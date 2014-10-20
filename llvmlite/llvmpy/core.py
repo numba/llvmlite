@@ -51,6 +51,7 @@ INTR_FLOOR = 'llvm.floor'
 TYPE_STRUCT = ir.TYPE_STRUCT
 TYPE_POINTER = ir.TYPE_POINTER
 
+LINKAGE_EXTERNAL = 'external'
 LINKAGE_INTERNAL = 'internal'
 LINKAGE_LINKONCE_ODR = 'linkonce_odr'
 
@@ -142,6 +143,10 @@ class Constant(object):
     @staticmethod
     def inttoptr(const, typ):
         return const.inttoptr(typ)
+
+    @staticmethod
+    def gep(const, indices):
+        return const.gep(indices)
 
 
 class Module(ir.Module):

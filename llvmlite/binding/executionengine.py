@@ -42,12 +42,15 @@ def create_mcjit_compiler(module, opt=2, relocmodel='default', emitdebug=False):
 class ExecutionEngine(ffi.ObjectRef):
     """An ExecutionEngine owns all Modules associated with it.
     Deleting the engine will remove all associated modules.
-    It is an error to delete the associated mdoules.
+    It is an error to delete the associated modules.
     """
 
     def __init__(self, ptr, module):
-        # Keep module alives for ownership
+        """
+        Module ownership is transferred to the EE
+        """
         self._modules = set([module])
+        module.detach()
         ffi.ObjectRef.__init__(self, ptr)
 
     def get_pointer_to_global(self, gv):
@@ -64,30 +67,42 @@ class ExecutionEngine(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddGlobalMapping(self, gv, addr)
 
     def add_module(self, module):
-        self._modules.add(module)
+        """
+        Ownership of module is transferred to the execution engine
+        """
         ffi.lib.LLVMPY_AddModule(self, module)
+        self._modules.add(module)
+        module.detach()
 
     def finalize_object(self):
         ffi.lib.LLVMPY_FinalizeObject(self)
 
     def remove_module(self, module):
+        """
+        Ownership of module is returned
+        """
         self._modules.remove(module)
         with ffi.OutputString() as outerr:
             if ffi.lib.LLVMPY_RemoveModule(self, module, outerr):
-                raise RuntimeError(outerr)
+                raise RuntimeError(str(outerr))
+        module.reattach()
 
     @property
     def target_data(self):
         td = ffi.lib.LLVMPY_GetExecutionEngineTargetData(self)
-        return targets.TargetData(td)
+        ret = targets.TargetData(td)
+        ret.detach()
+        return ret
 
     def close(self):
         if not self._closed:
             # The modules will be cleaned up by the EE
             for mod in self._modules:
-                mod.detach()
+                mod.close_detached()
+            self._modules.clear()
             ffi.lib.LLVMPY_DisposeExecutionEngine(self)
             ffi.ObjectRef.close(self)
+
 
 
 # ============================================================================

@@ -28,7 +28,7 @@ class ModuleRef(ffi.ObjectRef):
             return str(outstr)
 
     def close(self):
-        if not self._closed:
+        if not self._detached:
             ffi.lib.LLVMPY_DisposeModule(self)
             ffi.ObjectRef.close(self)
 
@@ -58,6 +58,8 @@ class ModuleRef(ffi.ObjectRef):
 
     def link_in(self, other, preserve=False):
         link_modules(self, other, preserve)
+        if not preserve:
+            other.detach()
 
 
     target_data = data_layout
