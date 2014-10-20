@@ -32,12 +32,16 @@ class OutputString(object):
     """Object for managing output string memory
     """
 
-    def __init__(self):
+    def __init__(self, owned=True):
         self.pointer = ctypes.c_char_p(None)
         self._as_parameter_ = ctypes.byref(self.pointer)
+        self._owned = owned
 
     def close(self):
-        lib.LLVMPY_DisposeString(self.pointer)
+        if self.pointer is not None:
+            if self._owned:
+                lib.LLVMPY_DisposeString(self.pointer)
+            self.pointer = None
 
     def __enter__(self):
         return self
@@ -46,8 +50,11 @@ class OutputString(object):
         self.close()
 
     def __str__(self):
-        assert self.pointer.value is not None
-        return self.pointer.value.decode('utf8')
+        if self.pointer is None:
+            return "<dead OutputString>"
+        s = self.pointer.value
+        assert s is not None
+        return s.decode('utf8')
 
     def __bool__(self):
         return bool(self.pointer)
@@ -55,15 +62,27 @@ class OutputString(object):
     __nonzero__ = __bool__
 
 
+class _DeadPointer(object):
+    """
+    Dummy class to make error messages more helpful.
+    """
+
+
 class ObjectRef(object):
     """Weak reference to LLVM objects
     """
+    _closed = False
+    _as_parameter_ = _DeadPointer()
 
     def __init__(self, ptr):
         if ptr is None:
             raise ValueError("NULL pointer")
         self._ptr = ptr
         self._as_parameter_ = ptr
+
+    def close(self):
+        del self._as_parameter_
+        self._closed = True
 
     def __enter__(self):
         assert hasattr(self, "close")

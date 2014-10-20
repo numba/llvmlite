@@ -32,8 +32,8 @@ LLVMPY_GetNamedFunction(LLVMModuleRef M,
 }
 
 LLVMValueRef
-LLVMPY_GetNamedGobalVariable(LLVMModuleRef M,
-                             const char *Name)
+LLVMPY_GetNamedGlobalVariable(LLVMModuleRef M,
+                              const char *Name)
 {
     using namespace llvm;
     return wrap(unwrap(M)->getGlobalVariable(Name));
@@ -43,7 +43,7 @@ LLVMPY_GetNamedGobalVariable(LLVMModuleRef M,
 int
 LLVMPY_VerifyModule(LLVMModuleRef M, char **OutMsg)
 {
-    return LLVMVerifyModule(M, LLVMPrintMessageAction, OutMsg);
+    return LLVMVerifyModule(M, LLVMReturnStatusAction, OutMsg);
 }
 
 void

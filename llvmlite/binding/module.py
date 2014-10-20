@@ -28,7 +28,9 @@ class ModuleRef(ffi.ObjectRef):
             return str(outstr)
 
     def close(self):
-        return ffi.lib.LLVMPY_DisposeModule(self)
+        if not self._closed:
+            ffi.lib.LLVMPY_DisposeModule(self)
+            ffi.ObjectRef.close(self)
 
     def get_function(self, name):
         p = ffi.lib.LLVMPY_GetNamedFunction(self, name.encode('utf8'))
@@ -37,7 +39,7 @@ class ModuleRef(ffi.ObjectRef):
         return ValueRef(p)
 
     def get_global_variable(self, name):
-        p = ffi.lib.LLVMPY_GetNamedGobalVariable(self, name.encode('utf8'))
+        p = ffi.lib.LLVMPY_GetNamedGlobalVariable(self, name.encode('utf8'))
         if not p:
             raise NameError(name)
         return ValueRef(p)
@@ -45,11 +47,14 @@ class ModuleRef(ffi.ObjectRef):
     def verify(self):
         with ffi.OutputString() as outmsg:
             if ffi.lib.LLVMPY_VerifyModule(self, outmsg):
-                raise RuntimeError(outmsg)
+                raise RuntimeError(str(outmsg))
 
     @property
     def data_layout(self):
-        ffi.lib.LLVMPY_GetDataLayout(self)
+        # LLVMGetDataLayout() points inside a std::string managed by LLVM.
+        with ffi.OutputString(owned=False) as outmsg:
+            ffi.lib.LLVMPY_GetDataLayout(self, outmsg)
+            return str(outmsg)
 
     def link_in(self, other, preserve=False):
         link_modules(self, other, preserve)
@@ -80,8 +85,7 @@ ffi.lib.LLVMPY_VerifyModule.argtypes = [ffi.LLVMModuleRef,
                                         POINTER(c_char_p)]
 ffi.lib.LLVMPY_VerifyModule.restype = c_bool
 
-ffi.lib.LLVMPY_GetDataLayout = [ffi.LLVMModuleRef,
-                                POINTER(c_char_p)]
+ffi.lib.LLVMPY_GetDataLayout.argtypes = [ffi.LLVMModuleRef, POINTER(c_char_p)]
 
-ffi.lib.LLVMPY_GetNamedGobalVariable.argtypes = [ffi.LLVMModuleRef, c_char_p]
-ffi.lib.LLVMPY_GetNamedGobalVariable.restype = ffi.LLVMValueRef
+ffi.lib.LLVMPY_GetNamedGlobalVariable.argtypes = [ffi.LLVMModuleRef, c_char_p]
+ffi.lib.LLVMPY_GetNamedGlobalVariable.restype = ffi.LLVMValueRef
