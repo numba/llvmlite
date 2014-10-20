@@ -56,6 +56,8 @@ builder.cbranch(cond, bb_loop, bb_exit)
 builder.position_at_end(bb_exit)
 builder.ret(added)
 
+strmod = str(module)
+
 t2 = time()
 
 print("generate IR:", t2-t1)
@@ -63,7 +65,7 @@ print("generate IR:", t2-t1)
 t3 = time()
 
 module.triple = llvm.get_default_triple()
-llmod = llvm.parse_assembly(str(module))
+llmod = llvm.parse_assembly(strmod)
 
 t4 = time()
 
