@@ -136,6 +136,10 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(NameError):
             mod.get_function("foo")
 
+        # Check that fn keeps the module instance alive
+        del mod
+        str(fn.module)
+
     def test_get_global_variable(self):
         mod = self.module()
         gv = mod.get_global_variable("glob")
@@ -144,6 +148,10 @@ class TestModuleRef(BaseTest):
 
         with self.assertRaises(NameError):
             mod.get_global_variable("bar")
+
+        # Check that gv keeps the module instance alive
+        del mod
+        str(gv.module)
 
     def test_link_in(self):
         dest = self.module()

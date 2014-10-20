@@ -6,6 +6,10 @@ class ValueRef(ffi.ObjectRef):
     """A weak reference to a LLVM value.
     """
 
+    def __init__(self, ptr, module):
+        self._module = module
+        ffi.ObjectRef.__init__(self, ptr)
+
     def __str__(self):
         with ffi.OutputString() as outstr:
             ffi.lib.LLVMPY_PrintValueToString(self, outstr)
@@ -13,10 +17,9 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def module(self):
-        """Only valid for global value
+        """The module this value is defined in.
         """
-        from . import ModuleRef
-        return ModuleRef(ffi.lib.LLVMPY_GetGlobalParent(self))
+        return self._module
 
     @property
     def name(self):
