@@ -20,7 +20,9 @@ class TargetData(ffi.ObjectRef):
             return str(out)
 
     def close(self):
-        ffi.lib.LLVMPY_DisposeTargetData(self)
+        if not self._closed:
+            ffi.lib.LLVMPY_DisposeTargetData(self)
+            ffi.ObjectRef.close(self)
 
     def abi_size(self, ty):
         from llvmlite.ir import Type, Module, GlobalVariable

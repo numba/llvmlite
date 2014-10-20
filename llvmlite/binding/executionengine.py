@@ -20,21 +20,23 @@ def create_jit_compiler(module, opt=2):
                                             outerr):
             raise RuntimeError(str(outerr))
 
-    return ExecutionEngine(engine)
+    return ExecutionEngine(engine, module=module)
 
 
-def create_mcjit_compiler(module, opt=2, relocmodel='', emitdebug=False):
+def create_mcjit_compiler(module, opt=2, relocmodel='default', emitdebug=False):
     """Create a MCJIT ExecutionEngine
     """
+    if relocmodel not in ('default', 'static', 'pic', 'dynamicnopic'):
+        raise ValueError("invalid relocation model %r" % (relocmodel,))
     engine = ffi.LLVMExecutionEngineRef()
     with ffi.OutputString() as outerr:
         if ffi.lib.LLVMPY_CreateMCJITCompilerCustom(
-                byref(engine), module, int(opt),
-                str(relocmodel).lower().encode('ascii'),
+                byref(engine), module, opt,
+                relocmodel.lower().encode('ascii'),
                 int(bool(emitdebug)), outerr):
             raise RuntimeError(str(outerr))
 
-    return ExecutionEngine(engine)
+    return ExecutionEngine(engine, module=module)
 
 
 class ExecutionEngine(ffi.ObjectRef):
@@ -43,7 +45,14 @@ class ExecutionEngine(ffi.ObjectRef):
     It is an error to delete the associated mdoules.
     """
 
+    def __init__(self, ptr, module):
+        # Keep the module alive for ownership
+        self._module = module
+        ffi.ObjectRef.__init__(self, ptr)
+
     def get_pointer_to_global(self, gv):
+        # XXX getPointerToGlobal is deprecated for MCJIT,
+        # getGlobalValueAddress should be used instead.
         ptr = ffi.lib.LLVMPY_GetPointerToGlobal(self, gv)
         if ptr is None:
             raise ValueError("Cannot find given global value")
@@ -55,6 +64,7 @@ class ExecutionEngine(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddGlobalMapping(self, gv, addr)
 
     def add_module(self, module):
+        # XXX ownership of module
         ffi.lib.LLVMPY_AddModule(self, module)
 
     def finalize_object(self):
@@ -71,7 +81,11 @@ class ExecutionEngine(ffi.ObjectRef):
         return targets.TargetData(td)
 
     def close(self):
-        ffi.lib.LLVMPY_DisposeExecutionEngine(self)
+        if not self._closed:
+            # The module will be cleaned up by the EE
+            self._module.detach()
+            ffi.lib.LLVMPY_DisposeExecutionEngine(self)
+            ffi.ObjectRef.close(self)
 
 
 # ============================================================================

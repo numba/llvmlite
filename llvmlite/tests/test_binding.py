@@ -1,3 +1,4 @@
+from __future__ import print_function, absolute_import
 
 import ctypes
 from ctypes import *
@@ -52,45 +53,40 @@ asm_verification_fail = r"""
     """
 
 
-class TestBindingFunctions(TestCase):
+class BaseTest(TestCase):
 
     def setUp(self):
         llvm.initialize()
         llvm.initialize_native_target()
 
-    def _parse_assembly(self, asm):
-        asm = asm.format(triple=llvm.get_default_triple())
-        mod = llvm.parse_assembly(asm)
-        mod.verify()
-        return mod
-
-    def test_parse_assembly(self):
-        self._parse_assembly(asm_sum)
-
-    def test_parse_assembly_error(self):
-        with self.assertRaises(RuntimeError) as cm:
-            self._parse_assembly(asm_parse_error)
-        s = str(cm.exception)
-        self.assertIn("parsing error", s)
-        self.assertIn("invalid operand type", s)
-
-    def test_mcjit(self):
-        mod = self._parse_assembly(asm_sum)
-        with llvm.create_mcjit_compiler(mod) as ee:
-            ee.finalize_object()
-            cfptr = ee.get_pointer_to_global(mod.get_function('sum'))
-
-            cfunc = CFUNCTYPE(c_int, c_int, c_int)(cfptr)
-            res = cfunc(2, -5)
-            self.assertEqual(-3, res)
-
-
-class TestModuleRef(TestCase):
-
     def module(self, asm=asm_sum):
         asm = asm.format(triple=llvm.get_default_triple())
         mod = llvm.parse_assembly(asm)
         return mod
+
+
+class TestFunctions(BaseTest):
+
+    def test_parse_assembly(self):
+        self.module(asm_sum)
+
+    def test_parse_assembly_error(self):
+        with self.assertRaises(RuntimeError) as cm:
+            self.module(asm_parse_error)
+        s = str(cm.exception)
+        self.assertIn("parsing error", s)
+        self.assertIn("invalid operand type", s)
+
+    def test_dylib_symbols(self):
+        llvm.add_symbol("__xyzzy", 1234)
+        llvm.add_symbol("__xyzzy", 5678)
+        addr = llvm.address_of_symbol("__xyzzy")
+        self.assertEqual(addr, 5678)
+        addr = llvm.address_of_symbol("__foobar")
+        self.assertIs(addr, None)
+
+
+class TestModuleRef(BaseTest):
 
     def test_str(self):
         mod = self.module()
@@ -154,6 +150,36 @@ class TestModuleRef(TestCase):
         src = self.module(asm_mul)
         dest.link_in(src)
         dest.get_function("mul")
+
+
+class JITTestMixin(object):
+
+    def test_run_code(self):
+        mod = self.module()
+        with self.jit(mod) as ee:
+            ee.finalize_object()
+            cfptr = ee.get_pointer_to_global(mod.get_function('sum'))
+
+            cfunc = CFUNCTYPE(c_int, c_int, c_int)(cfptr)
+            res = cfunc(2, -5)
+            self.assertEqual(-3, res)
+
+    def test_close(self):
+        ee = self.jit(self.module())
+        ee.close()
+        ee.close()
+
+
+class TestMCJit(BaseTest, JITTestMixin):
+
+    def jit(self, mod):
+        return llvm.create_mcjit_compiler(mod)
+
+
+class TestLegacyJit(BaseTest, JITTestMixin):
+
+    def jit(self, mod):
+        return llvm.create_jit_compiler(mod)
 
 
 if __name__ == "__main__":

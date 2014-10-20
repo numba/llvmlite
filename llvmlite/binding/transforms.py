@@ -45,13 +45,10 @@ class PassManagerBuilder(ffi.ObjectRef):
             raise ValueError(pm)
 
     def close(self):
-        ffi.lib.LLVMPY_PassManagerBuilderDispose(self)
+        if not self._closed:
+            ffi.lib.LLVMPY_PassManagerBuilderDispose(self)
+            ffi.ObjectRef.close(self)
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
 
 # ============================================================================
 # FFI

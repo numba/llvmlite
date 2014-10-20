@@ -17,7 +17,9 @@ class PassManager(ffi.ObjectRef):
     """
 
     def close(self):
-        ffi.lib.LLVMPY_DisposePassManager(self)
+        if not self._closed:
+            ffi.lib.LLVMPY_DisposePassManager(self)
+            ffi.ObjectRef.close(self)
 
 
 class ModulePassManager(PassManager):

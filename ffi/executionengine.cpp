@@ -68,13 +68,16 @@ LLVMPY_CreateMCJITCompilerCustom(LLVMExecutionEngineRef *OutEE,
     eb.setOptLevel((llvm::CodeGenOpt::Level)Opt);
 
     std::string rm = RelocModel;
-    if (rm == "static") {
+    if (rm == "default")
         eb.setRelocationModel(llvm::Reloc::Default);
-    } else if (rm == "pic") {
+    else if (rm == "static")
+        eb.setRelocationModel(llvm::Reloc::Static);
+    else if (rm == "pic")
         eb.setRelocationModel(llvm::Reloc::PIC_);
-    } else if (rm == "dynamicnopic") {
+    else if (rm == "dynamicnopic")
         eb.setRelocationModel(llvm::Reloc::DynamicNoPIC);
-    }
+    else
+        assert(0); // unreachable
 
     llvm::TargetOptions options;
     options.JITEmitDebugInfo = (bool)EmitDebug;

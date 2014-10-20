@@ -57,6 +57,9 @@ class OutputString(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def __del__(self):
+        self.close()
+
     def __str__(self):
         if self._ptr is None:
             return "<dead OutputString>"
@@ -87,11 +90,18 @@ class ObjectRef(object):
         self._closed = True
         self._ptr = None
 
+    def detach(self):
+        del self._as_parameter_
+        self._closed = True
+
     def __enter__(self):
         assert hasattr(self, "close")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
         self.close()
 
     def __bool__(self):
