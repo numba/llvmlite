@@ -99,8 +99,10 @@ class ExecutionEngine(ffi.ObjectRef):
             # The modules will be cleaned up by the EE
             for mod in self._modules:
                 mod.close_detached()
+            self._modules.clear()
             ffi.lib.LLVMPY_DisposeExecutionEngine(self)
             ffi.ObjectRef.close(self)
+
 
 
 # ============================================================================

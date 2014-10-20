@@ -21,7 +21,7 @@ class TargetData(ffi.ObjectRef):
             return str(out)
 
     def close(self):
-        if not self._closed:
+        if not self._detached:
             ffi.lib.LLVMPY_DisposeTargetData(self)
             ffi.ObjectRef.close(self)
 
