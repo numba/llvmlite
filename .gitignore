@@ -2,3 +2,5 @@
 *.pyd
 *.so
 *.dylib
+htmlcov/
+

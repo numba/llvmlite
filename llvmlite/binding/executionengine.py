@@ -46,8 +46,8 @@ class ExecutionEngine(ffi.ObjectRef):
     """
 
     def __init__(self, ptr, module):
-        # Keep the module alive for ownership
-        self._module = module
+        # Keep module alives for ownership
+        self._modules = set([module])
         ffi.ObjectRef.__init__(self, ptr)
 
     def get_pointer_to_global(self, gv):
@@ -64,13 +64,14 @@ class ExecutionEngine(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddGlobalMapping(self, gv, addr)
 
     def add_module(self, module):
-        # XXX ownership of module
+        self._modules.add(module)
         ffi.lib.LLVMPY_AddModule(self, module)
 
     def finalize_object(self):
         ffi.lib.LLVMPY_FinalizeObject(self)
 
     def remove_module(self, module):
+        self._modules.remove(module)
         with ffi.OutputString() as outerr:
             if ffi.lib.LLVMPY_RemoveModule(self, module, outerr):
                 raise RuntimeError(outerr)
@@ -82,8 +83,9 @@ class ExecutionEngine(ffi.ObjectRef):
 
     def close(self):
         if not self._closed:
-            # The module will be cleaned up by the EE
-            self._module.detach()
+            # The modules will be cleaned up by the EE
+            for mod in self._modules:
+                mod.detach()
             ffi.lib.LLVMPY_DisposeExecutionEngine(self)
             ffi.ObjectRef.close(self)
 

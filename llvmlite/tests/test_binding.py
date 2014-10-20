@@ -168,6 +168,36 @@ class JITTestMixin(object):
         ee = self.jit(self.module())
         ee.close()
         ee.close()
+        with self.assertRaises(ctypes.ArgumentError):
+            ee.finalize_object()
+
+    def test_with(self):
+        ee = self.jit(self.module())
+        with ee:
+            pass
+        with ee:
+            pass
+        with self.assertRaises(ctypes.ArgumentError):
+            ee.finalize_object()
+
+    def test_add_module(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        self.assertFalse(mod.closed)
+        ee.close()
+        self.assertTrue(mod.closed)
+
+    def test_remove_module(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        ee.remove_module(mod)
+        with self.assertRaises(KeyError):
+            ee.remove_module(mod)
+        self.assertFalse(mod.closed)
+        ee.close()
+        self.assertFalse(mod.closed)
 
 
 class TestMCJit(BaseTest, JITTestMixin):
