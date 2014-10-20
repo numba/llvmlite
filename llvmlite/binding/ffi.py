@@ -28,20 +28,28 @@ else:
     lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.so'))
 
 
+class _DeadPointer(object):
+    """
+    Dummy class to make error messages more helpful.
+    """
+
+
 class OutputString(object):
     """Object for managing output string memory
     """
+    _as_parameter_ = _DeadPointer()
 
     def __init__(self, owned=True):
-        self.pointer = ctypes.c_char_p(None)
-        self._as_parameter_ = ctypes.byref(self.pointer)
+        self._ptr = ctypes.c_char_p(None)
+        self._as_parameter_ = ctypes.byref(self._ptr)
         self._owned = owned
 
     def close(self):
-        if self.pointer is not None:
+        if self._ptr is not None:
             if self._owned:
-                lib.LLVMPY_DisposeString(self.pointer)
-            self.pointer = None
+                lib.LLVMPY_DisposeString(self._ptr)
+            self._ptr = None
+            del self._as_parameter_
 
     def __enter__(self):
         return self
@@ -50,22 +58,16 @@ class OutputString(object):
         self.close()
 
     def __str__(self):
-        if self.pointer is None:
+        if self._ptr is None:
             return "<dead OutputString>"
-        s = self.pointer.value
+        s = self._ptr.value
         assert s is not None
         return s.decode('utf8')
 
     def __bool__(self):
-        return bool(self.pointer)
+        return bool(self._ptr)
 
     __nonzero__ = __bool__
-
-
-class _DeadPointer(object):
-    """
-    Dummy class to make error messages more helpful.
-    """
 
 
 class ObjectRef(object):
