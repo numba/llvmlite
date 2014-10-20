@@ -31,17 +31,19 @@ LLVMPY_Shutdown(){
     LLVMShutdown();
 }
 
-
 // Target Initialization
 #define INIT(F) void LLVMPY_Initialize ## F() { LLVMInitialize ## F (); }
 
-INIT(AllTargetInfos)
-INIT(AllTargets)
-INIT(AllTargetMCs)
+// NOTE: it is important that we don't export functions which we don't use,
+// especially those which may pull in large amounts of additional code or data.
+
+// INIT(AllTargetInfos)
+// INIT(AllTargets)
+// INIT(AllTargetMCs)
 INIT(NativeTarget)
 INIT(NativeAsmParser)
 INIT(NativeAsmPrinter)
-INIT(NativeDisassembler)
+// INIT(NativeDisassembler)
 
 #undef INIT
 

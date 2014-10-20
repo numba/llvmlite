@@ -1,7 +1,9 @@
 # Using g++ is recommended for linking
 CXX = g++
-CXXFLAGS = `llvm-config --cxxflags`
-LDFLAGS = `llvm-config --ldflags`
+
+# -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
+CXXFLAGS = -flto `llvm-config --cxxflags`
+LDFLAGS = -flto `llvm-config --ldflags` -Wl,--exclude-libs=ALL
 LIBS = `llvm-config --system-libs --libs all`
 SRC = assembly.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
