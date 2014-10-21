@@ -1,6 +1,8 @@
 from __future__ import print_function, absolute_import
 from ctypes import c_char_p, byref, POINTER, c_bool
+
 from . import ffi, link_modules
+from .common import _encode_string
 from .value import ValueRef
 
 
@@ -9,7 +11,8 @@ def parse_assembly(llvmir):
     Create Module from a LLVM IR string
     """
     context = ffi.lib.LLVMPY_GetGlobalContext()
-    strbuf = c_char_p(llvmir.encode('utf8'))
+    llvmir = _encode_string(llvmir)
+    strbuf = c_char_p(llvmir)
     with ffi.OutputString() as errmsg:
         mod = ModuleRef(ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg))
         if errmsg:
@@ -31,13 +34,13 @@ class ModuleRef(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposeModule(self)
 
     def get_function(self, name):
-        p = ffi.lib.LLVMPY_GetNamedFunction(self, name.encode('utf8'))
+        p = ffi.lib.LLVMPY_GetNamedFunction(self, _encode_string(name))
         if not p:
             raise NameError(name)
         return ValueRef(p, module=self)
 
     def get_global_variable(self, name):
-        p = ffi.lib.LLVMPY_GetNamedGlobalVariable(self, name.encode('utf8'))
+        p = ffi.lib.LLVMPY_GetNamedGlobalVariable(self, _encode_string(name))
         if not p:
             raise NameError(name)
         return ValueRef(p, module=self)

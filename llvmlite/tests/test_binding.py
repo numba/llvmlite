@@ -323,6 +323,18 @@ class TestValueRef(BaseTest):
         mod = self.module()
         glob = mod.get_global_variable("glob")
         self.assertEqual(glob.name, "glob")
+        glob.name = "foobar"
+        self.assertEqual(glob.name, "foobar")
+
+    def test_linkage(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        linkage = glob.linkage
+        self.assertIsInstance(linkage, str)
+        self.assertTrue(linkage)
+        for linkage in ("internal", "external"):
+            glob.linkage = linkage
+            self.assertEqual(glob.linkage, linkage)
 
     def test_module(self):
         mod = self.module()

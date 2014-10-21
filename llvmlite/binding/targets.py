@@ -2,7 +2,7 @@ from __future__ import print_function, absolute_import
 from ctypes import (POINTER, c_char_p, c_ulonglong, c_int, c_size_t,
                     c_void_p, string_at)
 from . import ffi, parse_assembly
-from .common import _decode_string
+from .common import _decode_string, _encode_string
 
 
 def get_default_triple():
@@ -12,7 +12,7 @@ def get_default_triple():
 
 
 def create_target_data(strrep):
-    return TargetData(ffi.lib.LLVMPY_CreateTargetData(strrep.encode('utf8')))
+    return TargetData(ffi.lib.LLVMPY_CreateTargetData(_encode_string(strrep)))
 
 
 class TargetData(ffi.ObjectRef):
@@ -86,12 +86,12 @@ class Target(ffi.ObjectRef):
         assert codemodel in CODEMODEL
         triple = triple or self._triple
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
-                                                triple.encode('utf8'),
-                                                cpu.encode('utf8'),
-                                                features.encode('utf8'),
+                                                _encode_string(triple),
+                                                _encode_string(cpu),
+                                                _encode_string(features),
                                                 opt,
-                                                reloc.encode('utf8'),
-                                                codemodel.encode('utf8'),
+                                                _encode_string(reloc),
+                                                _encode_string(codemodel),
                                                 )
         if tm:
             return TargetMachine(tm)
