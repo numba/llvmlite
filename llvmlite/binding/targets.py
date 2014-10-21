@@ -14,6 +14,11 @@ def create_target_data(strrep):
 
 
 class TargetData(ffi.ObjectRef):
+
+    def __init__(self, ptr, ee=None):
+        self._ee = ee
+        ffi.ObjectRef.__init__(self, ptr)
+
     def __str__(self):
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_CopyStringRepOfTargetData(self, out)
@@ -21,12 +26,14 @@ class TargetData(ffi.ObjectRef):
 
     def close(self):
         if not self._closed:
-            ffi.lib.LLVMPY_DisposeTargetData(self)
+            if self._ee is None:
+                ffi.lib.LLVMPY_DisposeTargetData(self)
             ffi.ObjectRef.close(self)
 
     def abi_size(self, ty):
         from llvmlite.ir import Type, Module, GlobalVariable
 
+        # XXX unused
         if isinstance(ty, Type):
             # We need to convert our type object to the LLVM's object
             m = Module()

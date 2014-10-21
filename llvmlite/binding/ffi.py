@@ -89,9 +89,10 @@ class ObjectRef(object):
         self.detach()
 
     def detach(self):
-        del self._as_parameter_
-        self._closed = True
-        self._ptr = None
+        if not self._closed:
+            del self._as_parameter_
+            self._closed = True
+            self._ptr = None
 
     @property
     def closed(self):

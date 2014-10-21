@@ -60,8 +60,6 @@ class ModuleRef(ffi.ObjectRef):
         link_modules(self, other, preserve)
 
 
-    target_data = data_layout
-
 # =============================================================================
 # Set function FFI
 

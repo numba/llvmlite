@@ -2,9 +2,12 @@ from __future__ import print_function, absolute_import
 
 import ctypes
 from ctypes import *
+import subprocess
+import sys
 import unittest
 
 from llvmlite import binding as llvm
+from llvmlite.binding import ffi
 from . import TestCase
 
 
@@ -12,7 +15,7 @@ asm_sum = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
 
-    @glob = global i32 0, align 4
+    @glob = global i32 0, align 1
 
     define i32 @sum(i32 %.1, i32 %.2) {{
       %.3 = add i32 %.1, %.2
@@ -64,6 +67,11 @@ class BaseTest(TestCase):
         mod = llvm.parse_assembly(asm)
         return mod
 
+    def glob(self, name='glob', mod=None):
+        if mod is None:
+            mod = self.module()
+        return mod.get_global_variable(name)
+
 
 class TestFunctions(BaseTest):
 
@@ -84,6 +92,26 @@ class TestFunctions(BaseTest):
         self.assertEqual(addr, 5678)
         addr = llvm.address_of_symbol("__foobar")
         self.assertIs(addr, None)
+
+    def test_get_default_triple(self):
+        triple = llvm.get_default_triple()
+        self.assertIsInstance(triple, str)
+
+    def test_create_target_data(self):
+        td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+        glob = self.glob()
+        self.assertEqual(td.abi_size(glob.type), 8)
+
+    def test_initfini(self):
+        code = """if 1:
+            from llvmlite import binding as llvm
+
+            llvm.initialize()
+            llvm.initialize_native_target()
+            llvm.initialize_native_asmprinter()
+            llvm.shutdown()
+            """
+        subprocess.check_call([sys.executable, "-c", code])
 
 
 class TestModuleRef(BaseTest):
@@ -206,6 +234,45 @@ class JITTestMixin(object):
         self.assertFalse(mod.closed)
         ee.close()
         self.assertFalse(mod.closed)
+
+    def test_target_data(self):
+        mod = self.module()
+        ee = self.jit(mod)
+        td = ee.target_data
+        gv = mod.get_global_variable("glob")
+        self.assertIn(td.abi_size(gv.type), (4, 8))
+        str(td)
+        del mod, ee
+        str(td)
+
+
+class TestValueRef(BaseTest):
+
+    def test_str(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(str(glob), "@glob = global i32 0, align 1")
+
+    def test_name(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(glob.name, "glob")
+
+    def test_module(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertIs(glob.module, mod)
+
+    def test_type(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        tp = glob.type
+        self.assertIsInstance(tp, ffi.LLVMTypeRef)
+
+    def test_close(self):
+        glob = self.glob()
+        glob.close()
+        glob.close()
 
 
 class TestMCJit(BaseTest, JITTestMixin):

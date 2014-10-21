@@ -79,7 +79,7 @@ class ExecutionEngine(ffi.ObjectRef):
     @property
     def target_data(self):
         td = ffi.lib.LLVMPY_GetExecutionEngineTargetData(self)
-        return targets.TargetData(td)
+        return targets.TargetData(td, ee=self)
 
     def close(self):
         if not self._closed:
