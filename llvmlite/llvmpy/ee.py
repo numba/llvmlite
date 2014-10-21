@@ -38,12 +38,12 @@ class EngineBuilder(object):
         return TargetMachine()
 
     def create(self, tm):
-        return llvm.create_mcjit_compiler(self.module, opt=self._opt)
+        return llvm.create_mcjit_compiler(self.module, tm._tm)
 
 
 class TargetMachine(object):
     def __init__(self, cpu='', features='', opt=2, reloc='default',
-                 codemodel='default'):
+                 codemodel='jitdefault'):
         self.triple = llvm.get_default_triple()
         self.target = llvm.Target.from_triple(self.triple)
         self._tm = self.target.create_target_machine(self.triple, cpu,

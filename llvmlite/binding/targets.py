@@ -45,9 +45,14 @@ CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel',
 
 
 class Target(ffi.ObjectRef):
+    _triple = ''
 
     # No _dispose() method since LLVMGetTargetFromTriple() returns a
     # persistent object.
+
+    @classmethod
+    def from_default_triple(cls):
+        return cls.from_triple(get_default_triple())
 
     @classmethod
     def from_triple(cls, triple):
@@ -56,22 +61,37 @@ class Target(ffi.ObjectRef):
                                                         outerr)
             if not target:
                 raise RuntimeError(str(outerr))
-            return cls(target)
+            target = cls(target)
+            target._triple = triple
+            return target
 
-    def create_target_machine(self, triple, cpu, features, opt, reloc,
-                              codemodel):
+    @property
+    def name(self):
+        s = ffi.lib.LLVMPY_GetTargetName(self)
+        return s.decode('utf-8')
+
+    @property
+    def description(self):
+        s = ffi.lib.LLVMPY_GetTargetDescription(self)
+        return s.decode('utf-8')
+
+    def __str__(self):
+        return "<Target {0} ({1})>".format(self.name, self.description)
+
+    def create_target_machine(self, triple='', cpu='', features='',
+                              opt=1, reloc='default', codemodel='jitdefault'):
         assert 0 <= opt <= 3
-        reloc = reloc.lower()
         assert reloc in RELOC
-        codemodel = codemodel.lower()
         assert codemodel in CODEMODEL
+        triple = triple or self._triple
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
                                                 triple.encode('utf8'),
                                                 cpu.encode('utf8'),
                                                 features.encode('utf8'),
                                                 opt,
                                                 reloc.encode('utf8'),
-                                                codemodel.encode('utf8'), )
+                                                codemodel.encode('utf8'),
+                                                )
         if tm:
             return TargetMachine(tm)
         else:
@@ -133,6 +153,12 @@ ffi.lib.LLVMPY_ABISizeOfType.restype = c_ulonglong
 
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTargetFromTriple.restype = ffi.LLVMTargetRef
+
+ffi.lib.LLVMPY_GetTargetName.argtypes = [ffi.LLVMTargetRef]
+ffi.lib.LLVMPY_GetTargetName.restype = c_char_p
+
+ffi.lib.LLVMPY_GetTargetDescription.argtypes = [ffi.LLVMTargetRef]
+ffi.lib.LLVMPY_GetTargetDescription.restype = c_char_p
 
 ffi.lib.LLVMPY_CreateTargetMachine.argtypes = [
     ffi.LLVMTargetRef,

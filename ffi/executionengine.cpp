@@ -53,31 +53,31 @@ LLVMPY_CreateJITCompiler(LLVMExecutionEngineRef *OutEE,
     return LLVMCreateJITCompilerForModule(OutEE, M, OptLevel, OutError);
 }
 
-int
-LLVMPY_CreateMCJITCompilerCustom(LLVMExecutionEngineRef *OutEE,
-                                 LLVMModuleRef M,
-                                 int Opt,
-                                 const char *RelocModel,
-                                 int EmitDebug,
-                                 char **OutError)
+// wrap/unwrap for LLVMTargetMachineRef.
+// Ripped from lib/Target/TargetMachineC.cpp.
+
+namespace llvm {
+    inline TargetMachine *unwrap(LLVMTargetMachineRef P) {
+      return reinterpret_cast<TargetMachine*>(P);
+    }
+    inline LLVMTargetMachineRef wrap(const TargetMachine *P) {
+      return
+        reinterpret_cast<LLVMTargetMachineRef>(const_cast<TargetMachine*>(P));
+    }
+}
+
+LLVMExecutionEngineRef
+LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
+                           LLVMTargetMachineRef TM,
+                           int EmitDebug,
+                           char **OutError)
 {
+    LLVMExecutionEngineRef ee = nullptr;
+
     llvm::EngineBuilder eb(llvm::unwrap(M));
     std::string err;
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);
-    eb.setOptLevel((llvm::CodeGenOpt::Level)Opt);
-
-    std::string rm = RelocModel;
-    if (rm == "default")
-        eb.setRelocationModel(llvm::Reloc::Default);
-    else if (rm == "static")
-        eb.setRelocationModel(llvm::Reloc::Static);
-    else if (rm == "pic")
-        eb.setRelocationModel(llvm::Reloc::PIC_);
-    else if (rm == "dynamicnopic")
-        eb.setRelocationModel(llvm::Reloc::DynamicNoPIC);
-    else
-        assert(0); // unreachable
 
     llvm::TargetOptions options;
     options.JITEmitDebugInfo = (bool)EmitDebug;
@@ -87,17 +87,14 @@ LLVMPY_CreateMCJITCompilerCustom(LLVMExecutionEngineRef *OutEE,
 
     eb.setTargetOptions(options);
 
-    llvm::ExecutionEngine *engine = eb.create();
+    llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
 
-    if (!engine) {
+    if (!engine)
         *OutError = strdup(err.c_str());
-        return 1;
-    } else {
-        *OutEE = llvm::wrap(engine);
-        return 0;
-    }
+    else
+        ee = llvm::wrap(engine);
+    return ee;
 }
-
 
 void*
 LLVMPY_GetPointerToGlobal(LLVMExecutionEngineRef EE,

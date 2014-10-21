@@ -64,7 +64,6 @@ print("generate IR:", t2-t1)
 
 t3 = time()
 
-module.triple = llvm.get_default_triple()
 llmod = llvm.parse_assembly(strmod)
 
 t4 = time()
@@ -75,8 +74,9 @@ print(llmod)
 
 t5 = time()
 
-with llvm.create_mcjit_compiler(llmod) as ee:
-    # ee.add_module(llmod)
+target_machine = llvm.Target.from_default_triple().create_target_machine()
+
+with llvm.create_mcjit_compiler(llmod, target_machine) as ee:
     ee.finalize_object()
 
     cfptr = ee.get_pointer_to_global(llmod.get_function('sum'))

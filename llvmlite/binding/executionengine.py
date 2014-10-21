@@ -23,19 +23,19 @@ def create_jit_compiler(module, opt=2):
     return ExecutionEngine(engine, module=module)
 
 
-def create_mcjit_compiler(module, opt=2, relocmodel='default', emitdebug=False):
-    """Create a MCJIT ExecutionEngine
+def create_mcjit_compiler(module, target_machine, emitdebug=False):
     """
-    if relocmodel not in ('default', 'static', 'pic', 'dynamicnopic'):
-        raise ValueError("invalid relocation model %r" % (relocmodel,))
-    engine = ffi.LLVMExecutionEngineRef()
+    Create a MCJIT ExecutionEngine from the given *module* and
+    *target_machine*.
+    """
     with ffi.OutputString() as outerr:
-        if ffi.lib.LLVMPY_CreateMCJITCompilerCustom(
-                byref(engine), module, opt,
-                relocmodel.lower().encode('ascii'),
-                int(bool(emitdebug)), outerr):
+        engine = ffi.lib.LLVMPY_CreateMCJITCompiler(
+                module, target_machine,
+                int(bool(emitdebug)), outerr)
+        if not engine:
             raise RuntimeError(str(outerr))
 
+    target_machine._owned = True
     return ExecutionEngine(engine, module=module)
 
 
@@ -114,15 +114,13 @@ ffi.lib.LLVMPY_CreateJITCompiler.argtypes = [
 ]
 ffi.lib.LLVMPY_CreateJITCompiler.restype = c_bool
 
-ffi.lib.LLVMPY_CreateMCJITCompilerCustom.argtypes = [
-    POINTER(ffi.LLVMExecutionEngineRef),
+ffi.lib.LLVMPY_CreateMCJITCompiler.argtypes = [
     ffi.LLVMModuleRef,
-    c_uint,
-    c_char_p,
+    ffi.LLVMTargetMachineRef,
     c_uint,
     POINTER(c_char_p),
 ]
-ffi.lib.LLVMPY_CreateMCJITCompilerCustom.restype = c_bool
+ffi.lib.LLVMPY_CreateMCJITCompiler.restype = ffi.LLVMExecutionEngineRef
 
 ffi.lib.LLVMPY_RemoveModule.argtypes = [
     ffi.LLVMExecutionEngineRef,

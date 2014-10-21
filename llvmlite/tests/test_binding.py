@@ -6,6 +6,7 @@ import subprocess
 import sys
 import unittest
 
+from llvmlite import six
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from . import TestCase
@@ -71,6 +72,10 @@ class BaseTest(TestCase):
         if mod is None:
             mod = self.module()
         return mod.get_global_variable(name)
+
+    def target_machine(self):
+        target = llvm.Target.from_default_triple()
+        return target.create_target_machine()
 
 
 class TestFunctions(BaseTest):
@@ -278,7 +283,7 @@ class JITTestMixin(object):
 class TestMCJit(BaseTest, JITTestMixin):
 
     def jit(self, mod):
-        return llvm.create_mcjit_compiler(mod)
+        return llvm.create_mcjit_compiler(mod, self.target_machine())
 
 
 class TestLegacyJit(BaseTest, JITTestMixin):
@@ -331,6 +336,24 @@ class TestTarget(BaseTest):
     def test_create_target_machine(self):
         target = llvm.Target.from_triple(llvm.get_default_triple())
         target.create_target_machine('', '', '', 1, 'default', 'default')
+
+    def test_name(self):
+        t = llvm.Target.from_triple(llvm.get_default_triple())
+        u = llvm.Target.from_default_triple()
+        self.assertIsInstance(t.name, six.text_type)
+        self.assertEqual(t.name, u.name)
+
+    def test_description(self):
+        t = llvm.Target.from_triple(llvm.get_default_triple())
+        u = llvm.Target.from_default_triple()
+        self.assertIsInstance(t.description, six.text_type)
+        self.assertEqual(t.description, u.description)
+
+    def test_str(self):
+        target = llvm.Target.from_triple(llvm.get_default_triple())
+        s = str(target)
+        self.assertIn(target.name, s)
+        self.assertIn(target.description, s)
 
 
 if __name__ == "__main__":

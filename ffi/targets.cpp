@@ -12,8 +12,7 @@ extern "C" {
 
 void
 LLVMPY_GetDefaultTargetTriple(const char **Out){
-    using namespace llvm;
-    *Out = LLVMPY_CreateString(sys::getDefaultTargetTriple().c_str());
+    *Out = LLVMPY_CreateString(llvm::sys::getDefaultTargetTriple().c_str());
 }
 
 LLVMTargetDataRef
@@ -69,6 +68,18 @@ LLVMPY_GetTargetFromTriple(const char *Triple, const char **ErrOut)
         return NULL;
     }
     return T;
+}
+
+const char *
+LLVMPY_GetTargetName(LLVMTargetRef T)
+{
+    return LLVMGetTargetName(T);
+}
+
+const char *
+LLVMPY_GetTargetDescription(LLVMTargetRef T)
+{
+    return LLVMGetTargetDescription(T);
 }
 
 LLVMTargetMachineRef

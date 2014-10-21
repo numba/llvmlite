@@ -17,9 +17,6 @@ LLVMPY_DisposeString(const char *msg);
 LLVMContextRef
 LLVMPY_GetGlobalContext();
 
-
-
-
 } /* end extern "C" */
 
 
