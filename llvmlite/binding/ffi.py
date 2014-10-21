@@ -2,6 +2,8 @@ import ctypes
 import os
 import sys
 
+from .common import _decode_string
+
 
 def _make_opaque_ref(name):
     newcls = type(name, (ctypes.Structure,), {})
@@ -68,7 +70,7 @@ class OutputString(object):
             return "<dead OutputString>"
         s = self._ptr.value
         assert s is not None
-        return s.decode('utf8')
+        return _decode_string(s)
 
     def __bool__(self):
         return bool(self._ptr)

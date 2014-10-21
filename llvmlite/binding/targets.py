@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import
 from ctypes import (POINTER, c_char_p, c_ulonglong, c_int, c_size_t,
                     c_void_p, string_at)
 from . import ffi, parse_assembly
+from .common import _decode_string
 
 
 def get_default_triple():
@@ -68,12 +69,12 @@ class Target(ffi.ObjectRef):
     @property
     def name(self):
         s = ffi.lib.LLVMPY_GetTargetName(self)
-        return s.decode('utf-8')
+        return _decode_string(s)
 
     @property
     def description(self):
         s = ffi.lib.LLVMPY_GetTargetDescription(self)
-        return s.decode('utf-8')
+        return _decode_string(s)
 
     def __str__(self):
         return "<Target {0} ({1})>".format(self.name, self.description)
@@ -103,12 +104,21 @@ class TargetMachine(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposeTargetMachine(self)
 
     def emit_object(self, module):
-        return self.emit_to_memory(module, use_object=True)
+        """
+        Represent the module as a code object, suitable for use with
+        the platform's linker.  Returns a byte string.
+        """
+        return self._emit_to_memory(module, use_object=True)
 
     def emit_assembly(self, module):
-        return self.emit_to_memory(module, use_object=False)
+        """
+        Return the raw assembler of the module, as a string.
 
-    def emit_to_memory(self, module, use_object=False):
+        llvm.initialize_native_asmprinter() must have been called first.
+        """
+        return _decode_string(self._emit_to_memory(module, use_object=False))
+
+    def _emit_to_memory(self, module, use_object=False):
         """Returns bytes of object code of the module.
 
         Args
@@ -194,5 +204,3 @@ ffi.lib.LLVMPY_GetBufferSize.argtypes = [ffi.LLVMMemoryBufferRef]
 ffi.lib.LLVMPY_GetBufferSize.restype = c_size_t
 
 ffi.lib.LLVMPY_DisposeMemoryBuffer.argtypes = [ffi.LLVMMemoryBufferRef]
-
-

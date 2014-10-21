@@ -62,6 +62,7 @@ class BaseTest(TestCase):
     def setUp(self):
         llvm.initialize()
         llvm.initialize_native_target()
+        llvm.initialize_native_asmprinter()
 
     def module(self, asm=asm_sum):
         asm = asm.format(triple=llvm.get_default_triple())
@@ -282,8 +283,27 @@ class JITTestMixin(object):
 
 class TestMCJit(BaseTest, JITTestMixin):
 
-    def jit(self, mod):
-        return llvm.create_mcjit_compiler(mod, self.target_machine())
+    def jit(self, mod, target_machine=None):
+        if target_machine is None:
+            target_machine = self.target_machine()
+        return llvm.create_mcjit_compiler(mod, target_machine)
+
+    def test_emit_assembly(self):
+        """Test TargetMachineRef.emit_assembly()"""
+        target_machine = self.target_machine()
+        mod = self.module()
+        ee = self.jit(mod, target_machine)
+        raw_asm = target_machine.emit_assembly(mod)
+        self.assertIn("sum", raw_asm)
+
+    def test_emit_object(self):
+        """Test TargetMachineRef.emit_object()"""
+        target_machine = self.target_machine()
+        mod = self.module()
+        ee = self.jit(mod, target_machine)
+        code_object = target_machine.emit_object(mod)
+        self.assertIsInstance(code_object, six.binary_type)
+        self.assertIn(b"ELF", code_object[:10])
 
 
 class TestLegacyJit(BaseTest, JITTestMixin):
@@ -340,13 +360,13 @@ class TestTarget(BaseTest):
     def test_name(self):
         t = llvm.Target.from_triple(llvm.get_default_triple())
         u = llvm.Target.from_default_triple()
-        self.assertIsInstance(t.name, six.text_type)
+        self.assertIsInstance(t.name, str)
         self.assertEqual(t.name, u.name)
 
     def test_description(self):
         t = llvm.Target.from_triple(llvm.get_default_triple())
         u = llvm.Target.from_default_triple()
-        self.assertIsInstance(t.description, six.text_type)
+        self.assertIsInstance(t.description, str)
         self.assertEqual(t.description, u.description)
 
     def test_str(self):
