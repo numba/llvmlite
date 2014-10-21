@@ -31,6 +31,12 @@ LLVMPY_GetValueName(LLVMValueRef Val)
     return LLVMGetValueName(Val);
 }
 
+void
+LLVMPY_SetValueName(LLVMValueRef Val, const char *Name)
+{
+    LLVMSetValueName(Val, Name);
+}
+
 
 LLVMModuleRef
 LLVMPY_GetGlobalParent(LLVMValueRef Val)
@@ -43,6 +49,19 @@ LLVMPY_TypeOf(LLVMValueRef Val)
 {
     return LLVMTypeOf(Val);
 }
+
+void
+LLVMPY_SetLinkage(LLVMValueRef Val, int Linkage)
+{
+    LLVMSetLinkage(Val, (LLVMLinkage)Linkage);
+}
+
+int
+LLVMPY_GetLinkage(LLVMValueRef Val)
+{
+    return (int)LLVMGetLinkage(Val);
+}
+
 
 } // end extern "C"
 

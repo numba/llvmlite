@@ -17,6 +17,9 @@ LLVMPassManagerBuilderRef = _make_opaque_ref("LLVMPassManagerBuilder")
 LLVMPassManagerRef = _make_opaque_ref("LLVMPassManager")
 LLVMTargetDataRef = _make_opaque_ref("LLVMTargetData")
 LLVMTargetLibraryInfoRef = _make_opaque_ref(("LLVMTargetLibraryInfo"))
+LLVMTargetRef = _make_opaque_ref(("LLVMTarget"))
+LLVMTargetMachineRef = _make_opaque_ref(("LLVMTargetMachine"))
+LLVMMemoryBufferRef = _make_opaque_ref(("LLVMMemoryBuffer"))
 
 ffi_dir = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ffi')
@@ -112,3 +115,6 @@ class ObjectRef(object):
         return bool(self._ptr)
 
     __nonzero__ = __bool__
+
+    def __hash__(self):
+        return hash(ctypes.cast(self._ptr, ctypes.c_void_p).value)
