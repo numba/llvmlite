@@ -16,20 +16,13 @@ def create_target_data(strrep):
 
 class TargetData(ffi.ObjectRef):
 
-    def __init__(self, ptr, ee=None):
-        self._ee = ee
-        ffi.ObjectRef.__init__(self, ptr)
-
     def __str__(self):
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_CopyStringRepOfTargetData(self, out)
             return str(out)
 
-    def close(self):
-        if not self._closed:
-            if self._ee is None:
-                ffi.lib.LLVMPY_DisposeTargetData(self)
-            ffi.ObjectRef.close(self)
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeTargetData(self)
 
     def abi_size(self, ty):
         from llvmlite.ir import Type, Module, GlobalVariable
@@ -82,7 +75,7 @@ class Target(ffi.ObjectRef):
 
 
 class TargetMachine(ffi.ObjectRef):
-    def close(self):
+    def _dispose(self):
         ffi.lib.LLVMPY_DisposeTargetMachine(self)
 
     def emit_object(self, module):

@@ -27,10 +27,8 @@ class ModuleRef(ffi.ObjectRef):
             ffi.lib.LLVMPY_PrintModuleToString(self, outstr)
             return str(outstr)
 
-    def close(self):
-        if not self._closed:
-            ffi.lib.LLVMPY_DisposeModule(self)
-            ffi.ObjectRef.close(self)
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeModule(self)
 
     def get_function(self, name):
         p = ffi.lib.LLVMPY_GetNamedFunction(self, name.encode('utf8'))

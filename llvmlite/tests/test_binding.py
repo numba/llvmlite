@@ -189,6 +189,9 @@ class TestModuleRef(BaseTest):
 
 
 class JITTestMixin(object):
+    """
+    Mixin for ExecutionEngine tests.
+    """
 
     def test_run_code(self):
         mod = self.module()
@@ -216,6 +219,18 @@ class JITTestMixin(object):
         with self.assertRaises(ctypes.ArgumentError):
             ee.finalize_object()
 
+    def test_module_lifetime(self):
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.close()
+        mod.close()
+
+    def test_module_lifetime2(self):
+        mod = self.module()
+        ee = self.jit(mod)
+        mod.close()
+        ee.close()
+
     def test_add_module(self):
         ee = self.jit(self.module())
         mod = self.module(asm_mul)
@@ -223,6 +238,20 @@ class JITTestMixin(object):
         self.assertFalse(mod.closed)
         ee.close()
         self.assertTrue(mod.closed)
+
+    def test_add_module_lifetime(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        mod.close()
+        ee.close()
+
+    def test_add_module_lifetime2(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        ee.close()
+        mod.close()
 
     def test_remove_module(self):
         ee = self.jit(self.module())

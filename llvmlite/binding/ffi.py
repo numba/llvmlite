@@ -81,6 +81,7 @@ class ObjectRef(object):
     """
     _closed = False
     _as_parameter_ = _DeadPointer()
+    _owned = False
 
     def __init__(self, ptr):
         if ptr is None:
@@ -89,13 +90,29 @@ class ObjectRef(object):
         self._as_parameter_ = ptr
 
     def close(self):
-        self.detach()
+        """
+        Close this object and do any required clean-up actions.
+        """
+        try:
+            if not self._closed and not self._owned:
+                self._dispose()
+        finally:
+            self.detach()
 
     def detach(self):
+        """
+        Detach the underlying LLVM resource without disposing of it.
+        """
         if not self._closed:
             del self._as_parameter_
             self._closed = True
             self._ptr = None
+
+    def _dispose(self):
+        """
+        Dispose of the underlying LLVM resource.  Should be overriden
+        by subclasses.
+        """
 
     @property
     def closed(self):
@@ -116,5 +133,6 @@ class ObjectRef(object):
 
     __nonzero__ = __bool__
 
+    # XXX useful?
     def __hash__(self):
         return hash(ctypes.cast(self._ptr, ctypes.c_void_p).value)

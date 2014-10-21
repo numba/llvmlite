@@ -50,6 +50,7 @@ class ExecutionEngine(ffi.ObjectRef):
         Module ownership is transferred to the EE
         """
         self._modules = set([module])
+        module._owned = True
         ffi.ObjectRef.__init__(self, ptr)
 
     def get_pointer_to_global(self, gv):
@@ -70,6 +71,7 @@ class ExecutionEngine(ffi.ObjectRef):
         Ownership of module is transferred to the execution engine
         """
         ffi.lib.LLVMPY_AddModule(self, module)
+        module._owned = True
         self._modules.add(module)
 
     def finalize_object(self):
@@ -79,25 +81,25 @@ class ExecutionEngine(ffi.ObjectRef):
         """
         Ownership of module is returned
         """
-        self._modules.remove(module)
         with ffi.OutputString() as outerr:
             if ffi.lib.LLVMPY_RemoveModule(self, module, outerr):
                 raise RuntimeError(str(outerr))
+        self._modules.remove(module)
+        module._owned = False
 
     @property
     def target_data(self):
-        td = ffi.lib.LLVMPY_GetExecutionEngineTargetData(self)
-        return targets.TargetData(td, ee=self)
+        ptr = ffi.lib.LLVMPY_GetExecutionEngineTargetData(self)
+        td = targets.TargetData(ptr)
+        td._owned = True
+        return td
 
-    def close(self):
-        if not self._closed:
-            # The modules will be cleaned up by the EE
-            for mod in self._modules:
-                mod.detach()
-            self._modules.clear()
-            ffi.lib.LLVMPY_DisposeExecutionEngine(self)
-            ffi.ObjectRef.close(self)
-
+    def _dispose(self):
+        # The modules will be cleaned up by the EE
+        for mod in self._modules:
+            mod.detach()
+        self._modules.clear()
+        ffi.lib.LLVMPY_DisposeExecutionEngine(self)
 
 
 # ============================================================================
