@@ -81,6 +81,7 @@ class ObjectRef(object):
     """
     _closed = False
     _as_parameter_ = _DeadPointer()
+    # Whether this object pointer is owned by another one.
     _owned = False
 
     def __init__(self, ptr):
