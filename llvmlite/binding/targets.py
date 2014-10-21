@@ -45,6 +45,10 @@ CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel',
 
 
 class Target(ffi.ObjectRef):
+
+    # No _dispose() method since LLVMGetTargetFromTriple() returns a
+    # persistent object.
+
     @classmethod
     def from_triple(cls, triple):
         with ffi.OutputString() as outerr:

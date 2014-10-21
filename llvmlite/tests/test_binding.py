@@ -275,6 +275,18 @@ class JITTestMixin(object):
         str(td)
 
 
+class TestMCJit(BaseTest, JITTestMixin):
+
+    def jit(self, mod):
+        return llvm.create_mcjit_compiler(mod)
+
+
+class TestLegacyJit(BaseTest, JITTestMixin):
+
+    def jit(self, mod):
+        return llvm.create_jit_compiler(mod)
+
+
 class TestValueRef(BaseTest):
 
     def test_str(self):
@@ -304,16 +316,21 @@ class TestValueRef(BaseTest):
         glob.close()
 
 
-class TestMCJit(BaseTest, JITTestMixin):
+class TestTarget(BaseTest):
 
-    def jit(self, mod):
-        return llvm.create_mcjit_compiler(mod)
+    def test_from_triple(self):
+        f = llvm.Target.from_triple
+        with self.assertRaises(RuntimeError) as cm:
+            f("foobar")
+        self.assertIn("No available targets are compatible with this triple",
+                      str(cm.exception))
+        triple = llvm.get_default_triple()
+        target = f(triple)
+        target.close()
 
-
-class TestLegacyJit(BaseTest, JITTestMixin):
-
-    def jit(self, mod):
-        return llvm.create_jit_compiler(mod)
+    def test_create_target_machine(self):
+        target = llvm.Target.from_triple(llvm.get_default_triple())
+        target.create_target_machine('', '', '', 1, 'default', 'default')
 
 
 if __name__ == "__main__":

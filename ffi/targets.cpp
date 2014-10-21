@@ -59,11 +59,11 @@ LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 
 
 LLVMTargetRef
-LLVMPY_GetTargetFromTriple (const char *Triple, const char **ErrOut)
+LLVMPY_GetTargetFromTriple(const char *Triple, const char **ErrOut)
 {
     char *ErrorMessage;
     LLVMTargetRef T;
-    if ( 0 != LLVMGetTargetFromTriple(Triple, &T, &ErrorMessage) ) {
+    if (LLVMGetTargetFromTriple(Triple, &T, &ErrorMessage)) {
         *ErrOut = LLVMPY_CreateString(ErrorMessage);
         LLVMDisposeMessage(ErrorMessage);
         return NULL;
@@ -72,16 +72,16 @@ LLVMPY_GetTargetFromTriple (const char *Triple, const char **ErrOut)
 }
 
 LLVMTargetMachineRef
-LLVMPY_CreateTargetMachine (   LLVMTargetRef T,
-                               const char *Triple,
-                               const char *CPU,
-                               const char *Features,
-                               int         OL,
-                               const char *RM,
-                               const char *CM  )
+LLVMPY_CreateTargetMachine(LLVMTargetRef T,
+                           const char *Triple,
+                           const char *CPU,
+                           const char *Features,
+                           int         OptLevel,
+                           const char *RelocModel,
+                           const char *CodeModel)
 {
     LLVMCodeGenOptLevel cgol;
-    switch(OL) {
+    switch(OptLevel) {
     case 0:
         cgol = LLVMCodeGenLevelNone;
         break;
@@ -97,30 +97,30 @@ LLVMPY_CreateTargetMachine (   LLVMTargetRef T,
     }
 
     LLVMCodeModel cm;
-    if ( strcmp(CM, "jitdefault") == 0 ){
+    std::string cms(CodeModel);
+    if (cms == "jitdefault")
         cm = LLVMCodeModelJITDefault;
-    } else if ( strcmp(CM, "small") == 0 ){
+    else if (cms == "small")
         cm = LLVMCodeModelSmall;
-    } else if ( strcmp(CM, "kernel") == 0 ){
+    else if (cms == "kernel")
         cm = LLVMCodeModelKernel;
-    } else if ( strcmp(CM, "Medium") == 0 ){
+    else if (cms == "medium")
         cm = LLVMCodeModelMedium;
-    } else if ( strcmp(CM, "Large") == 0 ){
+    else if (cms == "large")
         cm = LLVMCodeModelLarge;
-    } else {
+    else
         cm = LLVMCodeModelDefault;
-    }
 
     LLVMRelocMode rm;
-    if ( strcmp(RM, "static") == 0 ) {
+    std::string rms(RelocModel);
+    if (rms == "static")
         rm = LLVMRelocStatic;
-    } else if ( strcmp(RM, "pic") == 0 ) {
+    else if (rms == "pic")
         rm = LLVMRelocPIC;
-    } else if ( strcmp(RM, "dynamicnopic") == 0 ) {
+    else if (rms == "dynamicnopic")
         rm = LLVMRelocDynamicNoPic;
-    } else {
+    else
         rm = LLVMRelocDefault;
-    }
 
     return LLVMCreateTargetMachine(T, Triple, CPU, Features, cgol, rm, cm);
 }
