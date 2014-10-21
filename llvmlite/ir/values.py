@@ -176,12 +176,13 @@ class GlobalValue(Value, ConstOpMixin):
 
 
 class GlobalVariable(GlobalValue):
-    def __init__(self, module, typ, name):
-        super(GlobalVariable, self).__init__(module, typ.as_pointer(),
+    def __init__(self, module, typ, name, addrspace=0):
+        super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),
                                              name=name)
         self.gtype = typ
         self.initializer = None
         self.global_constant = False
+        self.addrspace = addrspace
         self.parent.add_global(self)
 
     def descr(self, buf):
@@ -192,11 +193,21 @@ class GlobalVariable(GlobalValue):
 
         if not self.linkage:
             # Default to external linkage
-            linkage = 'external'
+            linkage = 'external' if self.initializer is None else ''
         else:
             linkage = self.linkage
 
-        print("{0} {1} {2} ".format(linkage, kind, self.gtype), file=buf,
+        if self.addrspace != 0:
+            addrspace = 'addrspace({0:d})'.format(self.addrspace)
+        else:
+            addrspace = ''
+
+        print("{linkage} {addrspace} {kind} {type} ".format(
+            addrspace=addrspace,
+            linkage=linkage,
+            kind=kind,
+            type=self.gtype),
+              file=buf,
               end='')
 
         if self.initializer is not None:
@@ -797,4 +808,22 @@ class InlineAsm(object):
 
     def __str__(self):
         return "{0} {1}".format(self.type, self.get_reference())
+
+
+class AtomicRMW(Instruction):
+    def __init__(self, parent, op, ptr, val, ordering, name):
+        super(AtomicRMW, self).__init__(parent, val.type, "atomicrmw",
+                                        (ptr, val), name=name)
+        self.operation = op
+        self.ordering = ordering
+
+    def descr(self, buf):
+        fmt = "atomicrmw {op} {ptrty} {ptr}, {ty} {val} {ordering}"
+        print(fmt.format(op=self.operation,
+                         ptrty=self.operands[0].type,
+                         ptr=self.operands[0].get_reference(),
+                         ty=self.operands[1].type,
+                         val=self.operands[1].get_reference(),
+                         ordering=self.ordering),
+              file=buf)
 

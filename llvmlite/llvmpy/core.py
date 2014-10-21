@@ -72,8 +72,8 @@ class Type(object):
         return ir.DoubleType()
 
     @staticmethod
-    def pointer(ty):
-        return ir.PointerType(ty)
+    def pointer(ty, addrspace=0):
+        return ir.PointerType(ty, addrspace)
 
     @staticmethod
     def function(res, args, var_arg=False):
@@ -166,8 +166,9 @@ class Module(ir.Module):
     def add_function(self, fnty, name):
         return ir.Function(self, fnty, name)
 
-    def add_global_variable(self, ty, name):
-        return ir.GlobalVariable(self, ty, self.get_unique_name(name))
+    def add_global_variable(self, ty, name, addrspace=0):
+        return ir.GlobalVariable(self, ty, self.get_unique_name(name),
+                                 addrspace)
 
     def get_global_variable_named(self, name):
         try:
@@ -256,3 +257,4 @@ class InlineAsm(ir.InlineAsm):
     @staticmethod
     def get(*args, **kwargs):
         return InlineAsm(*args, **kwargs)
+

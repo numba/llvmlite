@@ -25,8 +25,8 @@ class Type(object):
     def __str__(self):
         raise NotImplementedError
 
-    def as_pointer(self):
-        return PointerType(self)
+    def as_pointer(self, addrspace=0):
+        return PointerType(self, addrspace)
 
     def __ne__(self, other):
         return not (self == other)
@@ -55,12 +55,16 @@ class PointerType(Type):
     kind = TYPE_POINTER
     null = 'null'
 
-    def __init__(self, pointee):
+    def __init__(self, pointee, addrspace=0):
         assert not isinstance(pointee, VoidType)
         self.pointee = pointee
+        self.addrspace = addrspace
 
     def __str__(self):
-        return "%s*" % (self.pointee, )
+        if self.addrspace != 0:
+            return "{0} addrspace({1})* ".format(self.pointee, self.addrspace)
+        else:
+            return "{0}*".format(self.pointee)
 
     def __eq__(self, other):
         if isinstance(other, PointerType):

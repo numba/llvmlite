@@ -316,6 +316,7 @@ class IRBuilder(object):
         self._insert(st)
         return st
 
+
     #
     # Terminators APIs
     #
@@ -386,6 +387,12 @@ class IRBuilder(object):
         return inst
 
     # Special API
+
     def unreachable(self):
         inst = values.Unreachable(self.block)
         self._set_terminator(inst)
+
+    def atomic_rmw(self, op, ptr, val, ordering, name=''):
+        inst = values.AtomicRMW(self.block, op, ptr, val, ordering, name=name)
+        self._insert(inst)
+        return inst
