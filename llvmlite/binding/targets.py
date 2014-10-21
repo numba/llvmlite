@@ -135,7 +135,10 @@ class TargetMachine(ffi.ObjectRef):
 
         bufptr = ffi.lib.LLVMPY_GetBufferStart(mb)
         bufsz = ffi.lib.LLVMPY_GetBufferSize(mb)
-        return string_at(bufptr, bufsz)
+        try:
+            return string_at(bufptr, bufsz)
+        finally:
+            ffi.lib.LLVMPY_DisposeMemoryBuffer(mb)
 
 # ============================================================================
 # FFI
