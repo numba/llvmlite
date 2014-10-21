@@ -18,3 +18,5 @@ else:
     def _decode_string(b):
         return b.decode('utf-8')
 
+_encode_string.__doc__ = """Encode a string for use by LLVM."""
+_decode_string.__doc__ = """Decode a LLVM character (byte)string."""
