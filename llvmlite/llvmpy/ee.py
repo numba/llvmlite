@@ -58,4 +58,4 @@ class TargetMachine(object):
         return self._tm.emit_object(module)
 
     def emit_assembly(self, module):
-        return self._tm.emit_assembly(module).decode('ascii')
+        return self._tm.emit_assembly(module)
