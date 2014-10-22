@@ -388,5 +388,51 @@ class TestTarget(BaseTest):
         self.assertIn(target.description, s)
 
 
+class TestPassManagerBuilder(BaseTest):
+
+    def pmb(self):
+        return llvm.create_pass_manager_builder()
+
+    def test_close(self):
+        pmb = self.pmb()
+        pmb.close()
+        pmb.close()
+
+    def test_opt_level(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.opt_level, six.integer_types)
+        for i in range(3):
+            pmb.opt_level = i
+            self.assertEqual(pmb.opt_level, i)
+
+    def test_size_level(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.size_level, six.integer_types)
+        for i in range(3):
+            pmb.size_level = i
+            self.assertEqual(pmb.size_level, i)
+
+    def test_inlining_threshold(self):
+        pmb = self.pmb()
+        with self.assertRaises(NotImplementedError):
+            pmb.inlining_threshold
+        for i in (25, 80, 350):
+            pmb.inlining_threshold = i
+
+    def test_disable_unit_at_a_time(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.disable_unit_at_a_time, bool)
+        for b in (True, False):
+            pmb.disable_unit_at_a_time = b
+            self.assertEqual(pmb.disable_unit_at_a_time, b)
+
+    def test_disable_unroll_loops(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.disable_unroll_loops, bool)
+        for b in (True, False):
+            pmb.disable_unroll_loops = b
+            self.assertEqual(pmb.disable_unroll_loops, b)
+
+
 if __name__ == "__main__":
     unittest.main()

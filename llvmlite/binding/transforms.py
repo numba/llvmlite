@@ -9,26 +9,47 @@ def create_pass_manager_builder():
 
 
 class PassManagerBuilder(ffi.ObjectRef):
-    def set_opt(self, level):
+    __slots__ = ()
+
+    @property
+    def opt_level(self):
+        return ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel(self)
+
+    @opt_level.setter
+    def opt_level(self, level):
         ffi.lib.LLVMPY_PassManagerBuilderSetOptLevel(self, level)
-        return self
 
-    def set_size(self, level):
-        ffi.lib.LLVMPY_PassManagerBuilderSetSizeLevel(self, level)
-        return self
+    @property
+    def size_level(self):
+        return ffi.lib.LLVMPY_PassManagerBuilderGetSizeLevel(self)
 
-    def set_inline(self, threshold):
+    @size_level.setter
+    def size_level(self, size):
+        ffi.lib.LLVMPY_PassManagerBuilderSetSizeLevel(self, size)
+
+    @property
+    def inlining_threshold(self):
+        raise NotImplementedError("inlining_threshold is write-only")
+
+    @inlining_threshold.setter
+    def inlining_threshold(self, threshold):
         ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(self, threshold)
-        return self
 
+    @property
+    def disable_unit_at_a_time(self):
+        return ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnitAtATime(self)
+
+    @disable_unit_at_a_time.setter
     def disable_unit_at_a_time(self, disable=True):
         ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnitAtATime(self, disable)
 
+    @property
+    def disable_unroll_loops(self):
+        return ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops(self)
+
+    @disable_unroll_loops.setter
     def disable_unroll_loops(self, disable=True):
         ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops(self, disable)
-
-    def disable_simplify_lib_calls(self, disable=True):
-        ffi.lib.LLVMPY_PassManagerBuilderSetDisableSimplifyLibCalls(self, disable)
 
     def _populate_module_pm(self, pm):
         ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager(self, pm)
@@ -67,32 +88,30 @@ ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager.argtypes = [
     ffi.LLVMPassManagerRef,
 ]
 
-ffi.lib.LLVMPY_PassManagerBuilderSetOptLevel.argtypes = [
-    ffi.LLVMPassManagerBuilderRef,
-    c_uint,
-]
+# Unsigned int PassManagerBuilder properties
 
-ffi.lib.LLVMPY_PassManagerBuilderSetSizeLevel.argtypes = [
-    ffi.LLVMPassManagerBuilderRef,
-    c_uint,
-]
+for _func in (ffi.lib.LLVMPY_PassManagerBuilderSetOptLevel,
+              ffi.lib.LLVMPY_PassManagerBuilderSetSizeLevel,
+              ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold,
+              ):
+    _func.argtypes = [ffi.LLVMPassManagerBuilderRef, c_uint]
 
-ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnitAtATime.argtypes = [
-    ffi.LLVMPassManagerBuilderRef,
-    c_bool,
-]
+for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel,
+              ffi.lib.LLVMPY_PassManagerBuilderGetSizeLevel,
+              ):
+    _func.argtypes = [ffi.LLVMPassManagerBuilderRef]
+    _func.restype = c_uint
 
-ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops.argtypes = [
-    ffi.LLVMPassManagerBuilderRef,
-    c_bool,
-]
+# Boolean PassManagerBuilder properties
 
-ffi.lib.LLVMPY_PassManagerBuilderSetDisableSimplifyLibCalls.argtypes = [
-    ffi.LLVMPassManagerBuilderRef,
-    c_bool,
-]
+for _func in (ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnitAtATime,
+              ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops,
+              ):
+    _func.argtypes = [ffi.LLVMPassManagerBuilderRef, c_bool]
 
-ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold.argtypes = [
-    ffi.LLVMPassManagerBuilderRef,
-    c_uint,
-]
+for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnitAtATime,
+              ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
+              ):
+    _func.argtypes = [ffi.LLVMPassManagerBuilderRef]
+    _func.restype = c_bool
+
