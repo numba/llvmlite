@@ -20,7 +20,8 @@ asm_sum = r"""
 
     define i32 @sum(i32 %.1, i32 %.2) {{
       %.3 = add i32 %.1, %.2
-      ret i32 %.3
+      %.4 = add i32 0, %.3
+      ret i32 %.4
     }}
     """
 
@@ -432,6 +433,78 @@ class TestPassManagerBuilder(BaseTest):
         for b in (True, False):
             pmb.disable_unroll_loops = b
             self.assertEqual(pmb.disable_unroll_loops, b)
+
+    def test_populate_module_pass_manager(self):
+        pmb = self.pmb()
+        pm = llvm.create_module_pass_manager()
+        pmb.populate(pm)
+        pmb.close()
+        pm.close()
+
+    def test_populate_function_pass_manager(self):
+        mod = self.module()
+        pmb = self.pmb()
+        pm = llvm.create_function_pass_manager(mod)
+        pmb.populate(pm)
+        pmb.close()
+        pm.close()
+
+
+class PassManagerTestMixin(object):
+
+    def pmb(self):
+        pmb = llvm.create_pass_manager_builder()
+        pmb.opt_level = 2
+        return pmb
+
+    def test_close(self):
+        pm = self.pm()
+        pm.close()
+        pm.close()
+
+
+class TestModulePassManager(BaseTest, PassManagerTestMixin):
+
+    def pm(self):
+        return llvm.create_module_pass_manager()
+
+    def test_run(self):
+        pm = self.pm()
+        self.pmb().populate(pm)
+        mod = self.module()
+        orig_asm = str(mod)
+        pm.run(mod)
+        opt_asm = str(mod)
+        # Quick check that optimizations were run
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", opt_asm)
+
+
+class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
+
+    def pm(self, mod=None):
+        mod = mod or self.module()
+        return llvm.create_function_pass_manager(mod)
+
+    def test_initfini(self):
+        pm = self.pm()
+        pm.initialize()
+        pm.finalize()
+
+    def test_run(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        pm = self.pm(mod)
+        self.pmb().populate(pm)
+        mod.close()
+        orig_asm = str(fn)
+        pm.initialize()
+        pm.run(fn)
+        pm.finalize()
+        opt_asm = str(fn)
+        # Quick check that optimizations were run
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", opt_asm)
 
 
 if __name__ == "__main__":

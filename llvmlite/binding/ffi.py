@@ -2,7 +2,7 @@ import ctypes
 import os
 import sys
 
-from .common import _decode_string
+from .common import _decode_string, _is_shutting_down
 
 
 def _make_opaque_ref(name):
@@ -62,8 +62,11 @@ class OutputString(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def __del__(self):
-        self.close()
+    def __del__(self, _is_shutting_down=_is_shutting_down):
+        # Avoid errors trying to rely on globals and modules at interpreter
+        # shutdown.
+        if not _is_shutting_down():
+            self.close()
 
     def __str__(self):
         if self._ptr is None:

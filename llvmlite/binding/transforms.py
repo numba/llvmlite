@@ -61,9 +61,9 @@ class PassManagerBuilder(ffi.ObjectRef):
         if isinstance(pm, passmanagers.ModulePassManager):
             self._populate_module_pm(pm)
         elif isinstance(pm, passmanagers.FunctionPassManager):
-            self._populate_funciton_pm(pm)
+            self._populate_function_pm(pm)
         else:
-            raise ValueError(pm)
+            raise TypeError(pm)
 
     def _dispose(self):
         ffi.lib.LLVMPY_PassManagerBuilderDispose(self)

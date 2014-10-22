@@ -77,7 +77,20 @@ print("-- parse assembly:", t4-t3)
 
 print(llmod)
 
+pmb = llvm.create_pass_manager_builder()
+pmb.opt_level = 2
+pm = llvm.create_module_pass_manager()
+pmb.populate(pm)
+
 t5 = time()
+
+pm.run(llmod)
+
+t6 = time()
+
+print("-- optimize:", t6-t5)
+
+t7 = time()
 
 target_machine = llvm.Target.from_default_triple().create_target_machine()
 
@@ -85,8 +98,8 @@ with llvm.create_mcjit_compiler(llmod, target_machine) as ee:
     ee.finalize_object()
     cfptr = ee.get_pointer_to_global(llmod.get_function('sum'))
 
-    t6 = time()
-    print("-- JIT compile:", t6 - t5)
+    t8 = time()
+    print("-- JIT compile:", t8 - t7)
 
     print(target_machine.emit_assembly(llmod))
 
