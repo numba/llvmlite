@@ -10,7 +10,7 @@ def build_pass_managers(**kws):
         fpm = None
 
     with llvm.create_pass_manager_builder() as pmb:
-        pmb.set_opt(kws.get('opt', 2))
+        pmb.opt_level = kws.get('opt', 2)
         pmb.populate(pm)
         return namedtuple("pms", ['pm', 'fpm'])(pm=pm, fpm=fpm)
 

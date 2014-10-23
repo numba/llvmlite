@@ -1,5 +1,7 @@
 from ctypes import POINTER, c_char_p, c_int
+
 from . import ffi
+from .common import _decode_string, _encode_string
 
 
 _linkage_ct = iter(range(40))
@@ -47,11 +49,11 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def name(self):
-        return ffi.lib.LLVMPY_GetValueName(self).decode('utf8')
+        return _decode_string(ffi.lib.LLVMPY_GetValueName(self))
 
     @name.setter
     def name(self, val):
-        return ffi.lib.LLVMPY_SetValueName(self, val.encode('utf8'))
+        ffi.lib.LLVMPY_SetValueName(self, _encode_string(val))
 
     @property
     def linkage(self):

@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import
 from ctypes import (POINTER, c_char_p, c_ulonglong, c_int, c_size_t,
                     c_void_p, string_at)
 from . import ffi, parse_assembly
+from .common import _decode_string, _encode_string
 
 
 def get_default_triple():
@@ -11,7 +12,7 @@ def get_default_triple():
 
 
 def create_target_data(strrep):
-    return TargetData(ffi.lib.LLVMPY_CreateTargetData(strrep.encode('utf8')))
+    return TargetData(ffi.lib.LLVMPY_CreateTargetData(_encode_string(strrep)))
 
 
 class TargetData(ffi.ObjectRef):
@@ -45,9 +46,14 @@ CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel',
 
 
 class Target(ffi.ObjectRef):
+    _triple = ''
 
     # No _dispose() method since LLVMGetTargetFromTriple() returns a
     # persistent object.
+
+    @classmethod
+    def from_default_triple(cls):
+        return cls.from_triple(get_default_triple())
 
     @classmethod
     def from_triple(cls, triple):
@@ -56,22 +62,37 @@ class Target(ffi.ObjectRef):
                                                         outerr)
             if not target:
                 raise RuntimeError(str(outerr))
-            return cls(target)
+            target = cls(target)
+            target._triple = triple
+            return target
 
-    def create_target_machine(self, triple, cpu, features, opt, reloc,
-                              codemodel):
+    @property
+    def name(self):
+        s = ffi.lib.LLVMPY_GetTargetName(self)
+        return _decode_string(s)
+
+    @property
+    def description(self):
+        s = ffi.lib.LLVMPY_GetTargetDescription(self)
+        return _decode_string(s)
+
+    def __str__(self):
+        return "<Target {0} ({1})>".format(self.name, self.description)
+
+    def create_target_machine(self, triple='', cpu='', features='',
+                              opt=1, reloc='default', codemodel='jitdefault'):
         assert 0 <= opt <= 3
-        reloc = reloc.lower()
         assert reloc in RELOC
-        codemodel = codemodel.lower()
         assert codemodel in CODEMODEL
+        triple = triple or self._triple
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
-                                                triple.encode('utf8'),
-                                                cpu.encode('utf8'),
-                                                features.encode('utf8'),
+                                                _encode_string(triple),
+                                                _encode_string(cpu),
+                                                _encode_string(features),
                                                 opt,
-                                                reloc.encode('utf8'),
-                                                codemodel.encode('utf8'), )
+                                                _encode_string(reloc),
+                                                _encode_string(codemodel),
+                                                )
         if tm:
             return TargetMachine(tm)
         else:
@@ -83,12 +104,21 @@ class TargetMachine(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposeTargetMachine(self)
 
     def emit_object(self, module):
-        return self.emit_to_memory(module, use_object=True)
+        """
+        Represent the module as a code object, suitable for use with
+        the platform's linker.  Returns a byte string.
+        """
+        return self._emit_to_memory(module, use_object=True)
 
     def emit_assembly(self, module):
-        return self.emit_to_memory(module, use_object=False)
+        """
+        Return the raw assembler of the module, as a string.
 
-    def emit_to_memory(self, module, use_object=False):
+        llvm.initialize_native_asmprinter() must have been called first.
+        """
+        return _decode_string(self._emit_to_memory(module, use_object=False))
+
+    def _emit_to_memory(self, module, use_object=False):
         """Returns bytes of object code of the module.
 
         Args
@@ -105,7 +135,10 @@ class TargetMachine(ffi.ObjectRef):
 
         bufptr = ffi.lib.LLVMPY_GetBufferStart(mb)
         bufsz = ffi.lib.LLVMPY_GetBufferSize(mb)
-        return string_at(bufptr, bufsz)
+        try:
+            return string_at(bufptr, bufsz)
+        finally:
+            ffi.lib.LLVMPY_DisposeMemoryBuffer(mb)
 
 # ============================================================================
 # FFI
@@ -133,6 +166,12 @@ ffi.lib.LLVMPY_ABISizeOfType.restype = c_ulonglong
 
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTargetFromTriple.restype = ffi.LLVMTargetRef
+
+ffi.lib.LLVMPY_GetTargetName.argtypes = [ffi.LLVMTargetRef]
+ffi.lib.LLVMPY_GetTargetName.restype = c_char_p
+
+ffi.lib.LLVMPY_GetTargetDescription.argtypes = [ffi.LLVMTargetRef]
+ffi.lib.LLVMPY_GetTargetDescription.restype = c_char_p
 
 ffi.lib.LLVMPY_CreateTargetMachine.argtypes = [
     ffi.LLVMTargetRef,
@@ -168,5 +207,3 @@ ffi.lib.LLVMPY_GetBufferSize.argtypes = [ffi.LLVMMemoryBufferRef]
 ffi.lib.LLVMPY_GetBufferSize.restype = c_size_t
 
 ffi.lib.LLVMPY_DisposeMemoryBuffer.argtypes = [ffi.LLVMMemoryBufferRef]
-
-

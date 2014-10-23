@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from ctypes import CFUNCTYPE, c_int, POINTER
 import sys
 try:
@@ -7,7 +9,10 @@ except ImportError:
 
 import numpy as np
 
-import faulthandler; faulthandler.enable()
+try:
+    import faulthandler; faulthandler.enable()
+except ImportError:
+    pass
 
 import llvmlite.ir as ll
 import llvmlite.binding as llvm
@@ -60,34 +65,46 @@ strmod = str(module)
 
 t2 = time()
 
-print("generate IR:", t2-t1)
+print("-- generate IR:", t2-t1)
 
 t3 = time()
 
-module.triple = llvm.get_default_triple()
 llmod = llvm.parse_assembly(strmod)
 
 t4 = time()
 
-print("parse assembly:", t4-t3)
+print("-- parse assembly:", t4-t3)
 
 print(llmod)
 
+pmb = llvm.create_pass_manager_builder()
+pmb.opt_level = 2
+pm = llvm.create_module_pass_manager()
+pmb.populate(pm)
+
 t5 = time()
 
-with llvm.create_mcjit_compiler(llmod) as ee:
-    # ee.add_module(llmod)
-    ee.finalize_object()
+pm.run(llmod)
 
+t6 = time()
+
+print("-- optimize:", t6-t5)
+
+t7 = time()
+
+target_machine = llvm.Target.from_default_triple().create_target_machine()
+
+with llvm.create_mcjit_compiler(llmod, target_machine) as ee:
+    ee.finalize_object()
     cfptr = ee.get_pointer_to_global(llmod.get_function('sum'))
 
-    t6 = time()
-    print("JIT compile:", t6 - t5)
+    t8 = time()
+    print("-- JIT compile:", t8 - t7)
+
+    print(target_machine.emit_assembly(llmod))
 
     cfunc = CFUNCTYPE(c_int, POINTER(c_int), c_int)(cfptr)
-
     A = np.arange(10, dtype=np.int32)
-
     res = cfunc(A.ctypes.data_as(POINTER(c_int)), A.size)
 
     print(res, A.sum())

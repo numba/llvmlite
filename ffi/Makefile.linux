@@ -10,7 +10,9 @@ SRC = assembly.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  linker.cpp
 OUTPUT = libllvmlite.so
 
-all: $(SRC)
+all: $(OUTPUT)
+
+$(OUTPUT): $(SRC)
 	$(CXX) -shared $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
 
 

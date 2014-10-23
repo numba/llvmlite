@@ -6,6 +6,7 @@ import subprocess
 import sys
 import unittest
 
+from llvmlite import six
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from . import TestCase
@@ -19,7 +20,8 @@ asm_sum = r"""
 
     define i32 @sum(i32 %.1, i32 %.2) {{
       %.3 = add i32 %.1, %.2
-      ret i32 %.3
+      %.4 = add i32 0, %.3
+      ret i32 %.4
     }}
     """
 
@@ -61,6 +63,7 @@ class BaseTest(TestCase):
     def setUp(self):
         llvm.initialize()
         llvm.initialize_native_target()
+        llvm.initialize_native_asmprinter()
 
     def module(self, asm=asm_sum):
         asm = asm.format(triple=llvm.get_default_triple())
@@ -71,6 +74,10 @@ class BaseTest(TestCase):
         if mod is None:
             mod = self.module()
         return mod.get_global_variable(name)
+
+    def target_machine(self):
+        target = llvm.Target.from_default_triple()
+        return target.create_target_machine()
 
 
 class TestFunctions(BaseTest):
@@ -277,8 +284,29 @@ class JITTestMixin(object):
 
 class TestMCJit(BaseTest, JITTestMixin):
 
-    def jit(self, mod):
-        return llvm.create_mcjit_compiler(mod)
+    def jit(self, mod, target_machine=None):
+        if target_machine is None:
+            target_machine = self.target_machine()
+        return llvm.create_mcjit_compiler(mod, target_machine)
+
+    def test_emit_assembly(self):
+        """Test TargetMachineRef.emit_assembly()"""
+        target_machine = self.target_machine()
+        mod = self.module()
+        ee = self.jit(mod, target_machine)
+        raw_asm = target_machine.emit_assembly(mod)
+        self.assertIn("sum", raw_asm)
+
+    def test_emit_object(self):
+        """Test TargetMachineRef.emit_object()"""
+        target_machine = self.target_machine()
+        mod = self.module()
+        ee = self.jit(mod, target_machine)
+        code_object = target_machine.emit_object(mod)
+        self.assertIsInstance(code_object, six.binary_type)
+        if sys.platform.startswith('linux'):
+            # Sanity check
+            self.assertIn(b"ELF", code_object[:10])
 
 
 class TestLegacyJit(BaseTest, JITTestMixin):
@@ -298,6 +326,18 @@ class TestValueRef(BaseTest):
         mod = self.module()
         glob = mod.get_global_variable("glob")
         self.assertEqual(glob.name, "glob")
+        glob.name = "foobar"
+        self.assertEqual(glob.name, "foobar")
+
+    def test_linkage(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        linkage = glob.linkage
+        self.assertIsInstance(linkage, str)
+        self.assertTrue(linkage)
+        for linkage in ("internal", "external"):
+            glob.linkage = linkage
+            self.assertEqual(glob.linkage, linkage)
 
     def test_module(self):
         mod = self.module()
@@ -331,6 +371,142 @@ class TestTarget(BaseTest):
     def test_create_target_machine(self):
         target = llvm.Target.from_triple(llvm.get_default_triple())
         target.create_target_machine('', '', '', 1, 'default', 'default')
+
+    def test_name(self):
+        t = llvm.Target.from_triple(llvm.get_default_triple())
+        u = llvm.Target.from_default_triple()
+        self.assertIsInstance(t.name, str)
+        self.assertEqual(t.name, u.name)
+
+    def test_description(self):
+        t = llvm.Target.from_triple(llvm.get_default_triple())
+        u = llvm.Target.from_default_triple()
+        self.assertIsInstance(t.description, str)
+        self.assertEqual(t.description, u.description)
+
+    def test_str(self):
+        target = llvm.Target.from_triple(llvm.get_default_triple())
+        s = str(target)
+        self.assertIn(target.name, s)
+        self.assertIn(target.description, s)
+
+
+class TestPassManagerBuilder(BaseTest):
+
+    def pmb(self):
+        return llvm.create_pass_manager_builder()
+
+    def test_close(self):
+        pmb = self.pmb()
+        pmb.close()
+        pmb.close()
+
+    def test_opt_level(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.opt_level, six.integer_types)
+        for i in range(3):
+            pmb.opt_level = i
+            self.assertEqual(pmb.opt_level, i)
+
+    def test_size_level(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.size_level, six.integer_types)
+        for i in range(3):
+            pmb.size_level = i
+            self.assertEqual(pmb.size_level, i)
+
+    def test_inlining_threshold(self):
+        pmb = self.pmb()
+        with self.assertRaises(NotImplementedError):
+            pmb.inlining_threshold
+        for i in (25, 80, 350):
+            pmb.inlining_threshold = i
+
+    def test_disable_unit_at_a_time(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.disable_unit_at_a_time, bool)
+        for b in (True, False):
+            pmb.disable_unit_at_a_time = b
+            self.assertEqual(pmb.disable_unit_at_a_time, b)
+
+    def test_disable_unroll_loops(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.disable_unroll_loops, bool)
+        for b in (True, False):
+            pmb.disable_unroll_loops = b
+            self.assertEqual(pmb.disable_unroll_loops, b)
+
+    def test_populate_module_pass_manager(self):
+        pmb = self.pmb()
+        pm = llvm.create_module_pass_manager()
+        pmb.populate(pm)
+        pmb.close()
+        pm.close()
+
+    def test_populate_function_pass_manager(self):
+        mod = self.module()
+        pmb = self.pmb()
+        pm = llvm.create_function_pass_manager(mod)
+        pmb.populate(pm)
+        pmb.close()
+        pm.close()
+
+
+class PassManagerTestMixin(object):
+
+    def pmb(self):
+        pmb = llvm.create_pass_manager_builder()
+        pmb.opt_level = 2
+        return pmb
+
+    def test_close(self):
+        pm = self.pm()
+        pm.close()
+        pm.close()
+
+
+class TestModulePassManager(BaseTest, PassManagerTestMixin):
+
+    def pm(self):
+        return llvm.create_module_pass_manager()
+
+    def test_run(self):
+        pm = self.pm()
+        self.pmb().populate(pm)
+        mod = self.module()
+        orig_asm = str(mod)
+        pm.run(mod)
+        opt_asm = str(mod)
+        # Quick check that optimizations were run
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", opt_asm)
+
+
+class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
+
+    def pm(self, mod=None):
+        mod = mod or self.module()
+        return llvm.create_function_pass_manager(mod)
+
+    def test_initfini(self):
+        pm = self.pm()
+        pm.initialize()
+        pm.finalize()
+
+    def test_run(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        pm = self.pm(mod)
+        self.pmb().populate(pm)
+        mod.close()
+        orig_asm = str(fn)
+        pm.initialize()
+        pm.run(fn)
+        pm.finalize()
+        opt_asm = str(fn)
+        # Quick check that optimizations were run
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", opt_asm)
 
 
 if __name__ == "__main__":

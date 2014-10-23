@@ -1,24 +1,32 @@
-//    void 	LLVMPassManagerBuilderPopulateLTOPassManager (LLVMPassManagerBuilderRef PMB, LLVMPassManagerRef PM, LLVMBool Internalize, LLVMBool RunInliner)
-
-
 #include "core.h"
 #include "llvm-c/Transforms/PassManagerBuilder.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 extern "C" {
 
-LLVMPassManagerBuilderRef
+namespace llvm {
+    inline PassManagerBuilder *unwrap(LLVMPassManagerBuilderRef P) {
+        return reinterpret_cast<PassManagerBuilder*>(P);
+    }
+
+    inline LLVMPassManagerBuilderRef wrap(PassManagerBuilder *P) {
+      return reinterpret_cast<LLVMPassManagerBuilderRef>(P);
+    }
+};
+
+API_EXPORT(LLVMPassManagerBuilderRef)
 LLVMPY_PassManagerBuilderCreate()
 {
     return LLVMPassManagerBuilderCreate();
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderDispose(LLVMPassManagerBuilderRef PMB)
 {
     LLVMPassManagerBuilderDispose(PMB);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderPopulateModulePassManager(
                             LLVMPassManagerBuilderRef PMB,
                             LLVMPassManagerRef PM)
@@ -26,51 +34,70 @@ LLVMPY_PassManagerBuilderPopulateModulePassManager(
     LLVMPassManagerBuilderPopulateModulePassManager(PMB, PM);
 }
 
-void
+API_EXPORT(unsigned)
+LLVMPY_PassManagerBuilderGetOptLevel(LLVMPassManagerBuilderRef PMB)
+{
+    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
+    return pmb->OptLevel;
+}
+
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderSetOptLevel(LLVMPassManagerBuilderRef PMB,
                                   unsigned OptLevel)
 {
     LLVMPassManagerBuilderSetOptLevel(PMB, OptLevel);
 }
 
-void
+API_EXPORT(unsigned)
+LLVMPY_PassManagerBuilderGetSizeLevel(LLVMPassManagerBuilderRef PMB)
+{
+    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
+    return pmb->SizeLevel;
+}
+
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderSetSizeLevel(LLVMPassManagerBuilderRef PMB,
                                    unsigned SizeLevel)
 {
     LLVMPassManagerBuilderSetSizeLevel(PMB, SizeLevel);
 }
 
-void
+API_EXPORT(int)
+LLVMPY_PassManagerBuilderGetDisableUnitAtATime(LLVMPassManagerBuilderRef PMB)
+{
+    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
+    return pmb->DisableUnitAtATime;
+}
+
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderSetDisableUnitAtATime(LLVMPassManagerBuilderRef PMB,
                                             int Value)
 {
     LLVMPassManagerBuilderSetDisableUnitAtATime(PMB, Value);
 }
 
-void
+API_EXPORT(int)
+LLVMPY_PassManagerBuilderGetDisableUnrollLoops(LLVMPassManagerBuilderRef PMB)
+{
+    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
+    return pmb->DisableUnrollLoops;
+}
+
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderSetDisableUnrollLoops(LLVMPassManagerBuilderRef PMB,
                                             LLVMBool Value)
 {
     LLVMPassManagerBuilderSetDisableUnrollLoops(PMB, Value);
 }
 
-
-void
-LLVMPY_PassManagerBuilderSetDisableSimplifyLibCalls(
-                                    LLVMPassManagerBuilderRef PMB,
-                                    int Value)
-{
-    LLVMPassManagerBuilderSetDisableSimplifyLibCalls(PMB, Value);
-}
-
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderUseInlinerWithThreshold(LLVMPassManagerBuilderRef PMB,
                                                  unsigned Threshold)
 {
     LLVMPassManagerBuilderUseInlinerWithThreshold(PMB, Threshold);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderPopulateFunctionPassManager(
                                         LLVMPassManagerBuilderRef PMB,
                                         LLVMPassManagerRef PM)
@@ -79,7 +106,4 @@ LLVMPY_PassManagerBuilderPopulateFunctionPassManager(
 }
 
 
-
 } // end extern "C"
-
-

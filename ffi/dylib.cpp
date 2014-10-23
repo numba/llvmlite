@@ -1,16 +1,17 @@
+#include "core.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/ADT/StringRef.h"
 
 extern "C" {
 
-void*
+API_EXPORT(void *)
 LLVMPY_SearchAddressOfSymbol(const char *name)
 {
     return llvm::sys::DynamicLibrary::SearchForAddressOfSymbol(name);
 }
 
 
-void
+API_EXPORT(void)
 LLVMPY_AddSymbol(const char *name,
                  void *addr)
 {

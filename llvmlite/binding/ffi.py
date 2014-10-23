@@ -2,6 +2,9 @@ import ctypes
 import os
 import sys
 
+from .common import _decode_string, _is_shutting_down
+from ..utils import get_library_name
+
 
 def _make_opaque_ref(name):
     newcls = type(name, (ctypes.Structure,), {})
@@ -22,14 +25,8 @@ LLVMTargetMachineRef = _make_opaque_ref("LLVMTargetMachine")
 LLVMMemoryBufferRef = _make_opaque_ref("LLVMMemoryBuffer")
 LLVMGlobalsIterator = _make_opaque_ref("LLVMGlobalsIterator")
 
-ffi_dir = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ffi')
 
-if sys.platform == 'darwin':
-    lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.dylib'))
-else:
-    assert os.name == 'posix'
-    lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.so'))
+lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), get_library_name()))
 
 
 class _DeadPointer(object):
@@ -61,15 +58,18 @@ class OutputString(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def __del__(self):
-        self.close()
+    def __del__(self, _is_shutting_down=_is_shutting_down):
+        # Avoid errors trying to rely on globals and modules at interpreter
+        # shutdown.
+        if not _is_shutting_down():
+            self.close()
 
     def __str__(self):
         if self._ptr is None:
             return "<dead OutputString>"
         s = self._ptr.value
         assert s is not None
-        return s.decode('utf8')
+        return _decode_string(s)
 
     def __bool__(self):
         return bool(self._ptr)
@@ -138,3 +138,4 @@ class ObjectRef(object):
     # XXX useful?
     def __hash__(self):
         return hash(ctypes.cast(self._ptr, ctypes.c_void_p).value)
+

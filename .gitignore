@@ -2,6 +2,11 @@
 *.pyd
 *.so
 *.dylib
+*.dll
+build/
+dist/
+*.egg-info
+ffi/build/
 htmlcov/
 .coverage
 

@@ -13,7 +13,7 @@
 
 extern "C" {
 
-LLVMModuleRef
+API_EXPORT(LLVMModuleRef)
 LLVMPY_ParseAssembly(LLVMContextRef context,
                      const char *ir,
                      const char **outmsg)
@@ -36,5 +36,3 @@ LLVMPY_ParseAssembly(LLVMContextRef context,
 }
 
 } // end extern "C"
-
-
