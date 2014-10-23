@@ -2,7 +2,7 @@
 
 A lightweight LLVM python binding for writing JIT compilers
 
-Old (llvmpy)[https://github.com/llvmpy/llvmpy] binding exposes a lot of LLVM but the mapping of C++ style memory management to python is error prone. Numba and many JIT compiler does not need a full LLVM API. Only the IR builder, optimizer, and JIT compiler APIs are necessary.
+Old [llvmpy](https://github.com/llvmpy/llvmpy) binding exposes a lot of LLVM but the mapping of C++ style memory management to python is error prone. Numba and many JIT compiler does not need a full LLVM API. Only the IR builder, optimizer, and JIT compiler APIs are necessary.
 
 llvmlite is a project originally tailored for Numba's needs, using the following approach:
 
@@ -29,7 +29,7 @@ need for Numba.
 
 You must have a LLVM build (libraries and header files) available somewhere. If it is not installed in a standard location, you may have to tweak the build script.
 
-Under Windows, you must have (cmake)[http://www.cmake.org/] installed, and LLVM should have been built using cmake, in Release mode.
+Under Windows, you must have [cmake](http://www.cmake.org/) installed, and LLVM should have been built using cmake, in Release mode.
 
 To build the llvmlite C wrapper, run `python ffi/build.py`.
 
