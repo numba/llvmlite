@@ -23,17 +23,22 @@ LLVMTargetRef = _make_opaque_ref("LLVMTarget")
 LLVMTargetMachineRef = _make_opaque_ref("LLVMTargetMachine")
 LLVMMemoryBufferRef = _make_opaque_ref("LLVMMemoryBuffer")
 
-ffi_dir = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ffi')
 
-if os.name == 'posix':
-    if sys.platform == 'darwin':
-        lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.dylib'))
+def get_library_name():
+    """
+    Return the name of the llvmlite shared library file.
+    """
+    if os.name == 'posix':
+        if sys.platform == 'darwin':
+            return 'libllvmlite.dylib'
+        else:
+            return 'libllvmlite.so'
     else:
-        lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.so'))
-else:
-    assert os.name == 'nt'
-    lib = ctypes.CDLL(os.path.join(ffi_dir, 'llvmlite.dll'))
+        assert os.name == 'nt'
+        return 'llvmlite.dll'
+
+
+lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), get_library_name()))
 
 
 class _DeadPointer(object):
