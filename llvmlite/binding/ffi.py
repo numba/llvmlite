@@ -3,6 +3,7 @@ import os
 import sys
 
 from .common import _decode_string, _is_shutting_down
+from ..utils import get_library_name
 
 
 def _make_opaque_ref(name):
@@ -22,20 +23,6 @@ LLVMTargetLibraryInfoRef = _make_opaque_ref("LLVMTargetLibraryInfo")
 LLVMTargetRef = _make_opaque_ref("LLVMTarget")
 LLVMTargetMachineRef = _make_opaque_ref("LLVMTargetMachine")
 LLVMMemoryBufferRef = _make_opaque_ref("LLVMMemoryBuffer")
-
-
-def get_library_name():
-    """
-    Return the name of the llvmlite shared library file.
-    """
-    if os.name == 'posix':
-        if sys.platform == 'darwin':
-            return 'libllvmlite.dylib'
-        else:
-            return 'libllvmlite.so'
-    else:
-        assert os.name == 'nt'
-        return 'llvmlite.dll'
 
 
 lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), get_library_name()))

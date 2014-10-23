@@ -3,7 +3,22 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
-from llvmlite.binding import ffi
+from distutils.spawn import spawn
+from distutils.command.build import build
+import os
+import sys
+
+from llvmlite.utils import get_library_name
+
+
+here_dir = os.path.dirname(__file__)
+
+
+class LlvmliteBuild(build):
+
+    def run(self):
+        cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
+        spawn(cmd, dry_run=self.dry_run)
 
 
 packages = ['llvmlite',
@@ -29,11 +44,12 @@ setup(name='llvmlite',
       ],
       # Include the separately-compiled shared library
       package_data={
-          "llvmlite.binding": [ffi.get_library_name()],
+          "llvmlite.binding": [get_library_name()],
       },
       author="Continuum Analytics, Inc.",
       author_email="numba-users@continuum.io",
       url="https://github.com/numba/llvmlite",
       packages=packages,
       license="BSD",
+      cmdclass={'build': LlvmliteBuild},
       )

@@ -31,7 +31,7 @@ You must have a LLVM build (libraries and header files) available somewhere. If 
 
 Under Windows, you must have [cmake](http://www.cmake.org/) installed, and LLVM should have been built using cmake, in Release mode.
 
-To build the llvmlite C wrapper, run `python ffi/build.py`.
+To build the llvmlite C wrapper, run `python setup.py build`.
 
 ## Run tests
 
