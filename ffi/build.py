@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+"""
+Build script for the shared library providing the C ABI bridge to LLVM.
+"""
 
 import os
 import subprocess
@@ -11,7 +15,7 @@ build_dir = os.path.join(here_dir, 'build')
 
 def main_win32():
     # NOTE: the LLVM build must have the same bitness as the Python runtime.
-    # I don't know if there's an way for us to check this.
+    # I don't know if there's an easy way for us to check this.
     config = 'Release'
     if not os.path.isdir(build_dir):
         os.mkdir(build_dir)
@@ -19,6 +23,12 @@ def main_win32():
     subprocess.check_call(['cmake', here_dir])
     subprocess.check_call(['cmake', '--build', '.', '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), here_dir)
+
+
+def main_posix(kind):
+    os.chdir(here_dir)
+    makefile = "Makefile.%s" % (kind,)
+    subprocess.check_call(['make', '-f', makefile])
 
 
 def main():
