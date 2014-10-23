@@ -8,7 +8,7 @@ extern "C" {
 
 
 #define INIT(F) \
-    void LLVMPY_Initialize ## F() { \
+    API_EXPORT(void) LLVMPY_Initialize ## F() { \
             LLVMInitialize ## F (LLVMGetGlobalPassRegistry()); }
 
 INIT(Core)
@@ -26,13 +26,13 @@ INIT(Target)
 
 #undef INIT
 
-void
+API_EXPORT(void)
 LLVMPY_Shutdown(){
     LLVMShutdown();
 }
 
 // Target Initialization
-#define INIT(F) void LLVMPY_Initialize ## F() { LLVMInitialize ## F (); }
+#define INIT(F) API_EXPORT(void) LLVMPY_Initialize ## F() { LLVMInitialize ## F (); }
 
 // NOTE: it is important that we don't export functions which we don't use,
 // especially those which may pull in large amounts of additional code or data.

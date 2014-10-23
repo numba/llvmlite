@@ -7,12 +7,12 @@
 
 extern "C" {
 
-void
+API_EXPORT(void)
 LLVMPY_DisposeModule(LLVMModuleRef m) {
     return LLVMDisposeModule(m);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PrintModuleToString(LLVMModuleRef M,
                            const char **outstr)
 {
@@ -24,14 +24,14 @@ LLVMPY_PrintModuleToString(LLVMModuleRef M,
     *outstr = LLVMPY_CreateString(buf.c_str());
 }
 
-LLVMValueRef
+API_EXPORT(LLVMValueRef)
 LLVMPY_GetNamedFunction(LLVMModuleRef M,
                      const char *Name)
 {
     return LLVMGetNamedFunction(M, Name);
 }
 
-LLVMValueRef
+API_EXPORT(LLVMValueRef)
 LLVMPY_GetNamedGlobalVariable(LLVMModuleRef M,
                               const char *Name)
 {
@@ -40,13 +40,13 @@ LLVMPY_GetNamedGlobalVariable(LLVMModuleRef M,
 }
 
 
-int
+API_EXPORT(int)
 LLVMPY_VerifyModule(LLVMModuleRef M, char **OutMsg)
 {
     return LLVMVerifyModule(M, LLVMReturnStatusAction, OutMsg);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_GetDataLayout(LLVMModuleRef M,
                      const char **DL)
 {
@@ -54,8 +54,4 @@ LLVMPY_GetDataLayout(LLVMModuleRef M,
 }
 
 
-
-
 } // end extern "C"
-
-

@@ -1,13 +1,10 @@
-//    void 	LLVMPassManagerBuilderPopulateLTOPassManager (LLVMPassManagerBuilderRef PMB, LLVMPassManagerRef PM, LLVMBool Internalize, LLVMBool RunInliner)
-
-
 #include "core.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Linker/Linker.h"
 
 extern "C" {
 
-int
+API_EXPORT(int)
 LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, unsigned Mode,
                    const char **Err)
 {

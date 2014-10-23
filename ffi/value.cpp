@@ -6,7 +6,7 @@
 
 extern "C" {
 
-void
+API_EXPORT(void)
 LLVMPY_PrintValueToString(LLVMValueRef Val,
                           const char** outstr)
 {
@@ -24,39 +24,37 @@ LLVMPY_PrintValueToString(LLVMValueRef Val,
     *outstr = LLVMPY_CreateString(buf.c_str());
 }
 
-
-const char *
+API_EXPORT(const char *)
 LLVMPY_GetValueName(LLVMValueRef Val)
 {
     return LLVMGetValueName(Val);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_SetValueName(LLVMValueRef Val, const char *Name)
 {
     LLVMSetValueName(Val, Name);
 }
 
-
-LLVMModuleRef
+API_EXPORT(LLVMModuleRef)
 LLVMPY_GetGlobalParent(LLVMValueRef Val)
 {
     return LLVMGetGlobalParent(Val);
 }
 
-LLVMTypeRef
+API_EXPORT(LLVMTypeRef)
 LLVMPY_TypeOf(LLVMValueRef Val)
 {
     return LLVMTypeOf(Val);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_SetLinkage(LLVMValueRef Val, int Linkage)
 {
     LLVMSetLinkage(Val, (LLVMLinkage)Linkage);
 }
 
-int
+API_EXPORT(int)
 LLVMPY_GetLinkage(LLVMValueRef Val)
 {
     return (int)LLVMGetLinkage(Val);
@@ -64,5 +62,3 @@ LLVMPY_GetLinkage(LLVMValueRef Val)
 
 
 } // end extern "C"
-
-

@@ -1,16 +1,16 @@
 #include "core.h"
 
-const char *
+API_EXPORT(const char *)
 LLVMPY_CreateString(const char *msg) {
     return strdup(msg);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_DisposeString(const char *msg) {
     free(const_cast<char*>(msg));
 }
 
-LLVMContextRef
+API_EXPORT(LLVMContextRef)
 LLVMPY_GetGlobalContext() {
     return LLVMGetGlobalContext();
 }

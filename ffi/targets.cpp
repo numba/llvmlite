@@ -10,18 +10,18 @@
 
 extern "C" {
 
-void
+API_EXPORT(void)
 LLVMPY_GetDefaultTargetTriple(const char **Out){
     *Out = LLVMPY_CreateString(llvm::sys::getDefaultTargetTriple().c_str());
 }
 
-LLVMTargetDataRef
+API_EXPORT(LLVMTargetDataRef)
 LLVMPY_CreateTargetData(const char *StringRep)
 {
     return LLVMCreateTargetData(StringRep);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_AddTargetData(LLVMTargetDataRef TD,
                      LLVMPassManagerRef PM)
 {
@@ -37,27 +37,27 @@ LLVMPY_AddTargetData(LLVMTargetDataRef TD,
 //        LLVMAddTargetLibraryInfo(TLI, PM);
 //    }
 
-void
+API_EXPORT(void)
 LLVMPY_CopyStringRepOfTargetData(LLVMTargetDataRef TD, char** Out)
 {
     *Out = LLVMCopyStringRepOfTargetData(TD);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_DisposeTargetData(LLVMTargetDataRef TD)
 {
     LLVMDisposeTargetData(TD);
 }
 
 
-unsigned long long
+API_EXPORT(unsigned long long)
 LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 {
     return LLVMABISizeOfType(TD, Ty);
 }
 
 
-LLVMTargetRef
+API_EXPORT(LLVMTargetRef)
 LLVMPY_GetTargetFromTriple(const char *Triple, const char **ErrOut)
 {
     char *ErrorMessage;
@@ -70,19 +70,19 @@ LLVMPY_GetTargetFromTriple(const char *Triple, const char **ErrOut)
     return T;
 }
 
-const char *
+API_EXPORT(const char *)
 LLVMPY_GetTargetName(LLVMTargetRef T)
 {
     return LLVMGetTargetName(T);
 }
 
-const char *
+API_EXPORT(const char *)
 LLVMPY_GetTargetDescription(LLVMTargetRef T)
 {
     return LLVMGetTargetDescription(T);
 }
 
-LLVMTargetMachineRef
+API_EXPORT(LLVMTargetMachineRef)
 LLVMPY_CreateTargetMachine(LLVMTargetRef T,
                            const char *Triple,
                            const char *CPU,
@@ -137,14 +137,14 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
 }
 
 
-void
+API_EXPORT(void)
 LLVMPY_DisposeTargetMachine(LLVMTargetMachineRef TM)
 {
     return LLVMDisposeTargetMachine(TM);
 }
 
 
-LLVMMemoryBufferRef
+API_EXPORT(LLVMMemoryBufferRef)
 LLVMPY_TargetMachineEmitToMemory (
     LLVMTargetMachineRef TM,
     LLVMModuleRef M,
@@ -169,25 +169,22 @@ LLVMPY_TargetMachineEmitToMemory (
     return BufOut;
 }
 
-const void*
+API_EXPORT(const void*)
 LLVMPY_GetBufferStart(LLVMMemoryBufferRef MB)
 {
     return LLVMGetBufferStart(MB);
 }
 
-size_t
+API_EXPORT(size_t)
 LLVMPY_GetBufferSize(LLVMMemoryBufferRef MB)
 {
     return LLVMGetBufferSize(MB);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_DisposeMemoryBuffer(LLVMMemoryBufferRef MB)
 {
     return LLVMDisposeMemoryBuffer(MB);
 }
-
-
-
 
 } // end extern "C"

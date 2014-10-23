@@ -14,19 +14,19 @@ namespace llvm {
     }
 };
 
-LLVMPassManagerBuilderRef
+API_EXPORT(LLVMPassManagerBuilderRef)
 LLVMPY_PassManagerBuilderCreate()
 {
     return LLVMPassManagerBuilderCreate();
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderDispose(LLVMPassManagerBuilderRef PMB)
 {
     LLVMPassManagerBuilderDispose(PMB);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderPopulateModulePassManager(
                             LLVMPassManagerBuilderRef PMB,
                             LLVMPassManagerRef PM)
@@ -34,71 +34,70 @@ LLVMPY_PassManagerBuilderPopulateModulePassManager(
     LLVMPassManagerBuilderPopulateModulePassManager(PMB, PM);
 }
 
-unsigned
+API_EXPORT(unsigned)
 LLVMPY_PassManagerBuilderGetOptLevel(LLVMPassManagerBuilderRef PMB)
 {
     llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
     return pmb->OptLevel;
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderSetOptLevel(LLVMPassManagerBuilderRef PMB,
                                   unsigned OptLevel)
 {
     LLVMPassManagerBuilderSetOptLevel(PMB, OptLevel);
 }
 
-unsigned
+API_EXPORT(unsigned)
 LLVMPY_PassManagerBuilderGetSizeLevel(LLVMPassManagerBuilderRef PMB)
 {
     llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
     return pmb->SizeLevel;
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderSetSizeLevel(LLVMPassManagerBuilderRef PMB,
                                    unsigned SizeLevel)
 {
     LLVMPassManagerBuilderSetSizeLevel(PMB, SizeLevel);
 }
 
-int
+API_EXPORT(int)
 LLVMPY_PassManagerBuilderGetDisableUnitAtATime(LLVMPassManagerBuilderRef PMB)
 {
     llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
     return pmb->DisableUnitAtATime;
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderSetDisableUnitAtATime(LLVMPassManagerBuilderRef PMB,
                                             int Value)
 {
     LLVMPassManagerBuilderSetDisableUnitAtATime(PMB, Value);
 }
 
-int
+API_EXPORT(int)
 LLVMPY_PassManagerBuilderGetDisableUnrollLoops(LLVMPassManagerBuilderRef PMB)
 {
     llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
     return pmb->DisableUnrollLoops;
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderSetDisableUnrollLoops(LLVMPassManagerBuilderRef PMB,
                                             LLVMBool Value)
 {
     LLVMPassManagerBuilderSetDisableUnrollLoops(PMB, Value);
 }
 
-
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderUseInlinerWithThreshold(LLVMPassManagerBuilderRef PMB,
                                                  unsigned Threshold)
 {
     LLVMPassManagerBuilderUseInlinerWithThreshold(PMB, Threshold);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_PassManagerBuilderPopulateFunctionPassManager(
                                         LLVMPassManagerBuilderRef PMB,
                                         LLVMPassManagerRef PM)
@@ -107,7 +106,4 @@ LLVMPY_PassManagerBuilderPopulateFunctionPassManager(
 }
 
 
-
 } // end extern "C"
-
-

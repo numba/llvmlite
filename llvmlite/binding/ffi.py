@@ -26,11 +26,14 @@ LLVMMemoryBufferRef = _make_opaque_ref("LLVMMemoryBuffer")
 ffi_dir = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'ffi')
 
-if sys.platform == 'darwin':
-    lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.dylib'))
+if os.name == 'posix':
+    if sys.platform == 'darwin':
+        lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.dylib'))
+    else:
+        lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.so'))
 else:
-    assert os.name == 'posix'
-    lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.so'))
+    assert os.name == 'nt'
+    lib = ctypes.CDLL(os.path.join(ffi_dir, 'build', 'Release', 'yyy.dll'))
 
 
 class _DeadPointer(object):

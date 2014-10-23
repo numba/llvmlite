@@ -3,46 +3,46 @@
 
 extern "C" {
 
-LLVMPassManagerRef
+API_EXPORT(LLVMPassManagerRef)
 LLVMPY_CreatePassManager()
 {
     return LLVMCreatePassManager();
 }
 
-void
+API_EXPORT(void)
 LLVMPY_DisposePassManager(LLVMPassManagerRef PM)
 {
     return LLVMDisposePassManager(PM);
 }
 
 
-LLVMPassManagerRef
+API_EXPORT(LLVMPassManagerRef)
 LLVMPY_CreateFunctionPassManager(LLVMModuleRef M)
 {
     return LLVMCreateFunctionPassManagerForModule(M);
 }
 
-int
+API_EXPORT(int)
 LLVMPY_RunPassManager(LLVMPassManagerRef PM,
                       LLVMModuleRef M)
 {
     return LLVMRunPassManager(PM, M);
 }
 
-int
+API_EXPORT(int)
 LLVMPY_RunFunctionPassManager(LLVMPassManagerRef PM,
                               LLVMValueRef F)
 {
     return LLVMRunFunctionPassManager(PM, F);
 }
 
-int
+API_EXPORT(int)
 LLVMPY_InitializeFunctionPassManager(LLVMPassManagerRef FPM)
 {
     return LLVMInitializeFunctionPassManager(FPM);
 }
 
-int
+API_EXPORT(int)
 LLVMPY_FinalizeFunctionPassManager(LLVMPassManagerRef FPM)
 {
     return LLVMFinalizeFunctionPassManager(FPM);

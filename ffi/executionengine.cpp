@@ -6,30 +6,30 @@
 
 extern "C" {
 
-void
+API_EXPORT(void)
 LLVMPY_LinkInJIT() {
     LLVMLinkInJIT();
 }
 
-void
+API_EXPORT(void)
 LLVMPY_LinkInMCJIT() {
     LLVMLinkInMCJIT();
 }
 
-void
+API_EXPORT(void)
 LLVMPY_DisposeExecutionEngine(LLVMExecutionEngineRef EE)
 {
     LLVMDisposeExecutionEngine(EE);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_AddModule(LLVMExecutionEngineRef EE,
               LLVMModuleRef M)
 {
     LLVMAddModule(EE, M);
 }
 
-int
+API_EXPORT(int)
 LLVMPY_RemoveModule(LLVMExecutionEngineRef EE,
                     LLVMModuleRef M,
                     char** OutError)
@@ -37,14 +37,13 @@ LLVMPY_RemoveModule(LLVMExecutionEngineRef EE,
    return LLVMRemoveModule(EE, M, &M, OutError);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_FinalizeObject(LLVMExecutionEngineRef EE)
 {
     llvm::unwrap(EE)->finalizeObject();
 }
 
-
-int
+API_EXPORT(int)
 LLVMPY_CreateJITCompiler(LLVMExecutionEngineRef *OutEE,
                          LLVMModuleRef M,
                          unsigned OptLevel,
@@ -66,7 +65,7 @@ namespace llvm {
     }
 }
 
-LLVMExecutionEngineRef
+API_EXPORT(LLVMExecutionEngineRef)
 LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
                            LLVMTargetMachineRef TM,
                            int EmitDebug,
@@ -96,14 +95,14 @@ LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
     return ee;
 }
 
-void*
+API_EXPORT(void *)
 LLVMPY_GetPointerToGlobal(LLVMExecutionEngineRef EE,
                           LLVMValueRef Global)
 {
     return LLVMGetPointerToGlobal(EE, Global);
 }
 
-void
+API_EXPORT(void)
 LLVMPY_AddGlobalMapping(LLVMExecutionEngineRef EE,
                         LLVMValueRef Global,
                         void *Addr)
@@ -111,7 +110,7 @@ LLVMPY_AddGlobalMapping(LLVMExecutionEngineRef EE,
     LLVMAddGlobalMapping(EE, Global, Addr);
 }
 
-LLVMTargetDataRef
+API_EXPORT(LLVMTargetDataRef)
 LLVMPY_GetExecutionEngineTargetData(LLVMExecutionEngineRef EE)
 {
     return LLVMGetExecutionEngineTargetData(EE);
