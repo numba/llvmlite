@@ -27,8 +27,6 @@ need for Numba.
 
 ## Build
 
-### LLVM binding
-
 You must have a LLVM build available somewhere. If it is not installed in a standard location, you may have
 to tweak the build script.
 
@@ -40,7 +38,6 @@ To build the llvmlite C wrapper, run `python ffi/build.py`.
 
 Run `python runtests.py`.
 
-### Install llvmlite
+## Install
 
 TODO
-
