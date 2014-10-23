@@ -33,7 +33,7 @@ if os.name == 'posix':
         lib = ctypes.CDLL(os.path.join(ffi_dir, 'libllvmlite.so'))
 else:
     assert os.name == 'nt'
-    lib = ctypes.CDLL(os.path.join(ffi_dir, 'build', 'Release', 'yyy.dll'))
+    lib = ctypes.CDLL(os.path.join(ffi_dir, 'build', 'Release', 'llvmlite.dll'))
 
 
 class _DeadPointer(object):

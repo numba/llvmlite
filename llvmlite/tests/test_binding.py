@@ -304,7 +304,9 @@ class TestMCJit(BaseTest, JITTestMixin):
         ee = self.jit(mod, target_machine)
         code_object = target_machine.emit_object(mod)
         self.assertIsInstance(code_object, six.binary_type)
-        self.assertIn(b"ELF", code_object[:10])
+        if sys.platform.startswith('linux'):
+            # Sanity check
+            self.assertIn(b"ELF", code_object[:10])
 
 
 class TestLegacyJit(BaseTest, JITTestMixin):
