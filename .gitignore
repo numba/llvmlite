@@ -2,6 +2,8 @@
 *.pyd
 *.so
 *.dylib
+*.dll
+ffi/build/
 htmlcov/
 .coverage
 
