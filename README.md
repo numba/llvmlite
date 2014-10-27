@@ -25,18 +25,36 @@ need for Numba.
 
 `llvmlite.llvmpy.*` provides a minimal LLVMPY compatibility layer.
 
+## Dependencies
+
+You need Python 2.6 or greater (including Python 3.3 or greater).
+
+### Build dependencies
+
+- LLVM 3.5
+- A C compiler, and possibly other tools (see below)
+
+### Runtime dependencies
+
+- None that we're aware of
+
 ## Build
 
-You must have a LLVM build (libraries and header files) available somewhere. If it is not installed in a standard location, you may have to tweak the build script.
+Run `python setup.py build`. This will build the llvmlite C wrapper, which will contain a statically-linked copy of the required subset of LLVM.
 
-Under Windows, you must have [cmake](http://www.cmake.org/) installed, and LLVM should have been built using cmake, in Release mode.
+### Unix requirements
 
-To build the llvmlite C wrapper, run `python setup.py build`.
+You must have a LLVM build (libraries and header files) available somewhere. If it is not installed in a standard location, you may have to tweak the build script. Under Ubuntu, try installing `llvm-3.5-dev`.
+
+### Windows requirements
+
+Under Windows, you must have [cmake](http://www.cmake.org/) installed, and LLVM should have been built using cmake, in Release mode. Be careful to use the right bitness (32- or 64-bit) for your Python installation.
 
 ## Run tests
 
-Run `python runtests.py`.
+Run `python runtests.py` or `python -m llvmlite.tests`.
 
 ## Install
 
-TODO
+Run `python setup.py install`.
+
