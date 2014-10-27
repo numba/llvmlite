@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
-from ctypes import c_char_p, byref, POINTER, c_bool
-
+from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
+                    c_void_p, cast)
 from . import ffi, link_modules
 from .common import _encode_string
 from .value import ValueRef
@@ -57,10 +57,41 @@ class ModuleRef(ffi.ObjectRef):
             ffi.lib.LLVMPY_GetDataLayout(self, outmsg)
             return str(outmsg)
 
+    @data_layout.setter
+    def data_layout(self, strrep):
+        ffi.lib.LLVMPY_SetDataLayout(self,
+                                     create_string_buffer(
+                                         strrep.encode('utf8')))
+
     def link_in(self, other, preserve=False):
         link_modules(self, other, preserve)
         if not preserve:
             other.detach()
+
+    @property
+    def global_variables(self):
+        gi = ffi.lib.LLVMPY_ModuleGlobalIter(self)
+        return _GlobalsIterator(gi, module=self)
+
+
+class _GlobalsIterator(ffi.ObjectRef):
+    def __init__(self, ptr, module):
+        ffi.ObjectRef.__init__(self, ptr)
+        # Keep Module alive
+        self._module = module
+
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeGlobalIter(self)
+
+    def __next__(self):
+        vp = ffi.lib.LLVMPY_GlobalIterNext(self)
+        if vp:
+            return ValueRef(vp, self._module)
+        else:
+            raise StopIteration
+
+    def __iter__(self):
+        return self
 
 
 # =============================================================================
@@ -87,6 +118,15 @@ ffi.lib.LLVMPY_VerifyModule.argtypes = [ffi.LLVMModuleRef,
 ffi.lib.LLVMPY_VerifyModule.restype = c_bool
 
 ffi.lib.LLVMPY_GetDataLayout.argtypes = [ffi.LLVMModuleRef, POINTER(c_char_p)]
+ffi.lib.LLVMPY_SetDataLayout.argtypes = [ffi.LLVMModuleRef, c_char_p]
 
 ffi.lib.LLVMPY_GetNamedGlobalVariable.argtypes = [ffi.LLVMModuleRef, c_char_p]
 ffi.lib.LLVMPY_GetNamedGlobalVariable.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_ModuleGlobalIter.argtypes = [ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_ModuleGlobalIter.restype = ffi.LLVMGlobalsIterator
+
+ffi.lib.LLVMPY_DisposeGlobalIter.argtypes = [ffi.LLVMGlobalsIterator]
+
+ffi.lib.LLVMPY_GlobalIterNext.argtypes = [ffi.LLVMGlobalsIterator]
+ffi.lib.LLVMPY_GlobalIterNext.restype = ffi.LLVMValueRef
