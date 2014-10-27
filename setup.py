@@ -48,6 +48,7 @@ class LlvmliteBuildExt(build_ext):
 
 packages = ['llvmlite',
             'llvmlite.binding',
+            'llvmlite.ir',
             'llvmlite.llvmpy',
             'llvmlite.tests',
             ]
