@@ -145,11 +145,11 @@ class NamedMetaData(object):
         self.operands.append(md)
 
 
-class MetaData(Value):
+class MDValue(Value):
     name_prefix = '!'
 
     def __init__(self, parent, values, name):
-        super(MetaData, self).__init__(parent, types.MetaData(), name=name)
+        super(MDValue, self).__init__(parent, types.MetaData(), name=name)
         self.operands = tuple(values)
         parent.metadata.append(self)
 

@@ -16,7 +16,7 @@ class Module(object):
 
     def add_metadata(self, operands):
         n = len(self.metadata)
-        return values.MetaData(self, operands, name=str(n))
+        return values.MDValue(self, operands, name=str(n))
 
     def add_named_metadata(self, name):
         nmd = values.NamedMetaData(self)

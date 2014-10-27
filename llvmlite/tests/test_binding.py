@@ -120,7 +120,6 @@ class TestFunctions(BaseTest):
             """
         subprocess.check_call([sys.executable, "-c", code])
 
-
 class TestModuleRef(BaseTest):
 
     def test_str(self):
@@ -507,6 +506,7 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         # Quick check that optimizations were run
         self.assertIn("%.4", orig_asm)
         self.assertNotIn("%.4", opt_asm)
+
 
 
 if __name__ == "__main__":
