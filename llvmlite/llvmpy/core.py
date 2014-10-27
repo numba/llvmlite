@@ -177,6 +177,11 @@ class Module(ir.Module):
 
 
 class Function(ir.Function):
+
+    @classmethod
+    def new(cls, module_obj, functy, name=''):
+        return cls(module_obj, functy, name)
+
     @staticmethod
     def intrinsic(module, intrinsic, tys):
         return module.declare_intrinsic(intrinsic, tys)
