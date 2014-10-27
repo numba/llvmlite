@@ -48,7 +48,7 @@ You must have a LLVM build (libraries and header files) available somewhere. If 
 
 ### Windows requirements
 
-Under Windows, you must have [cmake](http://www.cmake.org/) installed, and LLVM should have been built using cmake, in Release mode. Be careful to use the right bitness (32- or 64-bit) for your Python installation.
+You must have Visual Studio 2012 or later (the free Express edition is ok). In addition, you must have [cmake](http://www.cmake.org/) installed, and LLVM should have been built using cmake, in Release mode. Be careful to use the right bitness (32- or 64-bit) for your Python installation.
 
 ## Run tests
 

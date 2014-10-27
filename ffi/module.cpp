@@ -5,6 +5,36 @@
 #include "llvm/IR/Module.h"
 #include "core.h"
 
+
+struct GlobalsIterator {
+    typedef llvm::Module::global_iterator iterator;
+    iterator cur;
+    iterator end;
+
+    GlobalsIterator(iterator cur, iterator end)
+        :cur(cur), end(end)
+    { }
+};
+
+struct OpaqueGlobalsIterator;
+typedef OpaqueGlobalsIterator* LLVMGlobalsIteratorRef;
+
+
+namespace llvm {
+
+LLVMGlobalsIteratorRef
+wrap(GlobalsIterator* GI){
+    return reinterpret_cast<LLVMGlobalsIteratorRef>(GI);
+}
+
+GlobalsIterator*
+unwrap(LLVMGlobalsIteratorRef GI){
+    return reinterpret_cast<GlobalsIterator*>(GI);
+}
+
+}  // end namespace llvm
+
+
 extern "C" {
 
 API_EXPORT(void)
@@ -51,6 +81,46 @@ LLVMPY_GetDataLayout(LLVMModuleRef M,
                      const char **DL)
 {
     *DL = LLVMGetDataLayout(M);
+}
+
+
+void
+LLVMPY_SetDataLayout(LLVMModuleRef M,
+                     const char *DL)
+{
+    LLVMSetDataLayout(M, DL);
+}
+
+
+LLVMGlobalsIteratorRef
+LLVMPY_ModuleGlobalIter(LLVMModuleRef M)
+{
+    using namespace llvm;
+    Module* mod = unwrap(M);
+    return wrap(new GlobalsIterator(mod->global_begin(),
+                                    mod->global_end()));
+}
+
+
+/*
+Returns NULL if we are at the end
+*/
+LLVMValueRef
+LLVMPY_GlobalIterNext(LLVMGlobalsIteratorRef GI)
+{
+    using namespace llvm;
+    GlobalsIterator* iter = unwrap(GI);
+    if (iter->cur != iter->end) {
+        return wrap(&*iter->cur++);
+    } else {
+        return NULL;
+    }
+}
+
+void
+LLVMPY_DisposeGlobalIter(LLVMGlobalsIteratorRef GI)
+{
+    delete llvm::unwrap(GI);
 }
 
 
