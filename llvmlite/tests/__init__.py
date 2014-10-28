@@ -1,7 +1,7 @@
 
 import sys
 
-if sys.version_info <= (2, 6):
+if sys.version_info < (2, 7):
     # Monkey-patch unittest2 into the import machinery, so that
     # submodule imports work properly too.
     import unittest2

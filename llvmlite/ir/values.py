@@ -3,7 +3,6 @@ Classes that are LLVM values: Value, Constant, Instructions...
 """
 
 from __future__ import print_function, absolute_import
-from weakref import WeakSet
 import string
 import struct
 from . import types, _utils
@@ -78,7 +77,6 @@ class Value(object):
         self.scope = pscope.get_child() if self.nested_scope else pscope
         self._name = None
         self.name = name
-        self.users = WeakSet()
 
     def __str__(self):
         with _utils.StringIO() as buf:
@@ -381,9 +379,6 @@ class Instruction(Value):
         self.opname = opname
         self.operands = operands
 
-        for op in self.operands:
-            op.users.add(self)
-
         self.metadata = {}
 
     def _stringify_metatdata(self):
@@ -495,7 +490,6 @@ class Constant(ConstOpMixin):
         assert not isinstance(typ, types.VoidType)
         self.type = typ
         self.constant = constant
-        self.users = WeakSet()
 
     def __str__(self):
         return '{0} {1}'.format(self.type, self.get_reference())
@@ -539,7 +533,6 @@ class ConstOp(object):
     def __init__(self, typ, op):
         self.type = typ
         self.op = op
-        self.users = WeakSet()
 
     def __str__(self):
         return "{0}".format(self.op)
@@ -789,7 +782,6 @@ class InlineAsm(object):
     def __init__(self, ftype, asm, constraint, side_effect=False):
         self.type = ftype.return_type
         self.function_type = ftype
-        self.users = set()
         self.asm = asm
         self.constraint = constraint
         self.side_effect = side_effect
