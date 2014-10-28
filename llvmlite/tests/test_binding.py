@@ -274,6 +274,8 @@ class JITTestMixin(object):
         mod = self.module()
         ee = self.jit(mod)
         td = ee.target_data
+        # A singleton is returned
+        self.assertIs(ee.target_data, td)
         gv = mod.get_global_variable("glob")
         self.assertIn(td.abi_size(gv.type), (4, 8))
         str(td)

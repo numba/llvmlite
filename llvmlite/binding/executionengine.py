@@ -50,6 +50,7 @@ class ExecutionEngine(ffi.ObjectRef):
         Module ownership is transferred to the EE
         """
         self._modules = set([module])
+        self._td = None
         module._owned = True
         ffi.ObjectRef.__init__(self, ptr)
 
@@ -89,15 +90,19 @@ class ExecutionEngine(ffi.ObjectRef):
 
     @property
     def target_data(self):
+        if self._td is not None:
+            return self._td
         ptr = ffi.lib.LLVMPY_GetExecutionEngineTargetData(self)
-        td = targets.TargetData(ptr)
-        td._owned = True
-        return td
+        self._td = targets.TargetData(ptr)
+        self._td._owned = True
+        return self._td
 
     def _dispose(self):
         # The modules will be cleaned up by the EE
         for mod in self._modules:
             mod.detach()
+        if self._td is not None:
+            self._td.detach()
         self._modules.clear()
         ffi.lib.LLVMPY_DisposeExecutionEngine(self)
 

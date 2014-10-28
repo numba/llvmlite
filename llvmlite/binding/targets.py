@@ -18,6 +18,8 @@ def create_target_data(strrep):
 class TargetData(ffi.ObjectRef):
 
     def __str__(self):
+        if self._closed:
+            return "<dead TargetData>"
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_CopyStringRepOfTargetData(self, out)
             return str(out)
