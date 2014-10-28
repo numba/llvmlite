@@ -84,7 +84,7 @@ LLVMPY_GetDataLayout(LLVMModuleRef M,
 }
 
 
-void
+API_EXPORT(void)
 LLVMPY_SetDataLayout(LLVMModuleRef M,
                      const char *DL)
 {
@@ -92,7 +92,7 @@ LLVMPY_SetDataLayout(LLVMModuleRef M,
 }
 
 
-LLVMGlobalsIteratorRef
+API_EXPORT(LLVMGlobalsIteratorRef)
 LLVMPY_ModuleGlobalIter(LLVMModuleRef M)
 {
     using namespace llvm;
@@ -105,7 +105,7 @@ LLVMPY_ModuleGlobalIter(LLVMModuleRef M)
 /*
 Returns NULL if we are at the end
 */
-LLVMValueRef
+API_EXPORT(LLVMValueRef)
 LLVMPY_GlobalIterNext(LLVMGlobalsIteratorRef GI)
 {
     using namespace llvm;
@@ -117,7 +117,7 @@ LLVMPY_GlobalIterNext(LLVMGlobalsIteratorRef GI)
     }
 }
 
-void
+API_EXPORT(void)
 LLVMPY_DisposeGlobalIter(LLVMGlobalsIteratorRef GI)
 {
     delete llvm::unwrap(GI);
