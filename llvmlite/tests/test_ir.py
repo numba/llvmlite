@@ -26,7 +26,7 @@ class TestBase(TestCase):
 
         pattern = ''.join(map(escape, pattern))
         regex = re.sub(r'\s+', r'\s*', pattern)
-        self.assertRegex(text, regex)
+        self.assertRegexpMatches(text, regex)
 
     def assert_valid_ir(self, mod):
         llvm.parse_assembly(str(mod))
