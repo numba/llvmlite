@@ -1,0 +1,29 @@
+package:
+  name: llvmlite
+  version: "0.1.dev1"
+
+source:
+  git_url: https://github.com/numba/llvmlite.git
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - python
+    #- cmake          [win]
+  run:
+    - python
+
+test:
+  requires:
+    - argparse       [py26]
+    - unittest2      [py26]
+  imports:
+    - llvmlite
+    - llvmlite.binding
+
+about:
+  home: https://github.com/numba/llvmlite
+  license: New BSD License
+  summary: A lightweight LLVM python binding for writing JIT compilers
