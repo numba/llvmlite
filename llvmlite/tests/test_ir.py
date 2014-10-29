@@ -15,7 +15,10 @@ from llvmlite import six
 
 
 int1 = ir.IntType(1)
+int8 = ir.IntType(8)
 int32 = ir.IntType(32)
+flt = ir.FloatType()
+dbl = ir.DoubleType()
 
 
 class TestBase(TestCase):
@@ -44,7 +47,7 @@ class TestBase(TestCase):
 
     def function(self, module=None, name='my_func'):
         module = module or self.module()
-        fnty = ir.FunctionType(int32, (int32, int32))
+        fnty = ir.FunctionType(int32, (int32, int32, dbl, ir.PointerType(int32)))
         return ir.Function(self.module(), fnty, name)
 
     def block(self, func=None, name=''):
@@ -337,6 +340,37 @@ class TestBuilder(TestBase):
                 %"g" = load i32* %"c"
             """)
 
+    def test_cast_ops(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b, fa, ptr = builder.function.args[:4]
+        c = builder.trunc(a, int8, name='c')
+        d = builder.zext(c, int32, name='d')
+        e = builder.sext(c, int32, name='e')
+        fb = builder.fptrunc(fa, flt, 'fb')
+        fc = builder.fpext(fb, dbl, 'fc')
+        g = builder.fptoui(fa, int32, 'g')
+        h = builder.fptosi(fa, int8, 'h')
+        fd = builder.uitofp(g, flt, 'fd')
+        fe = builder.sitofp(h, dbl, 'fe')
+        i = builder.ptrtoint(ptr, int32, 'i')
+        j = builder.inttoptr(i, ir.PointerType(int8), 'j')
+        k = builder.bitcast(a, flt, "k")
+        self.check_block(block, """\
+            my_block:
+                %"c" = trunc i32 %".1" to i8
+                %"d" = zext i8 %"c" to i32
+                %"e" = sext i8 %"c" to i32
+                %"fb" = fptrunc double %".3" to float
+                %"fc" = fpext float %"fb" to double
+                %"g" = fptoui double %".3" to i32
+                %"h" = fptosi double %".3" to i8
+                %"fd" = uitofp i32 %"g" to float
+                %"fe" = sitofp i8 %"h" to double
+                %"i" = ptrtoint i32* %".4" to i32
+                %"j" = inttoptr i32 %"i" to i8*
+                %"k" = bitcast i32 %".1" to float
+            """)
 
 
 if __name__ == '__main__':

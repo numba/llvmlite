@@ -232,6 +232,3 @@ class IdentifiedStructType(StructType):
     def __eq__(self, other):
         if isinstance(other, IdentifiedStructType):
             return self.name == other.name
-
-
-

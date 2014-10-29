@@ -300,9 +300,9 @@ class IRBuilder(object):
     def alloca(self, typ, size=None, name=''):
         if size is None:
             pass
-        elif isinstance(size, values.Constant):
+        elif isinstance(size, (values.Value, values.Constant)):
             assert isinstance(size.type, types.IntType)
-        elif not isinstance(size, values.Value):
+        else:
             # If it is not a Value instance,
             # assume to be a Python integer.
             size = values.Constant(types.IntType(32), size)
