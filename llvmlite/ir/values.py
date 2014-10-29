@@ -4,7 +4,9 @@ Instructions are in the instructions module.
 """
 
 from __future__ import print_function, absolute_import
+
 import string
+import struct
 
 from . import types, _utils
 
@@ -31,6 +33,25 @@ class Undefined(object):
 
 def _wrapname(x):
     return '"{0}"'.format(x).replace(' ', '_')
+
+
+def _as_float(value):
+    """Truncate to single-precision float
+    """
+    return struct.unpack('f', struct.pack('f', value))[0]
+
+
+def _format_float(value, packfmt, unpackfmt, numdigits):
+    raw = struct.pack(packfmt, float(value))
+    intrep = struct.unpack(unpackfmt, raw)[0]
+    out = '{{0:#{0}x}}'.format(numdigits).format(intrep)
+    return out
+
+
+def _special_float_value(val):
+    if val == val:
+        return val == float('+inf') or val == float('-inf')
+    return False
 
 
 class ConstOp(object):
@@ -75,6 +96,54 @@ class ConstOpMixin(object):
                                                    self.get_reference(),
                                                    ', '.join(strindices))
         return ConstOp(outtype.as_pointer(), op)
+
+
+class Constant(ConstOpMixin):
+    """
+    Constant values
+    """
+
+    def __init__(self, typ, constant):
+        assert not isinstance(typ, types.VoidType)
+        self.type = typ
+        self.constant = constant
+
+    def __str__(self):
+        return '{0} {1}'.format(self.type, self.get_reference())
+
+    def get_reference(self):
+        if isinstance(self.constant, bytearray):
+            val = 'c"{0}"'.format(_escape_string(self.constant))
+
+        elif self.constant is None:
+            val = self.type.null
+
+        elif self.constant is Undefined:
+            val = "undef"
+
+        elif isinstance(self.type, types.ArrayType):
+            fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
+            val = "[{0}]".format(', '.join(map(fmter, self.constant)))
+
+        elif isinstance(self.type, types.StructType):
+            fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
+            val = "{{{0}}}".format(', '.join(map(fmter, self.constant)))
+
+        elif isinstance(self.type, (types.FloatType, types.DoubleType)):
+            if isinstance(self.type, types.FloatType):
+                val = _as_float(self.constant)
+            else:
+                val = self.constant
+            val = _format_float(val, 'd', 'Q', 16)
+
+        else:
+            val = str(self.constant)
+        return val
+
+    @classmethod
+    def literal_struct(cls, elems):
+        tys = [el.type for el in elems]
+        return cls(types.LiteralStructType(tys), elems)
 
 
 class Value(object):

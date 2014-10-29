@@ -187,6 +187,18 @@ class TestBuilder(TestBase):
                 %"t" = lshr i32 %".1", %".2"
             """)
 
+    def test_unary_ops(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        builder.neg(a, 'c')
+        builder.not_(b, 'd')
+        self.check_block(block, """\
+            my_block:
+                %"c" = sub i32 0, %".1"
+                %"d" = xor i32 %".2", -1
+            """)
+
 
 if __name__ == '__main__':
     unittest.main()
