@@ -13,6 +13,8 @@ from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite import six
 
+
+int1 = ir.IntType(1)
 int32 = ir.IntType(32)
 
 
@@ -274,6 +276,31 @@ class TestBuilder(TestBase):
                 %"v" = fcmp uno i32 %".1", %".2"
                 %"w" = fcmp ord i32 %".1", %".2"
                 %"x" = fcmp uno i32 %".1", %".2"
+            """)
+
+    def test_misc_ops(self):
+        block = self.block(name='my_block')
+        t = ir.Constant(int1, True)
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        builder.select(t, a, b, 'c')
+        self.check_block(block, """\
+            my_block:
+                %"c" = select i1 true, i32 %".1", i32 %".2"
+            """)
+
+    def test_phi(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        bb2 = builder.function.append_basic_block('b2')
+        bb3 = builder.function.append_basic_block('b3')
+        phi = builder.phi(int32, 'my_phi')
+        phi.add_incoming(a, bb2)
+        phi.add_incoming(b, bb3)
+        self.check_block(block, """\
+            my_block:
+                %"my_phi" = phi i32 [%".1", %"b2"], [%".2", %"b3"]
             """)
 
 

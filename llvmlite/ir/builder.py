@@ -189,7 +189,7 @@ class IRBuilder(object):
         return self.sub(values.Constant(value.type, 0), value, name=name)
 
     #
-    # Comparions APIs
+    # Comparison APIs
     #
 
     def _invalid_cmp_op(self, cmpop, instr_name):

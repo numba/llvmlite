@@ -136,6 +136,9 @@ class Constant(ConstOpMixin):
                 val = self.constant
             val = _format_float(val, 'd', 'Q', 16)
 
+        elif isinstance(self.constant, bool):
+            val = str(self.constant).lower()
+
         else:
             val = str(self.constant)
         return val
