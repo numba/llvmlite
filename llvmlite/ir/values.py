@@ -33,6 +33,18 @@ def _wrapname(x):
     return '"{0}"'.format(x).replace(' ', '_')
 
 
+class ConstOp(object):
+    def __init__(self, typ, op):
+        self.type = typ
+        self.op = op
+
+    def __str__(self):
+        return "{0}".format(self.op)
+
+    def get_reference(self):
+        return str(self)
+
+
 class ConstOpMixin(object):
     def bitcast(self, typ):
         if typ == self.type:
@@ -353,6 +365,14 @@ class Argument(Value):
 
 
 class Block(Value):
+    """
+    A LLVM IR building block. A building block is a sequence of
+    instructions whose execution always goes from start to end.  That
+    is, a control flow instruction (branch) can only appear as the
+    last instruction, and incoming branches can only jump to the first
+    instruction.
+    """
+
     def __init__(self, parent, name=''):
         super(Block, self).__init__(parent, types.LabelType(), name=name)
         self.instructions = []

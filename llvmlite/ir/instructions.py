@@ -167,18 +167,6 @@ class Constant(ConstOpMixin):
         return cls(types.LiteralStructType(tys), elems)
 
 
-class ConstOp(object):
-    def __init__(self, typ, op):
-        self.type = typ
-        self.op = op
-
-    def __str__(self):
-        return "{0}".format(self.op)
-
-    def get_reference(self):
-        return str(self)
-
-
 class SelectInstr(Instruction):
     def __init__(self, parent, cond, lhs, rhs, name=''):
         assert lhs.type == rhs.type
