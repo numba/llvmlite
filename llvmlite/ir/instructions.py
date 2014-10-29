@@ -62,15 +62,6 @@ class CallInstr(Instruction):
 
 
 class Terminator(Instruction):
-    def __new__(cls, parent, opname, *args):
-        if opname == 'ret':
-            cls = Ret
-        elif opname == 'switch':
-            cls = SwitchInstr
-        else:
-            cls = Terminator
-        return object.__new__(cls)
-
     def __init__(self, parent, opname, operands):
         super(Terminator, self).__init__(parent, types.VoidType(), opname,
                                          operands)
@@ -84,18 +75,19 @@ class Terminator(Instruction):
 
 
 class Ret(Terminator):
+    def __init__(self, parent, opname, return_value=None):
+        operands = [return_value] if return_value is not None else []
+        super(Ret, self).__init__(parent, opname, operands)
+        self.return_value = return_value
+
     def descr(self, buf):
-        msg = "ret {0} {1}".format(
-            self.return_type, self.return_value.get_reference())
+        return_value = self.return_value
+        if return_value is not None:
+            msg = "{0} {1} {2}".format(self.opname, return_value.type,
+                                       return_value.get_reference())
+        else:
+            msg = str(self.opname)
         print(msg, file=buf)
-
-    @property
-    def return_value(self):
-        return self.operands[0]
-
-    @property
-    def return_type(self):
-        return self.operands[0].type
 
 
 class SwitchInstr(Terminator):

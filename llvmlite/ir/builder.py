@@ -333,7 +333,7 @@ class IRBuilder(object):
     #
 
     def switch(self, val, elseblk):
-        swt = instructions.Terminator(self.block, 'switch', val, elseblk)
+        swt = instructions.SwitchInstr(self.block, 'switch', val, elseblk)
         self._set_terminator(swt)
         return swt
 
@@ -353,11 +353,11 @@ class IRBuilder(object):
 
     def ret_void(self):
         return self._set_terminator(
-            instructions.Terminator(self.block, "ret void", ()))
+            instructions.Ret(self.block, "ret void"))
 
     def ret(self, value):
         return self._set_terminator(
-            instructions.Terminator(self.block, "ret", [value]))
+            instructions.Ret(self.block, "ret", value))
 
     # Call APIs
 
