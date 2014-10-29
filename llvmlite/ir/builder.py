@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
 import functools
-from . import types, values
+from . import instructions, types, values
 
 _CMP_MAP = {
     '>': 'gt',
@@ -14,7 +14,7 @@ _CMP_MAP = {
 }
 
 
-def _binop(opname, cls=values.Instruction):
+def _binop(opname, cls=instructions.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, lhs, rhs, name=''):
@@ -28,7 +28,7 @@ def _binop(opname, cls=values.Instruction):
     return wrap
 
 
-def _uniop(opname, cls=values.Instruction):
+def _uniop(opname, cls=instructions.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, operand, name=''):
@@ -41,7 +41,7 @@ def _uniop(opname, cls=values.Instruction):
     return wrap
 
 
-def _castop(opname, cls=values.CastInstr):
+def _castop(opname, cls=instructions.CastInstr):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, val, typ, name=''):
@@ -198,7 +198,7 @@ class IRBuilder(object):
         op = _CMP_MAP[cmpop]
         if cmpop not in ('==', '!='):
             op = 's' + op
-        instr = values.ICMPInstr(self.block, op, lhs, rhs, name=name)
+        instr = instructions.ICMPInstr(self.block, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -206,7 +206,7 @@ class IRBuilder(object):
         op = _CMP_MAP[cmpop]
         if cmpop not in ('==', '!='):
             op = 'u' + op
-        instr = values.ICMPInstr(self.block, op, lhs, rhs, name=name)
+        instr = instructions.ICMPInstr(self.block, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -215,7 +215,7 @@ class IRBuilder(object):
             op = 'o' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = values.FCMPInstr(self.block, op, lhs, rhs, name=name)
+        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -224,12 +224,12 @@ class IRBuilder(object):
             op = 'u' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = values.FCMPInstr(self.block, op, lhs, rhs, name=name)
+        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
     def select(self, cond, lhs, rhs, name=''):
-        instr = values.SelectInstr(self.block, cond, lhs, rhs, name=name)
+        instr = instructions.SelectInstr(self.block, cond, lhs, rhs, name=name)
         self._insert(instr)
         return instr
 
@@ -302,17 +302,17 @@ class IRBuilder(object):
             # assume to be a python number.
             size = values.Constant(types.IntType(32), int(size))
 
-        al = values.AllocaInstr(self.block, typ, size, name)
+        al = instructions.AllocaInstr(self.block, typ, size, name)
         self._insert(al)
         return al
 
     def load(self, ptr, name=''):
-        ld = values.LoadInstr(self.block, ptr, name)
+        ld = instructions.LoadInstr(self.block, ptr, name)
         self._insert(ld)
         return ld
 
     def store(self, val, ptr):
-        st = values.StoreInstr(self.block, val, ptr)
+        st = instructions.StoreInstr(self.block, val, ptr)
         self._insert(st)
         return st
 
@@ -322,43 +322,43 @@ class IRBuilder(object):
     #
 
     def switch(self, val, elseblk):
-        swt = values.Terminator(self.block, 'switch', val, elseblk)
+        swt = instructions.Terminator(self.block, 'switch', val, elseblk)
         self._set_terminator(swt)
         return swt
 
     def branch(self, target):
         """Jump to target
         """
-        term = values.Terminator(self.block, "br", [target])
+        term = instructions.Terminator(self.block, "br", [target])
         self._set_terminator(term)
         return term
 
     def cbranch(self, cond, truebr, falsebr):
         """Branch conditionally
         """
-        term = values.Terminator(self.block, "br", [cond, truebr, falsebr])
+        term = instructions.Terminator(self.block, "br", [cond, truebr, falsebr])
         self._set_terminator(term)
         return term
 
     def ret_void(self):
-        return self._set_terminator(values.Terminator(self.block,
-                                                      "ret void", ()))
+        return self._set_terminator(
+            instructions.Terminator(self.block, "ret void", ()))
 
     def ret(self, value):
-        return self._set_terminator(values.Terminator(self.block, "ret",
-                                                      [value]))
+        return self._set_terminator(
+            instructions.Terminator(self.block, "ret", [value]))
 
     # Call APIs
 
     def call(self, fn, args, name=''):
-        inst = values.CallInstr(self.block, fn, args, name=name)
+        inst = instructions.CallInstr(self.block, fn, args, name=name)
         self._insert(inst)
         return inst
 
     # GEP APIs
 
     def gep(self, ptr, indices, inbounds=False, name=''):
-        instr = values.GEPInstr(self.block, ptr, indices,
+        instr = instructions.GEPInstr(self.block, ptr, indices,
                                 inbounds=inbounds, name=name)
         self._insert(instr)
         return instr
@@ -368,21 +368,21 @@ class IRBuilder(object):
     def extract_value(self, agg, idx, name=''):
         if not isinstance(idx, (tuple, list)):
             idx = [idx]
-        instr = values.ExtractValue(self.block, agg, idx, name='')
+        instr = instructions.ExtractValue(self.block, agg, idx, name='')
         self._insert(instr)
         return instr
 
     def insert_value(self, agg, elem, idx, name=''):
         if not isinstance(idx, (tuple, list)):
             idx = [idx]
-        instr = values.InsertValue(self.block, agg, elem, idx, name='')
+        instr = instructions.InsertValue(self.block, agg, elem, idx, name='')
         self._insert(instr)
         return instr
 
     # PHI APIs
 
     def phi(self, typ, name=''):
-        inst = values.PhiInstr(self.block, typ, name=name)
+        inst = instructions.PhiInstr(self.block, typ, name=name)
         self._insert(inst)
         return inst
 
@@ -393,6 +393,6 @@ class IRBuilder(object):
         self._set_terminator(inst)
 
     def atomic_rmw(self, op, ptr, val, ordering, name=''):
-        inst = values.AtomicRMW(self.block, op, ptr, val, ordering, name=name)
+        inst = instructions.AtomicRMW(self.block, op, ptr, val, ordering, name=name)
         self._insert(inst)
         return inst

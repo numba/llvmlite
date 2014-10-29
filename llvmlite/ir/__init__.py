@@ -6,3 +6,4 @@ from .types import *
 from .values import *
 from .module import *
 from .builder import *
+from .instructions import *
