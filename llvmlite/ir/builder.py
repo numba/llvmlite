@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 import functools
+
 from . import instructions, types, values
 
 _CMP_MAP = {
@@ -297,28 +298,31 @@ class IRBuilder(object):
     #
 
     def alloca(self, typ, size=None, name=''):
-        if isinstance(size, values.Constant):
-            assert isinstance(size.type, types.IntType)
-            size = size.constant
-
-        assert size is None or size > 0
         if size is None:
             pass
+        elif isinstance(size, values.Constant):
+            assert isinstance(size.type, types.IntType)
         elif not isinstance(size, values.Value):
             # If it is not a Value instance,
-            # assume to be a python number.
-            size = values.Constant(types.IntType(32), int(size))
+            # assume to be a Python integer.
+            size = values.Constant(types.IntType(32), size)
 
         al = instructions.AllocaInstr(self.block, typ, size, name)
         self._insert(al)
         return al
 
     def load(self, ptr, name=''):
+        if not isinstance(ptr.type, types.PointerType):
+            raise TypeError("cannot load from value of type %s (%r): not a pointer"
+                            % (ptr.type, str(ptr)))
         ld = instructions.LoadInstr(self.block, ptr, name)
         self._insert(ld)
         return ld
 
     def store(self, val, ptr):
+        if not isinstance(ptr.type, types.PointerType):
+            raise TypeError("cannot store to value of type %s (%r): not a pointer"
+                            % (ptr.type, str(ptr)))
         st = instructions.StoreInstr(self.block, val, ptr)
         self._insert(st)
         return st
@@ -396,7 +400,7 @@ class IRBuilder(object):
     # Special API
 
     def unreachable(self):
-        inst = values.Unreachable(self.block)
+        inst = instructions.Unreachable(self.block)
         self._set_terminator(inst)
 
     def atomic_rmw(self, op, ptr, val, ordering, name=''):

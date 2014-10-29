@@ -167,6 +167,7 @@ class TestBuilder(TestBase):
         builder.shl(a, b, 'r')
         builder.ashr(a, b, 's')
         builder.lshr(a, b, 't')
+        self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
                 %"c" = add i32 %".1", %".2"
@@ -195,6 +196,7 @@ class TestBuilder(TestBase):
         a, b = builder.function.args[:2]
         builder.neg(a, 'c')
         builder.not_(b, 'd')
+        self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
                 %"c" = sub i32 0, %".1"
@@ -221,6 +223,7 @@ class TestBuilder(TestBase):
             builder.icmp_signed('uno', a, b, 'zz')
         with self.assertRaises(ValueError):
             builder.icmp_signed('foo', a, b, 'zz')
+        self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
                 %"c" = icmp eq i32 %".1", %".2"
@@ -258,6 +261,7 @@ class TestBuilder(TestBase):
         builder.fcmp_ordered('uno', a, b, 'v')
         builder.fcmp_unordered('ord', a, b, 'w')
         builder.fcmp_unordered('uno', a, b, 'x')
+        self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
                 %"c" = fcmp oeq i32 %".1", %".2"
@@ -284,9 +288,13 @@ class TestBuilder(TestBase):
         builder = ir.IRBuilder(block)
         a, b = builder.function.args[:2]
         builder.select(t, a, b, 'c')
+        self.assertFalse(block.is_terminated)
+        builder.unreachable()
+        self.assertTrue(block.is_terminated)
         self.check_block(block, """\
             my_block:
                 %"c" = select i1 true, i32 %".1", i32 %".2"
+                unreachable
             """)
 
     def test_phi(self):
@@ -298,10 +306,37 @@ class TestBuilder(TestBase):
         phi = builder.phi(int32, 'my_phi')
         phi.add_incoming(a, bb2)
         phi.add_incoming(b, bb3)
+        self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
                 %"my_phi" = phi i32 [%".1", %"b2"], [%".2", %"b3"]
             """)
+
+    def test_mem_ops(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        c = builder.alloca(int32, name='c')
+        d = builder.alloca(int32, size=42, name='d')
+        e = builder.alloca(int32, size=a, name='e')
+        self.assertEqual(e.type, ir.PointerType(int32))
+        f = builder.store(b, c)
+        self.assertEqual(f.type, ir.VoidType())
+        g = builder.load(c, 'g')
+        self.assertEqual(g.type, int32)
+        with self.assertRaises(TypeError):
+            builder.store(b, a)
+        with self.assertRaises(TypeError):
+            builder.load(b)
+        self.check_block(block, """\
+            my_block:
+                %"c" = alloca i32
+                %"d" = alloca i32, i32 42
+                %"e" = alloca i32, i32 %".1"
+                store i32 %".2", i32* %"c"
+                %"g" = load i32* %"c"
+            """)
+
 
 
 if __name__ == '__main__':
