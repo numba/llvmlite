@@ -252,10 +252,10 @@ class GEPInstr(Instruction):
     def descr(self, buf):
         indices = ['{0} {1}'.format(i.type, i.get_reference())
                    for i in self.indices]
-        inbounds = "inbounds" if self.inbounds else ""
-        print("getelementptr {0} {1} {2}, {3}".format(
-            inbounds, self.pointer.type, self.pointer.get_reference(),
-            ', '.join(indices)),
+        head = "getelementptr inbounds" if self.inbounds else "getelementptr"
+        print("{0} {1} {2}, {3}".format(
+                  head, self.pointer.type, self.pointer.get_reference(),
+                  ', '.join(indices)),
               file=buf)
 
 
@@ -278,8 +278,12 @@ class PhiInstr(Instruction):
 class ExtractValue(Instruction):
     def __init__(self, parent, agg, indices, name=''):
         typ = agg.type
-        for i in indices:
-            typ = typ.elements[i]
+        try:
+            for i in indices:
+                typ = typ.elements[i]
+        except (AttributeError, IndexError):
+            raise TypeError("Can't index at %r in %s"
+                            % (list(indices), agg.type))
 
         super(ExtractValue, self).__init__(parent, typ, "extractvalue",
                                            [agg], name=name)
@@ -299,9 +303,15 @@ class ExtractValue(Instruction):
 class InsertValue(Instruction):
     def __init__(self, parent, agg, elem, indices, name=''):
         typ = agg.type
-        for i in indices:
-            typ = typ.elements[i]
-        assert elem.type == typ
+        try:
+            for i in indices:
+                typ = typ.elements[i]
+        except (AttributeError, IndexError):
+            raise TypeError("Can't index at %r in %s"
+                            % (list(indices), agg.type))
+        if elem.type != typ:
+            raise TypeError("Can only insert %s at %r in %s: got %s"
+                            % (typ, list(indices), agg.type, elem.type))
         super(InsertValue, self).__init__(parent, agg.type, "insertvalue",
                                           [agg, elem], name=name)
 

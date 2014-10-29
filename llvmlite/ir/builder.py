@@ -379,14 +379,14 @@ class IRBuilder(object):
     def extract_value(self, agg, idx, name=''):
         if not isinstance(idx, (tuple, list)):
             idx = [idx]
-        instr = instructions.ExtractValue(self.block, agg, idx, name='')
+        instr = instructions.ExtractValue(self.block, agg, idx, name=name)
         self._insert(instr)
         return instr
 
     def insert_value(self, agg, elem, idx, name=''):
         if not isinstance(idx, (tuple, list)):
             idx = [idx]
-        instr = instructions.InsertValue(self.block, agg, elem, idx, name='')
+        instr = instructions.InsertValue(self.block, agg, elem, idx, name=name)
         self._insert(instr)
         return instr
 

@@ -159,7 +159,14 @@ class _Repeat(object):
             raise IndexError(item)
 
 
-class ArrayType(Type):
+class Aggregate(Type):
+    """
+    Base class for aggregate types.
+    See http://llvm.org/docs/LangRef.html#t-aggregate
+    """
+
+
+class ArrayType(Aggregate):
     def __init__(self, element, count):
         self.element = element
         self.count = count
@@ -182,7 +189,7 @@ class ArrayType(Type):
         return self.element
 
 
-class StructType(Type):
+class StructType(Aggregate):
     kind = TYPE_STRUCT
 
     def __len__(self):
