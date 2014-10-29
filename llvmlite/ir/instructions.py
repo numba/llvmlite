@@ -121,7 +121,8 @@ class CompareInstr(Instruction):
     VALID_OP = {}
 
     def __init__(self, parent, op, lhs, rhs, name=''):
-        assert op in self.VALID_OP
+        if op not in self.VALID_OP:
+            raise ValueError("invalid comparison %r for %s" % (op, self.OPNAME))
         super(CompareInstr, self).__init__(parent, types.IntType(1),
                                            self.OPNAME, [lhs, rhs], name=name)
         self.op = op

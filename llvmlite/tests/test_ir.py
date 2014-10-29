@@ -199,6 +199,42 @@ class TestBuilder(TestBase):
                 %"d" = xor i32 %".2", -1
             """)
 
+    def test_integer_comparisons(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        builder.icmp_unsigned('==', a, b, 'c')
+        builder.icmp_unsigned('!=', a, b, 'd')
+        builder.icmp_unsigned('<', a, b, 'e')
+        builder.icmp_unsigned('<=', a, b, 'f')
+        builder.icmp_unsigned('>', a, b, 'g')
+        builder.icmp_unsigned('>=', a, b, 'h')
+        builder.icmp_signed('==', a, b, 'i')
+        builder.icmp_signed('!=', a, b, 'j')
+        builder.icmp_signed('<', a, b, 'k')
+        builder.icmp_signed('<=', a, b, 'l')
+        builder.icmp_signed('>', a, b, 'm')
+        builder.icmp_signed('>=', a, b, 'n')
+        with self.assertRaises(ValueError):
+            builder.icmp_signed('uno', a, b, 'zz')
+        with self.assertRaises(ValueError):
+            builder.icmp_signed('foo', a, b, 'zz')
+        self.check_block(block, """\
+            my_block:
+                %"c" = icmp eq i32 %".1", %".2"
+                %"d" = icmp ne i32 %".1", %".2"
+                %"e" = icmp ult i32 %".1", %".2"
+                %"f" = icmp ule i32 %".1", %".2"
+                %"g" = icmp ugt i32 %".1", %".2"
+                %"h" = icmp uge i32 %".1", %".2"
+                %"i" = icmp eq i32 %".1", %".2"
+                %"j" = icmp ne i32 %".1", %".2"
+                %"k" = icmp slt i32 %".1", %".2"
+                %"l" = icmp sle i32 %".1", %".2"
+                %"m" = icmp sgt i32 %".1", %".2"
+                %"n" = icmp sge i32 %".1", %".2"
+            """)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -194,8 +194,14 @@ class IRBuilder(object):
     # Comparions APIs
     #
 
+    def _invalid_cmp_op(self, cmpop, instr_name):
+        raise ValueError("invalid comparison %r for %s" % (cmpop, instr_name))
+
     def icmp_signed(self, cmpop, lhs, rhs, name=''):
-        op = _CMP_MAP[cmpop]
+        try:
+            op = _CMP_MAP[cmpop]
+        except KeyError:
+            self._invalid_cmp_op(cmpop, "icmp")
         if cmpop not in ('==', '!='):
             op = 's' + op
         instr = instructions.ICMPInstr(self.block, op, lhs, rhs, name=name)
@@ -203,7 +209,10 @@ class IRBuilder(object):
         return instr
 
     def icmp_unsigned(self, cmpop, lhs, rhs, name=''):
-        op = _CMP_MAP[cmpop]
+        try:
+            op = _CMP_MAP[cmpop]
+        except KeyError:
+            self._invalid_cmp_op(cmpop, "icmp")
         if cmpop not in ('==', '!='):
             op = 'u' + op
         instr = instructions.ICMPInstr(self.block, op, lhs, rhs, name=name)
