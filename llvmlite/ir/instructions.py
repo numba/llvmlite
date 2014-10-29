@@ -98,6 +98,28 @@ class Ret(Terminator):
         return self.operands[0].type
 
 
+class SwitchInstr(Terminator):
+    def __init__(self, parent, opname, val, default):
+        super(SwitchInstr, self).__init__(parent, opname, [val])
+        self.value = val
+        self.default = default
+        self.cases = []
+
+    def add_case(self, val, blk):
+        assert isinstance(blk, Block)
+        self.cases.append((val, blk))
+
+    def descr(self, buf):
+        cases = ["{0} {1}, label {2}".format(val.type, val.get_reference(),
+                                             blk.get_reference())
+                 for val, blk in self.cases]
+        print("switch {0} {1}, label {2} [{3}]".format(self.value.type,
+                                                       self.value.get_reference(),
+                                                       self.default.get_reference(),
+                                                       ' '.join(cases)),
+              file=buf)
+
+
 class SelectInstr(Instruction):
     def __init__(self, parent, cond, lhs, rhs, name=''):
         assert lhs.type == rhs.type
@@ -220,28 +242,6 @@ class AllocaInstr(Instruction):
             print(", {0} {1}".format(self.operands[0].type,
                                      self.operands[0].get_reference()),
                   file=buf)
-
-
-class SwitchInstr(Terminator):
-    def __init__(self, parent, opname, val, default):
-        super(SwitchInstr, self).__init__(parent, opname, [val])
-        self.value = val
-        self.default = default
-        self.cases = []
-
-    def add_case(self, val, blk):
-        assert isinstance(blk, Block)
-        self.cases.append((val, blk))
-
-    def descr(self, buf):
-        cases = ["{0} {1}, label {2}".format(val.type, val.get_reference(),
-                                             blk.get_reference())
-                 for val, blk in self.cases]
-        print("switch {0} {1}, label {2} [{3}]".format(self.value.type,
-                                                       self.value.get_reference(),
-                                                       self.default.get_reference(),
-                                                       ' '.join(cases)),
-              file=buf)
 
 
 class GEPInstr(Instruction):

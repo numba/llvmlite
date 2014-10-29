@@ -126,6 +126,9 @@ class TestBlock(TestBase):
 
 
 class TestBuilder(TestBase):
+    """
+    Test IR generation through the builder class.
+    """
 
     def check_block(self, block, asm):
         asm = textwrap.dedent(asm)
@@ -137,6 +140,14 @@ class TestBuilder(TestBase):
         block = self.block(name='start')
         builder = ir.IRBuilder(block)
         self.assertIs(builder.function, block.parent)
+
+    def test_constant(self):
+        block = self.block(name='start')
+        builder = ir.IRBuilder(block)
+        c = builder.constant(int32, 5)
+        self.assertIsInstance(c, ir.Constant)
+        self.assertIs(c.type, int32)
+        self.assertEqual(c.constant, 5)
 
     def test_simple(self):
         block = self.block(name='my_block')
@@ -356,6 +367,7 @@ class TestBuilder(TestBase):
         i = builder.ptrtoint(ptr, int32, 'i')
         j = builder.inttoptr(i, ir.PointerType(int8), 'j')
         k = builder.bitcast(a, flt, "k")
+        self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
                 %"c" = trunc i32 %".1" to i8
@@ -370,6 +382,65 @@ class TestBuilder(TestBase):
                 %"i" = ptrtoint i32* %".4" to i32
                 %"j" = inttoptr i32 %"i" to i8*
                 %"k" = bitcast i32 %".1" to float
+            """)
+
+    def test_branch(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        bb_target = builder.function.append_basic_block(name='target')
+        builder.branch(bb_target)
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            my_block:
+                br label %"target"
+            """)
+
+    def test_cbranch(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        bb_true = builder.function.append_basic_block(name='b_true')
+        bb_false = builder.function.append_basic_block(name='b_false')
+        builder.cbranch(ir.Constant(int1, False), bb_true, bb_false)
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            my_block:
+                br i1 false, label %"b_true", label %"b_false"
+            """)
+
+    def test_returns(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        builder.ret_void()
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            my_block:
+                ret void
+            """)
+        block = self.block(name='other_block')
+        builder = ir.IRBuilder(block)
+        builder.ret(ir.Constant(int32, 5))
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            other_block:
+                ret i32 5
+            """)
+
+    def test_switch(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        bb_onzero = builder.function.append_basic_block(name='onzero')
+        bb_onone = builder.function.append_basic_block(name='onone')
+        bb_ontwo = builder.function.append_basic_block(name='ontwo')
+        bb_else = builder.function.append_basic_block(name='otherwise')
+        sw = builder.switch(a, bb_else)
+        sw.add_case(ir.Constant(int32, 0), bb_onzero)
+        sw.add_case(ir.Constant(int32, 1), bb_onone)
+        sw.add_case(ir.Constant(int32, 2), bb_ontwo)
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            my_block:
+                switch i32 %".1", label %"otherwise" [i32 0, label %"onzero" i32 1, label %"onone" i32 2, label %"ontwo"]
             """)
 
 
