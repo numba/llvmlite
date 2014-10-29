@@ -235,6 +235,47 @@ class TestBuilder(TestBase):
                 %"n" = icmp sge i32 %".1", %".2"
             """)
 
+    def test_float_comparisons(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        builder.fcmp_ordered('==', a, b, 'c')
+        builder.fcmp_ordered('!=', a, b, 'd')
+        builder.fcmp_ordered('<', a, b, 'e')
+        builder.fcmp_ordered('<=', a, b, 'f')
+        builder.fcmp_ordered('>', a, b, 'g')
+        builder.fcmp_ordered('>=', a, b, 'h')
+        builder.fcmp_unordered('==', a, b, 'i')
+        builder.fcmp_unordered('!=', a, b, 'j')
+        builder.fcmp_unordered('<', a, b, 'k')
+        builder.fcmp_unordered('<=', a, b, 'l')
+        builder.fcmp_unordered('>', a, b, 'm')
+        builder.fcmp_unordered('>=', a, b, 'n')
+        # fcmp_ordered and fcmp_unordered are the same for these cases
+        builder.fcmp_ordered('ord', a, b, 'u')
+        builder.fcmp_ordered('uno', a, b, 'v')
+        builder.fcmp_unordered('ord', a, b, 'w')
+        builder.fcmp_unordered('uno', a, b, 'x')
+        self.check_block(block, """\
+            my_block:
+                %"c" = fcmp oeq i32 %".1", %".2"
+                %"d" = fcmp one i32 %".1", %".2"
+                %"e" = fcmp olt i32 %".1", %".2"
+                %"f" = fcmp ole i32 %".1", %".2"
+                %"g" = fcmp ogt i32 %".1", %".2"
+                %"h" = fcmp oge i32 %".1", %".2"
+                %"i" = fcmp ueq i32 %".1", %".2"
+                %"j" = fcmp une i32 %".1", %".2"
+                %"k" = fcmp ult i32 %".1", %".2"
+                %"l" = fcmp ule i32 %".1", %".2"
+                %"m" = fcmp ugt i32 %".1", %".2"
+                %"n" = fcmp uge i32 %".1", %".2"
+                %"u" = fcmp ord i32 %".1", %".2"
+                %"v" = fcmp uno i32 %".1", %".2"
+                %"w" = fcmp ord i32 %".1", %".2"
+                %"x" = fcmp uno i32 %".1", %".2"
+            """)
+
 
 if __name__ == '__main__':
     unittest.main()
