@@ -193,30 +193,22 @@ class IRBuilder(object):
     # Comparison APIs
     #
 
-    def _invalid_cmp_op(self, cmpop, instr_name):
-        raise ValueError("invalid comparison %r for %s" % (cmpop, instr_name))
+    def _icmp(self, prefix, cmpop, lhs, rhs, name):
+        try:
+            op = _CMP_MAP[cmpop]
+        except KeyError:
+            raise ValueError("invalid comparison %r for icmp" % (cmpop,))
+        if cmpop not in ('==', '!='):
+            op = prefix + op
+        instr = instructions.ICMPInstr(self.block, op, lhs, rhs, name=name)
+        self._insert(instr)
+        return instr
 
     def icmp_signed(self, cmpop, lhs, rhs, name=''):
-        try:
-            op = _CMP_MAP[cmpop]
-        except KeyError:
-            self._invalid_cmp_op(cmpop, "icmp")
-        if cmpop not in ('==', '!='):
-            op = 's' + op
-        instr = instructions.ICMPInstr(self.block, op, lhs, rhs, name=name)
-        self._insert(instr)
-        return instr
+        return self._icmp('s', cmpop, lhs, rhs, name)
 
     def icmp_unsigned(self, cmpop, lhs, rhs, name=''):
-        try:
-            op = _CMP_MAP[cmpop]
-        except KeyError:
-            self._invalid_cmp_op(cmpop, "icmp")
-        if cmpop not in ('==', '!='):
-            op = 'u' + op
-        instr = instructions.ICMPInstr(self.block, op, lhs, rhs, name=name)
-        self._insert(instr)
-        return instr
+        return self._icmp('u', cmpop, lhs, rhs, name)
 
     def fcmp_ordered(self, cmpop, lhs, rhs, name=''):
         if cmpop in _CMP_MAP:
