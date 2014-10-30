@@ -534,6 +534,54 @@ class TestBuilder(TestBase):
                 %"res_g" = call double (i32, ...)* @"g"(i32 %".2", i32 %".1")
             """)
 
+    def test_positioning(self):
+        """
+        Test IRBuilder.position_{before,after,at_start,at_end}.
+        """
+        func = self.function()
+        builder = ir.IRBuilder()
+        z = ir.Constant(int32, 0)
+        bb_one = func.append_basic_block(name='one')
+        bb_two = func.append_basic_block(name='two')
+        bb_three = func.append_basic_block(name='three')
+        # .at_start(empty block)
+        builder.position_at_start(bb_one)
+        a = builder.add(z, z, 'a')
+        # .at_end(empty block)
+        builder.position_at_end(bb_two)
+        m = builder.add(z, z, 'm')
+        n = builder.add(z, z, 'n')
+        # .at_start(block)
+        builder.position_at_start(bb_two)
+        o = builder.add(z, z, 'o')
+        p = builder.add(z, z, 'p')
+        # .at_end(block)
+        builder.position_at_end(bb_one)
+        b = builder.add(z, z, 'b')
+        # .after(instr)
+        builder.position_after(o)
+        q = builder.add(z, z, 'q')
+        # .before(instr)
+        builder.position_before(b)
+        c = builder.add(z, z, 'c')
+        self.check_block(bb_one, """\
+            one:
+                %"a" = add i32 0, 0
+                %"c" = add i32 0, 0
+                %"b" = add i32 0, 0
+            """)
+        self.check_block(bb_two, """\
+            two:
+                %"o" = add i32 0, 0
+                %"q" = add i32 0, 0
+                %"p" = add i32 0, 0
+                %"m" = add i32 0, 0
+                %"n" = add i32 0, 0
+            """)
+        self.check_block(bb_three, """\
+            three:
+            """)
+
 
 if __name__ == '__main__':
     unittest.main()

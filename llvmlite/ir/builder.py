@@ -72,15 +72,11 @@ class IRBuilder(object):
 
     def position_before(self, instr):
         self._block = instr.parent
-        # if instr is self.block.terminator:
-        #     self._anchor = len(self.block.instructions)
-        # else:
-        self._anchor = max(0, self._block.instructions.index(instr))
+        self._anchor = self._block.instructions.index(instr)
 
     def position_after(self, instr):
         self._block = instr.parent
-        self._anchor = min(self._block.instructions.index(instr) + 1,
-                           len(self._block.instructions))
+        self._anchor = self._block.instructions.index(instr) + 1
 
     def position_at_start(self, block):
         self._block = block
