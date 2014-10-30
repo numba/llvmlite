@@ -459,6 +459,19 @@ class TestBuilder(TestBase):
                 %"k" = bitcast i32 %".1" to float
             """)
 
+    def test_atomicrmw(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        c = builder.alloca(int32, name='c')
+        d = builder.atomic_rmw('add', c, a, 'monotonic', 'd')
+        self.assertEqual(d.type, int32)
+        self.check_block(block, """\
+            my_block:
+                %"c" = alloca i32
+                %"d" = atomicrmw add i32* %"c", i32 %".1" monotonic
+            """)
+
     def test_branch(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
