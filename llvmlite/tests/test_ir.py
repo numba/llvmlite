@@ -518,6 +518,22 @@ class TestBuilder(TestBase):
                 switch i32 %".1", label %"otherwise" [i32 0, label %"onzero" i32 1, label %"onone" i32 2, label %"ontwo"]
             """)
 
+    def test_call(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        tp_f = ir.FunctionType(flt, (int32, int32))
+        tp_g = ir.FunctionType(dbl, (int32,), var_arg=True)
+        f = ir.Function(builder.function.module, tp_f, 'f')
+        g = ir.Function(builder.function.module, tp_g, 'g')
+        builder.call(f, (a, b), 'res_f')
+        builder.call(g, (b, a), 'res_g')
+        self.check_block(block, """\
+            my_block:
+                %"res_f" = call float (i32, i32)* @"f"(i32 %".1", i32 %".2")
+                %"res_g" = call double (i32, ...)* @"g"(i32 %".2", i32 %".1")
+            """)
+
 
 if __name__ == '__main__':
     unittest.main()
