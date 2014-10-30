@@ -92,6 +92,22 @@ LLVMPY_SetDataLayout(LLVMModuleRef M,
 }
 
 
+API_EXPORT(void)
+LLVMPY_GetTarget(LLVMModuleRef M,
+                 const char **Triple)
+{
+    *Triple = LLVMGetTarget(M);
+}
+
+
+API_EXPORT(void)
+LLVMPY_SetTarget(LLVMModuleRef M,
+                 const char *Triple)
+{
+    LLVMSetTarget(M, Triple);
+}
+
+
 API_EXPORT(LLVMGlobalsIteratorRef)
 LLVMPY_ModuleGlobalIter(LLVMModuleRef M)
 {

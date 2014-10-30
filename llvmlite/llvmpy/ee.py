@@ -59,3 +59,6 @@ class TargetMachine(object):
 
     def emit_assembly(self, module):
         return self._tm.emit_assembly(module)
+
+    def add_analysis_passes(self, pm):
+        self._tm.add_analysis_passes(pm)

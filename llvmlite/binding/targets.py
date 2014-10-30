@@ -16,7 +16,6 @@ def create_target_data(strrep):
 
 
 class TargetData(ffi.ObjectRef):
-
     def __str__(self):
         if self._closed:
             return "<dead TargetData>"
@@ -40,6 +39,9 @@ class TargetData(ffi.ObjectRef):
                 ty = gv.type
 
         return ffi.lib.LLVMPY_ABISizeOfType(self, ty)
+
+    def add_pass(self, pm):
+        ffi.lib.LLVMPY_AddTargetData(self, pm)
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
@@ -94,7 +96,7 @@ class Target(ffi.ObjectRef):
                                                 opt,
                                                 _encode_string(reloc),
                                                 _encode_string(codemodel),
-                                                )
+        )
         if tm:
             return TargetMachine(tm)
         else:
@@ -104,6 +106,9 @@ class Target(ffi.ObjectRef):
 class TargetMachine(ffi.ObjectRef):
     def _dispose(self):
         ffi.lib.LLVMPY_DisposeTargetMachine(self)
+
+    def add_analysis_passes(self, pm):
+        ffi.lib.LLVMPY_AddAnalysisPasses(self, pm)
 
     def emit_object(self, module):
         """
@@ -141,6 +146,20 @@ class TargetMachine(ffi.ObjectRef):
             return string_at(bufptr, bufsz)
         finally:
             ffi.lib.LLVMPY_DisposeMemoryBuffer(mb)
+
+
+def create_target_library_info(triple):
+    return TargetLibraryInfo(
+        ffi.lib.LLVMPY_CreateTargetLibraryInfo(_encode_string(triple, ))
+    )
+
+
+class TargetLibraryInfo(ffi.ObjectRef):
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeTargetLibraryInfo(self)
+
+    def add_pass(self, pm):
+        ffi.lib.LLVMPY_AddTargetLibraryInfo(self, pm)
 
 # ============================================================================
 # FFI
@@ -194,6 +213,11 @@ ffi.lib.LLVMPY_CreateTargetMachine.restype = ffi.LLVMTargetMachineRef
 
 ffi.lib.LLVMPY_DisposeTargetMachine.argtypes = [ffi.LLVMTargetMachineRef]
 
+ffi.lib.LLVMPY_AddAnalysisPasses.argtypes = [
+    ffi.LLVMTargetMachineRef,
+    ffi.LLVMPassManagerRef,
+]
+
 ffi.lib.LLVMPY_TargetMachineEmitToMemory.argtypes = [
     ffi.LLVMTargetMachineRef,
     ffi.LLVMModuleRef,
@@ -209,3 +233,15 @@ ffi.lib.LLVMPY_GetBufferSize.argtypes = [ffi.LLVMMemoryBufferRef]
 ffi.lib.LLVMPY_GetBufferSize.restype = c_size_t
 
 ffi.lib.LLVMPY_DisposeMemoryBuffer.argtypes = [ffi.LLVMMemoryBufferRef]
+
+ffi.lib.LLVMPY_CreateTargetLibraryInfo.argtypes = [c_char_p]
+ffi.lib.LLVMPY_CreateTargetLibraryInfo.restype = ffi.LLVMTargetLibraryInfoRef
+
+ffi.lib.LLVMPY_DisposeTargetLibraryInfo.argtypes = [
+    ffi.LLVMTargetLibraryInfoRef,
+]
+
+ffi.lib.LLVMPY_AddTargetLibraryInfo.argtypes = [
+    ffi.LLVMTargetLibraryInfoRef,
+    ffi.LLVMPassManagerRef,
+]

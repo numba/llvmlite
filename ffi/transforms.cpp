@@ -1,6 +1,8 @@
 #include "core.h"
 #include "llvm-c/Transforms/PassManagerBuilder.h"
+#include "llvm-c/Target.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
 
 extern "C" {
 
@@ -12,6 +14,7 @@ namespace llvm {
     inline LLVMPassManagerBuilderRef wrap(PassManagerBuilder *P) {
       return reinterpret_cast<LLVMPassManagerBuilderRef>(P);
     }
+
 };
 
 API_EXPORT(LLVMPassManagerBuilderRef)
@@ -103,6 +106,22 @@ LLVMPY_PassManagerBuilderPopulateFunctionPassManager(
                                         LLVMPassManagerRef PM)
 {
     LLVMPassManagerBuilderPopulateFunctionPassManager(PMB, PM);
+}
+
+
+API_EXPORT(void)
+LLVMPY_PassManagerBuilderSetLoopVectorize(LLVMPassManagerBuilderRef PMB,
+                                          int Value)
+{
+    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
+    pmb->LoopVectorize = Value;
+}
+
+API_EXPORT(int)
+LLVMPY_PassManagerBuilderGetLoopVectorize(LLVMPassManagerBuilderRef PMB)
+{
+    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
+    return pmb->LoopVectorize;
 }
 
 
