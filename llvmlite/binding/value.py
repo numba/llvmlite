@@ -2,9 +2,9 @@ from ctypes import POINTER, c_char_p, c_int
 
 from . import ffi
 from .common import _decode_string, _encode_string
+import itertools
 
-
-_linkage_ct = iter(range(40))
+_linkage_ct = itertools.count()
 _linkage_get = lambda: next(_linkage_ct)
 
 LINKAGE = {
