@@ -243,4 +243,25 @@ LLVMPY_DisableAllBuiltins(LLVMTargetLibraryInfoRef TLI)
     llvm::unwrap(TLI)->disableAllFunctions();
 }
 
+API_EXPORT(int)
+LLVMPY_GetLibFunc(LLVMTargetLibraryInfoRef TLI, const char *Name, int *OutF)
+{
+    llvm::LibFunc::Func F;
+    if (llvm::unwrap(TLI)->getLibFunc(Name, F)) {
+        /* Ok */
+        *OutF = F;
+        return 1;
+    } else {
+        /* Failed */
+        return 0;
+    }
+}
+
+API_EXPORT(void)
+LLVMPY_SetUnavailableLibFunc(LLVMTargetLibraryInfoRef TLI, int F)
+{
+    llvm::unwrap(TLI)->setUnavailable((llvm::LibFunc::Func)F);
+}
+
+
 } // end extern "C"

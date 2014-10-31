@@ -56,7 +56,14 @@ def build_pass_managers(**kws):
 
             tli = llvm.create_target_library_info(mod.triple)
             if kws.get('nobuiltins', False):
+                # Disable all builtins (-fno-builtins)
                 tli.disable_all()
+            else:
+                # Disable a list of builtins given
+                for k in kws.get('disable_builtins', ()):
+                    libf = tli.get_libfunc(k)
+                    tli.set_unavailable(libf)
+
             tli.add_pass(pm)
             if fpm is not None:
                 tli.add_pass(fpm)

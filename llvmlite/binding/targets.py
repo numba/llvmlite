@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
+import collections
 from ctypes import (POINTER, c_char_p, c_ulonglong, c_int, c_size_t,
-                    c_void_p, string_at)
+                    c_void_p, string_at, byref)
 from . import ffi, parse_assembly
 from .common import _decode_string, _encode_string
 
@@ -172,6 +173,19 @@ class TargetLibraryInfo(ffi.ObjectRef):
         """
         ffi.lib.LLVMPY_DisableAllBuiltins(self)
 
+    def get_libfunc(self, name):
+        lf = c_int()
+        if not ffi.lib.LLVMPY_GetLibFunc(self, _encode_string(name),
+                                         byref(lf)):
+            raise NameError("LibFunc '{name}' not found".format(name=name))
+        return LibFunc(name=name, identity=lf.value)
+
+    def set_unavailable(self, libfunc):
+        ffi.lib.LLVMPY_SetUnavailableLibFunc(self, libfunc.identity)
+
+
+LibFunc = collections.namedtuple("LibFunc", ["identity", "name"])
+
 # ============================================================================
 # FFI
 
@@ -259,4 +273,16 @@ ffi.lib.LLVMPY_AddTargetLibraryInfo.argtypes = [
 
 ffi.lib.LLVMPY_DisableAllBuiltins.argtypes = [
     ffi.LLVMTargetLibraryInfoRef,
+]
+
+ffi.lib.LLVMPY_GetLibFunc.argtypes = [
+    ffi.LLVMTargetLibraryInfoRef,
+    c_char_p,
+    POINTER(c_int),
+]
+ffi.lib.LLVMPY_GetLibFunc.restype = c_int
+
+ffi.lib.LLVMPY_SetUnavailableLibFunc.argtypes = [
+    ffi.LLVMTargetLibraryInfoRef,
+    c_int,
 ]
