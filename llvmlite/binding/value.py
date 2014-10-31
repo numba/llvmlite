@@ -4,6 +4,7 @@ from . import ffi
 from .common import _decode_string, _encode_string
 import itertools
 
+# Linkage Enum
 _linkage_ct = itertools.count()
 _linkage_get = lambda: next(_linkage_ct)
 
@@ -13,6 +14,8 @@ LINKAGE = {
     'linkonce_any': _linkage_get(),
     'linkonce_odr': _linkage_get(),
     'linkonce_odr_autohide': _linkage_get(),
+    'weak_any': _linkage_get(),
+    'weak_odr': _linkage_get(),
     'appending': _linkage_get(),
     'internal': _linkage_get(),
     'private': _linkage_get(),
@@ -26,6 +29,51 @@ LINKAGE = {
 }
 
 _REVLINKAGE = dict((v, k) for k, v in LINKAGE.items())
+
+
+# Attribute Enum
+
+_attribute_ct = itertools.count()
+_attribute_get = lambda: 1 << next(_attribute_ct)
+
+ATTRIBUTE = {
+    'zext': _attribute_get(),
+    'sext': _attribute_get(),
+    'noreturn': _attribute_get(),
+    'inreg': _attribute_get(),
+    'structret': _attribute_get(),
+    'nounwind': _attribute_get(),
+    'noalias': _attribute_get(),
+    'byval': _attribute_get(),
+    'nest': _attribute_get(),
+    'readnone': _attribute_get(),
+    'readonly': _attribute_get(),
+    'noinline': _attribute_get(),
+    'alwaysinline': _attribute_get(),
+    'optimizeforsize': _attribute_get(),
+    'stackprotect': _attribute_get(),
+    'stackprotectreq': _attribute_get(),  # 1 << 15
+
+    '_reserved0': _attribute_get(),
+    '_reserved1': _attribute_get(),
+    '_reserved2': _attribute_get(),
+    '_reserved3': _attribute_get(),
+    '_reserved4': _attribute_get(),
+
+    'nocapture': _attribute_get(),
+    'noredzone': _attribute_get(),
+    'noimplicitfloat': _attribute_get(),
+    'naked': _attribute_get(),
+    'inlinehint': _attribute_get(),  # 1 << 25
+
+    '_reserved5': _attribute_get(),
+    '_reserved6': _attribute_get(),
+    '_reserved7': _attribute_get(),
+
+    'returnstwice': _attribute_get(), # 1 << 29
+    'uwtable': _attribute_get(),
+    'nonlazybind': _attribute_get(),
+}
 
 
 class ValueRef(ffi.ObjectRef):
@@ -63,6 +111,11 @@ class ValueRef(ffi.ObjectRef):
     def linkage(self, value):
         ffi.lib.LLVMPY_SetLinkage(self, LINKAGE[value])
 
+    def add_function_attribute(self, attr):
+        """Only works on function value"""
+        ffi.lib.LLVMPY_AddFunctionAttr(self, ATTRIBUTE[attr])
+
+
     @property
     def type(self):
         # XXX what does this return?
@@ -90,3 +143,5 @@ ffi.lib.LLVMPY_GetLinkage.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetLinkage.restype = c_int
 
 ffi.lib.LLVMPY_SetLinkage.argtypes = [ffi.LLVMValueRef, c_int]
+
+ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_int]
