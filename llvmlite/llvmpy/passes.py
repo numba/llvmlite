@@ -46,7 +46,7 @@ def build_pass_managers(**kws):
     with llvm.create_pass_manager_builder() as pmb:
         pmb.opt_level = opt = kws.get('opt', 2)
         pmb.loop_vectorize = kws.get('loop_vectorize', False)
-        pmb.inline_threshold = _inline_threshold(optlevel=opt)
+        pmb.inlining_threshold = _inline_threshold(optlevel=opt)
 
         if mod:
             dl = llvm.create_target_data(mod.data_layout)
