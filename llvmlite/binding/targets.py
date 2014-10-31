@@ -42,6 +42,8 @@ class TargetData(ffi.ObjectRef):
 
     def add_pass(self, pm):
         ffi.lib.LLVMPY_AddTargetData(self, pm)
+        # Once added to a PassManager, we can never get it back.
+        self._owned = True
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
@@ -159,7 +161,11 @@ class TargetLibraryInfo(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposeTargetLibraryInfo(self)
 
     def add_pass(self, pm):
+        """Add this object as a pass to
+        """
         ffi.lib.LLVMPY_AddTargetLibraryInfo(self, pm)
+        # Once added to a PassManager, we can never get it back.
+        self._owned = True
 
 # ============================================================================
 # FFI
