@@ -237,5 +237,10 @@ LLVMPY_AddTargetLibraryInfo(
     LLVMAddTargetLibraryInfo(TLI, PM);
 }
 
+API_EXPORT(void)
+LLVMPY_DisableAllBuiltins(LLVMTargetLibraryInfoRef TLI)
+{
+    llvm::unwrap(TLI)->disableAllFunctions();
+}
 
 } // end extern "C"

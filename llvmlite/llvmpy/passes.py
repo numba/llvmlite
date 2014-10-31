@@ -55,6 +55,8 @@ def build_pass_managers(**kws):
                 dl.add_pass(fpm)
 
             tli = llvm.create_target_library_info(mod.triple)
+            if kws.get('nobuiltins', False):
+                tli.disable_all()
             tli.add_pass(pm)
             if fpm is not None:
                 tli.add_pass(fpm)

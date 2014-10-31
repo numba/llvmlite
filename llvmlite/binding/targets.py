@@ -167,6 +167,11 @@ class TargetLibraryInfo(ffi.ObjectRef):
         # Once added to a PassManager, we can never get it back.
         self._owned = True
 
+    def disable_all(self):
+        """Disable all builtins
+        """
+        ffi.lib.LLVMPY_DisableAllBuiltins(self)
+
 # ============================================================================
 # FFI
 
@@ -250,4 +255,8 @@ ffi.lib.LLVMPY_DisposeTargetLibraryInfo.argtypes = [
 ffi.lib.LLVMPY_AddTargetLibraryInfo.argtypes = [
     ffi.LLVMTargetLibraryInfoRef,
     ffi.LLVMPassManagerRef,
+]
+
+ffi.lib.LLVMPY_DisableAllBuiltins.argtypes = [
+    ffi.LLVMTargetLibraryInfoRef,
 ]
