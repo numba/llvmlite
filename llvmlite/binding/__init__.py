@@ -10,3 +10,4 @@ from .executionengine import *
 from .passmanagers import *
 from .transforms import *
 from .dylib import *
+from .options import *

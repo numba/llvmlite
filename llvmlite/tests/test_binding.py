@@ -81,6 +81,9 @@ class BaseTest(TestCase):
 
 
 class TestFunctions(BaseTest):
+    """
+    Test miscellaneous functions in llvm.binding.
+    """
 
     def test_parse_assembly(self):
         self.module(asm_sum)
@@ -119,6 +122,17 @@ class TestFunctions(BaseTest):
             llvm.shutdown()
             """
         subprocess.check_call([sys.executable, "-c", code])
+
+    def test_set_option(self):
+        # We cannot set an option multiple times (LLVM would exit() the
+        # process), so run the code in a subprocess.
+        code = """if 1:
+            from llvmlite import binding as llvm
+
+            llvm.set_option("progname", "-debug-pass=Disabled")
+            """
+        subprocess.check_call([sys.executable, "-c", code])
+
 
 class TestModuleRef(BaseTest):
 
