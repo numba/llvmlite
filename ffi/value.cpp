@@ -60,5 +60,11 @@ LLVMPY_GetLinkage(LLVMValueRef Val)
     return (int)LLVMGetLinkage(Val);
 }
 
+API_EXPORT(void)
+LLVMPY_AddFunctionAttr(LLVMValueRef Fn, int Attr)
+{
+    LLVMAddFunctionAttr(Fn, (LLVMAttribute)Attr);
+}
+
 
 } // end extern "C"

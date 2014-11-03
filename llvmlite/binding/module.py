@@ -63,6 +63,19 @@ class ModuleRef(ffi.ObjectRef):
                                      create_string_buffer(
                                          strrep.encode('utf8')))
 
+    @property
+    def triple(self):
+        # LLVMGetTarget() points inside a std::string managed by LLVM.
+        with ffi.OutputString(owned=False) as outmsg:
+            ffi.lib.LLVMPY_GetTarget(self, outmsg)
+            return str(outmsg)
+
+    @triple.setter
+    def triple(self, strrep):
+        ffi.lib.LLVMPY_SetTarget(self,
+                                 create_string_buffer(
+                                     strrep.encode('utf8')))
+
     def link_in(self, other, preserve=False):
         link_modules(self, other, preserve)
         if not preserve:
@@ -119,6 +132,9 @@ ffi.lib.LLVMPY_VerifyModule.restype = c_bool
 
 ffi.lib.LLVMPY_GetDataLayout.argtypes = [ffi.LLVMModuleRef, POINTER(c_char_p)]
 ffi.lib.LLVMPY_SetDataLayout.argtypes = [ffi.LLVMModuleRef, c_char_p]
+
+ffi.lib.LLVMPY_GetTarget.argtypes = [ffi.LLVMModuleRef, POINTER(c_char_p)]
+ffi.lib.LLVMPY_SetTarget.argtypes = [ffi.LLVMModuleRef, c_char_p]
 
 ffi.lib.LLVMPY_GetNamedGlobalVariable.argtypes = [ffi.LLVMModuleRef, c_char_p]
 ffi.lib.LLVMPY_GetNamedGlobalVariable.restype = ffi.LLVMValueRef

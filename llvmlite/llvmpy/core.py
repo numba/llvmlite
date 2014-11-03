@@ -1,5 +1,6 @@
 from llvmlite import ir
 from llvmlite import binding as llvm
+import itertools
 
 CallOrInvokeInstruction = ir.CallInstr
 
@@ -7,8 +8,7 @@ CallOrInvokeInstruction = ir.CallInstr
 class LLVMException(Exception):
     pass
 
-
-_icmp_ct = iter(range(40))
+_icmp_ct = itertools.count()
 _icmp_get = lambda: next(_icmp_ct)
 
 ICMP_EQ = _icmp_get()

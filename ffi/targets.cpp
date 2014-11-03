@@ -2,11 +2,28 @@
 #include "llvm-c/Target.h"
 #include "llvm/Support/Host.h"
 #include "llvm-c/TargetMachine.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Target/TargetLibraryInfo.h"
+#include "llvm/ADT/Triple.h"
 //#include "llvm/Support/TargetRegistry.h"
 //#include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include <cstdio>
 #include <cstring>
 
+
+namespace llvm {
+
+
+inline LLVMTargetLibraryInfoRef wrap(TargetLibraryInfo *TLI) {
+    return reinterpret_cast<LLVMTargetLibraryInfoRef>(TLI);
+}
+
+inline TargetLibraryInfo *unwrap(LLVMTargetLibraryInfoRef TLI) {
+    return reinterpret_cast<TargetLibraryInfo*>(TLI);
+}
+
+}
 
 extern "C" {
 
@@ -169,6 +186,17 @@ LLVMPY_TargetMachineEmitToMemory (
     return BufOut;
 }
 
+
+API_EXPORT(void)
+LLVMPY_AddAnalysisPasses(
+    LLVMTargetMachineRef TM,
+    LLVMPassManagerRef PM
+    )
+{
+    LLVMAddAnalysisPasses(TM, PM);
+}
+
+
 API_EXPORT(const void*)
 LLVMPY_GetBufferStart(LLVMMemoryBufferRef MB)
 {
@@ -186,5 +214,54 @@ LLVMPY_DisposeMemoryBuffer(LLVMMemoryBufferRef MB)
 {
     return LLVMDisposeMemoryBuffer(MB);
 }
+
+
+API_EXPORT(LLVMTargetLibraryInfoRef)
+LLVMPY_CreateTargetLibraryInfo(const char *Triple)
+{
+    return llvm::wrap(new llvm::TargetLibraryInfo(llvm::Triple(Triple)));
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeTargetLibraryInfo(LLVMTargetLibraryInfoRef TLI)
+{
+    delete llvm::unwrap(TLI);
+}
+
+API_EXPORT(void)
+LLVMPY_AddTargetLibraryInfo(
+    LLVMTargetLibraryInfoRef TLI,
+    LLVMPassManagerRef PM
+    )
+{
+    LLVMAddTargetLibraryInfo(TLI, PM);
+}
+
+API_EXPORT(void)
+LLVMPY_DisableAllBuiltins(LLVMTargetLibraryInfoRef TLI)
+{
+    llvm::unwrap(TLI)->disableAllFunctions();
+}
+
+API_EXPORT(int)
+LLVMPY_GetLibFunc(LLVMTargetLibraryInfoRef TLI, const char *Name, int *OutF)
+{
+    llvm::LibFunc::Func F;
+    if (llvm::unwrap(TLI)->getLibFunc(Name, F)) {
+        /* Ok */
+        *OutF = F;
+        return 1;
+    } else {
+        /* Failed */
+        return 0;
+    }
+}
+
+API_EXPORT(void)
+LLVMPY_SetUnavailableLibFunc(LLVMTargetLibraryInfoRef TLI, int F)
+{
+    llvm::unwrap(TLI)->setUnavailable((llvm::LibFunc::Func)F);
+}
+
 
 } // end extern "C"
