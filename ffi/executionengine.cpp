@@ -77,6 +77,7 @@ LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
     std::string err;
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);
+    eb.setUseMCJIT(true);
 
     llvm::TargetOptions options;
     options.JITEmitDebugInfo = (bool)EmitDebug;
