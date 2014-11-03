@@ -4,6 +4,7 @@ Classes that are LLVM types
 
 from __future__ import print_function, absolute_import
 
+# XXX This doesn't seem to be used
 _type_state = iter(range(50))
 _type_enum = lambda: next(_type_state)
 
@@ -14,6 +15,9 @@ TYPE_METADATA = _type_enum()
 
 
 class Type(object):
+    """
+    The base class for all LLVM types.
+    """
     is_pointer = False
     null = 'zeroinitializer'
 
@@ -32,7 +36,7 @@ class Type(object):
         return not (self == other)
 
 
-class MetaData(object):
+class MetaData(Type):
     kind = TYPE_METADATA
 
     def __str__(self):
@@ -43,14 +47,18 @@ class MetaData(object):
 
 
 class LabelType(Type):
+    """
+    The label type is the type of e.g. basic blocks.
+    """
+
     def __str__(self):
         return "label"
 
-    def __eq__(self, other):
-        return isinstance(other, VoidType)
-
 
 class PointerType(Type):
+    """
+    The type of all pointer values.
+    """
     is_pointer = True
     kind = TYPE_POINTER
     null = 'null'
@@ -73,10 +81,19 @@ class PointerType(Type):
             return False
 
     def gep(self, i):
+        """
+        Resolve the type of the i-th element (for getelementptr lookups).
+        """
+        if not isinstance(i.type, IntType):
+            raise TypeError(i.type)
         return self.pointee
 
 
 class VoidType(Type):
+    """
+    The type for empty values (e.g. a function returning no value).
+    """
+
     def __str__(self):
         return 'void'
 
@@ -85,27 +102,39 @@ class VoidType(Type):
 
 
 class FunctionType(Type):
+    """
+    The type for functions.
+    """
+
     def __init__(self, return_type, args, var_arg=False):
         self.return_type = return_type
         self.args = tuple(args)
         self.var_arg = var_arg
 
     def __str__(self):
-        strargs = ', '.join(str(a) for a in self.args)
-        if self.var_arg:
-            return '{0} ({1}, ...)'.format(self.return_type, strargs)
+        if self.args:
+            strargs = ', '.join(str(a) for a in self.args)
+            if self.var_arg:
+                return '{0} ({1}, ...)'.format(self.return_type, strargs)
+            else:
+                return '{0} ({1})'.format(self.return_type, strargs)
+        elif self.var_arg:
+            return '{0} (...)'.format(self.return_type)
         else:
-            return '{0} ({1})'.format(self.return_type, strargs)
+            return '{0} ()'.format(self.return_type)
 
     def __eq__(self, other):
         if isinstance(other, FunctionType):
             return (self.return_type == other.return_type and
-                    all((a == b) for a, b in zip(self.args, other.args)))
+                    self.args == other.args and self.var_arg == other.var_arg)
         else:
             return False
 
 
 class IntType(Type):
+    """
+    The type for integers.
+    """
     null = '0'
 
     def __init__(self, bits):
@@ -123,6 +152,9 @@ class IntType(Type):
 
 
 class FloatType(Type):
+    """
+    The type for single-precision floats.
+    """
     null = '0.0'
     intrinsic_name = 'f32'
 
@@ -134,6 +166,9 @@ class FloatType(Type):
 
 
 class DoubleType(Type):
+    """
+    The type for double-precision floats.
+    """
     null = '0.0'
     intrinsic_name = 'f64'
 
@@ -167,6 +202,10 @@ class Aggregate(Type):
 
 
 class ArrayType(Aggregate):
+    """
+    The type for fixed-size homogenous arrays (e.g. "[f32 x 3]").
+    """
+
     def __init__(self, element, count):
         self.element = element
         self.count = count
@@ -186,10 +225,19 @@ class ArrayType(Aggregate):
             return self.element == other.element and self.count == other.count
 
     def gep(self, i):
+        """
+        Resolve the type of the i-th element (for getelementptr lookups).
+        """
+        if not isinstance(i.type, IntType):
+            raise TypeError(i.type)
         return self.element
 
 
-class StructType(Aggregate):
+class BaseStructType(Aggregate):
+    """
+    The base type for heterogenous struct types.
+    """
+
     kind = TYPE_STRUCT
 
     def __len__(self):
@@ -205,7 +253,12 @@ class StructType(Aggregate):
         return self.elements is None
 
 
-class LiteralStructType(StructType):
+class LiteralStructType(BaseStructType):
+    """
+    The type of "literal" structs, i.e. structs with a literally-defined
+    type (by contrast with IdentifiedStructType).
+    """
+
     null = 'zeroinitializer'
 
     def __init__(self, elems):
@@ -219,22 +272,34 @@ class LiteralStructType(StructType):
             return self.elements == other.elements
 
     def gep(self, i):
+        """
+        Resolve the type of the i-th element (for getelementptr lookups).
+
+        *i* needs to be a LLVM constant, so that the type can be determined
+        at compile-time.
+        """
         if not isinstance(i.type, IntType):
             raise TypeError(i.type)
         return self.elements[i.constant]
 
 
-class IdentifiedStructType(StructType):
+class IdentifiedStructType(BaseStructType):
+    """
+    A type which is a named alias for another struct type, akin to a typedef.
+    While literal struct types can be structurally equal (see
+    LiteralStructType), identified struct types are compared by name.
+
+    Do not use this directly.
+    """
+
     def __init__(self, context, name):
-        """Do not use this directly
-        """
         assert name
         self.context = context
         self.name = name
         self.elements = None
 
     def __str__(self):
-        return '%%%s' % self.name
+        return self.name
 
     def __eq__(self, other):
         if isinstance(other, IdentifiedStructType):

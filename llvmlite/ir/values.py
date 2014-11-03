@@ -125,7 +125,7 @@ class Constant(ConstOpMixin):
             fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
             val = "[{0}]".format(', '.join(map(fmter, self.constant)))
 
-        elif isinstance(self.type, types.StructType):
+        elif isinstance(self.type, types.BaseStructType):
             fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
             val = "{{{0}}}".format(', '.join(map(fmter, self.constant)))
 

@@ -4,6 +4,8 @@ IR Construction Tests
 
 from __future__ import print_function, absolute_import
 
+import copy
+import itertools
 import re
 import textwrap
 import unittest
@@ -594,6 +596,94 @@ class TestBuilder(TestBase):
         self.check_block(bb_three, """\
             three:
             """)
+
+
+class TestTypes(TestBase):
+
+    def test_comparisons(self):
+        # A bunch of mutually unequal types
+        types = [
+            ir.LabelType(), ir.VoidType(),
+            ir.FunctionType(int1, (int8, int8)), ir.FunctionType(int1, (int8,)),
+            ir.FunctionType(int1, (int8,), var_arg=True),
+            ir.FunctionType(int8, (int8,)),
+            int1, int8, int32, flt, dbl,
+            ir.ArrayType(flt, 5), ir.ArrayType(dbl, 5), ir.ArrayType(dbl, 4),
+            ir.LiteralStructType((int1, int8)), ir.LiteralStructType((int8, int1)),
+            ]
+        types.extend([ir.PointerType(tp) for tp in types
+                      if not isinstance(tp, ir.VoidType)])
+        for a, b in itertools.product(types, types):
+            if a is not b:
+                self.assertFalse(a == b, (a, b))
+                self.assertTrue(a != b, (a, b))
+        # We assume copy.copy() works fine here...
+        for tp in types:
+            other = copy.copy(tp)
+            self.assertIsNot(other, tp)
+            if isinstance(tp, ir.LabelType):
+                self.assertFalse(tp == other, (tp, other))
+                self.assertTrue(tp != other, (tp, other))
+            else:
+                self.assertTrue(tp == other, (tp, other))
+                self.assertFalse(tp != other, (tp, other))
+
+    def test_str(self):
+        """
+        Test the string representation of types.
+        """
+        self.assertEqual(str(int1), 'i1')
+        self.assertEqual(str(ir.IntType(29)), 'i29')
+        self.assertEqual(str(flt), 'float')
+        self.assertEqual(str(dbl), 'double')
+        self.assertEqual(str(ir.VoidType()), 'void')
+        self.assertEqual(str(ir.FunctionType(int1, ())), 'i1 ()')
+        self.assertEqual(str(ir.FunctionType(int1, (flt,))), 'i1 (float)')
+        self.assertEqual(str(ir.FunctionType(int1, (flt, dbl))),
+                         'i1 (float, double)')
+        self.assertEqual(str(ir.FunctionType(int1, (), var_arg=True)),
+                         'i1 (...)')
+        self.assertEqual(str(ir.FunctionType(int1, (flt,), var_arg=True)),
+                         'i1 (float, ...)')
+        self.assertEqual(str(ir.FunctionType(int1, (flt, dbl), var_arg=True)),
+                         'i1 (float, double, ...)')
+        self.assertEqual(str(ir.PointerType(int32)), 'i32*')
+        self.assertEqual(str(ir.PointerType(ir.PointerType(int32))), 'i32**')
+        self.assertEqual(str(ir.ArrayType(int1, 5)), '[5 x i1]')
+        self.assertEqual(str(ir.ArrayType(ir.PointerType(int1), 5)), '[5 x i1*]')
+        self.assertEqual(str(ir.PointerType(ir.ArrayType(int1, 5))), '[5 x i1]*')
+        self.assertEqual(str(ir.LiteralStructType((int1,))), '{i1}')
+        self.assertEqual(str(ir.LiteralStructType((int1, flt))), '{i1, float}')
+        self.assertEqual(str(ir.LiteralStructType((
+            ir.PointerType(int1), ir.LiteralStructType((int32, int8))))),
+            '{i1*, {i32, i8}}')
+
+    def test_gep(self):
+        def check_constant(tp, i, expected):
+            actual = tp.gep(ir.Constant(int32, i))
+            self.assertEqual(actual, expected)
+        def check_index_type(tp):
+            index = ir.Constant(dbl, 1.0)
+            with self.assertRaises(TypeError):
+                tp.gep(index)
+
+        tp = ir.PointerType(dbl)
+        for i in range(5):
+            check_constant(tp, i, dbl)
+        check_index_type(tp)
+
+        tp = ir.ArrayType(int1, 3)
+        for i in range(3):
+            check_constant(tp, i, int1)
+        check_index_type(tp)
+
+        tp = ir.LiteralStructType((dbl, ir.LiteralStructType((int1, int8))))
+        check_constant(tp, 0, dbl)
+        check_constant(tp, 1, ir.LiteralStructType((int1, int8)))
+        with self.assertRaises(IndexError):
+            tp.gep(ir.Constant(int32, 2))
+        check_index_type(tp)
+
 
 
 if __name__ == '__main__':
