@@ -144,6 +144,9 @@ class TestBuilder(TestBase):
         self.assertIs(builder.function, block.parent)
 
     def test_constant(self):
+        """
+        Test the IRBuilder.constant() method.
+        """
         block = self.block(name='start')
         builder = ir.IRBuilder(block)
         c = builder.constant(int32, 5)
@@ -684,6 +687,48 @@ class TestTypes(TestBase):
             tp.gep(ir.Constant(int32, 2))
         check_index_type(tp)
 
+
+c32 = lambda i: ir.Constant(int32, i)
+
+
+class TestConstant(TestBase):
+
+    def test_integers(self):
+        c = ir.Constant(int32, 42)
+        self.assertEqual(str(c), 'i32 42')
+        c = ir.Constant(int1, 1)
+        self.assertEqual(str(c), 'i1 1')
+        c = ir.Constant(int1, 0)
+        self.assertEqual(str(c), 'i1 0')
+        c = ir.Constant(int1, True)
+        self.assertEqual(str(c), 'i1 true')
+        c = ir.Constant(int1, False)
+        self.assertEqual(str(c), 'i1 false')
+
+    def test_reals(self):
+        # XXX Test NaNs and infs
+        c = ir.Constant(flt, 1.5)
+        self.assertEqual(str(c), 'float 0x3ff8000000000000')
+        c = ir.Constant(flt, -1.5)
+        self.assertEqual(str(c), 'float 0xbff8000000000000')
+        c = ir.Constant(dbl, 1.5)
+        self.assertEqual(str(c), 'double 0x3ff8000000000000')
+        c = ir.Constant(dbl, -1.5)
+        self.assertEqual(str(c), 'double 0xbff8000000000000')
+
+    def test_arrays(self):
+        # XXX Test byte array special case
+        c = ir.Constant(ir.ArrayType(int32, 3), (c32(5), c32(6), c32(4)))
+        self.assertEqual(str(c), '[3 x i32] [i32 5, i32 6, i32 4]')
+
+    def test_structs(self):
+        c = ir.Constant(ir.LiteralStructType((flt, int1)),
+                        (ir.Constant(ir.FloatType(), 1.5),
+                         ir.Constant(int1, True)))
+        self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 true}')
+        c = ir.Constant.literal_struct((ir.Constant(ir.FloatType(), 1.5),
+                                        ir.Constant(int1, True)))
+        self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 true}')
 
 
 if __name__ == '__main__':
