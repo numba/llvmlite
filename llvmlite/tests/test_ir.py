@@ -704,6 +704,8 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'i1 true')
         c = ir.Constant(int1, False)
         self.assertEqual(str(c), 'i1 false')
+        c = ir.Constant(int1, ir.Undefined)
+        self.assertEqual(str(c), 'i1 undef')
 
     def test_reals(self):
         # XXX Test NaNs and infs
@@ -715,11 +717,17 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'double 0x3ff8000000000000')
         c = ir.Constant(dbl, -1.5)
         self.assertEqual(str(c), 'double 0xbff8000000000000')
+        c = ir.Constant(dbl, ir.Undefined)
+        self.assertEqual(str(c), 'double undef')
 
     def test_arrays(self):
         # XXX Test byte array special case
         c = ir.Constant(ir.ArrayType(int32, 3), (c32(5), c32(6), c32(4)))
         self.assertEqual(str(c), '[3 x i32] [i32 5, i32 6, i32 4]')
+        c = ir.Constant(ir.ArrayType(int32, 2), (c32(5), c32(ir.Undefined)))
+        self.assertEqual(str(c), '[2 x i32] [i32 5, i32 undef]')
+        c = ir.Constant(ir.ArrayType(int32, 2), ir.Undefined)
+        self.assertEqual(str(c), '[2 x i32] undef')
 
     def test_structs(self):
         c = ir.Constant(ir.LiteralStructType((flt, int1)),
@@ -729,6 +737,11 @@ class TestConstant(TestBase):
         c = ir.Constant.literal_struct((ir.Constant(ir.FloatType(), 1.5),
                                         ir.Constant(int1, True)))
         self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 true}')
+        c = ir.Constant.literal_struct((ir.Constant(ir.FloatType(), 1.5),
+                                        ir.Constant(int1, ir.Undefined)))
+        self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 undef}')
+        c = ir.Constant(ir.LiteralStructType((flt, int1)), ir.Undefined)
+        self.assertEqual(str(c), '{float, i1} undef')
 
 
 if __name__ == '__main__':
