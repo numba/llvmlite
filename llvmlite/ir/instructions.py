@@ -46,6 +46,11 @@ class CallInstr(Instruction):
         self.args = args
         self.callee = func
 
+    def replace_callee(self, newfunc):
+        if newfunc.function_type != self.callee.function_type:
+            raise TypeError("New function has incompatible type")
+        self.callee = newfunc
+
     @property
     def called_function(self):
         """Alias for llvmpy"""
