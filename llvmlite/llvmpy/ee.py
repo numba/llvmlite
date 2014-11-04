@@ -44,11 +44,10 @@ class EngineBuilder(object):
 class TargetMachine(object):
     def __init__(self, cpu='', features='', opt=2, reloc='default',
                  codemodel='jitdefault'):
-        self.triple = llvm.get_default_triple()
-        self.target = llvm.Target.from_triple(self.triple)
-        self._tm = self.target.create_target_machine(self.triple, cpu,
-                                                     features, opt, reloc,
-                                                     codemodel)
+        self.target = llvm.Target.from_default_triple()
+        self.triple = self.target.triple
+        self._tm = self.target.create_target_machine(cpu, features, opt,
+                                                     reloc, codemodel)
 
     @staticmethod
     def new(*args, **kwargs):

@@ -381,11 +381,12 @@ class TestTarget(BaseTest):
                       str(cm.exception))
         triple = llvm.get_default_triple()
         target = f(triple)
+        self.assertEqual(target.triple, triple)
         target.close()
 
     def test_create_target_machine(self):
         target = llvm.Target.from_triple(llvm.get_default_triple())
-        target.create_target_machine('', '', '', 1, 'default', 'default')
+        target.create_target_machine('', '', 1, 'default', 'default')
 
     def test_name(self):
         t = llvm.Target.from_triple(llvm.get_default_triple())

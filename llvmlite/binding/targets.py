@@ -90,17 +90,20 @@ class Target(ffi.ObjectRef):
         s = ffi.lib.LLVMPY_GetTargetDescription(self)
         return _decode_string(s)
 
+    @property
+    def triple(self):
+        return self._triple
+
     def __str__(self):
         return "<Target {0} ({1})>".format(self.name, self.description)
 
-    def create_target_machine(self, triple='', cpu='', features='',
+    def create_target_machine(self, cpu='', features='',
                               opt=1, reloc='default', codemodel='jitdefault'):
         assert 0 <= opt <= 3
         assert reloc in RELOC
         assert codemodel in CODEMODEL
-        triple = triple or self._triple
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
-                                                _encode_string(triple),
+                                                _encode_string(self._triple),
                                                 _encode_string(cpu),
                                                 _encode_string(features),
                                                 opt,
