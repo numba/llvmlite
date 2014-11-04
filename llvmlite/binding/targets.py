@@ -1,7 +1,10 @@
 from __future__ import print_function, absolute_import
+
 import collections
+import os
 from ctypes import (POINTER, c_char_p, c_ulonglong, c_int, c_size_t,
                     c_void_p, string_at, byref)
+
 from . import ffi, parse_assembly
 from .common import _decode_string, _encode_string
 
@@ -60,7 +63,11 @@ class Target(ffi.ObjectRef):
 
     @classmethod
     def from_default_triple(cls):
-        return cls.from_triple(get_default_triple())
+        triple = get_default_triple()
+        # For MCJIT under Windows, see http://lists.cs.uiuc.edu/pipermail/llvmdev/2013-December/068381.html
+        if os.name == 'nt':
+            triple += '-elf'
+        return cls.from_triple(triple)
 
     @classmethod
     def from_triple(cls, triple):
