@@ -3,7 +3,7 @@ from . import CallInstr
 
 class Visitor(object):
     def visit(self, module):
-        self.module = module
+        self._module = module
         for func in module.functions:
             self.visit_Function(func)
 
@@ -19,6 +19,10 @@ class Visitor(object):
 
     def visit_Instruction(self, instr):
         raise NotImplementedError
+
+    @property
+    def module(self):
+        return self._module
 
     @property
     def function(self):
