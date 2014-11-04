@@ -3,6 +3,7 @@ from . import CallInstr
 
 class Visitor(object):
     def visit(self, module):
+        self.module = module
         for func in module.functions:
             self.visit_Function(func)
 

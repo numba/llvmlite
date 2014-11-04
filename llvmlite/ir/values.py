@@ -463,3 +463,16 @@ class Block(Value):
         for instr in self.instructions:
             print('  ', end='', file=buf)
             print(instr, file=buf)
+
+    def replace(self, old, new):
+        """Replace an instruction"""
+        if old.type != new.type:
+            raise TypeError("new instruction has a different type")
+        pos = self.instructions.index(old)
+        self.instructions.remove(old)
+        self.instructions.insert(pos, new)
+
+        for bb in self.parent.basic_blocks:
+            for instr in bb.instructions:
+                instr.replace_usage(old, new)
+

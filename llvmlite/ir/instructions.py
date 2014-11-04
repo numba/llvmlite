@@ -38,13 +38,30 @@ class Instruction(Value):
         print("{opname} {typ} {operands}{metadata}".format(**locals()),
               file=buf)
 
+    def replace_usage(self, old, new):
+        if old in self.operands:
+            ops = []
+            for op in self.operands:
+                ops.append(new if op is old else op)
+            self.operands = tuple(ops)
+
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name=''):
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
-        self.args = args
-        self.callee = func
+
+    @property
+    def callee(self):
+        return self.operands[0]
+
+    @callee.setter
+    def callee(self, newcallee):
+        self.operands[0] = newcallee
+
+    @property
+    def args(self):
+        return self.operands[1:]
 
     def replace_callee(self, newfunc):
         if newfunc.function_type != self.callee.function_type:
@@ -83,7 +100,13 @@ class Ret(Terminator):
     def __init__(self, parent, opname, return_value=None):
         operands = [return_value] if return_value is not None else []
         super(Ret, self).__init__(parent, opname, operands)
-        self.return_value = return_value
+
+    @property
+    def return_value(self):
+        if self.operands:
+            return self.operands[0]
+        else:
+            return None
 
     def descr(self, buf):
         return_value = self.return_value
@@ -98,9 +121,12 @@ class Ret(Terminator):
 class SwitchInstr(Terminator):
     def __init__(self, parent, opname, val, default):
         super(SwitchInstr, self).__init__(parent, opname, [val])
-        self.value = val
         self.default = default
         self.cases = []
+
+    @property
+    def value(self):
+        return self.operands[0]
 
     def add_case(self, val, blk):
         assert isinstance(blk, Block)
@@ -122,9 +148,18 @@ class SelectInstr(Instruction):
         assert lhs.type == rhs.type
         super(SelectInstr, self).__init__(parent, lhs.type, "select",
                                           [cond, lhs, rhs], name=name)
-        self.cond = cond
-        self.lhs = lhs
-        self.rhs = rhs
+
+    @property
+    def cond(self):
+        return self.operands[0]
+
+    @property
+    def lhs(self):
+        return self.operands[1]
+
+    @property
+    def rhs(self):
+        return self.operands[2]
 
     def descr(self, buf):
         print("select {0} {1}, {2} {3}, {4} {5}".format(
@@ -278,6 +313,10 @@ class PhiInstr(Instruction):
     def add_incoming(self, value, block):
         assert isinstance(block, Block)
         self.incomings.append((value, block))
+
+    def replace_usage(self, old, new):
+        self.incomings = [((new if val is old else val), blk)
+                          for (val, blk) in self.incomings]
 
 
 class ExtractValue(Instruction):
