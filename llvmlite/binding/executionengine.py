@@ -23,15 +23,14 @@ def create_jit_compiler(module, opt=2):
     return ExecutionEngine(engine, module=module)
 
 
-def create_mcjit_compiler(module, target_machine, emitdebug=False):
+def create_mcjit_compiler(module, target_machine):
     """
     Create a MCJIT ExecutionEngine from the given *module* and
     *target_machine*.
     """
     with ffi.OutputString() as outerr:
         engine = ffi.lib.LLVMPY_CreateMCJITCompiler(
-                module, target_machine,
-                int(bool(emitdebug)), outerr)
+                module, target_machine, outerr)
         if not engine:
             raise RuntimeError(str(outerr))
 
@@ -122,7 +121,6 @@ ffi.lib.LLVMPY_CreateJITCompiler.restype = c_bool
 ffi.lib.LLVMPY_CreateMCJITCompiler.argtypes = [
     ffi.LLVMModuleRef,
     ffi.LLVMTargetMachineRef,
-    c_uint,
     POINTER(c_char_p),
 ]
 ffi.lib.LLVMPY_CreateMCJITCompiler.restype = ffi.LLVMExecutionEngineRef

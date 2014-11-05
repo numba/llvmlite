@@ -68,7 +68,6 @@ namespace llvm {
 API_EXPORT(LLVMExecutionEngineRef)
 LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
                            LLVMTargetMachineRef TM,
-                           int EmitDebug,
                            char **OutError)
 {
     LLVMExecutionEngineRef ee = nullptr;
@@ -78,14 +77,6 @@ LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);
     eb.setUseMCJIT(true);
-
-    llvm::TargetOptions options;
-    options.JITEmitDebugInfo = (bool)EmitDebug;
-    options.TrapUnreachable = true;
-//    options.NoFramePointerElim = true;
-//    options.PrintMachineCode = false;
-
-    eb.setTargetOptions(options);
 
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
 
