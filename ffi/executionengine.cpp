@@ -78,6 +78,7 @@ LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
     eb.setEngineKind(llvm::EngineKind::JIT);
     eb.setUseMCJIT(true);
 
+    /* EngineBuilder::create loads the current process symbols */
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
 
     if (!engine)

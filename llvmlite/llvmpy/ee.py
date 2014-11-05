@@ -1,4 +1,5 @@
 from llvmlite import binding as llvm
+from collections import defaultdict
 
 RELOC_PIC = 'pic'
 
@@ -16,6 +17,8 @@ def dylib_address_of_symbol(name):
 
 
 class EngineBuilder(object):
+    """Emulate llvm::EngineBuilder.
+    """
     @classmethod
     def new(cls, mod):
         return EngineBuilder(mod)
@@ -24,6 +27,7 @@ class EngineBuilder(object):
         self.module = llvm.parse_assembly(str(mod))
         self._opt = 2
         self._mattrs = ''
+        self._options = defaultdict(bool)
 
     def opt(self, opt):
         self._opt = opt
@@ -33,25 +37,50 @@ class EngineBuilder(object):
         self._mattrs = attrs
         return self
 
-    def select_target(self):
-        # TODO
-        return TargetMachine()
+    @property
+    def emit_jit_debug(self):
+        return self._options['jitdebug']
 
-    def create(self, tm):
+    @emit_jit_debug.setter
+    def emit_jit_debug(self, enable=True):
+        self._options['jitdebug'] = enable
+
+    @property
+    def print_machine_code(self):
+        return self._options['printmc']
+
+    @print_machine_code.setter
+    def print_machine_code(self, enable=True):
+        self._options['printmc'] = enable
+
+    def select_target(self):
+        target = llvm.Target.from_triple(self.module.triple)
+        tm = target.create_target_machine(features=self._mattrs,
+                                          opt=self._opt, **self._options)
+        return TargetMachine(target=target, triple=target.triple, tm=tm)
+
+    def create(self, tm=None):
+        if tm is None:
+            tm = self.select_target()
+        if not isinstance(tm, TargetMachine):
+            tm = tm._tm
         return llvm.create_mcjit_compiler(self.module, tm._tm)
 
 
 class TargetMachine(object):
-    def __init__(self, cpu='', features='', opt=2, reloc='default',
-                 codemodel='jitdefault'):
-        self.target = llvm.Target.from_default_triple()
-        self.triple = self.target.triple
-        self._tm = self.target.create_target_machine(cpu, features, opt,
-                                                     reloc, codemodel)
-
     @staticmethod
-    def new(*args, **kwargs):
-        return TargetMachine(*args, **kwargs)
+    def new(cpu='', features='', opt=2, reloc='default',
+            codemodel='jitdefault'):
+        target = llvm.Target.from_default_triple()
+        triple = target.triple
+        tm = target.create_target_machine(cpu, features, opt,
+                                          reloc, codemodel)
+        return TargetMachine(target=target, triple=triple, tm=tm)
+
+    def __init__(self, target, triple, tm):
+        self.target = target
+        self.triple = triple
+        self._tm = tm
 
     def emit_object(self, module):
         return self._tm.emit_object(module)

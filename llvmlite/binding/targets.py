@@ -98,7 +98,8 @@ class Target(ffi.ObjectRef):
         return "<Target {0} ({1})>".format(self.name, self.description)
 
     def create_target_machine(self, cpu='', features='',
-                              opt=1, reloc='default', codemodel='jitdefault'):
+                              opt=2, reloc='default', codemodel='jitdefault',
+                              jitdebug=False, printmc=False):
         assert 0 <= opt <= 3
         assert reloc in RELOC
         assert codemodel in CODEMODEL
@@ -109,6 +110,8 @@ class Target(ffi.ObjectRef):
                                                 opt,
                                                 _encode_string(reloc),
                                                 _encode_string(codemodel),
+                                                int(jitdebug),
+                                                int(printmc),
         )
         if tm:
             return TargetMachine(tm)

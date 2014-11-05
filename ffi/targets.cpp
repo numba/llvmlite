@@ -6,7 +6,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Target/TargetLibraryInfo.h"
 #include "llvm/ADT/Triple.h"
-//#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/TargetRegistry.h"
 //#include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include <cstdio>
 #include <cstring>
@@ -21,6 +21,14 @@ inline LLVMTargetLibraryInfoRef wrap(TargetLibraryInfo *TLI) {
 
 inline TargetLibraryInfo *unwrap(LLVMTargetLibraryInfoRef TLI) {
     return reinterpret_cast<TargetLibraryInfo*>(TLI);
+}
+
+inline Target *unwrap(LLVMTargetRef T) {
+    return reinterpret_cast<Target*>(T);
+}
+
+inline LLVMTargetMachineRef wrap(TargetMachine *TM) {
+    return reinterpret_cast<LLVMTargetMachineRef>(TM);
 }
 
 }
@@ -106,51 +114,59 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
                            const char *Features,
                            int         OptLevel,
                            const char *RelocModel,
-                           const char *CodeModel)
+                           const char *CodeModel,
+                           int         EmitJITDebug,
+                           int         PrintMC)
 {
-    LLVMCodeGenOptLevel cgol;
+    using namespace llvm;
+    CodeGenOpt::Level cgol;
     switch(OptLevel) {
     case 0:
-        cgol = LLVMCodeGenLevelNone;
+        cgol = CodeGenOpt::None;
         break;
     case 1:
-        cgol = LLVMCodeGenLevelLess;
+        cgol = CodeGenOpt::Less;
         break;
     case 3:
-        cgol = LLVMCodeGenLevelAggressive;
+        cgol = CodeGenOpt::Aggressive;
         break;
     case 2:
     default:
-        cgol = LLVMCodeGenLevelDefault;
+        cgol = CodeGenOpt::Default;
     }
 
-    LLVMCodeModel cm;
+    CodeModel::Model cm;
     std::string cms(CodeModel);
     if (cms == "jitdefault")
-        cm = LLVMCodeModelJITDefault;
+        cm = CodeModel::JITDefault;
     else if (cms == "small")
-        cm = LLVMCodeModelSmall;
+        cm = CodeModel::Small;
     else if (cms == "kernel")
-        cm = LLVMCodeModelKernel;
+        cm = CodeModel::Kernel;
     else if (cms == "medium")
-        cm = LLVMCodeModelMedium;
+        cm = CodeModel::Medium;
     else if (cms == "large")
-        cm = LLVMCodeModelLarge;
+        cm = CodeModel::Large;
     else
-        cm = LLVMCodeModelDefault;
+        cm = CodeModel::Default;
 
-    LLVMRelocMode rm;
+    Reloc::Model rm;
     std::string rms(RelocModel);
     if (rms == "static")
-        rm = LLVMRelocStatic;
+        rm = Reloc::Static;
     else if (rms == "pic")
-        rm = LLVMRelocPIC;
+        rm = Reloc::PIC_;
     else if (rms == "dynamicnopic")
-        rm = LLVMRelocDynamicNoPic;
+        rm = Reloc::DynamicNoPIC;
     else
-        rm = LLVMRelocDefault;
+        rm = Reloc::Default;
 
-    return LLVMCreateTargetMachine(T, Triple, CPU, Features, cgol, rm, cm);
+    TargetOptions opt;
+    opt.JITEmitDebugInfo = EmitJITDebug;
+    opt.PrintMachineCode = PrintMC;
+
+    return wrap(unwrap(T)->createTargetMachine(Triple, CPU, Features, opt,
+                                               rm, cm, cgol));
 }
 
 
