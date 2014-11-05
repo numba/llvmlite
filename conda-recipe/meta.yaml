@@ -1,6 +1,6 @@
 package:
   name: llvmlite
-  version: "0.1.dev1"
+  version: "0.1.dev2"
 
 source:
   git_url: https://github.com/numba/llvmlite.git
