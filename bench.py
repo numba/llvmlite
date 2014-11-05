@@ -95,8 +95,7 @@ def run_bench(verbose):
     A = np.arange(10, dtype=np.int32)
     res = cfunc(A.ctypes.data_as(POINTER(c_int)), A.size)
 
-    if verbose:
-        print(res, A.sum())
+    assert res == A.sum(), (res, A.sum())
 
 
 if __name__ == "__main__":
@@ -124,4 +123,6 @@ if __name__ == "__main__":
     else:
         raise RuntimeError("Wrong implementation %r" % (impl,))
 
-    run_bench(True)
+    for i in range(3):
+        run_bench(True)
+        print()
