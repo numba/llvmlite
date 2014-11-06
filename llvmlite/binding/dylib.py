@@ -6,10 +6,18 @@ from .common import _encode_string
 
 
 def address_of_symbol(name):
+    """
+    Get the in-process address of symbol named *name*.
+    An integer is returned, or None if the symbol isn't found.
+    """
     return ffi.lib.LLVMPY_SearchAddressOfSymbol(_encode_string(name))
 
 
 def add_symbol(name, address):
+    """
+    Register the *address* of global symbol *name*.  This will make
+    it usable (e.g. callable) from LLVM-compiled functions.
+    """
     ffi.lib.LLVMPY_AddSymbol(_encode_string(name), c_void_p(address))
 
 # ============================================================================

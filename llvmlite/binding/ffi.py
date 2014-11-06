@@ -36,7 +36,8 @@ class _DeadPointer(object):
 
 
 class OutputString(object):
-    """Object for managing output string memory
+    """
+    Object for managing the char* output of LLVM APIs.
     """
     _as_parameter_ = _DeadPointer()
 
@@ -78,7 +79,8 @@ class OutputString(object):
 
 
 class ObjectRef(object):
-    """Weak reference to LLVM objects
+    """
+    A wrapper around a ctypes pointer to a LLVM object ("resource").
     """
     _closed = False
     _as_parameter_ = _DeadPointer()
@@ -113,15 +115,22 @@ class ObjectRef(object):
     def _dispose(self):
         """
         Dispose of the underlying LLVM resource.  Should be overriden
-        by subclasses.
+        by subclasses.  Automatically called by close(), __del__() and
+        __exit__() (unless the resource has been detached).
         """
 
     @property
     def closed(self):
+        """
+        Whether this object has been closed.  A closed object can't
+        be used anymore.
+        """
         return self._closed
 
     def __enter__(self):
         assert hasattr(self, "close")
+        if self._closed:
+            raise RuntimeError("%s instance already closed" % (self.__class__,))
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

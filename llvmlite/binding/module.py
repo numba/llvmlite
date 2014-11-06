@@ -24,7 +24,8 @@ def parse_assembly(llvmir):
 
 
 class ModuleRef(ffi.ObjectRef):
-    """A weak reference to a LLVM module.
+    """
+    A reference to a LLVM module.
     """
 
     def __str__(self):
@@ -36,24 +37,38 @@ class ModuleRef(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposeModule(self)
 
     def get_function(self, name):
+        """
+        Get a ValueRef pointing to the function named *name*.
+        NameError is raised if the symbol isn't found.
+        """
         p = ffi.lib.LLVMPY_GetNamedFunction(self, _encode_string(name))
         if not p:
             raise NameError(name)
         return ValueRef(p, module=self)
 
     def get_global_variable(self, name):
+        """
+        Get a ValueRef pointing to the global variable named *name*.
+        NameError is raised if the symbol isn't found.
+        """
         p = ffi.lib.LLVMPY_GetNamedGlobalVariable(self, _encode_string(name))
         if not p:
             raise NameError(name)
         return ValueRef(p, module=self)
 
     def verify(self):
+        """
+        Verify the module IR's correctness.  RuntimeError is raised on error.
+        """
         with ffi.OutputString() as outmsg:
             if ffi.lib.LLVMPY_VerifyModule(self, outmsg):
                 raise RuntimeError(str(outmsg))
 
     @property
     def data_layout(self):
+        """
+        This module's data layout specification, as a string.
+        """
         # LLVMGetDataLayout() points inside a std::string managed by LLVM.
         with ffi.OutputString(owned=False) as outmsg:
             ffi.lib.LLVMPY_GetDataLayout(self, outmsg)
@@ -67,6 +82,9 @@ class ModuleRef(ffi.ObjectRef):
 
     @property
     def triple(self):
+        """
+        This module's target "triple" specification, as a string.
+        """
         # LLVMGetTarget() points inside a std::string managed by LLVM.
         with ffi.OutputString(owned=False) as outmsg:
             ffi.lib.LLVMPY_GetTarget(self, outmsg)
@@ -85,6 +103,10 @@ class ModuleRef(ffi.ObjectRef):
 
     @property
     def global_variables(self):
+        """
+        Return an iterator over this module's global variables.
+        The iterator will yield a ValueRef for each global variable.
+        """
         gi = ffi.lib.LLVMPY_ModuleGlobalIter(self)
         return _GlobalsIterator(gi, module=self)
 

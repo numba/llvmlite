@@ -156,8 +156,9 @@ class TestModuleRef(BaseTest):
             str(mod)
         with self.assertRaises(ctypes.ArgumentError):
             str(mod)
-        with mod:
-            pass
+        with self.assertRaises(RuntimeError):
+            with mod:
+                pass
 
     def test_data_layout(self):
         mod = self.module()
@@ -234,8 +235,9 @@ class JITTestMixin(object):
         ee = self.jit(self.module())
         with ee:
             pass
-        with ee:
-            pass
+        with self.assertRaises(RuntimeError):
+            with ee:
+                pass
         with self.assertRaises(ctypes.ArgumentError):
             ee.finalize_object()
 

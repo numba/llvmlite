@@ -86,6 +86,9 @@ class ExecutionEngine(ffi.ObjectRef):
 
     @property
     def target_data(self):
+        """
+        The TargetData for this execution engine.
+        """
         if self._td is not None:
             return self._td
         ptr = ffi.lib.LLVMPY_GetExecutionEngineTargetData(self)
