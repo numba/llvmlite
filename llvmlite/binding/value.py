@@ -1,79 +1,63 @@
+
 from ctypes import POINTER, c_char_p, c_int
+import enum
+import itertools
 
 from . import ffi
 from .common import _decode_string, _encode_string
-import itertools
-
-# Linkage Enum
-_linkage_ct = itertools.count()
-_linkage_get = lambda: next(_linkage_ct)
-
-LINKAGE = {
-    'external': _linkage_get(),
-    'available_externally': _linkage_get(),
-    'linkonce_any': _linkage_get(),
-    'linkonce_odr': _linkage_get(),
-    'linkonce_odr_autohide': _linkage_get(),
-    'weak_any': _linkage_get(),
-    'weak_odr': _linkage_get(),
-    'appending': _linkage_get(),
-    'internal': _linkage_get(),
-    'private': _linkage_get(),
-    'dllimport': _linkage_get(),
-    'dllexport': _linkage_get(),
-    'external_weak': _linkage_get(),
-    'ghost': _linkage_get(),
-    'common': _linkage_get(),
-    'linker_private': _linkage_get(),
-    'linker_private_weak': _linkage_get(),
-}
-
-_REVLINKAGE = dict((v, k) for k, v in LINKAGE.items())
 
 
-# Attribute Enum
+class Linkage(enum.IntEnum):
+    # The LLVMLinkage enum from llvm-c/Core.h
 
-_attribute_ct = itertools.count()
-_attribute_get = lambda: 1 << next(_attribute_ct)
+    external = 0
+    available_externally = 1
+    linkonce_any = 2
+    linkonce_odr = 3
+    linkonce_odr_autohide = 4
+    weak_any = 5
+    weak_odr = 6
+    appending = 7
+    internal = 8
+    private = 9
+    dllimport = 10
+    dllexport = 11
+    external_weak = 12
+    ghost = 13
+    common = 14
+    linker_private = 15
+    linker_private_weak = 16
 
-ATTRIBUTE = {
-    'zext': _attribute_get(),
-    'sext': _attribute_get(),
-    'noreturn': _attribute_get(),
-    'inreg': _attribute_get(),
-    'structret': _attribute_get(),
-    'nounwind': _attribute_get(),
-    'noalias': _attribute_get(),
-    'byval': _attribute_get(),
-    'nest': _attribute_get(),
-    'readnone': _attribute_get(),
-    'readonly': _attribute_get(),
-    'noinline': _attribute_get(),
-    'alwaysinline': _attribute_get(),
-    'optimizeforsize': _attribute_get(),
-    'stackprotect': _attribute_get(),
-    'stackprotectreq': _attribute_get(),  # 1 << 15
 
-    '_reserved0': _attribute_get(),
-    '_reserved1': _attribute_get(),
-    '_reserved2': _attribute_get(),
-    '_reserved3': _attribute_get(),
-    '_reserved4': _attribute_get(),
+class Attribute(enum.IntEnum):
+    # The LLVMAttribute enum from llvm-c/Core.h
 
-    'nocapture': _attribute_get(),
-    'noredzone': _attribute_get(),
-    'noimplicitfloat': _attribute_get(),
-    'naked': _attribute_get(),
-    'inlinehint': _attribute_get(),  # 1 << 25
+    zext = 1 << 0
+    sext = 1 << 1
+    noreturn = 1 << 2
+    inreg = 1 << 3
+    structret = 1 << 4
+    nounwind = 1 << 5
+    noalias = 1 << 6
+    byval = 1 << 7
+    nest = 1 << 8
+    readnone = 1 << 9
+    readonly = 1 << 10
+    noinline = 1 << 11
+    alwaysinline = 1 << 12
+    optimizeforsize = 1 << 13
+    stackprotect = 1 << 14
+    stackprotectreq = 1 << 15
 
-    '_reserved5': _attribute_get(),
-    '_reserved6': _attribute_get(),
-    '_reserved7': _attribute_get(),
+    nocapture = 1 << 21
+    noredzone = 1 << 22
+    noimplicitfloat = 1 << 23
+    naked = 1 << 24
+    inlinehint = 1 << 25
 
-    'returnstwice': _attribute_get(), # 1 << 29
-    'uwtable': _attribute_get(),
-    'nonlazybind': _attribute_get(),
-}
+    returnstwice = 1 << 29
+    uwtable = 1 << 30
+    nonlazybind = 1 << 31
 
 
 class ValueRef(ffi.ObjectRef):
@@ -105,16 +89,20 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def linkage(self):
-        return _REVLINKAGE[ffi.lib.LLVMPY_GetLinkage(self)]
+        return Linkage(ffi.lib.LLVMPY_GetLinkage(self))
 
     @linkage.setter
     def linkage(self, value):
-        ffi.lib.LLVMPY_SetLinkage(self, LINKAGE[value])
+        if not isinstance(value, Linkage):
+            value = Linkage[value]
+        ffi.lib.LLVMPY_SetLinkage(self, value)
 
     def add_function_attribute(self, attr):
         """Only works on function value"""
-        ffi.lib.LLVMPY_AddFunctionAttr(self, ATTRIBUTE[attr])
-
+        # XXX unused?
+        if not isinstance(attr, Attribute):
+            attr = Attribute[attr]
+        ffi.lib.LLVMPY_AddFunctionAttr(self, attr)
 
     @property
     def type(self):

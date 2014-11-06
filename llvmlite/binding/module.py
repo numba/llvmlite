@@ -1,7 +1,9 @@
 from __future__ import print_function, absolute_import
 from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
                     c_void_p, cast)
-from . import ffi, link_modules
+
+from . import ffi
+from .linker import link_modules
 from .common import _encode_string
 from .value import ValueRef
 

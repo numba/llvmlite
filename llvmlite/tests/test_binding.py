@@ -348,11 +348,18 @@ class TestValueRef(BaseTest):
         mod = self.module()
         glob = mod.get_global_variable("glob")
         linkage = glob.linkage
-        self.assertIsInstance(linkage, str)
-        self.assertTrue(linkage)
+        self.assertIsInstance(glob.linkage, llvm.Linkage)
+        glob.linkage = linkage
+        self.assertEqual(glob.linkage, linkage)
         for linkage in ("internal", "external"):
             glob.linkage = linkage
-            self.assertEqual(glob.linkage, linkage)
+            self.assertIsInstance(glob.linkage, llvm.Linkage)
+            self.assertEqual(glob.linkage.name, linkage)
+
+    def test_add_function_attribute(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        fn.add_function_attribute("zext")
 
     def test_module(self):
         mod = self.module()

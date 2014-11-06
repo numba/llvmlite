@@ -5,7 +5,8 @@ import os
 from ctypes import (POINTER, c_char_p, c_ulonglong, c_int, c_size_t,
                     c_void_p, string_at, byref)
 
-from . import ffi, parse_assembly
+from . import ffi
+from .module import parse_assembly
 from .common import _decode_string, _encode_string
 
 
