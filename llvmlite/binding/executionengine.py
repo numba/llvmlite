@@ -3,12 +3,9 @@ from ctypes import byref, POINTER, c_char_p, c_bool, c_uint, c_void_p
 from . import ffi, targets
 
 
-def link_in_jit():
-    ffi.lib.LLVMPY_LinkInJIT()
-
-
-def link_in_mcjit():
-    ffi.lib.LLVMPY_LinkInMCJIT()
+# Just check these weren't optimized out of the DLL.
+ffi.lib.LLVMPY_LinkInJIT
+ffi.lib.LLVMPY_LinkInMCJIT
 
 
 def create_jit_compiler(module, opt=2):
