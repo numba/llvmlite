@@ -1,0 +1,26 @@
+package:
+  name: llvmdev
+  version: "3.5"
+
+source:
+  fn: llvm-3.5.src.tar.xz
+  url: http://llvm.org/releases/3.5.0/llvm-3.5.0.src.tar.xz
+  sha1: 58d817ac2ff573386941e7735d30702fe71267d5
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - system           [linux and not armv6]
+  run:
+    - system           [linux and not armv6]
+
+#test:
+  #commands:
+    #- clang --help     [linux and not armv6]
+
+about:
+  home: http://llvm.org/
+  license: Open Source (http://llvm.org/releases/3.5.0/LICENSE.TXT)
+  summary: Development headers and libraries for LLVM
