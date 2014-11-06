@@ -11,6 +11,8 @@ build:
 requirements:
   build:
     - python
+      # On channel https://binstar.org/antoine/
+    - llvmdev 3.5* [win]
     #- cmake          [win]
   run:
     - python
