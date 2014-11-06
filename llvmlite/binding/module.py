@@ -127,6 +127,8 @@ class _GlobalsIterator(ffi.ObjectRef):
         else:
             raise StopIteration
 
+    next = __next__
+
     def __iter__(self):
         return self
 

@@ -17,6 +17,7 @@ asm_sum = r"""
     target triple = "{triple}"
 
     @glob = global i32 0, align 1
+    @globz = global float 1.5, align 1
 
     define i32 @sum(i32 %.1, i32 %.2) {{
       %.3 = add i32 %.1, %.2
@@ -201,6 +202,15 @@ class TestModuleRef(BaseTest):
         # Check that gv keeps the module instance alive
         del mod
         str(gv.module)
+
+    def test_global_variables(self):
+        mod = self.module()
+        it = mod.global_variables
+        del mod
+        globs = sorted(it, key=lambda value: value.name)
+        self.assertEqual(len(globs), 2)
+        self.assertEqual(globs[0].name, "glob")
+        self.assertEqual(globs[1].name, "globz")
 
     def test_link_in(self):
         dest = self.module()
