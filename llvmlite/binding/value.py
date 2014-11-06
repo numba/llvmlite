@@ -29,7 +29,7 @@ class Linkage(enum.IntEnum):
     linker_private_weak = 16
 
 
-class Attribute(enum.IntEnum):
+class Attribute(enum.Enum):
     # The LLVMAttribute enum from llvm-c/Core.h
 
     zext = 1 << 0
@@ -102,7 +102,7 @@ class ValueRef(ffi.ObjectRef):
         # XXX unused?
         if not isinstance(attr, Attribute):
             attr = Attribute[attr]
-        ffi.lib.LLVMPY_AddFunctionAttr(self, attr)
+        ffi.lib.LLVMPY_AddFunctionAttr(self, attr.value)
 
     @property
     def type(self):
