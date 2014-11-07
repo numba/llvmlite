@@ -43,14 +43,6 @@ LLVMPY_FinalizeObject(LLVMExecutionEngineRef EE)
     llvm::unwrap(EE)->finalizeObject();
 }
 
-API_EXPORT(int)
-LLVMPY_CreateJITCompiler(LLVMExecutionEngineRef *OutEE,
-                         LLVMModuleRef M,
-                         unsigned OptLevel,
-                         char **OutError)
-{
-    return LLVMCreateJITCompilerForModule(OutEE, M, OptLevel, OutError);
-}
 
 // wrap/unwrap for LLVMTargetMachineRef.
 // Ripped from lib/Target/TargetMachineC.cpp.
@@ -65,10 +57,13 @@ namespace llvm {
     }
 }
 
-API_EXPORT(LLVMExecutionEngineRef)
-LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
-                           LLVMTargetMachineRef TM,
-                           char **OutError)
+
+static
+LLVMExecutionEngineRef
+create_execution_engine(LLVMModuleRef M,
+                        LLVMTargetMachineRef TM,
+                        char **OutError,
+                        bool useMCJIT )
 {
     LLVMExecutionEngineRef ee = nullptr;
 
@@ -76,7 +71,7 @@ LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
     std::string err;
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);
-    eb.setUseMCJIT(true);
+    eb.setUseMCJIT(useMCJIT);
 
     /* EngineBuilder::create loads the current process symbols */
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
@@ -86,6 +81,31 @@ LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
     else
         ee = llvm::wrap(engine);
     return ee;
+}
+
+API_EXPORT(int)
+LLVMPY_CreateJITCompiler(LLVMExecutionEngineRef *OutEE,
+                         LLVMModuleRef M,
+                         unsigned OptLevel,
+                         char **OutError)
+{
+    return LLVMCreateJITCompilerForModule(OutEE, M, OptLevel, OutError);
+}
+
+API_EXPORT(LLVMExecutionEngineRef)
+LLVMPY_CreateJITCompilerWithTM(LLVMModuleRef M,
+                           LLVMTargetMachineRef TM,
+                           char **OutError)
+{
+    return create_execution_engine(M, TM, OutError, false);
+}
+
+API_EXPORT(LLVMExecutionEngineRef)
+LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
+                           LLVMTargetMachineRef TM,
+                           char **OutError)
+{
+    return create_execution_engine(M, TM, OutError, true);
 }
 
 API_EXPORT(void *)

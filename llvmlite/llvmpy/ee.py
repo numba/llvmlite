@@ -28,6 +28,7 @@ class EngineBuilder(object):
         self._opt = 2
         self._mattrs = ''
         self._options = defaultdict(bool)
+        self._use_mcjit = True
 
     def opt(self, opt):
         self._opt = opt
@@ -37,21 +38,17 @@ class EngineBuilder(object):
         self._mattrs = attrs
         return self
 
-    @property
-    def emit_jit_debug(self):
-        return self._options['jitdebug']
+    def use_mcjit(self, enable=True):
+        self._use_mcjit = enable
+        return self
 
-    @emit_jit_debug.setter
     def emit_jit_debug(self, enable=True):
         self._options['jitdebug'] = enable
+        return self
 
-    @property
-    def print_machine_code(self):
-        return self._options['printmc']
-
-    @print_machine_code.setter
     def print_machine_code(self, enable=True):
         self._options['printmc'] = enable
+        return self
 
     def select_target(self):
         target = llvm.Target.from_triple(self.module.triple)
@@ -64,7 +61,10 @@ class EngineBuilder(object):
             tm = self.select_target()
         if not isinstance(tm, TargetMachine):
             tm = tm._tm
-        return llvm.create_mcjit_compiler(self.module, tm._tm)
+        if self._use_mcjit:
+            return llvm.create_mcjit_compiler(self.module, tm._tm)
+        else:
+            return llvm.create_jit_compiler_with_tm(self.module, tm._tm)
 
 
 class TargetMachine(object):
