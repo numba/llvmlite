@@ -309,12 +309,7 @@ class JITTestMixin(object):
         str(td)
 
 
-class TestMCJit(BaseTest, JITTestMixin):
-
-    def jit(self, mod, target_machine=None):
-        if target_machine is None:
-            target_machine = self.target_machine()
-        return llvm.create_mcjit_compiler(mod, target_machine)
+class JITWithTMTestMixin(JITTestMixin):
 
     def test_emit_assembly(self):
         """Test TargetMachineRef.emit_assembly()"""
@@ -336,7 +331,32 @@ class TestMCJit(BaseTest, JITTestMixin):
             self.assertIn(b"ELF", code_object[:10])
 
 
+class TestMCJit(BaseTest, JITWithTMTestMixin):
+    """
+    Test JIT engines created with create_mcjit_compiler().
+    """
+
+    def jit(self, mod, target_machine=None):
+        if target_machine is None:
+            target_machine = self.target_machine()
+        return llvm.create_mcjit_compiler(mod, target_machine)
+
+
+class TestLegacyJitWithTM(BaseTest, JITWithTMTestMixin):
+    """
+    Test JIT engines created with create_jit_compiler_with_tm().
+    """
+
+    def jit(self, mod, target_machine=None):
+        if target_machine is None:
+            target_machine = self.target_machine()
+        return llvm.create_jit_compiler_with_tm(mod, target_machine)
+
+
 class TestLegacyJit(BaseTest, JITTestMixin):
+    """
+    Test JIT engines created with create_jit_compiler().
+    """
 
     def jit(self, mod):
         return llvm.create_jit_compiler(mod)
