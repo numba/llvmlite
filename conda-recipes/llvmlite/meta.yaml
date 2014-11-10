@@ -1,9 +1,10 @@
 package:
   name: llvmlite
-  version: "0.1.dev2"
+  version: "0.1.dev3"
 
 source:
-  git_url: https://github.com/numba/llvmlite.git
+  path: ../..
+  #git_url: https://github.com/numba/llvmlite.git
 
 build:
   number: 1
@@ -16,6 +17,7 @@ requirements:
     #- cmake          [win]
   run:
     - python
+    - enum34         [py26 or py27 or py33]
 
 test:
   requires:
