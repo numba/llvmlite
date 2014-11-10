@@ -8,6 +8,5 @@
     --prefix=$PREFIX \
     --with-python=$SYS_PYTHON
 
-# libs-only, install-libs?
 make -j4 libs-only
 make install-libs
