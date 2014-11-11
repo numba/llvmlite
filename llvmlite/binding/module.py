@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
 from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
-                    c_void_p, cast)
+                    c_void_p, c_size_t, cast, string_at)
 
 from . import ffi
 from .linker import link_modules
@@ -32,6 +32,21 @@ class ModuleRef(ffi.ObjectRef):
         with ffi.OutputString() as outstr:
             ffi.lib.LLVMPY_PrintModuleToString(self, outstr)
             return str(outstr)
+
+    def as_bitcode(self):
+        """
+        Return the module's LLVM bitcode, as a bytes object.
+        """
+        ptr = c_char_p(None)
+        size = c_size_t(-1)
+        ffi.lib.LLVMPY_WriteBitcodeToString(self, byref(ptr), byref(size))
+        if not ptr:
+            raise MemoryError
+        try:
+            assert size.value >= 0
+            return string_at(ptr, size.value)
+        finally:
+            ffi.lib.LLVMPY_DisposeString(ptr)
 
     def _dispose(self):
         ffi.lib.LLVMPY_DisposeModule(self)
@@ -147,6 +162,9 @@ ffi.lib.LLVMPY_DisposeModule.argtypes = [ffi.LLVMModuleRef]
 
 ffi.lib.LLVMPY_PrintModuleToString.argtypes = [ffi.LLVMModuleRef,
                                                POINTER(c_char_p)]
+ffi.lib.LLVMPY_WriteBitcodeToString.argtypes = [ffi.LLVMModuleRef,
+                                                POINTER(c_char_p),
+                                                POINTER(c_size_t)]
 
 ffi.lib.LLVMPY_GetNamedFunction.argtypes = [ffi.LLVMModuleRef,
                                             c_char_p]

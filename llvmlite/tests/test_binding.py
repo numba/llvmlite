@@ -218,6 +218,11 @@ class TestModuleRef(BaseTest):
         dest.link_in(src)
         dest.get_function("mul")
 
+    def test_as_bitcode(self):
+        mod = self.module()
+        bc = mod.as_bitcode()
+        self.assertTrue(bc.startswith(b'BC'))
+
 
 class JITTestMixin(object):
     """

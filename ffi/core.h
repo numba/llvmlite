@@ -22,6 +22,9 @@ extern "C" {
 API_EXPORT(const char *)
 LLVMPY_CreateString(const char *msg);
 
+API_EXPORT(const char *)
+LLVMPY_CreateByteString(const char *buf, size_t len);
+
 API_EXPORT(void)
 LLVMPY_DisposeString(const char *msg);
 
