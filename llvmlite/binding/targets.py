@@ -180,22 +180,32 @@ def create_target_library_info(triple):
 
 
 class TargetLibraryInfo(ffi.ObjectRef):
+    """
+    A LLVM TargetLibraryInfo.  Use :func:`create_target_library_info`
+    to create instances.
+    """
+
     def _dispose(self):
         ffi.lib.LLVMPY_DisposeTargetLibraryInfo(self)
 
     def add_pass(self, pm):
-        """Add this object as a pass to
+        """
+        Add this library info as a pass to PassManager *pm*.
         """
         ffi.lib.LLVMPY_AddTargetLibraryInfo(self, pm)
         # Once added to a PassManager, we can never get it back.
         self._owned = True
 
     def disable_all(self):
-        """Disable all builtins
+        """
+        Disable all "builtin" functions.
         """
         ffi.lib.LLVMPY_DisableAllBuiltins(self)
 
     def get_libfunc(self, name):
+        """
+        Get the library function *name*.  NameError is raised if not found.
+        """
         lf = c_int()
         if not ffi.lib.LLVMPY_GetLibFunc(self, _encode_string(name),
                                          byref(lf)):
@@ -203,6 +213,9 @@ class TargetLibraryInfo(ffi.ObjectRef):
         return LibFunc(name=name, identity=lf.value)
 
     def set_unavailable(self, libfunc):
+        """
+        Mark the given library function (*libfunc*) as unavailable.
+        """
         ffi.lib.LLVMPY_SetUnavailableLibFunc(self, libfunc.identity)
 
 

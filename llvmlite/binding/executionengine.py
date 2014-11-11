@@ -77,6 +77,7 @@ class ExecutionEngine(ffi.ObjectRef):
     get_pointer_to_function = get_pointer_to_global
 
     def add_global_mapping(self, gv, addr):
+        # XXX unused?
         ffi.lib.LLVMPY_AddGlobalMapping(self, gv, addr)
 
     def add_module(self, module):
