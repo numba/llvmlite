@@ -21,6 +21,11 @@ def create_target_data(strrep):
 
 
 class TargetData(ffi.ObjectRef):
+    """
+    A TargetData provides structured access to a data layout.
+    Use :func:`create_target_data` to create instances.
+    """
+
     def __str__(self):
         if self._closed:
             return "<dead TargetData>"
@@ -34,7 +39,7 @@ class TargetData(ffi.ObjectRef):
     def abi_size(self, ty):
         from llvmlite.ir import Type, Module, GlobalVariable
 
-        # XXX unused
+        # XXX layering violation
         if isinstance(ty, Type):
             # We need to convert our type object to the LLVM's object
             m = Module()
@@ -46,6 +51,9 @@ class TargetData(ffi.ObjectRef):
         return ffi.lib.LLVMPY_ABISizeOfType(self, ty)
 
     def add_pass(self, pm):
+        """
+        Add a DataLayout pass to PassManager *pm*.
+        """
         ffi.lib.LLVMPY_AddTargetData(self, pm)
         # Once added to a PassManager, we can never get it back.
         self._owned = True

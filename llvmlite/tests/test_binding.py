@@ -108,11 +108,6 @@ class TestFunctions(BaseTest):
         triple = llvm.get_default_triple()
         self.assertIsInstance(triple, str)
 
-    def test_create_target_data(self):
-        td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
-        glob = self.glob()
-        self.assertEqual(td.abi_size(glob.type), 8)
-
     def test_initfini(self):
         code = """if 1:
             from llvmlite import binding as llvm
@@ -481,6 +476,22 @@ class TestTarget(BaseTest):
         s = str(target)
         self.assertIn(target.name, s)
         self.assertIn(target.description, s)
+
+
+class TestTargetData(BaseTest):
+
+    def target_data(self):
+        return llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+
+    def test_abi_size(self):
+        td = self.target_data()
+        glob = self.glob()
+        self.assertEqual(td.abi_size(glob.type), 8)
+
+    def test_add_pass(self):
+        td = self.target_data()
+        pm = llvm.create_module_pass_manager()
+        td.add_pass(pm)
 
 
 class TestPassManagerBuilder(BaseTest):
