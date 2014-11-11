@@ -1,3 +1,4 @@
+#include "llvm-c/BitReader.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Bitcode/ReaderWriter.h"
 #include "llvm/Support/raw_ostream.h"
@@ -23,5 +24,21 @@ LLVMPY_WriteBitcodeToString(LLVMModuleRef M,
     *outlen = buf.size();
 }
 
+API_EXPORT(LLVMModuleRef)
+LLVMPY_ParseBitcode(LLVMContextRef context,
+                    const char *bitcode, size_t bitcodelen,
+                    char **outmsg)
+{
+    using namespace llvm;
+    LLVMModuleRef ref;
+    LLVMMemoryBufferRef mem = LLVMCreateMemoryBufferWithMemoryRange(
+        bitcode, bitcodelen,
+        "" /* BufferName*/,
+        0 /* RequiresNullTerminator*/
+    );
+
+    LLVMParseBitcodeInContext(context, mem, &ref, outmsg);
+    return ref;
+}
 
 } // end extern "C"

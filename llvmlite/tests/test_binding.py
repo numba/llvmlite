@@ -223,6 +223,19 @@ class TestModuleRef(BaseTest):
         bc = mod.as_bitcode()
         self.assertTrue(bc.startswith(b'BC'))
 
+    def test_parse_bitcode_error(self):
+        with self.assertRaises(RuntimeError) as cm:
+            llvm.parse_bitcode(b"")
+        self.assertIn("LLVM bitcode parsing error", str(cm.exception))
+        self.assertIn("Invalid bitcode signature", str(cm.exception))
+
+    def test_bitcode_roundtrip(self):
+        bc = self.module().as_bitcode()
+        mod = llvm.parse_bitcode(bc)
+        self.assertEqual(mod.as_bitcode(), bc)
+        mod.get_function("sum")
+        mod.get_global_variable("glob")
+
 
 class JITTestMixin(object):
     """

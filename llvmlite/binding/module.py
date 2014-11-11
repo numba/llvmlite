@@ -23,6 +23,21 @@ def parse_assembly(llvmir):
     return mod
 
 
+def parse_bitcode(bitcode):
+    """
+    Create Module from a LLVM *bitcode* (a bytes object).
+    """
+    context = ffi.lib.LLVMPY_GetGlobalContext()
+    buf = c_char_p(bitcode)
+    bufsize = len(bitcode)
+    with ffi.OutputString() as errmsg:
+        mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(context, buf, bufsize, errmsg))
+        if errmsg:
+            mod.close()
+            raise RuntimeError("LLVM bitcode parsing error\n{0}".format(errmsg))
+    return mod
+
+
 class ModuleRef(ffi.ObjectRef):
     """
     A reference to a LLVM module.
@@ -155,6 +170,11 @@ ffi.lib.LLVMPY_ParseAssembly.argtypes = [ffi.LLVMContextRef,
                                          c_char_p,
                                          POINTER(c_char_p)]
 ffi.lib.LLVMPY_ParseAssembly.restype = ffi.LLVMModuleRef
+
+ffi.lib.LLVMPY_ParseBitcode.argtypes = [ffi.LLVMContextRef,
+                                        c_char_p, c_size_t,
+                                        POINTER(c_char_p)]
+ffi.lib.LLVMPY_ParseBitcode.restype = ffi.LLVMModuleRef
 
 ffi.lib.LLVMPY_GetGlobalContext.restype = ffi.LLVMContextRef
 
