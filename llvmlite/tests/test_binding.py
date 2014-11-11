@@ -235,7 +235,12 @@ class TestModuleRef(BaseTest):
     def test_as_bitcode(self):
         mod = self.module()
         bc = mod.as_bitcode()
-        self.assertTrue(bc.startswith(b'BC'))
+        # Refer to http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00064
+        # and http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00092
+        bitcode_wrapper_magic = b'\xde\xc0\x17\x0b'
+        bitcode_magic = b'BC'
+        self.assertTrue(bc.startswith(bitcode_magic) or
+                        bc.startswith(bitcode_wrapper_magic))
 
     def test_parse_bitcode_error(self):
         with self.assertRaises(RuntimeError) as cm:
