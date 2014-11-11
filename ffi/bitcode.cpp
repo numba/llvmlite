@@ -38,6 +38,7 @@ LLVMPY_ParseBitcode(LLVMContextRef context,
     );
 
     LLVMParseBitcodeInContext(context, mem, &ref, outmsg);
+    LLVMDisposeMemoryBuffer(mem);
     return ref;
 }
 
