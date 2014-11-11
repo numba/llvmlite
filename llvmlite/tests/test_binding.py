@@ -165,6 +165,15 @@ class TestModuleRef(BaseTest):
         mod = self.module()
         s = mod.data_layout
         self.assertIsInstance(s, str)
+        mod.data_layout = s
+        self.assertEqual(s, mod.data_layout)
+
+    def test_triple(self):
+        mod = self.module()
+        s = mod.triple
+        self.assertEqual(s, llvm.get_default_triple())
+        mod.triple = ''
+        self.assertEqual(mod.triple, '')
 
     def test_verify(self):
         # Verify successful
@@ -217,6 +226,16 @@ class TestModuleRef(BaseTest):
         src = self.module(asm_mul)
         dest.link_in(src)
         dest.get_function("mul")
+        dest.close()
+        with self.assertRaises(ctypes.ArgumentError):
+            src.get_function("mul")
+
+    def test_link_in_preserve(self):
+        dest = self.module()
+        src2 = self.module(asm_mul)
+        dest.link_in(src2, preserve=True)
+        dest.close()
+        src2.get_function("mul")
 
     def test_as_bitcode(self):
         mod = self.module()
