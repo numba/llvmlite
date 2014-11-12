@@ -4,6 +4,7 @@ Build script for the shared library providing the C ABI bridge to LLVM.
 """
 
 from __future__ import print_function
+from distutils.spawn import find_executable
 
 import os
 import subprocess
@@ -80,8 +81,11 @@ def main():
     elif sys.platform.startswith('linux'):
         main_posix('linux', '.so')
     elif sys.platform == 'darwin':
-        main_posix('osx', '.dylib',
-                   default_llvm_config='/usr/local/opt/llvm/bin/llvm-config')
+        llvm_config_path = 'llvm-config'
+        # If the llvm-config is not in PATH, try a default path
+        if not find_executable(llvm_config_path):
+            llvm_config_path = '/usr/local/opt/llvm/bin/llvm-config'
+        main_posix('osx', '.dylib', llvm_config_path)
     else:
         raise RuntimeError("unsupported platform: %r" % (sys.platform,))
 
