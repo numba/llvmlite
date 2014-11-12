@@ -1,6 +1,6 @@
 package:
   name: llvmlite
-  version: "0.1.dev4"
+  version: "0.1.dev5"
 
 source:
   path: ../..
