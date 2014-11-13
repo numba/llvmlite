@@ -36,19 +36,20 @@ class TargetData(ffi.ObjectRef):
     def _dispose(self):
         ffi.lib.LLVMPY_DisposeTargetData(self)
 
-    def abi_size(self, ty):
-        from llvmlite.ir import Type, Module, GlobalVariable
-
-        # XXX layering violation
-        if isinstance(ty, Type):
-            # We need to convert our type object to the LLVM's object
-            m = Module()
-            foo = GlobalVariable(m, ty, name="foo")
-            with parse_assembly(str(m)) as mod:
-                gv = mod.get_global_variable(foo.name)
-                ty = gv.type
-
+    def get_abi_size(self, ty):
+        """
+        Get ABI size of LLVM type *ty*.
+        """
         return ffi.lib.LLVMPY_ABISizeOfType(self, ty)
+
+    def get_pointee_abi_size(self, ty):
+        """
+        Get ABI size of pointee type of LLVM pointer type *ty*.
+        """
+        size = ffi.lib.LLVMPY_ABISizeOfElementType(self, ty)
+        if size == -1:
+            raise RuntimeError("Not a pointer type: %s" % (ty,))
+        return size
 
     def add_pass(self, pm):
         """
@@ -243,7 +244,11 @@ ffi.lib.LLVMPY_AddTargetData.argtypes = [ffi.LLVMTargetDataRef,
 
 ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
                                          ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_ABISizeOfType.restype = c_ulonglong
+ffi.lib.LLVMPY_ABISizeOfType.restype = c_size_t
+
+ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef,
+                                                ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ABISizeOfElementType.restype = c_size_t
 
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTargetFromTriple.restype = ffi.LLVMTargetRef

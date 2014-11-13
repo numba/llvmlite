@@ -35,6 +35,20 @@ class Type(object):
     def __ne__(self, other):
         return not (self == other)
 
+    def get_abi_size(self, target_data):
+        """
+        Get the ABI size of this type according to data layout *target_data*.
+        """
+        from . import Module, GlobalVariable
+        from ..binding import parse_assembly
+
+        # We need to convert our type object to an LLVM type
+        m = Module()
+        foo = GlobalVariable(m, self, name="foo")
+        with parse_assembly(str(m)) as llmod:
+            llty = llmod.get_global_variable(foo.name).type
+            return target_data.get_pointee_abi_size(llty)
+
 
 class MetaData(Type):
     kind = TYPE_METADATA

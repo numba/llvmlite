@@ -17,7 +17,8 @@ asm_sum = r"""
     target triple = "{triple}"
 
     @glob = global i32 0, align 1
-    @globz = global float 1.5, align 1
+    @glob_f = global float 1.5, align 1
+    @glob_struct = global {{ i64, [2 x i64]}} {{i64 0, [2 x i64] [i64 0, i64 0]}}
 
     define i32 @sum(i32 %.1, i32 %.2) {{
       %.3 = add i32 %.1, %.2
@@ -212,9 +213,10 @@ class TestModuleRef(BaseTest):
         it = mod.global_variables
         del mod
         globs = sorted(it, key=lambda value: value.name)
-        self.assertEqual(len(globs), 2)
+        self.assertEqual(len(globs), 3)
         self.assertEqual(globs[0].name, "glob")
-        self.assertEqual(globs[1].name, "globz")
+        self.assertEqual(globs[1].name, "glob_f")
+        self.assertEqual(globs[2].name, "glob_struct")
 
     def test_link_in(self):
         dest = self.module()
@@ -339,11 +341,22 @@ class JITTestMixin(object):
         td = ee.target_data
         # A singleton is returned
         self.assertIs(ee.target_data, td)
-        gv = mod.get_global_variable("glob")
-        self.assertIn(td.abi_size(gv.type), (4, 8))
         str(td)
         del mod, ee
         str(td)
+
+    def test_target_data_abi_size(self):
+        mod = self.module()
+        ee = self.jit(mod)
+        td = ee.target_data
+        gv_i32 = mod.get_global_variable("glob")
+        gv_struct = mod.get_global_variable("glob_struct")
+        # A global is a pointer, it has the ABI size of a pointer
+        pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
+        self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
+        self.assertEqual(td.get_abi_size(gv_struct.type), pointer_size)
+        self.assertEqual(td.get_pointee_abi_size(gv_i32.type), 4)
+        self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
 
 
 class JITWithTMTestMixin(JITTestMixin):
@@ -488,10 +501,10 @@ class TestTargetData(BaseTest):
     def target_data(self):
         return llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
 
-    def test_abi_size(self):
+    def test_get_abi_size(self):
         td = self.target_data()
         glob = self.glob()
-        self.assertEqual(td.abi_size(glob.type), 8)
+        self.assertEqual(td.get_abi_size(glob.type), 8)
 
     def test_add_pass(self):
         td = self.target_data()

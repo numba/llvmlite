@@ -7,7 +7,8 @@
 #include "llvm/Target/TargetLibraryInfo.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/TargetRegistry.h"
-//#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/IR/Type.h"
+
 #include <cstdio>
 #include <cstring>
 
@@ -75,10 +76,20 @@ LLVMPY_DisposeTargetData(LLVMTargetDataRef TD)
 }
 
 
-API_EXPORT(unsigned long long)
+API_EXPORT(size_t)
 LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 {
-    return LLVMABISizeOfType(TD, Ty);
+    return (size_t) LLVMABISizeOfType(TD, Ty);
+}
+
+API_EXPORT(size_t)
+LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
+{
+    llvm::Type *tp = llvm::unwrap(Ty);
+    if (!tp->isPointerTy())
+        return -1;
+    tp = tp->getSequentialElementType();
+    return (size_t) LLVMABISizeOfType(TD, llvm::wrap(tp));
 }
 
 

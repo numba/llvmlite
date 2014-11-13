@@ -19,6 +19,7 @@ from llvmlite import six
 int1 = ir.IntType(1)
 int8 = ir.IntType(8)
 int32 = ir.IntType(32)
+int64 = ir.IntType(64)
 flt = ir.FloatType()
 dbl = ir.DoubleType()
 
@@ -686,6 +687,17 @@ class TestTypes(TestBase):
         with self.assertRaises(IndexError):
             tp.gep(ir.Constant(int32, 2))
         check_index_type(tp)
+
+    def test_abi_size(self):
+        td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+        def check(tp, expected):
+            self.assertEqual(tp.get_abi_size(td), expected)
+        check(int8, 1)
+        check(int32, 4)
+        check(int64, 8)
+        check(ir.ArrayType(int8, 5), 5)
+        check(ir.ArrayType(int32, 5), 20)
+        check(ir.LiteralStructType((dbl, flt, flt)), 16)
 
 
 c32 = lambda i: ir.Constant(int32, i)
