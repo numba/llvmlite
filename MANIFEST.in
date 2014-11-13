@@ -1,1 +1,3 @@
 include README.md setup.py runtests.py run_coverage.py LICENSE
+include versioneer.py
+include llvmlite/_version.py

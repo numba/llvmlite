@@ -11,9 +11,21 @@ import sys
 
 from llvmlite.utils import get_library_name
 
+import versioneer
+
+versioneer.VCS = 'git'
+versioneer.versionfile_source = 'llvmlite/_version.py'
+versioneer.versionfile_build = 'llvmlite/_version.py'
+versioneer.tag_prefix = 'v' # tags are like v1.2.0
+versioneer.parentdir_prefix = 'llvmlite-' # dirname like 'myproject-1.2.0'
+
 
 here_dir = os.path.dirname(__file__)
 
+
+cmdclass = versioneer.get_cmdclass()
+build = cmdclass.get('build', build)
+build_ext = cmdclass.get('build_ext', build_ext)
 
 class LlvmliteBuild(build):
 
@@ -46,6 +58,11 @@ class LlvmliteBuildExt(build_ext):
         }
 
 
+cmdclass.update({'build': LlvmliteBuild,
+                 'build_ext': LlvmliteBuildExt,
+                 })
+
+
 packages = ['llvmlite',
             'llvmlite.binding',
             'llvmlite.ir',
@@ -55,7 +72,7 @@ packages = ['llvmlite',
 
 setup(name='llvmlite',
       description="lightweight wrapper around basic LLVM functionality",
-      version="0.1",
+      version=versioneer.get_version(),
       classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
@@ -74,7 +91,5 @@ setup(name='llvmlite',
       url="https://github.com/numba/llvmlite",
       packages=packages,
       license="BSD",
-      cmdclass={'build': LlvmliteBuild,
-                'build_ext': LlvmliteBuildExt,
-                },
+      cmdclass=cmdclass,
       )
