@@ -76,20 +76,20 @@ LLVMPY_DisposeTargetData(LLVMTargetDataRef TD)
 }
 
 
-API_EXPORT(size_t)
+API_EXPORT(long long)
 LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 {
-    return (size_t) LLVMABISizeOfType(TD, Ty);
+    return (long long) LLVMABISizeOfType(TD, Ty);
 }
 
-API_EXPORT(size_t)
+API_EXPORT(long long)
 LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 {
     llvm::Type *tp = llvm::unwrap(Ty);
     if (!tp->isPointerTy())
         return -1;
     tp = tp->getSequentialElementType();
-    return (size_t) LLVMABISizeOfType(TD, llvm::wrap(tp));
+    return (long long) LLVMABISizeOfType(TD, llvm::wrap(tp));
 }
 
 

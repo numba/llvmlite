@@ -2,7 +2,7 @@ from __future__ import print_function, absolute_import
 
 import collections
 import os
-from ctypes import (POINTER, c_char_p, c_ulonglong, c_int, c_size_t,
+from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
                     c_void_p, string_at, byref)
 
 from . import ffi
@@ -244,11 +244,11 @@ ffi.lib.LLVMPY_AddTargetData.argtypes = [ffi.LLVMTargetDataRef,
 
 ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
                                          ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_ABISizeOfType.restype = c_size_t
+ffi.lib.LLVMPY_ABISizeOfType.restype = c_longlong
 
 ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef,
                                                 ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_ABISizeOfElementType.restype = c_size_t
+ffi.lib.LLVMPY_ABISizeOfElementType.restype = c_longlong
 
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTargetFromTriple.restype = ffi.LLVMTargetRef
