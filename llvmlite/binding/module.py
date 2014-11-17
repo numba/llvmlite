@@ -129,7 +129,7 @@ class ModuleRef(ffi.ObjectRef):
     def link_in(self, other, preserve=False):
         link_modules(self, other, preserve)
         if not preserve:
-            other.detach()
+            other.close()
 
     @property
     def global_variables(self):
