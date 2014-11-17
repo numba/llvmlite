@@ -137,21 +137,28 @@ class ModuleRef(ffi.ObjectRef):
         Return an iterator over this module's global variables.
         The iterator will yield a ValueRef for each global variable.
         """
-        gi = ffi.lib.LLVMPY_ModuleGlobalIter(self)
-        return _GlobalsIterator(gi, module=self)
+        it = ffi.lib.LLVMPY_ModuleGlobalsIter(self)
+        return _GlobalsIterator(it, module=self)
+
+    @property
+    def functions(self):
+        """
+        Return an iterator over this module's functions.
+        The iterator will yield a ValueRef for each function.
+        """
+        it = ffi.lib.LLVMPY_ModuleFunctionsIter(self)
+        return _FunctionsIterator(it, module=self)
 
 
-class _GlobalsIterator(ffi.ObjectRef):
+class _Iterator(ffi.ObjectRef):
+
     def __init__(self, ptr, module):
         ffi.ObjectRef.__init__(self, ptr)
         # Keep Module alive
         self._module = module
 
-    def _dispose(self):
-        ffi.lib.LLVMPY_DisposeGlobalIter(self)
-
     def __next__(self):
-        vp = ffi.lib.LLVMPY_GlobalIterNext(self)
+        vp = self._next()
         if vp:
             return ValueRef(vp, self._module)
         else:
@@ -161,6 +168,24 @@ class _GlobalsIterator(ffi.ObjectRef):
 
     def __iter__(self):
         return self
+
+
+class _GlobalsIterator(_Iterator):
+
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeGlobalsIter(self)
+
+    def _next(self):
+        return ffi.lib.LLVMPY_GlobalsIterNext(self)
+
+
+class _FunctionsIterator(_Iterator):
+
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeFunctionsIter(self)
+
+    def _next(self):
+        return ffi.lib.LLVMPY_FunctionsIterNext(self)
 
 
 # =============================================================================
@@ -203,10 +228,18 @@ ffi.lib.LLVMPY_SetTarget.argtypes = [ffi.LLVMModuleRef, c_char_p]
 ffi.lib.LLVMPY_GetNamedGlobalVariable.argtypes = [ffi.LLVMModuleRef, c_char_p]
 ffi.lib.LLVMPY_GetNamedGlobalVariable.restype = ffi.LLVMValueRef
 
-ffi.lib.LLVMPY_ModuleGlobalIter.argtypes = [ffi.LLVMModuleRef]
-ffi.lib.LLVMPY_ModuleGlobalIter.restype = ffi.LLVMGlobalsIterator
+ffi.lib.LLVMPY_ModuleGlobalsIter.argtypes = [ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_ModuleGlobalsIter.restype = ffi.LLVMGlobalsIterator
 
-ffi.lib.LLVMPY_DisposeGlobalIter.argtypes = [ffi.LLVMGlobalsIterator]
+ffi.lib.LLVMPY_DisposeGlobalsIter.argtypes = [ffi.LLVMGlobalsIterator]
 
-ffi.lib.LLVMPY_GlobalIterNext.argtypes = [ffi.LLVMGlobalsIterator]
-ffi.lib.LLVMPY_GlobalIterNext.restype = ffi.LLVMValueRef
+ffi.lib.LLVMPY_GlobalsIterNext.argtypes = [ffi.LLVMGlobalsIterator]
+ffi.lib.LLVMPY_GlobalsIterNext.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_ModuleFunctionsIter.argtypes = [ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_ModuleFunctionsIter.restype = ffi.LLVMFunctionsIterator
+
+ffi.lib.LLVMPY_DisposeFunctionsIter.argtypes = [ffi.LLVMFunctionsIterator]
+
+ffi.lib.LLVMPY_FunctionsIterNext.argtypes = [ffi.LLVMFunctionsIterator]
+ffi.lib.LLVMPY_FunctionsIterNext.restype = ffi.LLVMValueRef

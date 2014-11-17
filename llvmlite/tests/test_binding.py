@@ -218,10 +218,19 @@ class TestModuleRef(BaseTest):
         self.assertEqual(globs[1].name, "glob_f")
         self.assertEqual(globs[2].name, "glob_struct")
 
+    def test_functions(self):
+        mod = self.module()
+        it = mod.functions
+        del mod
+        funcs = list(it)
+        self.assertEqual(len(funcs), 1)
+        self.assertEqual(funcs[0].name, "sum")
+
     def test_link_in(self):
         dest = self.module()
         src = self.module(asm_mul)
         dest.link_in(src)
+        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.get_function("mul")
         dest.close()
         with self.assertRaises(ctypes.ArgumentError):
@@ -231,6 +240,7 @@ class TestModuleRef(BaseTest):
         dest = self.module()
         src2 = self.module(asm_mul)
         dest.link_in(src2, preserve=True)
+        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.close()
         src2.get_function("mul")
 

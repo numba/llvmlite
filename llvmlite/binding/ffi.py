@@ -24,6 +24,7 @@ LLVMTargetRef = _make_opaque_ref("LLVMTarget")
 LLVMTargetMachineRef = _make_opaque_ref("LLVMTargetMachine")
 LLVMMemoryBufferRef = _make_opaque_ref("LLVMMemoryBuffer")
 LLVMGlobalsIterator = _make_opaque_ref("LLVMGlobalsIterator")
+LLVMFunctionsIterator = _make_opaque_ref("LLVMFunctionsIterator")
 
 
 lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), get_library_name()))

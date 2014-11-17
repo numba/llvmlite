@@ -6,6 +6,7 @@
 #include "core.h"
 
 
+/* An iterator around a module's globals, including the stop condition */
 struct GlobalsIterator {
     typedef llvm::Module::global_iterator iterator;
     iterator cur;
@@ -20,20 +21,53 @@ struct OpaqueGlobalsIterator;
 typedef OpaqueGlobalsIterator* LLVMGlobalsIteratorRef;
 
 
+/* An iterator around a module's functions, including the stop condition */
+struct FunctionsIterator {
+    typedef llvm::Module::const_iterator const_iterator;
+    const_iterator cur;
+    const_iterator end;
+
+    FunctionsIterator(const_iterator cur, const_iterator end)
+        :cur(cur), end(end)
+    { }
+};
+
+struct OpaqueFunctionsIterator;
+typedef OpaqueFunctionsIterator* LLVMFunctionsIteratorRef;
+
+
+//
+// Local helper functions
+//
+
 namespace llvm {
 
-LLVMGlobalsIteratorRef
+static LLVMGlobalsIteratorRef
 wrap(GlobalsIterator* GI){
     return reinterpret_cast<LLVMGlobalsIteratorRef>(GI);
 }
 
-GlobalsIterator*
+static GlobalsIterator*
 unwrap(LLVMGlobalsIteratorRef GI){
     return reinterpret_cast<GlobalsIterator*>(GI);
 }
 
+static LLVMFunctionsIteratorRef
+wrap(FunctionsIterator* GI){
+    return reinterpret_cast<LLVMFunctionsIteratorRef>(GI);
+}
+
+static FunctionsIterator*
+unwrap(LLVMFunctionsIteratorRef GI){
+    return reinterpret_cast<FunctionsIterator *>(GI);
+}
+
 }  // end namespace llvm
 
+
+//
+// Exported API
+//
 
 extern "C" {
 
@@ -107,9 +141,10 @@ LLVMPY_SetTarget(LLVMModuleRef M,
     LLVMSetTarget(M, Triple);
 }
 
+// Iteration APIs
 
 API_EXPORT(LLVMGlobalsIteratorRef)
-LLVMPY_ModuleGlobalIter(LLVMModuleRef M)
+LLVMPY_ModuleGlobalsIter(LLVMModuleRef M)
 {
     using namespace llvm;
     Module* mod = unwrap(M);
@@ -117,12 +152,21 @@ LLVMPY_ModuleGlobalIter(LLVMModuleRef M)
                                     mod->global_end()));
 }
 
+API_EXPORT(LLVMFunctionsIteratorRef)
+LLVMPY_ModuleFunctionsIter(LLVMModuleRef M)
+{
+    using namespace llvm;
+    Module* mod = unwrap(M);
+    return wrap(new FunctionsIterator(mod->begin(),
+                                      mod->end()));
+}
+
 
 /*
-Returns NULL if we are at the end
+  These functions return NULL if we are at the end
 */
 API_EXPORT(LLVMValueRef)
-LLVMPY_GlobalIterNext(LLVMGlobalsIteratorRef GI)
+LLVMPY_GlobalsIterNext(LLVMGlobalsIteratorRef GI)
 {
     using namespace llvm;
     GlobalsIterator* iter = unwrap(GI);
@@ -133,8 +177,26 @@ LLVMPY_GlobalIterNext(LLVMGlobalsIteratorRef GI)
     }
 }
 
+API_EXPORT(LLVMValueRef)
+LLVMPY_FunctionsIterNext(LLVMFunctionsIteratorRef GI)
+{
+    using namespace llvm;
+    FunctionsIterator* iter = unwrap(GI);
+    if (iter->cur != iter->end) {
+        return wrap(&*iter->cur++);
+    } else {
+        return NULL;
+    }
+}
+
 API_EXPORT(void)
-LLVMPY_DisposeGlobalIter(LLVMGlobalsIteratorRef GI)
+LLVMPY_DisposeGlobalsIter(LLVMGlobalsIteratorRef GI)
+{
+    delete llvm::unwrap(GI);
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeFunctionsIter(LLVMFunctionsIteratorRef GI)
 {
     delete llvm::unwrap(GI);
 }
