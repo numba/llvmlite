@@ -14,7 +14,7 @@ from llvmlite import binding as llvm
 from collections import namedtuple
 
 
-def _inline_threshold(optlevel, sizelevel=0):
+def _inlining_threshold(optlevel, sizelevel=0):
     # Refer http://llvm.org/docs/doxygen/html/InlineSimple_8cpp_source.html
     if optlevel > 2:
         return 275
@@ -28,6 +28,14 @@ def _inline_threshold(optlevel, sizelevel=0):
         return 25
 
     return 225
+
+
+def create_pass_manager_builder(opt=2, loop_vectorize=False):
+    pmb = llvm.create_pass_manager_builder()
+    pmb.opt_level = opt
+    pmb.loop_vectorize = loop_vectorize
+    pmb.inlining_threshold = _inlining_threshold(opt)
+    return pmb
 
 
 def build_pass_managers(**kws):
@@ -46,7 +54,7 @@ def build_pass_managers(**kws):
     with llvm.create_pass_manager_builder() as pmb:
         pmb.opt_level = opt = kws.get('opt', 2)
         pmb.loop_vectorize = kws.get('loop_vectorize', False)
-        pmb.inlining_threshold = _inline_threshold(optlevel=opt)
+        pmb.inlining_threshold = _inlining_threshold(optlevel=opt)
 
         if mod:
             dl = llvm.create_target_data(mod.data_layout)
