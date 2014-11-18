@@ -4,6 +4,7 @@ Build script for the shared library providing the C ABI bridge to LLVM.
 """
 
 from __future__ import print_function
+from distutils.spawn import find_executable
 
 import os
 import subprocess
@@ -65,10 +66,10 @@ def main_win32():
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
 
 
-def main_posix(kind, library_ext):
+def main_posix(kind, library_ext, default_llvm_config='llvm-config'):
     os.chdir(here_dir)
     makefile = "Makefile.%s" % (kind,)
-    llvm_config = os.environ.get('LLVM_CONFIG', 'llvm-config')
+    llvm_config = os.environ.get('LLVM_CONFIG', default_llvm_config)
     subprocess.check_call(['make', '-f', makefile,
                            'LLVM_CONFIG=%s' % llvm_config])
     shutil.copy('libllvmlite' + library_ext, target_dir)
@@ -80,7 +81,11 @@ def main():
     elif sys.platform.startswith('linux'):
         main_posix('linux', '.so')
     elif sys.platform == 'darwin':
-        main_posix('osx', '.dylib')
+        llvm_config_path = 'llvm-config'
+        # If the llvm-config is not in PATH, try a default path
+        if not find_executable(llvm_config_path):
+            llvm_config_path = '/usr/local/opt/llvm/bin/llvm-config'
+        main_posix('osx', '.dylib', llvm_config_path)
     else:
         raise RuntimeError("unsupported platform: %r" % (sys.platform,))
 
