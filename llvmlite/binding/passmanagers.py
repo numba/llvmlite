@@ -61,9 +61,9 @@ ffi.lib.LLVMPY_CreateFunctionPassManager.restype = ffi.LLVMPassManagerRef
 
 ffi.lib.LLVMPY_DisposePassManager.argtypes = [ffi.LLVMPassManagerRef]
 
-ffi.lib.LLVMPY_RunFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef,
-                                                  ffi.LLVMValueRef]
-ffi.lib.LLVMPY_RunFunctionPassManager.restype = c_bool
+ffi.lib.LLVMPY_RunPassManager.argtypes = [ffi.LLVMPassManagerRef,
+                                          ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_RunPassManager.restype = c_bool
 
 ffi.lib.LLVMPY_InitializeFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_InitializeFunctionPassManager.restype = c_bool

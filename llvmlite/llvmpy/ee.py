@@ -59,12 +59,12 @@ class EngineBuilder(object):
     def create(self, tm=None):
         if tm is None:
             tm = self.select_target()
-        if not isinstance(tm, TargetMachine):
+        if isinstance(tm, TargetMachine):
             tm = tm._tm
         if self._use_mcjit:
-            return llvm.create_mcjit_compiler(self.module, tm._tm)
+            return llvm.create_mcjit_compiler(self.module, tm)
         else:
-            return llvm.create_jit_compiler_with_tm(self.module, tm._tm)
+            return llvm.create_jit_compiler_with_tm(self.module, tm)
 
 
 class TargetMachine(object):
