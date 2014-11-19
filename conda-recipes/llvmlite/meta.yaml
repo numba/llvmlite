@@ -1,6 +1,6 @@
 package:
   name: llvmlite
-  version: "0.1.dev5"
+  version: "0.1.dev6"
 
 source:
   path: ../..
@@ -12,8 +12,8 @@ build:
 requirements:
   build:
     - python
-      # On channel https://binstar.org/antoine/
-    - llvmdev 3.5* [win]
+      # On channel https://binstar.org/numba/
+    - llvmdev 3.5*
     #- cmake          [win]
   run:
     - python

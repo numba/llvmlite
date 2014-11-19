@@ -68,9 +68,7 @@ def main_win32():
 def main_posix(kind, library_ext):
     os.chdir(here_dir)
     makefile = "Makefile.%s" % (kind,)
-    llvm_config = os.environ.get('LLVM_CONFIG', 'llvm-config')
-    subprocess.check_call(['make', '-f', makefile,
-                           'LLVM_CONFIG=%s' % llvm_config])
+    subprocess.check_call(['make', '-f', makefile])
     shutil.copy('libllvmlite' + library_ext, target_dir)
 
 
