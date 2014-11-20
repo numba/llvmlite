@@ -71,7 +71,7 @@ class ExecutionEngine(ffi.ObjectRef):
         # getGlobalValueAddress should be used instead.
         ptr = ffi.lib.LLVMPY_GetPointerToGlobal(self, gv)
         if ptr is None:
-            raise ValueError("Cannot find given global value")
+            raise ValueError("Cannot find given global value %r" % (gv.name))
         return ptr
 
     get_pointer_to_function = get_pointer_to_global
