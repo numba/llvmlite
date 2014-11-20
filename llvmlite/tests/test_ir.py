@@ -55,12 +55,18 @@ class TestBase(TestCase):
 
     def block(self, func=None, name=''):
         func = func or self.function()
-        return ir.Block(func, name)
+        return func.append_basic_block(name)
 
     def descr(self, thing):
         sio = six.StringIO()
         thing.descr(sio)
         return sio.getvalue()
+
+    def check_block(self, block, asm):
+        asm = textwrap.dedent(asm)
+        # Normalize indent
+        asm = asm.replace("\n    ", "\n  ")
+        self.assertEqual(self.descr(block), asm)
 
 
 class TestIR(TestBase):
@@ -127,17 +133,27 @@ class TestBlock(TestBase):
         block.instructions.extend(['a', 'b'])
         self.assertEqual(self.descr(block), "my_block:\n  a\n  b\n")
 
+    def test_replace(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        c = builder.add(a, b, 'c')
+        d = builder.sub(a, b, 'd')
+        builder.mul(d, b, 'e')
+        f = ir.Instruction(block, a.type, 'sdiv', (c, b), 'f')
+        block.replace(d, f)
+        self.check_block(block, """\
+            my_block:
+                %"c" = add i32 %".1", %".2"
+                %"f" = sdiv i32 %"c", %".2"
+                %"e" = mul i32 %"f", %".2"
+            """)
+
 
 class TestBuilder(TestBase):
     """
     Test IR generation through the builder class.
     """
-
-    def check_block(self, block, asm):
-        asm = textwrap.dedent(asm)
-        # Normalize indent
-        asm = asm.replace("\n    ", "\n  ")
-        self.assertEqual(self.descr(block), asm)
 
     def test_attributes(self):
         block = self.block(name='start')

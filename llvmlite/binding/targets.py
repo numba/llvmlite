@@ -134,6 +134,9 @@ class TargetMachine(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposeTargetMachine(self)
 
     def add_analysis_passes(self, pm):
+        """
+        Register analysis passes for this target machine with a pass manager.
+        """
         ffi.lib.LLVMPY_AddAnalysisPasses(self, pm)
 
     def emit_object(self, module):

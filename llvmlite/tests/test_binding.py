@@ -27,6 +27,16 @@ asm_sum = r"""
     }}
     """
 
+asm_sum2 = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define i32 @sum(i32 %.1, i32 %.2) {{
+      %.3 = add i32 %.1, %.2
+      ret i32 %.3
+    }}
+    """
+
 asm_mul = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
@@ -243,6 +253,15 @@ class TestModuleRef(BaseTest):
         self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.close()
         src2.get_function("mul")
+
+    def test_link_in_error(self):
+        # Raise an error by trying to link two modules with the same global
+        # definition "sum".
+        dest = self.module()
+        src = self.module(asm_sum2)
+        with self.assertRaises(RuntimeError) as cm:
+            dest.link_in(src)
+        self.assertIn("symbol multiply defined", str(cm.exception))
 
     def test_as_bitcode(self):
         mod = self.module()
@@ -520,6 +539,14 @@ class TestTargetData(BaseTest):
         td = self.target_data()
         pm = llvm.create_module_pass_manager()
         td.add_pass(pm)
+
+
+class TestTargetMachine(BaseTest):
+
+    def test_add_analysis_passes(self):
+        tm = self.target_machine()
+        pm = llvm.create_module_pass_manager()
+        tm.add_analysis_passes(pm)
 
 
 class TestTargetLibraryInfo(BaseTest):
