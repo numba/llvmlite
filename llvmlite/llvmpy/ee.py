@@ -90,3 +90,7 @@ class TargetMachine(object):
 
     def add_analysis_passes(self, pm):
         self._tm.add_analysis_passes(pm)
+
+    @property
+    def target_data(self):
+        return self._tm.target_data

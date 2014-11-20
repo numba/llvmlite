@@ -176,6 +176,12 @@ class TargetMachine(ffi.ObjectRef):
         finally:
             ffi.lib.LLVMPY_DisposeMemoryBuffer(mb)
 
+    @property
+    def target_data(self):
+        td = TargetData(ffi.lib.LLVMPY_GetTargetMachineData(self))
+        td._owned = True
+        return td
+
 
 def create_target_library_info(triple):
     return TargetLibraryInfo(
@@ -329,3 +335,8 @@ ffi.lib.LLVMPY_SetUnavailableLibFunc.argtypes = [
     ffi.LLVMTargetLibraryInfoRef,
     c_int,
 ]
+
+ffi.lib.LLVMPY_GetTargetMachineData.argtypes = [
+    ffi.LLVMTargetMachineRef,
+]
+ffi.lib.LLVMPY_GetTargetMachineData.restype = ffi.LLVMTargetDataRef

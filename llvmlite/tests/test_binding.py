@@ -548,6 +548,15 @@ class TestTargetMachine(BaseTest):
         pm = llvm.create_module_pass_manager()
         tm.add_analysis_passes(pm)
 
+    def test_target_data_from_tm(self):
+        tm = self.target_machine()
+        td = tm.target_data
+        mod = self.module()
+        gv_i32 = mod.get_global_variable("glob")
+        # A global is a pointer, it has the ABI size of a pointer
+        pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
+        self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
+
 
 class TestTargetLibraryInfo(BaseTest):
 

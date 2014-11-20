@@ -213,6 +213,11 @@ LLVMPY_TargetMachineEmitToMemory (
     return BufOut;
 }
 
+API_EXPORT(LLVMTargetDataRef)
+LLVMPY_GetTargetMachineData(LLVMTargetMachineRef TM)
+{
+    return LLVMGetTargetMachineData(TM);
+}
 
 API_EXPORT(void)
 LLVMPY_AddAnalysisPasses(
