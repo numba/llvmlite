@@ -4,7 +4,8 @@
 
 llvm_config_candidate=/usr/bin/llvm-config
 
-if [ -x ${llvm_config_candidate} -a $(${llvm_config_candidate} --version) \> "3.5" ]
+if [ -x ${llvm_config_candidate}
+     -a "$(${llvm_config_candidate} --version)" \> "3.5" ]
 then export LLVM_CONFIG=${llvm_config_candidate}
 fi
 
