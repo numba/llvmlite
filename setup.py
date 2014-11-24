@@ -6,6 +6,7 @@ except ImportError:
 from distutils.spawn import spawn
 from distutils.command.build import build
 from distutils.command.build_ext import build_ext
+from distutils.command.install import install
 import os
 import sys
 
@@ -54,12 +55,24 @@ class LlvmliteBuildExt(build_ext):
         # included in binary builds, not source builds.
         library_name = get_library_name()
         self.distribution.package_data = {
-            "llvmlite.binding": [get_library_name()],
+            "llvmlite.binding": [library_name],
         }
+
+
+class LlvmliteInstall(install):
+    # Ensure install see the libllvmlite shared library
+    # This seems to only be necessary on OSX.
+    def run(self):
+        library_name = get_library_name()
+        self.distribution.package_data = {
+            "llvmlite.binding": [library_name],
+        }
+        install.run(self)
 
 
 cmdclass.update({'build': LlvmliteBuild,
                  'build_ext': LlvmliteBuildExt,
+                 'install': LlvmliteInstall,
                  })
 
 
