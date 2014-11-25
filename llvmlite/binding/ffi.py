@@ -27,7 +27,14 @@ LLVMGlobalsIterator = _make_opaque_ref("LLVMGlobalsIterator")
 LLVMFunctionsIterator = _make_opaque_ref("LLVMFunctionsIterator")
 
 
-lib = ctypes.CDLL(os.path.join(os.path.dirname(__file__), get_library_name()))
+_lib_dir = os.path.dirname(__file__)
+
+if os.name == 'nt':
+    # Append DLL directory to PATH, to allow loading of bundled CRT libraries
+    # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).
+    os.environ['PATH'] += ';' + _lib_dir
+
+lib = ctypes.CDLL(os.path.join(_lib_dir, get_library_name()))
 
 
 class _DeadPointer(object):

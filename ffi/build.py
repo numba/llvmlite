@@ -5,6 +5,7 @@ Build script for the shared library providing the C ABI bridge to LLVM.
 
 from __future__ import print_function
 
+from ctypes.util import find_library
 import os
 import subprocess
 import shutil
@@ -63,6 +64,20 @@ def main_win32():
     try_cmake(here_dir, build_dir, generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
+    # Copy CRT libraries as well, so as to package them.
+    if os.environ.get('PROCESSOR_ARCHITEW6432'):
+        # Hard-code WoW64 path if we're a 32-bit Python in a 64-bit system,
+        # otherwise the wrong DLL file will be found by find_library().
+        search_path = r'c:\windows\syswow64'
+    else:
+        search_path = r'c:\windows\system32'
+    for lib in ['msvcr120.dll', 'msvcp120.dll']:
+        lib_path = os.path.join(search_path, lib)
+        if not os.path.exists(lib_path):
+            lib_path = find_library(lib)
+            if lib_path is None:
+                raise RuntimeError("%r not found" % (lib,))
+        shutil.copy(lib_path, target_dir)
 
 
 def main_posix(kind, library_ext):

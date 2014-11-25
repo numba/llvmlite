@@ -10,7 +10,7 @@ from distutils.command.install import install
 import os
 import sys
 
-from llvmlite.utils import get_library_name
+from llvmlite.utils import get_library_files
 
 import versioneer
 
@@ -53,9 +53,8 @@ class LlvmliteBuildExt(build_ext):
         spawn(cmd, dry_run=self.dry_run)
         # HACK: this makes sure the library file (which is large) is only
         # included in binary builds, not source builds.
-        library_name = get_library_name()
         self.distribution.package_data = {
-            "llvmlite.binding": [library_name],
+            "llvmlite.binding": get_library_files(),
         }
 
 
@@ -63,9 +62,8 @@ class LlvmliteInstall(install):
     # Ensure install see the libllvmlite shared library
     # This seems to only be necessary on OSX.
     def run(self):
-        library_name = get_library_name()
         self.distribution.package_data = {
-            "llvmlite.binding": [library_name],
+            "llvmlite.binding": get_library_files(),
         }
         install.run(self)
 

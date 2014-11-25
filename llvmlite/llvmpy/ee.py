@@ -13,7 +13,7 @@ def dylib_add_symbol(name, addr):
 
 
 def dylib_address_of_symbol(name):
-    llvm.address_of_symbol(name)
+    return llvm.address_of_symbol(name)
 
 
 class EngineBuilder(object):
