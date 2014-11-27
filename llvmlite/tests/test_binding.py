@@ -335,6 +335,8 @@ class JITTestMixin(object):
         ee = self.jit(self.module())
         mod = self.module(asm_mul)
         ee.add_module(mod)
+        with self.assertRaises(KeyError):
+            ee.add_module(mod)
         self.assertFalse(mod.closed)
         ee.close()
         self.assertTrue(mod.closed)

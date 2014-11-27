@@ -84,6 +84,8 @@ class ExecutionEngine(ffi.ObjectRef):
         """
         Ownership of module is transferred to the execution engine
         """
+        if module in self._modules:
+            raise KeyError("module already added to this engine")
         ffi.lib.LLVMPY_AddModule(self, module)
         module._owned = True
         self._modules.add(module)
