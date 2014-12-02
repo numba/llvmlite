@@ -422,3 +422,27 @@ class AtomicRMW(Instruction):
                          val=self.operands[1].get_reference(),
                          ordering=self.ordering),
               file=buf)
+
+
+class CmpXchg(Instruction):
+    """This instruction has changed since llvm3.5.  It is not compatible with
+    older llvm versions.
+    """
+    def __init__(self, parent, ptr, cmp, val, ordering, failordering, name):
+        outtype = types.LiteralStructType([val.type, types.IntType(1)])
+        super(CmpXchg, self).__init__(parent, outtype, "cmpxchg",
+                                      (ptr, cmp, val), name=name)
+        self.ordering = ordering
+        self.failordering = failordering
+
+    def descr(self, buf):
+        fmt = "cmpxchg {ptrty} {ptr}, {ty} {cmp}, {ty} {val} {ordering} " \
+              "{failordering}"
+        print(fmt.format(ptrty=self.operands[0].type,
+                         ptr=self.operands[0].get_reference(),
+                         ty=self.operands[1].type,
+                         cmp=self.operands[1].get_reference(),
+                         val=self.operands[2].get_reference(),
+                         ordering=self.ordering,
+                         failordering=self.failordering, ),
+              file=buf)
