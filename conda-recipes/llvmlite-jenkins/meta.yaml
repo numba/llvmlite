@@ -1,13 +1,13 @@
 package:
   name: llvmlite
-  version: "0.1.dev8"
+  version: {{ environ['GIT_DESCRIBE_TAG'].lstrip('v') }}
 
 source:
   path: ../..
   #git_url: https://github.com/numba/llvmlite.git
 
 build:
-  number: 1
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
 
 requirements:
   build:
