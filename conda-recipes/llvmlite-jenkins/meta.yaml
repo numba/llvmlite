@@ -1,10 +1,11 @@
 package:
   name: llvmlite
-  version: {{ environ['GIT_DESCRIBE_TAG'].lstrip('v') }}
+  # GIT_DESCRIBE_TAG may not be set
+  version: {{ environ.get('GIT_DESCRIBE_TAG','').lstrip('v') }}
 
 source:
-  path: ../..
-  #git_url: https://github.com/numba/llvmlite.git
+  # somehow git_url with relative path does not update GIT_DESCRIBE_TAG
+  git_url: https://github.com/numba/llvmlite.git
 
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
