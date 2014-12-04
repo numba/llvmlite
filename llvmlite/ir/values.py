@@ -332,10 +332,10 @@ class FunctionAttributes(AttributeSet):
         self._alignstack = val
 
     def __repr__(self):
-        attrs = list(self)
+        attrs = sorted(self)
         if self.alignstack:
-            attrs.append('alignstack({:u})'.format(self.alignstack))
-        return ', '.join(attrs)
+            attrs.append('alignstack({:d})'.format(self.alignstack))
+        return ' '.join(attrs)
 
 
 class Function(GlobalValue):
@@ -388,7 +388,8 @@ class Function(GlobalValue):
         attrs = self.attributes
         vararg = ', ...' if self.ftype.var_arg else ''
         linkage = self.linkage
-        prototype = "{state} {linkage} {retty} {name}({args}{vararg}) {attrs}" \
+        prefix = " ".join(str(x) for x in [state, linkage, retty] if x)
+        prototype = "{prefix} {name}({args}{vararg}) {attrs}" \
             .format(
             **locals())
         print(prototype, file=buf)
@@ -429,8 +430,11 @@ class Argument(Value):
         self.attributes = ArgumentAttributes()
 
     def __str__(self):
-        return "{0} {1} {2}".format(self.type, ' '.join(self.attributes),
-                                    self.get_reference())
+        if self.attributes:
+            return "{0} {1} {2}".format(self.type, ' '.join(self.attributes),
+                                        self.get_reference())
+        else:
+            return "{0} {1}".format(self.type, self.get_reference())
 
     def add_attribute(self, attr):
         self.attributes.add(attr)

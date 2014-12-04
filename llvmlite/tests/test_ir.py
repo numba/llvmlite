@@ -62,11 +62,51 @@ class TestBase(TestCase):
         thing.descr(sio)
         return sio.getvalue()
 
-    def check_block(self, block, asm):
-        asm = textwrap.dedent(asm)
+    def check_descr(self, descr, expected):
+        expected = textwrap.dedent(expected)
         # Normalize indent
-        asm = asm.replace("\n    ", "\n  ")
-        self.assertEqual(self.descr(block), asm)
+        expected = expected.replace("\n    ", "\n  ")
+        self.assertEqual(descr, expected)
+
+    def check_block(self, block, asm):
+        self.check_descr(self.descr(block), asm)
+
+
+class TestFunction(TestBase):
+
+    proto = """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4")"""
+
+    def test_declare(self):
+        # A simple declaration
+        func = self.function()
+        asm = self.descr(func).strip()
+        self.assertEqual(asm.strip(), "declare %s" % self.proto)
+
+    def test_declare_attributes(self):
+        # Now with function attributes
+        func = self.function()
+        func.attributes.add("optsize")
+        func.attributes.add("alwaysinline")
+        func.attributes.alignstack = 16
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+            "declare %s alwaysinline optsize alignstack(16)" % self.proto)
+
+    def test_define(self):
+        # A simple definition
+        func = self.function()
+        func.attributes.add("alwaysinline")
+        block = func.append_basic_block('my_block')
+        builder = ir.IRBuilder(block)
+        builder.ret_void()
+        asm = self.descr(func)
+        self.check_descr(asm, """\
+            define {proto} alwaysinline
+            {{
+            my_block:
+                ret void
+            }}
+            """.format(proto=self.proto))
 
 
 class TestIR(TestBase):
