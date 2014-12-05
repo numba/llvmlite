@@ -118,6 +118,12 @@ class TestFunctions(BaseTest):
     def test_get_default_triple(self):
         triple = llvm.get_default_triple()
         self.assertIsInstance(triple, str)
+        self.assertTrue(triple)
+
+    def test_get_host_cpu_name(self):
+        cpu = llvm.get_host_cpu_name()
+        self.assertIsInstance(cpu, str)
+        self.assertTrue(cpu)
 
     def test_initfini(self):
         code = """if 1:
@@ -506,7 +512,11 @@ class TestTarget(BaseTest):
 
     def test_create_target_machine(self):
         target = llvm.Target.from_triple(llvm.get_default_triple())
+        # With the default settings
         target.create_target_machine('', '', 1, 'default', 'default')
+        # With the host's CPU
+        cpu = llvm.get_host_cpu_name()
+        target.create_target_machine(cpu, '', 1, 'default', 'default')
 
     def test_name(self):
         t = llvm.Target.from_triple(llvm.get_default_triple())

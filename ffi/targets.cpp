@@ -37,8 +37,14 @@ inline LLVMTargetMachineRef wrap(TargetMachine *TM) {
 extern "C" {
 
 API_EXPORT(void)
-LLVMPY_GetDefaultTargetTriple(const char **Out){
+LLVMPY_GetDefaultTargetTriple(const char **Out) {
+    // Should we use getProcessTriple() instead?
     *Out = LLVMPY_CreateString(llvm::sys::getDefaultTargetTriple().c_str());
+}
+
+API_EXPORT(void)
+LLVMPY_GetHostCPUName(const char **Out) {
+    *Out = LLVMPY_CreateString(llvm::sys::getHostCPUName().data());
 }
 
 API_EXPORT(LLVMTargetDataRef)

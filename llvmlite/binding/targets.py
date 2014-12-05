@@ -11,10 +11,21 @@ from .common import _decode_string, _encode_string
 
 
 def get_default_triple():
+    """
+    Return the default target triple LLVM is configured to produce code for.
+    """
     with ffi.OutputString() as out:
         ffi.lib.LLVMPY_GetDefaultTargetTriple(out)
         return str(out)
 
+def get_host_cpu_name():
+    """
+    Get the name of the host's CPU, suitable for using with
+    :meth:`Target.create_target_machine()`.
+    """
+    with ffi.OutputString() as out:
+        ffi.lib.LLVMPY_GetHostCPUName(out)
+        return str(out)
 
 def create_target_data(strrep):
     return TargetData(ffi.lib.LLVMPY_CreateTargetData(_encode_string(strrep)))
@@ -235,6 +246,8 @@ LibFunc = collections.namedtuple("LibFunc", ["identity", "name"])
 # FFI
 
 ffi.lib.LLVMPY_GetDefaultTargetTriple.argtypes = [POINTER(c_char_p)]
+
+ffi.lib.LLVMPY_GetHostCPUName.argtypes = [POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_CreateTargetData.argtypes = [c_char_p]
 ffi.lib.LLVMPY_CreateTargetData.restype = ffi.LLVMTargetDataRef
