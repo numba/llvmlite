@@ -334,7 +334,7 @@ class FunctionAttributes(AttributeSet):
     def __repr__(self):
         attrs = sorted(self)
         if self.alignstack:
-            attrs.append('alignstack({:d})'.format(self.alignstack))
+            attrs.append('alignstack({0:d})'.format(self.alignstack))
         return ' '.join(attrs)
 
 
