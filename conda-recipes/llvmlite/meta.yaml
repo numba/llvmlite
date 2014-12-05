@@ -1,6 +1,7 @@
 package:
   name: llvmlite
-  version: {{ environ['GIT_DESCRIBE_TAG'].lstrip('v') }}
+  # GIT_DESCRIBE_TAG may not be set
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '').lstrip('v') }}
 
 source:
   # Using the local source tree helps test building without pushing changes
