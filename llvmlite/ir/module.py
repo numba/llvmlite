@@ -8,6 +8,7 @@ class Module(object):
         self.name = name   # name is for debugging/informational
         self.globals = {}
         self.metadata = []
+        self._metadatacache = {}
         self.data_layout = ""
         self.namedmetadata = {}
         self.scope = context.scope.get_child()
@@ -15,8 +16,17 @@ class Module(object):
         self._sequence = []
 
     def add_metadata(self, operands):
+        """Add a metadata to the module or return a previous equivalent
+        metadata.
+        """
         n = len(self.metadata)
-        return values.MDValue(self, operands, name=str(n))
+        key = tuple(operands)
+        if key not in self._metadatacache:
+            md = values.MDValue(self, operands, name=str(n))
+            self._metadatacache[key] = md
+        else:
+            md = self._metadatacache[key]
+        return md
 
     def add_named_metadata(self, name):
         nmd = values.NamedMetaData(self)

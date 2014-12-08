@@ -148,6 +148,18 @@ class Constant(ConstOpMixin):
         tys = [el.type for el in elems]
         return cls(types.LiteralStructType(tys), elems)
 
+    def __eq__(self, other):
+        if isinstance(other, Constant):
+            return str(self) == str(other)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(str(self))
+
 
 class Value(object):
     name_prefix = '%'
@@ -216,6 +228,18 @@ class MetaDataString(Value):
     def __str__(self):
         return self.get_reference()
 
+    def __eq__(self, other):
+        if isinstance(other, MetaDataString):
+            return self.string == other.string
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.string)
+
 
 class NamedMetaData(object):
     name_prefix = '!'
@@ -247,6 +271,18 @@ class MDValue(Value):
 
     def get_reference(self):
         return self.name_prefix + str(self.name)
+
+    def __eq__(self, other):
+        if isinstance(other, MDValue):
+            return self.operands == other.operands
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.operands)
 
 
 class GlobalValue(Value, ConstOpMixin):
