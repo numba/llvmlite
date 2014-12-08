@@ -77,10 +77,12 @@ class CallInstr(Instruction):
         args = ', '.join('{0} {1}'.format(a.type, a.get_reference())
                          for a in self.args)
         fnty = self.callee.type
-        print("call {0} {1}({2})".format(fnty,
-                                         self.callee.get_reference(),
-                                         args),
-              file=buf)
+        print("call {0} {1}({2}){metadata}".format(
+            fnty,
+            self.callee.get_reference(),
+            args,
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class Terminator(Instruction):
@@ -93,7 +95,9 @@ class Terminator(Instruction):
         opname = self.opname
         operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
                              for op in self.operands)
-        print("{opname} {operands} ".format(**locals()), file=buf, end='')
+        metadata = self._stringify_metatdata()
+        print("{opname} {operands} {metadata}".format(**locals()), file=buf,
+              end='')
 
 
 class Ret(Terminator):
@@ -136,11 +140,13 @@ class SwitchInstr(Terminator):
         cases = ["{0} {1}, label {2}".format(val.type, val.get_reference(),
                                              blk.get_reference())
                  for val, blk in self.cases]
-        print("switch {0} {1}, label {2} [{3}]".format(self.value.type,
-                                                       self.value.get_reference(),
-                                                       self.default.get_reference(),
-                                                       ' '.join(cases)),
-              file=buf)
+        print("switch {0} {1}, label {2} [{3}]  {metadata}".format(
+            self.value.type,
+            self.value.get_reference(),
+            self.default.get_reference(),
+            ' '.join(cases),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class SelectInstr(Instruction):
@@ -162,11 +168,12 @@ class SelectInstr(Instruction):
         return self.operands[2]
 
     def descr(self, buf):
-        print("select {0} {1}, {2} {3}, {4} {5}".format(
+        print("select {0} {1}, {2} {3}, {4} {5} {metadata}".format(
             self.cond.type, self.cond.get_reference(),
             self.lhs.type, self.lhs.get_reference(),
-            self.rhs.type, self.rhs.get_reference()),
-              file=buf)
+            self.rhs.type, self.rhs.get_reference(),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class CompareInstr(Instruction):
@@ -256,9 +263,11 @@ class StoreInstr(Instruction):
 
     def descr(self, buf):
         val, ptr = self.operands
-        print("store {0} {1}, {2} {3}".format(val.type, val.get_reference(),
-                                              ptr.type, ptr.get_reference()),
-              file=buf)
+        print("store {0} {1}, {2} {3}{metadata}".format(
+            val.type, val.get_reference(),
+            ptr.type, ptr.get_reference(),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class AllocaInstr(Instruction):
@@ -271,9 +280,12 @@ class AllocaInstr(Instruction):
         print("{0} {1}".format(self.opname, self.type.pointee),
               file=buf, end='')
         if self.operands:
-            print(", {0} {1}".format(self.operands[0].type,
-                                     self.operands[0].get_reference()),
-                  file=buf)
+            print(", {0} {1}".format(
+                self.operands[0].type,
+                self.operands[0].get_reference(),
+                ), file=buf, end='')
+        if self.metadata:
+            print(self._stringify_metatdata(), file=buf)
 
 
 class GEPInstr(Instruction):
@@ -293,10 +305,13 @@ class GEPInstr(Instruction):
         indices = ['{0} {1}'.format(i.type, i.get_reference())
                    for i in self.indices]
         head = "getelementptr inbounds" if self.inbounds else "getelementptr"
-        print("{0} {1} {2}, {3}".format(
-                  head, self.pointer.type, self.pointer.get_reference(),
-                  ', '.join(indices)),
-              file=buf)
+        print("{0} {1} {2}, {3} {metadata}".format(
+                  head,
+                  self.pointer.type,
+                  self.pointer.get_reference(),
+                  ', '.join(indices),
+                  metadata=self._stringify_metatdata(),
+                  ), file=buf)
 
 
 class PhiInstr(Instruction):
@@ -308,7 +323,9 @@ class PhiInstr(Instruction):
         incs = ', '.join('[{0}, {1}]'.format(v.get_reference(),
                                              b.get_reference())
                          for v, b in self.incomings)
-        print("phi {0} {1}".format(self.type, incs), file=buf)
+        print("phi {0} {1} {metadata}".format(
+            self.type, incs, metadata=self._stringify_metatdata(),
+            ), file=buf)
 
     def add_incoming(self, value, block):
         assert isinstance(block, Block)
@@ -338,10 +355,12 @@ class ExtractValue(Instruction):
     def descr(self, buf):
         indices = [str(i) for i in self.indices]
 
-        print("extractvalue {0} {1}, {2}".format(self.aggregate.type,
-                                                 self.aggregate.get_reference(),
-                                                 ', '.join(indices)),
-              file=buf)
+        print("extractvalue {0} {1}, {2} {metadata}".format(
+            self.aggregate.type,
+            self.aggregate.get_reference(),
+            ', '.join(indices),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class InsertValue(Instruction):
@@ -366,11 +385,12 @@ class InsertValue(Instruction):
     def descr(self, buf):
         indices = [str(i) for i in self.indices]
 
-        print("insertvalue {0} {1}, {2} {3}, {4}".format(
+        print("insertvalue {0} {1}, {2} {3}, {4} {metadata}".format(
             self.aggregate.type, self.aggregate.get_reference(),
             self.value.type, self.value.get_reference(),
-            ', '.join(indices)),
-              file=buf)
+            ', '.join(indices),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class Unreachable(Instruction):
@@ -394,7 +414,7 @@ class InlineAsm(object):
         sideeffect = 'sideeffect' if self.side_effect else ''
         fmt = "asm {sideeffect} \"{asm}\", \"{constraint}\""
         print(fmt.format(sideeffect=sideeffect, asm=self.asm,
-                         constraint=self.constraint),
+                         constraint=self.constraint,),
               file=buf, end='')
 
     def get_reference(self):
@@ -414,13 +434,14 @@ class AtomicRMW(Instruction):
         self.ordering = ordering
 
     def descr(self, buf):
-        fmt = "atomicrmw {op} {ptrty} {ptr}, {ty} {val} {ordering}"
+        fmt = "atomicrmw {op} {ptrty} {ptr}, {ty} {val} {ordering} {metadata}"
         print(fmt.format(op=self.operation,
                          ptrty=self.operands[0].type,
                          ptr=self.operands[0].get_reference(),
                          ty=self.operands[1].type,
                          val=self.operands[1].get_reference(),
-                         ordering=self.ordering),
+                         ordering=self.ordering,
+                         metadata=self._stringify_metatdata(),),
               file=buf)
 
 
@@ -437,12 +458,13 @@ class CmpXchg(Instruction):
 
     def descr(self, buf):
         fmt = "cmpxchg {ptrty} {ptr}, {ty} {cmp}, {ty} {val} {ordering} " \
-              "{failordering}"
+              "{failordering} {metadata}"
         print(fmt.format(ptrty=self.operands[0].type,
                          ptr=self.operands[0].get_reference(),
                          ty=self.operands[1].type,
                          cmp=self.operands[1].get_reference(),
                          val=self.operands[2].get_reference(),
                          ordering=self.ordering,
-                         failordering=self.failordering, ),
+                         failordering=self.failordering,
+                         metadata=self._stringify_metatdata(), ),
               file=buf)
