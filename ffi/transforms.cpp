@@ -125,4 +125,20 @@ LLVMPY_PassManagerBuilderGetLoopVectorize(LLVMPassManagerBuilderRef PMB)
 }
 
 
+API_EXPORT(void)
+LLVMPY_PassManagerBuilderSetSLPVectorize(LLVMPassManagerBuilderRef PMB,
+                                          int Value)
+{
+    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
+    pmb->SLPVectorize = Value;
+}
+
+API_EXPORT(int)
+LLVMPY_PassManagerBuilderGetSLPVectorize(LLVMPassManagerBuilderRef PMB)
+{
+    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
+    return pmb->SLPVectorize;
+}
+
+
 } // end extern "C"

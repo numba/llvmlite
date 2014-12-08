@@ -59,6 +59,14 @@ class PassManagerBuilder(ffi.ObjectRef):
     def loop_vectorize(self, enable=True):
         return ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize(self, enable)
 
+    @property
+    def slp_vectorize(self):
+        return ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize(self)
+
+    @slp_vectorize.setter
+    def slp_vectorize(self, enable=True):
+        return ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize(self, enable)
+
     def _populate_module_pm(self, pm):
         ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager(self, pm)
 
@@ -115,12 +123,14 @@ for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel,
 for _func in (ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnitAtATime,
               ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops,
               ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize,
+              ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize,
               ):
     _func.argtypes = [ffi.LLVMPassManagerBuilderRef, c_bool]
 
 for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnitAtATime,
               ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
               ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize,
+              ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize,
               ):
     _func.argtypes = [ffi.LLVMPassManagerBuilderRef]
     _func.restype = c_bool

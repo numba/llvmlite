@@ -30,10 +30,12 @@ def _inlining_threshold(optlevel, sizelevel=0):
     return 225
 
 
-def create_pass_manager_builder(opt=2, loop_vectorize=False):
+def create_pass_manager_builder(opt=2, loop_vectorize=False,
+                                slp_vectorize=False):
     pmb = llvm.create_pass_manager_builder()
     pmb.opt_level = opt
     pmb.loop_vectorize = loop_vectorize
+    pmb.slp_vectorize = slp_vectorize
     pmb.inlining_threshold = _inlining_threshold(opt)
     return pmb
 
@@ -54,6 +56,7 @@ def build_pass_managers(**kws):
     with llvm.create_pass_manager_builder() as pmb:
         pmb.opt_level = opt = kws.get('opt', 2)
         pmb.loop_vectorize = kws.get('loop_vectorize', False)
+        pmb.slp_vectorize = kws.get('slp_vectorize', False)
         pmb.inlining_threshold = _inlining_threshold(optlevel=opt)
 
         if mod:
