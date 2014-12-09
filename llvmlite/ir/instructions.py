@@ -189,11 +189,14 @@ class CompareInstr(Instruction):
         self.op = op
 
     def descr(self, buf):
-        print("{0} {1} {2} {3}, {4}".format(self.OPNAME, self.op,
-                                            self.operands[0].type,
-                                            self.operands[0].get_reference(),
-                                            self.operands[1].get_reference()),
-              file=buf)
+        print("{0} {1} {2} {3}, {4}{metadata}".format(
+            self.OPNAME,
+            self.op,
+            self.operands[0].type,
+            self.operands[0].get_reference(),
+            self.operands[1].get_reference(),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class ICMPInstr(CompareInstr):
@@ -239,11 +242,13 @@ class CastInstr(Instruction):
         super(CastInstr, self).__init__(parent, typ, op, [val], name=name)
 
     def descr(self, buf):
-        print("{0} {1} {2} to {3}".format(self.opname,
-                                          self.operands[0].type,
-                                          self.operands[0].get_reference(),
-                                          self.type),
-              file=buf)
+        print("{0} {1} {2} to {3}{metadata}".format(
+            self.opname,
+            self.operands[0].type,
+            self.operands[0].get_reference(),
+            self.type,
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class LoadInstr(Instruction):
@@ -253,7 +258,10 @@ class LoadInstr(Instruction):
 
     def descr(self, buf):
         [val] = self.operands
-        print("load {0} {1}".format(val.type, val.get_reference()), file=buf)
+        print("load {0} {1}{metadata}".format(
+            val.type, val.get_reference(),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
 
 
 class StoreInstr(Instruction):
