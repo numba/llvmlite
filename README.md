@@ -36,7 +36,7 @@ You need Python 2.6 or greater (including Python 3.3 or greater).
 
 ### Runtime dependencies
 
-- None that we're aware of
+- For Python versions before 3.4, the [enum34](https://pypi.python.org/pypi/enum34) package is required
 
 ## Build
 
