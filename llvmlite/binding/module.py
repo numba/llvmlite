@@ -149,6 +149,9 @@ class ModuleRef(ffi.ObjectRef):
         it = ffi.lib.LLVMPY_ModuleFunctionsIter(self)
         return _FunctionsIterator(it, module=self)
 
+    def clone(self):
+        return ModuleRef(ffi.lib.LLVMPY_CloneModule(self))
+
 
 class _Iterator(ffi.ObjectRef):
 
@@ -243,3 +246,6 @@ ffi.lib.LLVMPY_DisposeFunctionsIter.argtypes = [ffi.LLVMFunctionsIterator]
 
 ffi.lib.LLVMPY_FunctionsIterNext.argtypes = [ffi.LLVMFunctionsIterator]
 ffi.lib.LLVMPY_FunctionsIterNext.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_CloneModule.argtypes = [ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_CloneModule.restype = ffi.LLVMModuleRef

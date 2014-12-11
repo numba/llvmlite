@@ -66,5 +66,10 @@ LLVMPY_AddFunctionAttr(LLVMValueRef Fn, int Attr)
     LLVMAddFunctionAttr(Fn, (LLVMAttribute)Attr);
 }
 
+API_EXPORT(int)
+LLVMPY_IsDeclaration(LLVMValueRef GV)
+{
+    return LLVMIsDeclaration(GV);
+}
 
 } // end extern "C"

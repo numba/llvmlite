@@ -109,6 +109,12 @@ class ValueRef(ffi.ObjectRef):
         # XXX what does this return?
         return ffi.lib.LLVMPY_TypeOf(self)
 
+    @property
+    def is_declaration(self):
+        """Is this global defined in the current module?
+        """
+        return ffi.lib.LLVMPY_IsDeclaration(self)
+
 # FFI
 
 ffi.lib.LLVMPY_PrintValueToString.argtypes = [
@@ -133,3 +139,6 @@ ffi.lib.LLVMPY_GetLinkage.restype = c_int
 ffi.lib.LLVMPY_SetLinkage.argtypes = [ffi.LLVMValueRef, c_int]
 
 ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_int]
+
+ffi.lib.LLVMPY_IsDeclaration.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_IsDeclaration.restype = c_int

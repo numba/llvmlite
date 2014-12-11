@@ -69,6 +69,12 @@ asm_verification_fail = r"""
     }}
     """
 
+asm_sum_declare = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    declare i32 @sum(i32 %.1, i32 %.2)
+    """
 
 class BaseTest(TestCase):
 
@@ -292,6 +298,12 @@ class TestModuleRef(BaseTest):
         mod.get_function("sum")
         mod.get_global_variable("glob")
 
+    def test_cloning(self):
+        m = self.module()
+        cloned = m.clone()
+        self.assertIsNot(cloned, m)
+        self.assertEqual(cloned.as_bitcode(), m.as_bitcode())
+
 
 class JITTestMixin(object):
     """
@@ -495,6 +507,12 @@ class TestValueRef(BaseTest):
         glob = self.glob()
         glob.close()
         glob.close()
+
+    def test_is_declaration(self):
+        defined = self.module().get_function('sum')
+        declared = self.module(asm_sum_declare).get_function('sum')
+        self.assertFalse(defined.is_declaration)
+        self.assertTrue(declared.is_declaration)
 
 
 class TestTarget(BaseTest):

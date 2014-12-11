@@ -3,6 +3,7 @@
 #include "llvm-c/Analysis.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 #include "core.h"
 
 
@@ -201,5 +202,11 @@ LLVMPY_DisposeFunctionsIter(LLVMFunctionsIteratorRef GI)
     delete llvm::unwrap(GI);
 }
 
+API_EXPORT(LLVMModuleRef)
+LLVMPY_CloneModule(LLVMModuleRef M)
+{
+    using namespace llvm;
+    return wrap(CloneModule(unwrap(M)));
+}
 
 } // end extern "C"
