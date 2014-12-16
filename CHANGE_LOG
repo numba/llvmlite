@@ -1,0 +1,12 @@
+v0.2.0
+-------
+
+This is the first official release. It contains a few feature additions
+and bug fixes. It meets all requirements to replace llvmpy in numba and
+numbapro.
+
+v0.1.0
+-------
+
+This is the first release. This is released for beta testing llvmlite
+and numba before the official release.
