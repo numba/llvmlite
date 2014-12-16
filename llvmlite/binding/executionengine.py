@@ -122,7 +122,7 @@ class ExecutionEngine(ffi.ObjectRef):
         if self._td is not None:
             self._td.detach()
         self._modules.clear()
-        ffi.lib.LLVMPY_DisposeExecutionEngine(self)
+        self._capi.LLVMPY_DisposeExecutionEngine(self)
 
 
 # ============================================================================

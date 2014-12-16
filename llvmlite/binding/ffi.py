@@ -1,6 +1,5 @@
 import ctypes
 import os
-import sys
 
 from .common import _decode_string, _is_shutting_down
 from ..utils import get_library_name
@@ -100,6 +99,7 @@ class ObjectRef(object):
             raise ValueError("NULL pointer")
         self._ptr = ptr
         self._as_parameter_ = ptr
+        self._capi = lib
 
     def close(self):
         """
