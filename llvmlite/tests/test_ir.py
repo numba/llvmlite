@@ -718,6 +718,11 @@ class TestTypes(TestBase):
             ir.PointerType(int1), ir.LiteralStructType((int32, int8))))),
             '{i1*, {i32, i8}}')
 
+        # Avoid polluting the namespace
+        context = ir.Context()
+        mytype = context.get_identified_type("MyType")
+        self.assertEqual(str(mytype), "%MyType")
+
     def test_gep(self):
         def check_constant(tp, i, expected):
             actual = tp.gep(ir.Constant(int32, i))
@@ -754,6 +759,18 @@ class TestTypes(TestBase):
         check(ir.ArrayType(int8, 5), 5)
         check(ir.ArrayType(int32, 5), 20)
         check(ir.LiteralStructType((dbl, flt, flt)), 16)
+
+    def test_identified_struct(self):
+        context = ir.Context()
+        mytype = context.get_identified_type("MyType")
+        module = ir.Module(context=context)
+        self.assertTrue(mytype.is_opaque)
+        self.assert_valid_ir(module)
+        oldstr = str(module)
+        mytype.set_body(ir.IntType(32), ir.IntType(64), ir.FloatType())
+        self.assertFalse(mytype.is_opaque)
+        self.assert_valid_ir(module)
+        self.assertNotEqual(oldstr, str(module))
 
 
 c32 = lambda i: ir.Constant(int32, i)

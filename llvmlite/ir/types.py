@@ -266,6 +266,11 @@ class BaseStructType(Aggregate):
     def is_opaque(self):
         return self.elements is None
 
+    def structure_repr(self):
+        """Return the LLVM IR for the structure representation
+        """
+        return '{%s}' % ', '.join(map(str, self.elements))
+
 
 class LiteralStructType(BaseStructType):
     """
@@ -279,7 +284,7 @@ class LiteralStructType(BaseStructType):
         self.elements = tuple(elems)
 
     def __str__(self):
-        return '{%s}' % ', '.join(map(str, self.elements))
+        return self.structure_repr()
 
     def __eq__(self, other):
         if isinstance(other, LiteralStructType):
@@ -305,6 +310,7 @@ class IdentifiedStructType(BaseStructType):
 
     Do not use this directly.
     """
+    null = 'zeroinitializer'
 
     def __init__(self, context, name):
         assert name
@@ -313,8 +319,24 @@ class IdentifiedStructType(BaseStructType):
         self.elements = None
 
     def __str__(self):
-        return self.name
+        return "%{name}".format(name=self.name)
+
+    def get_declaration(self):
+        """Returns the string for the declaration of the type
+        """
+        if self.is_opaque:
+            out = "{strrep} = type opaque".format(strrep=str(self))
+        else:
+            out = "{strrep} = type {struct}".format(
+                strrep=str(self), struct=self.structure_repr())
+        return out
 
     def __eq__(self, other):
         if isinstance(other, IdentifiedStructType):
             return self.name == other.name
+
+    def set_body(self, *elems):
+        if not self.is_opaque:
+            raise RuntimeError("{name} is already defined".format(
+                name=self.name))
+        self.elements = tuple(elems)

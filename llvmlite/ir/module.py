@@ -74,6 +74,9 @@ class Module(object):
                 raise NotImplementedError(name)
             return values.Function(self, fnty, name=name)
 
+    def get_identified_types(self):
+        return self.context.identified_types
+
     def __repr__(self):
         body = '\n'.join(str(self.globals[k]) for k in self._sequence)
         nmdbuf = []
@@ -91,9 +94,14 @@ class Module(object):
                'target triple = "{triple}"\n'
                'target datalayout = "{data}"\n'
                '\n'
+               '{typedecl}\n'
                '{body}\n'
                '{md}\n'
                '{nmd}\n')
+
+        idtypes = [it.get_declaration()
+                   for it in self.get_identified_types().values()]
         return fmt.format(name=self.name, triple=self.triple, body=body,
                           nmd='\n'.join(nmdbuf), md='\n'.join(mdbuf),
-                          data=self.data_layout)
+                          data=self.data_layout,
+                          typedecl='\n'.join(idtypes))
