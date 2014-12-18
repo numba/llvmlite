@@ -47,7 +47,8 @@ class Instruction(Value):
 
 
 class CallInstr(Instruction):
-    def __init__(self, parent, func, args, name=''):
+    def __init__(self, parent, func, args, name='', cconv=None):
+        self.cconv = cconv
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
 
@@ -77,9 +78,11 @@ class CallInstr(Instruction):
         args = ', '.join('{0} {1}'.format(a.type, a.get_reference())
                          for a in self.args)
         fnty = self.callee.type
-        print("call {0} {1}({2}){metadata}".format(
-            fnty,
-            self.callee.get_reference(),
+        callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
+        if self.cconv:
+            callee_ref = "{0} {1}".format(self.cconv, callee_ref)
+        print("call {0}({1}){metadata}".format(
+            callee_ref,
             args,
             metadata=self._stringify_metatdata(),
             ), file=buf)
