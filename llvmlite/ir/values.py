@@ -388,6 +388,7 @@ class Function(GlobalValue):
         self.args = tuple([Argument(self, i, t)
                            for i, t in enumerate(ftype.args)])
         self.parent.add_global(self)
+        self.calling_convention = ''
 
     @property
     def module(self):
@@ -424,10 +425,9 @@ class Function(GlobalValue):
         attrs = self.attributes
         vararg = ', ...' if self.ftype.var_arg else ''
         linkage = self.linkage
-        prefix = " ".join(str(x) for x in [state, linkage, retty] if x)
-        prototype = "{prefix} {name}({args}{vararg}) {attrs}" \
-            .format(
-            **locals())
+        cconv = self.calling_convention
+        prefix = " ".join(str(x) for x in [state, linkage, cconv, retty] if x)
+        prototype = "{prefix} {name}({args}{vararg}) {attrs}".format(**locals())
         print(prototype, file=buf)
 
     def descr_body(self, buf):

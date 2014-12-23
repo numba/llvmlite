@@ -5,7 +5,7 @@ Implementation of LLVM IR instructions.
 from __future__ import print_function, absolute_import
 
 from . import types, _utils
-from .values import Block, ConstOpMixin, Undefined, Value
+from .values import Block, Function, Value
 
 
 class Instruction(Value):
@@ -48,7 +48,9 @@ class Instruction(Value):
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name='', cconv=None):
-        self.cconv = cconv
+        self.cconv = (func.calling_convention
+                      if cconv is None and isinstance(func, Function)
+                      else cconv)
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
 
