@@ -53,6 +53,12 @@ class CallInstr(Instruction):
                       else cconv)
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
+        # Validate
+        for argno, (arg, exptype) in enumerate(zip(self.args,
+                                               self.callee.function_type.args)):
+            if arg.type != exptype:
+                msg = "Type of #{0} arg mismatch: {1} != {2}"
+                raise TypeError(msg.format(argno, exptype, arg.type))
 
     @property
     def callee(self):

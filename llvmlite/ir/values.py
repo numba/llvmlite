@@ -206,12 +206,13 @@ class Value(object):
 
     @property
     def function_type(self):
-        if isinstance(self.type, types.PointerType):
+        ty = self.type
+        if isinstance(ty, types.PointerType):
             ty = self.type.pointee
         if isinstance(ty, types.FunctionType):
             return ty
         else:
-            raise TypeError(self.type)
+            raise TypeError("Not a function: {0}".format(self.type))
 
 
 class MetaDataString(Value):
