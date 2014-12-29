@@ -281,6 +281,10 @@ class IRBuilder(object):
     def inttoptr(self, value, typ, name=''):
         pass
 
+    @_castop('addrspacecast')
+    def addrspacecast(self, value, typ, name=''):
+        pass
+
     #
     # Memory APIs
     #
