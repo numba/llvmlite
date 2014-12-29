@@ -58,7 +58,7 @@ class CallInstr(Instruction):
                                                self.callee.function_type.args)):
             if arg.type != exptype:
                 msg = "Type of #{0} arg mismatch: {1} != {2}"
-                raise TypeError(msg.format(argno, exptype, arg.type))
+                raise TypeError(msg.format(1 + argno, exptype, arg.type))
 
     @property
     def callee(self):
