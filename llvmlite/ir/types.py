@@ -90,7 +90,8 @@ class PointerType(Type):
 
     def __eq__(self, other):
         if isinstance(other, PointerType):
-            return self.pointee == other.pointee
+            return (self.pointee, self.addrspace) == (other.pointee,
+                                                      other.addrspace)
         else:
             return False
 
