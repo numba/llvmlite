@@ -304,10 +304,16 @@ class AllocaInstr(Instruction):
 class GEPInstr(Instruction):
     def __init__(self, parent, ptr, indices, inbounds, name):
         typ = ptr.type
+        lasttyp = None
         for i in indices:
-            typ = typ.gep(i)
+            lasttyp, typ = typ, typ.gep(i)
 
-        typ = typ.as_pointer()
+        if (not isinstance(typ, types.PointerType) and
+                isinstance(lasttyp, types.PointerType)):
+            typ = lasttyp
+        else:
+            typ = typ.as_pointer()
+
         super(GEPInstr, self).__init__(parent, typ, "getelementptr",
                                        [ptr] + list(indices), name=name)
         self.pointer = ptr
