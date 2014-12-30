@@ -47,10 +47,11 @@ class Instruction(Value):
 
 
 class CallInstr(Instruction):
-    def __init__(self, parent, func, args, name='', cconv=None):
+    def __init__(self, parent, func, args, name='', cconv=None, tail=False):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
+        self.tail = tail
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
         # Validate
@@ -89,9 +90,10 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
-        print("call {0}({1}){metadata}".format(
-            callee_ref,
-            args,
+        print("{tail}call {callee}({args}){metadata}".format(
+            tail='tail ' if self.tail else '',
+            callee=callee_ref,
+            args=args,
             metadata=self._stringify_metatdata(),
             ), file=buf)
 
