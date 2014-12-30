@@ -349,8 +349,8 @@ class IRBuilder(object):
 
     # Call APIs
 
-    def call(self, fn, args, name=''):
-        inst = instructions.CallInstr(self.block, fn, args, name=name)
+    def call(self, fn, args, name='', cconv=None):
+        inst = instructions.CallInstr(self.block, fn, args, name=name, cconv=cconv)
         self._insert(inst)
         return inst
 

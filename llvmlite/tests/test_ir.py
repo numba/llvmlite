@@ -603,10 +603,12 @@ class TestBuilder(TestBase):
         g = ir.Function(builder.function.module, tp_g, 'g')
         builder.call(f, (a, b), 'res_f')
         builder.call(g, (b, a), 'res_g')
+        builder.call(f, (a, b), 'res_f_fast', cconv='fastcc')
         self.check_block(block, """\
             my_block:
                 %"res_f" = call float (i32, i32)* @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...)* @"g"(i32 %".2", i32 %".1")
+                %"res_f_fast" = call fastcc float (i32, i32)* @"f"(i32 %".1", i32 %".2")
             """)
 
     def test_positioning(self):
