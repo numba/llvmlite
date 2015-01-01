@@ -44,7 +44,7 @@ Run `python setup.py build`. This will build the llvmlite C wrapper, which will 
 
 ### Unix requirements
 
-You must have a LLVM build (libraries and header files) available somewhere. If it is not installed in a standard location, you may have to tweak the build script. Under Ubuntu, you can install `llvm-3.5-dev`, but currently only from a Debian repository ([see how](http://askubuntu.com/questions/116257/adding-debian-sid-as-package-repository)).
+You must have a LLVM 3.5 build (libraries and header files) available somewhere. If it is not installed in a standard location, you may have to tweak the build script. Under Ubuntu, you can install `llvm-3.5-dev`, but currently only from a Debian 'unstable' repository ([see how and understand the risk of mixing Debian and Ubuntu](http://askubuntu.com/questions/116257/adding-debian-sid-as-package-repository)).
 
 ### Windows requirements
 
