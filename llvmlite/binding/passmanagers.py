@@ -18,7 +18,7 @@ class PassManager(ffi.ObjectRef):
     """
 
     def _dispose(self):
-        ffi.lib.LLVMPY_DisposePassManager(self)
+        self._capi.LLVMPY_DisposePassManager(self)
 
 
 class ModulePassManager(PassManager):
