@@ -64,7 +64,7 @@ class ModuleRef(ffi.ObjectRef):
             ffi.lib.LLVMPY_DisposeString(ptr)
 
     def _dispose(self):
-        ffi.lib.LLVMPY_DisposeModule(self)
+        self._capi.LLVMPY_DisposeModule(self)
 
     def get_function(self, name):
         """
@@ -176,7 +176,7 @@ class _Iterator(ffi.ObjectRef):
 class _GlobalsIterator(_Iterator):
 
     def _dispose(self):
-        ffi.lib.LLVMPY_DisposeGlobalsIter(self)
+        self._capi.LLVMPY_DisposeGlobalsIter(self)
 
     def _next(self):
         return ffi.lib.LLVMPY_GlobalsIterNext(self)
@@ -185,7 +185,7 @@ class _GlobalsIterator(_Iterator):
 class _FunctionsIterator(_Iterator):
 
     def _dispose(self):
-        ffi.lib.LLVMPY_DisposeFunctionsIter(self)
+        self._capi.LLVMPY_DisposeFunctionsIter(self)
 
     def _next(self):
         return ffi.lib.LLVMPY_FunctionsIterNext(self)

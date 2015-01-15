@@ -45,7 +45,7 @@ class TargetData(ffi.ObjectRef):
             return str(out)
 
     def _dispose(self):
-        ffi.lib.LLVMPY_DisposeTargetData(self)
+        self._capi.LLVMPY_DisposeTargetData(self)
 
     def get_abi_size(self, ty):
         """
@@ -141,8 +141,9 @@ class Target(ffi.ObjectRef):
 
 
 class TargetMachine(ffi.ObjectRef):
+
     def _dispose(self):
-        ffi.lib.LLVMPY_DisposeTargetMachine(self)
+        self._capi.LLVMPY_DisposeTargetMachine(self)
 
     def add_analysis_passes(self, pm):
         """
@@ -207,7 +208,7 @@ class TargetLibraryInfo(ffi.ObjectRef):
     """
 
     def _dispose(self):
-        ffi.lib.LLVMPY_DisposeTargetLibraryInfo(self)
+        self._capi.LLVMPY_DisposeTargetLibraryInfo(self)
 
     def add_pass(self, pm):
         """

@@ -82,7 +82,7 @@ class PassManagerBuilder(ffi.ObjectRef):
             raise TypeError(pm)
 
     def _dispose(self):
-        ffi.lib.LLVMPY_PassManagerBuilderDispose(self)
+        self._capi.LLVMPY_PassManagerBuilderDispose(self)
 
 
 # ============================================================================
