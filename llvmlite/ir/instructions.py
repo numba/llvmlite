@@ -5,7 +5,7 @@ Implementation of LLVM IR instructions.
 from __future__ import print_function, absolute_import
 
 from . import types, _utils
-from .values import Block, ConstOpMixin, Undefined, Value
+from .values import Block, Function, Value
 
 
 class Instruction(Value):
@@ -47,10 +47,19 @@ class Instruction(Value):
 
 
 class CallInstr(Instruction):
-    def __init__(self, parent, func, args, name='', cconv=None):
-        self.cconv = cconv
+    def __init__(self, parent, func, args, name='', cconv=None, tail=False):
+        self.cconv = (func.calling_convention
+                      if cconv is None and isinstance(func, Function)
+                      else cconv)
+        self.tail = tail
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
+        # Validate
+        for argno, (arg, exptype) in enumerate(zip(self.args,
+                                               self.callee.function_type.args)):
+            if arg.type != exptype:
+                msg = "Type of #{0} arg mismatch: {1} != {2}"
+                raise TypeError(msg.format(1 + argno, exptype, arg.type))
 
     @property
     def callee(self):
@@ -81,9 +90,10 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
-        print("call {0}({1}){metadata}".format(
-            callee_ref,
-            args,
+        print("{tail}call {callee}({args}){metadata}".format(
+            tail='tail ' if self.tail else '',
+            callee=callee_ref,
+            args=args,
             metadata=self._stringify_metatdata(),
             ), file=buf)
 
@@ -302,10 +312,16 @@ class AllocaInstr(Instruction):
 class GEPInstr(Instruction):
     def __init__(self, parent, ptr, indices, inbounds, name):
         typ = ptr.type
+        lasttyp = None
         for i in indices:
-            typ = typ.gep(i)
+            lasttyp, typ = typ, typ.gep(i)
 
-        typ = typ.as_pointer()
+        if (not isinstance(typ, types.PointerType) and
+                isinstance(lasttyp, types.PointerType)):
+            typ = lasttyp
+        else:
+            typ = typ.as_pointer()
+
         super(GEPInstr, self).__init__(parent, typ, "getelementptr",
                                        [ptr] + list(indices), name=name)
         self.pointer = ptr
