@@ -41,6 +41,8 @@ class TestValueRepr(TestCase):
         values = [Constant(int8, x) for x in (5, 10, -15)]
         c = Constant(tp, values)
         self.assertEqual(str(c), "[3 x i8] [i8 5, i8 10, i8 -15]")
+        c = Constant(tp, bytearray(b"\x01\x02\x03"))
+        self.assertEqual(str(c), '[3 x i8] c"\\01\\02\\03"')
 
 
 if __name__ == "__main__":

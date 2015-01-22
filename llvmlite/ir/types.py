@@ -4,6 +4,9 @@ Classes that are LLVM types
 
 from __future__ import print_function, absolute_import
 
+import struct
+
+
 # XXX This doesn't seem to be used
 _type_state = iter(range(50))
 _type_enum = lambda: next(_type_state)
@@ -48,6 +51,13 @@ class Type(object):
         with parse_assembly(str(m)) as llmod:
             llty = llmod.get_global_variable(foo.name).type
             return target_data.get_pointee_abi_size(llty)
+
+    def format_const(self, val):
+        """
+        Format constant *val* of this type.  This method may be overriden
+        by subclasses.
+        """
+        return str(val)
 
 
 class MetaData(Type):
@@ -165,6 +175,32 @@ class IntType(Type):
         else:
             return False
 
+    def format_const(self, val):
+        if isinstance(val, bool):
+            return str(val).lower()
+        else:
+            return str(val)
+
+
+def _as_float(value):
+    """
+    Truncate to single-precision float.
+    """
+    return struct.unpack('f', struct.pack('f', value))[0]
+
+def _format_float_as_hex(value, packfmt, unpackfmt, numdigits):
+    raw = struct.pack(packfmt, float(value))
+    intrep = struct.unpack(unpackfmt, raw)[0]
+    out = '{{0:#{0}x}}'.format(numdigits).format(intrep)
+    return out
+
+def _format_double(value):
+    """
+    Format *value* as a hexadecimal string of its IEEE double precision
+    representation.
+    """
+    return _format_float_as_hex(value, 'd', 'Q', 16)
+
 
 class FloatType(Type):
     """
@@ -179,6 +215,9 @@ class FloatType(Type):
     def __eq__(self, other):
         return isinstance(other, type(self))
 
+    def format_const(self, val):
+        return _format_double(_as_float(val))
+
 
 class DoubleType(Type):
     """
@@ -192,6 +231,9 @@ class DoubleType(Type):
 
     def __eq__(self, other):
         return isinstance(other, type(self))
+
+    def format_const(self, val):
+        return _format_double(val)
 
 
 class _Repeat(object):
@@ -247,6 +289,10 @@ class ArrayType(Aggregate):
             raise TypeError(i.type)
         return self.element
 
+    def format_const(self, val):
+        fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
+        return "[{0}]".format(', '.join(map(fmter, val)))
+
 
 class BaseStructType(Aggregate):
     """
@@ -271,6 +317,10 @@ class BaseStructType(Aggregate):
         """Return the LLVM IR for the structure representation
         """
         return '{%s}' % ', '.join(map(str, self.elements))
+
+    def format_const(self, val):
+        fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
+        return "{{{0}}}".format(', '.join(map(fmter, val)))
 
 
 class LiteralStructType(BaseStructType):
