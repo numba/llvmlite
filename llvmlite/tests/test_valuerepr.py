@@ -3,8 +3,14 @@ from __future__ import print_function, absolute_import
 import math
 import unittest
 
-from llvmlite.ir import Constant, FloatType, DoubleType
+from llvmlite.ir import (
+    Constant, FloatType, DoubleType, LiteralStructType, IntType,
+    ArrayType)
 from . import TestCase
+
+
+int8 = IntType(8)
+int16 = IntType(16)
 
 
 class TestValueRepr(TestCase):
@@ -24,6 +30,17 @@ class TestValueRepr(TestCase):
         check_repr(math.pi, "float 0x400921fb60000000")
         check_repr(float('inf'), "float 0x7ff0000000000000")
         check_repr(float('-inf'), "float 0xfff0000000000000")
+
+    def test_struct_repr(self):
+        tp = LiteralStructType([int8, int16])
+        c = Constant(tp, (Constant(int8, 100), Constant(int16, 1000)))
+        self.assertEqual(str(c), "{i8, i16} {i8 100, i16 1000}")
+
+    def test_array_repr(self):
+        tp = ArrayType(int8, 3)
+        values = [Constant(int8, x) for x in (5, 10, -15)]
+        c = Constant(tp, values)
+        self.assertEqual(str(c), "[3 x i8] [i8 5, i8 10, i8 -15]")
 
 
 if __name__ == "__main__":
