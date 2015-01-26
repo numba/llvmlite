@@ -46,6 +46,8 @@ Run `python setup.py build`. This will build the llvmlite C wrapper, which will 
 
 You must have a LLVM 3.5 build (libraries and header files) available somewhere. If it is not installed in a standard location, you may have to tweak the build script. Under Ubuntu 14.10 and Debian unstable, you can install `llvm-3.5-dev`. Versions shipped with earlier versions (Ubuntu 14.04, Debian stable) may not be good enough.
 
+When building on Ubuntu, the linker may report an error if the development version of ``libedit`` is not installed. Install ``libedit-dev`` if you run into this problem.
+
 ### Windows requirements
 
 You must have Visual Studio 2012 or later (the free Express edition is ok). In addition, you must have [cmake](http://www.cmake.org/) installed, and LLVM should have been built using cmake, in Release mode. Be careful to use the right bitness (32- or 64-bit) for your Python installation.
