@@ -7,7 +7,7 @@
 extern "C" {
 
 API_EXPORT(int)
-LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, unsigned Mode,
+LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, int Preserve,
                    const char **Err)
 {
     using namespace llvm;
@@ -26,13 +26,17 @@ LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, unsigned Mode,
         llvm::DiagnosticPrinterRawOStream DP(errstream);
         DI.print(DP);
     };
+    if (Preserve)
+        Src = LLVMCloneModule(Src);
     bool failed = Linker::LinkModules(unwrap(Dest), unwrap(Src), diagnose);
+    if (Preserve)
+        LLVMDisposeModule(Src);
     if (failed) {
         errstream.flush();
         *Err = LLVMPY_CreateString(errorstring.c_str());
     }
 #else
-    bool failed = Linker::LinkModules(unwrap(Dest), unwrap(Src), Mode,
+    bool failed = Linker::LinkModules(unwrap(Dest), unwrap(Src), Preserve,
                                       &errorstring);
     if (failed) {
         *Err = LLVMPY_CreateString(errorstring.c_str());
