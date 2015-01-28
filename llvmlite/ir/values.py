@@ -231,7 +231,7 @@ class MDValue(Value):
     def descr(self, buf):
         operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
                              for op in self.operands)
-        print("metadata !{{ {operands} }}".format(operands=operands), file=buf)
+        print("!{{ {operands} }}".format(operands=operands), file=buf)
 
     def get_reference(self):
         return self.name_prefix + str(self.name)

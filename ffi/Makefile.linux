@@ -3,7 +3,7 @@ CXX = g++
 LLVM_CONFIG ?= llvm-config
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
-CXXFLAGS = -flto `$(LLVM_CONFIG) --cxxflags` -fno-rtti
+CXXFLAGS = -flto `$(LLVM_CONFIG) --cxxflags` -fno-rtti -g
 LDFLAGS = -flto `$(LLVM_CONFIG) --ldflags` -Wl,--exclude-libs=ALL
 LIBS = `$(LLVM_CONFIG) --system-libs --libs all`
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
