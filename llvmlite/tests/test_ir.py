@@ -122,9 +122,10 @@ class TestIR(TestBase):
     def test_metadata_2(self):
         mod = self.module()
         mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        mod.add_metadata([ir.Constant(ir.IntType(32), 321)])
+        mod.add_metadata([ir.Constant(ir.IntType(32), 321),
+                          ir.MetaDataString(mod, "kernel")])
         pat1 = "!0 = !{ i32 123 }"
-        pat2 = "!1 = !{ i32 321 }"
+        pat2 = '!1 = !{ i32 321, !"kernel" }'
         self.assertInText(pat1, str(mod))
         self.assertInText(pat2, str(mod))
 

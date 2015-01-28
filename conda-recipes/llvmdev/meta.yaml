@@ -1,14 +1,15 @@
 package:
   name: llvmdev
-  version: "3.5"
+  version: "3.6"
 
 source:
-  fn: llvm-3.5.src.tar.xz
-  url: http://llvm.org/releases/3.5.0/llvm-3.5.0.src.tar.xz
-  sha1: 58d817ac2ff573386941e7735d30702fe71267d5
+  #fn: llvm-3.5.src.tar.xz
+  #url: http://llvm.org/releases/3.5.0/llvm-3.5.0.src.tar.xz
+  #sha1: 58d817ac2ff573386941e7735d30702fe71267d5
+  path: /home/antoine/llvm-3.6.0rc1.src
 
 build:
-  number: 2
+  number: 1
 
 requirements:
   build:
@@ -16,8 +17,9 @@ requirements:
   run:
     - system           [linux and not armv6]
 
-#test:
-  #commands:
+test:
+  commands:
+    - llvm-config --libs   [linux and not armv6]
     #- clang --help     [linux and not armv6]
 
 about:
