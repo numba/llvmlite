@@ -286,7 +286,7 @@ class TestModuleRef(BaseTest):
         self.assertTrue(bc.startswith(bitcode_magic) or
                         bc.startswith(bitcode_wrapper_magic))
 
-    def _test_parse_bitcode_error(self):
+    def test_parse_bitcode_error(self):
         # LLVM 3.6rc1 calls exit(1) on error (in LLVMContext::diagnose)
         with self.assertRaises(RuntimeError) as cm:
             llvm.parse_bitcode(b"")
