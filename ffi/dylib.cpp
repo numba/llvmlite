@@ -18,5 +18,16 @@ LLVMPY_AddSymbol(const char *name,
     llvm::sys::DynamicLibrary::AddSymbol(name, addr);
 }
 
+API_EXPORT(bool)
+LLVMPY_LoadLibraryPermanently(const char *filename, char **OutError)
+{
+    std::string error;
+    bool failed = llvm::sys::DynamicLibrary::LoadLibraryPermanently(filename, &error);
+    if (failed) {
+      *OutError = strdup(error.c_str());
+    }
+    return failed;
+}
+
 
 } // end extern "C"
