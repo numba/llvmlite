@@ -42,6 +42,8 @@ You need Python 2.6 or greater (including Python 3.3 or greater).
 
 Run `python setup.py build`. This will build the llvmlite C wrapper, which will contain a statically-linked copy of the required subset of LLVM.
 
+If your LLVM is installed in a non-standard location, first point the `LLVM_CONFIG` environment variable to the path of the corresponding `llvm-config` executable.
+
 ### Unix requirements
 
 You must have a LLVM 3.5 build (libraries and header files) available somewhere. If it is not installed in a standard location, you may have to tweak the build script. Under Ubuntu 14.10 and Debian unstable, you can install `llvm-3.5-dev`. Versions shipped with earlier versions (Ubuntu 14.04, Debian stable) may not be good enough.

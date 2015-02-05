@@ -1,5 +1,5 @@
 # Using g++ is recommended for linking
-CXX = g++
+CXX ?= g++
 LLVM_CONFIG ?= llvm-config
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use

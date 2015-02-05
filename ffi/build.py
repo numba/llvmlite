@@ -82,6 +82,16 @@ def main_win32():
 
 def main_posix(kind, library_ext):
     os.chdir(here_dir)
+    # Check availability of llvm-config
+    llvm_config = os.environ.get('LLVM_CONFIG', 'llvm-config')
+    print("LLVM version... ", end='')
+    sys.stdout.flush()
+    try:
+        subprocess.check_call([llvm_config, '--version'])
+    except (OSError, subprocess.CalledProcessError):
+        raise RuntimeError("%s failed executing, please point LLVM_CONFIG "
+                           "to the path for llvm-config" % (llvm_config,))
+
     makefile = "Makefile.%s" % (kind,)
     subprocess.check_call(['make', '-f', makefile])
     shutil.copy('libllvmlite' + library_ext, target_dir)

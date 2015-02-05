@@ -1,3 +1,23 @@
+v0.2.2
+-------
+
+Enhancements:
+* Support for addrspacescast
+* Support for tail call, calling convention attribute
+* Support for IdentifiedStructType
+
+Fixes:
+* GEP addrspace propagation
+* Various installation process fixes
+
+Patched LLVM 3.5:
+The binaries from the numba binstar channel use a patched LLVM3.5 for fixing
+a LLVM ELF relocation bug that is caused by the use of 32-bit relative offset
+in 64-bit binaries.  The problem appears to occur more often on hardened
+kernels, like in CentOS.  The patched source code is available at:
+https://github.com/numba/llvm-mirror/releases/tag/3.5p1
+
+
 v0.2.0
 -------
 
