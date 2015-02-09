@@ -42,7 +42,7 @@ class Module(object):
                 if isinstance(v, values.Function)]
 
     @property
-    def global_variables(self):
+    def global_values(self):
         return self.globals.values()
 
     def get_global(self, name):
