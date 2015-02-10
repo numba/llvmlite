@@ -120,6 +120,15 @@ class TestIR(TestBase):
         self.assertEqual(mod.get_global('globdouble'), globdouble)
         self.assertIsNone(mod.get_global('kkk'))
 
+    def test_functions_global_values_access(self):
+        mod = self.module()
+        fty = ir.FunctionType(ir.VoidType(), [])
+        foo = ir.Function(mod, fty, 'foo')
+        bar = ir.Function(mod, fty, 'bar')
+        globdouble = ir.GlobalVariable(mod, ir.DoubleType(), 'globdouble')
+        self.assertEqual(set(mod.functions), set((foo, bar)))
+        self.assertEqual(set(mod.global_values), set((foo, bar, globdouble)))
+
     def test_metadata(self):
         mod = self.module()
         md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
