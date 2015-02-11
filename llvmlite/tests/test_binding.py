@@ -98,7 +98,7 @@ class BaseTest(TestCase):
         return target.create_target_machine()
 
 
-class TestFunctions(BaseTest):
+class TestMisc(BaseTest):
     """
     Test miscellaneous functions in llvm.binding.
     """
@@ -151,6 +151,10 @@ class TestFunctions(BaseTest):
             llvm.set_option("progname", "-debug-pass=Disabled")
             """
         subprocess.check_call([sys.executable, "-c", code])
+
+    def test_version(self):
+        self.assertIn(llvm.llvm_version_info,
+                      [(3, 5, 0), (3, 5, 1)])
 
 
 class TestModuleRef(BaseTest):

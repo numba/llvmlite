@@ -3,6 +3,7 @@
 #include "llvm-c/Target.h"
 
 #include "core.h"
+#include "llvm/Config/config.h"
 
 extern "C" {
 
@@ -47,7 +48,14 @@ INIT(NativeAsmPrinter)
 
 #undef INIT
 
+API_EXPORT(unsigned int)
+LLVMPY_GetVersionInfo()
+{
+    unsigned int verinfo = 0;
+    verinfo += LLVM_VERSION_MAJOR << 16;
+    verinfo += LLVM_VERSION_MINOR << 8;
+    verinfo += LLVM_VERSION_PATCH << 0;
+    return verinfo;
+}
 
 } // end extern "C"
-
-
