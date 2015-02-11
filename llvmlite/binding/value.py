@@ -1,6 +1,16 @@
+from __future__ import print_function
 
 from ctypes import POINTER, c_char_p, c_int
-import enum
+
+try:
+    import enum
+except ImportError as e:
+    print()
+    print("Python versions < 3.4 need the 'enum34' package.")
+    print("You should be able to fix this with 'pip install enum34'")
+    print()
+    raise e
+
 import itertools
 
 from . import ffi
