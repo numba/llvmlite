@@ -746,7 +746,7 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
 
 class TestDylib(BaseTest):
     def test_bad_library(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(RuntimeError):
             dylib.load_library_permanently("zzzasdkf;jasd;l")
 
     @unittest.skipUnless(platform.system() in ["Linux", "Darwin"], 
