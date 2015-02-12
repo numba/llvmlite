@@ -6,7 +6,7 @@ import platform
 from ctypes.util import find_library
 import unittest
 
-@unittest.skipUnless(platform.system() in {"Linux", "Darwin"}, "Unsupport test for current OS")
+@unittest.skipUnless(platform.system() in ["Linux", "Darwin"], "Unsupport test for current OS")
 class TestDylib(TestCase):
     def setUp(self):
         llvm.initialize()
