@@ -2,13 +2,15 @@ from __future__ import print_function, absolute_import
 
 import ctypes
 from ctypes import *
+from ctypes.util import find_library
 import subprocess
 import sys
 import unittest
+import platform
 
 from llvmlite import six
 from llvmlite import binding as llvm
-from llvmlite.binding import ffi
+from llvmlite.binding import ffi, dylib
 from . import TestCase
 
 
@@ -741,6 +743,21 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         self.assertIn("%.4", orig_asm)
         self.assertNotIn("%.4", opt_asm)
 
+
+class TestDylib(BaseTest):
+    def test_bad_library(self):
+        with self.assertRaises(Exception):
+            dylib.load_library_permanently("zzzasdkf;jasd;l")
+
+    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"], 
+        "Unsupport test for current OS")
+    def test_libm(self):
+        system = platform.system()
+        if system  == "Linux":
+            libm = find_library("m")
+        elif system == "Darwin":
+            libm = find_library("libm")
+        dylib.load_library_permanently(libm)
 
 
 if __name__ == "__main__":
