@@ -17,6 +17,7 @@ requirements:
       # On channel https://binstar.org/numba/
     - llvmdev 3.5*
     #- cmake          [win]
+    - enum34         [py26 or py27 or py33]
   run:
     - python
     - enum34         [py26 or py27 or py33]
