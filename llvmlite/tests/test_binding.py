@@ -10,7 +10,7 @@ import platform
 
 from llvmlite import six
 from llvmlite import binding as llvm
-from llvmlite.binding import ffi, dylib
+from llvmlite.binding import ffi
 from . import TestCase
 
 
@@ -749,19 +749,20 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
 
 
 class TestDylib(BaseTest):
+
     def test_bad_library(self):
         with self.assertRaises(RuntimeError):
-            dylib.load_library_permanently("zzzasdkf;jasd;l")
+            llvm.load_library_permanently("zzzasdkf;jasd;l")
 
     @unittest.skipUnless(platform.system() in ["Linux", "Darwin"], 
-        "Unsupport test for current OS")
+                         "test only works on Linux and Darwin")
     def test_libm(self):
         system = platform.system()
-        if system  == "Linux":
+        if system == "Linux":
             libm = find_library("m")
         elif system == "Darwin":
             libm = find_library("libm")
-        dylib.load_library_permanently(libm)
+        llvm.load_library_permanently(libm)
 
 
 if __name__ == "__main__":
