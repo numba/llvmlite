@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function
-from ctypes import c_void_p, c_char_p
+from ctypes import c_void_p, c_char_p, c_bool, POINTER
 
 from . import ffi
 from .common import _encode_string
@@ -20,6 +20,15 @@ def add_symbol(name, address):
     """
     ffi.lib.LLVMPY_AddSymbol(_encode_string(name), c_void_p(address))
 
+def load_library_permanently(filename):
+    """
+    Load an external library
+    """
+    with ffi.OutputString() as outerr:
+        if ffi.lib.LLVMPY_LoadLibraryPermanently(
+                _encode_string(filename), outerr):
+            raise RuntimeError(str(outerr))
+
 # ============================================================================
 # FFI
 
@@ -31,3 +40,5 @@ ffi.lib.LLVMPY_AddSymbol.argtypes = [
 ffi.lib.LLVMPY_SearchAddressOfSymbol.argtypes = [c_char_p]
 ffi.lib.LLVMPY_SearchAddressOfSymbol.restype = c_void_p
 
+ffi.lib.LLVMPY_LoadLibraryPermanently.argtypes = [c_char_p, POINTER(c_char_p)]
+ffi.lib.LLVMPY_LoadLibraryPermanently.restype = c_bool

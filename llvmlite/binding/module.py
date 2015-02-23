@@ -136,6 +136,10 @@ class ModuleRef(ffi.ObjectRef):
         """
         Return an iterator over this module's global variables.
         The iterator will yield a ValueRef for each global variable.
+
+        Note that global variables don't include functions
+        (a function is a "global value" but not a "global variable" in
+         LLVM parlance)
         """
         it = ffi.lib.LLVMPY_ModuleGlobalsIter(self)
         return _GlobalsIterator(it, module=self)

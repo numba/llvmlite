@@ -42,8 +42,13 @@ class Module(object):
                 if isinstance(v, values.Function)]
 
     @property
-    def global_variables(self):
+    def global_values(self):
         return self.globals.values()
+
+    def get_global(self, name):
+        """Get a global value by name.
+        """
+        return self.globals.get(name)
 
     def add_global(self, globalvalue):
         """Add a global value

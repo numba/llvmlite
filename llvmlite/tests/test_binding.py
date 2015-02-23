@@ -2,9 +2,11 @@ from __future__ import print_function, absolute_import
 
 import ctypes
 from ctypes import *
+from ctypes.util import find_library
 import subprocess
 import sys
 import unittest
+import platform
 
 from llvmlite import six
 from llvmlite import binding as llvm
@@ -98,7 +100,7 @@ class BaseTest(TestCase):
         return target.create_target_machine()
 
 
-class TestFunctions(BaseTest):
+class TestMisc(BaseTest):
     """
     Test miscellaneous functions in llvm.binding.
     """
@@ -151,6 +153,10 @@ class TestFunctions(BaseTest):
             llvm.set_option("progname", "-debug-pass=Disabled")
             """
         subprocess.check_call([sys.executable, "-c", code])
+
+    def test_version(self):
+        self.assertIn(llvm.llvm_version_info,
+                      [(3, 5, 0), (3, 5, 1)])
 
 
 class TestModuleRef(BaseTest):
@@ -743,6 +749,22 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         self.assertIn("%.4", orig_asm)
         self.assertNotIn("%.4", opt_asm)
 
+
+class TestDylib(BaseTest):
+
+    def test_bad_library(self):
+        with self.assertRaises(RuntimeError):
+            llvm.load_library_permanently("zzzasdkf;jasd;l")
+
+    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"], 
+                         "test only works on Linux and Darwin")
+    def test_libm(self):
+        system = platform.system()
+        if system == "Linux":
+            libm = find_library("m")
+        elif system == "Darwin":
+            libm = find_library("libm")
+        llvm.load_library_permanently(libm)
 
 
 if __name__ == "__main__":
