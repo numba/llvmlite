@@ -5,7 +5,7 @@ Implementation of LLVM IR instructions.
 from __future__ import print_function, absolute_import
 
 from . import types, _utils
-from .values import Block, Function, Value
+from .values import Block, Function, Value, Constant
 
 
 class Instruction(Value):
@@ -147,6 +147,8 @@ class SwitchInstr(Terminator):
 
     def add_case(self, val, blk):
         assert isinstance(blk, Block)
+        if not isinstance(val, (Value, Constant)):
+            val = Constant(self.value.type, val)
         self.cases.append((val, blk))
 
     def descr(self, buf):

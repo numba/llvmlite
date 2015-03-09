@@ -604,7 +604,8 @@ class TestBuilder(TestBase):
         sw = builder.switch(a, bb_else)
         sw.add_case(ir.Constant(int32, 0), bb_onzero)
         sw.add_case(ir.Constant(int32, 1), bb_onone)
-        sw.add_case(ir.Constant(int32, 2), bb_ontwo)
+        # A plain Python value gets converted into the right IR constant
+        sw.add_case(2, bb_ontwo)
         self.assertTrue(block.is_terminated)
         self.check_block(block, """\
             my_block:
