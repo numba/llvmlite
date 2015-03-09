@@ -239,7 +239,7 @@ class Builder(ir.IRBuilder):
         else:
             return self.fcmp_ordered(omap[pred], lhs, rhs, name=name)
 
-    def switch(self, val, elseblk, n):
+    def switch(self, val, elseblk, n=0):
         """
         n is ignored
         """
