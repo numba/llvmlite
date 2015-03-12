@@ -98,6 +98,16 @@ LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
     return (long long) LLVMABISizeOfType(TD, llvm::wrap(tp));
 }
 
+API_EXPORT(long long)
+LLVMPY_ABIAlignmentOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
+{
+    llvm::Type *tp = llvm::unwrap(Ty);
+    if (!tp->isPointerTy())
+        return -1;
+    tp = tp->getSequentialElementType();
+    return (long long) LLVMABIAlignmentOfType(TD, llvm::wrap(tp));
+}
+
 
 API_EXPORT(LLVMTargetRef)
 LLVMPY_GetTargetFromTriple(const char *Triple, const char **ErrOut)

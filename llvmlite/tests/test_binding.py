@@ -18,8 +18,9 @@ asm_sum = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
 
-    @glob = global i32 0, align 1
-    @glob_f = global float 1.5, align 1
+    @glob = global i32 0
+    @glob_b = global i8 0
+    @glob_f = global float 1.5
     @glob_struct = global {{ i64, [2 x i64]}} {{i64 0, [2 x i64] [i64 0, i64 0]}}
 
     define i32 @sum(i32 %.1, i32 %.2) {{
@@ -241,10 +242,9 @@ class TestModuleRef(BaseTest):
         it = mod.global_variables
         del mod
         globs = sorted(it, key=lambda value: value.name)
-        self.assertEqual(len(globs), 3)
-        self.assertEqual(globs[0].name, "glob")
-        self.assertEqual(globs[1].name, "glob_f")
-        self.assertEqual(globs[2].name, "glob_struct")
+        self.assertEqual(len(globs), 4)
+        self.assertEqual([g.name for g in globs],
+                         ["glob", "glob_b", "glob_f", "glob_struct"])
 
     def test_functions(self):
         mod = self.module()
@@ -400,18 +400,26 @@ class JITTestMixin(object):
         del mod, ee
         str(td)
 
-    def test_target_data_abi_size(self):
+    def test_target_data_abi_enquiries(self):
         mod = self.module()
         ee = self.jit(mod)
         td = ee.target_data
         gv_i32 = mod.get_global_variable("glob")
+        gv_i8 = mod.get_global_variable("glob_b")
         gv_struct = mod.get_global_variable("glob_struct")
         # A global is a pointer, it has the ABI size of a pointer
         pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
-        self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
-        self.assertEqual(td.get_abi_size(gv_struct.type), pointer_size)
+        for g in (gv_i32, gv_i8, gv_struct):
+            self.assertEqual(td.get_abi_size(g.type), pointer_size)
+
         self.assertEqual(td.get_pointee_abi_size(gv_i32.type), 4)
+        self.assertEqual(td.get_pointee_abi_alignment(gv_i32.type), 4)
+
+        self.assertEqual(td.get_pointee_abi_size(gv_i8.type), 1)
+        self.assertIn(td.get_pointee_abi_alignment(gv_i8.type), (1, 2, 4))
+
         self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
+        self.assertEqual(td.get_pointee_abi_alignment(gv_struct.type), 8)
 
 
 class JITWithTMTestMixin(JITTestMixin):
@@ -472,7 +480,7 @@ class TestValueRef(BaseTest):
     def test_str(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
-        self.assertEqual(str(glob), "@glob = global i32 0, align 1")
+        self.assertEqual(str(glob), "@glob = global i32 0")
 
     def test_name(self):
         mod = self.module()
