@@ -419,7 +419,7 @@ class JITTestMixin(object):
         self.assertIn(td.get_pointee_abi_alignment(gv_i8.type), (1, 2, 4))
 
         self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
-        self.assertEqual(td.get_pointee_abi_alignment(gv_struct.type), 8)
+        self.assertIn(td.get_pointee_abi_alignment(gv_struct.type), (4, 8))
 
 
 class JITWithTMTestMixin(JITTestMixin):
