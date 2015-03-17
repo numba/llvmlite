@@ -62,6 +62,15 @@ class TargetData(ffi.ObjectRef):
             raise RuntimeError("Not a pointer type: %s" % (ty,))
         return size
 
+    def get_pointee_abi_alignment(self, ty):
+        """
+        Get minimum ABI alignment of pointee type of LLVM pointer type *ty*.
+        """
+        size = ffi.lib.LLVMPY_ABIAlignmentOfElementType(self, ty)
+        if size == -1:
+            raise RuntimeError("Not a pointer type: %s" % (ty,))
+        return size
+
     def add_pass(self, pm):
         """
         Add a DataLayout pass to PassManager *pm*.
@@ -272,6 +281,10 @@ ffi.lib.LLVMPY_ABISizeOfType.restype = c_longlong
 ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef,
                                                 ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_ABISizeOfElementType.restype = c_longlong
+
+ffi.lib.LLVMPY_ABIAlignmentOfElementType.argtypes = [ffi.LLVMTargetDataRef,
+                                                     ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ABIAlignmentOfElementType.restype = c_longlong
 
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTargetFromTriple.restype = ffi.LLVMTargetRef

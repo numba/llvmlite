@@ -442,6 +442,9 @@ class Argument(Value):
         else:
             return "{0} {1}".format(self.type, self.get_reference())
 
+    def __repr__(self):
+        return "<Argument %r (#%s) of type %s>" % (self.name, self.pos, self.type)
+
     def add_attribute(self, attr):
         self.attributes.add(attr)
 

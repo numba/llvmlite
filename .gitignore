@@ -9,4 +9,4 @@ dist/
 ffi/build/
 htmlcov/
 .coverage
-
+MANIFEST

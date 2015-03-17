@@ -605,7 +605,8 @@ class TestBuilder(TestBase):
         sw = builder.switch(a, bb_else)
         sw.add_case(ir.Constant(int32, 0), bb_onzero)
         sw.add_case(ir.Constant(int32, 1), bb_onone)
-        sw.add_case(ir.Constant(int32, 2), bb_ontwo)
+        # A plain Python value gets converted into the right IR constant
+        sw.add_case(2, bb_ontwo)
         self.assertTrue(block.is_terminated)
         self.check_block(block, """\
             my_block:
@@ -780,6 +781,17 @@ class TestTypes(TestBase):
         check(ir.ArrayType(int8, 5), 5)
         check(ir.ArrayType(int32, 5), 20)
         check(ir.LiteralStructType((dbl, flt, flt)), 16)
+
+    def test_abi_alignment(self):
+        td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+        def check(tp, expected):
+            self.assertIn(tp.get_abi_alignment(td), expected)
+        check(int8, (1, 2, 4))
+        check(int32, (4,))
+        check(int64, (8,))
+        check(ir.ArrayType(int8, 5), (1, 2, 4))
+        check(ir.ArrayType(int32, 5), (4,))
+        check(ir.LiteralStructType((dbl, flt, flt)), (8,))
 
     def test_identified_struct(self):
         context = ir.Context()
