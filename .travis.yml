@@ -9,7 +9,7 @@ python:
 
 before_install:
     # Install Miniconda
-    - wget http://repo.continuum.io/miniconda/Miniconda3-3.7.0-Linux-x86_64.sh -O miniconda.sh
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
     - chmod +x miniconda.sh
     - ./miniconda.sh -b
     - export PATH=$HOME/miniconda3/bin:$PATH
@@ -18,7 +18,7 @@ before_install:
     - conda create -n travisci --yes python=$PY_MAJOR_MINOR
     - source activate travisci
     # Install llvmdev (separate channel, for now)
-    - conda install --yes -c numba llvmdev
+    - conda install --yes -c numba llvmdev="3.5*"
     # Install unittest2 and argparse for Python 2.6
     - if [ $PY_MAJOR_MINOR == "2.6" ]; then conda install --yes unittest2 argparse; fi
     # Install enum34 for Python < 3.4
