@@ -3,13 +3,15 @@ package:
   version: "3.6"
 
 source:
-  #fn: llvm-3.5.src.tar.xz
-  #url: http://llvm.org/releases/3.5.0/llvm-3.5.0.src.tar.xz
-  #sha1: 58d817ac2ff573386941e7735d30702fe71267d5
-  path: /home/antoine/llvm-3.6.0rc1.src
+  fn: llvm-3.6.src.tar.xz
+  url: http://llvm.org/releases/3.6.0/llvm-3.6.0.src.tar.xz
+  sha1: 6eb2b7381d924bb3f267281c9058c817d825d824
+  patches:
+    # From http://reviews.llvm.org/D6052
+    - ../llvm-elf-relocation.patch
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
@@ -20,9 +22,8 @@ requirements:
 test:
   commands:
     - llvm-config --libs   [linux and not armv6]
-    #- clang --help     [linux and not armv6]
 
 about:
   home: http://llvm.org/
-  license: Open Source (http://llvm.org/releases/3.5.0/LICENSE.TXT)
+  license: Open Source (http://llvm.org/releases/3.6.0/LICENSE.TXT)
   summary: Development headers and libraries for LLVM
