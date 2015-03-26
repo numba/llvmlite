@@ -1,13 +1,13 @@
 package:
   name: llvmdev
-  version: "3.5"
+  version: "3.5.1p1"
 
 source:
-  fn: 3.5.tar.gz
-  url: https://github.com/sklam/llvm/archive/3.5.tar.gz
+  fn: 3.5.1.tar.gz
+  url: https://github.com/sklam/llvm/archive/3.5.1p1.tar.gz
 
 build:
-  number: 2
+  number: 0
 
 requirements:
   build:
