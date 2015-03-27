@@ -1,3 +1,19 @@
+v0.3.1
+------
+
+Enhancements:
+* Add Module.get_global()
+* Renamd Module.global_variables to Module.global_values
+* Support loading library parmanently
+* Add Type.get_abi_alignment()
+
+Fixes:
+* Expose LLVM version as a tuple
+
+Patched LLVM 3.5.1:
+Updated to 3.5.1 with the same ELF relocation patched for v0.2.2.
+
+
 v0.2.2
 -------
 
