@@ -4,7 +4,7 @@ package:
 
 source:
   fn: 3.5.1.tar.gz
-  url: https://github.com/sklam/llvm/archive/3.5.1p1.tar.gz
+  url: https://github.com/numba/llvm-mirror/archive/3.5.1p1.tar.gz
 
 build:
   number: 0
