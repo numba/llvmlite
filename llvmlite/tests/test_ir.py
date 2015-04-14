@@ -862,15 +862,8 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '{float, i1} undef')
 
     def test_encoding_problem(self):
-        try:
-            get_buffer = buffer
-        except:
-            get_buffer = lambda x: x   # Insert stub
-
-        celems = [ir.Constant(ir.ArrayType(ir.IntType(8), 8),
-                              bytearray(get_buffer(array("d", [i + 0.5]))))
-                  for i in range(10)]
-        c = ir.Constant(ir.ArrayType(celems[0].type, len(celems)), celems)
+        c = ir.Constant(ir.ArrayType(ir.IntType(8), 256),
+                        bytearray(range(256)))
         m = self.module()
         gv = ir.GlobalVariable(m, c.type, "myconstant")
         gv.global_constant = True
