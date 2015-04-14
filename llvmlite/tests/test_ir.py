@@ -9,6 +9,7 @@ import itertools
 import re
 import textwrap
 import unittest
+from array import array
 
 from . import TestCase
 from llvmlite import ir
@@ -859,6 +860,22 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 undef}')
         c = ir.Constant(ir.LiteralStructType((flt, int1)), ir.Undefined)
         self.assertEqual(str(c), '{float, i1} undef')
+
+    def test_encoding_problem(self):
+        celems = [ir.Constant(ir.ArrayType(ir.IntType(8), 8),
+                              bytearray(array("d", [i + 0.5])))
+                  for i in range(10)]
+        c = ir.Constant(ir.ArrayType(celems[0].type, len(celems)), celems)
+        m = self.module()
+        gv = ir.GlobalVariable(m, c.type, "myconstant")
+        gv.global_constant = True
+        gv.initializer = c
+        # With utf-8, the following will cause:
+        # UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe0 in position 136: invalid continuation byte
+        parsed = llvm.parse_assembly(str(m))
+        # Make sure the encoding does not modify the IR
+        reparsed = llvm.parse_assembly(str(parsed))
+        self.assertEqual(str(parsed), str(reparsed))
 
 
 class TestTransforms(TestBase):
