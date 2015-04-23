@@ -11,7 +11,7 @@ source:
     - ../llvm-elf-relocation.patch
 
 build:
-  number: 2
+  number: 1
 
 requirements:
   build:
