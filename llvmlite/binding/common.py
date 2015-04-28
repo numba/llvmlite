@@ -8,16 +8,17 @@ if sys.version_info < (3, 0):
         if isinstance(s, bytes):
             return s
         else:
-            return s.encode('utf-8')
+            return s.encode('latin1')
 
     def _decode_string(b):
         return b
 else:
     def _encode_string(s):
-        return s.encode('utf-8')
+        encoded = s.encode('latin1')
+        return encoded
 
     def _decode_string(b):
-        return b.decode('utf-8')
+        return b.decode('latin1')
 
 _encode_string.__doc__ = """Encode a string for use by LLVM."""
 _decode_string.__doc__ = """Decode a LLVM character (byte)string."""
