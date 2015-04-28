@@ -1,4 +1,6 @@
 from __future__ import print_function, absolute_import
+
+import contextlib
 import functools
 
 from . import instructions, types, values
@@ -85,6 +87,35 @@ class IRBuilder(object):
     def position_at_end(self, block):
         self._block = block
         self._anchor = len(block.instructions)
+
+    def append_basic_block(self, name=''):
+        return self.function.append_basic_block(name)
+
+    @contextlib.contextmanager
+    def goto_block(self, block):
+        """
+        A context manager which temporarily positions the builder at the end
+        of basic block *bb* (but before any terminator).
+        """
+        old_block = self.basic_block
+        term = block.terminator
+        if term is not None:
+            self.position_before(term)
+        else:
+            self.position_at_end(block)
+        try:
+            yield
+        finally:
+            self.position_at_end(old_block)
+
+    @contextlib.contextmanager
+    def goto_entry_block(self):
+        """
+        A context manager which temporarily positions the builder at the
+        end of the function's entry block.
+        """
+        with self.goto_block(self.function.entry_basic_block):
+            yield
 
     def constant(self, typ, val):
         return values.Constant(typ, val)
