@@ -71,6 +71,16 @@ class TestBase(TestCase):
     def check_block(self, block, asm):
         self.check_descr(self.descr(block), asm)
 
+    def check_metadata(self, module, asm):
+        """
+        Check module metadata against *asm*.
+        """
+        expected = textwrap.dedent(asm)
+        # Normalize indent
+        expected = expected.replace("\n    ", "\n  ")
+        actual = module._stringify_metadata()
+        self.assertEqual(actual.strip(), expected.strip())
+
 
 class TestFunction(TestBase):
 
@@ -152,6 +162,7 @@ class TestIR(TestBase):
         nmd = mod.add_named_metadata("foo")
         nmd.add(md)
         self.assertInText("!foo = !{ !0 }", str(mod))
+        self.assert_valid_ir(mod)
 
     def test_named_metadata_2(self):
         mod = self.module()
@@ -163,6 +174,7 @@ class TestIR(TestBase):
         nmd2.add(md)
         self.assertInText("!foo = !{ !0 }", str(mod))
         self.assertInText("!bar = !{ !0, !0 }", str(mod))
+        self.assert_valid_ir(mod)
 
     def test_inline_assembly(self):
         mod = self.module()
@@ -559,6 +571,22 @@ class TestBuildInstructions(TestBase):
                 br i1 false, label %"b_true", label %"b_false"
             """)
 
+    def test_cbranch_weights(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        bb_true = builder.function.append_basic_block(name='b_true')
+        bb_false = builder.function.append_basic_block(name='b_false')
+        br = builder.cbranch(ir.Constant(int1, False), bb_true, bb_false)
+        br.set_weights([5, 42])
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            my_block:
+                br i1 false, label %"b_true", label %"b_false", !prof !0
+            """)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 5, i32 42 }
+            """)
+
     def test_returns(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -624,6 +652,7 @@ class TestBuilderMisc(TestBase):
         block = self.block(name='start')
         builder = ir.IRBuilder(block)
         self.assertIs(builder.function, block.parent)
+        self.assertIs(builder.module, block.parent.module)
 
     def test_constant(self):
         """

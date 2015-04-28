@@ -1,16 +1,4 @@
 from __future__ import print_function, absolute_import
-try:
-    from StringIO import StringIO as _StringIO
-
-    class StringIO(_StringIO):
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            self.close()
-
-except ImportError:
-    from io import StringIO
 
 
 class DuplicatedNameError(NameError):

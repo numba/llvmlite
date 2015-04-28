@@ -72,6 +72,10 @@ class IRBuilder(object):
     def function(self):
         return self.block.parent
 
+    @property
+    def module(self):
+        return self.block.parent.module
+
     def position_before(self, instr):
         self._block = instr.parent
         self._anchor = self._block.instructions.index(instr)
@@ -363,16 +367,17 @@ class IRBuilder(object):
     def branch(self, target):
         """Jump to target
         """
-        term = instructions.Terminator(self.block, "br", [target])
-        self._set_terminator(term)
-        return term
+        br = instructions.Branch(self.block, "br", [target])
+        self._set_terminator(br)
+        return br
 
     def cbranch(self, cond, truebr, falsebr):
         """Branch conditionally
         """
-        term = instructions.Terminator(self.block, "br", [cond, truebr, falsebr])
-        self._set_terminator(term)
-        return term
+        br = instructions.ConditionalBranch(self.block, "br",
+                                            [cond, truebr, falsebr])
+        self._set_terminator(br)
+        return br
 
     def ret_void(self):
         return self._set_terminator(

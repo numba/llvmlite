@@ -4,8 +4,9 @@ Implementation of LLVM IR instructions.
 
 from __future__ import print_function, absolute_import
 
-from . import types, _utils
-from .values import Block, Function, Value, Constant
+from ..six import StringIO
+from . import types
+from .values import Block, Function, Value, Constant, MetaDataString
 
 
 class Instruction(Value):
@@ -18,14 +19,21 @@ class Instruction(Value):
         self.metadata = {}
 
     def _stringify_metatdata(self):
-        buf = []
-
         if self.metadata:
+            buf = []
             for k, v in self.metadata.items():
                 buf.append("!{0} {1}".format(k, v.get_reference()))
             return ', ' + ', '.join(buf)
         else:
             return ''
+
+    @property
+    def function(self):
+        return self.parent.function
+
+    @property
+    def module(self):
+        return self.parent.function.module
 
     def set_metadata(self, name, node):
         self.metadata[name] = node
@@ -109,8 +117,20 @@ class Terminator(Instruction):
         operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
                              for op in self.operands)
         metadata = self._stringify_metatdata()
-        print("{opname} {operands} {metadata}".format(**locals()), file=buf,
+        print("{opname} {operands}{metadata}".format(**locals()), file=buf,
               end='')
+
+
+class PredictableTerminator(Terminator):
+
+    def set_weights(self, weights):
+        operands = [MetaDataString(self.module, "branch_weights")]
+        for w in weights:
+            if w < 0:
+                raise ValueError("branch weight must be a positive integer")
+            operands.append(Constant(types.IntType(32), w))
+        md = self.module.add_metadata(operands)
+        self.set_metadata("prof", md)
 
 
 class Ret(Terminator):
@@ -135,7 +155,16 @@ class Ret(Terminator):
         print(msg, file=buf)
 
 
-class SwitchInstr(Terminator):
+class Branch(Terminator):
+    pass
+
+
+class ConditionalBranch(PredictableTerminator):
+    pass
+
+
+class SwitchInstr(PredictableTerminator):
+
     def __init__(self, parent, opname, val, default):
         super(SwitchInstr, self).__init__(parent, opname, [val])
         self.default = default
@@ -447,9 +476,9 @@ class InlineAsm(object):
               file=buf, end='')
 
     def get_reference(self):
-        with _utils.StringIO() as buf:
-            self.descr(buf)
-            return buf.getvalue()
+        buf = StringIO()
+        self.descr(buf)
+        return buf.getvalue()
 
     def __str__(self):
         return "{0} {1}".format(self.type, self.get_reference())
