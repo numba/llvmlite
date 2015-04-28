@@ -8,7 +8,7 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - g++-4.9
+      - g++-4.8
 
 python:
   - "2.6"
@@ -34,7 +34,7 @@ before_install:
     - if [ $PY_MAJOR_MINOR \< "3.4" ]; then conda install --yes enum34; fi
 
 install:
-    - export CXX=g++-4.9
+    - export CXX=g++-4.8
     - python setup.py build
 
 script:
