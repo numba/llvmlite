@@ -135,8 +135,9 @@ class IRBuilder(object):
         on the given predicate (a i1 value).  If the conditional block
         is not explicitly terminated, a branch will be added to the next
         block.
-        If *likely* is given, the branch weight will be marked strong or
-        weak depending on its boolean value.
+        If *likely* is given, its boolean value indicates whether the
+        predicate is likely to be true or not, and metadata is issued
+        for LLVM's optimizers to account for that.
         """
         bb = self.basic_block
         bbif = self.append_basic_block(name=bb.name + '.if')
