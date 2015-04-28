@@ -208,26 +208,10 @@ class TestBlock(TestBase):
             """)
 
 
-class TestBuilder(TestBase):
+class TestBuildInstructions(TestBase):
     """
-    Test IR generation through the builder class.
+    Test IR generation of LLVM instructions through the IRBuilder class.
     """
-
-    def test_attributes(self):
-        block = self.block(name='start')
-        builder = ir.IRBuilder(block)
-        self.assertIs(builder.function, block.parent)
-
-    def test_constant(self):
-        """
-        Test the IRBuilder.constant() method.
-        """
-        block = self.block(name='start')
-        builder = ir.IRBuilder(block)
-        c = builder.constant(int32, 5)
-        self.assertIsInstance(c, ir.Constant)
-        self.assertIs(c.type, int32)
-        self.assertEqual(c.constant, 5)
 
     def test_simple(self):
         block = self.block(name='my_block')
@@ -237,35 +221,6 @@ class TestBuilder(TestBase):
         self.check_block(block, """\
             my_block:
                 %"res" = add i32 %".1", %".2"
-            """)
-
-    def test_block_operations(self):
-        block = self.block(name='my_block')
-        builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
-        builder.add(a, b, 'c')
-        bb_new = builder.append_basic_block(name='foo')
-        with builder.goto_block(bb_new):
-            builder.fadd(a, b, 'd')
-            with builder.goto_entry_block():
-                builder.sub(a, b, 'e')
-            builder.fsub(a, b, 'f')
-            builder.branch(bb_new)
-        builder.mul(a, b, 'g')
-        with builder.goto_block(bb_new):
-            builder.fmul(a, b, 'h')
-        self.check_block(block, """\
-            my_block:
-                %"c" = add i32 %".1", %".2"
-                %"e" = sub i32 %".1", %".2"
-                %"g" = mul i32 %".1", %".2"
-            """)
-        self.check_block(bb_new, """\
-            foo:
-                %"d" = fadd i32 %".1", %".2"
-                %"f" = fsub i32 %".1", %".2"
-                %"h" = fmul i32 %".1", %".2"
-                br label %"foo"
             """)
 
     def test_binops(self):
@@ -657,6 +612,57 @@ class TestBuilder(TestBase):
                 %"res_f" = call float (i32, i32)* @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...)* @"g"(i32 %".2", i32 %".1")
                 %"res_f_fast" = call fastcc float (i32, i32)* @"f"(i32 %".1", i32 %".2")
+            """)
+
+
+class TestBuilderMisc(TestBase):
+    """
+    Test various other features of the IRBuilder class.
+    """
+
+    def test_attributes(self):
+        block = self.block(name='start')
+        builder = ir.IRBuilder(block)
+        self.assertIs(builder.function, block.parent)
+
+    def test_constant(self):
+        """
+        Test the IRBuilder.constant() method.
+        """
+        block = self.block(name='start')
+        builder = ir.IRBuilder(block)
+        c = builder.constant(int32, 5)
+        self.assertIsInstance(c, ir.Constant)
+        self.assertIs(c.type, int32)
+        self.assertEqual(c.constant, 5)
+
+    def test_goto_block(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        builder.add(a, b, 'c')
+        bb_new = builder.append_basic_block(name='foo')
+        with builder.goto_block(bb_new):
+            builder.fadd(a, b, 'd')
+            with builder.goto_entry_block():
+                builder.sub(a, b, 'e')
+            builder.fsub(a, b, 'f')
+            builder.branch(bb_new)
+        builder.mul(a, b, 'g')
+        with builder.goto_block(bb_new):
+            builder.fmul(a, b, 'h')
+        self.check_block(block, """\
+            my_block:
+                %"c" = add i32 %".1", %".2"
+                %"e" = sub i32 %".1", %".2"
+                %"g" = mul i32 %".1", %".2"
+            """)
+        self.check_block(bb_new, """\
+            foo:
+                %"d" = fadd i32 %".1", %".2"
+                %"f" = fsub i32 %".1", %".2"
+                %"h" = fmul i32 %".1", %".2"
+                br label %"foo"
             """)
 
     def test_positioning(self):
