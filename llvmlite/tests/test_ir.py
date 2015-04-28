@@ -62,10 +62,14 @@ class TestBase(TestCase):
         thing.descr(sio)
         return sio.getvalue()
 
-    def check_descr(self, descr, expected):
-        expected = textwrap.dedent(expected)
+    def _normalize_asm(self, asm):
+        asm = textwrap.dedent(asm)
         # Normalize indent
-        expected = expected.replace("\n    ", "\n  ")
+        asm = asm.replace("\n    ", "\n  ")
+        return asm
+
+    def check_descr(self, descr, asm):
+        expected = self._normalize_asm(asm)
         self.assertEqual(descr, expected)
 
     def check_block(self, block, asm):
@@ -75,10 +79,14 @@ class TestBase(TestCase):
         """
         Check module metadata against *asm*.
         """
-        expected = textwrap.dedent(asm)
-        # Normalize indent
-        expected = expected.replace("\n    ", "\n  ")
+        expected = self._normalize_asm(asm)
         actual = module._stringify_metadata()
+        self.assertEqual(actual.strip(), expected.strip())
+
+    def check_func_body(self, func, asm):
+        expected = self._normalize_asm(asm)
+        actual = self.descr(func)
+        actual = actual.partition('{')[2].rpartition('}')[0]
         self.assertEqual(actual.strip(), expected.strip())
 
 
@@ -652,7 +660,9 @@ class TestBuilderMisc(TestBase):
         block = self.block(name='start')
         builder = ir.IRBuilder(block)
         self.assertIs(builder.function, block.parent)
+        self.assertIsInstance(builder.function, ir.Function)
         self.assertIs(builder.module, block.parent.module)
+        self.assertIsInstance(builder.module, ir.Module)
 
     def test_constant(self):
         """
@@ -692,6 +702,36 @@ class TestBuilderMisc(TestBase):
                 %"f" = fsub i32 %".1", %".2"
                 %"h" = fmul i32 %".1", %".2"
                 br label %"foo"
+            """)
+
+    def test_if_then(self):
+        block = self.block(name='one')
+        builder = ir.IRBuilder(block)
+        z = ir.Constant(int1, 0)
+        a = builder.add(z, z, 'a')
+        with builder.if_then(a) as bbend:
+            b = builder.add(z, z, 'b')
+            # Block will be terminated implicitly
+        self.assertIs(builder.block, bbend)
+        c = builder.add(z, z, 'c')
+        with builder.if_then(c):
+            d = builder.add(z, z, 'd')
+            builder.branch(block)
+            # No implicit termination
+        self.check_func_body(builder.function, """\
+            one:
+                %"a" = add i1 0, 0
+                br i1 %"a", label %"one.if", label %"one.endif"
+            one.if:
+                %"b" = add i1 0, 0
+                br label %"one.endif"
+            one.endif:
+                %"c" = add i1 0, 0
+                br i1 %"c", label %"one.endif.if", label %"one.endif.endif"
+            one.endif.if:
+                %"d" = add i1 0, 0
+                br label %"one"
+            one.endif.endif:
             """)
 
     def test_positioning(self):

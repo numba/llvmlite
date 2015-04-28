@@ -121,6 +121,26 @@ class IRBuilder(object):
         with self.goto_block(self.function.entry_basic_block):
             yield
 
+    @contextlib.contextmanager
+    def if_then(self, pred):
+        """
+        A temporary manager which sets up a conditional basic block based
+        on the given predicate (a i1 value).  If the conditional block
+        is not explicitly terminated, a branch will be added to the next
+        block.
+        """
+        bb = self.basic_block
+        bbif = self.append_basic_block(name=bb.name + '.if')
+        bbend = self.append_basic_block(name=bb.name + '.endif')
+        self.cbranch(pred, bbif, bbend)
+
+        with self.goto_block(bbif):
+            yield bbend
+            if bbif.terminator is None:
+                self.branch(bbend)
+
+        self.position_at_end(bbend)
+
     def constant(self, typ, val):
         return values.Constant(typ, val)
 
