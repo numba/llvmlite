@@ -122,17 +122,21 @@ class IRBuilder(object):
             yield
 
     @contextlib.contextmanager
-    def if_then(self, pred):
+    def if_then(self, pred, likely=None):
         """
         A temporary manager which sets up a conditional basic block based
         on the given predicate (a i1 value).  If the conditional block
         is not explicitly terminated, a branch will be added to the next
         block.
+        If *likely* is given, the branch weight will be marked strong or
+        weak depending on its boolean value.
         """
         bb = self.basic_block
         bbif = self.append_basic_block(name=bb.name + '.if')
         bbend = self.append_basic_block(name=bb.name + '.endif')
-        self.cbranch(pred, bbif, bbend)
+        br = self.cbranch(pred, bbif, bbend)
+        if likely is not None:
+            br.set_weights([99, 1] if likely else [1, 99])
 
         with self.goto_block(bbif):
             yield bbend

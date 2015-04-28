@@ -735,6 +735,27 @@ class TestBuilderMisc(TestBase):
             one.endif.endif:
             """)
 
+    def test_if_then_likely(self):
+        def check(likely):
+            block = self.block(name='one')
+            builder = ir.IRBuilder(block)
+            z = ir.Constant(int1, 0)
+            with builder.if_then(z, likely=likely):
+                pass
+            self.check_block(block, """\
+                one:
+                    br i1 0, label %"one.if", label %"one.endif", !prof !0
+                """)
+            return builder
+        builder = check(True)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            """)
+        builder = check(False)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            """)
+
     def test_positioning(self):
         """
         Test IRBuilder.position_{before,after,at_start,at_end}.
