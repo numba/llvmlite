@@ -756,6 +756,71 @@ class TestBuilderMisc(TestBase):
             !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
             """)
 
+    def test_if_else(self):
+        block = self.block(name='one')
+        builder = ir.IRBuilder(block)
+        z = ir.Constant(int1, 0)
+        a = builder.add(z, z, 'a')
+        with builder.if_else(a) as (then, otherwise):
+            with then:
+                b = builder.add(z, z, 'b')
+            with otherwise:
+                c = builder.add(z, z, 'c')
+            # Each block will be terminated implicitly
+        with builder.if_else(a) as (then, otherwise):
+            with then:
+                builder.branch(block)
+            with otherwise:
+                builder.ret_void()
+            # No implicit termination
+        self.check_func_body(builder.function, """\
+            one:
+                %"a" = add i1 0, 0
+                br i1 %"a", label %"one.if", label %"one.else"
+            one.if:
+                %"b" = add i1 0, 0
+                br label %"one.endif"
+            one.else:
+                %"c" = add i1 0, 0
+                br label %"one.endif"
+            one.endif:
+                br i1 %"a", label %"one.endif.if", label %"one.endif.else"
+            one.endif.if:
+                br label %"one"
+            one.endif.else:
+                ret void
+            one.endif.endif:
+            """)
+
+    def test_if_else_likely(self):
+        def check(likely):
+            block = self.block(name='one')
+            builder = ir.IRBuilder(block)
+            z = ir.Constant(int1, 0)
+            with builder.if_else(z, likely=likely) as (then, otherwise):
+                with then:
+                    builder.branch(block)
+                with otherwise:
+                    builder.ret_void()
+            self.check_func_body(builder.function, """\
+                one:
+                    br i1 0, label %"one.if", label %"one.else", !prof !0
+                one.if:
+                    br label %"one"
+                one.else:
+                    ret void
+                one.endif:
+                """)
+            return builder
+        builder = check(True)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            """)
+        builder = check(False)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            """)
+
     def test_positioning(self):
         """
         Test IRBuilder.position_{before,after,at_start,at_end}.

@@ -122,9 +122,16 @@ class IRBuilder(object):
             yield
 
     @contextlib.contextmanager
+    def _branch_helper(self, bbenter, bbexit):
+        self.position_at_end(bbenter)
+        yield bbexit
+        if bbenter.terminator is None:
+            self.branch(bbexit)
+
+    @contextlib.contextmanager
     def if_then(self, pred, likely=None):
         """
-        A temporary manager which sets up a conditional basic block based
+        A context manager which sets up a conditional basic block based
         on the given predicate (a i1 value).  If the conditional block
         is not explicitly terminated, a branch will be added to the next
         block.
@@ -138,10 +145,32 @@ class IRBuilder(object):
         if likely is not None:
             br.set_weights([99, 1] if likely else [1, 99])
 
-        with self.goto_block(bbif):
+        with self._branch_helper(bbif, bbend):
             yield bbend
-            if bbif.terminator is None:
-                self.branch(bbend)
+
+        self.position_at_end(bbend)
+
+    @contextlib.contextmanager
+    def if_else(self, pred, likely=None):
+        """
+        A context manager which sets up two conditional basic blocks based
+        on the given predicate (a i1 value).
+        A tuple of context managers is yield'ed.  Each context manager
+        acts as a if_then() block.
+        *likely* has the same meaning as in if_then().
+        """
+        bb = self.basic_block
+        bbif = self.append_basic_block(name=bb.name + '.if')
+        bbelse = self.append_basic_block(name=bb.name + '.else')
+        bbend = self.append_basic_block(name=bb.name + '.endif')
+        br = self.cbranch(pred, bbif, bbelse)
+        if likely is not None:
+            br.set_weights([99, 1] if likely else [1, 99])
+
+        then = self._branch_helper(bbif, bbend)
+        otherwise = self._branch_helper(bbelse, bbend)
+
+        yield then, otherwise
 
         self.position_at_end(bbend)
 
