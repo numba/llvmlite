@@ -159,6 +159,13 @@ class IRBuilder(object):
         A tuple of context managers is yield'ed.  Each context manager
         acts as a if_then() block.
         *likely* has the same meaning as in if_then().
+
+        Typical use::
+            with builder.if_else(pred) as (then, otherwise):
+                with then:
+                    # emit instructions for when the predicate is true
+                with otherwise:
+                    # emit instructions for when the predicate is false
         """
         bb = self.basic_block
         bbif = self.append_basic_block(name=bb.name + '.if')
