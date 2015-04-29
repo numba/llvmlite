@@ -12,6 +12,9 @@ from distutils.spawn import spawn
 import os
 import sys
 
+if os.environ.get('READTHEDOCS', None) == 'True':
+    sys.exit()
+
 from llvmlite.utils import get_library_files
 
 import versioneer
