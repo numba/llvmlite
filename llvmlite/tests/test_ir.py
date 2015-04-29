@@ -961,6 +961,15 @@ class TestTypes(TestBase):
             tp.gep(ir.Constant(int32, 2))
         check_index_type(tp)
 
+        context = ir.Context()
+        tp = ir.IdentifiedStructType(context, "MyType")
+        tp.set_body(dbl, ir.LiteralStructType((int1, int8)))
+        check_constant(tp, 0, dbl)
+        check_constant(tp, 1, ir.LiteralStructType((int1, int8)))
+        with self.assertRaises(IndexError):
+            tp.gep(ir.Constant(int32, 2))
+        check_index_type(tp)
+
     def test_abi_size(self):
         td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
         def check(tp, expected):
