@@ -51,7 +51,7 @@ is where llvmlite loses in flexibility compared to the direct mapping
 of C++ APIs into Python that was provided by llvmpy.  The saving in
 maintenance effort, however, is large.
 
-LLVM Compatibility
+LLVM compatibility
 ------------------
 
 Despite minimizing the API surface with LLVM, llvmlite is impacted
@@ -63,7 +63,7 @@ with neither LLVM 3.4.0 nor 3.6.0).
 
 Which LLVM version is supported is driven by Numba_'s requirements.
 
-API Stability
+API stability
 -------------
 
 At this time, we reserve ourselves the possibility to slightly break the

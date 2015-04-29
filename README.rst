@@ -97,10 +97,9 @@ Unix requirements
 -----------------
 
 You must have a LLVM 3.5 build (libraries and header files) available
-somewhere.  If it is not installed in a standard location, you may have to
-tweak the build script.  Under Ubuntu 14.10 and Debian unstable, you can
-install ``llvm-3.5-dev``.  Versions shipped with earlier versions
-(Ubuntu 14.04, Debian stable) may not be good enough.
+somewhere.  Under Ubuntu 14.10 and Debian unstable, you can install
+``llvm-3.5-dev``.  Versions shipped with some earlier distributions such as
+Ubuntu 14.04 are known to be broken.
 
 When building on Ubuntu, the linker may report an error if the development
 version of ``libedit`` is not installed. Install ``libedit-dev`` if you
