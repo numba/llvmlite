@@ -10,3 +10,5 @@ ffi/build/
 htmlcov/
 .coverage
 MANIFEST
+docs/_build/
+
