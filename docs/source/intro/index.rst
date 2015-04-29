@@ -32,13 +32,12 @@ into the LLVM library, llvmlite takes an entirely different approach.
 llvmlite starts from the needs of a JIT compiler and splits them into
 two decoupled tasks:
 
-1. Construction of a module (a compilation unit), function by function,
-   instruction by instruction
+1. Construction of a :term:`module`, function by function,
+   :term:`instruction` by instruction
 2. Compilation and optimization of the module into machine code
 
-
 The construction of a LLVM module doesn't call the LLVM C++ API; rather,
-it constructs the LLVM IR (Intermediate Representation) in pure Python.
+it constructs the LLVM :term:`Intermediate Representation` in pure Python.
 This is the part of the :ref:`IR layer <ir-layer>`.
 
 The compilation of a LLVM module takes the IR in textual form and feeds

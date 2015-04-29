@@ -1,17 +1,18 @@
 
-Welcome to llvmlite's documentation!
-====================================
+llvmlite - a light-weight Python binding to LLVM
+================================================
 
 .. toctree::
    :numbered:
-   :maxdepth: 2
+   :maxdepth: 3
 
    intro/index.rst
    install/index.rst
    ir/index.rst
    binding/index.rst
    developer/index.rst
-..    glossary.rst
+   glossary.rst
+
 ..    release-notes.rst
 
 
