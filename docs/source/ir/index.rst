@@ -20,11 +20,10 @@ representation of the :term:`IR`.
    <http://llvm.org/releases/3.5.1/docs/LangRef.html>`_.
 
 .. toctree::
-   :titlesonly:
-   :maxdepth: 2
+   :maxdepth: 3
 
    types.rst
    values.rst
    modules.rst
    builder.rst
-
+   examples.rst

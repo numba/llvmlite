@@ -1,6 +1,6 @@
 
-llvmlite - a light-weight Python binding to LLVM
-================================================
+llvmlite -- a light-weight Python binding to LLVM
+=================================================
 
 .. toctree::
    :numbered:
@@ -16,10 +16,10 @@ llvmlite - a light-weight Python binding to LLVM
 ..    release-notes.rst
 
 
-.. Indices and tables
-.. ==================
-..
-.. * :ref:`genindex`
-.. * :ref:`modindex`
+Indices
+=======
+
+* :ref:`genindex`
+* :ref:`modindex`
+
 .. * :ref:`search`
-..

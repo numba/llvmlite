@@ -4,6 +4,12 @@ IR builders
 
 .. currentmodule:: llvmlite.ir
 
+.. sidebar:: Contents
+
+   .. contents::
+      :depth: 2
+      :local:
+
 :class:`IRBuilder` is the workhorse of LLVM :term:`IR` generation.  It allows
 you to fill the :term:`basic blocks <basic block>` of your functions with
 LLVM instructions.
@@ -12,11 +18,6 @@ A :class:`IRBuilder` internally maintains a current basic block, and a
 pointer inside the block's list of instructions.  When adding a new
 instruction, it is inserted at that point and the pointer is then advanced
 after the new instruction.
-
-.. contents::
-   :depth: 2
-   :local:
-
 
 Instantiation
 -------------
