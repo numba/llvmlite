@@ -98,3 +98,52 @@ basic block, then go back where you were:
    Just like :meth:`goto_block`, but with the current function's entry
    block.
 
+
+Conditional code
+----------------
+
+The following context managers make it easier to create conditional code.
+
+.. method:: IRBuilder.if_then(pred, likely=None)
+
+   A context manager which creates a basic block whose execution is
+   conditioned on predicate *pred* (a value of type ``IntType(1)``).
+   Another basic block is created for instructions after the conditional
+   block.  The current basic block is terminated with a conditional branch
+   based on *pred*.
+
+   When the context manager is entered, the builder positions at the
+   end of the conditional block.  When the context manager is exited,
+   the builder positions at the start of the continuation block.
+
+   If *likely* is not :const:`None`, it indicates whether *pred*
+   is likely to be true, and metadata is emitted to specify branch
+   weights in accordance.
+
+
+.. method:: IRBuilder.if_else(pred, likely=None)
+
+   A context manager which sets up two basic blocks whose execution
+   is condition on predicate *pred* (a value of type ``IntType(1)``).
+   *likely* has the same meaning as in if_then().
+
+   A pair of context managers is yield'ed.  Each of them acts as a
+   :meth:`if_then()` context manager: the first one for the block
+   to be executed if *pred* is true, the second one for the block
+   to be executed if *pred* is false.
+
+   When the context manager is exited, the builder is positioned on
+   a new continuation block which both conditional blocks jump into.
+
+   Typical use:
+
+   .. code-block:: Python
+
+      with builder.if_else(pred) as (then, otherwise):
+          with then:
+              # emit instructions for when the predicate is true
+          with otherwise:
+              # emit instructions for when the predicate is false
+      # emit instructions following the if-else block
+
+
