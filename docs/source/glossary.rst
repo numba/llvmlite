@@ -65,6 +65,7 @@ Glossary
       and metadata.
 
    terminator
+   terminator instruction
       A kind of :term:`instruction` which explicitly transfers control
       to another part of the program (instead of simply going to the next
       instruction after it is executed).  Examples are branches and

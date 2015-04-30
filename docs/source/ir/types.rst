@@ -4,10 +4,10 @@ Types
 
 .. currentmodule:: llvmlite.ir
 
-All values used in a LLVM module are explicitly typed.  Types all
-derive from a common base class :class:`Type`.  Most of them can be
-instantiated directly but some of them will need you to use other
-APIs.  Once instantiated, a type should be considered immutable.
+All :ref:`values <ir-values>` used in a LLVM module are explicitly typed.
+All types derive from a common base class :class:`Type`.  Most of them can be
+instantiated directly.  Once instantiated, a type should be considered
+immutable.
 
 .. class:: Type
 
