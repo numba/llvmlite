@@ -80,10 +80,31 @@ Atomic types
 Aggregate types
 ---------------
 
+.. class:: Aggregate
+
+   The base class for aggregate types.  You should never instantiate it
+   directly.  Aggregate types have the following attribute in common:
+
+   .. attribute:: elements
+
+      A tuple-like immutable sequence of element types for this aggregate
+      type.
+
+
 .. class:: ArrayType(element, count)
 
-   The class for arrays.  *element* is the type of every element, *count*
+   The class for array types.  *element* is the type of every element, *count*
    the number of elements (a Python integer).
+
+.. class:: LiteralStructType(elements)
+
+   The class for literal struct types.  *elements* is a sequence of element
+   types for each member of the structure.
+
+.. .. class:: IdentifiedStructType
+
+   I prefer not documenting this before the straighten out the API, which
+   is currently weird.
 
 
 Other types
