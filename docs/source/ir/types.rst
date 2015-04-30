@@ -77,6 +77,8 @@ Atomic types
    function without a return value.
 
 
+.. _aggregate-types:
+
 Aggregate types
 ---------------
 

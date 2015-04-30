@@ -326,9 +326,40 @@ Comparisons
    Floating-point unordered compare *lhs* with *rhs*.  *cmpop*, a string, can
    be one of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``, ``ord``, ``uno``.
 
+
+Conditional move
+''''''''''''''''
+
 .. method:: IRBuilder.select(cond, lhs, rhs, name='')
 
    Two-way select: *lhs* if *cond* else *rhs*.
+
+
+Phi
+'''
+
+.. method:: IRBuilder.phi(typ, name='')
+
+   Create a phi node.  Add incoming edges and their values using
+   the :meth:`~PhiInstr.add_incoming` method on the return value.
+
+
+Aggregate operations
+''''''''''''''''''''
+
+.. method:: IRBuilder.extract_value(agg, index, name='')
+
+   Extract the element at *index* of the
+   :ref:`aggregate value <aggregate-types>` *agg*.
+   *index* may be an integer or a sequence of integers.  If *agg* is of an
+   array type, indices can be arbitrary values; if *agg* is of a struct
+   type, indices have to be constant.
+
+.. method:: IRBuilder.insert_value(agg, value, index, name='')
+
+   Build a copy of :ref:`aggregate value <aggregate-types>` *agg* by setting
+   the new *value* at *index*.  *index* can be of the same types as in
+   :meth:`extract_value`.
 
 
 Memory
@@ -351,7 +382,7 @@ Memory
 
    The :term:`getelementptr` instruction.  Given a pointer *ptr* to an
    aggregate value, compute the address of the inner element given by
-   the *indices* (a sequence of integer values).
+   the sequence of *indices*.
 
 .. method:: cmpxchg(ptr, cmp, val, ordering, failordering=None, name='')
 
@@ -376,3 +407,42 @@ Function call
    *cconc* is the optional calling convention.  *tail*, if true, is
    a hint for the optimizer to perform tail-call optimization.
 
+
+Branches
+''''''''
+
+These instructions are all :term:`terminators <terminator>`.
+
+.. method:: IRBuilder.branch(target)
+
+   Unconditional jump to the *target* (a :class:`Block`).
+
+.. method:: IRBuilder.cbranch(cond, truebr, falsebr)
+
+   Conditional jump to either *truebr* or *falsebr* (both :class:`Block`
+   instances), depending on *cond*.  This instruction is a
+   :class:`PredictableInstr`.
+
+.. method:: IRBuilder.ret(value)
+
+   Return the *value* from the current function.
+
+.. method:: IRBuilder.ret_void()
+
+   Return from the current function without a value.
+
+.. method:: IRBuilder.switch(value, default)
+
+   Switch to different blocks based on the *value*.  *default* is the
+   block to switch to if no other block is matched.
+
+   Add non-default targets using the :meth:`~SwitchInstr.add_case`
+   method on the return value.
+
+
+Miscellaneous
+'''''''''''''
+
+.. method:: IRBuilder.unreachable()
+
+   Mark an unreachable point in the code.

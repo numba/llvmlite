@@ -254,11 +254,11 @@ use the helper methods on the :class:`IRBuilder` class.
 
    A switch statement.  Switch statements have the following method:
 
-   .. method:: add_case(val, blk)
+   .. method:: add_case(val, block)
 
       Add a case to the switch statements.  *val* should be a :class:`Constant`
       or a Python value compatible with the switch statement's operand type.
-      *blk* is a :class:`Block` to jump to if, and only if, *val* and
+      *block* is a :class:`Block` to jump to if, and only if, *val* and
       the switch operand compare equal.
 
 
