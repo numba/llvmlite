@@ -25,3 +25,5 @@ representation of the :term:`IR`.
 
    types.rst
    values.rst
+   modules.rst
+

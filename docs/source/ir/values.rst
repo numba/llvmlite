@@ -60,12 +60,12 @@ Values are what a :term:`module` mostly consists of.
 .. class:: MDValue
 
    A :term:`metadata` node.  To create an instance, call
-   :meth:`~llvmlite.ir.Module.add_metadata`.
+   :meth:`Module.add_metadata`.
 
 .. class:: NamedMetaData
 
    A named metadata.  To create an instance, call
-   :meth:`~llvmlite.ir.Module.add_named_metadata`.  Named metadata has
+   :meth:`Module.add_named_metadata`.  Named metadata has
    the following method:
 
    .. method:: add(md)
