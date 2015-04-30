@@ -407,11 +407,11 @@ class IRBuilder(object):
         self._insert(ld)
         return ld
 
-    def store(self, val, ptr):
+    def store(self, value, ptr):
         if not isinstance(ptr.type, types.PointerType):
             raise TypeError("cannot store to value of type %s (%r): not a pointer"
                             % (ptr.type, str(ptr)))
-        st = instructions.StoreInstr(self.block, val, ptr)
+        st = instructions.StoreInstr(self.block, value, ptr)
         self._insert(st)
         return st
 

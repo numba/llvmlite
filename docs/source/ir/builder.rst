@@ -103,8 +103,8 @@ basic block, then go back where you were:
    block.
 
 
-Conditional code
-----------------
+Flow control helpers
+--------------------
 
 The following context managers make it easier to create conditional code.
 
@@ -154,172 +154,225 @@ The following context managers make it easier to create conditional code.
 Instruction building
 --------------------
 
-The following methods inserts a new instruction (a
+The following methods all insert a new instruction (a
 :class:`Instruction` instance) at the current index in the current block.
 The new instruction is returned.
+
+An instruction's operands are most always :ref:`values <ir-values>`.
+
+Many of these methods also take an optional *name* argument, specifying the
+local *name* of the result value.  If not given, a unique name is
+automatically generated.
 
 Arithmetic
 ''''''''''
 
-.. method:: IRBuilder.shl(lhs, rhs)
+.. method:: IRBuilder.shl(lhs, rhs, name='')
 
    Left-shift *lhs* by *rhs* bits.
 
-.. method:: IRBuilder.lshr(lhs, rhs)
+.. method:: IRBuilder.lshr(lhs, rhs, name='')
 
    Logical right-shift *lhs* by *rhs* bits.
 
-.. method:: IRBuilder.ashr(lhs, rhs)
+.. method:: IRBuilder.ashr(lhs, rhs, name='')
 
    Arithmetic (signed) right-shift *lhs* by *rhs* bits.
 
-.. method:: IRBuilder.add(lhs, rhs)
+.. method:: IRBuilder.add(lhs, rhs, name='')
 
    Integer add *lhs* and *rhs*.
 
-.. method:: IRBuilder.fadd(lhs, rhs)
+.. method:: IRBuilder.fadd(lhs, rhs, name='')
 
    Floating-point add *lhs* and *rhs*.
 
-.. method:: IRBuilder.sub(lhs, rhs)
+.. method:: IRBuilder.sub(lhs, rhs, name='')
 
    Integer subtract*rhs* from *lhs*.
 
-.. method:: IRBuilder.fadd(lhs, rhs)
+.. method:: IRBuilder.fadd(lhs, rhs, name='')
 
    Floating-point subtract *rhs* from *lhs*.
 
-.. method:: IRBuilder.mul(lhs, rhs)
+.. method:: IRBuilder.mul(lhs, rhs, name='')
 
    Integer multiply *lhs* with *rhs*.
 
-.. method:: IRBuilder.fmul(lhs, rhs)
+.. method:: IRBuilder.fmul(lhs, rhs, name='')
 
    Floating-point multiply *lhs* with *rhs*.
 
-.. method:: IRBuilder.sdiv(lhs, rhs)
+.. method:: IRBuilder.sdiv(lhs, rhs, name='')
 
    Signed integer divide *lhs* by *rhs*.
 
-.. method:: IRBuilder.udiv(lhs, rhs)
+.. method:: IRBuilder.udiv(lhs, rhs, name='')
 
    Unsigned integer divide *lhs* by *rhs*.
 
-.. method:: IRBuilder.fdiv(lhs, rhs)
+.. method:: IRBuilder.fdiv(lhs, rhs, name='')
 
    Floating-point divide *lhs* by *rhs*.
 
-.. method:: IRBuilder.srem(lhs, rhs)
+.. method:: IRBuilder.srem(lhs, rhs, name='')
 
    Signed integer remainder of *lhs* divided by *rhs*.
 
-.. method:: IRBuilder.urem(lhs, rhs)
+.. method:: IRBuilder.urem(lhs, rhs, name='')
 
    Unsigned integer remainder of *lhs* divided by *rhs*.
 
-.. method:: IRBuilder.frem(lhs, rhs)
+.. method:: IRBuilder.frem(lhs, rhs, name='')
 
    Floating-point remainder of *lhs* divided by *rhs*.
 
-.. method:: IRBuilder.and_(lhs, rhs)
+.. method:: IRBuilder.and_(lhs, rhs, name='')
 
    Bitwise AND *lhs* with *rhs*.
 
-.. method:: IRBuilder.or_(lhs, rhs)
+.. method:: IRBuilder.or_(lhs, rhs, name='')
 
    Bitwise OR *lhs* with *rhs*.
 
-.. method:: IRBuilder.xor(lhs, rhs)
+.. method:: IRBuilder.xor(lhs, rhs, name='')
 
    Bitwise XOR *lhs* with *rhs*.
 
-.. method:: IRBuilder.not_(value)
+.. method:: IRBuilder.not_(value, name='')
 
    Bitwise complement *value*.
 
-.. method:: IRBuilder.neg(value)
+.. method:: IRBuilder.neg(value, name='')
 
    Negate *value*.
 
 Conversions
 '''''''''''
 
-.. method:: IRBuilder.trunc(value, typ)
+.. method:: IRBuilder.trunc(value, typ, name='')
 
    Truncate integer *value* to integer type *typ*.
 
-.. method:: IRBuilder.zext(value, typ)
+.. method:: IRBuilder.zext(value, typ, name='')
 
    Zero-extend integer *value* to integer type *typ*.
 
-.. method:: IRBuilder.sext(value, typ)
+.. method:: IRBuilder.sext(value, typ, name='')
 
    Sign-extend integer *value* to integer type *typ*.
 
-.. method:: IRBuilder.fptrunc(value, typ)
+.. method:: IRBuilder.fptrunc(value, typ, name='')
 
    Truncate (approximate) floating-point *value* to floating-point type *typ*.
 
-.. method:: IRBuilder.fpext(value, typ)
+.. method:: IRBuilder.fpext(value, typ, name='')
 
    Extend floating-point *value* to floating-point type *typ*.
 
-.. method:: IRBuilder.fptosi(value, typ)
+.. method:: IRBuilder.fptosi(value, typ, name='')
 
    Convert floating-point *value* to signed integer type *typ*.
 
-.. method:: IRBuilder.fptoui(value, typ)
+.. method:: IRBuilder.fptoui(value, typ, name='')
 
    Convert floating-point *value* to unsigned integer type *typ*.
 
-.. method:: IRBuilder.sitofp(value, typ)
+.. method:: IRBuilder.sitofp(value, typ, name='')
 
    Convert signed integer *value* to floating-point type *typ*.
 
-.. method:: IRBuilder.uitofp(value, typ)
+.. method:: IRBuilder.uitofp(value, typ, name='')
 
    Convert unsigned integer *value* to floating-point type *typ*.
 
-.. method:: IRBuilder.ptrtoint(value, typ)
+.. method:: IRBuilder.ptrtoint(value, typ, name='')
 
    Convert pointer *value* to integer type *typ*.
 
-.. method:: IRBuilder.inttoptr(value, typ)
+.. method:: IRBuilder.inttoptr(value, typ, name='')
 
    Convert integer *value* to pointer type *typ*.
 
-.. method:: IRBuilder.bitcast(value, typ)
+.. method:: IRBuilder.bitcast(value, typ, name='')
 
    Convert pointer *value* to pointer type *typ*.
 
-.. method:: IRBuilder.addrspacecast(value, typ)
+.. method:: IRBuilder.addrspacecast(value, typ, name='')
 
    Convert pointer *value* to pointer type *typ* of different address space.
+
 
 Comparisons
 '''''''''''
 
-.. method:: IRBuilder.icmp_signed(cmpop, lhs, rhs)
+.. method:: IRBuilder.icmp_signed(cmpop, lhs, rhs, name='')
 
    Signed integer compare *lhs* with *rhs*.  *cmpop*, a string, can be one
    of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``.
 
-.. method:: IRBuilder.icmp_unsigned(cmpop, lhs, rhs)
+.. method:: IRBuilder.icmp_unsigned(cmpop, lhs, rhs, name='')
 
    Unsigned integer compare *lhs* with *rhs*.  *cmpop*, a string, can be one
    of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``.
 
-.. method:: IRBuilder.fcmp_ordered(cmpop, lhs, rhs)
+.. method:: IRBuilder.fcmp_ordered(cmpop, lhs, rhs, name='')
 
    Floating-point ordered compare *lhs* with *rhs*.  *cmpop*, a string, can
    be one of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``, ``ord``, ``uno``.
 
-.. method:: IRBuilder.fcmp_unordered(cmpop, lhs, rhs)
+.. method:: IRBuilder.fcmp_unordered(cmpop, lhs, rhs, name='')
 
    Floating-point unordered compare *lhs* with *rhs*.  *cmpop*, a string, can
    be one of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``, ``ord``, ``uno``.
 
-.. method:: IRBuilder.select(cond, lhs, rhs)
+.. method:: IRBuilder.select(cond, lhs, rhs, name='')
 
    Two-way select: *lhs* if *cond* else *rhs*.
+
+
+Memory
+''''''
+
+.. method:: IRBuilder.alloca(typ, size=None, name='')
+
+   Statically allocate a stack slot for *size* values of type *typ*.
+   If *size* is not given, a stack slot for one value is allocated.
+
+.. method:: IRBuilder.load(ptr, name='')
+
+   Load value from pointer *ptr*.
+
+.. method:: IRBuilder.store(value, ptr)
+
+   Store *value* to pointer *ptr*.
+
+.. method:: IRBuilder.gep(ptr, indices, inbounds=False, name='')
+
+   The :term:`getelementptr` instruction.  Given a pointer *ptr* to an
+   aggregate value, compute the address of the inner element given by
+   the *indices* (a sequence of integer values).
+
+.. method:: cmpxchg(ptr, cmp, val, ordering, failordering=None, name='')
+
+   Atomic compare-and-swap at address *ptr*.  *cmp* is the value to compare
+   the contents with, *val* the new value to be swapped into.
+   Optional *ordering* and *failordering* specify the memory model for
+   this instruction.
+
+.. method:: atomic_rmw(op, ptr, val, ordering, name='')
+
+   Atomic in-memory operation *op* at address *ptr*, with operand *val*.
+   *op* is a string specifying the operation (e.g. ``add`` or ``sub``).
+   The optional *ordering* specifies the memory model for this instruction.
+
+
+Function call
+'''''''''''''
+
+.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=False)
+
+   Call function *fn* with arguments *args* (a sequence of values).
+   *cconc* is the optional calling convention.  *tail*, if true, is
+   a hint for the optimizer to perform tail-call optimization.
 
