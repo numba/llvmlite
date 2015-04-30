@@ -27,8 +27,10 @@ def _escape_string(text):
     return ''.join(buf)
 
 
-class Undefined(object):
+class _Undefined(object):
     pass
+
+Undefined = _Undefined()
 
 
 def _wrapname(x):
