@@ -13,6 +13,10 @@ pointer inside the block's list of instructions.  When adding a new
 instruction, it is inserted at that point and the pointer is then advanced
 after the new instruction.
 
+.. contents::
+   :depth: 2
+   :local:
+
 
 Instantiation
 -------------
@@ -146,4 +150,176 @@ The following context managers make it easier to create conditional code.
               # emit instructions for when the predicate is false
       # emit instructions following the if-else block
 
+
+Instruction building
+--------------------
+
+The following methods inserts a new instruction (a
+:class:`Instruction` instance) at the current index in the current block.
+The new instruction is returned.
+
+Arithmetic
+''''''''''
+
+.. method:: IRBuilder.shl(lhs, rhs)
+
+   Left-shift *lhs* by *rhs* bits.
+
+.. method:: IRBuilder.lshr(lhs, rhs)
+
+   Logical right-shift *lhs* by *rhs* bits.
+
+.. method:: IRBuilder.ashr(lhs, rhs)
+
+   Arithmetic (signed) right-shift *lhs* by *rhs* bits.
+
+.. method:: IRBuilder.add(lhs, rhs)
+
+   Integer add *lhs* and *rhs*.
+
+.. method:: IRBuilder.fadd(lhs, rhs)
+
+   Floating-point add *lhs* and *rhs*.
+
+.. method:: IRBuilder.sub(lhs, rhs)
+
+   Integer subtract*rhs* from *lhs*.
+
+.. method:: IRBuilder.fadd(lhs, rhs)
+
+   Floating-point subtract *rhs* from *lhs*.
+
+.. method:: IRBuilder.mul(lhs, rhs)
+
+   Integer multiply *lhs* with *rhs*.
+
+.. method:: IRBuilder.fmul(lhs, rhs)
+
+   Floating-point multiply *lhs* with *rhs*.
+
+.. method:: IRBuilder.sdiv(lhs, rhs)
+
+   Signed integer divide *lhs* by *rhs*.
+
+.. method:: IRBuilder.udiv(lhs, rhs)
+
+   Unsigned integer divide *lhs* by *rhs*.
+
+.. method:: IRBuilder.fdiv(lhs, rhs)
+
+   Floating-point divide *lhs* by *rhs*.
+
+.. method:: IRBuilder.srem(lhs, rhs)
+
+   Signed integer remainder of *lhs* divided by *rhs*.
+
+.. method:: IRBuilder.urem(lhs, rhs)
+
+   Unsigned integer remainder of *lhs* divided by *rhs*.
+
+.. method:: IRBuilder.frem(lhs, rhs)
+
+   Floating-point remainder of *lhs* divided by *rhs*.
+
+.. method:: IRBuilder.and_(lhs, rhs)
+
+   Bitwise AND *lhs* with *rhs*.
+
+.. method:: IRBuilder.or_(lhs, rhs)
+
+   Bitwise OR *lhs* with *rhs*.
+
+.. method:: IRBuilder.xor(lhs, rhs)
+
+   Bitwise XOR *lhs* with *rhs*.
+
+.. method:: IRBuilder.not_(value)
+
+   Bitwise complement *value*.
+
+.. method:: IRBuilder.neg(value)
+
+   Negate *value*.
+
+Conversions
+'''''''''''
+
+.. method:: IRBuilder.trunc(value, typ)
+
+   Truncate integer *value* to integer type *typ*.
+
+.. method:: IRBuilder.zext(value, typ)
+
+   Zero-extend integer *value* to integer type *typ*.
+
+.. method:: IRBuilder.sext(value, typ)
+
+   Sign-extend integer *value* to integer type *typ*.
+
+.. method:: IRBuilder.fptrunc(value, typ)
+
+   Truncate (approximate) floating-point *value* to floating-point type *typ*.
+
+.. method:: IRBuilder.fpext(value, typ)
+
+   Extend floating-point *value* to floating-point type *typ*.
+
+.. method:: IRBuilder.fptosi(value, typ)
+
+   Convert floating-point *value* to signed integer type *typ*.
+
+.. method:: IRBuilder.fptoui(value, typ)
+
+   Convert floating-point *value* to unsigned integer type *typ*.
+
+.. method:: IRBuilder.sitofp(value, typ)
+
+   Convert signed integer *value* to floating-point type *typ*.
+
+.. method:: IRBuilder.uitofp(value, typ)
+
+   Convert unsigned integer *value* to floating-point type *typ*.
+
+.. method:: IRBuilder.ptrtoint(value, typ)
+
+   Convert pointer *value* to integer type *typ*.
+
+.. method:: IRBuilder.inttoptr(value, typ)
+
+   Convert integer *value* to pointer type *typ*.
+
+.. method:: IRBuilder.bitcast(value, typ)
+
+   Convert pointer *value* to pointer type *typ*.
+
+.. method:: IRBuilder.addrspacecast(value, typ)
+
+   Convert pointer *value* to pointer type *typ* of different address space.
+
+Comparisons
+'''''''''''
+
+.. method:: IRBuilder.icmp_signed(cmpop, lhs, rhs)
+
+   Signed integer compare *lhs* with *rhs*.  *cmpop*, a string, can be one
+   of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``.
+
+.. method:: IRBuilder.icmp_unsigned(cmpop, lhs, rhs)
+
+   Unsigned integer compare *lhs* with *rhs*.  *cmpop*, a string, can be one
+   of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``.
+
+.. method:: IRBuilder.fcmp_ordered(cmpop, lhs, rhs)
+
+   Floating-point ordered compare *lhs* with *rhs*.  *cmpop*, a string, can
+   be one of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``, ``ord``, ``uno``.
+
+.. method:: IRBuilder.fcmp_unordered(cmpop, lhs, rhs)
+
+   Floating-point unordered compare *lhs* with *rhs*.  *cmpop*, a string, can
+   be one of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``, ``ord``, ``uno``.
+
+.. method:: IRBuilder.select(cond, lhs, rhs)
+
+   Two-way select: *lhs* if *cond* else *rhs*.
 
