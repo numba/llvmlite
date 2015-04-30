@@ -420,8 +420,8 @@ class IRBuilder(object):
     # Terminators APIs
     #
 
-    def switch(self, val, elseblk):
-        swt = instructions.SwitchInstr(self.block, 'switch', val, elseblk)
+    def switch(self, value, default):
+        swt = instructions.SwitchInstr(self.block, 'switch', value, default)
         self._set_terminator(swt)
         return swt
 
@@ -473,10 +473,10 @@ class IRBuilder(object):
         self._insert(instr)
         return instr
 
-    def insert_value(self, agg, elem, idx, name=''):
+    def insert_value(self, agg, value, idx, name=''):
         if not isinstance(idx, (tuple, list)):
             idx = [idx]
-        instr = instructions.InsertValue(self.block, agg, elem, idx, name=name)
+        instr = instructions.InsertValue(self.block, agg, value, idx, name=name)
         self._insert(instr)
         return instr
 
