@@ -22,3 +22,5 @@ only those parts that have proven useful to implement Numba_'s JIT compiler.
    initfini.rst
    dylib.rst
    targets.rst
+   modules.rst
+
