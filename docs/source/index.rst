@@ -4,7 +4,7 @@ llvmlite -- a light-weight Python binding to LLVM
 
 .. toctree::
    :numbered:
-   :maxdepth: 3
+   :maxdepth: 2
 
    intro/index.rst
    install/index.rst
