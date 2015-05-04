@@ -24,4 +24,5 @@ only those parts that have proven useful to implement Numba_'s JIT compiler.
    targets.rst
    modules.rst
    values.rst
+   engine.rst
 
