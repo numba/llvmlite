@@ -2,6 +2,8 @@
 Example
 =======
 
+.. _ir-fpadd:
+
 A trivial function
 ------------------
 

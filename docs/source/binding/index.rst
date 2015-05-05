@@ -26,5 +26,7 @@ only those parts that have proven useful to implement Numba_'s JIT compiler.
    values.rst
    engine.rst
    passmanager.rst
+   examples.rst
+
 
 
