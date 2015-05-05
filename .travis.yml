@@ -14,7 +14,7 @@ before_install:
     - ./miniconda.sh -b
     - export PATH=$HOME/miniconda3/bin:$PATH
     - PY_MAJOR_MINOR=${TRAVIS_PYTHON_VERSION:0:3}
-    - CONDA_INSTALL=conda install --yes -q
+    - CONDA_INSTALL="conda install --yes -q"
     # Setup environment
     - conda create -n travisci --yes python=$PY_MAJOR_MINOR
     - source activate travisci
