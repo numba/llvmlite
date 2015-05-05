@@ -24,3 +24,6 @@ like this:
      %"res" = fadd double %".1", %".2"
      ret double %"res"
    }
+
+To learn how to compile and execute this function, refer to the
+:ref:`binding layer <binding-layer>` documentation.

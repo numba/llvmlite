@@ -53,3 +53,46 @@ configure a :class:`PassManagerBuilder`.
       If true, enable the "SLP vectorizer", which uses a different algorithm
       from the loop vectorizer.  Both may be enabled at the same time.
 
+
+.. class:: PassManager
+
+   The base class for pass managers.
+
+
+.. class:: ModulePassManager()
+
+   Create a new pass manager to run optimization passes on a module.
+   Use :meth:`PassManagerBuilder.populate` to add optimization passes.
+
+   The following method is available:
+
+   .. method:: run(module)
+
+      Run optimization passes on the *module* (a :class:`ModuleRef` instance).
+      True is returned if the optimizations made any modification to the
+      module, False instead.
+
+
+.. class:: FunctionPassManager(module)
+
+   Create a new pass manager to run optimization passes on a function of
+   the given *module* (an :class:`ModuleRef` instance).
+   Use :meth:`PassManagerBuilder.populate` to add optimization passes.
+
+   The following methods are available:
+
+   .. method:: finalize()
+
+      Run all the finalizers of the optimization passes.
+
+   .. method:: initialize()
+
+      Run all the initializers of the optimization passes.
+
+   .. method:: run(function)
+
+      Run optimization passes on the *function* (a :class:`ValueRef` instance).
+      True is returned if the optimizations made any modification to the
+      module, False instead.
+
+
