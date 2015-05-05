@@ -39,7 +39,7 @@ install:
 
 script:
     # Ensure that the documentation builds without warnings nor missing references
-    - cd $TRAVIS_BUILD_DIR/docs ; make SPHINXOPTS=-W clean html
+    - cd $TRAVIS_BUILD_DIR/docs ; make SPHINXOPTS=-Wn clean html
     - cd $TRAVIS_BUILD_DIR; python runtests.py -v
 
 notifications:
