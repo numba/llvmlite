@@ -23,7 +23,7 @@ Values are what a :term:`module` mostly consists of.
 
    * All types accept :data:`Undefined`, and turn it into LLVM's "undef".
 
-   * All types accept :const:`None`, and turn it into LLVM's "zeroinitializer".
+   * All types accept None, and turn it into LLVM's "zeroinitializer".
 
    * :class:`IntType` accepts any Python integer or boolean.
 
@@ -109,8 +109,7 @@ Values are what a :term:`module` mostly consists of.
 
    .. attribute:: terminator
 
-      The block's :term:`terminator instruction`, if any.  Otherwise
-      :const:`None`.
+      The block's :term:`terminator instruction`, if any.  Otherwise None.
 
 
 Global values
@@ -150,13 +149,12 @@ Global values are values accessible using a module-wide name.
    .. attribute:: global_constant
 
       If true, the variable is declared a constant, i.e. its contents
-      cannot be ever modified.  Default is :const:`False`.
+      cannot be ever modified.  Default is False.
 
    .. attribute:: initializer
 
       The variable's initialization value (probably a :class:`Constant`
-      of type *typ*).  Default is :const:`None`, meaning the variable is
-      uninitialized.
+      of type *typ*).  Default is None, meaning the variable is uninitialized.
 
 
 .. class:: Function(module, typ, name)

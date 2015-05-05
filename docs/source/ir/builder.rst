@@ -24,7 +24,7 @@ Instantiation
 
 .. class:: IRBuilder(block=None)
 
-   Create a new IR builder.  If *block* (a :class:`BasicBlock`) is given,
+   Create a new IR builder.  If *block* (a :class:`Block`) is given,
    the builder starts right at the end of this basic block.
 
 
@@ -53,7 +53,7 @@ Utilities
 
    Append a basic block, with the given optional *name*, to the current
    function.  The current block is not changed.  A
-   :class:`BasicBlock` is returned.
+   :class:`Block` is returned.
 
 
 Positioning
@@ -121,9 +121,8 @@ The following context managers make it easier to create conditional code.
    end of the conditional block.  When the context manager is exited,
    the builder positions at the start of the continuation block.
 
-   If *likely* is not :const:`None`, it indicates whether *pred*
-   is likely to be true, and metadata is emitted to specify branch
-   weights in accordance.
+   If *likely* is not None, it indicates whether *pred* is likely to be
+   true, and metadata is emitted to specify branch weights in accordance.
 
 
 .. method:: IRBuilder.if_else(pred, likely=None)
