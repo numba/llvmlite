@@ -11,4 +11,5 @@ htmlcov/
 .coverage
 MANIFEST
 docs/_build/
+docs/gh-pages/
 
