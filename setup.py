@@ -78,13 +78,16 @@ cmdclass.update({'build': LlvmliteBuild,
                  'install': LlvmliteInstall,
                  })
 
-
 packages = ['llvmlite',
             'llvmlite.binding',
             'llvmlite.ir',
             'llvmlite.llvmpy',
             'llvmlite.tests',
             ]
+
+install_requires = []
+if sys.version_info < (3, 4):
+    install_requires.append('enum34')
 
 setup(name='llvmlite',
       description="lightweight wrapper around basic LLVM functionality",
@@ -106,6 +109,7 @@ setup(name='llvmlite',
       author_email="numba-users@continuum.io",
       url="https://github.com/numba/llvmlite",
       packages=packages,
+      install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
       )
