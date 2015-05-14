@@ -45,6 +45,12 @@ The ``llvmlite.llvmpy`` namespace provides a minimal llvmpy compatibility
 layer.
 
 
+Documentation
+=============
+
+You'll find the documentation at http://llvmlite.pydata.org
+
+
 Dependencies
 ============
 
