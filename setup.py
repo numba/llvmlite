@@ -13,7 +13,8 @@ import os
 import sys
 
 if os.environ.get('READTHEDOCS', None) == 'True':
-    sys.exit()
+    sys.exit("setup.py disabled on readthedocs: called with %s"
+             % (sys.argv,))
 
 from llvmlite.utils import get_library_files
 
@@ -113,3 +114,4 @@ setup(name='llvmlite',
       license="BSD",
       cmdclass=cmdclass,
       )
+
