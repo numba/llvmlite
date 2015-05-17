@@ -126,6 +126,10 @@ class PointerType(Type):
             raise TypeError(i.type)
         return self.pointee
 
+    @property
+    def intrinsic_name(self):
+        return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
+
 
 class VoidType(Type):
     """
@@ -193,6 +197,10 @@ class IntType(Type):
             return str(val).lower()
         else:
             return str(val)
+
+    @property
+    def intrinsic_name(self):
+        return str(self)
 
 
 def _as_float(value):
