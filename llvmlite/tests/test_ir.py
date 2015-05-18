@@ -594,7 +594,7 @@ class TestBuildInstructions(TestBase):
                 br i1 false, label %"b_true", label %"b_false", !prof !0
             """)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 5, i32 42 }
+            !0 = !{ !"branch_weights", i32 5, i32 42 }
             """)
 
     def test_returns(self):
@@ -750,11 +750,11 @@ class TestBuilderMisc(TestBase):
             return builder
         builder = check(True)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            !0 = !{ !"branch_weights", i32 99, i32 1 }
             """)
         builder = check(False)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            !0 = !{ !"branch_weights", i32 1, i32 99 }
             """)
 
     def test_if_else(self):
@@ -815,11 +815,11 @@ class TestBuilderMisc(TestBase):
             return builder
         builder = check(True)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            !0 = !{ !"branch_weights", i32 99, i32 1 }
             """)
         builder = check(False)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            !0 = !{ !"branch_weights", i32 1, i32 99 }
             """)
 
     def test_positioning(self):
