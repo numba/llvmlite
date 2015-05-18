@@ -12,6 +12,10 @@ from distutils.spawn import spawn
 import os
 import sys
 
+if os.environ.get('READTHEDOCS', None) == 'True':
+    sys.exit("setup.py disabled on readthedocs: called with %s"
+             % (sys.argv,))
+
 from llvmlite.utils import get_library_files
 
 import versioneer
@@ -75,7 +79,6 @@ cmdclass.update({'build': LlvmliteBuild,
                  'install': LlvmliteInstall,
                  })
 
-
 packages = ['llvmlite',
             'llvmlite.binding',
             'llvmlite.ir',
@@ -83,11 +86,15 @@ packages = ['llvmlite',
             'llvmlite.tests',
             ]
 
+install_requires = []
+if sys.version_info < (3, 4):
+    install_requires.append('enum34')
+
 setup(name='llvmlite',
       description="lightweight wrapper around basic LLVM functionality",
       version=versioneer.get_version(),
       classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
@@ -101,8 +108,11 @@ setup(name='llvmlite',
       # Include the separately-compiled shared library
       author="Continuum Analytics, Inc.",
       author_email="numba-users@continuum.io",
-      url="https://github.com/numba/llvmlite",
+      url="http://llvmlite.pydata.org",
+      download_url="https://github.com/numba/llvmlite",
       packages=packages,
+      install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
       )
+

@@ -16,8 +16,11 @@ class Module(object):
         self._sequence = []
 
     def add_metadata(self, operands):
-        """Add a metadata to the module or return a previous equivalent
-        metadata.
+        """
+        Add an unnamed metadata to the module with the given *operands*
+        (a list of values) or return a previous equivalent metadata.
+        A MDValue instance is returned, it can then be associated to
+        e.g. an instruction.
         """
         n = len(self.metadata)
         key = tuple(operands)
@@ -82,18 +85,18 @@ class Module(object):
     def get_identified_types(self):
         return self.context.identified_types
 
-    def __repr__(self):
-        body = '\n'.join(str(self.globals[k]) for k in self._sequence)
-        nmdbuf = []
+    def _stringify_metadata(self):
+        mdbuf = []
         for k, v in self.namedmetadata.items():
-
-            nmdbuf.append("!{name} = !{{ {operands} }}".format(
+            mdbuf.append("!{name} = !{{ {operands} }}".format(
                 name=k, operands=','.join(i.get_reference()
                                           for i in v.operands)))
-
-        mdbuf = []
         for md in self.metadata:
             mdbuf.append(str(md))
+        return '\n'.join(mdbuf)
+
+    def __repr__(self):
+        body = '\n'.join(str(self.globals[k]) for k in self._sequence)
 
         fmt = ('; ModuleID = "{name}"\n'
                'target triple = "{triple}"\n'
@@ -101,12 +104,11 @@ class Module(object):
                '\n'
                '{typedecl}\n'
                '{body}\n'
-               '{md}\n'
-               '{nmd}\n')
+               '{md}\n')
 
         idtypes = [it.get_declaration()
                    for it in self.get_identified_types().values()]
         return fmt.format(name=self.name, triple=self.triple, body=body,
-                          nmd='\n'.join(nmdbuf), md='\n'.join(mdbuf),
+                          md=self._stringify_metadata(),
                           data=self.data_layout,
                           typedecl='\n'.join(idtypes))

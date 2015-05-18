@@ -4,13 +4,11 @@ from . import ffi
 
 
 def create_module_pass_manager():
-    return ModulePassManager(ffi.lib.LLVMPY_CreatePassManager())
+    return ModulePassManager()
 
 
 def create_function_pass_manager(module):
-    fpm = ffi.lib.LLVMPY_CreateFunctionPassManager(module)
-    module._owned = True
-    return FunctionPassManager(fpm, module)
+    return FunctionPassManager(module)
 
 
 class PassManager(ffi.ObjectRef):
@@ -23,14 +21,21 @@ class PassManager(ffi.ObjectRef):
 
 class ModulePassManager(PassManager):
 
+    def __init__(self, ptr=None):
+        if ptr is None:
+            ptr = ffi.lib.LLVMPY_CreatePassManager()
+        PassManager.__init__(self, ptr)
+
     def run(self, module):
         return ffi.lib.LLVMPY_RunPassManager(self, module)
 
 
 class FunctionPassManager(PassManager):
 
-    def __init__(self, ptr, module):
+    def __init__(self, module):
+        ptr = ffi.lib.LLVMPY_CreateFunctionPassManager(module)
         self._module = module
+        module._owned = True
         PassManager.__init__(self, ptr)
 
     def initialize(self):

@@ -7,7 +7,8 @@ from __future__ import print_function, absolute_import
 
 import string
 
-from . import types, _utils
+from ..six import StringIO
+from . import types
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)))
@@ -26,8 +27,10 @@ def _escape_string(text):
     return ''.join(buf)
 
 
-class Undefined(object):
+class _Undefined(object):
     pass
+
+Undefined = _Undefined()
 
 
 def _wrapname(x):
@@ -139,15 +142,15 @@ class Value(object):
         self.name = name
 
     def __str__(self):
-        with _utils.StringIO() as buf:
-            if self.type == types.VoidType():
-                self.descr(buf)
-                return buf.getvalue().rstrip()
-            else:
-                name = self.get_reference()
-                self.descr(buf)
-                descr = buf.getvalue().rstrip()
-                return "{name} = {descr}".format(**locals())
+        buf = StringIO()
+        if self.type == types.VoidType():
+            self.descr(buf)
+            return buf.getvalue().rstrip()
+        else:
+            name = self.get_reference()
+            self.descr(buf)
+            descr = buf.getvalue().rstrip()
+            return "{name} = {descr}".format(**locals())
 
     def descr(self, buf):
         raise NotImplementedError
@@ -179,6 +182,11 @@ class Value(object):
 
 
 class MetaDataString(Value):
+    """
+    A metadata string, i.e. a constant string used as a value in a metadata
+    node.
+    """
+
     def __init__(self, parent, string):
         super(MetaDataString, self).__init__(parent, types.MetaData(), name="")
         self.string = string
@@ -415,9 +423,9 @@ class Function(GlobalValue):
             print('}', file=buf)
 
     def __str__(self):
-        with _utils.StringIO() as buf:
-            self.descr(buf)
-            return buf.getvalue()
+        buf = StringIO()
+        self.descr(buf)
+        return buf.getvalue()
 
     @property
     def is_declaration(self):

@@ -643,7 +643,13 @@ class TestTargetLibraryInfo(BaseTest):
 class TestPassManagerBuilder(BaseTest):
 
     def pmb(self):
-        return llvm.create_pass_manager_builder()
+        return llvm.PassManagerBuilder()
+
+    def test_old_api(self):
+        # Test the create_pass_manager_builder() factory function
+        pmb = llvm.create_pass_manager_builder()
+        pmb.inlining_threshold = 2
+        pmb.opt_level = 3
 
     def test_close(self):
         pmb = self.pmb()
@@ -653,14 +659,14 @@ class TestPassManagerBuilder(BaseTest):
     def test_opt_level(self):
         pmb = self.pmb()
         self.assertIsInstance(pmb.opt_level, six.integer_types)
-        for i in range(3):
+        for i in range(4):
             pmb.opt_level = i
             self.assertEqual(pmb.opt_level, i)
 
     def test_size_level(self):
         pmb = self.pmb()
         self.assertIsInstance(pmb.size_level, six.integer_types)
-        for i in range(3):
+        for i in range(4):
             pmb.size_level = i
             self.assertEqual(pmb.size_level, i)
 
