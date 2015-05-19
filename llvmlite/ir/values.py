@@ -424,7 +424,7 @@ class Function(GlobalValue):
     @property
     def is_declaration(self):
         return len(self.blocks) == 0
-
+        
 
 class ArgumentAttributes(AttributeSet):
     _known = frozenset(['nocapture'])  # TODO
@@ -490,4 +490,3 @@ class Block(Value):
         for bb in self.parent.basic_blocks:
             for instr in bb.instructions:
                 instr.replace_usage(old, new)
-
