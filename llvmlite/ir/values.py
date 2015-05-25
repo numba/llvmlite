@@ -229,7 +229,7 @@ class MDValue(Value):
 
     def __init__(self, parent, values, name):
         super(MDValue, self).__init__(parent, types.MetaData(), name=name)
-        self.operands = tuple(values)
+        self.operands = list(values)
         parent.metadata.append(self)
 
     @property
@@ -254,7 +254,10 @@ class MDValue(Value):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(self.operands)
+        return hash(tuple(self.operands))
+
+    def append(self, val):
+        self.operands.append(val)
 
 
 class GlobalValue(Value, ConstOpMixin):
