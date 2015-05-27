@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 
+import platform
 import re
 from ctypes import CFUNCTYPE, c_int
 import unittest
@@ -11,7 +12,19 @@ llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()
 
 
+@unittest.skipUnless(platform.system() in ["Linux", "Darwin"],
+                     "test only works on Linux and Darwin")
 class TestDebugInfo(TestCase):
+    def check_debuginfo_in_assembly(self, asm):
+        if platform.system() == "Linux":
+            regex = re.compile("\.section\s+\.debug_info")
+            self.assertTrue(regex.search(asm))
+        elif platform.system() == "Darwin":
+            self.assertIn("DWARF", asm)
+            self.assertIn("showdebug.c", asm)
+        else:
+            self.fail("Unknown platform")
+
     def test_simple_debug_info(self):
         """
         Generator int foo(int) and have debug info match the signature
@@ -56,8 +69,7 @@ class TestDebugInfo(TestCase):
 
         # Ensure debug info is generated in the assembly
         assembly = tm.emit_assembly(module)
-        self.assertIn("DWARF", assembly)
-        self.assertIn("showdebug.c", assembly)
+        self.check_debuginfo_in_assembly(assembly)
 
     def test_minimal_debug_info(self):
         """
@@ -102,8 +114,7 @@ class TestDebugInfo(TestCase):
 
         # Ensure debug info is generated in the assembly
         assembly = tm.emit_assembly(module)
-        self.assertIn("DWARF", assembly)
-        self.assertIn("showdebug.c", assembly)
+        self.check_debuginfo_in_assembly(assembly)
 
 
 if __name__ == '__main__':
