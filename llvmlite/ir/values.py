@@ -249,13 +249,12 @@ class MetaDataNull(object):
 
 class MDValue(Value):
     name_prefix = '!'
-    deduplicate_name = False
 
     def __init__(self, parent, values, name):
-        assert not name, "name must be empty"
-        # Provide custom numbering because LLVM3.5 only allow integer name
-        # for metadata
-        name = str(len(parent.metadata))
+        if not name:
+            # Provide custom numbering because LLVM3.5 only allow integer name
+            # for metadata
+            name = str(len(parent.metadata))
         super(MDValue, self).__init__(parent, types.MetaData(), name=name)
         self.operands = list(values)
         parent.metadata.append(self)
