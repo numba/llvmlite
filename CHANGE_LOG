@@ -1,3 +1,18 @@
+v0.5.0
+------
+
+New documentation hosted at http://llvmlite.pydata.org
+
+Enhancements:
+
+* Add code-generation helpers from numba.cgutils
+* Support for memset, memcpy, memmove intrinsics
+
+Fixes:
+
+* Fix string encoding problem when round-triping parse_assembly()
+
+
 v0.4.0
 ------
 
