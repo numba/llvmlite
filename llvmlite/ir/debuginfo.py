@@ -215,9 +215,9 @@ class DIBuilder(object):
         self.dbg_cu.add(cu)
         return cu
 
-    def add_subprogram(self, func, name, return_type, argument_types, lineno=0,
-                       lineno_scope=0, is_local=False, is_defined=True,
-                       is_optimized=False):
+    def add_subprogram(self, func, name, return_type=None, argument_types=(),
+                       lineno=0, lineno_scope=0, is_local=False,
+                       is_defined=True, is_optimized=False):
         tag = llvm_debug_version + DI_Tag.DW_TAG_subprogram
         fn_name = display_name = self._md_string(name)
         mip_linkage_name_cpp = self._md_string("")
@@ -294,6 +294,8 @@ class DIBuilder(object):
     def create_subroutine_type(self, return_type, argument_types, typename='',
                                filepath=None, lineno=0):
         tag = DI_Tag.DW_TAG_subroutine_type
+        if return_type is None:
+            return_type = self._md_null()
         members = [return_type] + list(argument_types)
         return self.create_composite_type(tag,
                                           members,
