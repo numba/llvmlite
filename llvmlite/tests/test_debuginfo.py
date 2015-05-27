@@ -28,6 +28,8 @@ class TestDebugInfo(TestCase):
     def test_simple_debug_info(self):
         """
         Generator int foo(int) and have debug info match the signature
+
+        Try running this in GDB and setting a breakpoint on "foo"
         """
         module = ir.Module()
         fnty = ir.FunctionType(ir.IntType(32), [ir.IntType(32)])
@@ -75,6 +77,8 @@ class TestDebugInfo(TestCase):
         """
         Generator int foo(int) and the debug info does not contain
         return type and argument type.
+        
+        Try running this in GDB and setting a breakpoint on "foo"
         """
         module = ir.Module()
         fnty = ir.FunctionType(ir.IntType(32), [ir.IntType(32)])
