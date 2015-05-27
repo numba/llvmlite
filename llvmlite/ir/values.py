@@ -224,10 +224,38 @@ class NamedMetaData(object):
         self.operands.append(md)
 
 
+
+class MetaDataNull(object):
+    """
+    A metadata null
+    """
+    type = types.NullMetaData()
+
+    def descr(self, buf):
+        print("null", file=buf)
+
+    def get_reference(self):
+        return "null"
+
+    def __str__(self):
+        return self.get_reference()
+
+    def __eq__(self, other):
+        return isinstance(other, MetaDataNull)
+
+    def __hash__(self):
+        return object.__hash__(self)
+
+
 class MDValue(Value):
     name_prefix = '!'
+    deduplicate_name = False
 
     def __init__(self, parent, values, name):
+        assert not name, "name must be empty"
+        # Provide custom numbering because LLVM3.5 only allow integer name
+        # for metadata
+        name = str(len(parent.metadata))
         super(MDValue, self).__init__(parent, types.MetaData(), name=name)
         self.operands = list(values)
         parent.metadata.append(self)
@@ -242,7 +270,7 @@ class MDValue(Value):
         print("metadata !{{ {operands} }}".format(operands=operands), file=buf)
 
     def get_reference(self):
-        return self.name_prefix + str(self.name)
+        return self.name_prefix + '{0}'.format(self.name.lstrip('.'))
 
     def __eq__(self, other):
         if isinstance(other, MDValue):

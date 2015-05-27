@@ -83,6 +83,12 @@ class MetaData(Type):
         raise TypeError
 
 
+class NullMetaData(MetaData):
+    def __str__(self):
+        return ""
+
+
+
 class LabelType(Type):
     """
     The label type is the type of e.g. basic blocks.
