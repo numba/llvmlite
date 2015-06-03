@@ -1,3 +1,11 @@
+v0.5.1 (unreleased)
+-------------------
+
+Fixes:
+
+* Fix implicit termination of basic block in nested if_then()
+
+
 v0.5.0
 ------
 
