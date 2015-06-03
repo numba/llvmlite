@@ -182,9 +182,6 @@ class IRBuilder(object):
 
         self.position_at_end(bbend)
 
-    def constant(self, typ, val):
-        return values.Constant(typ, val)
-
     def _insert(self, instr):
         self._block.instructions.insert(self._anchor, instr)
         self._anchor += 1
