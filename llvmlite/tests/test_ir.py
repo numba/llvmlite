@@ -685,17 +685,6 @@ class TestBuilderMisc(TestBase):
         self.assertIs(builder.module, block.parent.module)
         self.assertIsInstance(builder.module, ir.Module)
 
-    def test_constant(self):
-        """
-        Test the IRBuilder.constant() method.
-        """
-        block = self.block(name='start')
-        builder = ir.IRBuilder(block)
-        c = builder.constant(int32, 5)
-        self.assertIsInstance(c, ir.Constant)
-        self.assertIs(c.type, int32)
-        self.assertEqual(c.constant, 5)
-
     def test_goto_block(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
