@@ -156,8 +156,9 @@ class TestMisc(BaseTest):
         subprocess.check_call([sys.executable, "-c", code])
 
     def test_version(self):
-        self.assertIn(llvm.llvm_version_info,
-                      [(3, 5, 0), (3, 5, 1), (3, 6, 0), (3, 6, 1)])
+        major, minor, patch = llvm.llvm_version_info
+        self.assertIn((major, minor), [(3, 5), (3, 6)])
+        self.assertIn(patch, range(10))
 
 
 class TestModuleRef(BaseTest):

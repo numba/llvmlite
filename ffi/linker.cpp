@@ -12,7 +12,9 @@ LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, int Preserve,
 {
     using namespace llvm;
     std::string errorstring;
-#if LLVM_3_6_OR_ABOVE
+    /* NOTE: can't use LLVMLinkModules() as it fails to return the error
+     * message.
+     */
     llvm::raw_string_ostream errstream(errorstring);
     auto diagnose = [&] (const DiagnosticInfo &DI) {
         switch (DI.getSeverity()) {
@@ -35,13 +37,6 @@ LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, int Preserve,
         errstream.flush();
         *Err = LLVMPY_CreateString(errorstring.c_str());
     }
-#else
-    bool failed = Linker::LinkModules(unwrap(Dest), unwrap(Src), Preserve,
-                                      &errorstring);
-    if (failed) {
-        *Err = LLVMPY_CreateString(errorstring.c_str());
-    }
-#endif
     return failed;
 }
 
