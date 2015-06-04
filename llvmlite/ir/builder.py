@@ -122,27 +122,65 @@ class IRBuilder(object):
             yield
 
     @contextlib.contextmanager
-    def if_then(self, pred):
+    def _branch_helper(self, bbenter, bbexit):
+        self.position_at_end(bbenter)
+        yield bbexit
+        if self.basic_block.terminator is None:
+            self.branch(bbexit)
+
+    @contextlib.contextmanager
+    def if_then(self, pred, likely=None):
         """
-        A temporary manager which sets up a conditional basic block based
+        A context manager which sets up a conditional basic block based
         on the given predicate (a i1 value).  If the conditional block
         is not explicitly terminated, a branch will be added to the next
         block.
+        If *likely* is given, its boolean value indicates whether the
+        predicate is likely to be true or not, and metadata is issued
+        for LLVM's optimizers to account for that.
         """
         bb = self.basic_block
         bbif = self.append_basic_block(name=bb.name + '.if')
         bbend = self.append_basic_block(name=bb.name + '.endif')
-        self.cbranch(pred, bbif, bbend)
+        br = self.cbranch(pred, bbif, bbend)
+        if likely is not None:
+            br.set_weights([99, 1] if likely else [1, 99])
 
-        with self.goto_block(bbif):
+        with self._branch_helper(bbif, bbend):
             yield bbend
-            if bbif.terminator is None:
-                self.branch(bbend)
 
         self.position_at_end(bbend)
 
-    def constant(self, typ, val):
-        return values.Constant(typ, val)
+    @contextlib.contextmanager
+    def if_else(self, pred, likely=None):
+        """
+        A context manager which sets up two conditional basic blocks based
+        on the given predicate (a i1 value).
+        A tuple of context managers is yield'ed.  Each context manager
+        acts as a if_then() block.
+        *likely* has the same meaning as in if_then().
+
+        Typical use::
+            with builder.if_else(pred) as (then, otherwise):
+                with then:
+                    # emit instructions for when the predicate is true
+                with otherwise:
+                    # emit instructions for when the predicate is false
+        """
+        bb = self.basic_block
+        bbif = self.append_basic_block(name=bb.name + '.if')
+        bbelse = self.append_basic_block(name=bb.name + '.else')
+        bbend = self.append_basic_block(name=bb.name + '.endif')
+        br = self.cbranch(pred, bbif, bbelse)
+        if likely is not None:
+            br.set_weights([99, 1] if likely else [1, 99])
+
+        then = self._branch_helper(bbif, bbend)
+        otherwise = self._branch_helper(bbelse, bbend)
+
+        yield then, otherwise
+
+        self.position_at_end(bbend)
 
     def _insert(self, instr):
         self._block.instructions.insert(self._anchor, instr)
@@ -366,11 +404,11 @@ class IRBuilder(object):
         self._insert(ld)
         return ld
 
-    def store(self, val, ptr):
+    def store(self, value, ptr):
         if not isinstance(ptr.type, types.PointerType):
             raise TypeError("cannot store to value of type %s (%r): not a pointer"
                             % (ptr.type, str(ptr)))
-        st = instructions.StoreInstr(self.block, val, ptr)
+        st = instructions.StoreInstr(self.block, value, ptr)
         self._insert(st)
         return st
 
@@ -379,8 +417,8 @@ class IRBuilder(object):
     # Terminators APIs
     #
 
-    def switch(self, val, elseblk):
-        swt = instructions.SwitchInstr(self.block, 'switch', val, elseblk)
+    def switch(self, value, default):
+        swt = instructions.SwitchInstr(self.block, 'switch', value, default)
         self._set_terminator(swt)
         return swt
 
@@ -432,10 +470,10 @@ class IRBuilder(object):
         self._insert(instr)
         return instr
 
-    def insert_value(self, agg, elem, idx, name=''):
+    def insert_value(self, agg, value, idx, name=''):
         if not isinstance(idx, (tuple, list)):
             idx = [idx]
-        instr = instructions.InsertValue(self.block, agg, elem, idx, name=name)
+        instr = instructions.InsertValue(self.block, agg, value, idx, name=name)
         self._insert(instr)
         return instr
 

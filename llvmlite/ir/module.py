@@ -69,18 +69,23 @@ class Module(object):
         name = '.'.join([intrinsic, '.'.join(t.intrinsic_name for t in tys)])
         if name in self.globals:
             return self.globals[name]
-        else:
-            if len(tys) == 1:
-                if intrinsic == 'llvm.powi':
-                    fnty = types.FunctionType(tys[0], [tys[0],
-                                                       types.IntType(32)])
-                elif intrinsic == 'llvm.pow':
-                    fnty = types.FunctionType(tys[0], tys*2)
-                else:
-                    fnty = types.FunctionType(tys[0], tys)
+        if len(tys) == 1:
+            if intrinsic == 'llvm.powi':
+                fnty = types.FunctionType(tys[0], [tys[0], types.IntType(32)])
+            elif intrinsic == 'llvm.pow':
+                fnty = types.FunctionType(tys[0], tys*2)
             else:
-                raise NotImplementedError(name)
-            return values.Function(self, fnty, name=name)
+                fnty = types.FunctionType(tys[0], tys)
+        elif len(tys) == 2 and intrinsic == 'llvm.memset':
+            tys = [tys[0], types.IntType(8), tys[1],
+                   types.IntType(32), types.IntType(1)]
+            fnty = types.FunctionType(types.VoidType(), tys)
+        elif len(tys) == 3 and intrinsic in ('llvm.memcpy', 'llvm.memmove'):
+            tys = tys + [types.IntType(32), types.IntType(1)]
+            fnty = types.FunctionType(types.VoidType(), tys)
+        else:
+            raise NotImplementedError(name)
+        return values.Function(self, fnty, name=name)
 
     def get_identified_types(self):
         return self.context.identified_types

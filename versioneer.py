@@ -1,5 +1,5 @@
 
-# Version: 0.12
+# Version: 0.14
 
 """
 The Versioneer
@@ -10,8 +10,12 @@ The Versioneer
 * Brian Warner
 * License: Public Domain
 * Compatible With: python2.6, 2.7, 3.2, 3.3, 3.4, and pypy
-
-[![Build Status](https://travis-ci.org/warner/python-versioneer.png?branch=master)](https://travis-ci.org/warner/python-versioneer)
+* [![Latest Version]
+(https://pypip.in/version/versioneer/badge.svg?style=flat)
+](https://pypi.python.org/pypi/versioneer/)
+* [![Build Status]
+(https://travis-ci.org/warner/python-versioneer.png?branch=master)
+](https://travis-ci.org/warner/python-versioneer)
 
 This is a tool for managing a recorded version number in distutils-based
 python projects. The goal is to remove the tedious and error-prone "update
@@ -103,7 +107,7 @@ First, decide on values for the following configuration variables:
   append some `__version__`-setting assignments, if they aren't already
   present.
 
-*  `versionfile_build`:
+* `versionfile_build`:
 
   Like `versionfile_source`, but relative to the build directory instead of
   the source directory. These will differ when your setup.py uses
@@ -142,12 +146,14 @@ To versioneer-enable your project:
 * 2: add the following lines to the top of your `setup.py`, with the
   configuration values you decided earlier:
 
-        import versioneer
-        versioneer.VCS = 'git'
-        versioneer.versionfile_source = 'src/myproject/_version.py'
-        versioneer.versionfile_build = 'myproject/_version.py'
-        versioneer.tag_prefix = '' # tags are like 1.2.0
-        versioneer.parentdir_prefix = 'myproject-' # dirname like 'myproject-1.2.0'
+  ````
+  import versioneer
+  versioneer.VCS = 'git'
+  versioneer.versionfile_source = 'src/myproject/_version.py'
+  versioneer.versionfile_build = 'myproject/_version.py'
+  versioneer.tag_prefix = '' # tags are like 1.2.0
+  versioneer.parentdir_prefix = 'myproject-' # dirname like 'myproject-1.2.0'
+  ````
 
 * 3: add the following arguments to the setup() call in your setup.py:
 
@@ -195,17 +201,19 @@ import the top-level `versioneer.py` and run `get_versions()`.
 Both functions return a dictionary with different keys for different flavors
 of the version string:
 
-* `['version']`: condensed tag+distance+shortid+dirty identifier. For git,
-  this uses the output of `git describe --tags --dirty --always` but strips
-  the tag_prefix. For example "0.11-2-g1076c97-dirty" indicates that the tree
-  is like the "1076c97" commit but has uncommitted changes ("-dirty"), and
-  that this commit is two revisions ("-2-") beyond the "0.11" tag. For
-  released software (exactly equal to a known tag), the identifier will only
-  contain the stripped tag, e.g. "0.11".
+* `['version']`: A condensed PEP440-compliant string, equal to the
+  un-prefixed tag name for actual releases, and containing an additional
+  "local version" section with more detail for in-between builds. For Git,
+  this is TAG[+DISTANCE.gHEX[.dirty]] , using information from `git describe
+  --tags --dirty --always`. For example "0.11+2.g1076c97.dirty" indicates
+  that the tree is like the "1076c97" commit but has uncommitted changes
+  (".dirty"), and that this commit is two revisions ("+2") beyond the "0.11"
+  tag. For released software (exactly equal to a known tag), the identifier
+  will only contain the stripped tag, e.g. "0.11".
 
 * `['full']`: detailed revision identifier. For Git, this is the full SHA1
-  commit id, followed by "-dirty" if the tree contains uncommitted changes,
-  e.g. "1076c978a8d3cfc70f408fe5974aa6c092c949ac-dirty".
+  commit id, followed by ".dirty" if the tree contains uncommitted changes,
+  e.g. "1076c978a8d3cfc70f408fe5974aa6c092c949ac.dirty".
 
 Some variants are more useful than others. Including `full` in a bug report
 should allow developers to reconstruct the exact code being tested (or
@@ -213,13 +221,6 @@ indicate the presence of local changes that should be shared with the
 developers). `version` is suitable for display in an "about" box or a CLI
 `--version` output: it can be easily compared against release notes and lists
 of bugs fixed in various releases.
-
-In the future, this will also include a
-[PEP-0440](http://legacy.python.org/dev/peps/pep-0440/) -compatible flavor
-(e.g. `1.2.post0.dev123`). This loses a lot of information (and has no room
-for a hash-based revision id), but is safe to use in a `setup.py`
-"`version=`" argument. It also enables tools like *pip* to compare version
-strings and evaluate compatibility constraint declarations.
 
 The `setup.py versioneer` command adds the following text to your
 `__init__.py` to place a basic version in `YOURPROJECT.__version__`:
@@ -250,6 +251,14 @@ systems (SVN, etc) in the future.
 
 Nothing special.
 
+## Upgrading to 0.14
+
+0.14 changes the format of the version string. 0.13 and earlier used
+hyphen-separated strings like "0.11-2-g1076c97-dirty". 0.14 and beyond use a
+plus-separated "local version" section strings, with dot-separated
+components, like "0.11+2.g1076c97". PEP440-strict tools did not like the old
+format, but should be ok with the new one.
+
 ## Future Directions
 
 This tool is designed to make it easily extended to other version-control
@@ -272,10 +281,14 @@ domain.
 
 """
 
-import os, sys, re, subprocess, errno
-from distutils.core import Command
-from distutils.command.sdist import sdist as _sdist
+import errno
+import os
+import re
+import subprocess
+import sys
 from distutils.command.build import build as _build
+from distutils.command.sdist import sdist as _sdist
+from distutils.core import Command
 
 # these configuration settings will be overridden by setup.py after it
 # imports us
@@ -287,6 +300,7 @@ VCS = None
 
 # these dictionaries contain VCS-specific tools
 LONG_VERSION_PY = {}
+
 
 def run_command(commands, args, cwd=None, verbose=False, hide_stderr=False):
     assert isinstance(commands, list)
@@ -311,14 +325,13 @@ def run_command(commands, args, cwd=None, verbose=False, hide_stderr=False):
             print("unable to find command, tried %s" % (commands,))
         return None
     stdout = p.communicate()[0].strip()
-    if sys.version >= '3':
+    if sys.version_info[0] >= 3:
         stdout = stdout.decode()
     if p.returncode != 0:
         if verbose:
             print("unable to run %s (error)" % args[0])
         return None
     return stdout
-
 LONG_VERSION_PY['git'] = '''
 # This file helps to compute a version number in source trees obtained from
 # git-archive tarball (such as those provided by githubs download-from-tag
@@ -327,7 +340,13 @@ LONG_VERSION_PY['git'] = '''
 # that just contains the computed version number.
 
 # This file is released into the public domain. Generated by
-# versioneer-0.12 (https://github.com/warner/python-versioneer)
+# versioneer-0.14 (https://github.com/warner/python-versioneer)
+
+import errno
+import os
+import re
+import subprocess
+import sys
 
 # these strings will be replaced by git during git-archive
 git_refnames = "%(DOLLAR)sFormat:%%d%(DOLLAR)s"
@@ -338,7 +357,6 @@ tag_prefix = "%(TAG_PREFIX)s"
 parentdir_prefix = "%(PARENTDIR_PREFIX)s"
 versionfile_source = "%(VERSIONFILE_SOURCE)s"
 
-import os, sys, re, subprocess, errno
 
 def run_command(commands, args, cwd=None, verbose=False, hide_stderr=False):
     assert isinstance(commands, list)
@@ -363,7 +381,7 @@ def run_command(commands, args, cwd=None, verbose=False, hide_stderr=False):
             print("unable to find command, tried %%s" %% (commands,))
         return None
     stdout = p.communicate()[0].strip()
-    if sys.version >= '3':
+    if sys.version_info[0] >= 3:
         stdout = stdout.decode()
     if p.returncode != 0:
         if verbose:
@@ -378,10 +396,11 @@ def versions_from_parentdir(parentdir_prefix, root, verbose=False):
     dirname = os.path.basename(root)
     if not dirname.startswith(parentdir_prefix):
         if verbose:
-            print("guessing rootdir is '%%s', but '%%s' doesn't start with prefix '%%s'" %%
-                  (root, dirname, parentdir_prefix))
+            print("guessing rootdir is '%%s', but '%%s' doesn't start with "
+                  "prefix '%%s'" %% (root, dirname, parentdir_prefix))
         return None
     return {"version": dirname[len(parentdir_prefix):], "full": ""}
+
 
 def git_get_keywords(versionfile_abs):
     # the code embedded in _version.py can just fetch the value of these
@@ -390,7 +409,7 @@ def git_get_keywords(versionfile_abs):
     # _version.py.
     keywords = {}
     try:
-        f = open(versionfile_abs,"r")
+        f = open(versionfile_abs, "r")
         for line in f.readlines():
             if line.strip().startswith("git_refnames ="):
                 mo = re.search(r'=\s*"(.*)"', line)
@@ -405,14 +424,15 @@ def git_get_keywords(versionfile_abs):
         pass
     return keywords
 
+
 def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
     if not keywords:
-        return {} # keyword-finding function failed to find keywords
+        return {}  # keyword-finding function failed to find keywords
     refnames = keywords["refnames"].strip()
     if refnames.startswith("$Format"):
         if verbose:
             print("keywords are unexpanded, not using")
-        return {} # unexpanded, so not in an unpacked git-archive tarball
+        return {}  # unexpanded, so not in an unpacked git-archive tarball
     refs = set([r.strip() for r in refnames.strip("()").split(",")])
     # starting in git-1.8.3, tags are listed as "tag: foo-1.0" instead of
     # just "foo-1.0". If we see a "tag: " prefix, prefer those.
@@ -437,13 +457,59 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
             r = ref[len(tag_prefix):]
             if verbose:
                 print("picking %%s" %% r)
-            return { "version": r,
-                     "full": keywords["full"].strip() }
-    # no suitable tags, so we use the full revision id
+            return {"version": r,
+                    "full": keywords["full"].strip()}
+    # no suitable tags, so version is "0+unknown", but full hex is still there
     if verbose:
-        print("no suitable tags, using full revision id")
-    return { "version": keywords["full"].strip(),
-             "full": keywords["full"].strip() }
+        print("no suitable tags, using unknown + full revision id")
+    return {"version": "0+unknown",
+            "full": keywords["full"].strip()}
+
+
+def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
+    # TAG-NUM-gHEX[-dirty] or HEX[-dirty] . TAG might have hyphens.
+
+    # dirty
+    dirty = git_describe.endswith("-dirty")
+    if dirty:
+        git_describe = git_describe[:git_describe.rindex("-dirty")]
+    dirty_suffix = ".dirty" if dirty else ""
+
+    # now we have TAG-NUM-gHEX or HEX
+
+    if "-" not in git_describe:  # just HEX
+        return "0+untagged.g"+git_describe+dirty_suffix, dirty
+
+    # just TAG-NUM-gHEX
+    mo = re.search(r'^(.+)-(\d+)-g([0-9a-f]+)$', git_describe)
+    if not mo:
+        # unparseable. Maybe git-describe is misbehaving?
+        return "0+unparseable"+dirty_suffix, dirty
+
+    # tag
+    full_tag = mo.group(1)
+    if not full_tag.startswith(tag_prefix):
+        if verbose:
+            fmt = "tag '%%s' doesn't start with prefix '%%s'"
+            print(fmt %% (full_tag, tag_prefix))
+        return None, dirty
+    tag = full_tag[len(tag_prefix):]
+
+    # distance: number of commits since tag
+    distance = int(mo.group(2))
+
+    # commit: short hex revision ID
+    commit = mo.group(3)
+
+    # now build up version string, with post-release "local version
+    # identifier". Our goal: TAG[+NUM.gHEX[.dirty]] . Note that if you get a
+    # tagged build and then dirty it, you'll get TAG+0.gHEX.dirty . So you
+    # can always test version.endswith(".dirty").
+    version = tag
+    if distance or dirty:
+        version += "+%%d.g%%s" %% (distance, commit) + dirty_suffix
+
+    return version, dirty
 
 
 def git_versions_from_vcs(tag_prefix, root, verbose=False):
@@ -455,46 +521,49 @@ def git_versions_from_vcs(tag_prefix, root, verbose=False):
     if not os.path.exists(os.path.join(root, ".git")):
         if verbose:
             print("no .git in %%s" %% root)
-        return {}
+        return {}  # get_versions() will try next method
 
     GITS = ["git"]
     if sys.platform == "win32":
         GITS = ["git.cmd", "git.exe"]
-    stdout = run_command(GITS, ["describe", "--tags", "--dirty", "--always"],
+    # if there is a tag, this yields TAG-NUM-gHEX[-dirty]
+    # if there are no tags, this yields HEX[-dirty] (no NUM)
+    stdout = run_command(GITS, ["describe", "--tags", "--dirty",
+                                "--always", "--long"],
                          cwd=root)
+    # --long was added in git-1.5.5
     if stdout is None:
-        return {}
-    if not stdout.startswith(tag_prefix):
-        if verbose:
-            print("tag '%%s' doesn't start with prefix '%%s'" %% (stdout, tag_prefix))
-        return {}
-    tag = stdout[len(tag_prefix):]
+        return {}  # try next method
+    version, dirty = git_parse_vcs_describe(stdout, tag_prefix, verbose)
+
+    # build "full", which is FULLHEX[.dirty]
     stdout = run_command(GITS, ["rev-parse", "HEAD"], cwd=root)
     if stdout is None:
         return {}
     full = stdout.strip()
-    if tag.endswith("-dirty"):
-        full += "-dirty"
-    return {"version": tag, "full": full}
+    if dirty:
+        full += ".dirty"
+
+    return {"version": version, "full": full}
 
 
-def get_versions(default={"version": "unknown", "full": ""}, verbose=False):
+def get_versions(default={"version": "0+unknown", "full": ""}, verbose=False):
     # I am in _version.py, which lives at ROOT/VERSIONFILE_SOURCE. If we have
     # __file__, we can work backwards from there to the root. Some
     # py2exe/bbfreeze/non-CPython implementations don't do __file__, in which
     # case we can only use expanded keywords.
 
-    keywords = { "refnames": git_refnames, "full": git_full }
+    keywords = {"refnames": git_refnames, "full": git_full}
     ver = git_versions_from_keywords(keywords, tag_prefix, verbose)
     if ver:
         return ver
 
     try:
-        root = os.path.abspath(__file__)
+        root = os.path.realpath(__file__)
         # versionfile_source is the relative path from the top of the source
         # tree (where the .git directory might live) to this file. Invert
         # this to find the root from __file__.
-        for i in range(len(versionfile_source.split(os.sep))):
+        for i in versionfile_source.split('/'):
             root = os.path.dirname(root)
     except NameError:
         return default
@@ -504,6 +573,7 @@ def get_versions(default={"version": "unknown", "full": ""}, verbose=False):
             or default)
 '''
 
+
 def git_get_keywords(versionfile_abs):
     # the code embedded in _version.py can just fetch the value of these
     # keywords. When used from setup.py, we don't want to import _version.py,
@@ -511,7 +581,7 @@ def git_get_keywords(versionfile_abs):
     # _version.py.
     keywords = {}
     try:
-        f = open(versionfile_abs,"r")
+        f = open(versionfile_abs, "r")
         for line in f.readlines():
             if line.strip().startswith("git_refnames ="):
                 mo = re.search(r'=\s*"(.*)"', line)
@@ -526,14 +596,15 @@ def git_get_keywords(versionfile_abs):
         pass
     return keywords
 
+
 def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
     if not keywords:
-        return {} # keyword-finding function failed to find keywords
+        return {}  # keyword-finding function failed to find keywords
     refnames = keywords["refnames"].strip()
     if refnames.startswith("$Format"):
         if verbose:
             print("keywords are unexpanded, not using")
-        return {} # unexpanded, so not in an unpacked git-archive tarball
+        return {}  # unexpanded, so not in an unpacked git-archive tarball
     refs = set([r.strip() for r in refnames.strip("()").split(",")])
     # starting in git-1.8.3, tags are listed as "tag: foo-1.0" instead of
     # just "foo-1.0". If we see a "tag: " prefix, prefer those.
@@ -558,13 +629,59 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
             r = ref[len(tag_prefix):]
             if verbose:
                 print("picking %s" % r)
-            return { "version": r,
-                     "full": keywords["full"].strip() }
-    # no suitable tags, so we use the full revision id
+            return {"version": r,
+                    "full": keywords["full"].strip()}
+    # no suitable tags, so version is "0+unknown", but full hex is still there
     if verbose:
-        print("no suitable tags, using full revision id")
-    return { "version": keywords["full"].strip(),
-             "full": keywords["full"].strip() }
+        print("no suitable tags, using unknown + full revision id")
+    return {"version": "0+unknown",
+            "full": keywords["full"].strip()}
+
+
+def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
+    # TAG-NUM-gHEX[-dirty] or HEX[-dirty] . TAG might have hyphens.
+
+    # dirty
+    dirty = git_describe.endswith("-dirty")
+    if dirty:
+        git_describe = git_describe[:git_describe.rindex("-dirty")]
+    dirty_suffix = ".dirty" if dirty else ""
+
+    # now we have TAG-NUM-gHEX or HEX
+
+    if "-" not in git_describe:  # just HEX
+        return "0+untagged.g"+git_describe+dirty_suffix, dirty
+
+    # just TAG-NUM-gHEX
+    mo = re.search(r'^(.+)-(\d+)-g([0-9a-f]+)$', git_describe)
+    if not mo:
+        # unparseable. Maybe git-describe is misbehaving?
+        return "0+unparseable"+dirty_suffix, dirty
+
+    # tag
+    full_tag = mo.group(1)
+    if not full_tag.startswith(tag_prefix):
+        if verbose:
+            fmt = "tag '%s' doesn't start with prefix '%s'"
+            print(fmt % (full_tag, tag_prefix))
+        return None, dirty
+    tag = full_tag[len(tag_prefix):]
+
+    # distance: number of commits since tag
+    distance = int(mo.group(2))
+
+    # commit: short hex revision ID
+    commit = mo.group(3)
+
+    # now build up version string, with post-release "local version
+    # identifier". Our goal: TAG[+NUM.gHEX[.dirty]] . Note that if you get a
+    # tagged build and then dirty it, you'll get TAG+0.gHEX.dirty . So you
+    # can always test version.endswith(".dirty").
+    version = tag
+    if distance or dirty:
+        version += "+%d.g%s" % (distance, commit) + dirty_suffix
+
+    return version, dirty
 
 
 def git_versions_from_vcs(tag_prefix, root, verbose=False):
@@ -576,27 +693,30 @@ def git_versions_from_vcs(tag_prefix, root, verbose=False):
     if not os.path.exists(os.path.join(root, ".git")):
         if verbose:
             print("no .git in %s" % root)
-        return {}
+        return {}  # get_versions() will try next method
 
     GITS = ["git"]
     if sys.platform == "win32":
         GITS = ["git.cmd", "git.exe"]
-    stdout = run_command(GITS, ["describe", "--tags", "--dirty", "--always"],
+    # if there is a tag, this yields TAG-NUM-gHEX[-dirty]
+    # if there are no tags, this yields HEX[-dirty] (no NUM)
+    stdout = run_command(GITS, ["describe", "--tags", "--dirty",
+                                "--always", "--long"],
                          cwd=root)
+    # --long was added in git-1.5.5
     if stdout is None:
-        return {}
-    if not stdout.startswith(tag_prefix):
-        if verbose:
-            print("tag '%s' doesn't start with prefix '%s'" % (stdout, tag_prefix))
-        return {}
-    tag = stdout[len(tag_prefix):]
+        return {}  # try next method
+    version, dirty = git_parse_vcs_describe(stdout, tag_prefix, verbose)
+
+    # build "full", which is FULLHEX[.dirty]
     stdout = run_command(GITS, ["rev-parse", "HEAD"], cwd=root)
     if stdout is None:
         return {}
     full = stdout.strip()
-    if tag.endswith("-dirty"):
-        full += "-dirty"
-    return {"version": tag, "full": full}
+    if dirty:
+        full += ".dirty"
+
+    return {"version": version, "full": full}
 
 
 def do_vcs_install(manifest_in, versionfile_source, ipy):
@@ -631,19 +751,20 @@ def do_vcs_install(manifest_in, versionfile_source, ipy):
         files.append(".gitattributes")
     run_command(GITS, ["add", "--"] + files)
 
+
 def versions_from_parentdir(parentdir_prefix, root, verbose=False):
     # Source tarballs conventionally unpack into a directory that includes
     # both the project name and a version string.
     dirname = os.path.basename(root)
     if not dirname.startswith(parentdir_prefix):
         if verbose:
-            print("guessing rootdir is '%s', but '%s' doesn't start with prefix '%s'" %
-                  (root, dirname, parentdir_prefix))
+            print("guessing rootdir is '%s', but '%s' doesn't start with "
+                  "prefix '%s'" % (root, dirname, parentdir_prefix))
         return None
     return {"version": dirname[len(parentdir_prefix):], "full": ""}
 
 SHORT_VERSION_PY = """
-# This file was generated by 'versioneer.py' (0.12) from
+# This file was generated by 'versioneer.py' (0.14) from
 # revision-control system data, or from the parent directory name of an
 # unpacked source archive. Distribution tarballs contain a pre-generated copy
 # of this file.
@@ -655,7 +776,8 @@ def get_versions(default={}, verbose=False):
 
 """
 
-DEFAULT = {"version": "unknown", "full": "unknown"}
+DEFAULT = {"version": "0+unknown", "full": "unknown"}
+
 
 def versions_from_file(filename):
     versions = {}
@@ -673,6 +795,7 @@ def versions_from_file(filename):
 
     return versions
 
+
 def write_to_version_file(filename, versions):
     with open(filename, "w") as f:
         f.write(SHORT_VERSION_PY % versions)
@@ -686,14 +809,18 @@ def get_root():
     except NameError:
         return os.path.dirname(os.path.abspath(sys.argv[0]))
 
+
 def vcs_function(vcs, suffix):
     return getattr(sys.modules[__name__], '%s_%s' % (vcs, suffix), None)
 
+
 def get_versions(default=DEFAULT, verbose=False):
     # returns dict with two keys: 'version' and 'full'
-    assert versionfile_source is not None, "please set versioneer.versionfile_source"
+    assert versionfile_source is not None, \
+        "please set versioneer.versionfile_source"
     assert tag_prefix is not None, "please set versioneer.tag_prefix"
-    assert parentdir_prefix is not None, "please set versioneer.parentdir_prefix"
+    assert parentdir_prefix is not None, \
+        "please set versioneer.parentdir_prefix"
     assert VCS is not None, "please set versioneer.VCS"
 
     # I am in versioneer.py, which must live at the top of the source tree,
@@ -716,40 +843,50 @@ def get_versions(default=DEFAULT, verbose=False):
         vcs_keywords = get_keywords_f(versionfile_abs)
         ver = versions_from_keywords_f(vcs_keywords, tag_prefix)
         if ver:
-            if verbose: print("got version from expanded keyword %s" % ver)
+            if verbose:
+                print("got version from expanded keyword %s" % ver)
             return ver
 
     ver = versions_from_file(versionfile_abs)
     if ver:
-        if verbose: print("got version from file %s %s" % (versionfile_abs,ver))
+        if verbose:
+            print("got version from file %s %s" % (versionfile_abs, ver))
         return ver
 
     versions_from_vcs_f = vcs_function(VCS, "versions_from_vcs")
     if versions_from_vcs_f:
         ver = versions_from_vcs_f(tag_prefix, root, verbose)
         if ver:
-            if verbose: print("got version from VCS %s" % ver)
+            if verbose:
+                print("got version from VCS %s" % ver)
             return ver
 
     ver = versions_from_parentdir(parentdir_prefix, root, verbose)
     if ver:
-        if verbose: print("got version from parentdir %s" % ver)
+        if verbose:
+            print("got version from parentdir %s" % ver)
         return ver
 
-    if verbose: print("got version from default %s" % default)
+    if verbose:
+        print("got version from default %s" % default)
     return default
+
 
 def get_version(verbose=False):
     return get_versions(verbose=verbose)["version"]
+
 
 class cmd_version(Command):
     description = "report generated version string"
     user_options = []
     boolean_options = []
+
     def initialize_options(self):
         pass
+
     def finalize_options(self):
         pass
+
     def run(self):
         ver = get_version(verbose=True)
         print("Version is currently: %s" % ver)
@@ -762,7 +899,8 @@ class cmd_build(_build):
         # now locate _version.py in the new build/ directory and replace it
         # with an updated value
         if versionfile_build:
-            target_versionfile = os.path.join(self.build_lib, versionfile_build)
+            target_versionfile = os.path.join(self.build_lib,
+                                              versionfile_build)
             print("UPDATING %s" % target_versionfile)
             os.unlink(target_versionfile)
             with open(target_versionfile, "w") as f:
@@ -791,6 +929,7 @@ if 'cx_Freeze' in sys.modules:  # cx_freeze enabled?
                                 "VERSIONFILE_SOURCE": versionfile_source,
                                 })
 
+
 class cmd_sdist(_sdist):
     def run(self):
         versions = get_versions(verbose=True)
@@ -815,14 +954,19 @@ __version__ = get_versions()['version']
 del get_versions
 """
 
+
 class cmd_update_files(Command):
-    description = "install/upgrade Versioneer files: __init__.py SRC/_version.py"
+    description = ("install/upgrade Versioneer files: "
+                   "__init__.py SRC/_version.py")
     user_options = []
     boolean_options = []
+
     def initialize_options(self):
         pass
+
     def finalize_options(self):
         pass
+
     def run(self):
         print(" creating %s" % versionfile_source)
         with open(versionfile_source, "w") as f:
@@ -887,6 +1031,7 @@ class cmd_update_files(Command):
         # .gitattributes to mark _version.py for export-time keyword
         # substitution.
         do_vcs_install(manifest_in, versionfile_source, ipy)
+
 
 def get_cmdclass():
     cmds = {'version': cmd_version,

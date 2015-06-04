@@ -9,6 +9,7 @@ import itertools
 import re
 import textwrap
 import unittest
+from array import array
 
 from . import TestCase
 from llvmlite import ir
@@ -125,6 +126,26 @@ class TestFunction(TestBase):
                 ret void
             }}
             """.format(proto=self.proto))
+
+    def test_declare_intrinsics(self):
+        module = self.module()
+        pint8 = int8.as_pointer()
+
+        powi = module.declare_intrinsic('llvm.powi', [dbl])
+        memset = module.declare_intrinsic('llvm.memset', [pint8, int32])
+        memcpy = module.declare_intrinsic('llvm.memcpy', [pint8, pint8, int32])
+        self.check_descr(self.descr(powi).strip(), """\
+            declare double @"llvm.powi.f64"(double %".1", i32 %".2")""")
+        self.check_descr(self.descr(memset).strip(), """\
+            declare void @"llvm.memset.p0i8.i32"(i8* %".1", i8 %".2", i32 %".3", i32 %".4", i1 %".5")""")
+        self.check_descr(self.descr(memcpy).strip(), """\
+            declare void @"llvm.memcpy.p0i8.p0i8.i32"(i8* %".1", i8* %".2", i32 %".3", i32 %".4", i1 %".5")""")
+
+    def test_redeclare_intrinsic(self):
+        module = self.module()
+        powi = module.declare_intrinsic('llvm.powi', [dbl])
+        powi2 = module.declare_intrinsic('llvm.powi', [dbl])
+        self.assertIs(powi, powi2)
 
 
 class TestIR(TestBase):
@@ -664,17 +685,6 @@ class TestBuilderMisc(TestBase):
         self.assertIs(builder.module, block.parent.module)
         self.assertIsInstance(builder.module, ir.Module)
 
-    def test_constant(self):
-        """
-        Test the IRBuilder.constant() method.
-        """
-        block = self.block(name='start')
-        builder = ir.IRBuilder(block)
-        c = builder.constant(int32, 5)
-        self.assertIsInstance(c, ir.Constant)
-        self.assertIs(c.type, int32)
-        self.assertEqual(c.constant, 5)
-
     def test_goto_block(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -732,6 +742,119 @@ class TestBuilderMisc(TestBase):
                 %"d" = add i1 0, 0
                 br label %"one"
             one.endif.endif:
+            """)
+
+    def test_if_then_nested(self):
+        # Implicit termination in a nested if/then
+        block = self.block(name='one')
+        builder = ir.IRBuilder(block)
+        z = ir.Constant(int1, 0)
+        a = builder.add(z, z, 'a')
+        with builder.if_then(a) as bbend:
+            b = builder.add(z, z, 'b')
+            with builder.if_then(b) as bbend:
+                c = builder.add(z, z, 'c')
+        builder.ret_void()
+        self.check_func_body(builder.function, """\
+            one:
+                %"a" = add i1 0, 0
+                br i1 %"a", label %"one.if", label %"one.endif"
+            one.if:
+                %"b" = add i1 0, 0
+                br i1 %"b", label %"one.if.if", label %"one.if.endif"
+            one.endif:
+                ret void
+            one.if.if:
+                %"c" = add i1 0, 0
+                br label %"one.if.endif"
+            one.if.endif:
+                br label %"one.endif"
+            """)
+
+    def test_if_then_likely(self):
+        def check(likely):
+            block = self.block(name='one')
+            builder = ir.IRBuilder(block)
+            z = ir.Constant(int1, 0)
+            with builder.if_then(z, likely=likely):
+                pass
+            self.check_block(block, """\
+                one:
+                    br i1 0, label %"one.if", label %"one.endif", !prof !0
+                """)
+            return builder
+        builder = check(True)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            """)
+        builder = check(False)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            """)
+
+    def test_if_else(self):
+        block = self.block(name='one')
+        builder = ir.IRBuilder(block)
+        z = ir.Constant(int1, 0)
+        a = builder.add(z, z, 'a')
+        with builder.if_else(a) as (then, otherwise):
+            with then:
+                b = builder.add(z, z, 'b')
+            with otherwise:
+                c = builder.add(z, z, 'c')
+            # Each block will be terminated implicitly
+        with builder.if_else(a) as (then, otherwise):
+            with then:
+                builder.branch(block)
+            with otherwise:
+                builder.ret_void()
+            # No implicit termination
+        self.check_func_body(builder.function, """\
+            one:
+                %"a" = add i1 0, 0
+                br i1 %"a", label %"one.if", label %"one.else"
+            one.if:
+                %"b" = add i1 0, 0
+                br label %"one.endif"
+            one.else:
+                %"c" = add i1 0, 0
+                br label %"one.endif"
+            one.endif:
+                br i1 %"a", label %"one.endif.if", label %"one.endif.else"
+            one.endif.if:
+                br label %"one"
+            one.endif.else:
+                ret void
+            one.endif.endif:
+            """)
+
+    def test_if_else_likely(self):
+        def check(likely):
+            block = self.block(name='one')
+            builder = ir.IRBuilder(block)
+            z = ir.Constant(int1, 0)
+            with builder.if_else(z, likely=likely) as (then, otherwise):
+                with then:
+                    builder.branch(block)
+                with otherwise:
+                    builder.ret_void()
+            self.check_func_body(builder.function, """\
+                one:
+                    br i1 0, label %"one.if", label %"one.else", !prof !0
+                one.if:
+                    br label %"one"
+                one.else:
+                    ret void
+                one.endif:
+                """)
+            return builder
+        builder = check(True)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            """)
+        builder = check(False)
+        self.check_metadata(builder.module, """\
+            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
             """)
 
     def test_positioning(self):
@@ -874,6 +997,15 @@ class TestTypes(TestBase):
             tp.gep(ir.Constant(int32, 2))
         check_index_type(tp)
 
+        context = ir.Context()
+        tp = ir.IdentifiedStructType(context, "MyType")
+        tp.set_body(dbl, ir.LiteralStructType((int1, int8)))
+        check_constant(tp, 0, dbl)
+        check_constant(tp, 1, ir.LiteralStructType((int1, int8)))
+        with self.assertRaises(IndexError):
+            tp.gep(ir.Constant(int32, 2))
+        check_index_type(tp)
+
     def test_abi_size(self):
         td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
         def check(tp, expected):
@@ -963,6 +1095,20 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 undef}')
         c = ir.Constant(ir.LiteralStructType((flt, int1)), ir.Undefined)
         self.assertEqual(str(c), '{float, i1} undef')
+
+    def test_encoding_problem(self):
+        c = ir.Constant(ir.ArrayType(ir.IntType(8), 256),
+                        bytearray(range(256)))
+        m = self.module()
+        gv = ir.GlobalVariable(m, c.type, "myconstant")
+        gv.global_constant = True
+        gv.initializer = c
+        # With utf-8, the following will cause:
+        # UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe0 in position 136: invalid continuation byte
+        parsed = llvm.parse_assembly(str(m))
+        # Make sure the encoding does not modify the IR
+        reparsed = llvm.parse_assembly(str(parsed))
+        self.assertEqual(str(parsed), str(reparsed))
 
 
 class TestTransforms(TestBase):

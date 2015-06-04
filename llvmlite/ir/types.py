@@ -126,6 +126,10 @@ class PointerType(Type):
             raise TypeError(i.type)
         return self.pointee
 
+    @property
+    def intrinsic_name(self):
+        return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
+
 
 class VoidType(Type):
     """
@@ -193,6 +197,10 @@ class IntType(Type):
             return str(val).lower()
         else:
             return str(val)
+
+    @property
+    def intrinsic_name(self):
+        return str(self)
 
 
 def _as_float(value):
@@ -335,6 +343,17 @@ class BaseStructType(Aggregate):
         fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
         return "{{{0}}}".format(', '.join(map(fmter, val)))
 
+    def gep(self, i):
+        """
+        Resolve the type of the i-th element (for getelementptr lookups).
+
+        *i* needs to be a LLVM constant, so that the type can be determined
+        at compile-time.
+        """
+        if not isinstance(i.type, IntType):
+            raise TypeError(i.type)
+        return self.elements[i.constant]
+
 
 class LiteralStructType(BaseStructType):
     """
@@ -353,17 +372,6 @@ class LiteralStructType(BaseStructType):
     def __eq__(self, other):
         if isinstance(other, LiteralStructType):
             return self.elements == other.elements
-
-    def gep(self, i):
-        """
-        Resolve the type of the i-th element (for getelementptr lookups).
-
-        *i* needs to be a LLVM constant, so that the type can be determined
-        at compile-time.
-        """
-        if not isinstance(i.type, IntType):
-            raise TypeError(i.type)
-        return self.elements[i.constant]
 
 
 class IdentifiedStructType(BaseStructType):

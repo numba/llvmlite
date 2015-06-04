@@ -121,7 +121,7 @@ class Terminator(Instruction):
               end='')
 
 
-class PredictableTerminator(Terminator):
+class PredictableInstr(Instruction):
 
     def set_weights(self, weights):
         operands = [MetaDataString(self.module, "branch_weights")]
@@ -159,11 +159,11 @@ class Branch(Terminator):
     pass
 
 
-class ConditionalBranch(PredictableTerminator):
+class ConditionalBranch(PredictableInstr, Terminator):
     pass
 
 
-class SwitchInstr(PredictableTerminator):
+class SwitchInstr(PredictableInstr, Terminator):
 
     def __init__(self, parent, opname, val, default):
         super(SwitchInstr, self).__init__(parent, opname, [val])
@@ -174,11 +174,11 @@ class SwitchInstr(PredictableTerminator):
     def value(self):
         return self.operands[0]
 
-    def add_case(self, val, blk):
-        assert isinstance(blk, Block)
+    def add_case(self, val, block):
+        assert isinstance(block, Block)
         if not isinstance(val, (Value, Constant)):
             val = Constant(self.value.type, val)
-        self.cases.append((val, blk))
+        self.cases.append((val, block))
 
     def descr(self, buf):
         cases = ["{0} {1}, label {2}".format(val.type, val.get_reference(),

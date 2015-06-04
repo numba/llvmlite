@@ -5,11 +5,16 @@ from . import passmanagers
 
 
 def create_pass_manager_builder():
-    return PassManagerBuilder(ffi.lib.LLVMPY_PassManagerBuilderCreate())
+    return PassManagerBuilder()
 
 
 class PassManagerBuilder(ffi.ObjectRef):
     __slots__ = ()
+
+    def __init__(self, ptr=None):
+        if ptr is None:
+            ptr = ffi.lib.LLVMPY_PassManagerBuilderCreate()
+        ffi.ObjectRef.__init__(self, ptr)
 
     @property
     def opt_level(self):
