@@ -294,7 +294,6 @@ class TestModuleRef(BaseTest):
                         bc.startswith(bitcode_wrapper_magic))
 
     def test_parse_bitcode_error(self):
-        # LLVM 3.6rc1 calls exit(1) on error (in LLVMContext::diagnose)
         with self.assertRaises(RuntimeError) as cm:
             llvm.parse_bitcode(b"")
         self.assertIn("LLVM bitcode parsing error", str(cm.exception))
@@ -456,26 +455,6 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         if target_machine is None:
             target_machine = self.target_machine()
         return llvm.create_mcjit_compiler(mod, target_machine)
-
-
-#class TestLegacyJitWithTM(BaseTest, JITWithTMTestMixin):
-    #"""
-    #Test JIT engines created with create_jit_compiler_with_tm().
-    #"""
-
-    #def jit(self, mod, target_machine=None):
-        #if target_machine is None:
-            #target_machine = self.target_machine()
-        #return llvm.create_jit_compiler_with_tm(mod, target_machine)
-
-
-#class TestLegacyJit(BaseTest, JITTestMixin):
-    #"""
-    #Test JIT engines created with create_jit_compiler().
-    #"""
-
-    #def jit(self, mod):
-        #return llvm.create_jit_compiler(mod)
 
 
 class TestValueRef(BaseTest):
