@@ -134,12 +134,15 @@ class TestFunction(TestBase):
         powi = module.declare_intrinsic('llvm.powi', [dbl])
         memset = module.declare_intrinsic('llvm.memset', [pint8, int32])
         memcpy = module.declare_intrinsic('llvm.memcpy', [pint8, pint8, int32])
+        assume = module.declare_intrinsic('llvm.assume')
         self.check_descr(self.descr(powi).strip(), """\
             declare double @"llvm.powi.f64"(double %".1", i32 %".2")""")
         self.check_descr(self.descr(memset).strip(), """\
             declare void @"llvm.memset.p0i8.i32"(i8* %".1", i8 %".2", i32 %".3", i32 %".4", i1 %".5")""")
         self.check_descr(self.descr(memcpy).strip(), """\
             declare void @"llvm.memcpy.p0i8.p0i8.i32"(i8* %".1", i8* %".2", i32 %".3", i32 %".4", i1 %".5")""")
+        self.check_descr(self.descr(assume).strip(), """\
+            declare void @"llvm.assume"(i1 %".1")""")
 
     def test_redeclare_intrinsic(self):
         module = self.module()
@@ -670,6 +673,18 @@ class TestBuildInstructions(TestBase):
                 %"res_f" = call float (i32, i32)* @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...)* @"g"(i32 %".2", i32 %".1")
                 %"res_f_fast" = call fastcc float (i32, i32)* @"f"(i32 %".1", i32 %".2")
+            """)
+
+    def test_assume(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        c = builder.icmp_signed('>', a, b, name='c')
+        builder.assume(c)
+        self.check_block(block, """\
+            my_block:
+                %"c" = icmp sgt i32 %".1", %".2"
+                call void (i1)* @"llvm.assume"(i1 %"c")
             """)
 
 
