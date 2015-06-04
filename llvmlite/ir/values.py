@@ -39,6 +39,7 @@ def _wrapname(x):
 
 class ConstOp(object):
     def __init__(self, typ, op):
+        assert isinstance(typ, types.Type)
         self.type = typ
         self.op = op
 
@@ -87,6 +88,7 @@ class Constant(ConstOpMixin):
     """
 
     def __init__(self, typ, constant):
+        assert isinstance(typ, types.Type)
         assert not isinstance(typ, types.VoidType)
         self.type = typ
         self.constant = constant
@@ -134,6 +136,7 @@ class Value(object):
 
     def __init__(self, parent, type, name):
         assert parent is not None
+        assert isinstance(type, types.Type)
         self.parent = parent
         self.type = type
         pscope = self.parent.scope
@@ -268,6 +271,7 @@ class GlobalValue(Value, ConstOpMixin):
 
 class GlobalVariable(GlobalValue):
     def __init__(self, module, typ, name, addrspace=0):
+        assert isinstance(typ, types.Type)
         super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),
                                              name=name)
         self.gtype = typ
@@ -353,6 +357,7 @@ class Function(GlobalValue):
     nested_scope = True
 
     def __init__(self, module, ftype, name):
+        assert isinstance(ftype, types.Type)
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
         self.ftype = ftype
         self.blocks = []
@@ -432,6 +437,7 @@ class ArgumentAttributes(AttributeSet):
 
 class Argument(Value):
     def __init__(self, parent, pos, typ, name=''):
+        assert isinstance(typ, types.Type)
         super(Argument, self).__init__(parent, typ, name=name)
         self.parent = parent
         self.pos = pos
