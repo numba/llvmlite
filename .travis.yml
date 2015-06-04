@@ -33,6 +33,8 @@ before_install:
     - if [ $PY_MAJOR_MINOR == "2.6" ]; then $CONDA_INSTALL unittest2 argparse; fi
     # Install enum34 for Python < 3.4
     - if [ $PY_MAJOR_MINOR \< "3.4" ]; then $CONDA_INSTALL enum34; fi
+    # Install dependencies for building the docs
+    - $CONDA_INSTALL pip sphinx sphinx_rtd_theme pygments
 
 install:
     - export CXX=g++-4.8
