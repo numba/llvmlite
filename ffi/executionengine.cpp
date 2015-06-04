@@ -62,12 +62,7 @@ create_execution_engine(LLVMModuleRef M,
 {
     LLVMExecutionEngineRef ee = nullptr;
 
-#if LLVM_3_6_OR_ABOVE
     llvm::EngineBuilder eb(std::unique_ptr<llvm::Module>(llvm::unwrap(M)));
-#else
-    llvm::EngineBuilder eb(llvm::unwrap(M));
-    eb.setUseMCJIT(true);
-#endif
     std::string err;
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);

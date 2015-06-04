@@ -16,10 +16,6 @@
     #define API_EXPORT(RTYPE) RTYPE
 #endif
 
-#define LLVM_3_6_OR_ABOVE (LLVM_VERSION_MAJOR > 3 || \
-                           (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6))
-
-
 extern "C" {
 
 API_EXPORT(const char *)

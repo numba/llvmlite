@@ -22,11 +22,7 @@ LLVMPY_ParseAssembly(LLVMContextRef context,
 
     SMDiagnostic error;
 
-#if LLVM_3_6_OR_ABOVE
     Module *m = parseAssemblyString(ir, error, *unwrap(context)).release();
-#else
-    Module *m = ParseAssemblyString(ir, NULL, error, *unwrap(context));
-#endif
     if (!m) {
         // Error occurred
         std::string osbuf;
