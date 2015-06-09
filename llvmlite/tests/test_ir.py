@@ -701,17 +701,6 @@ class TestBuilderMisc(TestBase):
         self.assertIs(builder.module, block.parent.module)
         self.assertIsInstance(builder.module, ir.Module)
 
-    def test_constant(self):
-        """
-        Test the IRBuilder.constant() method.
-        """
-        block = self.block(name='start')
-        builder = ir.IRBuilder(block)
-        c = builder.constant(int32, 5)
-        self.assertIsInstance(c, ir.Constant)
-        self.assertIs(c.type, int32)
-        self.assertEqual(c.constant, 5)
-
     def test_goto_block(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -769,6 +758,33 @@ class TestBuilderMisc(TestBase):
                 %"d" = add i1 0, 0
                 br label %"one"
             one.endif.endif:
+            """)
+
+    def test_if_then_nested(self):
+        # Implicit termination in a nested if/then
+        block = self.block(name='one')
+        builder = ir.IRBuilder(block)
+        z = ir.Constant(int1, 0)
+        a = builder.add(z, z, 'a')
+        with builder.if_then(a) as bbend:
+            b = builder.add(z, z, 'b')
+            with builder.if_then(b) as bbend:
+                c = builder.add(z, z, 'c')
+        builder.ret_void()
+        self.check_func_body(builder.function, """\
+            one:
+                %"a" = add i1 0, 0
+                br i1 %"a", label %"one.if", label %"one.endif"
+            one.if:
+                %"b" = add i1 0, 0
+                br i1 %"b", label %"one.if.if", label %"one.if.endif"
+            one.endif:
+                ret void
+            one.if.if:
+                %"c" = add i1 0, 0
+                br label %"one.if.endif"
+            one.if.endif:
+                br label %"one.endif"
             """)
 
     def test_if_then_likely(self):

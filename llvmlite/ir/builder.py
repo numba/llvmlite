@@ -125,7 +125,7 @@ class IRBuilder(object):
     def _branch_helper(self, bbenter, bbexit):
         self.position_at_end(bbenter)
         yield bbexit
-        if bbenter.terminator is None:
+        if self.basic_block.terminator is None:
             self.branch(bbexit)
 
     @contextlib.contextmanager
@@ -181,9 +181,6 @@ class IRBuilder(object):
         yield then, otherwise
 
         self.position_at_end(bbend)
-
-    def constant(self, typ, val):
-        return values.Constant(typ, val)
 
     def _insert(self, instr):
         self._block.instructions.insert(self._anchor, instr)
