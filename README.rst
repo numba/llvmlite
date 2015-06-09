@@ -59,7 +59,7 @@ You need Python 2.6 or greater (including Python 3.3 or greater).
 Build dependencies
 ------------------
 
-- LLVM 3.5
+- LLVM 3.6
 - A C++ 11 compiler, and possibly other tools (see below)
 
 Runtime dependencies
@@ -102,10 +102,9 @@ If your LLVM is installed in a non-standard location, first point the
 Unix requirements
 -----------------
 
-You must have a LLVM 3.5 build (libraries and header files) available
-somewhere.  Under Ubuntu 14.10 and Debian unstable, you can install
-``llvm-3.5-dev``.  Versions shipped with some earlier distributions such as
-Ubuntu 14.04 are known to be broken.
+You must have a LLVM 3.6 build (libraries and header files) available
+somewhere.  Under a recent enough Ubuntu or Debian system, you may install
+``llvm-3.6-dev`` if available.
 
 When building on Ubuntu, the linker may report an error if the development
 version of ``libedit`` is not installed. Install ``libedit-dev`` if you

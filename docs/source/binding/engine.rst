@@ -6,10 +6,8 @@ Execution engine
 
 
 The execution engine is where actual code generation and execution happens.
-In the currently supported LLVM version (LLVM 3.5), there are two
-execution engines: MCJIT and the "old JIT".  Starting from LLVM 3.6,
-the "old JIT" is removed.  llvmlite exposes the same API for both, but
-they may have slightly different behaviour.
+The currently supported LLVM version (LLVM 3.6) exposes one execution engine,
+named MCJIT.
 
 
 Factory functions
@@ -18,13 +16,6 @@ Factory functions
 .. function:: create_mcjit_compiler(module, target_machine)
 
    Create a MCJIT-powered engine from the given *module* and
-   *target_machine*.  A :class:`ExecutionEngine` instance is returned.
-   The *module* need not contain any code.
-
-
-.. function:: create_jit_compiler_with_tm(module, target_machine)
-
-   Create a "old JIT"-powered engine from the given *module* and
    *target_machine*.  A :class:`ExecutionEngine` instance is returned.
    The *module* need not contain any code.
 
