@@ -65,11 +65,17 @@ class Module(object):
         """
         return self.scope.deduplicate(name)
 
-    def declare_intrinsic(self, intrinsic, tys):
-        name = '.'.join([intrinsic, '.'.join(t.intrinsic_name for t in tys)])
+    def declare_intrinsic(self, intrinsic, tys=()):
+        def _error():
+            raise NotImplementedError("unknown intrinsic %r with %d types"
+                                      % (intrinsic, len(tys)))
+
+        name = '.'.join([intrinsic] + [t.intrinsic_name for t in tys])
         if name in self.globals:
             return self.globals[name]
-        if len(tys) == 1:
+        if len(tys) == 0 and intrinsic == 'llvm.assume':
+            fnty = types.FunctionType(types.VoidType(), [types.IntType(1)])
+        elif len(tys) == 1:
             if intrinsic == 'llvm.powi':
                 fnty = types.FunctionType(tys[0], [tys[0], types.IntType(32)])
             elif intrinsic == 'llvm.pow':
@@ -84,7 +90,7 @@ class Module(object):
             tys = tys + [types.IntType(32), types.IntType(1)]
             fnty = types.FunctionType(types.VoidType(), tys)
         else:
-            raise NotImplementedError(name)
+            _error()
         return values.Function(self, fnty, name=name)
 
     def get_identified_types(self):

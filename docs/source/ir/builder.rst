@@ -420,8 +420,8 @@ These instructions are all :term:`terminators <terminator>`.
 .. method:: IRBuilder.cbranch(cond, truebr, falsebr)
 
    Conditional jump to either *truebr* or *falsebr* (both :class:`Block`
-   instances), depending on *cond*.  This instruction is a
-   :class:`PredictableInstr`.
+   instances), depending on *cond* (a value of type ``IntType(1)``).
+   This instruction is a :class:`PredictableInstr`.
 
 .. method:: IRBuilder.ret(value)
 
@@ -442,6 +442,11 @@ These instructions are all :term:`terminators <terminator>`.
 
 Miscellaneous
 '''''''''''''
+
+.. method:: IRBuilder.assume(cond)
+
+   Let the LLVM optimizer assume that *cond* (a value of type ``IntType(1)``)
+   is true.
 
 .. method:: IRBuilder.unreachable()
 

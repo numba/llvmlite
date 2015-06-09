@@ -504,3 +504,8 @@ class IRBuilder(object):
                                     failordering, name=name)
         self._insert(inst)
         return inst
+
+    def assume(self, cond):
+        fn = self.module.declare_intrinsic("llvm.assume")
+        return self.call(fn, [cond])
+
