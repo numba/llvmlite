@@ -1,9 +1,7 @@
 #include <string>
 #include "llvm-c/Core.h"
 #include "llvm-c/Analysis.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/Module.h"
-#include "llvm/Transforms/Utils/Cloning.h"
 #include "core.h"
 
 
@@ -81,12 +79,7 @@ API_EXPORT(void)
 LLVMPY_PrintModuleToString(LLVMModuleRef M,
                            const char **outstr)
 {
-    using namespace llvm;
-    std::string buf;
-    raw_string_ostream os(buf);
-    unwrap(M)->print(os, NULL);
-    os.flush();
-    *outstr = LLVMPY_CreateString(buf.c_str());
+    *outstr = LLVMPrintModuleToString(M);
 }
 
 API_EXPORT(LLVMValueRef)
@@ -205,8 +198,7 @@ LLVMPY_DisposeFunctionsIter(LLVMFunctionsIteratorRef GI)
 API_EXPORT(LLVMModuleRef)
 LLVMPY_CloneModule(LLVMModuleRef M)
 {
-    using namespace llvm;
-    return wrap(CloneModule(unwrap(M)));
+    return LLVMCloneModule(M);
 }
 
 } // end extern "C"

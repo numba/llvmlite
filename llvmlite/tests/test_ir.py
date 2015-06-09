@@ -171,7 +171,7 @@ class TestIR(TestBase):
     def test_metadata(self):
         mod = self.module()
         md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        pat = "!0 = metadata !{ i32 123 }"
+        pat = "!0 = !{ i32 123 }"
         self.assertInText(pat, str(mod))
         self.assertInText(pat, str(md))
         self.assert_valid_ir(mod)
@@ -179,9 +179,10 @@ class TestIR(TestBase):
     def test_metadata_2(self):
         mod = self.module()
         mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        mod.add_metadata([ir.Constant(ir.IntType(32), 321)])
-        pat1 = "!0 = metadata !{ i32 123 }"
-        pat2 = "!1 = metadata !{ i32 321 }"
+        mod.add_metadata([ir.Constant(ir.IntType(32), 321),
+                          ir.MetaDataString(mod, "kernel")])
+        pat1 = "!0 = !{ i32 123 }"
+        pat2 = '!1 = !{ i32 321, !"kernel" }'
         self.assertInText(pat1, str(mod))
         self.assertInText(pat2, str(mod))
 
@@ -613,7 +614,7 @@ class TestBuildInstructions(TestBase):
                 br i1 false, label %"b_true", label %"b_false", !prof !0
             """)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 5, i32 42 }
+            !0 = !{ !"branch_weights", i32 5, i32 42 }
             """)
 
     def test_returns(self):
@@ -785,11 +786,11 @@ class TestBuilderMisc(TestBase):
             return builder
         builder = check(True)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            !0 = !{ !"branch_weights", i32 99, i32 1 }
             """)
         builder = check(False)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            !0 = !{ !"branch_weights", i32 1, i32 99 }
             """)
 
     def test_if_else(self):
@@ -850,11 +851,11 @@ class TestBuilderMisc(TestBase):
             return builder
         builder = check(True)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            !0 = !{ !"branch_weights", i32 99, i32 1 }
             """)
         builder = check(False)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            !0 = !{ !"branch_weights", i32 1, i32 99 }
             """)
 
     def test_positioning(self):

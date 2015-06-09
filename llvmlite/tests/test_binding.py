@@ -156,8 +156,9 @@ class TestMisc(BaseTest):
         subprocess.check_call([sys.executable, "-c", code])
 
     def test_version(self):
-        self.assertIn(llvm.llvm_version_info,
-                      [(3, 5, 0), (3, 5, 1)])
+        major, minor, patch = llvm.llvm_version_info
+        self.assertIn((major, minor), [(3, 5), (3, 6)])
+        self.assertIn(patch, range(10))
 
 
 class TestModuleRef(BaseTest):
@@ -270,6 +271,7 @@ class TestModuleRef(BaseTest):
         dest.link_in(src2, preserve=True)
         self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.close()
+        self.assertEqual(sorted(f.name for f in src2.functions), ["mul"])
         src2.get_function("mul")
 
     def test_link_in_error(self):
@@ -453,26 +455,6 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         if target_machine is None:
             target_machine = self.target_machine()
         return llvm.create_mcjit_compiler(mod, target_machine)
-
-
-class TestLegacyJitWithTM(BaseTest, JITWithTMTestMixin):
-    """
-    Test JIT engines created with create_jit_compiler_with_tm().
-    """
-
-    def jit(self, mod, target_machine=None):
-        if target_machine is None:
-            target_machine = self.target_machine()
-        return llvm.create_jit_compiler_with_tm(mod, target_machine)
-
-
-class TestLegacyJit(BaseTest, JITTestMixin):
-    """
-    Test JIT engines created with create_jit_compiler().
-    """
-
-    def jit(self, mod):
-        return llvm.create_jit_compiler(mod)
 
 
 class TestValueRef(BaseTest):

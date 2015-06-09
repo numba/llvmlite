@@ -4,21 +4,7 @@ from . import ffi, targets
 
 
 # Just check these weren't optimized out of the DLL.
-ffi.lib.LLVMPY_LinkInJIT
 ffi.lib.LLVMPY_LinkInMCJIT
-
-
-def create_jit_compiler(module, opt=2):
-    """Create an ExecutionEngine for a module
-    """
-    engine = ffi.LLVMExecutionEngineRef()
-    with ffi.OutputString() as outerr:
-        if ffi.lib.LLVMPY_CreateJITCompiler(byref(engine), module, opt,
-                                            outerr):
-            raise RuntimeError(str(outerr))
-
-    return ExecutionEngine(engine, module=module)
-
 
 
 def create_mcjit_compiler(module, target_machine):
@@ -29,21 +15,6 @@ def create_mcjit_compiler(module, target_machine):
     with ffi.OutputString() as outerr:
         engine = ffi.lib.LLVMPY_CreateMCJITCompiler(
                 module, target_machine, outerr)
-        if not engine:
-            raise RuntimeError(str(outerr))
-
-    target_machine._owned = True
-    return ExecutionEngine(engine, module=module)
-
-
-def create_jit_compiler_with_tm(module, target_machine):
-    """
-    Create a JIT ExecutionEngine from the given *module* and
-    *target_machine*.
-    """
-    with ffi.OutputString() as outerr:
-        engine = ffi.lib.LLVMPY_CreateJITCompilerWithTM(
-            module, target_machine, outerr)
         if not engine:
             raise RuntimeError(str(outerr))
 
@@ -128,21 +99,6 @@ class ExecutionEngine(ffi.ObjectRef):
 # ============================================================================
 # FFI
 
-
-ffi.lib.LLVMPY_CreateJITCompiler.argtypes = [
-    POINTER(ffi.LLVMExecutionEngineRef),
-    ffi.LLVMModuleRef,
-    c_uint,
-    POINTER(c_char_p),
-]
-ffi.lib.LLVMPY_CreateJITCompiler.restype = c_bool
-
-ffi.lib.LLVMPY_CreateJITCompilerWithTM.argtypes = [
-    ffi.LLVMModuleRef,
-    ffi.LLVMTargetMachineRef,
-    POINTER(c_char_p),
-]
-ffi.lib.LLVMPY_CreateJITCompilerWithTM.restype = ffi.LLVMExecutionEngineRef
 
 ffi.lib.LLVMPY_CreateMCJITCompiler.argtypes = [
     ffi.LLVMModuleRef,

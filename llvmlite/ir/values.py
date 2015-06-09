@@ -195,10 +195,10 @@ class MetaDataString(Value):
         self.string = string
 
     def descr(self, buf):
-        print("metadata !\"{0}\"".format(self.string), file=buf)
+        print(self.get_reference(), file=buf)
 
     def get_reference(self):
-        return "!\"{0}\"".format(self.string)
+        return '!"{0}"'.format(self.string)
 
     def __str__(self):
         return self.get_reference()
@@ -240,9 +240,15 @@ class MDValue(Value):
         return len(self.operands)
 
     def descr(self, buf):
-        operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
-                             for op in self.operands)
-        print("metadata !{{ {operands} }}".format(operands=operands), file=buf)
+        operands = []
+        for op in self.operands:
+            typestr = str(op.type)
+            if isinstance(op.type, types.MetaData):
+                operands.append(op.get_reference())
+            else:
+                operands.append("{0} {1}".format(op.type, op.get_reference()))
+        operands = ', '.join(operands)
+        print("!{{ {0} }}".format(operands), file=buf)
 
     def get_reference(self):
         return self.name_prefix + str(self.name)
