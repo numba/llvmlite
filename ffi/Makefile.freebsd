@@ -1,0 +1,19 @@
+LLVM_CONFIG ?= llvm-config
+
+CXX = clang++ -std=c++11 -stdlib=libc++
+CXXFLAGS = `$(LLVM_CONFIG) --cxxflags`
+LDFLAGS = `$(LLVM_CONFIG) --ldflags`
+LIBS = `$(LLVM_CONFIG) --system-libs --libs all`
+SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
+	executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
+	linker.cpp
+OUTPUT = libllvmlite.so
+
+all: $(OUTPUT)
+
+$(OUTPUT): $(SRC)
+	$(CXX) -shared $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
+
+
+clean:
+	rm -rf test
