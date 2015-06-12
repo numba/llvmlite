@@ -61,9 +61,8 @@ class ConstOpMixin(object):
     def inttoptr(self, typ):
         assert isinstance(self.type, types.IntType)
         assert isinstance(typ, types.PointerType)
-        op = "inttoptr ({0} {1} to {2})".format(self.type,
-                                                self.get_reference(),
-                                                typ)
+        op = "inttoptr ({0} to {1})".format(self.get_reference(),
+                                            typ)
         return ConstOp(typ, op)
 
     def gep(self, indices):
