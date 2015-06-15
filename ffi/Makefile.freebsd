@@ -1,4 +1,4 @@
-LLVM_CONFIG ?= llvm-config
+LLVM_CONFIG ?= llvm-config36
 
 CXX = clang++ -std=c++11 -stdlib=libc++
 CXXFLAGS = `$(LLVM_CONFIG) --cxxflags`
