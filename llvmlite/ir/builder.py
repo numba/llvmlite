@@ -18,9 +18,9 @@ _CMP_MAP = {
 def _binop(opname, cls=instructions.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
-        def wrapped(self, lhs, rhs, name=''):
+        def wrapped(self, lhs, rhs, name='', flags=()):
             assert lhs.type == rhs.type, "Operands must be the same type"
-            instr = cls(self.block, lhs.type, opname, (lhs, rhs), name)
+            instr = cls(self.block, lhs.type, opname, (lhs, rhs), name, flags)
             self._insert(instr)
             return instr
 

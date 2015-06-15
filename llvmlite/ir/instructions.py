@@ -10,11 +10,13 @@ from .values import Block, Function, Value, Constant, MetaDataString
 
 
 class Instruction(Value):
-    def __init__(self, parent, typ, opname, operands, name=''):
+    def __init__(self, parent, typ, opname, operands, name='', flags=()):
         super(Instruction, self).__init__(parent, typ, name=name)
         assert isinstance(parent, Block)
         self.opname = opname
         self.operands = operands
+        assert isinstance(flags, (tuple, list))
+        self.flags = list(flags)
 
         self.metadata = {}
 
@@ -40,6 +42,8 @@ class Instruction(Value):
 
     def descr(self, buf):
         opname = self.opname
+        if self.flags:
+            opname = ' '.join([opname] + self.flags)
         operands = ', '.join(op.get_reference() for op in self.operands)
         typ = self.type
         metadata = self._stringify_metatdata()

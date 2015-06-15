@@ -7,6 +7,8 @@ Enhancements:
   has slightly changed, and the "old JIT" engine has been remove (only
   MCJIT is now available).
 
+* Add an optional flags argument to arithmetic instructions on IRBuilder.
+
 
 v0.5.1
 ------

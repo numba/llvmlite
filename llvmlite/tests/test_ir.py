@@ -313,6 +313,20 @@ class TestBuildInstructions(TestBase):
                 %"t" = lshr i32 %".1", %".2"
             """)
 
+    def test_binop_flags(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        # As tuple
+        builder.add(a, b, 'c', flags=('nuw',))
+        # and as list
+        builder.sub(a, b, 'd', flags=['nuw', 'nsw'])
+        self.check_block(block, """\
+            my_block:
+                %"c" = add nuw i32 %".1", %".2"
+                %"d" = sub nuw nsw i32 %".1", %".2"
+            """)
+
     def test_unary_ops(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
