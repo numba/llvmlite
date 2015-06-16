@@ -74,7 +74,7 @@ the currently supported LLVM version (currently, the 3.6 series).
 We don't expect contributors to test their code on all platforms.  Pull
 requests are automatically built and tested using
 `Travis-CI <https://travis-ci.org/numba/llvmlite>`_.  This takes care of
-Linux compatibility.  Over operating systems are tested on an internal
+Linux compatibility.  Other operating systems are tested on an internal
 continuous integration platform at Continuum Analytics.
 
 
