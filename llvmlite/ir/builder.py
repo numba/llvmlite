@@ -457,7 +457,7 @@ class IRBuilder(object):
 
     def gep(self, ptr, indices, inbounds=False, name=''):
         instr = instructions.GEPInstr(self.block, ptr, indices,
-                                inbounds=inbounds, name=name)
+                                      inbounds=inbounds, name=name)
         self._insert(instr)
         return instr
 
