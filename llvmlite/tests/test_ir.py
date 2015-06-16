@@ -111,6 +111,17 @@ class TestFunction(TestBase):
         self.assertEqual(asm,
             "declare %s alwaysinline optsize alignstack(16)" % self.proto)
 
+    def test_function_attributes(self):
+        # Now with parameter attributes
+        func = self.function()
+        func.args[0].add_attribute("zeroext")
+        func.args[3].add_attribute("nonnull")
+        func.return_value.add_attribute("noalias")
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+            """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 %".2", double %".3", i32* nonnull %".4")"""
+            )
+
     def test_define(self):
         # A simple definition
         func = self.function()
