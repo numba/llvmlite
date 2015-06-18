@@ -37,8 +37,27 @@ inline LLVMTargetMachineRef wrap(TargetMachine *TM) {
 extern "C" {
 
 API_EXPORT(void)
+LLVMPY_GetProcessTriple(const char **Out) {
+    *Out = LLVMPY_CreateString(llvm::sys::getProcessTriple().c_str());
+}
+
+API_EXPORT(void)
+LLVMPY_GetHostCPUFeatures(const char **Out){
+    llvm::StringMap<bool> features;
+    std::string buf;
+    if ( llvm::sys::getHostCPUFeatures(features) ) {
+        for (auto &F : features) {
+            if (buf.size()){
+                buf += ',';
+            }
+            buf += ((F.second? "+": "-") + F.first()).str();
+        }
+    }
+    *Out = LLVMPY_CreateString(buf.c_str());
+}
+
+API_EXPORT(void)
 LLVMPY_GetDefaultTargetTriple(const char **Out) {
-    // Should we use getProcessTriple() instead?
     *Out = LLVMPY_CreateString(llvm::sys::getDefaultTargetTriple().c_str());
 }
 

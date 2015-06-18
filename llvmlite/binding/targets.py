@@ -6,8 +6,26 @@ from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
                     c_void_p, string_at, byref)
 
 from . import ffi
-from .module import parse_assembly
 from .common import _decode_string, _encode_string
+
+
+def get_process_triple():
+    """
+    Returns the target triple of the process when using jit for the current
+    process.
+    """
+    with ffi.OutputString() as out:
+        ffi.lib.LLVMPY_GetProcessTriple(out)
+        return str(out)
+
+def get_host_cpu_features():
+    """
+    Returns a string (e.g. "+sse,-avx) indicating the available CPU features.
+    May return an empty string if LLVM cannot detect the CPU features.
+    """
+    with ffi.OutputString() as out:
+        ffi.lib.LLVMPY_GetHostCPUFeatures(out)
+        return str(out)
 
 
 def get_default_triple():
@@ -254,6 +272,10 @@ LibFunc = collections.namedtuple("LibFunc", ["identity", "name"])
 
 # ============================================================================
 # FFI
+
+ffi.lib.LLVMPY_GetProcessTriple.argtypes = [POINTER(c_char_p)]
+
+ffi.lib.LLVMPY_GetHostCPUFeatures.argtypes = [POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_GetDefaultTargetTriple.argtypes = [POINTER(c_char_p)]
 
