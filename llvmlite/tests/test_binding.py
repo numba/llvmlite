@@ -129,6 +129,22 @@ class TestMisc(BaseTest):
         self.assertIsInstance(triple, str)
         self.assertTrue(triple)
 
+    def test_get_process_triple(self):
+        triple = llvm.get_process_triple()
+        self.assertIsInstance(triple, str)
+        self.assertTrue(triple)
+
+    @unittest.expectedFailure
+    def test_get_host_cpu_features(self):
+        """
+        It is not implemented for x86 yet.
+        Wait for llvm3.7 and this test will pass thus triggering a
+        not failing as expected.
+        """
+        features = llvm.get_host_cpu_features()
+        self.assertIsInstance(features, str)
+        self.assertTrue(features)
+
     def test_get_host_cpu_name(self):
         cpu = llvm.get_host_cpu_name()
         self.assertIsInstance(cpu, str)
@@ -750,7 +766,7 @@ class TestDylib(BaseTest):
         with self.assertRaises(RuntimeError):
             llvm.load_library_permanently("zzzasdkf;jasd;l")
 
-    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"], 
+    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"],
                          "test only works on Linux and Darwin")
     def test_libm(self):
         system = platform.system()
