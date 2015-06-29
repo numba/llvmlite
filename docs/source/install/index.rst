@@ -25,16 +25,15 @@ Building manually
 Prerequisites (UNIX)
 ''''''''''''''''''''
 
-You must have a LLVM 3.5 build (libraries and header files) available
+You must have a LLVM 3.6 build (libraries and header files) available
 somewhere.
 
-Under Ubuntu 14.10 and Debian, you can install the ``llvm-3.5-dev``
-package.  LLVM packages shipped with some earlier distributions such as
-Ubuntu 14.04 are known to be broken.
+Under a recent Ubuntu or Debian system, you may install the ``llvm-3.6-dev``
+package if available.
 
-If building on Ubuntu, the linker may report an error if the development
-version of ``libedit`` is not installed. Install ``libedit-dev`` if you
-run into this problem.
+If building LLVM on Ubuntu, the linker may report an error if the
+development version of ``libedit`` is not installed. Install ``libedit-dev``
+if you run into this problem.
 
 Prerequisites (Windows)
 '''''''''''''''''''''''

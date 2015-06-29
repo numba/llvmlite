@@ -1,5 +1,17 @@
-v0.5.1 (unreleased)
--------------------
+v0.6.0
+------
+
+Enhancements:
+
+* Switch from LLVM 3.5 to LLVM 3.6.  The generated IR for metadata nodes
+  has slightly changed, and the "old JIT" engine has been remove (only
+  MCJIT is now available).
+* Add an optional flags argument to arithmetic instructions on IRBuilder.
+* Support attributes on the return type of a function.
+
+
+v0.5.1
+------
 
 Fixes:
 

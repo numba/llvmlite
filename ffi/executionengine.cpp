@@ -7,11 +7,6 @@
 extern "C" {
 
 API_EXPORT(void)
-LLVMPY_LinkInJIT() {
-    LLVMLinkInJIT();
-}
-
-API_EXPORT(void)
 LLVMPY_LinkInMCJIT() {
     LLVMLinkInMCJIT();
 }
@@ -62,16 +57,15 @@ static
 LLVMExecutionEngineRef
 create_execution_engine(LLVMModuleRef M,
                         LLVMTargetMachineRef TM,
-                        char **OutError,
-                        bool useMCJIT )
+                        char **OutError
+                        )
 {
     LLVMExecutionEngineRef ee = nullptr;
 
-    llvm::EngineBuilder eb(llvm::unwrap(M));
+    llvm::EngineBuilder eb(std::unique_ptr<llvm::Module>(llvm::unwrap(M)));
     std::string err;
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);
-    eb.setUseMCJIT(useMCJIT);
 
     /* EngineBuilder::create loads the current process symbols */
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
@@ -83,29 +77,12 @@ create_execution_engine(LLVMModuleRef M,
     return ee;
 }
 
-API_EXPORT(int)
-LLVMPY_CreateJITCompiler(LLVMExecutionEngineRef *OutEE,
-                         LLVMModuleRef M,
-                         unsigned OptLevel,
-                         char **OutError)
-{
-    return LLVMCreateJITCompilerForModule(OutEE, M, OptLevel, OutError);
-}
-
-API_EXPORT(LLVMExecutionEngineRef)
-LLVMPY_CreateJITCompilerWithTM(LLVMModuleRef M,
-                           LLVMTargetMachineRef TM,
-                           char **OutError)
-{
-    return create_execution_engine(M, TM, OutError, false);
-}
-
 API_EXPORT(LLVMExecutionEngineRef)
 LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
                            LLVMTargetMachineRef TM,
                            char **OutError)
 {
-    return create_execution_engine(M, TM, OutError, true);
+    return create_execution_engine(M, TM, OutError);
 }
 
 API_EXPORT(void *)

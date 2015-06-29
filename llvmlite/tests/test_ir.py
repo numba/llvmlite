@@ -111,6 +111,17 @@ class TestFunction(TestBase):
         self.assertEqual(asm,
             "declare %s alwaysinline optsize alignstack(16)" % self.proto)
 
+    def test_function_attributes(self):
+        # Now with parameter attributes
+        func = self.function()
+        func.args[0].add_attribute("zeroext")
+        func.args[3].add_attribute("nonnull")
+        func.return_value.add_attribute("noalias")
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+            """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 %".2", double %".3", i32* nonnull %".4")"""
+            )
+
     def test_define(self):
         # A simple definition
         func = self.function()
@@ -134,12 +145,15 @@ class TestFunction(TestBase):
         powi = module.declare_intrinsic('llvm.powi', [dbl])
         memset = module.declare_intrinsic('llvm.memset', [pint8, int32])
         memcpy = module.declare_intrinsic('llvm.memcpy', [pint8, pint8, int32])
+        assume = module.declare_intrinsic('llvm.assume')
         self.check_descr(self.descr(powi).strip(), """\
             declare double @"llvm.powi.f64"(double %".1", i32 %".2")""")
         self.check_descr(self.descr(memset).strip(), """\
             declare void @"llvm.memset.p0i8.i32"(i8* %".1", i8 %".2", i32 %".3", i32 %".4", i1 %".5")""")
         self.check_descr(self.descr(memcpy).strip(), """\
             declare void @"llvm.memcpy.p0i8.p0i8.i32"(i8* %".1", i8* %".2", i32 %".3", i32 %".4", i1 %".5")""")
+        self.check_descr(self.descr(assume).strip(), """\
+            declare void @"llvm.assume"(i1 %".1")""")
 
     def test_redeclare_intrinsic(self):
         module = self.module()
@@ -171,7 +185,7 @@ class TestIR(TestBase):
     def test_metadata(self):
         mod = self.module()
         md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        pat = "!0 = metadata !{ i32 123 }"
+        pat = "!0 = !{ i32 123 }"
         self.assertInText(pat, str(mod))
         self.assertInText(pat, str(md))
         self.assert_valid_ir(mod)
@@ -179,9 +193,10 @@ class TestIR(TestBase):
     def test_metadata_2(self):
         mod = self.module()
         mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        mod.add_metadata([ir.Constant(ir.IntType(32), 321)])
-        pat1 = "!0 = metadata !{ i32 123 }"
-        pat2 = "!1 = metadata !{ i32 321 }"
+        mod.add_metadata([ir.Constant(ir.IntType(32), 321),
+                          ir.MetaDataString(mod, "kernel")])
+        pat1 = "!0 = !{ i32 123 }"
+        pat2 = '!1 = !{ i32 321, !"kernel" }'
         self.assertInText(pat1, str(mod))
         self.assertInText(pat2, str(mod))
 
@@ -307,6 +322,20 @@ class TestBuildInstructions(TestBase):
                 %"r" = shl i32 %".1", %".2"
                 %"s" = ashr i32 %".1", %".2"
                 %"t" = lshr i32 %".1", %".2"
+            """)
+
+    def test_binop_flags(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        # As tuple
+        builder.add(a, b, 'c', flags=('nuw',))
+        # and as list
+        builder.sub(a, b, 'd', flags=['nuw', 'nsw'])
+        self.check_block(block, """\
+            my_block:
+                %"c" = add nuw i32 %".1", %".2"
+                %"d" = sub nuw nsw i32 %".1", %".2"
             """)
 
     def test_unary_ops(self):
@@ -613,7 +642,7 @@ class TestBuildInstructions(TestBase):
                 br i1 false, label %"b_true", label %"b_false", !prof !0
             """)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 5, i32 42 }
+            !0 = !{ !"branch_weights", i32 5, i32 42 }
             """)
 
     def test_returns(self):
@@ -669,6 +698,18 @@ class TestBuildInstructions(TestBase):
                 %"res_f" = call float (i32, i32)* @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...)* @"g"(i32 %".2", i32 %".1")
                 %"res_f_fast" = call fastcc float (i32, i32)* @"f"(i32 %".1", i32 %".2")
+            """)
+
+    def test_assume(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        c = builder.icmp_signed('>', a, b, name='c')
+        builder.assume(c)
+        self.check_block(block, """\
+            my_block:
+                %"c" = icmp sgt i32 %".1", %".2"
+                call void (i1)* @"llvm.assume"(i1 %"c")
             """)
 
 
@@ -785,11 +826,11 @@ class TestBuilderMisc(TestBase):
             return builder
         builder = check(True)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            !0 = !{ !"branch_weights", i32 99, i32 1 }
             """)
         builder = check(False)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            !0 = !{ !"branch_weights", i32 1, i32 99 }
             """)
 
     def test_if_else(self):
@@ -850,11 +891,11 @@ class TestBuilderMisc(TestBase):
             return builder
         builder = check(True)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 99, i32 1 }
+            !0 = !{ !"branch_weights", i32 99, i32 1 }
             """)
         builder = check(False)
         self.check_metadata(builder.module, """\
-            !0 = metadata !{ metadata !"branch_weights", i32 1, i32 99 }
+            !0 = !{ !"branch_weights", i32 1, i32 99 }
             """)
 
     def test_positioning(self):

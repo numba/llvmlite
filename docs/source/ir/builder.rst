@@ -167,75 +167,80 @@ automatically generated.
 Arithmetic
 ''''''''''
 
-.. method:: IRBuilder.shl(lhs, rhs, name='')
+The *flags* argument in the methods below is an optional sequence of strings
+serving as modifiers of the instruction's semantics.  Examples include the
+fast-math flags for floating-point operations, or whether wraparound on
+overflow can be ignored on integer operations.
+
+.. method:: IRBuilder.shl(lhs, rhs, name='', flags=())
 
    Left-shift *lhs* by *rhs* bits.
 
-.. method:: IRBuilder.lshr(lhs, rhs, name='')
+.. method:: IRBuilder.lshr(lhs, rhs, name='', flags=())
 
    Logical right-shift *lhs* by *rhs* bits.
 
-.. method:: IRBuilder.ashr(lhs, rhs, name='')
+.. method:: IRBuilder.ashr(lhs, rhs, name='', flags=())
 
    Arithmetic (signed) right-shift *lhs* by *rhs* bits.
 
-.. method:: IRBuilder.add(lhs, rhs, name='')
+.. method:: IRBuilder.add(lhs, rhs, name='', flags=())
 
    Integer add *lhs* and *rhs*.
 
-.. method:: IRBuilder.fadd(lhs, rhs, name='')
+.. method:: IRBuilder.fadd(lhs, rhs, name='', flags=())
 
    Floating-point add *lhs* and *rhs*.
 
-.. method:: IRBuilder.sub(lhs, rhs, name='')
+.. method:: IRBuilder.sub(lhs, rhs, name='', flags=())
 
    Integer subtract*rhs* from *lhs*.
 
-.. method:: IRBuilder.fadd(lhs, rhs, name='')
+.. method:: IRBuilder.fadd(lhs, rhs, name='', flags=())
 
    Floating-point subtract *rhs* from *lhs*.
 
-.. method:: IRBuilder.mul(lhs, rhs, name='')
+.. method:: IRBuilder.mul(lhs, rhs, name='', flags=())
 
    Integer multiply *lhs* with *rhs*.
 
-.. method:: IRBuilder.fmul(lhs, rhs, name='')
+.. method:: IRBuilder.fmul(lhs, rhs, name='', flags=())
 
    Floating-point multiply *lhs* with *rhs*.
 
-.. method:: IRBuilder.sdiv(lhs, rhs, name='')
+.. method:: IRBuilder.sdiv(lhs, rhs, name='', flags=())
 
    Signed integer divide *lhs* by *rhs*.
 
-.. method:: IRBuilder.udiv(lhs, rhs, name='')
+.. method:: IRBuilder.udiv(lhs, rhs, name='', flags=())
 
    Unsigned integer divide *lhs* by *rhs*.
 
-.. method:: IRBuilder.fdiv(lhs, rhs, name='')
+.. method:: IRBuilder.fdiv(lhs, rhs, name='', flags=())
 
    Floating-point divide *lhs* by *rhs*.
 
-.. method:: IRBuilder.srem(lhs, rhs, name='')
+.. method:: IRBuilder.srem(lhs, rhs, name='', flags=())
 
    Signed integer remainder of *lhs* divided by *rhs*.
 
-.. method:: IRBuilder.urem(lhs, rhs, name='')
+.. method:: IRBuilder.urem(lhs, rhs, name='', flags=())
 
    Unsigned integer remainder of *lhs* divided by *rhs*.
 
-.. method:: IRBuilder.frem(lhs, rhs, name='')
+.. method:: IRBuilder.frem(lhs, rhs, name='', flags=())
 
    Floating-point remainder of *lhs* divided by *rhs*.
 
-.. method:: IRBuilder.and_(lhs, rhs, name='')
+.. method:: IRBuilder.and_(lhs, rhs, name='', flags=())
 
    Bitwise AND *lhs* with *rhs*.
 
-.. method:: IRBuilder.or_(lhs, rhs, name='')
+.. method:: IRBuilder.or_(lhs, rhs, name='', flags=())
 
    Bitwise OR *lhs* with *rhs*.
 
-.. method:: IRBuilder.xor(lhs, rhs, name='')
+.. method:: IRBuilder.xor(lhs, rhs, name='', flags=())
 
    Bitwise XOR *lhs* with *rhs*.
 
@@ -420,8 +425,8 @@ These instructions are all :term:`terminators <terminator>`.
 .. method:: IRBuilder.cbranch(cond, truebr, falsebr)
 
    Conditional jump to either *truebr* or *falsebr* (both :class:`Block`
-   instances), depending on *cond*.  This instruction is a
-   :class:`PredictableInstr`.
+   instances), depending on *cond* (a value of type ``IntType(1)``).
+   This instruction is a :class:`PredictableInstr`.
 
 .. method:: IRBuilder.ret(value)
 
@@ -442,6 +447,11 @@ These instructions are all :term:`terminators <terminator>`.
 
 Miscellaneous
 '''''''''''''
+
+.. method:: IRBuilder.assume(cond)
+
+   Let the LLVM optimizer assume that *cond* (a value of type ``IntType(1)``)
+   is true.
 
 .. method:: IRBuilder.unreachable()
 
