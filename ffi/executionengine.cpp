@@ -2,6 +2,7 @@
 #include "llvm-c/ExecutionEngine.h"
 #include "llvm/IR/Module.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/Support/Memory.h"
 #include <cstdio>
 
 extern "C" {
@@ -104,6 +105,22 @@ API_EXPORT(LLVMTargetDataRef)
 LLVMPY_GetExecutionEngineTargetData(LLVMExecutionEngineRef EE)
 {
     return LLVMGetExecutionEngineTargetData(EE);
+}
+
+API_EXPORT(int)
+LLVMPY_TryAllocateExecutableMemory(void)
+{
+    using namespace llvm::sys;
+    std::error_code ec;
+    MemoryBlock mb = Memory::allocateMappedMemory(4096, nullptr,
+                                                  Memory::MF_READ |
+                                                  Memory::MF_WRITE,
+                                                  ec);
+    if (!ec) {
+        ec = Memory::protectMappedMemory(mb, Memory::MF_READ | Memory::MF_EXEC);
+        (void) Memory::releaseMappedMemory(mb);  /* Should always succeed */
+    }
+    return ec.value();
 }
 
 } // end extern "C"

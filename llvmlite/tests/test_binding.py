@@ -160,6 +160,9 @@ class TestMisc(BaseTest):
         self.assertIn((major, minor), [(3, 5), (3, 6)])
         self.assertIn(patch, range(10))
 
+    def test_check_jit_execution(self):
+        llvm.check_jit_execution()
+
 
 class TestModuleRef(BaseTest):
 

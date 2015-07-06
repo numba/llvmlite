@@ -10,14 +10,24 @@ The currently supported LLVM version (LLVM 3.6) exposes one execution engine,
 named MCJIT.
 
 
-Factory functions
------------------
+Functions
+---------
 
 .. function:: create_mcjit_compiler(module, target_machine)
 
    Create a MCJIT-powered engine from the given *module* and
    *target_machine*.  A :class:`ExecutionEngine` instance is returned.
    The *module* need not contain any code.
+
+
+.. function:: check_jit_execution()
+
+   Ensure the system allows creation of executable memory ranges for
+   JIT-compiled code.  If some security mechanism (such as SELinux) prevents
+   it, an exception is raised.  Otherwise the function returns silently.
+
+   Calling this function early can help diagnose system configuration issues,
+   instead of letting JIT-compiled functions crash mysteriously.
 
 
 The ExecutionEngine class
