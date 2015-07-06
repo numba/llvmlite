@@ -1,5 +1,7 @@
 from __future__ import print_function, absolute_import
-from ctypes import byref, POINTER, c_char_p, c_bool, c_uint, c_void_p
+
+from ctypes import byref, POINTER, c_char_p, c_bool, c_uint, c_void_p, c_int
+
 from . import ffi, targets
 
 
@@ -20,6 +22,20 @@ def create_mcjit_compiler(module, target_machine):
 
     target_machine._owned = True
     return ExecutionEngine(engine, module=module)
+
+
+def check_jit_execution():
+    """
+    Check the system allows execution of in-memory JITted functions.
+    An exception is raised otherwise.
+    """
+    errno = ffi.lib.LLVMPY_TryAllocateExecutableMemory()
+    if errno != 0:
+        raise OSError(errno,
+                      "cannot allocate executable memory. "
+                      "This may be due to security restrictions on your "
+                      "system, such as SELinux or similar mechanisms."
+                      )
 
 
 class ExecutionEngine(ffi.ObjectRef):
@@ -133,3 +149,6 @@ ffi.lib.LLVMPY_GetExecutionEngineTargetData.argtypes = [
     ffi.LLVMExecutionEngineRef
 ]
 ffi.lib.LLVMPY_GetExecutionEngineTargetData.restype = ffi.LLVMTargetDataRef
+
+ffi.lib.LLVMPY_TryAllocateExecutableMemory.argtypes = []
+ffi.lib.LLVMPY_TryAllocateExecutableMemory.restype = c_int
