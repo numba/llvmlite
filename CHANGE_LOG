@@ -1,3 +1,8 @@
+v0.7.0 (in development)
+-----------------------
+
+* Issue #76: Fix non-Windows builds when LLVM was built using CMake
+
 v0.6.0
 ------
 

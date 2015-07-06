@@ -3,11 +3,7 @@
 #include "llvm-c/Target.h"
 
 #include "core.h"
-#ifdef _WIN32
 #include "llvm/Config/llvm-config.h"
-#else
-#include "llvm/Config/config.h"
-#endif
 
 extern "C" {
 
