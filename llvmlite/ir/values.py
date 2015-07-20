@@ -11,7 +11,8 @@ from ..six import StringIO
 from . import types
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
-                frozenset(map(ord, string.digits)))
+                frozenset(map(ord, string.digits)) |
+                frozenset('._-$'))
 
 
 def _escape_string(text):
