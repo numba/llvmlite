@@ -15,6 +15,18 @@ from llvmlite.binding import ffi
 from . import TestCase
 
 
+def no_de_locale():
+    cur = locale.setlocale(locale.LC_ALL)
+    try:
+        locale.setlocale(locale.LC_ALL, 'de_DE')
+    except locale.Error:
+        return True
+    else:
+        return False
+    finally:
+        locale.setlocale(locale.LC_ALL, cur)
+
+
 asm_sum = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
@@ -175,6 +187,7 @@ class TestMisc(BaseTest):
     def test_check_jit_execution(self):
         llvm.check_jit_execution()
 
+    @unittest.skipIf(no_de_locale(), "Locale not available")
     def test_print_double_locale(self):
         m = self.module(asm_double_locale)
         expect = str(m)
