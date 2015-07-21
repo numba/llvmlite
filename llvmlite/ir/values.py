@@ -283,6 +283,7 @@ class GlobalVariable(GlobalValue):
                                              name=name)
         self.gtype = typ
         self.initializer = None
+        self.unnamed_addr = False
         self.global_constant = False
         self.addrspace = addrspace
         self.parent.add_global(self)
@@ -304,9 +305,15 @@ class GlobalVariable(GlobalValue):
         else:
             addrspace = ''
 
-        print("{linkage} {addrspace} {kind} {type} ".format(
-            addrspace=addrspace,
+        if self.unnamed_addr:
+            unnamed_addr = 'unnamed_addr'
+        else:
+            unnamed_addr = ''
+
+        print("{linkage} {unnamed_addr} {addrspace} {kind} {type} ".format(
             linkage=linkage,
+            unnamed_addr=unnamed_addr,
+            addrspace=addrspace,
             kind=kind,
             type=self.gtype),
               file=buf,

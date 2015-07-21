@@ -151,6 +151,12 @@ Global values are values accessible using a module-wide name.
       If true, the variable is declared a constant, i.e. its contents
       cannot be ever modified.  Default is False.
 
+   .. attribute:: unnamed_addr
+
+      If true, the address of the variable is deemed insignificant, i.e.
+      it will be merged with other variables which have the same initializer.
+      Default is False.
+
    .. attribute:: initializer
 
       The variable's initialization value (probably a :class:`Constant`
