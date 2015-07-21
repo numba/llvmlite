@@ -489,6 +489,7 @@ class IRBuilder(object):
     def unreachable(self):
         inst = instructions.Unreachable(self.block)
         self._set_terminator(inst)
+        return inst
 
     def atomic_rmw(self, op, ptr, val, ordering, name=''):
         inst = instructions.AtomicRMW(self.block, op, ptr, val, ordering, name=name)
