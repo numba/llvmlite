@@ -63,6 +63,17 @@ class ExecutionEngine(ffi.ObjectRef):
             raise ValueError("Cannot find given global value %r" % (gv.name))
         return ptr
 
+    def get_function_address(self, name):
+        ptr = ffi.lib.LLVMPY_GetFunctionAddress(self, name.encode("ascii"))
+        if ptr is None:
+            raise ValueError("Cannot find given function %s" % name)
+        return ptr
+
+    def get_global_value_address(self, name):
+        ptr = ffi.lib.LLVMPY_GetGlobalValueAddress(self, name.encode("ascii"))
+        if ptr is None:
+            raise ValueError("Cannot find given global value %s" % name)
+        return ptr
 
     def add_global_mapping(self, gv, addr):
         # XXX unused?
@@ -153,3 +164,15 @@ ffi.lib.LLVMPY_GetExecutionEngineTargetData.restype = ffi.LLVMTargetDataRef
 
 ffi.lib.LLVMPY_TryAllocateExecutableMemory.argtypes = []
 ffi.lib.LLVMPY_TryAllocateExecutableMemory.restype = c_int
+
+ffi.lib.LLVMPY_GetFunctionAddress.argtypes = [
+    ffi.LLVMExecutionEngineRef,
+    c_char_p
+]
+ffi.lib.LLVMPY_GetFunctionAddress.restype = c_uint64
+
+ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [
+    ffi.LLVMExecutionEngineRef,
+    c_char_p
+]
+ffi.lib.LLVMPY_GetGlobalValueAddress.restype = c_uint64
