@@ -1,6 +1,8 @@
 from __future__ import print_function, absolute_import
 
-from ctypes import byref, POINTER, c_char_p, c_bool, c_uint, c_void_p, c_int
+from ctypes import (byref, POINTER, c_char_p, c_bool, c_uint, c_void_p, c_int,
+                    c_uint64)
+import warnings
 
 from . import ffi, targets
 
@@ -53,15 +55,14 @@ class ExecutionEngine(ffi.ObjectRef):
         module._owned = True
         ffi.ObjectRef.__init__(self, ptr)
 
-    def get_pointer_to_global(self, gv):
-        # XXX getPointerToGlobal is deprecated for MCJIT,
-        # getGlobalValueAddress should be used instead.
+    def get_pointer_to_function(self, gv):
+        warnings.warn(".get_pointer_to_function() is deprecated.  Use "
+                      ".get_function_address() instead.", DeprecationWarning)
         ptr = ffi.lib.LLVMPY_GetPointerToGlobal(self, gv)
         if ptr is None:
             raise ValueError("Cannot find given global value %r" % (gv.name))
         return ptr
 
-    get_pointer_to_function = get_pointer_to_global
 
     def add_global_mapping(self, gv, addr):
         # XXX unused?
