@@ -361,7 +361,7 @@ class JITTestMixin(object):
         mod = self.module()
         with self.jit(mod) as ee:
             ee.finalize_object()
-            cfptr = ee.get_pointer_to_global(mod.get_function('sum'))
+            cfptr = ee.get_function_address("sum")
 
             cfunc = CFUNCTYPE(c_int, c_int, c_int)(cfptr)
             res = cfunc(2, -5)
