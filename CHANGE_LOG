@@ -2,6 +2,8 @@ v0.7.0 (in development)
 -----------------------
 
 * Issue #76: Fix non-Windows builds when LLVM was built using CMake
+* Deprecate .get_pointer_to_global() and add .get_function_address() and
+  .get_global_value_address() in ExecutionEngine.
 
 v0.6.0
 ------
