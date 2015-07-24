@@ -167,6 +167,30 @@ class ConditionalBranch(PredictableInstr, Terminator):
     pass
 
 
+class IndirectBranch(PredictableInstr, Terminator):
+    def __init__(self, parent, opname, addr):
+        super(IndirectBranch, self).__init__(parent, opname, [addr])
+        self.destinations = []
+
+    @property
+    def address(self):
+        return self.operands[0]
+
+    def add_destination(self, block):
+        assert isinstance(block, Block)
+        self.destinations.append(block)
+
+    def descr(self, buf):
+        destinations = ["label {0}".format(blk.get_reference())
+                        for blk in self.destinations]
+        print("indirectbr {0} {1}, [{2}]  {metadata}".format(
+            self.address.type,
+            self.address.get_reference(),
+            ', '.join(destinations),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
+
+
 class SwitchInstr(PredictableInstr, Terminator):
 
     def __init__(self, parent, opname, val, default):

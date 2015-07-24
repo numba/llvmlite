@@ -444,6 +444,16 @@ These instructions are all :term:`terminators <terminator>`.
    Add non-default targets using the :meth:`~SwitchInstr.add_case`
    method on the return value.
 
+.. method:: IRBuilder.indirectbr(address)
+
+   Jump to basic block with address *address* (a value of type
+   `IntType(8).as_pointer()`). A block address can be obtained
+   using the :class:`BlockAddress` constant.
+
+   Add all possible jump destinations using
+   the :meth:`~IndirectBranch.add_destination` method on the return
+   value.
+
 
 Miscellaneous
 '''''''''''''

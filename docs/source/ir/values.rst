@@ -111,6 +111,20 @@ Values are what a :term:`module` mostly consists of.
 
       The block's :term:`terminator instruction`, if any.  Otherwise None.
 
+.. class:: BlockAddress
+
+   A constant representing an address of a basic block.
+
+   Block address constants have the following attributes:
+
+   .. attribute:: function
+
+      The function the basic block is defined in.
+
+   .. attribute:: basic_block
+
+      The basic block. Must be a part of :attr:`function`.
+
 
 Global values
 -------------
@@ -264,6 +278,17 @@ use the helper methods on the :class:`IRBuilder` class.
       or a Python value compatible with the switch instruction's operand type.
       *block* is a :class:`Block` to jump to if, and only if, *val* and
       the switch operand compare equal.
+
+
+.. class:: IndirectBranch
+
+   An indirect branch instruction.  Indirect branch instructions have
+   the following method:
+
+   .. method:: add_destination(value, block)
+
+      Add an outgoing edge.  The indirect branch instruction must
+      refer to every basic block it can transfer control to.
 
 
 .. class:: PhiInstr
