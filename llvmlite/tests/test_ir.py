@@ -729,6 +729,24 @@ class TestBuildInstructions(TestBase):
                     to label %"normal" unwind label %"unwind"
             """)
 
+    def test_landingpad(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        tp_pers = ir.FunctionType(int8, (), var_arg=True)
+        pers = ir.Function(builder.function.module, tp_pers, '__gxx_personality_v0')
+        lp = builder.landingpad(ir.LiteralStructType([int32, int8.as_pointer()]), pers, 'lp')
+        int_typeinfo = ir.GlobalVariable(builder.function.module, int8.as_pointer(), "_ZTIi")
+        int_typeinfo.global_constant = True
+        lp.add_clause(ir.CatchClause(int_typeinfo))
+        lp.add_clause(ir.FilterClause(ir.Constant(ir.ArrayType(int_typeinfo.type, 1),
+                                                  [int_typeinfo])))
+        self.check_block(block, """\
+            my_block:
+                %"lp" = landingpad {i32, i8*} personality i8 (...)* @"__gxx_personality_v0"
+                    catch i8** @"_ZTIi"
+                    filter [1 x i8**] [i8** @"_ZTIi"]
+            """)
+
     def test_assume(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)

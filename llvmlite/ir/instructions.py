@@ -572,3 +572,46 @@ class CmpXchg(Instruction):
                          failordering=self.failordering,
                          metadata=self._stringify_metatdata(), ),
               file=buf)
+
+
+class _LandingPadClause:
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "{kind} {type} {value}".format(
+            kind=self.kind,
+            type=self.value.type,
+            value=self.value.get_reference())
+
+class CatchClause(_LandingPadClause):
+    kind = 'catch'
+
+class FilterClause(_LandingPadClause):
+    kind = 'filter'
+
+    def __init__(self, value):
+        assert isinstance(value, Constant)
+        assert isinstance(value.type, types.ArrayType)
+        super(FilterClause, self).__init__(value)
+
+class LandingPadInstr(Instruction):
+    def __init__(self, parent, typ, personality, name='', cleanup=False):
+        super(LandingPadInstr, self).__init__(parent, typ, "landingpad", [], name=name)
+        self.personality = personality
+        self.cleanup = cleanup
+        self.clauses = []
+
+    def add_clause(self, clause):
+        assert isinstance(clause, _LandingPadClause)
+        self.clauses.append(clause)
+
+    def descr(self, buf):
+        print("landingpad {type} personality {persty} {persfn}"
+              "{cleanup}{clauses}".format(
+            type=self.type,
+            persty=self.personality.type,
+            persfn=self.personality.get_reference(),
+            cleanup=' cleanup' if self.cleanup else '',
+            clauses=''.join(["\n      " + str(clause) for clause in self.clauses])
+            ), file=buf)
