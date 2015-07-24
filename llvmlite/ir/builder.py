@@ -437,6 +437,13 @@ class IRBuilder(object):
         self._set_terminator(br)
         return br
 
+    def branch_indirect(self, addr):
+        """Branch indirectly
+        """
+        br = instructions.IndirectBranch(self.block, "indirectbr", addr)
+        self._set_terminator(br)
+        return br
+
     def ret_void(self):
         return self._set_terminator(
             instructions.Ret(self.block, "ret void"))
