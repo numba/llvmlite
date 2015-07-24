@@ -734,6 +734,21 @@ class TestBuildInstructions(TestBase):
                 %"res_f_fast" = call fastcc float (i32, i32)* @"f"(i32 %".1", i32 %".2")
             """)
 
+    def test_invoke(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        tp_f = ir.FunctionType(flt, (int32, int32))
+        f = ir.Function(builder.function.module, tp_f, 'f')
+        bb_normal = builder.function.append_basic_block(name='normal')
+        bb_unwind = builder.function.append_basic_block(name='unwind')
+        builder.invoke(f, (a, b), bb_normal, bb_unwind, 'res_f')
+        self.check_block(block, """\
+            my_block:
+                %"res_f" = invoke float (i32, i32)* @"f"(i32 %".1", i32 %".2")
+                    to label %"normal" unwind label %"unwind"
+            """)
+
     def test_assume(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)

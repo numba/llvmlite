@@ -455,6 +455,21 @@ These instructions are all :term:`terminators <terminator>`.
    value.
 
 
+Exception handling
+''''''''''''''''''
+
+.. method:: IRBuilder.invoke(self, fn, args, normal_to, unwind_to,
+                             name='', cconv=None, tail=False)
+
+   Call function *fn* with arguments *args* (a sequence of values).
+   *cconc* is the optional calling convention.  *tail*, if true, is
+   a hint for the optimizer to perform tail-call optimization.
+
+   If the function *fn* returns normally, control is transferred to
+   *normal_to*. Otherwise, it is transferred to *unwind_to*,
+   the first non-phi instruction of which must be :class:`LandingPad`.
+
+
 Miscellaneous
 '''''''''''''
 
