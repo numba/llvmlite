@@ -486,7 +486,7 @@ class ReturnValue(_BaseArgument):
 
 class Block(Value):
     """
-    A LLVM IR building block. A building block is a sequence of
+    A LLVM IR basic block. A basic block is a sequence of
     instructions whose execution always goes from start to end.  That
     is, a control flow instruction (branch) can only appear as the
     last instruction, and incoming branches can only jump to the first
