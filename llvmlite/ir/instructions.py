@@ -6,7 +6,7 @@ from __future__ import print_function, absolute_import
 
 from ..six import StringIO
 from . import types
-from .values import Block, Function, Value, Constant, MetaDataString
+from .values import Block, Function, Value, Constant, MetaDataString, AttributeSet
 
 
 class Instruction(Value):
@@ -57,6 +57,8 @@ class Instruction(Value):
                 ops.append(new if op is old else op)
             self.operands = tuple(ops)
 
+class CallInstrAttributes(AttributeSet):
+    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone'])
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name='', cconv=None, tail=False):
@@ -64,6 +66,7 @@ class CallInstr(Instruction):
                       if cconv is None and isinstance(func, Function)
                       else cconv)
         self.tail = tail
+        self.attributes = CallInstrAttributes()
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
         # Validate
@@ -102,11 +105,12 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
-        print("{tail}{opname} {callee}({args}){metadata}".format(
+        print("{tail}{opname} {callee}({args}){attributes}{metadata}".format(
             tail='tail ' if self.tail else '',
             opname=self.opname,
             callee=callee_ref,
             args=args,
+            attributes=''.join([" " + attr for attr in self.attributes]),
             metadata=self._stringify_metatdata() if add_metadata else "",
             ), file=buf)
 
