@@ -566,6 +566,11 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
+    def landingpad(self, typ, personality, name='', cleanup=False):
+        inst = instructions.LandingPadInstr(self.block, typ, personality, name, cleanup)
+        self._insert(inst)
+        return inst
+
     def assume(self, cond):
         fn = self.module.declare_intrinsic("llvm.assume")
         return self.call(fn, [cond])

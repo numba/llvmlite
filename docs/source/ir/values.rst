@@ -299,3 +299,31 @@ use the helper methods on the :class:`IRBuilder` class.
 
       Add an incoming edge.  Whenever transfer is controlled from *block*
       (a :class:`Block`), the phi instruction takes the given *value*.
+
+
+.. class:: LandingPad
+
+   A landing pad.  Landing pads have the following method:
+
+   .. method:: add_clause(value, block)
+
+      Add a catch or filter clause.  Create catch clauses using
+      :class:`CatchClause`, and filter clauses using :class:`FilterClause`.
+
+Landing pad clauses
+-------------------
+
+Landing pads have the following classes associated with them:
+
+.. class:: CatchClause(value)
+
+   A catch clause. Instructs the personality function to compare
+   the in-flight exception typeinfo with *value*, which should have type
+   `IntType(8).as_pointer().as_pointer()`.
+
+.. class:: FilterClause(value)
+
+   A filter clause. Instructs the personality function to check
+   inclusion of the the in-flight exception typeinfo in *value*,
+   which should have type
+   `ArrayType(IntType(8).as_pointer().as_pointer(), ...)`.

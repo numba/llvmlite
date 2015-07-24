@@ -469,6 +469,37 @@ Exception handling
    *normal_to*. Otherwise, it is transferred to *unwind_to*,
    the first non-phi instruction of which must be :class:`LandingPad`.
 
+.. method:: IRBuilder.landingpad(typ, personality, name='', cleanup=False)
+
+   Describe which exceptions this basic block can handle.
+
+   *typ* specifies the return type of the landing pad. It is a structure
+   with two pointer-sized fields.
+   *personality* specifies an exception personality function.
+   *cleanup* specifies whether control should be always transferred
+   to this landing pad, even when no matching exception is caught.
+
+   Add landing pad clauses using the :meth:`~LandingPad.add_clause`
+   method on the return value.
+
+   There are two kinds of landing pad clauses:
+
+      * A :class:`CatchClause`, which specifies a typeinfo for
+        a single exception to be caught. The typeinfo is a value
+        of type `IntType(8).as_pointer().as_pointer()`;
+
+      * A :class:`FilterClause`, which specifies an array of
+        typeinfos.
+
+   Every landing pad must either contain at least one clause,
+   or be marked for cleanup.
+
+   The semantics of a landing pad are entirely determined by the personality
+   function. See `Exception handling in LLVM <http://llvm.org/docs/ExceptionHandling.html>`_
+   for details on the way LLVM handles landing pads in the optimizer, and
+   `Itanium exception handling ABI <https://mentorembedded.github.io/cxx-abi/abi-eh.html>`_
+   for details on the implementation of personality functions.
+
 
 Miscellaneous
 '''''''''''''
