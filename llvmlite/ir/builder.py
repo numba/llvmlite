@@ -460,6 +460,12 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
+    def invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None, tail=False):
+        inst = instructions.InvokeInstr(self.block, fn, args, normal_to, unwind_to, name=name,
+                                        cconv=cconv)
+        self._set_terminator(inst)
+        return inst
+
     # GEP APIs
 
     def gep(self, ptr, indices, inbounds=False, name=''):

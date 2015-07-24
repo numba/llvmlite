@@ -102,11 +102,29 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
-        print("{tail}call {callee}({args}){metadata}".format(
+        print("{tail}{opname} {callee}({args}){metadata}".format(
             tail='tail ' if self.tail else '',
+            opname=self.opname,
             callee=callee_ref,
             args=args,
             metadata=self._stringify_metatdata(),
+            ), file=buf)
+
+
+class InvokeInstr(CallInstr):
+    def __init__(self, parent, func, args, normal_to, unwind_to, name='', cconv=None):
+        assert isinstance(normal_to, Block)
+        assert isinstance(unwind_to, Block)
+        super(InvokeInstr, self).__init__(parent, func, args, name, cconv)
+        self.opname = "invoke"
+        self.normal_to = normal_to
+        self.unwind_to = unwind_to
+
+    def descr(self, buf):
+        super(InvokeInstr, self).descr(buf)
+        print("      to label {} unwind label {}".format(
+            self.normal_to.get_reference(),
+            self.unwind_to.get_reference()
             ), file=buf)
 
 
