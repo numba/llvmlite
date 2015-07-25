@@ -415,7 +415,10 @@ class Function(GlobalValue):
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
         attrs = self.attributes
-        vararg = ', ...' if self.ftype.var_arg else ''
+        if any(self.args):
+            vararg = ', ...' if self.ftype.var_arg else ''
+        else:
+            vararg = '...' if self.ftype.var_arg else ''
         linkage = self.linkage
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
