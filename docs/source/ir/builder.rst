@@ -500,6 +500,12 @@ Exception handling
    `Itanium exception handling ABI <https://mentorembedded.github.io/cxx-abi/abi-eh.html>`_
    for details on the implementation of personality functions.
 
+.. method:: IRBuilder.resume(landingpad)
+
+   Resume an exception caught by landing pad *landingpad*. Used to indicate
+   that the landing pad did not catch the exception after all (perhaps
+   because it only performed cleanup).
+
 
 Miscellaneous
 '''''''''''''

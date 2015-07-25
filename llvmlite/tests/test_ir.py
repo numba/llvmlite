@@ -760,11 +760,13 @@ class TestBuildInstructions(TestBase):
         lp.add_clause(ir.CatchClause(int_typeinfo))
         lp.add_clause(ir.FilterClause(ir.Constant(ir.ArrayType(int_typeinfo.type, 1),
                                                   [int_typeinfo])))
+        builder.resume(lp)
         self.check_block(block, """\
             my_block:
                 %"lp" = landingpad {i32, i8*} personality i8 (...)* @"__gxx_personality_v0"
                     catch i8** @"_ZTIi"
                     filter [1 x i8**] [i8** @"_ZTIi"]
+                resume {i32, i8*} %"lp"
             """)
 
     def test_assume(self):
