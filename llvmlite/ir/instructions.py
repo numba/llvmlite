@@ -243,6 +243,10 @@ class SwitchInstr(PredictableInstr, Terminator):
             ), file=buf)
 
 
+class Resume(Terminator):
+    pass
+
+
 class SelectInstr(Instruction):
     def __init__(self, parent, cond, lhs, rhs, name=''):
         assert lhs.type == rhs.type

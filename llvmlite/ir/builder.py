@@ -452,6 +452,13 @@ class IRBuilder(object):
         return self._set_terminator(
             instructions.Ret(self.block, "ret", value))
 
+    def resume(self, landingpad):
+        """Resume an in-flight exception
+        """
+        br = instructions.Branch(self.block, "resume", [landingpad])
+        self._set_terminator(br)
+        return br
+
     # Call APIs
 
     def call(self, fn, args, name='', cconv=None, tail=False):
