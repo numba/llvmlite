@@ -84,8 +84,11 @@ def main_win32():
 
 def get_compiler_args(kind):
     if kind in ('freebsd', 'osx'):
-        return ['clang++', '-std=c++11', '-stdlib=libc++']
-    return ['g++']
+        compiler_args = ['clang++', '-std=c++11', '-stdlib=libc++']
+    else:
+        compiler_args = ['g++']
+    compiler_args[0] = os.environ.get('CXX', compiler_args[0])
+    return compiler_args
 
 
 def try_static_compile(kind, build_dir, test_source_path):
