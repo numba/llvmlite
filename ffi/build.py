@@ -110,7 +110,7 @@ def can_use_static_libcpp(kind):
     build_dir = tempfile.mkdtemp()
     test_fd, test_path = tempfile.mkstemp(suffix='.cpp', dir=build_dir, text=True)
     try:
-        os.write(test_fd, '#include <algorithm>\nint main() { return 0; }\n')
+        os.write(test_fd, b'#include <algorithm>\nint main() { return 0; }\n')
         os.close(test_fd)
         try_static_compile(kind, build_dir, test_path)
     except subprocess.CalledProcessError:
