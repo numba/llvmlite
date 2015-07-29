@@ -10,6 +10,24 @@ def initialize():
     ffi.lib.LLVMPY_InitializeCore()
 
 
+def initialize_all_targets():
+    """
+    Initialize all targets. Necessary before targets can be looked up
+    via the :class:`Target` class.
+    """
+    ffi.lib.LLVMPY_InitializeAllTargetInfos()
+    ffi.lib.LLVMPY_InitializeAllTargets()
+    ffi.lib.LLVMPY_InitializeAllTargetMCs()
+
+def initialize_all_asmprinters():
+    """
+    Initialize all code generators. Necessary before generating
+    any assembly or machine code via the :meth:`TargetMachine.emit_object`
+    and :meth:`TargetMachine.emit_assembly` methods.
+    """
+    ffi.lib.LLVMPY_InitializeAllAsmPrinters()
+
+
 def initialize_native_target():
     """
     Initialize the native (host) target.  Necessary before doing any
