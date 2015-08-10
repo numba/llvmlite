@@ -93,6 +93,20 @@ LLVMPY_GetPointerToGlobal(LLVMExecutionEngineRef EE,
     return LLVMGetPointerToGlobal(EE, Global);
 }
 
+API_EXPORT(uint64_t)
+LLVMPY_GetGlobalValueAddress(LLVMExecutionEngineRef EE,
+                             const char *Name)
+{
+    return LLVMGetGlobalValueAddress(EE, Name);
+}
+
+API_EXPORT(uint64_t)
+LLVMPY_GetFunctionAddress(LLVMExecutionEngineRef EE,
+                          const char *Name)
+{
+    return LLVMGetFunctionAddress(EE, Name);
+}
+
 API_EXPORT(void)
 LLVMPY_AddGlobalMapping(LLVMExecutionEngineRef EE,
                         LLVMValueRef Global,

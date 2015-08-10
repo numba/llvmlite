@@ -3,6 +3,7 @@ from llvmlite import ir as lc
 
 llvm.initialize()
 llvm.initialize_native_target()
+llvm.initialize_native_asmprinter()
 
 mod = lc.Module()
 mod.triple = llvm.get_default_triple()
@@ -26,9 +27,10 @@ with llvm.create_module_pass_manager() as pm:
 
 print(mod)
 
-ee = llvm.create_jit_compiler(mod)
-func = mod.get_function(name="foo")
-print(func, ee.get_pointer_to_global(func))
+tm = llvm.Target.from_default_triple().create_target_machine()
+ee = llvm.create_mcjit_compiler(mod, tm)
+func = mod.get_function("foo")
+print(func, ee.get_function_address("foo"))
 ee.close()
 
 llvm.shutdown()

@@ -84,7 +84,7 @@ def run_bench(verbose):
         llmod = module
         llfunc = llmod.get_function_named("sum")
 
-    cfptr = engine.get_pointer_to_global(llfunc)
+    cfptr = engine.get_pointer_to_function(llfunc)
 
     dt = time() - t
     if verbose:

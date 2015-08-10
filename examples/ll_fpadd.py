@@ -56,7 +56,7 @@ engine = create_execution_engine()
 mod = compile_ir(engine, llvm_ir)
 
 # Look up the function pointer (a Python int)
-func_ptr = engine.get_pointer_to_global(mod.get_function("fpadd"))
+func_ptr = engine.get_function_address("fpadd")
 
 # Run the function via ctypes
 cfunc = CFUNCTYPE(c_double, c_double, c_double)(func_ptr)
