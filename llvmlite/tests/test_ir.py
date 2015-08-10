@@ -338,6 +338,26 @@ class TestBuildInstructions(TestBase):
                 %"d" = sub nuw nsw i32 %".1", %".2"
             """)
 
+    def test_binops_with_overflow(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        builder.sadd_with_overflow(a, b, 'c')
+        builder.smul_with_overflow(a, b, 'd')
+        builder.ssub_with_overflow(a, b, 'e')
+        builder.uadd_with_overflow(a, b, 'f')
+        builder.umul_with_overflow(a, b, 'g')
+        builder.usub_with_overflow(a, b, 'h')
+        self.check_block(block, """\
+            my_block:
+                %"c" = call {i32, i1} (i32, i32)* @"llvm.sadd.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"d" = call {i32, i1} (i32, i32)* @"llvm.smul.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"e" = call {i32, i1} (i32, i32)* @"llvm.ssub.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"f" = call {i32, i1} (i32, i32)* @"llvm.uadd.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"g" = call {i32, i1} (i32, i32)* @"llvm.umul.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"h" = call {i32, i1} (i32, i32)* @"llvm.usub.with.overflow.i32"(i32 %".1", i32 %".2")
+            """)
+
     def test_unary_ops(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
