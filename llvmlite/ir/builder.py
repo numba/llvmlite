@@ -29,6 +29,29 @@ def _binop(opname, cls=instructions.Instruction):
     return wrap
 
 
+def _binop_with_overflow(opname, cls=instructions.Instruction):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, lhs, rhs, name=''):
+            assert lhs.type == rhs.type, "Operands must be the same type"
+            ty = lhs.type
+            if not isinstance(ty, types.IntType):
+                raise TypeError("expected an integer type, got %s" % (ty,))
+            bool_ty = types.IntType(1)
+
+            mod = self.module
+            fnty = types.FunctionType(types.LiteralStructType([ty, bool_ty]),
+                                      [ty, ty])
+            fn = mod.declare_intrinsic("llvm.%s.with.overflow" % (opname,),
+                                       [ty], fnty)
+            ret = self.call(fn, [lhs, rhs], name=name)
+            return ret
+
+        return wrapped
+
+    return wrap
+
+
 def _uniop(opname, cls=instructions.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
@@ -266,6 +289,30 @@ class IRBuilder(object):
 
     @_binop('xor')
     def xor(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('sadd')
+    def sadd_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('smul')
+    def smul_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('ssub')
+    def ssub_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('uadd')
+    def uadd_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('umul')
+    def umul_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('usub')
+    def usub_with_overflow(self, lhs, rhs, name=''):
         pass
 
     #
