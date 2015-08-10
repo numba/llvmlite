@@ -288,7 +288,10 @@ class MDValue(NamedValue):
         for op in self.operands:
             typestr = str(op.type)
             if isinstance(op.type, types.MetaData):
-                operands.append(op.get_reference())
+                if isinstance(op, Constant) and op.constant == None:
+                    operands.append("null")
+                else:
+                    operands.append(op.get_reference())
             else:
                 operands.append("{0} {1}".format(op.type, op.get_reference()))
         operands = ', '.join(operands)

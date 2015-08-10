@@ -224,6 +224,12 @@ class TestIR(TestBase):
         self.assertInText("!bar = !{ !0, !0 }", str(mod))
         self.assert_valid_ir(mod)
 
+    def test_metadata_null(self):
+        mod = self.module()
+        md = mod.add_metadata([ir.Constant(ir.PointerType(ir.IntType(32)), None)])
+        self.assertInText("!{ i32* null }", str(mod))
+        self.assert_valid_ir(mod)
+
     def test_inline_assembly(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
