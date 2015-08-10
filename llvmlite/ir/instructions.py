@@ -6,7 +6,7 @@ from __future__ import print_function, absolute_import
 
 from ..six import StringIO
 from . import types
-from .values import Block, Function, Value, Constant, MetaDataString
+from .values import Block, Function, Value, Constant, MetaDataString, AttributeSet
 
 
 class Instruction(Value):
@@ -57,6 +57,8 @@ class Instruction(Value):
                 ops.append(new if op is old else op)
             self.operands = tuple(ops)
 
+class CallInstrAttributes(AttributeSet):
+    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone'])
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name='', cconv=None, tail=False):
@@ -64,6 +66,7 @@ class CallInstr(Instruction):
                       if cconv is None and isinstance(func, Function)
                       else cconv)
         self.tail = tail
+        self.attributes = CallInstrAttributes()
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
         # Validate
@@ -102,11 +105,30 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
-        print("{tail}call {callee}({args}){metadata}".format(
+        print("{tail}{opname} {callee}({args}){attributes}{metadata}".format(
             tail='tail ' if self.tail else '',
+            opname=self.opname,
             callee=callee_ref,
             args=args,
+            attributes=''.join([" " + attr for attr in self.attributes]),
             metadata=self._stringify_metatdata(),
+            ), file=buf)
+
+
+class InvokeInstr(CallInstr):
+    def __init__(self, parent, func, args, normal_to, unwind_to, name='', cconv=None):
+        assert isinstance(normal_to, Block)
+        assert isinstance(unwind_to, Block)
+        super(InvokeInstr, self).__init__(parent, func, args, name, cconv)
+        self.opname = "invoke"
+        self.normal_to = normal_to
+        self.unwind_to = unwind_to
+
+    def descr(self, buf):
+        super(InvokeInstr, self).descr(buf)
+        print("      to label {} unwind label {}".format(
+            self.normal_to.get_reference(),
+            self.unwind_to.get_reference()
             ), file=buf)
 
 
@@ -167,6 +189,30 @@ class ConditionalBranch(PredictableInstr, Terminator):
     pass
 
 
+class IndirectBranch(PredictableInstr, Terminator):
+    def __init__(self, parent, opname, addr):
+        super(IndirectBranch, self).__init__(parent, opname, [addr])
+        self.destinations = []
+
+    @property
+    def address(self):
+        return self.operands[0]
+
+    def add_destination(self, block):
+        assert isinstance(block, Block)
+        self.destinations.append(block)
+
+    def descr(self, buf):
+        destinations = ["label {}".format(blk.get_reference())
+                        for blk in self.destinations]
+        print("indirectbr {0} {1}, [{2}]  {metadata}".format(
+            self.address.type,
+            self.address.get_reference(),
+            ', '.join(destinations),
+            metadata=self._stringify_metatdata(),
+            ), file=buf)
+
+
 class SwitchInstr(PredictableInstr, Terminator):
 
     def __init__(self, parent, opname, val, default):
@@ -195,6 +241,10 @@ class SwitchInstr(PredictableInstr, Terminator):
             ' '.join(cases),
             metadata=self._stringify_metatdata(),
             ), file=buf)
+
+
+class Resume(Terminator):
+    pass
 
 
 class SelectInstr(Instruction):
@@ -530,3 +580,46 @@ class CmpXchg(Instruction):
                          failordering=self.failordering,
                          metadata=self._stringify_metatdata(), ),
               file=buf)
+
+
+class _LandingPadClause(object):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "{kind} {type} {value}".format(
+            kind=self.kind,
+            type=self.value.type,
+            value=self.value.get_reference())
+
+class CatchClause(_LandingPadClause):
+    kind = 'catch'
+
+class FilterClause(_LandingPadClause):
+    kind = 'filter'
+
+    def __init__(self, value):
+        assert isinstance(value, Constant)
+        assert isinstance(value.type, types.ArrayType)
+        super(FilterClause, self).__init__(value)
+
+class LandingPadInstr(Instruction):
+    def __init__(self, parent, typ, personality, name='', cleanup=False):
+        super(LandingPadInstr, self).__init__(parent, typ, "landingpad", [], name=name)
+        self.personality = personality
+        self.cleanup = cleanup
+        self.clauses = []
+
+    def add_clause(self, clause):
+        assert isinstance(clause, _LandingPadClause)
+        self.clauses.append(clause)
+
+    def descr(self, buf):
+        print("landingpad {type} personality {persty} {persfn}"
+              "{cleanup}{clauses}".format(
+            type=self.type,
+            persty=self.personality.type,
+            persfn=self.personality.get_reference(),
+            cleanup=' cleanup' if self.cleanup else '',
+            clauses=''.join(["\n      " + str(clause) for clause in self.clauses])
+            ), file=buf)

@@ -665,6 +665,20 @@ class TestBuildInstructions(TestBase):
             !0 = !{ !"branch_weights", i32 5, i32 42 }
             """)
 
+    def test_branch_indirect(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        bb_1 = builder.function.append_basic_block(name='b_1')
+        bb_2 = builder.function.append_basic_block(name='b_2')
+        indirectbr = builder.branch_indirect(ir.BlockAddress(builder.function, bb_1))
+        indirectbr.add_destination(bb_1)
+        indirectbr.add_destination(bb_2)
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            my_block:
+                indirectbr i8* blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2"]
+            """)
+
     def test_returns(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -713,11 +727,49 @@ class TestBuildInstructions(TestBase):
         builder.call(f, (a, b), 'res_f')
         builder.call(g, (b, a), 'res_g')
         builder.call(f, (a, b), 'res_f_fast', cconv='fastcc')
+        res_f_readonly = builder.call(f, (a, b), 'res_f_readonly')
+        res_f_readonly.attributes.add('readonly')
         self.check_block(block, """\
             my_block:
                 %"res_f" = call float (i32, i32)* @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...)* @"g"(i32 %".2", i32 %".1")
                 %"res_f_fast" = call fastcc float (i32, i32)* @"f"(i32 %".1", i32 %".2")
+                %"res_f_readonly" = call float (i32, i32)* @"f"(i32 %".1", i32 %".2") readonly
+            """)
+
+    def test_invoke(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        tp_f = ir.FunctionType(flt, (int32, int32))
+        f = ir.Function(builder.function.module, tp_f, 'f')
+        bb_normal = builder.function.append_basic_block(name='normal')
+        bb_unwind = builder.function.append_basic_block(name='unwind')
+        builder.invoke(f, (a, b), bb_normal, bb_unwind, 'res_f')
+        self.check_block(block, """\
+            my_block:
+                %"res_f" = invoke float (i32, i32)* @"f"(i32 %".1", i32 %".2")
+                    to label %"normal" unwind label %"unwind"
+            """)
+
+    def test_landingpad(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        tp_pers = ir.FunctionType(int8, (), var_arg=True)
+        pers = ir.Function(builder.function.module, tp_pers, '__gxx_personality_v0')
+        lp = builder.landingpad(ir.LiteralStructType([int32, int8.as_pointer()]), pers, 'lp')
+        int_typeinfo = ir.GlobalVariable(builder.function.module, int8.as_pointer(), "_ZTIi")
+        int_typeinfo.global_constant = True
+        lp.add_clause(ir.CatchClause(int_typeinfo))
+        lp.add_clause(ir.FilterClause(ir.Constant(ir.ArrayType(int_typeinfo.type, 1),
+                                                  [int_typeinfo])))
+        builder.resume(lp)
+        self.check_block(block, """\
+            my_block:
+                %"lp" = landingpad {i32, i8*} personality i8 (...)* @"__gxx_personality_v0"
+                    catch i8** @"_ZTIi"
+                    filter [1 x i8**] [i8** @"_ZTIi"]
+                resume {i32, i8*} %"lp"
             """)
 
     def test_assume(self):
