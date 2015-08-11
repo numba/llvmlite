@@ -7,11 +7,24 @@ import subprocess
 import sys
 import unittest
 import platform
+import locale
 
 from llvmlite import six
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from . import TestCase
+
+
+def no_de_locale():
+    cur = locale.setlocale(locale.LC_ALL)
+    try:
+        locale.setlocale(locale.LC_ALL, 'de_DE')
+    except locale.Error:
+        return True
+    else:
+        return False
+    finally:
+        locale.setlocale(locale.LC_ALL, cur)
 
 
 asm_sum = r"""
@@ -77,6 +90,17 @@ asm_sum_declare = r"""
     target triple = "{triple}"
 
     declare i32 @sum(i32 %.1, i32 %.2)
+    """
+
+
+asm_double_locale = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @foo() {{
+      %const = fadd double 0.0, 3.14
+      ret void
+    }}
     """
 
 class BaseTest(TestCase):
@@ -156,8 +180,24 @@ class TestMisc(BaseTest):
         subprocess.check_call([sys.executable, "-c", code])
 
     def test_version(self):
-        self.assertIn(llvm.llvm_version_info,
-                      [(3, 5, 0), (3, 5, 1)])
+        major, minor, patch = llvm.llvm_version_info
+        self.assertIn((major, minor), [(3, 5), (3, 6)])
+        self.assertIn(patch, range(10))
+
+    def test_check_jit_execution(self):
+        llvm.check_jit_execution()
+
+    @unittest.skipIf(no_de_locale(), "Locale not available")
+    def test_print_double_locale(self):
+        m = self.module(asm_double_locale)
+        expect = str(m)
+        # Change the locale so that comma is used as decimal-point
+        # to trigger the LLVM bug (llvmlite issue #80)
+        locale.setlocale(locale.LC_ALL, 'de_DE')
+        # The LLVM bug is trigged by print the module with double constant
+        got = str(m)
+        # Changing the locale should not affect the LLVM IR
+        self.assertEqual(expect, got)
 
 
 class TestModuleRef(BaseTest):
@@ -270,6 +310,7 @@ class TestModuleRef(BaseTest):
         dest.link_in(src2, preserve=True)
         self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.close()
+        self.assertEqual(sorted(f.name for f in src2.functions), ["mul"])
         src2.get_function("mul")
 
     def test_link_in_error(self):
@@ -320,7 +361,7 @@ class JITTestMixin(object):
         mod = self.module()
         with self.jit(mod) as ee:
             ee.finalize_object()
-            cfptr = ee.get_pointer_to_global(mod.get_function('sum'))
+            cfptr = ee.get_function_address("sum")
 
             cfunc = CFUNCTYPE(c_int, c_int, c_int)(cfptr)
             res = cfunc(2, -5)
@@ -453,26 +494,6 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         if target_machine is None:
             target_machine = self.target_machine()
         return llvm.create_mcjit_compiler(mod, target_machine)
-
-
-class TestLegacyJitWithTM(BaseTest, JITWithTMTestMixin):
-    """
-    Test JIT engines created with create_jit_compiler_with_tm().
-    """
-
-    def jit(self, mod, target_machine=None):
-        if target_machine is None:
-            target_machine = self.target_machine()
-        return llvm.create_jit_compiler_with_tm(mod, target_machine)
-
-
-class TestLegacyJit(BaseTest, JITTestMixin):
-    """
-    Test JIT engines created with create_jit_compiler().
-    """
-
-    def jit(self, mod):
-        return llvm.create_jit_compiler(mod)
 
 
 class TestValueRef(BaseTest):
@@ -768,7 +789,7 @@ class TestDylib(BaseTest):
         with self.assertRaises(RuntimeError):
             llvm.load_library_permanently("zzzasdkf;jasd;l")
 
-    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"], 
+    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"],
                          "test only works on Linux and Darwin")
     def test_libm(self):
         system = platform.system()

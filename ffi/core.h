@@ -16,7 +16,6 @@
     #define API_EXPORT(RTYPE) RTYPE
 #endif
 
-
 extern "C" {
 
 API_EXPORT(const char *)

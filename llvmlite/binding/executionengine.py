@@ -1,24 +1,14 @@
 from __future__ import print_function, absolute_import
-from ctypes import byref, POINTER, c_char_p, c_bool, c_uint, c_void_p
+
+from ctypes import (byref, POINTER, c_char_p, c_bool, c_uint, c_void_p, c_int,
+                    c_uint64)
+import warnings
+
 from . import ffi, targets
 
 
 # Just check these weren't optimized out of the DLL.
-ffi.lib.LLVMPY_LinkInJIT
 ffi.lib.LLVMPY_LinkInMCJIT
-
-
-def create_jit_compiler(module, opt=2):
-    """Create an ExecutionEngine for a module
-    """
-    engine = ffi.LLVMExecutionEngineRef()
-    with ffi.OutputString() as outerr:
-        if ffi.lib.LLVMPY_CreateJITCompiler(byref(engine), module, opt,
-                                            outerr):
-            raise RuntimeError(str(outerr))
-
-    return ExecutionEngine(engine, module=module)
-
 
 
 def create_mcjit_compiler(module, target_machine):
@@ -36,19 +26,18 @@ def create_mcjit_compiler(module, target_machine):
     return ExecutionEngine(engine, module=module)
 
 
-def create_jit_compiler_with_tm(module, target_machine):
+def check_jit_execution():
     """
-    Create a JIT ExecutionEngine from the given *module* and
-    *target_machine*.
+    Check the system allows execution of in-memory JITted functions.
+    An exception is raised otherwise.
     """
-    with ffi.OutputString() as outerr:
-        engine = ffi.lib.LLVMPY_CreateJITCompilerWithTM(
-            module, target_machine, outerr)
-        if not engine:
-            raise RuntimeError(str(outerr))
-
-    target_machine._owned = True
-    return ExecutionEngine(engine, module=module)
+    errno = ffi.lib.LLVMPY_TryAllocateExecutableMemory()
+    if errno != 0:
+        raise OSError(errno,
+                      "cannot allocate executable memory. "
+                      "This may be due to security restrictions on your "
+                      "system, such as SELinux or similar mechanisms."
+                      )
 
 
 class ExecutionEngine(ffi.ObjectRef):
@@ -66,15 +55,25 @@ class ExecutionEngine(ffi.ObjectRef):
         module._owned = True
         ffi.ObjectRef.__init__(self, ptr)
 
-    def get_pointer_to_global(self, gv):
-        # XXX getPointerToGlobal is deprecated for MCJIT,
-        # getGlobalValueAddress should be used instead.
+    def get_pointer_to_function(self, gv):
+        warnings.warn(".get_pointer_to_function() is deprecated.  Use "
+                      ".get_function_address() instead.", DeprecationWarning)
         ptr = ffi.lib.LLVMPY_GetPointerToGlobal(self, gv)
         if ptr is None:
             raise ValueError("Cannot find given global value %r" % (gv.name))
         return ptr
 
-    get_pointer_to_function = get_pointer_to_global
+    def get_function_address(self, name):
+        ptr = ffi.lib.LLVMPY_GetFunctionAddress(self, name.encode("ascii"))
+        if ptr is None:
+            raise ValueError("Cannot find given function %s" % name)
+        return ptr
+
+    def get_global_value_address(self, name):
+        ptr = ffi.lib.LLVMPY_GetGlobalValueAddress(self, name.encode("ascii"))
+        if ptr is None:
+            raise ValueError("Cannot find given global value %s" % name)
+        return ptr
 
     def add_global_mapping(self, gv, addr):
         # XXX unused?
@@ -129,21 +128,6 @@ class ExecutionEngine(ffi.ObjectRef):
 # FFI
 
 
-ffi.lib.LLVMPY_CreateJITCompiler.argtypes = [
-    POINTER(ffi.LLVMExecutionEngineRef),
-    ffi.LLVMModuleRef,
-    c_uint,
-    POINTER(c_char_p),
-]
-ffi.lib.LLVMPY_CreateJITCompiler.restype = c_bool
-
-ffi.lib.LLVMPY_CreateJITCompilerWithTM.argtypes = [
-    ffi.LLVMModuleRef,
-    ffi.LLVMTargetMachineRef,
-    POINTER(c_char_p),
-]
-ffi.lib.LLVMPY_CreateJITCompilerWithTM.restype = ffi.LLVMExecutionEngineRef
-
 ffi.lib.LLVMPY_CreateMCJITCompiler.argtypes = [
     ffi.LLVMModuleRef,
     ffi.LLVMTargetMachineRef,
@@ -177,3 +161,18 @@ ffi.lib.LLVMPY_GetExecutionEngineTargetData.argtypes = [
     ffi.LLVMExecutionEngineRef
 ]
 ffi.lib.LLVMPY_GetExecutionEngineTargetData.restype = ffi.LLVMTargetDataRef
+
+ffi.lib.LLVMPY_TryAllocateExecutableMemory.argtypes = []
+ffi.lib.LLVMPY_TryAllocateExecutableMemory.restype = c_int
+
+ffi.lib.LLVMPY_GetFunctionAddress.argtypes = [
+    ffi.LLVMExecutionEngineRef,
+    c_char_p
+]
+ffi.lib.LLVMPY_GetFunctionAddress.restype = c_uint64
+
+ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [
+    ffi.LLVMExecutionEngineRef,
+    c_char_p
+]
+ffi.lib.LLVMPY_GetGlobalValueAddress.restype = c_uint64

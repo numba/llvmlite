@@ -14,7 +14,7 @@ requirements:
   build:
     - python
       # On channel https://binstar.org/numba/
-    - llvmdev 3.5.1p1
+    - llvmdev 3.6*
     #- cmake          [win]
     - enum34         [py26 or py27 or py33]
   run:

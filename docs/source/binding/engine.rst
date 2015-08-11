@@ -6,14 +6,12 @@ Execution engine
 
 
 The execution engine is where actual code generation and execution happens.
-In the currently supported LLVM version (LLVM 3.5), there are two
-execution engines: MCJIT and the "old JIT".  Starting from LLVM 3.6,
-the "old JIT" is removed.  llvmlite exposes the same API for both, but
-they may have slightly different behaviour.
+The currently supported LLVM version (LLVM 3.6) exposes one execution engine,
+named MCJIT.
 
 
-Factory functions
------------------
+Functions
+---------
 
 .. function:: create_mcjit_compiler(module, target_machine)
 
@@ -22,11 +20,14 @@ Factory functions
    The *module* need not contain any code.
 
 
-.. function:: create_jit_compiler_with_tm(module, target_machine)
+.. function:: check_jit_execution()
 
-   Create a "old JIT"-powered engine from the given *module* and
-   *target_machine*.  A :class:`ExecutionEngine` instance is returned.
-   The *module* need not contain any code.
+   Ensure the system allows creation of executable memory ranges for
+   JIT-compiled code.  If some security mechanism (such as SELinux) prevents
+   it, an exception is raised.  Otherwise the function returns silently.
+
+   Calling this function early can help diagnose system configuration issues,
+   instead of letting JIT-compiled functions crash mysteriously.
 
 
 The ExecutionEngine class
@@ -48,15 +49,33 @@ The ExecutionEngine class
       Make sure all modules owned by the execution engine are fully processed
       and "usable" for execution.
 
-   .. method:: get_pointer_to_global(gv)
+   .. method:: get_pointer_to_function(gv)
 
-      Return the address of the global value *gv*, as an integer.  The
+      .. warning::
+         This function is deprecated.  User should use
+         :meth:`ExecutionEngine.get_function_address` and
+         :meth:`ExecutionEngine.get_global_value_address` instead
+
+      Return the address of the function value *gv*, as an integer.  The
       value should have been looked up on one of the modules owned by
       the execution engine.
 
       .. note::
          This method may implicitly generate code for the object being
          looked up.
+
+      .. note::
+         This function is formerly an alias to ``get_pointer_to_global()``,
+         which is now removed because it returns an invalid address in MCJIT
+         when given a non-function global value.
+
+   .. method:: get_function_address(name)
+
+      Return the address of the function named *name* as an integer.
+
+   .. method:: get_global_value_address(name)
+
+      Return the address of the global vlaue named *name* as an integer.
 
    .. method:: remove_module(module)
 

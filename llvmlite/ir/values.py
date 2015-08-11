@@ -11,7 +11,8 @@ from ..six import StringIO
 from . import types
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
-                frozenset(map(ord, string.digits)))
+                frozenset(map(ord, string.digits)) |
+                frozenset('._-$'))
 
 
 def _escape_string(text):
@@ -39,6 +40,7 @@ def _wrapname(x):
 
 class ConstOp(object):
     def __init__(self, typ, op):
+        assert isinstance(typ, types.Type)
         self.type = typ
         self.op = op
 
@@ -87,6 +89,7 @@ class Constant(ConstOpMixin):
     """
 
     def __init__(self, typ, constant):
+        assert isinstance(typ, types.Type)
         assert not isinstance(typ, types.VoidType)
         self.type = typ
         self.constant = constant
@@ -134,6 +137,7 @@ class Value(object):
 
     def __init__(self, parent, type, name):
         assert parent is not None
+        assert isinstance(type, types.Type)
         self.parent = parent
         self.type = type
         pscope = self.parent.scope
@@ -192,10 +196,10 @@ class MetaDataString(Value):
         self.string = string
 
     def descr(self, buf):
-        print("metadata !\"{0}\"".format(self.string), file=buf)
+        print(self.get_reference(), file=buf)
 
     def get_reference(self):
-        return "!\"{0}\"".format(self.string)
+        return '!"{0}"'.format(self.string)
 
     def __str__(self):
         return self.get_reference()
@@ -237,9 +241,15 @@ class MDValue(Value):
         return len(self.operands)
 
     def descr(self, buf):
-        operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
-                             for op in self.operands)
-        print("metadata !{{ {operands} }}".format(operands=operands), file=buf)
+        operands = []
+        for op in self.operands:
+            typestr = str(op.type)
+            if isinstance(op.type, types.MetaData):
+                operands.append(op.get_reference())
+            else:
+                operands.append("{0} {1}".format(op.type, op.get_reference()))
+        operands = ', '.join(operands)
+        print("!{{ {0} }}".format(operands), file=buf)
 
     def get_reference(self):
         return self.name_prefix + str(self.name)
@@ -268,6 +278,7 @@ class GlobalValue(Value, ConstOpMixin):
 
 class GlobalVariable(GlobalValue):
     def __init__(self, module, typ, name, addrspace=0):
+        assert isinstance(typ, types.Type)
         super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),
                                              name=name)
         self.gtype = typ
@@ -353,12 +364,14 @@ class Function(GlobalValue):
     nested_scope = True
 
     def __init__(self, module, ftype, name):
+        assert isinstance(ftype, types.Type)
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
         self.ftype = ftype
         self.blocks = []
         self.attributes = FunctionAttributes()
-        self.args = tuple([Argument(self, i, t)
-                           for i, t in enumerate(ftype.args)])
+        self.args = tuple([Argument(self, t)
+                           for t in ftype.args])
+        self.return_value = ReturnValue(self, ftype.return_type)
         self.parent.add_global(self)
         self.calling_convention = ''
 
@@ -391,14 +404,14 @@ class Function(GlobalValue):
         Describe the prototype ("head") of the function.
         """
         state = "define" if self.blocks else "declare"
-        retty = self.ftype.return_type
+        ret = self.return_value
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
         attrs = self.attributes
         vararg = ', ...' if self.ftype.var_arg else ''
         linkage = self.linkage
         cconv = self.calling_convention
-        prefix = " ".join(str(x) for x in [state, linkage, cconv, retty] if x)
+        prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
         prototype = "{prefix} {name}({args}{vararg}) {attrs}".format(**locals())
         print(prototype, file=buf)
 
@@ -427,15 +440,29 @@ class Function(GlobalValue):
 
 
 class ArgumentAttributes(AttributeSet):
-    _known = frozenset(['nocapture'])  # TODO
+    _known = frozenset(['byval', 'inalloca', 'inreg', 'nest', 'noalias',
+                        'nocapture', 'nonnull', 'returned', 'signext',
+                        'sret', 'zeroext'])
 
 
-class Argument(Value):
-    def __init__(self, parent, pos, typ, name=''):
-        super(Argument, self).__init__(parent, typ, name=name)
+class _BaseArgument(Value):
+    def __init__(self, parent, typ, name=''):
+        assert isinstance(typ, types.Type)
+        super(_BaseArgument, self).__init__(parent, typ, name=name)
         self.parent = parent
-        self.pos = pos
         self.attributes = ArgumentAttributes()
+
+    def __repr__(self):
+        return "<Argument %r (#%s) of type %s>" % (self.name, self.pos, self.type)
+
+    def add_attribute(self, attr):
+        self.attributes.add(attr)
+
+
+class Argument(_BaseArgument):
+    """
+    The specification of a function argument.
+    """
 
     def __str__(self):
         if self.attributes:
@@ -444,11 +471,17 @@ class Argument(Value):
         else:
             return "{0} {1}".format(self.type, self.get_reference())
 
-    def __repr__(self):
-        return "<Argument %r (#%s) of type %s>" % (self.name, self.pos, self.type)
 
-    def add_attribute(self, attr):
-        self.attributes.add(attr)
+class ReturnValue(_BaseArgument):
+    """
+    The specification of a function's return value.
+    """
+
+    def __str__(self):
+        if self.attributes:
+            return "{0} {1}".format(' '.join(self.attributes), self.type)
+        else:
+            return str(self.type)
 
 
 class Block(Value):

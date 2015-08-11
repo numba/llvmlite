@@ -1,3 +1,45 @@
+v0.7.0 (in development)
+-----------------------
+
+* Issue #76: Fix non-Windows builds when LLVM was built using CMake
+* Deprecate .get_pointer_to_global() and add .get_function_address() and
+  .get_global_value_address() in ExecutionEngine.
+
+v0.6.0
+------
+
+Enhancements:
+
+* Switch from LLVM 3.5 to LLVM 3.6.  The generated IR for metadata nodes
+  has slightly changed, and the "old JIT" engine has been remove (only
+  MCJIT is now available).
+* Add an optional flags argument to arithmetic instructions on IRBuilder.
+* Support attributes on the return type of a function.
+
+
+v0.5.1
+------
+
+Fixes:
+
+* Fix implicit termination of basic block in nested if_then()
+
+
+v0.5.0
+------
+
+New documentation hosted at http://llvmlite.pydata.org
+
+Enhancements:
+
+* Add code-generation helpers from numba.cgutils
+* Support for memset, memcpy, memmove intrinsics
+
+Fixes:
+
+* Fix string encoding problem when round-triping parse_assembly()
+
+
 v0.4.0
 ------
 

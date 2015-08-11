@@ -18,11 +18,34 @@ _CMP_MAP = {
 def _binop(opname, cls=instructions.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
-        def wrapped(self, lhs, rhs, name=''):
+        def wrapped(self, lhs, rhs, name='', flags=()):
             assert lhs.type == rhs.type, "Operands must be the same type"
-            instr = cls(self.block, lhs.type, opname, (lhs, rhs), name)
+            instr = cls(self.block, lhs.type, opname, (lhs, rhs), name, flags)
             self._insert(instr)
             return instr
+
+        return wrapped
+
+    return wrap
+
+
+def _binop_with_overflow(opname, cls=instructions.Instruction):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, lhs, rhs, name=''):
+            assert lhs.type == rhs.type, "Operands must be the same type"
+            ty = lhs.type
+            if not isinstance(ty, types.IntType):
+                raise TypeError("expected an integer type, got %s" % (ty,))
+            bool_ty = types.IntType(1)
+
+            mod = self.module
+            fnty = types.FunctionType(types.LiteralStructType([ty, bool_ty]),
+                                      [ty, ty])
+            fn = mod.declare_intrinsic("llvm.%s.with.overflow" % (opname,),
+                                       [ty], fnty)
+            ret = self.call(fn, [lhs, rhs], name=name)
+            return ret
 
         return wrapped
 
@@ -125,7 +148,7 @@ class IRBuilder(object):
     def _branch_helper(self, bbenter, bbexit):
         self.position_at_end(bbenter)
         yield bbexit
-        if bbenter.terminator is None:
+        if self.basic_block.terminator is None:
             self.branch(bbexit)
 
     @contextlib.contextmanager
@@ -181,9 +204,6 @@ class IRBuilder(object):
         yield then, otherwise
 
         self.position_at_end(bbend)
-
-    def constant(self, typ, val):
-        return values.Constant(typ, val)
 
     def _insert(self, instr):
         self._block.instructions.insert(self._anchor, instr)
@@ -269,6 +289,30 @@ class IRBuilder(object):
 
     @_binop('xor')
     def xor(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('sadd')
+    def sadd_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('smul')
+    def smul_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('ssub')
+    def ssub_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('uadd')
+    def uadd_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('umul')
+    def umul_with_overflow(self, lhs, rhs, name=''):
+        pass
+
+    @_binop_with_overflow('usub')
+    def usub_with_overflow(self, lhs, rhs, name=''):
         pass
 
     #
@@ -460,7 +504,7 @@ class IRBuilder(object):
 
     def gep(self, ptr, indices, inbounds=False, name=''):
         instr = instructions.GEPInstr(self.block, ptr, indices,
-                                inbounds=inbounds, name=name)
+                                      inbounds=inbounds, name=name)
         self._insert(instr)
         return instr
 
@@ -507,3 +551,8 @@ class IRBuilder(object):
                                     failordering, name=name)
         self._insert(inst)
         return inst
+
+    def assume(self, cond):
+        fn = self.module.declare_intrinsic("llvm.assume")
+        return self.call(fn, [cond])
+
