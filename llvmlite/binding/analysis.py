@@ -5,6 +5,7 @@ from .value import ValueRef
 
 __all__ = [
 'view_function_cfg',
+'view_function_cfg_only',
 ]
 
 
@@ -18,7 +19,6 @@ def view_function_cfg(fn):
     if not isinstance(fn, ValueRef):
         fn = parse_assembly(str(fn.module)).get_function(fn.name)
     fn.view_cfg()
-
 
 
 def view_function_cfg_only(fn):
