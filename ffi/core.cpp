@@ -1,5 +1,8 @@
 #include "core.h"
+
 #include "llvm-c/Support.h"
+
+#include <cstdio>
 
 extern "C" {
 
