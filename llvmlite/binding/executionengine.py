@@ -181,6 +181,7 @@ class ExecutionEngine(ffi.ObjectRef):
 
 class _ObjectCacheRef(ffi.ObjectRef):
     """
+    Internal: an ObjectCache instance for us within an ExecutionEngine.
     """
 
     def __init__(self, notify_func, getbuffer_func):
