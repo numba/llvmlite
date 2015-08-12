@@ -8,7 +8,6 @@
 #include "llvm/Support/Memory.h"
 
 #include <cstdio>
-#include <cctype>
 
 
 extern "C" {

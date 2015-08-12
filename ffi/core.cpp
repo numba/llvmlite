@@ -2,8 +2,6 @@
 
 #include "llvm-c/Support.h"
 
-#include <cstdio>
-
 extern "C" {
 
 API_EXPORT(const char *)

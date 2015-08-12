@@ -1,7 +1,7 @@
 from __future__ import print_function, absolute_import
 
 from ctypes import (byref, POINTER, c_char_p, c_bool, c_uint, c_void_p,
-                    c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast, PYFUNCTYPE)
+                    c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast)
 import warnings
 
 from . import ffi, targets
@@ -249,9 +249,9 @@ ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [
 ffi.lib.LLVMPY_GetGlobalValueAddress.restype = c_uint64
 
 
-_ObjectCacheNotifyFunc = PYFUNCTYPE(None, ffi.LLVMModuleRef, c_void_p, c_size_t)
-_ObjectCacheGetBufferFunc = PYFUNCTYPE(None, ffi.LLVMModuleRef,
-                                       POINTER(c_void_p), POINTER(c_size_t))
+_ObjectCacheNotifyFunc = CFUNCTYPE(None, ffi.LLVMModuleRef, c_void_p, c_size_t)
+_ObjectCacheGetBufferFunc = CFUNCTYPE(None, ffi.LLVMModuleRef,
+                                      POINTER(c_void_p), POINTER(c_size_t))
 
 ffi.lib.LLVMPY_CreateObjectCache.argtypes = [_ObjectCacheNotifyFunc,
                                              _ObjectCacheGetBufferFunc]
