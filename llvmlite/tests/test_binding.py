@@ -510,7 +510,6 @@ class JITTestMixin(object):
         self.assertEqual(len(notifies), 0)
         self.assertEqual(len(getbuffers), 0)
         cfunc = self.get_sum(ee)
-        self.assertEqual(cfunc(2, -5), -3)
         self.assertEqual(len(notifies), 1)
         self.assertEqual(len(getbuffers), 1)
         self.assertIs(getbuffers[0], mod)
@@ -533,7 +532,7 @@ class JITTestMixin(object):
         self.assertEqual(len(notifies), 0)
         self.assertEqual(len(getbuffers), 0)
         cfunc = self.get_sum(ee)
-        cfunc(2, -5)
+        self.assertEqual(cfunc(2, -5), -3)
         self.assertEqual(len(notifies), 0)
         self.assertEqual(len(getbuffers), 1)
 

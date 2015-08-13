@@ -133,7 +133,7 @@ class ExecutionEngine(ffi.ObjectRef):
 
         def raw_notify(module_ptr, buf_ptr, buf_len):
             """
-            Low-level notify function
+            Low-level notify hook.
             """
             if notify_func is None:
                 return
@@ -148,7 +148,7 @@ class ExecutionEngine(ffi.ObjectRef):
 
         def raw_getbuffer(module_ptr, buf_ptr_ptr, buf_len_ptr):
             """
-            Low-level getbuffer function
+            Low-level getbuffer hook.
             """
             if getbuffer_func is None:
                 return
@@ -181,11 +181,11 @@ class ExecutionEngine(ffi.ObjectRef):
 
 class _ObjectCacheRef(ffi.ObjectRef):
     """
-    Internal: an ObjectCache instance for us within an ExecutionEngine.
+    Internal: an ObjectCache instance for use within an ExecutionEngine.
     """
 
     def __init__(self, notify_func, getbuffer_func):
-        # Keep ownership of the ctypes C wrapper
+        # Keep ownership of the ctypes C wrappers
         self._notify_c_hook = _ObjectCacheNotifyFunc(notify_func)
         self._getbuffer_c_hook = _ObjectCacheGetBufferFunc(getbuffer_func)
         ptr = ffi.lib.LLVMPY_CreateObjectCache(self._notify_c_hook,
