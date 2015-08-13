@@ -226,6 +226,13 @@ class TestModuleRef(BaseTest):
             with mod:
                 pass
 
+    def test_name(self):
+        mod = self.module()
+        mod.name = "foo"
+        self.assertEqual(mod.name, "foo")
+        mod.name = "bar"
+        self.assertEqual(mod.name, "bar")
+
     def test_data_layout(self):
         mod = self.module()
         s = mod.data_layout

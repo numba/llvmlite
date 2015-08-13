@@ -92,9 +92,21 @@ LLVMPY_PrintModuleToString(LLVMModuleRef M,
     free(old_locale);
 }
 
+API_EXPORT(const char *)
+LLVMPY_GetModuleName(LLVMModuleRef M)
+{
+    return llvm::unwrap(M)->getModuleIdentifier().c_str();
+}
+
+API_EXPORT(void)
+LLVMPY_SetModuleName(LLVMModuleRef M, const char *Name)
+{
+    llvm::unwrap(M)->setModuleIdentifier(Name);
+}
+
 API_EXPORT(LLVMValueRef)
 LLVMPY_GetNamedFunction(LLVMModuleRef M,
-                     const char *Name)
+                        const char *Name)
 {
     return LLVMGetNamedFunction(M, Name);
 }
