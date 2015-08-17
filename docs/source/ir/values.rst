@@ -250,12 +250,12 @@ use the helper methods on the :class:`IRBuilder` class.
 
 .. class:: SwitchInstr
 
-   A switch statement.  Switch statements have the following method:
+   A switch instruction.  Switch instructions have the following method:
 
    .. method:: add_case(val, block)
 
-      Add a case to the switch statements.  *val* should be a :class:`Constant`
-      or a Python value compatible with the switch statement's operand type.
+      Add a case to the switch instruction.  *val* should be a :class:`Constant`
+      or a Python value compatible with the switch instruction's operand type.
       *block* is a :class:`Block` to jump to if, and only if, *val* and
       the switch operand compare equal.
 
@@ -268,4 +268,3 @@ use the helper methods on the :class:`IRBuilder` class.
 
       Add an incoming edge.  Whenever transfer is controlled from *block*
       (a :class:`Block`), the phi instruction takes the given *value*.
-
