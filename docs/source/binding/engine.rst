@@ -96,7 +96,7 @@ The ExecutionEngine class
       *getbuffer_func*, if given, is called before the engine starts
       compiling a module.  It is passed one argument, *module*, a
       :class:`ModuleRef` instance of the module being compiled.
-      The function can return :const:`None`, in which case the module
+      The function can return ``None``, in which case the module
       will be compiled normally.  Or it can return a bytes object of
       native code for the module, which will bypass compilation entirely.
 
