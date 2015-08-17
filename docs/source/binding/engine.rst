@@ -75,13 +75,30 @@ The ExecutionEngine class
 
    .. method:: get_global_value_address(name)
 
-      Return the address of the global vlaue named *name* as an integer.
+      Return the address of the global value named *name* as an integer.
 
    .. method:: remove_module(module)
 
       Remove the *module* (a :class:`ModuleRef` instance) from the modules
       owned by the execution engine.  This allows releasing the resources
       owned by the module without destroying the execution engine.
+
+   .. method:: set_object_cache(notify_func=None, getbuffer_func=None)
+
+      Set the object cache callbacks for this engine.
+
+      *notify_func*, if given, is called whenever the engine has finished
+      compiling a module.  It is passed two arguments ``(module, buffer)``.
+      The first argument *module* is a :class:`ModuleRef` instance.
+      The second argument *buffer* is a bytes object of the code generated
+      for the module.  The return value is ignored.
+
+      *getbuffer_func*, if given, is called before the engine starts
+      compiling a module.  It is passed one argument, *module*, a
+      :class:`ModuleRef` instance of the module being compiled.
+      The function can return ``None``, in which case the module
+      will be compiled normally.  Or it can return a bytes object of
+      native code for the module, which will bypass compilation entirely.
 
    .. attribute:: target_data
 

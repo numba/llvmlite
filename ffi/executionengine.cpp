@@ -1,9 +1,14 @@
 #include "core.h"
+
 #include "llvm-c/ExecutionEngine.h"
+
 #include "llvm/IR/Module.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/ObjectCache.h"
 #include "llvm/Support/Memory.h"
+
 #include <cstdio>
+
 
 extern "C" {
 
@@ -20,7 +25,7 @@ LLVMPY_DisposeExecutionEngine(LLVMExecutionEngineRef EE)
 
 API_EXPORT(void)
 LLVMPY_AddModule(LLVMExecutionEngineRef EE,
-              LLVMModuleRef M)
+                 LLVMModuleRef M)
 {
     LLVMAddModule(EE, M);
 }
@@ -136,5 +141,79 @@ LLVMPY_TryAllocateExecutableMemory(void)
     }
     return ec.value();
 }
+
+
+//
+// Object cache
+//
+
+typedef void (*ObjectCacheNotifyFunc)(LLVMModuleRef, const char *, size_t);
+typedef void (*ObjectCacheGetObjectFunc)(LLVMModuleRef, const char **, size_t *);
+
+
+class LLVMPYObjectCache : public llvm::ObjectCache {
+public:
+    LLVMPYObjectCache(ObjectCacheNotifyFunc notify_func,
+                      ObjectCacheGetObjectFunc getobject_func)
+    : notify_func(notify_func), getobject_func(getobject_func)
+    {
+    }
+
+    virtual void notifyObjectCompiled(const llvm::Module *M,
+                                      llvm::MemoryBufferRef MBR)
+    {
+        if (notify_func)
+            notify_func(llvm::wrap(M), MBR.getBufferStart(), MBR.getBufferSize());
+    }
+
+    // MCJIT will call this function before compiling any module
+    // MCJIT takes ownership of both the MemoryBuffer object and the memory
+    // to which it refers.
+    virtual std::unique_ptr<llvm::MemoryBuffer> getObject(const llvm::Module* M)
+    {
+        const char *buf_ptr = nullptr;
+        size_t buf_len = 0;
+        std::unique_ptr<llvm::MemoryBuffer> res = nullptr;
+
+        if (getobject_func) {
+            getobject_func(llvm::wrap(M), &buf_ptr, &buf_len);
+        }
+        if (buf_ptr && buf_len > 0) {
+            // Assume the returned string was allocated
+            // with LLVMPY_CreateByteString
+            res = llvm::MemoryBuffer::getMemBufferCopy(
+                llvm::StringRef(buf_ptr, buf_len));
+            LLVMPY_DisposeString(buf_ptr);
+        }
+        return res;
+    }
+
+private:
+    ObjectCacheNotifyFunc notify_func;
+    ObjectCacheGetObjectFunc getobject_func;
+};
+
+typedef LLVMPYObjectCache *LLVMPYObjectCacheRef;
+
+
+API_EXPORT(LLVMPYObjectCacheRef)
+LLVMPY_CreateObjectCache(ObjectCacheNotifyFunc notify_func,
+                         ObjectCacheGetObjectFunc getobject_func)
+{
+    return new LLVMPYObjectCache(notify_func, getobject_func);
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeObjectCache(LLVMPYObjectCacheRef C)
+{
+    delete C;
+}
+
+API_EXPORT(void)
+LLVMPY_SetObjectCache(LLVMExecutionEngineRef EE, LLVMPYObjectCacheRef C)
+{
+    llvm::unwrap(EE)->setObjectCache(C);
+}
+
 
 } // end extern "C"

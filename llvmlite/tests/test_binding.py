@@ -226,6 +226,13 @@ class TestModuleRef(BaseTest):
             with mod:
                 pass
 
+    def test_name(self):
+        mod = self.module()
+        mod.name = "foo"
+        self.assertEqual(mod.name, "foo")
+        mod.name = "bar"
+        self.assertEqual(mod.name, "bar")
+
     def test_data_layout(self):
         mod = self.module()
         s = mod.data_layout
@@ -357,13 +364,16 @@ class JITTestMixin(object):
     Mixin for ExecutionEngine tests.
     """
 
+    def get_sum(self, ee, func_name="sum"):
+        ee.finalize_object()
+        cfptr = ee.get_function_address(func_name)
+        self.assertTrue(cfptr)
+        return CFUNCTYPE(c_int, c_int, c_int)(cfptr)
+
     def test_run_code(self):
         mod = self.module()
         with self.jit(mod) as ee:
-            ee.finalize_object()
-            cfptr = ee.get_function_address("sum")
-
-            cfunc = CFUNCTYPE(c_int, c_int, c_int)(cfptr)
+            cfunc = self.get_sum(ee)
             res = cfunc(2, -5)
             self.assertEqual(-3, res)
 
@@ -461,6 +471,77 @@ class JITTestMixin(object):
 
         self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
         self.assertIn(td.get_pointee_abi_alignment(gv_struct.type), (4, 8))
+
+    def test_object_cache_notify(self):
+        notifies = []
+
+        def notify(mod, buf):
+            notifies.append((mod, buf))
+
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.set_object_cache(notify)
+
+        self.assertEqual(len(notifies), 0)
+        cfunc = self.get_sum(ee)
+        cfunc(2, -5)
+        self.assertEqual(len(notifies), 1)
+        # The right module object was found
+        self.assertIs(notifies[0][0], mod)
+        self.assertIsInstance(notifies[0][1], bytes)
+
+        notifies[:] = []
+        mod2 = self.module(asm_mul)
+        ee.add_module(mod2)
+        cfunc = self.get_sum(ee, "mul")
+        self.assertEqual(len(notifies), 1)
+        # The right module object was found
+        self.assertIs(notifies[0][0], mod2)
+        self.assertIsInstance(notifies[0][1], bytes)
+
+    def test_object_cache_getbuffer(self):
+        notifies = []
+        getbuffers = []
+
+        def notify(mod, buf):
+            notifies.append((mod, buf))
+
+        def getbuffer(mod):
+            getbuffers.append(mod)
+
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.set_object_cache(notify, getbuffer)
+
+        # First return None from getbuffer(): the object is compiled normally
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 0)
+        cfunc = self.get_sum(ee)
+        self.assertEqual(len(notifies), 1)
+        self.assertEqual(len(getbuffers), 1)
+        self.assertIs(getbuffers[0], mod)
+        sum_buffer = notifies[0][1]
+
+        # Recreate a new EE, and use getbuffer() to return the previously
+        # compiled object.
+
+        def getbuffer_successful(mod):
+            getbuffers.append(mod)
+            return sum_buffer
+
+        notifies[:] = []
+        getbuffers[:] = []
+        # Use another source module to make sure it is ignored
+        mod = self.module(asm_mul)
+        ee = self.jit(mod)
+        ee.set_object_cache(notify, getbuffer_successful)
+
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 0)
+        cfunc = self.get_sum(ee)
+        self.assertEqual(cfunc(2, -5), -3)
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 1)
 
 
 class JITWithTMTestMixin(JITTestMixin):
