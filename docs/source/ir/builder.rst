@@ -19,6 +19,10 @@ pointer inside the block's list of instructions.  When adding a new
 instruction, it is inserted at that point and the pointer is then advanced
 after the new instruction.
 
+A :class:`IRBuilder` also maintains a reference to metadata describing
+the current source location, which will be attached to all inserted
+instructions.
+
 Instantiation
 -------------
 
@@ -45,6 +49,10 @@ Properties
 
    The module the builder's function is defined in.
 
+.. attribute:: IRBuilder.debug_metadata
+
+   If not `None`, the metadata that will be attached to any inserted
+   instructions as `!dbg`, unless the instruction already has `!dbg` set.
 
 Utilities
 ---------
