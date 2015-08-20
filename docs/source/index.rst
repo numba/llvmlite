@@ -12,8 +12,7 @@ llvmlite -- a light-weight Python binding to LLVM
    binding/index.rst
    developer/index.rst
    glossary.rst
-
-..    release-notes.rst
+   release-notes.rst
 
 
 Indices
