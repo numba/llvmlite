@@ -484,6 +484,13 @@ class IRBuilder(object):
         self._set_terminator(br)
         return br
 
+    def branch_indirect(self, addr):
+        """Branch indirectly
+        """
+        br = instructions.IndirectBranch(self.block, "indirectbr", addr)
+        self._set_terminator(br)
+        return br
+
     def ret_void(self):
         return self._set_terminator(
             instructions.Ret(self.block, "ret void"))
@@ -492,12 +499,25 @@ class IRBuilder(object):
         return self._set_terminator(
             instructions.Ret(self.block, "ret", value))
 
+    def resume(self, landingpad):
+        """Resume an in-flight exception
+        """
+        br = instructions.Branch(self.block, "resume", [landingpad])
+        self._set_terminator(br)
+        return br
+
     # Call APIs
 
     def call(self, fn, args, name='', cconv=None, tail=False):
         inst = instructions.CallInstr(self.block, fn, args, name=name,
                                       cconv=cconv, tail=tail)
         self._insert(inst)
+        return inst
+
+    def invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None, tail=False):
+        inst = instructions.InvokeInstr(self.block, fn, args, normal_to, unwind_to, name=name,
+                                        cconv=cconv)
+        self._set_terminator(inst)
         return inst
 
     # GEP APIs
@@ -536,6 +556,7 @@ class IRBuilder(object):
     def unreachable(self):
         inst = instructions.Unreachable(self.block)
         self._set_terminator(inst)
+        return inst
 
     def atomic_rmw(self, op, ptr, val, ordering, name=''):
         inst = instructions.AtomicRMW(self.block, op, ptr, val, ordering, name=name)
@@ -549,6 +570,11 @@ class IRBuilder(object):
         failordering = ordering if failordering is None else failordering
         inst = instructions.CmpXchg(self.block, ptr, cmp, val, ordering,
                                     failordering, name=name)
+        self._insert(inst)
+        return inst
+
+    def landingpad(self, typ, personality, name='', cleanup=False):
+        inst = instructions.LandingPadInstr(self.block, typ, personality, name, cleanup)
         self._insert(inst)
         return inst
 

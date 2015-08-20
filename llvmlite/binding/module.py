@@ -4,7 +4,7 @@ from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
 
 from . import ffi
 from .linker import link_modules
-from .common import _encode_string
+from .common import _decode_string, _encode_string
 from .value import ValueRef
 
 
@@ -93,6 +93,17 @@ class ModuleRef(ffi.ObjectRef):
         with ffi.OutputString() as outmsg:
             if ffi.lib.LLVMPY_VerifyModule(self, outmsg):
                 raise RuntimeError(str(outmsg))
+
+    @property
+    def name(self):
+        """
+        The module's identifier.
+        """
+        return _decode_string(ffi.lib.LLVMPY_GetModuleName(self))
+
+    @name.setter
+    def name(self, value):
+        ffi.lib.LLVMPY_SetModuleName(self, _encode_string(value))
 
     @property
     def data_layout(self):
@@ -253,3 +264,8 @@ ffi.lib.LLVMPY_FunctionsIterNext.restype = ffi.LLVMValueRef
 
 ffi.lib.LLVMPY_CloneModule.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_CloneModule.restype = ffi.LLVMModuleRef
+
+ffi.lib.LLVMPY_GetModuleName.argtypes = [ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_GetModuleName.restype = c_char_p
+
+ffi.lib.LLVMPY_SetModuleName.argtypes = [ffi.LLVMModuleRef, c_char_p]

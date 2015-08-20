@@ -444,6 +444,68 @@ These instructions are all :term:`terminators <terminator>`.
    Add non-default targets using the :meth:`~SwitchInstr.add_case`
    method on the return value.
 
+.. method:: IRBuilder.indirectbr(address)
+
+   Jump to basic block with address *address* (a value of type
+   `IntType(8).as_pointer()`). A block address can be obtained
+   using the :class:`BlockAddress` constant.
+
+   Add all possible jump destinations using
+   the :meth:`~IndirectBranch.add_destination` method on the return
+   value.
+
+
+Exception handling
+''''''''''''''''''
+
+.. method:: IRBuilder.invoke(self, fn, args, normal_to, unwind_to,
+                             name='', cconv=None, tail=False)
+
+   Call function *fn* with arguments *args* (a sequence of values).
+   *cconc* is the optional calling convention.  *tail*, if true, is
+   a hint for the optimizer to perform tail-call optimization.
+
+   If the function *fn* returns normally, control is transferred to
+   *normal_to*. Otherwise, it is transferred to *unwind_to*,
+   the first non-phi instruction of which must be :class:`LandingPad`.
+
+.. method:: IRBuilder.landingpad(typ, personality, name='', cleanup=False)
+
+   Describe which exceptions this basic block can handle.
+
+   *typ* specifies the return type of the landing pad. It is a structure
+   with two pointer-sized fields.
+   *personality* specifies an exception personality function.
+   *cleanup* specifies whether control should be always transferred
+   to this landing pad, even when no matching exception is caught.
+
+   Add landing pad clauses using the :meth:`~LandingPad.add_clause`
+   method on the return value.
+
+   There are two kinds of landing pad clauses:
+
+      * A :class:`CatchClause`, which specifies a typeinfo for
+        a single exception to be caught. The typeinfo is a value
+        of type `IntType(8).as_pointer().as_pointer()`;
+
+      * A :class:`FilterClause`, which specifies an array of
+        typeinfos.
+
+   Every landing pad must either contain at least one clause,
+   or be marked for cleanup.
+
+   The semantics of a landing pad are entirely determined by the personality
+   function. See `Exception handling in LLVM <http://llvm.org/docs/ExceptionHandling.html>`_
+   for details on the way LLVM handles landing pads in the optimizer, and
+   `Itanium exception handling ABI <https://mentorembedded.github.io/cxx-abi/abi-eh.html>`_
+   for details on the implementation of personality functions.
+
+.. method:: IRBuilder.resume(landingpad)
+
+   Resume an exception caught by landing pad *landingpad*. Used to indicate
+   that the landing pad did not catch the exception after all (perhaps
+   because it only performed cleanup).
+
 
 Miscellaneous
 '''''''''''''

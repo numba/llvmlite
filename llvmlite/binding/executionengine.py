@@ -1,7 +1,7 @@
 from __future__ import print_function, absolute_import
 
-from ctypes import (byref, POINTER, c_char_p, c_bool, c_uint, c_void_p, c_int,
-                    c_uint64)
+from ctypes import (byref, POINTER, c_char_p, c_bool, c_uint, c_void_p,
+                    c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast)
 import warnings
 
 from . import ffi, targets
@@ -45,6 +45,7 @@ class ExecutionEngine(ffi.ObjectRef):
     Deleting the engine will remove all associated modules.
     It is an error to delete the associated modules.
     """
+    _object_cache = None
 
     def __init__(self, ptr, module):
         """
@@ -114,6 +115,60 @@ class ExecutionEngine(ffi.ObjectRef):
         self._td._owned = True
         return self._td
 
+    def _find_module_ptr(self, module_ptr):
+        """
+        Find the ModuleRef corresponding to the given pointer.
+        """
+        ptr = cast(module_ptr, c_void_p).value
+        for module in self._modules:
+            if cast(module._ptr, c_void_p).value == ptr:
+                return module
+        return None
+
+    def set_object_cache(self, notify_func=None, getbuffer_func=None):
+        """
+        Set the object cache "notifyObjectCompiled" and "getBuffer"
+        callbacks to the given Python functions.
+        """
+
+        def raw_notify(module_ptr, buf_ptr, buf_len):
+            """
+            Low-level notify hook.
+            """
+            if notify_func is None:
+                return
+            buf = string_at(buf_ptr, buf_len)
+            module = self._find_module_ptr(module_ptr)
+            if module is None:
+                # The LLVM EE should only give notifications for modules
+                # known by us.
+                raise RuntimeError("object compilation notification "
+                                   "for unknown module %s" % (module_ptr,))
+            notify_func(module, buf)
+
+        def raw_getbuffer(module_ptr, buf_ptr_ptr, buf_len_ptr):
+            """
+            Low-level getbuffer hook.
+            """
+            if getbuffer_func is None:
+                return
+            module = self._find_module_ptr(module_ptr)
+            if module is None:
+                # The LLVM EE should only give notifications for modules
+                # known by us.
+                raise RuntimeError("object compilation notification "
+                                   "for unknown module %s" % (module_ptr,))
+
+            buf = getbuffer_func(module)
+            if buf is not None:
+                # Create a copy, which will be freed by the caller
+                buf_ptr_ptr[0] = ffi.lib.LLVMPY_CreateByteString(buf, len(buf))
+                buf_len_ptr[0] = len(buf)
+
+        # Lifetime of the object cache is managed by us.
+        self._object_cache = _ObjectCacheRef(raw_notify, raw_getbuffer)
+        ffi.lib.LLVMPY_SetObjectCache(self, self._object_cache)
+
     def _dispose(self):
         # The modules will be cleaned up by the EE
         for mod in self._modules:
@@ -122,6 +177,23 @@ class ExecutionEngine(ffi.ObjectRef):
             self._td.detach()
         self._modules.clear()
         self._capi.LLVMPY_DisposeExecutionEngine(self)
+
+
+class _ObjectCacheRef(ffi.ObjectRef):
+    """
+    Internal: an ObjectCache instance for use within an ExecutionEngine.
+    """
+
+    def __init__(self, notify_func, getbuffer_func):
+        # Keep ownership of the ctypes C wrappers
+        self._notify_c_hook = _ObjectCacheNotifyFunc(notify_func)
+        self._getbuffer_c_hook = _ObjectCacheGetBufferFunc(getbuffer_func)
+        ptr = ffi.lib.LLVMPY_CreateObjectCache(self._notify_c_hook,
+                                               self._getbuffer_c_hook)
+        ffi.ObjectRef.__init__(self, ptr)
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeObjectCache(self)
 
 
 # ============================================================================
@@ -176,3 +248,20 @@ ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [
     c_char_p
 ]
 ffi.lib.LLVMPY_GetGlobalValueAddress.restype = c_uint64
+
+
+_ObjectCacheNotifyFunc = CFUNCTYPE(None, ffi.LLVMModuleRef, c_void_p, c_size_t)
+_ObjectCacheGetBufferFunc = CFUNCTYPE(None, ffi.LLVMModuleRef,
+                                      POINTER(c_void_p), POINTER(c_size_t))
+
+ffi.lib.LLVMPY_CreateObjectCache.argtypes = [_ObjectCacheNotifyFunc,
+                                             _ObjectCacheGetBufferFunc]
+ffi.lib.LLVMPY_CreateObjectCache.restype = ffi.LLVMObjectCacheRef
+
+ffi.lib.LLVMPY_DisposeObjectCache.argtypes = [ffi.LLVMObjectCacheRef]
+
+ffi.lib.LLVMPY_SetObjectCache.argtypes = [ffi.LLVMExecutionEngineRef,
+                                          ffi.LLVMObjectCacheRef]
+
+ffi.lib.LLVMPY_CreateByteString.restype = c_void_p
+ffi.lib.LLVMPY_CreateByteString.argtypes = [c_void_p, c_size_t]

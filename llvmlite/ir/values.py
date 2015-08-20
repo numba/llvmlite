@@ -283,6 +283,7 @@ class GlobalVariable(GlobalValue):
                                              name=name)
         self.gtype = typ
         self.initializer = None
+        self.unnamed_addr = False
         self.global_constant = False
         self.addrspace = addrspace
         self.parent.add_global(self)
@@ -304,9 +305,15 @@ class GlobalVariable(GlobalValue):
         else:
             addrspace = ''
 
-        print("{linkage} {addrspace} {kind} {type} ".format(
-            addrspace=addrspace,
+        if self.unnamed_addr:
+            unnamed_addr = 'unnamed_addr'
+        else:
+            unnamed_addr = ''
+
+        print("{linkage} {unnamed_addr} {addrspace} {kind} {type} ".format(
             linkage=linkage,
+            unnamed_addr=unnamed_addr,
+            addrspace=addrspace,
             kind=kind,
             type=self.gtype),
               file=buf,
@@ -408,7 +415,10 @@ class Function(GlobalValue):
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
         attrs = self.attributes
-        vararg = ', ...' if self.ftype.var_arg else ''
+        if any(self.args):
+            vararg = ', ...' if self.ftype.var_arg else ''
+        else:
+            vararg = '...' if self.ftype.var_arg else ''
         linkage = self.linkage
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
@@ -486,7 +496,7 @@ class ReturnValue(_BaseArgument):
 
 class Block(Value):
     """
-    A LLVM IR building block. A building block is a sequence of
+    A LLVM IR basic block. A basic block is a sequence of
     instructions whose execution always goes from start to end.  That
     is, a control flow instruction (branch) can only appear as the
     last instruction, and incoming branches can only jump to the first
@@ -523,3 +533,24 @@ class Block(Value):
         for bb in self.parent.basic_blocks:
             for instr in bb.instructions:
                 instr.replace_usage(old, new)
+
+
+class BlockAddress:
+    """
+    The address of a basic block.
+    """
+
+    def __init__(self, function, basic_block):
+        assert isinstance(function, Function)
+        assert isinstance(basic_block, Block)
+        self.type = types.IntType(8).as_pointer()
+        self.function = function
+        self.basic_block = basic_block
+
+    def __str__(self):
+        return '{0} {1}'.format(self.type, self.get_reference())
+
+    def get_reference(self):
+        return "blockaddress({0}, {1})".format(
+                    self.function.get_reference(),
+                    self.basic_block.get_reference())
