@@ -1,6 +1,10 @@
+
 v0.7.0 (in development)
 -----------------------
 
+* PR #88: Provide hooks into the MCJIT object cache
+* PR #87: Add indirect branches and exception handling APIs to ir.Builder.
+* PR #86: Add ir.Builder APIs for integer arithmetic with overflow
 * Issue #76: Fix non-Windows builds when LLVM was built using CMake
 * Deprecate .get_pointer_to_global() and add .get_function_address() and
   .get_global_value_address() in ExecutionEngine.
