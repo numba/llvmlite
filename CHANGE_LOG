@@ -1,6 +1,6 @@
 
-v0.7.0 (in development)
------------------------
+v0.7.0
+------
 
 * PR #88: Provide hooks into the MCJIT object cache
 * PR #87: Add indirect branches and exception handling APIs to ir.Builder.
