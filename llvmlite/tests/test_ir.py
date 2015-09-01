@@ -1026,6 +1026,16 @@ class TestBuilderMisc(TestBase):
             three:
             """)
 
+    def test_metadata(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        builder.debug_metadata = builder.module.add_metadata([])
+        a = builder.alloca(ir.PointerType(int32), name='c')
+        self.check_block(block, """\
+            my_block:
+                %"c" = alloca i32*, !dbg !0
+            """)
+
 
 class TestTypes(TestBase):
 
