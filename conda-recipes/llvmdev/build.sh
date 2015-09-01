@@ -27,6 +27,5 @@ else
 
 fi
 
-
-make -j4 libs-only
-make install-libs
+make -j4
+make install

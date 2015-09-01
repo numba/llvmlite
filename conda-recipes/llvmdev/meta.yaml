@@ -11,17 +11,18 @@ source:
     - ../llvm-elf-relocation.patch
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
-    - system           [linux and not armv6]
+    - system           [linux and not armv7l]
   run:
-    - system           [linux and not armv6]
+    - system           [linux and not armv7l]
 
 test:
   commands:
-    - llvm-config --libs   [linux and not armv6]
+    - llvm-config --libs   [linux]
+    - llc -version         [linux]
 
 about:
   home: http://llvm.org/
