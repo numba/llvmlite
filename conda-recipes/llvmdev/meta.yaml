@@ -1,17 +1,17 @@
 package:
   name: llvmdev
-  version: "3.6.1"
+  version: "3.6.2"
 
 source:
-  fn: llvm-3.6.1.src.tar.xz
-  url: http://llvm.org/releases/3.6.1/llvm-3.6.1.src.tar.xz
-  sha1: 01ecab99adc9030ee34e9a2e19e65dfe64e1affe
+  fn: llvm-3.6.2.src.tar.xz
+  url: http://llvm.org/releases/3.6.2/llvm-3.6.2.src.tar.xz
+  sha1: 7a00257eb2bc9431e4c77c3a36b033072c54bc7e
   patches:
     # From http://reviews.llvm.org/D6052
     - ../llvm-elf-relocation.patch
 
 build:
-  number: 2
+  number: 1
 
 requirements:
   build:

@@ -11,5 +11,5 @@ fi
 
 export PYTHONNOUSERSITE=1
 
-python setup.py build
+python setup.py build --force
 python setup.py install
