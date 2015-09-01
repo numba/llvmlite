@@ -443,19 +443,21 @@ class IRBuilder(object):
         self._insert(al)
         return al
 
-    def load(self, ptr, name=''):
+    def load(self, ptr, name='', align=None):
         if not isinstance(ptr.type, types.PointerType):
             raise TypeError("cannot load from value of type %s (%r): not a pointer"
                             % (ptr.type, str(ptr)))
         ld = instructions.LoadInstr(self.block, ptr, name)
+        ld.align = align
         self._insert(ld)
         return ld
 
-    def store(self, value, ptr):
+    def store(self, value, ptr, align=None):
         if not isinstance(ptr.type, types.PointerType):
             raise TypeError("cannot store to value of type %s (%r): not a pointer"
                             % (ptr.type, str(ptr)))
         st = instructions.StoreInstr(self.block, value, ptr)
+        st.align = align
         self._insert(st)
         return st
 

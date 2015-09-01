@@ -492,6 +492,12 @@ class TestBuildInstructions(TestBase):
         self.assertEqual(f.type, ir.VoidType())
         g = builder.load(c, 'g')
         self.assertEqual(g.type, int32)
+        # With alignment
+        h = builder.store(b, c, align=1)
+        self.assertEqual(h.type, ir.VoidType())
+        i = builder.load(c, 'i', align=1)
+        self.assertEqual(i.type, int32)
+        # Not pointer types
         with self.assertRaises(TypeError):
             builder.store(b, a)
         with self.assertRaises(TypeError):
@@ -503,6 +509,8 @@ class TestBuildInstructions(TestBase):
                 %"e" = alloca i32, i32 %".1"
                 store i32 %".2", i32* %"c"
                 %"g" = load i32* %"c"
+                store i32 %".2", i32* %"c", align 1
+                %"i" = load i32* %"c", align 1
             """)
 
     def test_gep(self):

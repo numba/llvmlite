@@ -354,14 +354,20 @@ class CastInstr(Instruction):
 
 
 class LoadInstr(Instruction):
+
     def __init__(self, parent, ptr, name=''):
         super(LoadInstr, self).__init__(parent, ptr.type.pointee, "load",
                                         [ptr], name=name)
+        self.align = None
 
     def descr(self, buf):
         [val] = self.operands
-        print("load {0} {1}{metadata}".format(
-            val.type, val.get_reference(),
+        if self.align is not None:
+            align = ', align %d' % (self.align)
+        else:
+            align = ''
+        print("load {0} {1}{align}{metadata}".format(
+            val.type, val.get_reference(), align=align,
             metadata=self._stringify_metatdata(),
             ), file=buf)
 
@@ -373,9 +379,14 @@ class StoreInstr(Instruction):
 
     def descr(self, buf):
         val, ptr = self.operands
-        print("store {0} {1}, {2} {3}{metadata}".format(
+        if self.align is not None:
+            align = ', align %d' % (self.align)
+        else:
+            align = ''
+        print("store {0} {1}, {2} {3}{align}{metadata}".format(
             val.type, val.get_reference(),
             ptr.type, ptr.get_reference(),
+            align=align,
             metadata=self._stringify_metatdata(),
             ), file=buf)
 

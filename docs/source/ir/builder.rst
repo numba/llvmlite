@@ -375,13 +375,15 @@ Memory
    Statically allocate a stack slot for *size* values of type *typ*.
    If *size* is not given, a stack slot for one value is allocated.
 
-.. method:: IRBuilder.load(ptr, name='')
+.. method:: IRBuilder.load(ptr, name='', align=None)
 
-   Load value from pointer *ptr*.
+   Load value from pointer *ptr*.  If *align* is passed, it should
+   be a Python integer specifying the guaranteed pointer alignment.
 
-.. method:: IRBuilder.store(value, ptr)
+.. method:: IRBuilder.store(value, ptr, align=None)
 
-   Store *value* to pointer *ptr*.
+   Store *value* to pointer *ptr*.  If *align* is passed, it should
+   be a Python integer specifying the guaranteed pointer alignment.
 
 .. method:: IRBuilder.gep(ptr, indices, inbounds=False, name='')
 
