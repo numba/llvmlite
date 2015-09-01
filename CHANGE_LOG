@@ -1,7 +1,7 @@
-
 v0.8.0 (in development)
 -----------------------
 
+* Update LLVM to 3.6.2
 * Add an *align* parameter to IRBuilder.load() and IRBuilder.store().
 
 v0.7.0
