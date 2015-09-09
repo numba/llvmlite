@@ -3,6 +3,7 @@ from __future__ import print_function, absolute_import
 import ctypes
 from ctypes import *
 from ctypes.util import find_library
+import gc
 import subprocess
 import sys
 import unittest
@@ -109,6 +110,18 @@ class BaseTest(TestCase):
         llvm.initialize()
         llvm.initialize_native_target()
         llvm.initialize_native_asmprinter()
+        gc.collect()
+        self.old_garbage = gc.garbage[:]
+        gc.garbage[:] = []
+
+    def tearDown(self):
+        # Test that no uncollectable objects were created
+        # (llvmlite objects have a __del__ so a reference cycle could
+        # create some).
+        gc.collect()
+        self.assertEqual(gc.garbage, [])
+        # This will probably put any existing garbage in gc.garbage again
+        del self.old_garbage
 
     def module(self, asm=asm_sum):
         asm = asm.format(triple=llvm.get_default_triple())

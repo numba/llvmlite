@@ -3,6 +3,7 @@ from __future__ import print_function, absolute_import
 from ctypes import (byref, POINTER, c_char_p, c_bool, c_uint, c_void_p,
                     c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast)
 import warnings
+import weakref
 
 from . import ffi, targets
 
@@ -130,11 +131,14 @@ class ExecutionEngine(ffi.ObjectRef):
         Set the object cache "notifyObjectCompiled" and "getBuffer"
         callbacks to the given Python functions.
         """
+        # Avoid reference cycle by capturing only a weak reference to self
+        wr = weakref.ref(self)
 
         def raw_notify(module_ptr, buf_ptr, buf_len):
             """
             Low-level notify hook.
             """
+            self = wr()
             if notify_func is None:
                 return
             buf = string_at(buf_ptr, buf_len)
@@ -150,6 +154,7 @@ class ExecutionEngine(ffi.ObjectRef):
             """
             Low-level getbuffer hook.
             """
+            self = wr()
             if getbuffer_func is None:
                 return
             module = self._find_module_ptr(module_ptr)
