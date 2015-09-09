@@ -147,15 +147,17 @@ LLVMPY_TryAllocateExecutableMemory(void)
 // Object cache
 //
 
-typedef void (*ObjectCacheNotifyFunc)(LLVMModuleRef, const char *, size_t);
-typedef void (*ObjectCacheGetObjectFunc)(LLVMModuleRef, const char **, size_t *);
+typedef void (*ObjectCacheNotifyFunc)(void *, LLVMModuleRef, const char *, size_t);
+typedef void (*ObjectCacheGetObjectFunc)(void *, LLVMModuleRef, const char **, size_t *);
 
 
 class LLVMPYObjectCache : public llvm::ObjectCache {
 public:
     LLVMPYObjectCache(ObjectCacheNotifyFunc notify_func,
-                      ObjectCacheGetObjectFunc getobject_func)
-    : notify_func(notify_func), getobject_func(getobject_func)
+                      ObjectCacheGetObjectFunc getobject_func,
+                      void *user_data)
+    : notify_func(notify_func), getobject_func(getobject_func),
+      user_data(user_data)
     {
     }
 
@@ -163,7 +165,8 @@ public:
                                       llvm::MemoryBufferRef MBR)
     {
         if (notify_func)
-            notify_func(llvm::wrap(M), MBR.getBufferStart(), MBR.getBufferSize());
+            notify_func(user_data, llvm::wrap(M),
+                        MBR.getBufferStart(), MBR.getBufferSize());
     }
 
     // MCJIT will call this function before compiling any module
@@ -176,7 +179,7 @@ public:
         std::unique_ptr<llvm::MemoryBuffer> res = nullptr;
 
         if (getobject_func) {
-            getobject_func(llvm::wrap(M), &buf_ptr, &buf_len);
+            getobject_func(user_data, llvm::wrap(M), &buf_ptr, &buf_len);
         }
         if (buf_ptr && buf_len > 0) {
             // Assume the returned string was allocated
@@ -191,6 +194,7 @@ public:
 private:
     ObjectCacheNotifyFunc notify_func;
     ObjectCacheGetObjectFunc getobject_func;
+    void *user_data;
 };
 
 typedef LLVMPYObjectCache *LLVMPYObjectCacheRef;
@@ -198,9 +202,10 @@ typedef LLVMPYObjectCache *LLVMPYObjectCacheRef;
 
 API_EXPORT(LLVMPYObjectCacheRef)
 LLVMPY_CreateObjectCache(ObjectCacheNotifyFunc notify_func,
-                         ObjectCacheGetObjectFunc getobject_func)
+                         ObjectCacheGetObjectFunc getobject_func,
+                         void *user_data)
 {
-    return new LLVMPYObjectCache(notify_func, getobject_func);
+    return new LLVMPYObjectCache(notify_func, getobject_func, user_data);
 }
 
 API_EXPORT(void)
