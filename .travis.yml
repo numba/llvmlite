@@ -15,6 +15,7 @@ python:
   - "2.7"
   - "3.3"
   - "3.4"
+  - "3.5-dev"
 
 before_install:
     # Install Miniconda
