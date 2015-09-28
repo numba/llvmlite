@@ -4,6 +4,9 @@
 
 #include "llvm/IR/Module.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+#ifdef USE_OPROFILE_JITEVENTS
+#include "llvm/ExecutionEngine/JITEventListener.h"
+#endif
 #include "llvm/ExecutionEngine/ObjectCache.h"
 #include "llvm/Support/Memory.h"
 
@@ -75,6 +78,14 @@ create_execution_engine(LLVMModuleRef M,
 
     /* EngineBuilder::create loads the current process symbols */
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
+
+#ifdef USE_OPROFILE_JITEVENTS
+    const char *jit_profiling = getenv("ENABLE_JITPROFILING");
+    if (jit_profiling && atoi(jit_profiling)) {
+        engine->RegisterJITEventListener(
+            llvm::JITEventListener::createOProfileJITEventListener());
+    }
+#endif
 
     if (!engine)
         *OutError = strdup(err.c_str());
