@@ -37,7 +37,9 @@ if os.name == 'nt':
 _lib_name = get_library_name()
 try:
     lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name))
-except:
+except Exception:
+    # Allow finding the llvmlite DLL in the current directory, for ease
+    # of bundling with frozen applications.
     lib = ctypes.CDLL(_lib_name)
 
 
