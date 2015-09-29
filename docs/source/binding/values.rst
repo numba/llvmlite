@@ -66,3 +66,11 @@ The ValueRef class
       This value's LLVM type.  An opaque object is returned.  It can be used
       with e.g. :meth:`TargetData.get_abi_size`.
 
+   .. method:: view_cfg
+
+      Generate a DOT file of the CFG of a function with instructions.
+
+
+   .. method:: view_cfg_only
+
+      Generate a DOT file of the CFG of a function without instructions.

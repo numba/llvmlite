@@ -115,6 +115,17 @@ class ValueRef(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
+    def view_cfg(self):
+        """Generate a DOT file of the CFG of a function
+        """
+        ffi.lib.LLVMPY_ViewFunctionCFG(self)
+
+    def view_cfg_only(self):
+        """Similar to ``view_cfg`` but the graph does not contain any
+        instructions.
+        """
+        ffi.lib.LLVMPY_ViewFunctionCFGOnly(self)
+
 # FFI
 
 ffi.lib.LLVMPY_PrintValueToString.argtypes = [
@@ -142,3 +153,6 @@ ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_int]
 
 ffi.lib.LLVMPY_IsDeclaration.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_IsDeclaration.restype = c_int
+
+ffi.lib.LLVMPY_ViewFunctionCFG.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_ViewFunctionCFGOnly.argtypes = [ffi.LLVMValueRef]

@@ -1,6 +1,8 @@
 #include <string>
 #include "llvm-c/Core.h"
 #include "core.h"
+#include "llvm-c/Analysis.h"
+
 
 extern "C" {
 
@@ -57,6 +59,18 @@ API_EXPORT(int)
 LLVMPY_IsDeclaration(LLVMValueRef GV)
 {
     return LLVMIsDeclaration(GV);
+}
+
+API_EXPORT(void)
+LLVMPY_ViewFunctionCFG(LLVMValueRef Fn)
+{
+  LLVMViewFunctionCFG(Fn);
+}
+
+API_EXPORT(void)
+LLVMPY_ViewFunctionCFGOnly(LLVMValueRef Fn)
+{
+  LLVMViewFunctionCFGOnly(Fn);
 }
 
 } // end extern "C"
