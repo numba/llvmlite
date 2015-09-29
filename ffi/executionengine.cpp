@@ -4,9 +4,7 @@
 
 #include "llvm/IR/Module.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
-#ifdef USE_OPROFILE_JITEVENTS
 #include "llvm/ExecutionEngine/JITEventListener.h"
-#endif
 #include "llvm/ExecutionEngine/ObjectCache.h"
 #include "llvm/Support/Memory.h"
 
@@ -79,13 +77,6 @@ create_execution_engine(LLVMModuleRef M,
     /* EngineBuilder::create loads the current process symbols */
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
 
-#ifdef USE_OPROFILE_JITEVENTS
-    const char *jit_profiling = getenv("ENABLE_JITPROFILING");
-    if (jit_profiling && atoi(jit_profiling)) {
-        engine->RegisterJITEventListener(
-            llvm::JITEventListener::createOProfileJITEventListener());
-    }
-#endif
 
     if (!engine)
         *OutError = strdup(err.c_str());
@@ -151,6 +142,20 @@ LLVMPY_TryAllocateExecutableMemory(void)
         (void) Memory::releaseMappedMemory(mb);  /* Should always succeed */
     }
     return ec.value();
+}
+
+API_EXPORT(bool)
+LLVMPY_EnableJITEvents(LLVMExecutionEngineRef EE)
+{
+#ifdef __linux__
+    llvm::JITEventListener *listener = llvm::JITEventListener::createOProfileJITEventListener();
+    // if listener is null, then LLVM was not compiled for OProfile JIT events.
+    if (listener) {
+        llvm::unwrap(EE)->RegisterJITEventListener(listener);
+        return true;
+    }
+#endif
+    return false;
 }
 
 
