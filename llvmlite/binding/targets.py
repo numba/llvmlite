@@ -27,6 +27,24 @@ def get_host_cpu_name():
         ffi.lib.LLVMPY_GetHostCPUName(out)
         return str(out)
 
+_object_formats = {
+    1: "COFF",
+    2: "ELF",
+    3: "MachO",
+    }
+
+def get_object_format(triple=None):
+    """
+    Get the object format for the given *triple* string (or the default
+    triple if omitted).
+    A string is returned
+    """
+    if triple is None:
+        triple = get_default_triple()
+    res = ffi.lib.LLVMPY_GetTripleObjectFormat(_encode_string(triple))
+    return _object_formats[res]
+
+
 def create_target_data(strrep):
     return TargetData(ffi.lib.LLVMPY_CreateTargetData(_encode_string(strrep)))
 
@@ -94,9 +112,6 @@ class Target(ffi.ObjectRef):
     @classmethod
     def from_default_triple(cls):
         triple = get_default_triple()
-        # For MCJIT under Windows, see http://lists.cs.uiuc.edu/pipermail/llvmdev/2013-December/068381.html
-        if os.name == 'nt':
-            triple += '-elf'
         return cls.from_triple(triple)
 
     @classmethod
@@ -133,8 +148,14 @@ class Target(ffi.ObjectRef):
         assert 0 <= opt <= 3
         assert reloc in RELOC
         assert codemodel in CODEMODEL
+        triple = self._triple
+        # MCJIT under Windows only supports ELF objects, see
+        # http://lists.llvm.org/pipermail/llvm-dev/2013-December/068341.html
+        # Note we still want to produce regular COFF files in AOT mode.
+        if os.name == 'nt' and codemodel == 'jitdefault':
+            triple += '-elf'
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
-                                                _encode_string(self._triple),
+                                                _encode_string(triple),
                                                 _encode_string(cpu),
                                                 _encode_string(features),
                                                 opt,
@@ -203,6 +224,12 @@ class TargetMachine(ffi.ObjectRef):
         td._owned = True
         return td
 
+    @property
+    def triple(self):
+        with ffi.OutputString() as out:
+            ffi.lib.LLVMPY_GetTargetMachineTriple(self, out)
+            return str(out)
+
 
 def create_target_library_info(triple):
     return TargetLibraryInfo(
@@ -259,6 +286,9 @@ ffi.lib.LLVMPY_GetDefaultTargetTriple.argtypes = [POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_GetHostCPUName.argtypes = [POINTER(c_char_p)]
 
+ffi.lib.LLVMPY_GetTripleObjectFormat.argtypes = [c_char_p]
+ffi.lib.LLVMPY_GetTripleObjectFormat.restype = c_int
+
 ffi.lib.LLVMPY_CreateTargetData.argtypes = [c_char_p]
 ffi.lib.LLVMPY_CreateTargetData.restype = ffi.LLVMTargetDataRef
 
@@ -313,6 +343,9 @@ ffi.lib.LLVMPY_CreateTargetMachine.argtypes = [
 ffi.lib.LLVMPY_CreateTargetMachine.restype = ffi.LLVMTargetMachineRef
 
 ffi.lib.LLVMPY_DisposeTargetMachine.argtypes = [ffi.LLVMTargetMachineRef]
+
+ffi.lib.LLVMPY_GetTargetMachineTriple.argtypes = [ffi.LLVMTargetMachineRef,
+                                                  POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_AddAnalysisPasses.argtypes = [
     ffi.LLVMTargetMachineRef,

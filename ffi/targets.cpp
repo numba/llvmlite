@@ -47,6 +47,12 @@ LLVMPY_GetHostCPUName(const char **Out) {
     *Out = LLVMPY_CreateString(llvm::sys::getHostCPUName().data());
 }
 
+API_EXPORT(int)
+LLVMPY_GetTripleObjectFormat(const char *tripleStr)
+{
+    return llvm::Triple(tripleStr).getObjectFormat();
+}
+
 API_EXPORT(LLVMTargetDataRef)
 LLVMPY_CreateTargetData(const char *StringRep)
 {
@@ -201,6 +207,13 @@ API_EXPORT(void)
 LLVMPY_DisposeTargetMachine(LLVMTargetMachineRef TM)
 {
     return LLVMDisposeTargetMachine(TM);
+}
+
+API_EXPORT(void)
+LLVMPY_GetTargetMachineTriple(LLVMTargetMachineRef TM, const char **Out)
+{
+    // result is already strdup()ed by LLVMGetTargetMachineTriple
+    *Out = LLVMGetTargetMachineTriple(TM);
 }
 
 
