@@ -163,8 +163,14 @@ LLVMPY_EnableJITEvents(LLVMExecutionEngineRef EE)
 // Object cache
 //
 
-typedef void (*ObjectCacheNotifyFunc)(void *, LLVMModuleRef, const char *, size_t);
-typedef void (*ObjectCacheGetObjectFunc)(void *, LLVMModuleRef, const char **, size_t *);
+typedef struct {
+    LLVMModuleRef modref;
+    const char *buf_ptr;
+    size_t buf_len;
+} ObjectCacheData;
+
+typedef void (*ObjectCacheNotifyFunc)(void *, const ObjectCacheData *);
+typedef void (*ObjectCacheGetObjectFunc)(void *, ObjectCacheData *);
 
 
 class LLVMPYObjectCache : public llvm::ObjectCache {
@@ -180,9 +186,12 @@ public:
     virtual void notifyObjectCompiled(const llvm::Module *M,
                                       llvm::MemoryBufferRef MBR)
     {
-        if (notify_func)
-            notify_func(user_data, llvm::wrap(M),
-                        MBR.getBufferStart(), MBR.getBufferSize());
+        if (notify_func) {
+            ObjectCacheData data = { llvm::wrap(M),
+                                     MBR.getBufferStart(),
+                                     MBR.getBufferSize() };
+            notify_func(user_data, &data);
+        }
     }
 
     // MCJIT will call this function before compiling any module
@@ -190,19 +199,19 @@ public:
     // to which it refers.
     virtual std::unique_ptr<llvm::MemoryBuffer> getObject(const llvm::Module* M)
     {
-        const char *buf_ptr = nullptr;
-        size_t buf_len = 0;
         std::unique_ptr<llvm::MemoryBuffer> res = nullptr;
 
         if (getobject_func) {
-            getobject_func(user_data, llvm::wrap(M), &buf_ptr, &buf_len);
-        }
-        if (buf_ptr && buf_len > 0) {
-            // Assume the returned string was allocated
-            // with LLVMPY_CreateByteString
-            res = llvm::MemoryBuffer::getMemBufferCopy(
-                llvm::StringRef(buf_ptr, buf_len));
-            LLVMPY_DisposeString(buf_ptr);
+            ObjectCacheData data = { llvm::wrap(M), nullptr, 0 };
+
+            getobject_func(user_data, &data);
+            if (data.buf_ptr && data.buf_len > 0) {
+                // Assume the returned string was allocated
+                // with LLVMPY_CreateByteString
+                res = llvm::MemoryBuffer::getMemBufferCopy(
+                    llvm::StringRef(data.buf_ptr, data.buf_len));
+                LLVMPY_DisposeString(data.buf_ptr);
+            }
         }
         return res;
     }
