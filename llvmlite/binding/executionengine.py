@@ -117,6 +117,15 @@ class ExecutionEngine(ffi.ObjectRef):
         self._td._owned = True
         return self._td
 
+    def enable_jit_events(self):
+        """
+        Enable JIT events for profiling of generated code.
+        Return value indicates whether connection to profiling tool
+        was successful.
+        """
+        ret = ffi.lib.LLVMPY_EnableJITEvents(self)
+        return ret
+
     def _find_module_ptr(self, module_ptr):
         """
         Find the ModuleRef corresponding to the given pointer.
