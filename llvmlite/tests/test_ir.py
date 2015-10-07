@@ -1255,9 +1255,10 @@ class TestConstant(TestBase):
         m = self.module()
         tp = ir.LiteralStructType((flt, int1))
         gv = ir.GlobalVariable(m, tp, "myconstant")
-        c = gv.gep([ir.Constant(int32, 0)])
+        c = gv.gep([ir.Constant(int32, x) for x in (0, 1)])
         self.assertEqual(str(c),
-                         'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0)')
+            'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0, i32 1)')
+        self.assertEqual(c.type, ir.PointerType(int1))
 
 
 class TestTransforms(TestBase):
