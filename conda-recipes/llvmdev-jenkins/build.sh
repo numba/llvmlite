@@ -4,20 +4,16 @@ CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF \
     "
 
-if [ -z "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    # Linux
-    # Enable devtoolset-2, a newer gcc toolchain
+# If available, enable newer toolset on old RH / CentOS machines
+toolset=/opt/rh/devtoolset-2
+
+if [ -d $toolset ]; then
     . /opt/rh/devtoolset-2/enable
-    # Statically link the standard C/C++ library, because
-    # we are building on an old centos5 machine.
     export CC=gcc
     export CXX=g++
+fi
 
-    mkdir build
-    cd build
-    cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
-
-else
+if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     # OSX needs 10.7 or above with libc++ enabled
     export MACOSX_DEPLOYMENT_TARGET=10.7
     ./configure \
@@ -30,6 +26,12 @@ else
         --prefix=$PREFIX \
         --with-python=$SYS_PYTHON \
         --enable-libcpp=yes
+
+else
+    # Use CMake-based build procedure
+    mkdir build
+    cd build
+    cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
 
 fi
 
