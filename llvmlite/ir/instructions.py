@@ -102,6 +102,8 @@ class CallInstr(Instruction):
         args = ', '.join('{0} {1}'.format(a.type, a.get_reference())
                          for a in self.args)
         fnty = self.callee.type
+        if isinstance(fnty, types.PointerType):
+            fnty = fnty.pointee
         callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
@@ -366,8 +368,8 @@ class LoadInstr(Instruction):
             align = ', align %d' % (self.align)
         else:
             align = ''
-        print("load {0} {1}{align}{metadata}".format(
-            val.type, val.get_reference(), align=align,
+        print("load {0}, {1} {2}{align}{metadata}".format(
+            val.type.pointee, val.type, val.get_reference(), align=align,
             metadata=self._stringify_metatdata(),
             ), file=buf)
 
@@ -432,8 +434,9 @@ class GEPInstr(Instruction):
         indices = ['{0} {1}'.format(i.type, i.get_reference())
                    for i in self.indices]
         head = "getelementptr inbounds" if self.inbounds else "getelementptr"
-        print("{0} {1} {2}, {3} {metadata}".format(
+        print("{0} {1}, {2} {3}, {4} {metadata}".format(
                   head,
+                  self.pointer.type.pointee,
                   self.pointer.type,
                   self.pointer.get_reference(),
                   ', '.join(indices),
