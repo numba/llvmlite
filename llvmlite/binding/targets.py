@@ -231,53 +231,53 @@ class TargetMachine(ffi.ObjectRef):
             return str(out)
 
 
-def create_target_library_info(triple):
-    return TargetLibraryInfo(
-        ffi.lib.LLVMPY_CreateTargetLibraryInfo(_encode_string(triple, ))
-    )
+#def create_target_library_info(triple):
+    #return TargetLibraryInfo(
+        #ffi.lib.LLVMPY_CreateTargetLibraryInfo(_encode_string(triple, ))
+    #)
 
 
-class TargetLibraryInfo(ffi.ObjectRef):
-    """
-    A LLVM TargetLibraryInfo.  Use :func:`create_target_library_info`
-    to create instances.
-    """
+#class TargetLibraryInfo(ffi.ObjectRef):
+    #"""
+    #A LLVM TargetLibraryInfo.  Use :func:`create_target_library_info`
+    #to create instances.
+    #"""
 
-    def _dispose(self):
-        self._capi.LLVMPY_DisposeTargetLibraryInfo(self)
+    #def _dispose(self):
+        #self._capi.LLVMPY_DisposeTargetLibraryInfo(self)
 
-    def add_pass(self, pm):
-        """
-        Add this library info as a pass to PassManager *pm*.
-        """
-        ffi.lib.LLVMPY_AddTargetLibraryInfo(self, pm)
-        # Once added to a PassManager, we can never get it back.
-        self._owned = True
+    #def add_pass(self, pm):
+        #"""
+        #Add this library info as a pass to PassManager *pm*.
+        #"""
+        #ffi.lib.LLVMPY_AddTargetLibraryInfo(self, pm)
+        ## Once added to a PassManager, we can never get it back.
+        #self._owned = True
 
-    def disable_all(self):
-        """
-        Disable all "builtin" functions.
-        """
-        ffi.lib.LLVMPY_DisableAllBuiltins(self)
+    #def disable_all(self):
+        #"""
+        #Disable all "builtin" functions.
+        #"""
+        #ffi.lib.LLVMPY_DisableAllBuiltins(self)
 
-    def get_libfunc(self, name):
-        """
-        Get the library function *name*.  NameError is raised if not found.
-        """
-        lf = c_int()
-        if not ffi.lib.LLVMPY_GetLibFunc(self, _encode_string(name),
-                                         byref(lf)):
-            raise NameError("LibFunc '{name}' not found".format(name=name))
-        return LibFunc(name=name, identity=lf.value)
+    #def get_libfunc(self, name):
+        #"""
+        #Get the library function *name*.  NameError is raised if not found.
+        #"""
+        #lf = c_int()
+        #if not ffi.lib.LLVMPY_GetLibFunc(self, _encode_string(name),
+                                         #byref(lf)):
+            #raise NameError("LibFunc '{name}' not found".format(name=name))
+        #return LibFunc(name=name, identity=lf.value)
 
-    def set_unavailable(self, libfunc):
-        """
-        Mark the given library function (*libfunc*) as unavailable.
-        """
-        ffi.lib.LLVMPY_SetUnavailableLibFunc(self, libfunc.identity)
+    #def set_unavailable(self, libfunc):
+        #"""
+        #Mark the given library function (*libfunc*) as unavailable.
+        #"""
+        #ffi.lib.LLVMPY_SetUnavailableLibFunc(self, libfunc.identity)
 
 
-LibFunc = collections.namedtuple("LibFunc", ["identity", "name"])
+#LibFunc = collections.namedtuple("LibFunc", ["identity", "name"])
 
 # ============================================================================
 # FFI
@@ -368,33 +368,33 @@ ffi.lib.LLVMPY_GetBufferSize.restype = c_size_t
 
 ffi.lib.LLVMPY_DisposeMemoryBuffer.argtypes = [ffi.LLVMMemoryBufferRef]
 
-ffi.lib.LLVMPY_CreateTargetLibraryInfo.argtypes = [c_char_p]
-ffi.lib.LLVMPY_CreateTargetLibraryInfo.restype = ffi.LLVMTargetLibraryInfoRef
+#ffi.lib.LLVMPY_CreateTargetLibraryInfo.argtypes = [c_char_p]
+#ffi.lib.LLVMPY_CreateTargetLibraryInfo.restype = ffi.LLVMTargetLibraryInfoRef
 
-ffi.lib.LLVMPY_DisposeTargetLibraryInfo.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-]
+#ffi.lib.LLVMPY_DisposeTargetLibraryInfo.argtypes = [
+    #ffi.LLVMTargetLibraryInfoRef,
+#]
 
-ffi.lib.LLVMPY_AddTargetLibraryInfo.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-    ffi.LLVMPassManagerRef,
-]
+#ffi.lib.LLVMPY_AddTargetLibraryInfo.argtypes = [
+    #ffi.LLVMTargetLibraryInfoRef,
+    #ffi.LLVMPassManagerRef,
+#]
 
-ffi.lib.LLVMPY_DisableAllBuiltins.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-]
+#ffi.lib.LLVMPY_DisableAllBuiltins.argtypes = [
+    #ffi.LLVMTargetLibraryInfoRef,
+#]
 
-ffi.lib.LLVMPY_GetLibFunc.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-    c_char_p,
-    POINTER(c_int),
-]
-ffi.lib.LLVMPY_GetLibFunc.restype = c_int
+#ffi.lib.LLVMPY_GetLibFunc.argtypes = [
+    #ffi.LLVMTargetLibraryInfoRef,
+    #c_char_p,
+    #POINTER(c_int),
+#]
+#ffi.lib.LLVMPY_GetLibFunc.restype = c_int
 
-ffi.lib.LLVMPY_SetUnavailableLibFunc.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-    c_int,
-]
+#ffi.lib.LLVMPY_SetUnavailableLibFunc.argtypes = [
+    #ffi.LLVMTargetLibraryInfoRef,
+    #c_int,
+#]
 
 ffi.lib.LLVMPY_GetTargetMachineData.argtypes = [
     ffi.LLVMTargetMachineRef,
