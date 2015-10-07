@@ -29,7 +29,7 @@ before_install:
     - conda create -n travisci --yes python=$PY_MAJOR_MINOR
     - source activate travisci
     # Install llvmdev (separate channel, for now)
-    - $CONDA_INSTALL -c numba llvmdev="3.6*"
+    - $CONDA_INSTALL -c numba llvmdev="3.7*"
     # Install unittest2 and argparse for Python 2.6
     - if [ $PY_MAJOR_MINOR == "2.6" ]; then $CONDA_INSTALL unittest2 argparse; fi
     # Install enum34 for Python < 3.4
