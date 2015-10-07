@@ -4,15 +4,17 @@ CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF \
     "
 
-if [ -z "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    # Linux
-    mkdir build
-    cd build
-    cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
+# If available, enable newer toolset on old RH / CentOS machines
+toolset=/opt/rh/devtoolset-2
 
-else
+if [ -d $toolset ]; then
+    . /opt/rh/devtoolset-2/enable
+    export CC=gcc
+    export CXX=g++
+fi
+
+if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     # OSX needs 10.7 or above with libc++ enabled
-
     export MACOSX_DEPLOYMENT_TARGET=10.7
     ./configure \
         --enable-pic \
@@ -24,6 +26,12 @@ else
         --prefix=$PREFIX \
         --with-python=$SYS_PYTHON \
         --enable-libcpp=yes
+
+else
+    # Use CMake-based build procedure
+    mkdir build
+    cd build
+    cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
 
 fi
 
