@@ -68,7 +68,8 @@ class ConstOpMixin(object):
         return ConstOp(typ, op)
 
     def gep(self, indices):
-        assert isinstance(self.type, types.PointerType)
+        if not isinstance(self.type, types.PointerType):
+            raise TypeError("cannot only call gep() on pointer constants")
 
         outtype = self.type
         for i in indices:
@@ -77,9 +78,9 @@ class ConstOpMixin(object):
         strindices = ["{0} {1}".format(idx.type, idx.get_reference())
                       for idx in indices]
 
-        op = "getelementptr ({0} {1}, {2})".format(self.type,
-                                                   self.get_reference(),
-                                                   ', '.join(strindices))
+        op = "getelementptr ({0}, {1} {2}, {3})".format(
+            self.type.pointee, self.type,
+            self.get_reference(), ', '.join(strindices))
         return ConstOp(outtype.as_pointer(), op)
 
 

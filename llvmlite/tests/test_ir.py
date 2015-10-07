@@ -485,11 +485,13 @@ class TestBuildInstructions(TestBase):
     def test_mem_ops(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
+        a, b, z = builder.function.args[:3]
         c = builder.alloca(int32, name='c')
         d = builder.alloca(int32, size=42, name='d')
-        e = builder.alloca(int32, size=a, name='e')
-        self.assertEqual(e.type, ir.PointerType(int32))
+        e = builder.alloca(dbl, size=a, name='e')
+        self.assertEqual(e.type, ir.PointerType(dbl))
+        ee = builder.store(z, e)
+        self.assertEqual(ee.type, ir.VoidType())
         f = builder.store(b, c)
         self.assertEqual(f.type, ir.VoidType())
         g = builder.load(c, 'g')
@@ -504,11 +506,17 @@ class TestBuildInstructions(TestBase):
             builder.store(b, a)
         with self.assertRaises(TypeError):
             builder.load(b)
+        # Mismatching pointer type
+        with self.assertRaises(TypeError) as cm:
+            builder.store(b, e)
+        self.assertEqual(str(cm.exception),
+                         "cannot store i32 to double*: mismatching types")
         self.check_block(block, """\
             my_block:
                 %"c" = alloca i32
                 %"d" = alloca i32, i32 42
-                %"e" = alloca i32, i32 %".1"
+                %"e" = alloca double, i32 %".1"
+                store double %".3", double* %"e"
                 store i32 %".2", i32* %"c"
                 %"g" = load i32, i32* %"c"
                 store i32 %".2", i32* %"c", align 1
@@ -1242,6 +1250,14 @@ class TestConstant(TestBase):
         # Make sure the encoding does not modify the IR
         reparsed = llvm.parse_assembly(str(parsed))
         self.assertEqual(str(parsed), str(reparsed))
+
+    def test_gep(self):
+        m = self.module()
+        tp = ir.LiteralStructType((flt, int1))
+        gv = ir.GlobalVariable(m, tp, "myconstant")
+        c = gv.gep([ir.Constant(int32, 0)])
+        self.assertEqual(str(c),
+                         'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0)')
 
 
 class TestTransforms(TestBase):
