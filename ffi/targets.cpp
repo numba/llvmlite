@@ -4,7 +4,7 @@
 #include "llvm-c/TargetMachine.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Target/TargetLibraryInfo.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/IR/Type.h"
@@ -195,7 +195,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
         rm = Reloc::Default;
 
     TargetOptions opt;
-    opt.JITEmitDebugInfo = EmitJITDebug;
+//     opt.JITEmitDebugInfo = EmitJITDebug;
     opt.PrintMachineCode = PrintMC;
 
     return wrap(unwrap(T)->createTargetMachine(Triple, CPU, Features, opt,
@@ -276,7 +276,20 @@ LLVMPY_DisposeMemoryBuffer(LLVMMemoryBufferRef MB)
     return LLVMDisposeMemoryBuffer(MB);
 }
 
+/*
 
+If needed:
+
+explicit TargetLibraryInfoWrapperPass(const Triple &T);
+
+void LLVMAddTargetLibraryInfo(LLVMTargetLibraryInfoRef TLI,
+                              LLVMPassManagerRef PM) {
+  unwrap(PM)->add(new TargetLibraryInfoWrapperPass(*unwrap(TLI)));
+}
+*/
+
+
+#if 0
 API_EXPORT(LLVMTargetLibraryInfoRef)
 LLVMPY_CreateTargetLibraryInfo(const char *Triple)
 {
@@ -288,6 +301,7 @@ LLVMPY_DisposeTargetLibraryInfo(LLVMTargetLibraryInfoRef TLI)
 {
     delete llvm::unwrap(TLI);
 }
+
 
 API_EXPORT(void)
 LLVMPY_AddTargetLibraryInfo(
@@ -323,6 +337,7 @@ LLVMPY_SetUnavailableLibFunc(LLVMTargetLibraryInfoRef TLI, int F)
 {
     llvm::unwrap(TLI)->setUnavailable((llvm::LibFunc::Func)F);
 }
+#endif
 
 
 } // end extern "C"
