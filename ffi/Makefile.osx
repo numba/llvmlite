@@ -1,9 +1,8 @@
-LLVM_CONFIG ?= llvm-config
 
 CXX = clang++ -std=c++11 -stdlib=libc++
-CXXFLAGS = `$(LLVM_CONFIG) --cxxflags` -fno-rtti
-LDFLAGS = `$(LLVM_CONFIG) --ldflags`
-LIBS = `$(LLVM_CONFIG) --system-libs --libs all`
+CXXFLAGS = $(LLVM_CXXFLAGS)
+LDFLAGS = $(LLVM_LDFLAGS)
+LIBS = $(LLVM_LIBS)
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
 	  linker.cpp
@@ -11,7 +10,6 @@ OUTPUT = libllvmlite.dylib
 
 all: $(SRC)
 	MACOSX_DEPLOYMENT_TARGET=10.7 $(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
-
 
 clean:
 	rm -rf test
