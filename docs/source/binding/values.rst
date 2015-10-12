@@ -36,6 +36,17 @@ Enumerations
    .. data:: linker_private
    .. data:: linker_private_weak
 
+
+.. class:: Visibility
+
+   The different visibility styles allowed for global values.  The following
+   values are provided:
+
+   .. data:: default
+   .. data:: hidden
+   .. data:: protected
+
+
 The ValueRef class
 ------------------
 
@@ -66,3 +77,7 @@ The ValueRef class
       This value's LLVM type.  An opaque object is returned.  It can be used
       with e.g. :meth:`TargetData.get_abi_size`.
 
+   .. attribute:: visibility
+
+      The visibility style (a :class:`Visibility` instance) for this value.
+      This attribute is settable.

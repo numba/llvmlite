@@ -60,6 +60,14 @@ class Attribute(enum.Enum):
     nonlazybind = 1 << 31
 
 
+class Visibility(enum.IntEnum):
+    # The LLVMVisibility enum from llvm-c/Core.h
+
+    default = 0
+    hidden = 1
+    protected = 2
+
+
 class ValueRef(ffi.ObjectRef):
     """A weak reference to a LLVM value.
     """
@@ -96,6 +104,16 @@ class ValueRef(ffi.ObjectRef):
         if not isinstance(value, Linkage):
             value = Linkage[value]
         ffi.lib.LLVMPY_SetLinkage(self, value)
+
+    @property
+    def visibility(self):
+        return Visibility(ffi.lib.LLVMPY_GetVisibility(self))
+
+    @visibility.setter
+    def visibility(self, value):
+        if not isinstance(value, Visibility):
+            value = Visibility[value]
+        ffi.lib.LLVMPY_SetVisibility(self, value)
 
     def add_function_attribute(self, attr):
         """Only works on function value"""
@@ -137,6 +155,11 @@ ffi.lib.LLVMPY_GetLinkage.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetLinkage.restype = c_int
 
 ffi.lib.LLVMPY_SetLinkage.argtypes = [ffi.LLVMValueRef, c_int]
+
+ffi.lib.LLVMPY_GetVisibility.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetVisibility.restype = c_int
+
+ffi.lib.LLVMPY_SetVisibility.argtypes = [ffi.LLVMValueRef, c_int]
 
 ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_int]
 
