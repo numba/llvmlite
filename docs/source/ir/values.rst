@@ -142,6 +142,12 @@ Global values are values accessible using a module-wide name.
       (e.g. whether it is visible from other modules).  Default is the
       empty string, meaning "external".
 
+   .. attribute:: storage_class
+
+      A Python string describing the storage class of the global value.
+      Default is the empty string, meaning "default".  Other possible
+      values include "dllimport" and "dllexport".
+
 
 .. class:: GlobalVariable(module, typ, name, addrspace=0)
 

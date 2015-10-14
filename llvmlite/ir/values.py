@@ -274,6 +274,7 @@ class GlobalValue(Value, ConstOpMixin):
     def __init__(self, *args, **kwargs):
         super(GlobalValue, self).__init__(*args, **kwargs)
         self.linkage = ''
+        self.storage_class = ''
 
 
 class GlobalVariable(GlobalValue):
@@ -310,8 +311,9 @@ class GlobalVariable(GlobalValue):
         else:
             unnamed_addr = ''
 
-        print("{linkage} {unnamed_addr} {addrspace} {kind} {type} ".format(
+        print("{linkage} {storage_class} {unnamed_addr} {addrspace} {kind} {type} ".format(
             linkage=linkage,
+            storage_class=self.storage_class,
             unnamed_addr=unnamed_addr,
             addrspace=addrspace,
             kind=kind,
