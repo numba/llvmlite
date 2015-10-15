@@ -13,6 +13,7 @@ import locale
 from llvmlite import six
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
+from llvmlite import ir
 from . import TestCase
 
 
@@ -933,6 +934,27 @@ class TestDylib(BaseTest):
         elif system == "Darwin":
             libm = find_library("libm")
         llvm.load_library_permanently(libm)
+
+
+class TestAnalysis(BaseTest):
+    def build_ir_module(self):
+        m = ir.Module()
+        ft = ir.FunctionType(ir.IntType(32), [ir.IntType(32), ir.IntType(32)])
+        fn = ir.Function(m, ft, "foo")
+        bd = ir.IRBuilder(fn.append_basic_block())
+        x, y = fn.args
+        z = bd.add(x, y)
+        bd.ret(z)
+        return m
+
+    def test_get_function_cfg(self):
+        mod = self.build_ir_module()
+        foo = mod.get_global('foo')
+        dot_showing_inst = llvm.get_function_cfg(foo)
+        dot_without_inst = llvm.get_function_cfg(foo, show_inst=False)
+        inst = "%.5 = add i32 %.1, %.2"
+        self.assertIn(inst, dot_showing_inst)
+        self.assertNotIn(inst, dot_without_inst)
 
 
 if __name__ == "__main__":

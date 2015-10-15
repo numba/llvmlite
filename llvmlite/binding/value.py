@@ -153,7 +153,8 @@ class ValueRef(ffi.ObjectRef):
 
     def get_function_cfg(self, show_inst=True):
         """Return a string of the control-flow graph of the function in DOT
-        format.
+        format. The `show_inst` flag controls whether the instructions of
+        each block are printed.
         """
         with ffi.OutputString() as dotstr:
             ffi.lib.LLVMPY_WriteCFG(self, dotstr, show_inst)
