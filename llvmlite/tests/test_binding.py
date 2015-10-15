@@ -667,6 +667,23 @@ class TestValueRef(BaseTest):
         self.assertFalse(defined.is_declaration)
         self.assertTrue(declared.is_declaration)
 
+    def test_function_cfg(self):
+        defined = self.module().get_function('sum')
+        dot_showing_inst = defined.get_function_cfg(show_inst=True)
+        dot_without_inst = defined.get_function_cfg(show_inst=False)
+        # Check "digraph"
+        prefix = 'digraph'
+        self.assertIn(prefix, dot_showing_inst)
+        self.assertIn(prefix, dot_without_inst)
+        # Check function name
+        fname = "CFG for 'sum' function"
+        self.assertIn(fname, dot_showing_inst)
+        self.assertIn(fname, dot_without_inst)
+        # Check instruction
+        inst = "%.3 = add i32 %.1, %.2"
+        self.assertIn(inst, dot_showing_inst)
+        self.assertNotIn(inst, dot_without_inst)
+
 
 class TestTarget(BaseTest):
 
