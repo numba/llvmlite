@@ -151,15 +151,6 @@ class ValueRef(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
-    def get_function_cfg(self, show_inst=True):
-        """Return a string of the control-flow graph of the function in DOT
-        format. The `show_inst` flag controls whether the instructions of
-        each block are printed.
-        """
-        with ffi.OutputString() as dotstr:
-            ffi.lib.LLVMPY_WriteCFG(self, dotstr, show_inst)
-            return str(dotstr)
-
 
 # FFI
 
@@ -198,6 +189,3 @@ ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_int]
 
 ffi.lib.LLVMPY_IsDeclaration.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_IsDeclaration.restype = c_int
-
-ffi.lib.LLVMPY_WriteCFG.argtypes = [ffi.LLVMValueRef, POINTER(c_char_p), c_int]
-
