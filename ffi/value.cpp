@@ -114,12 +114,42 @@ LLVMPY_IsPointerType(LLVMTypeRef Ty) {
     return unwrap<Type>(Ty)->isPointerTy();
 }
 
+API_EXPORT(int)
+LLVMPY_IsLabelType(LLVMTypeRef Ty) {
+    using namespace llvm;
+    return unwrap<Type>(Ty)->isLabelTy();
+}
+
 API_EXPORT(LLVMTypeRef)
 LLVMPY_TypePointee(LLVMTypeRef Ty) {
     using namespace llvm;
     return wrap(unwrap<Type>(Ty)->getPointerElementType());
 }
 
+API_EXPORT(LLVMBasicBlockRef)
+LLVMPY_GetEntryBasicBlock(LLVMValueRef Fn) {
+    return LLVMGetEntryBasicBlock(Fn);
+}
+
+API_EXPORT(LLVMBasicBlockRef)
+LLVMPY_ValueAsBasicBlock(LLVMValueRef Val) {
+    return LLVMValueAsBasicBlock(Val);
+}
+
+API_EXPORT(LLVMValueRef)
+LLVMPY_BasicBlockAsValue(LLVMBasicBlockRef BB) {
+    return LLVMBasicBlockAsValue(BB);
+}
+
+API_EXPORT(LLVMBasicBlockRef)
+LLVMPY_GetNextBasicBlock(LLVMBasicBlockRef BB) {
+    return LLVMGetNextBasicBlock(BB);
+}
+
+API_EXPORT(LLVMBasicBlockRef)
+LLVMPY_GetPreviousBasicBlock(LLVMBasicBlockRef BB) {
+    return LLVMGetPreviousBasicBlock(BB);
+}
 
 
 API_EXPORT(void)

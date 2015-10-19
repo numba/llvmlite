@@ -149,8 +149,56 @@ class ValueRef(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
+    @property
+    def entry_basic_block(self):
+        assert self.type.is_function_pointer
+        return BasicBlockRef(ffi.lib.LLVMPY_GetEntryBasicBlock(self),
+                             self._module)
+
+
+class BasicBlockRef(ffi.ObjectRef):
+    """
+    A weak reference to a LLVM BasicBlock
+    """
+    def __init__(self, ptr, module):
+        if ptr is None:
+            raise ValueError("null BasicBlock pointer")
+        self._module = module
+        super(BasicBlockRef, self).__init__(ptr)
+
+    @property
+    def as_value(self):
+        return ValueRef(ffi.lib.LLVMPY_BasicBlockAsValue(self),
+                        self._module)
+
+    def __str__(self):
+        return str(self.as_value)
+
+    @property
+    def name(self):
+        return _decode_string(ffi.lib.LLVMPY_GetValueName(self.as_value))
+
+    @name.setter
+    def name(self, val):
+        ffi.lib.LLVMPY_SetValueName(self.as_value, _encode_string(val))
+
+    @property
+    def next(self):
+        """The next basic block of the function"""
+        return BasicBlockRef(ffi.lib.LLVMPY_GetNextBasicBlock(self),
+                             self._module)
+
+    @property
+    def prev(self):
+        """The previous basic block of the function"""
+        return BasicBlockRef(ffi.lib.LLVMPY_GetPreviousBasicBlock(self),
+                             self._module)
+
 
 class TypeRef(ffi.ObjectRef):
+    """
+    A weak reference to a LLVM Type
+    """
     def __init__(self, ptr):
         ffi.ObjectRef.__init__(self, ptr)
         self._id = ffi.lib.LLVMPY_TypeID(self)
@@ -181,6 +229,11 @@ class TypeRef(ffi.ObjectRef):
     @property
     def is_function_pointer(self):
         return self.is_pointer and self.pointee.is_function
+
+    @property
+    def is_basic_block(self):
+        return bool(ffi.lib.LLVMPY_IsLabelType(self))
+
 
 # FFI
 
@@ -226,10 +279,26 @@ ffi.lib.LLVMPY_TypeID.restype = c_int
 ffi.lib.LLVMPY_PrintType.argtypes = [ffi.LLVMTypeRef, POINTER(c_char_p)]
 
 for _is_type_xxx_api in [ffi.lib.LLVMPY_IsFunctionType,
-                         ffi.lib.LLVMPY_IsPointerType]:
+                         ffi.lib.LLVMPY_IsPointerType,
+                         ffi.lib.LLVMPY_IsLabelType]:
     _is_type_xxx_api.argtypes = [ffi.LLVMTypeRef]
     _is_type_xxx_api.restype = c_int
 del _is_type_xxx_api
 
 ffi.lib.LLVMPY_TypePointee.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_TypePointee.restype = ffi.LLVMTypeRef
+
+ffi.lib.LLVMPY_GetEntryBasicBlock.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetEntryBasicBlock.restype = ffi.LLVMBasicBlockRef
+
+ffi.lib.LLVMPY_GetNextBasicBlock.argtypes = [ffi.LLVMBasicBlockRef]
+ffi.lib.LLVMPY_GetNextBasicBlock.restype = ffi.LLVMBasicBlockRef
+
+ffi.lib.LLVMPY_GetPreviousBasicBlock.argtypes = [ffi.LLVMBasicBlockRef]
+ffi.lib.LLVMPY_GetPreviousBasicBlock.restype = ffi.LLVMBasicBlockRef
+
+ffi.lib.LLVMPY_ValueAsBasicBlock.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_ValueAsBasicBlock.restype = ffi.LLVMBasicBlockRef
+
+ffi.lib.LLVMPY_BasicBlockAsValue.argtypes = [ffi.LLVMBasicBlockRef]
+ffi.lib.LLVMPY_BasicBlockAsValue.restype = ffi.LLVMValueRef

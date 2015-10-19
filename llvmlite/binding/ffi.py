@@ -13,6 +13,7 @@ def _make_opaque_ref(name):
 LLVMContextRef = _make_opaque_ref("LLVMContext")
 LLVMModuleRef = _make_opaque_ref("LLVMModule")
 LLVMValueRef = _make_opaque_ref("LLVMValue")
+LLVMBasicBlockRef = _make_opaque_ref("LLVMBasicBlockRef")
 LLVMTypeRef = _make_opaque_ref("LLVMType")
 LLVMExecutionEngineRef = _make_opaque_ref("LLVMExecutionEngine")
 LLVMPassManagerBuilderRef = _make_opaque_ref("LLVMPassManagerBuilder")
