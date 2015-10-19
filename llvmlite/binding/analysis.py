@@ -72,6 +72,7 @@ def control_structures_analysis(func):
         mod = parse_assembly(str(func.module))
         func = mod.get_function(func.name)
 
+    assert func.type.is_function_pointer
     with ffi.OutputString() as output:
         ffi.lib.LLVMPY_RunControlStructuresAnalysis(func, output)
         return str(output)

@@ -1,4 +1,3 @@
-
 from ctypes import POINTER, c_char_p, c_int
 import enum
 import itertools
@@ -142,8 +141,7 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def type(self):
-        # XXX what does this return?
-        return ffi.lib.LLVMPY_TypeOf(self)
+        return TypeRef(ffi.lib.LLVMPY_TypeOf(self))
 
     @property
     def is_declaration(self):
@@ -151,6 +149,38 @@ class ValueRef(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
+
+class TypeRef(ffi.ObjectRef):
+    def __init__(self, ptr):
+        ffi.ObjectRef.__init__(self, ptr)
+        self._id = ffi.lib.LLVMPY_TypeID(self)
+        with ffi.OutputString() as out:
+            ffi.lib.LLVMPY_PrintType(self, out)
+            self._str = str(out)
+
+    def __str__(self):
+        return self._str
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def pointee(self):
+        assert self.is_pointer
+        return TypeRef(ffi.lib.LLVMPY_TypePointee(self))
+
+    @property
+    def is_pointer(self):
+        return bool(ffi.lib.LLVMPY_IsPointerType(self))
+
+    @property
+    def is_function(self):
+        return bool(ffi.lib.LLVMPY_IsFunctionType(self))
+
+    @property
+    def is_function_pointer(self):
+        return self.is_pointer and self.pointee.is_function
 
 # FFI
 
@@ -189,3 +219,17 @@ ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_int]
 
 ffi.lib.LLVMPY_IsDeclaration.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_IsDeclaration.restype = c_int
+
+ffi.lib.LLVMPY_TypeID.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_TypeID.restype = c_int
+
+ffi.lib.LLVMPY_PrintType.argtypes = [ffi.LLVMTypeRef, POINTER(c_char_p)]
+
+for _is_type_xxx_api in [ffi.lib.LLVMPY_IsFunctionType,
+                         ffi.lib.LLVMPY_IsPointerType]:
+    _is_type_xxx_api.argtypes = [ffi.LLVMTypeRef]
+    _is_type_xxx_api.restype = c_int
+del _is_type_xxx_api
+
+ffi.lib.LLVMPY_TypePointee.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_TypePointee.restype = ffi.LLVMTypeRef

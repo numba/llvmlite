@@ -86,6 +86,41 @@ LLVMPY_IsDeclaration(LLVMValueRef GV)
     return LLVMIsDeclaration(GV);
 }
 
+API_EXPORT(int)
+LLVMPY_TypeID(LLVMTypeRef Ty)
+{
+    using namespace llvm;
+    return unwrap<Type>(Ty)->getTypeID();
+}
+
+API_EXPORT(void)
+LLVMPY_PrintType(LLVMTypeRef Ty, const char **Out) {
+    using namespace llvm;
+    std::string buf;
+    raw_string_ostream out(buf);
+    unwrap<Type>(Ty)->print(out);
+    *Out = LLVMPY_CreateString(out.str().c_str());
+}
+
+API_EXPORT(int)
+LLVMPY_IsFunctionType(LLVMTypeRef Ty) {
+    using namespace llvm;
+    return unwrap<Type>(Ty)->isFunctionTy();
+}
+
+API_EXPORT(int)
+LLVMPY_IsPointerType(LLVMTypeRef Ty) {
+    using namespace llvm;
+    return unwrap<Type>(Ty)->isPointerTy();
+}
+
+API_EXPORT(LLVMTypeRef)
+LLVMPY_TypePointee(LLVMTypeRef Ty) {
+    using namespace llvm;
+    return wrap(unwrap<Type>(Ty)->getPointerElementType());
+}
+
+
 
 API_EXPORT(void)
 LLVMPY_WriteCFG(LLVMValueRef Fval, const char **OutStr, int ShowInst) {
