@@ -66,5 +66,19 @@ def view_dot_graph(graph, filename=None, view=False):
             return display.SVG(data=src.pipe(format))
 
 
+def control_structures_analysis(func):
+    assert func is not None
+    if isinstance(func, ir.Function):
+        mod = parse_assembly(str(func.module))
+        func = mod.get_function(func.name)
+
+    with ffi.OutputString() as output:
+        ffi.lib.LLVMPY_RunControlStructuresAnalysis(func, output)
+        return str(output)
+
+
 # Ctypes binding
 ffi.lib.LLVMPY_WriteCFG.argtypes = [ffi.LLVMValueRef, POINTER(c_char_p), c_int]
+
+ffi.lib.LLVMPY_RunControlStructuresAnalysis.argtypes = [ffi.LLVMValueRef,
+                                                        POINTER(c_char_p)]
