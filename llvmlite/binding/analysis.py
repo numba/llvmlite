@@ -79,8 +79,21 @@ def control_structures_analysis(func):
         return ControlStructures(func, str(output))
 
 
-class ControlStructures(object):
+def _cached_property(key):
+    def wrap(compute_fn):
+        @property
+        def output(self):
+            ret = self._output.get(key)
+            if ret is None:
+                self._output[key] = ret = compute_fn(self)
+            return ret
 
+        return output
+
+    return wrap
+
+
+class ControlStructures(object):
     def __init__(self, func, descr):
         self._function = func
         self._bbmap = {}
@@ -94,14 +107,15 @@ class ControlStructures(object):
                 break
 
         self._sections = self._split_sections(descr)
+        self._output = {}
 
-    @property
+    @_cached_property('regions')
     def region_info(self):
         return self._parse_regions()
 
-    @property
+    @_cached_property('postdoms')
     def post_dominators(self):
-        return self._parse_
+        return self._parse_postdoms()
 
     def _split_sections(self, descr):
         prefix_template = '>>> {0}\n'
@@ -155,6 +169,32 @@ class ControlStructures(object):
         # Toplevel region must be defined already
         return regionmap[toplvl]
 
+    _regex_postdom = re.compile(r"^\s*\[(\d)\]\s+%(.*)\s\{.*\}$")
+
+    def _parse_postdoms(self):
+        desc = self._sections['postdoms']
+
+        tree = {}
+        stack = []
+        for m in _yield_matches(desc.splitlines(), self._regex_postdom):
+            grps = m.groups()
+            depth = int(grps[0])
+            bb = self._bbmap[grps[1]]
+
+            assert depth > 0
+            if depth == 1:
+                stack = [bb]
+            else:
+                stack = stack[:depth - 1]
+                parent = stack[-1]
+                tree[bb] = parent
+                stack.append(bb)
+
+                assert depth == len(stack)
+
+        return tree
+
+
 
 class Region(object):
     """
@@ -164,6 +204,7 @@ class Region(object):
     The `blocks` attribute is a set of all basicblock in the region.
     The `subregions` attribute is a set of all inner regions.
     """
+
     def __init__(self, name):
         self.name = name
         self.blocks = set()

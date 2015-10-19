@@ -171,6 +171,9 @@ class BasicBlockRef(ffi.ObjectRef):
     def __str__(self):
         return str(self.as_value)
 
+    def __repr__(self):
+        return "<BasicBlock {0!r}>".format(self.name)
+
     @property
     def name(self):
         return _decode_string(ffi.lib.LLVMPY_GetValueName(self.as_value))
@@ -190,6 +193,13 @@ class BasicBlockRef(ffi.ObjectRef):
         """The previous basic block of the function"""
         return BasicBlockRef(ffi.lib.LLVMPY_GetPreviousBasicBlock(self),
                              self._module)
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if isinstance(other, BasicBlockRef):
+            return self.name == other.name
 
 
 class TypeRef(ffi.ObjectRef):
