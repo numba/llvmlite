@@ -117,6 +117,10 @@ class ControlStructures(object):
     def post_dominators(self):
         return self._parse_postdoms()
 
+    @_cached_property('doms')
+    def dominators(self):
+        return self._parse_doms()
+
     def _split_sections(self, descr):
         prefix_template = '>>> {0}\n'
         sections = ['regions', 'postdoms', 'domfront', 'doms']
@@ -171,9 +175,7 @@ class ControlStructures(object):
 
     _regex_postdom = re.compile(r"^\s*\[(\d)\]\s+%(.*)\s\{.*\}$")
 
-    def _parse_postdoms(self):
-        desc = self._sections['postdoms']
-
+    def _parse_trees(self, desc):
         tree = {}
         stack = []
         for m in _yield_matches(desc.splitlines(), self._regex_postdom):
@@ -194,6 +196,13 @@ class ControlStructures(object):
 
         return tree
 
+    def _parse_postdoms(self):
+        desc = self._sections['postdoms']
+        return self._parse_trees(desc)
+
+    def _parse_doms(self):
+        desc = self._sections['doms']
+        return self._parse_trees(desc)
 
 
 class Region(object):
