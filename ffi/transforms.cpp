@@ -169,7 +169,8 @@ struct ControlStructuresDump : FunctionPass{
         const Module *M = F.getParent();
         const char prefix[] = ">>> ";
         out << prefix << "regions\n";
-        getAnalysis<RegionInfoPass>().print(out, M);
+        printRegionInfo(F, getAnalysis<RegionInfoPass>().getRegionInfo());
+
         out << prefix << "postdoms\n";
         getAnalysis<PostDominatorTree>().print(out, M);
         out << prefix << "domfront\n";
@@ -180,6 +181,25 @@ struct ControlStructuresDump : FunctionPass{
         getAnalysis<LoopInfo>().print(out, M);
 
         return false;
+    }
+
+    void printRegionInfo(Function &F, RegionInfo &RI) {
+        for (auto it = F.begin(); it != F.end(); ++it) {
+            Region *R = RI.getRegionFor(&*it);
+
+            // Print the block and the region
+            out << it->getName()
+                << "|"
+                << R->getNameStr();
+
+            // Print all parent region
+            for (R = R->getParent(); R; R = R->getParent()){
+                out << "|" << R->getNameStr();
+            }
+
+            out << '\n';
+        }
+        out << RI.getTopLevelRegion()->getNameStr();
     }
 
     void getAnalysisUsage(AnalysisUsage &AU) const {

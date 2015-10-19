@@ -5,6 +5,7 @@ A collection of analysis utils
 from __future__ import absolute_import, print_function
 
 from ctypes import POINTER, c_char_p, c_int
+import re
 
 from llvmlite import ir
 from . import ffi
@@ -75,7 +76,121 @@ def control_structures_analysis(func):
     assert func.type.is_function_pointer
     with ffi.OutputString() as output:
         ffi.lib.LLVMPY_RunControlStructuresAnalysis(func, output)
-        return str(output)
+        return ControlStructures(func, str(output))
+
+
+class ControlStructures(object):
+
+    def __init__(self, func, descr):
+        self._function = func
+        self._bbmap = {}
+        bb = self._function.entry_basic_block
+        while True:
+            self._bbmap[bb.name] = bb
+            print(bb)
+            try:
+                bb = bb.next
+            except ValueError:
+                break
+
+        self._sections = self._split_sections(descr)
+
+    @property
+    def region_info(self):
+        return self._parse_regions()
+
+    @property
+    def post_dominators(self):
+        return self._parse_
+
+    def _split_sections(self, descr):
+        prefix_template = '>>> {0}\n'
+        sections = ['regions', 'postdoms', 'domfront', 'doms']
+        starts = []
+        stops = []
+        lastpos = 0
+        sectmap = {}
+        for sect in sections:
+            prefix = prefix_template.format(sect)
+            lastpos = descr.index(prefix, lastpos)
+            starts.append(lastpos + len(prefix))
+            stops.append(lastpos)
+
+        stops.append(len(descr))
+        for start, stop, sect in zip(starts, stops[1:], sections):
+            sectmap[sect] = descr[start:stop]
+        return sectmap
+
+    def _parse_regions(self):
+        desc = self._sections['regions']
+
+        regionmap = {}
+
+        # Parse each line from the region description output
+        # Format: <BB name>|<Region name>|<List of Region parents...>
+        for line in desc.splitlines():
+            if '|' not in line:
+                break
+            elems = line.split('|')
+            bb = elems[0].strip()
+            regname = elems[1].strip()
+            parents = elems[2:]
+
+            if regname not in regionmap:
+                regionmap[regname] = Region(regname)
+
+            cur = regionmap[regname]
+            cur.blocks.add(self._bbmap[bb])
+
+            # Assign parent relationship
+            for par in parents:
+                par = par.strip()
+                if par not in regionmap:
+                    regionmap[par] = Region(par)
+                parent = regionmap[par]
+                parent.subregions.add(cur)
+                cur = parent
+
+        toplvl = line.strip()
+        # Toplevel region must be defined already
+        return regionmap[toplvl]
+
+
+class Region(object):
+    """
+    Represent a single-entry single-exit region as defined in the
+    Program Structure Tree paper by Johnson, Pearson and Pingali.
+
+    The `blocks` attribute is a set of all basicblock in the region.
+    The `subregions` attribute is a set of all inner regions.
+    """
+    def __init__(self, name):
+        self.name = name
+        self.blocks = set()
+        self.subregions = set()
+
+    def __repr__(self):
+        return "<RegionTree {0!r}>".format(self.name)
+
+
+def _yield_matches(lines, regex):
+    """
+    Skip until a match and continues to yield each matches line until the first
+    mismatch.
+    """
+    lniter = iter(lines)
+    for ln in lniter:
+        m = regex.match(ln)
+        if not m:
+            continue
+        else:
+            yield m
+            break
+    for ln in lniter:
+        m = regex.match(ln)
+        if not m:
+            break
+        yield m
 
 
 # Ctypes binding

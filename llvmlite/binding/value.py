@@ -1,6 +1,5 @@
 from ctypes import POINTER, c_char_p, c_int
 import enum
-import itertools
 
 from . import ffi
 from .common import _decode_string, _encode_string
@@ -161,8 +160,6 @@ class BasicBlockRef(ffi.ObjectRef):
     A weak reference to a LLVM BasicBlock
     """
     def __init__(self, ptr, module):
-        if ptr is None:
-            raise ValueError("null BasicBlock pointer")
         self._module = module
         super(BasicBlockRef, self).__init__(ptr)
 
