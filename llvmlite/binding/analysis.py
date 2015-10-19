@@ -121,6 +121,10 @@ class ControlStructures(object):
     def dominators(self):
         return self._parse_doms()
 
+    @_cached_property('domfront')
+    def dominance_frontiers(self):
+        return self._parse_domfront()
+
     def _split_sections(self, descr):
         prefix_template = '>>> {0}\n'
         sections = ['regions', 'postdoms', 'domfront', 'doms']
@@ -203,6 +207,21 @@ class ControlStructures(object):
     def _parse_doms(self):
         desc = self._sections['doms']
         return self._parse_trees(desc)
+
+    _regex_domfront = re.compile(r"^\s*DomFrontier for BB %(.*) is:(.*)$")
+    _regex_domfront_bb = re.compile(r"\s*%(.*)$")
+
+    def _parse_domfront(self):
+        desc = self._sections['domfront']
+        domfront = {}
+
+        for m in _yield_matches(desc.splitlines(), self._regex_domfront):
+            grps = m.groups()
+            src, dst = grps
+            m = self._regex_domfront_bb.match(dst)
+            if m:
+                domfront[self._bbmap[src]] = self._bbmap[m.group(1)]
+        return domfront
 
 
 class Region(object):
