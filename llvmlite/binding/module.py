@@ -16,10 +16,16 @@ def parse_assembly(llvmir):
     llvmir = _encode_string(llvmir)
     strbuf = c_char_p(llvmir)
     with ffi.OutputString() as errmsg:
-        mod = ModuleRef(ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg))
-        if errmsg:
-            mod.close()
-            raise RuntimeError("LLVM IR parsing error\n{0}".format(errmsg))
+        try:
+            mod = ModuleRef(ffi.lib.LLVMPY_ParseAssembly(context, strbuf,
+                                                         errmsg))
+        except ValueError:
+            # ParseAssembly returned NULL pointer
+            if errmsg:
+                raise RuntimeError("LLVM IR parsing error\n{0}".format(errmsg))
+            else:
+                raise
+
     return mod
 
 
@@ -31,10 +37,15 @@ def parse_bitcode(bitcode):
     buf = c_char_p(bitcode)
     bufsize = len(bitcode)
     with ffi.OutputString() as errmsg:
-        mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(context, buf, bufsize, errmsg))
-        if errmsg:
-            mod.close()
-            raise RuntimeError("LLVM bitcode parsing error\n{0}".format(errmsg))
+        try:
+            mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(context, buf, bufsize,
+                                                        errmsg))
+        except ValueError:
+            # ParseBitcode returned NULL pointer
+            if errmsg:
+                raise RuntimeError("LLVM bitcode parsing error\n{0}".format(errmsg))
+            else:
+                raise
     return mod
 
 

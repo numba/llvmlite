@@ -103,7 +103,10 @@ class ObjectRef(object):
     _owned = False
 
     def __init__(self, ptr):
-        if ptr is None:
+        # Check for NULL pointer:
+        # 1) it is NULL if ptr is None
+        # 2) ptr.contents will raises a ValueError when dereference NULL pointer
+        if ptr is None or not ptr.contents:
             raise ValueError("NULL pointer")
         self._ptr = ptr
         self._as_parameter_ = ptr
@@ -113,20 +116,24 @@ class ObjectRef(object):
         """
         Close this object and do any required clean-up actions.
         """
-        try:
-            if not self._closed and not self._owned:
-                self._dispose()
-        finally:
-            self.detach()
+        # Ensure we are not here due to __init__ error
+        if not isinstance(self._as_parameter_, _DeadPointer):
+            try:
+                if not self._closed and not self._owned:
+                    self._dispose()
+            finally:
+                self.detach()
 
     def detach(self):
         """
         Detach the underlying LLVM resource without disposing of it.
         """
-        if not self._closed:
-            del self._as_parameter_
-            self._closed = True
-            self._ptr = None
+        # Ensure we are not here due to __init__ error
+        if not isinstance(self._as_parameter_, _DeadPointer):
+            if not self._closed:
+                del self._as_parameter_
+                self._closed = True
+                self._ptr = None
 
     def _dispose(self):
         """
