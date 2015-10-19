@@ -655,7 +655,7 @@ class TestValueRef(BaseTest):
         mod = self.module()
         glob = mod.get_global_variable("glob")
         tp = glob.type
-        self.assertIsInstance(tp, ffi.LLVMTypeRef)
+        self.assertIsInstance(tp, llvm.TypeRef)
 
     def test_close(self):
         glob = self.glob()
