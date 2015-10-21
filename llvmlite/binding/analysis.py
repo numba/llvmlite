@@ -4,8 +4,8 @@ A collection of analysis utils
 
 from __future__ import absolute_import, print_function
 
-from ctypes import POINTER, c_char_p, c_int
 import re
+from ctypes import POINTER, c_char_p, c_int
 
 from llvmlite import ir
 from . import ffi
@@ -100,7 +100,6 @@ class ControlStructures(object):
         bb = self._function.entry_basic_block
         while True:
             self._bbmap[bb.name] = bb
-            print(bb)
             try:
                 bb = bb.next
             except ValueError:
@@ -229,7 +228,8 @@ class Region(object):
     Represent a single-entry single-exit region as defined in the
     Program Structure Tree paper by Johnson, Pearson and Pingali.
 
-    The `blocks` attribute is a set of all basicblock in the region.
+    The `blocks` attribute is a set of basic blocks that is directly in the
+    region, without including any basic blocks in the subregion.
     The `subregions` attribute is a set of all inner regions.
     """
 
@@ -238,8 +238,51 @@ class Region(object):
         self.blocks = set()
         self.subregions = set()
 
+    @property
+    def contained_blocks(self):
+        """
+        Returns all contained blocks
+        """
+        ret = self.blocks
+        for sub in self.subregions:
+            ret |= sub.contained_blocks
+        return ret
+
+    def __iter__(self):
+        # Iterate over all contained blocks with no specific order
+        def iterator():
+            # Yield all directly contained block
+            for i in self.blocks:
+                yield i
+            # Yield all sub region blocks
+            for sub in self.subregions:
+                for j in sub:
+                    yield j
+
+        return iterator()
+
+    def __contains__(self, bb):
+        return bb in self.blocks or any(bb in sub for sub in self.subregions)
+
     def __repr__(self):
         return "<RegionTree {0!r}>".format(self.name)
+
+    def __str__(self):
+        buf = []
+        self._format(buf)
+        return '\n'.join(buf)
+
+    def _format(self, buf, depth=0):
+        """
+        Format the region tree into a list buffer (`buf`).
+        """
+        indent = '  ' * depth
+        bbnames = [repr(bb.name) for bb in self.blocks]
+        buf.append("{0}Region {1} : {2}".format(indent, self.name,
+                                                ', '.join(bbnames)))
+        # Recursively format sub regions
+        for sub in self.subregions:
+            sub._format(buf, depth=depth + 1)
 
 
 def _yield_matches(lines, regex):
