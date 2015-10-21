@@ -208,7 +208,6 @@ class ControlStructures(object):
         return self._parse_trees(desc)
 
     _regex_domfront = re.compile(r"^\s*DomFrontier for BB %(.*) is:(.*)$")
-    _regex_domfront_bb = re.compile(r"\s*%(.*)$")
 
     def _parse_domfront(self):
         desc = self._sections['domfront']
@@ -217,9 +216,10 @@ class ControlStructures(object):
         for m in _yield_matches(desc.splitlines(), self._regex_domfront):
             grps = m.groups()
             src, dst = grps
-            m = self._regex_domfront_bb.match(dst)
-            if m:
-                domfront[self._bbmap[src]] = self._bbmap[m.group(1)]
+            bblist = dst.strip().split()
+            domfront[self._bbmap[src]] = frozenset(self._bbmap[bb.lstrip('%')]
+                                                   for bb in bblist)
+
         return domfront
 
 
