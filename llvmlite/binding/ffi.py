@@ -117,7 +117,7 @@ class ObjectRef(object):
         Close this object and do any required clean-up actions.
         """
         # Ensure we are not here due to __init__ error
-        if not isinstance(self._as_parameter_, _DeadPointer):
+        if hasattr(self, '_ptr'):
             try:
                 if not self._closed and not self._owned:
                     self._dispose()
@@ -129,7 +129,7 @@ class ObjectRef(object):
         Detach the underlying LLVM resource without disposing of it.
         """
         # Ensure we are not here due to __init__ error
-        if not isinstance(self._as_parameter_, _DeadPointer):
+        if hasattr(self, '_ptr'):
             if not self._closed:
                 del self._as_parameter_
                 self._closed = True
