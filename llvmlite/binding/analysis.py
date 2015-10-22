@@ -95,6 +95,16 @@ def _cached_property(key):
 
 
 class ControlStructures(object):
+    """
+    This class provides a lazy parser for the text description from the
+    result of the `control_structures_analysis()` function.
+
+    Access to the result of each analysis pass is provided from attributes:
+    e.g. region_info, post_dominators, etc..  The information is parsed
+    lazily and structures are constructed to facilitate the use of the analysis
+    result.
+
+    """
     def __init__(self, func, descr):
         self._function = func
         self._bbmap = {}
@@ -111,25 +121,47 @@ class ControlStructures(object):
 
     @_cached_property('regions')
     def region_info(self):
+        """
+        Returns the root (toplevel region) of the region tree.
+        """
         return self._parse_regions()
 
     @_cached_property('postdoms')
     def post_dominators(self):
+        """
+        Returns a dictionary of the post-dominators as a mapping from a block
+        to its immediate post-dominator.
+        """
         return self._parse_postdoms()
 
     @_cached_property('doms')
     def dominators(self):
+        """
+        Returns a dictionary of the dominators as a mapping from a block
+        to its immediate dominators.
+        """
         return self._parse_doms()
 
     @_cached_property('domfront')
     def dominance_frontiers(self):
+        """
+        Returns a dictionary of the dominance frontiers as a mapping from
+        a block to its dominance frontiers.
+        """
         return self._parse_domfront()
 
     @_cached_property('loops')
     def loops(self):
+        """
+        Returns a list of loop information.
+        """
         return self._parse_loops()
 
     def _split_sections(self, descr):
+        """
+        Internal function for splitting the descriptor text into different
+        sections.
+        """
         prefix_template = '>>> {0}\n'
         sections = ['regions', 'postdoms', 'domfront', 'doms', 'loops']
         starts = []
