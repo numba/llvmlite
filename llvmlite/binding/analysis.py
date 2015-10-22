@@ -5,6 +5,7 @@ A collection of analysis utils
 from __future__ import absolute_import, print_function
 
 import re
+from collections import defaultdict
 from ctypes import POINTER, c_char_p, c_int
 
 from llvmlite import ir
@@ -124,9 +125,13 @@ class ControlStructures(object):
     def dominance_frontiers(self):
         return self._parse_domfront()
 
+    @_cached_property('loops')
+    def loops(self):
+        return self._parse_loops()
+
     def _split_sections(self, descr):
         prefix_template = '>>> {0}\n'
-        sections = ['regions', 'postdoms', 'domfront', 'doms']
+        sections = ['regions', 'postdoms', 'domfront', 'doms', 'loops']
         starts = []
         stops = []
         lastpos = 0
@@ -221,6 +226,109 @@ class ControlStructures(object):
                                                    for bb in bblist)
 
         return domfront
+
+    _regex_loops = re.compile(r"^Loop at depth (\d) containing: (.*)$")
+
+    def _parse_loops(self):
+        desc = self._sections['loops']
+        loops = []
+        for m in _yield_matches(desc.splitlines(), self._regex_loops):
+            depth = int(m.group(1))
+            info = m.group(2)
+            loop = Loop(depth=depth)
+            # parse info
+            for sect in info.split(','):
+
+                has_tags = set()
+                for tag in Loop.TAGS:
+                    tagfmt = '<{0}>'.format(tag)
+                    if tagfmt in sect:
+                        has_tags.add(tag)
+
+                # strip tags
+                if has_tags:
+                    sect = sect[:sect.index('<')]
+                bb = self._bbmap[sect.lstrip('%')]
+
+                # add block
+                loop.blocks.add(bb)
+                # add tags
+                for tag in has_tags:
+                    loop.tag_block(bb, tag)
+
+            loops.append(loop)
+
+        return loops
+
+
+class Loop(object):
+    TAGS = frozenset(['header', 'latch', 'exiting'])
+
+    def __init__(self, depth):
+        self.depth = depth
+        self.blocks = set()
+        self._tags = defaultdict(set)
+        self._header = None
+        self._exit = None
+        self._latches = set()
+        self._tagless = None
+
+    def tag_block(self, blk, tag):
+        assert tag in self.TAGS
+        self.blocks.add(blk)
+        self._tags[blk].add(tag)
+        if tag == 'header':
+            assert self._header is None
+            self._header = blk
+        elif tag == 'latch':
+            self._latches.add(blk)
+        elif tag == 'exiting':
+            assert self._exit is None
+            self._exit = blk
+
+    def tags(self, blk):
+        """
+        Returns the tags as a set for the given block
+        or raises ValueError if it does not belong to this loop
+        """
+        if blk not in self.blocks:
+            raise ValueError("{0} does not belong to this loop".format(
+                blk.name))
+        return self._tags[blk]
+
+    @property
+    def header(self):
+        ret = self._header
+        assert ret is not None
+        return ret
+
+    @property
+    def exit(self):
+        ret = self._exit
+        assert ret is not None
+        return ret
+
+    @property
+    def latches(self):
+        return frozenset(self._latches)
+
+    @property
+    def tagless(self):
+        if not self._tagless:
+            self._tagless = frozenset(bb for bb, tags in self._tags.items()
+                                      if not tags)
+        return self._tagless
+
+    def __str__(self):
+        inner = []
+        for bb in self.blocks:
+            tags = ','.join([str(t) for t in self.tags(bb)])
+            if tags:
+                inner.append("{0} [{1}]".format(bb.name, tags))
+            else:
+                inner.append("{0}".format(bb.name))
+
+        return "Loop: " + '; '.join(inner)
 
 
 class Region(object):
