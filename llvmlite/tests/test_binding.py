@@ -1004,10 +1004,6 @@ class TestAnalysis(BaseTest):
         ir_mod = self.build_ir_module_complex_cfg()
         mod = llvm.parse_assembly(str(ir_mod))
         foo = mod.get_function('foo')
-
-        cfg = llvm.get_function_cfg(foo)
-        llvm.view_dot_graph(cfg, view=True)
-
         cs = llvm.control_structures_analysis(foo)
 
         top_level_region = cs.region_info
@@ -1028,9 +1024,6 @@ class TestAnalysis(BaseTest):
         ir_mod = self.build_ir_module_complex_cfg()
         mod = llvm.parse_assembly(str(ir_mod))
         foo = mod.get_function('foo')
-
-        cfg = llvm.get_function_cfg(foo)
-        llvm.view_dot_graph(cfg, view=True)
 
         cs = llvm.control_structures_analysis(foo)
         blocks = set(foo.basic_blocks)
@@ -1054,9 +1047,6 @@ class TestAnalysis(BaseTest):
         mod = llvm.parse_assembly(str(ir_mod))
         foo = mod.get_function('foo')
 
-        cfg = llvm.get_function_cfg(foo)
-        llvm.view_dot_graph(cfg, view=True)
-
         cs = llvm.control_structures_analysis(foo)
         blocks = set(foo.basic_blocks)
         blockmap = dict((b.name, b) for b in blocks)
@@ -1074,10 +1064,7 @@ class TestAnalysis(BaseTest):
         ir_mod = self.build_ir_module_complex_cfg()
         mod = llvm.parse_assembly(str(ir_mod))
         foo = mod.get_function('foo')
-
-        cfg = llvm.get_function_cfg(foo)
-        llvm.view_dot_graph(cfg, view=True)
-
+        
         cs = llvm.control_structures_analysis(foo)
         blocks = set(foo.basic_blocks)
         blockmap = dict((b.name, b) for b in blocks)
@@ -1095,9 +1082,6 @@ class TestAnalysis(BaseTest):
         ir_mod = self.build_ir_module_complex_cfg()
         mod = llvm.parse_assembly(str(ir_mod))
         foo = mod.get_function('foo')
-
-        cfg = llvm.get_function_cfg(foo)
-        llvm.view_dot_graph(cfg, view=True)
 
         cs = llvm.control_structures_analysis(foo)
         blocks = set(foo.basic_blocks)
