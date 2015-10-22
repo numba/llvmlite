@@ -105,6 +105,7 @@ class ControlStructures(object):
     result.
 
     """
+
     def __init__(self, func, descr):
         self._function = func
         self._bbmap = {}
@@ -274,6 +275,7 @@ class ControlStructures(object):
     def _parse_loops(self):
         desc = self._sections['loops']
         loops = []
+
         for m in _yield_matches(desc.splitlines(), self._regex_loops):
             depth = int(m.group(1))
             info = m.group(2)
@@ -296,8 +298,9 @@ class ControlStructures(object):
                 loop.blocks.add(bb)
                 # add tags
                 for tag in has_tags:
-                    loop.tag_block(bb, tag)
+                    loop._tag_block(bb, tag)
 
+            loop.verify()
             loops.append(loop)
 
         return loops
@@ -311,11 +314,11 @@ class Loop(object):
         self.blocks = set()
         self._tags = defaultdict(set)
         self._header = None
-        self._exit = None
+        self._exits = set()
         self._latches = set()
         self._tagless = None
 
-    def tag_block(self, blk, tag):
+    def _tag_block(self, blk, tag):
         assert tag in self.TAGS
         self.blocks.add(blk)
         self._tags[blk].add(tag)
@@ -325,8 +328,7 @@ class Loop(object):
         elif tag == 'latch':
             self._latches.add(blk)
         elif tag == 'exiting':
-            assert self._exit is None
-            self._exit = blk
+            self._exits.add(blk)
 
     def tags(self, blk):
         """
@@ -340,35 +342,65 @@ class Loop(object):
 
     @property
     def header(self):
+        """
+        The start of the loop.
+        """
         ret = self._header
         assert ret is not None
         return ret
 
     @property
-    def exit(self):
-        ret = self._exit
-        assert ret is not None
-        return ret
+    def exits(self):
+        """
+        The exit points of the loop.  An exit ends with the branch that
+        goes to the header (an exit can be a latch) or a latch, or escape the
+        cyclic code.
+        """
+        return self._exits
 
     @property
     def latches(self):
+        """Latches branch back to the loop header.
+        """
         return frozenset(self._latches)
 
     @property
     def tagless(self):
+        """
+        Other basic blocks in the loop that is not tagged.
+        """
         if not self._tagless:
-            self._tagless = frozenset(bb for bb, tags in self._tags.items()
-                                      if not tags)
+            self._tagless = frozenset(bb for bb in self.blocks
+                                      if not self.tags(bb))
         return self._tagless
 
+    def verify(self):
+        """
+        Verify self structure. Raise ValueError on failure.
+        """
+        combined = set([self.header]) | self.tagless | self.latches | self.exits
+        if self.blocks != combined:
+            raise ValueError("malformed")
+
     def __str__(self):
-        inner = []
-        for bb in self.blocks:
+        def fmt(inner, bb):
             tags = ','.join([str(t) for t in self.tags(bb)])
             if tags:
                 inner.append("{0} [{1}]".format(bb.name, tags))
             else:
                 inner.append("{0}".format(bb.name))
+
+        showed = set()
+        inner = []
+        fmt(inner, self.header)
+        showed.add(self.header)
+        for bb in (self.exits - showed):
+            fmt(inner, bb)
+        showed |= self.exits
+        for bb in (self.latches - showed):
+            fmt(inner, bb)
+        for bb in self.tagless:
+            fmt(inner, bb)
 
         return "Loop: " + '; '.join(inner)
 
