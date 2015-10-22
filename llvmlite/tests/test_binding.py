@@ -930,6 +930,50 @@ class TestAnalysis(BaseTest):
         bd.ret(z)
         return m
 
+    def build_ir_module_complex_cfg(self):
+        m = ir.Module()
+        ft = ir.FunctionType(ir.IntType(32), [ir.IntType(32), ir.IntType(32)])
+        ft_pred = ir.FunctionType(ir.IntType(1),
+                                  [ir.IntType(32), ir.IntType(32)])
+
+        fn = ir.Function(m, ft, "foo")
+        fn_check = ir.Function(m, ft_pred, "check")
+        fn_work = ir.Function(m, ft, "work")
+
+        bd = ir.IRBuilder(fn.append_basic_block('entry'))
+
+        x, y = fn.args
+        var_a = bd.alloca(x.type)
+
+        bd.store(bd.add(x, y), var_a)
+
+        bb_header = bd.append_basic_block('header')
+        bb_body = bd.append_basic_block('body')
+        bb_tail = bd.append_basic_block('tail')
+
+        bd.branch(bb_header)
+        bd.position_at_end(bb_header)
+
+        a = bd.load(var_a)
+        cond = bd.icmp_signed('==', a, bd.mul(y, x))
+        bd.cbranch(cond, bb_body, bb_tail)
+
+        bd.position_at_end(bb_body)
+
+        a = bd.load(var_a)
+        with bd.if_then(bd.call(fn_check, [a, x])):
+            bd.branch(bb_tail)
+
+        new_a = bd.call(fn_work, [a, y])
+        bd.store(new_a, var_a)
+
+        bd.branch(bb_header)
+
+        bd.position_at_end(bb_tail)
+
+        bd.ret(bd.load(var_a))
+        return m
+
     def test_get_function_cfg_on_ir(self):
         mod = self.build_ir_module()
         foo = mod.get_global('foo')
@@ -955,6 +999,122 @@ class TestAnalysis(BaseTest):
         inst = "%.3 = add i32 %.1, %.2"
         self.assertIn(inst, dot_showing_inst)
         self.assertNotIn(inst, dot_without_inst)
+
+    def test_region_info(self):
+        ir_mod = self.build_ir_module_complex_cfg()
+        mod = llvm.parse_assembly(str(ir_mod))
+        foo = mod.get_function('foo')
+
+        cfg = llvm.get_function_cfg(foo)
+        llvm.view_dot_graph(cfg, view=True)
+
+        cs = llvm.control_structures_analysis(foo)
+
+        top_level_region = cs.region_info
+        blocks = set(foo.basic_blocks)
+        blockmap = dict((b.name, b) for b in blocks)
+        # top level region must have all basic blocks
+        self.assertEqual(blocks, set(top_level_region.contained_blocks))
+        # but not all the blocks are directly in top level region
+        self.assertNotEqual(blocks, set(top_level_region.blocks))
+        # there is one subregion
+        self.assertEqual(len(top_level_region.subregions), 1)
+        [subregion] = top_level_region.subregions
+        # the subregion contains all blocks except "entry" and "tail"
+        self.assertEqual(set(subregion.blocks),
+                         blocks - set([blockmap['entry'], blockmap['tail']]))
+
+    def test_loop_info(self):
+        ir_mod = self.build_ir_module_complex_cfg()
+        mod = llvm.parse_assembly(str(ir_mod))
+        foo = mod.get_function('foo')
+
+        cfg = llvm.get_function_cfg(foo)
+        llvm.view_dot_graph(cfg, view=True)
+
+        cs = llvm.control_structures_analysis(foo)
+        blocks = set(foo.basic_blocks)
+        blockmap = dict((b.name, b) for b in blocks)
+
+        # there is one loop
+        self.assertEqual(len(cs.loops), 1)
+        [loop] = cs.loops
+        # check the header
+        self.assertEqual(loop.header, blockmap['header'])
+        # there are two exits
+        self.assertEqual(set([blockmap['header'], blockmap['body']]),
+                         loop.exits)
+        # there is one latch
+        self.assertEqual(set([blockmap['body.endif']]), loop.latches)
+        # there are no tagless blocks
+        self.assertEqual(len(loop.tagless), 0)
+
+    def test_post_dominators(self):
+        ir_mod = self.build_ir_module_complex_cfg()
+        mod = llvm.parse_assembly(str(ir_mod))
+        foo = mod.get_function('foo')
+
+        cfg = llvm.get_function_cfg(foo)
+        llvm.view_dot_graph(cfg, view=True)
+
+        cs = llvm.control_structures_analysis(foo)
+        blocks = set(foo.basic_blocks)
+        blockmap = dict((b.name, b) for b in blocks)
+
+        postdoms = cs.post_dominators
+
+        self.assertEqual(postdoms[blockmap['entry']], blockmap['header'])
+        self.assertEqual(postdoms[blockmap['header']], blockmap['tail'])
+        self.assertEqual(postdoms[blockmap['body']], blockmap['tail'])
+        self.assertEqual(postdoms[blockmap['body.if']], blockmap['tail'])
+        self.assertEqual(postdoms[blockmap['body.endif']], blockmap['header'])
+        self.assertIsNone(postdoms.get(blockmap['tail']))
+
+    def test_dominators(self):
+        ir_mod = self.build_ir_module_complex_cfg()
+        mod = llvm.parse_assembly(str(ir_mod))
+        foo = mod.get_function('foo')
+
+        cfg = llvm.get_function_cfg(foo)
+        llvm.view_dot_graph(cfg, view=True)
+
+        cs = llvm.control_structures_analysis(foo)
+        blocks = set(foo.basic_blocks)
+        blockmap = dict((b.name, b) for b in blocks)
+
+        doms = cs.dominators
+
+        self.assertIsNone(doms.get(blockmap['entry']))
+        self.assertEqual(doms[blockmap['header']], blockmap['entry'])
+        self.assertEqual(doms[blockmap['body']], blockmap['header'])
+        self.assertEqual(doms[blockmap['body.if']], blockmap['body'])
+        self.assertEqual(doms[blockmap['body.endif']], blockmap['body'])
+        self.assertEqual(doms[blockmap['tail']], blockmap['header'])
+
+    def test_dominance_frontier(self):
+        ir_mod = self.build_ir_module_complex_cfg()
+        mod = llvm.parse_assembly(str(ir_mod))
+        foo = mod.get_function('foo')
+
+        cfg = llvm.get_function_cfg(foo)
+        llvm.view_dot_graph(cfg, view=True)
+
+        cs = llvm.control_structures_analysis(foo)
+        blocks = set(foo.basic_blocks)
+        blockmap = dict((b.name, b) for b in blocks)
+
+        domfronts = cs.dominance_frontiers
+
+        self.assertEqual(domfronts[blockmap['entry']], set())
+        self.assertEqual(domfronts[blockmap['header']],
+                         set([blockmap['header']]))
+        self.assertEqual(domfronts[blockmap['body']],
+                         set([blockmap['header'], blockmap['tail']]))
+        self.assertEqual(domfronts[blockmap['body.if']],
+                         set([blockmap['tail']]))
+        self.assertEqual(domfronts[blockmap['body.endif']],
+                         set([blockmap['header']]))
+        self.assertEqual(domfronts[blockmap['tail']], set())
 
 
 if __name__ == "__main__":

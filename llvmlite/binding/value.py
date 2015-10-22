@@ -154,6 +154,21 @@ class ValueRef(ffi.ObjectRef):
         return BasicBlockRef(ffi.lib.LLVMPY_GetEntryBasicBlock(self),
                              self._module)
 
+    @property
+    def basic_blocks(self):
+        assert self.type.is_function_pointer
+        bb_iter = self.entry_basic_block
+        out = []
+
+        while True:
+            out.append(bb_iter)
+            try:
+                bb_iter = bb_iter.next
+            except:
+                break
+
+        return out
+
 
 class BasicBlockRef(ffi.ObjectRef):
     """

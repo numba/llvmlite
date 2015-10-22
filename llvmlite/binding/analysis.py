@@ -5,7 +5,7 @@ A collection of analysis utils
 from __future__ import absolute_import, print_function
 
 import re
-from collections import defaultdict
+from collections import defaultdict, Mapping, Sequence
 from ctypes import POINTER, c_char_p, c_int
 
 from llvmlite import ir
@@ -94,6 +94,43 @@ def _cached_property(key):
     return wrap
 
 
+class ImmutableMapping(Mapping):
+    def __init__(self, dct):
+        self._dct = dct
+
+    def __iter__(self):
+        return iter(self._dct)
+
+    def __len__(self):
+        return len(self._dct)
+
+    def __getitem__(self, item):
+        return self._dct[item]
+
+    def __str__(self):
+        return str(self._dct)
+
+    def __repr__(self):
+        return repr(self._dct)
+
+
+class ImmutableSequence(Sequence):
+    def __init__(self, seq):
+        self._seq = seq
+
+    def __getitem__(self, item):
+        return self._seq[item]
+
+    def __len__(self):
+        return len(self._seq)
+
+    def __str__(self):
+        return str(self._seq)
+
+    def __repr__(self):
+        return repr(self._seq)
+
+
 class ControlStructures(object):
     """
     This class provides a lazy parser for the text description from the
@@ -133,7 +170,7 @@ class ControlStructures(object):
         Returns a dictionary of the post-dominators as a mapping from a block
         to its immediate post-dominator.
         """
-        return self._parse_postdoms()
+        return ImmutableMapping(self._parse_postdoms())
 
     @_cached_property('doms')
     def dominators(self):
@@ -141,7 +178,7 @@ class ControlStructures(object):
         Returns a dictionary of the dominators as a mapping from a block
         to its immediate dominators.
         """
-        return self._parse_doms()
+        return ImmutableMapping(self._parse_doms())
 
     @_cached_property('domfront')
     def dominance_frontiers(self):
@@ -149,14 +186,14 @@ class ControlStructures(object):
         Returns a dictionary of the dominance frontiers as a mapping from
         a block to its dominance frontiers.
         """
-        return self._parse_domfront()
+        return ImmutableMapping(self._parse_domfront())
 
     @_cached_property('loops')
     def loops(self):
         """
         Returns a list of loop information.
         """
-        return self._parse_loops()
+        return ImmutableSequence(self._parse_loops())
 
     def _split_sections(self, descr):
         """
@@ -425,7 +462,7 @@ class Region(object):
         """
         Returns all contained blocks
         """
-        ret = self.blocks
+        ret = set(self.blocks)
         for sub in self.subregions:
             ret |= sub.contained_blocks
         return ret
