@@ -213,26 +213,36 @@ class ControlStructures(object):
         # Toplevel region must be defined already
         return regionmap[toplvl]
 
-    _regex_postdom = re.compile(r"^\s*\[(\d)\]\s+%(.*)\s\{.*\}$")
+    _regex_postdom = re.compile(r"^\s*\[(\d)\]\s+(.*)\s\{.*\}$")
 
     def _parse_trees(self, desc):
         tree = {}
         stack = []
+        # Make a dummy object as the sentinel
+        sentinel = object()
         for m in _yield_matches(desc.splitlines(), self._regex_postdom):
             grps = m.groups()
             depth = int(grps[0])
-            bb = self._bbmap[grps[1]]
+            nodename = grps[1]
+            if nodename.startswith('%'):
+                bb = self._bbmap[nodename[1:]]
 
-            assert depth > 0
-            if depth == 1:
-                stack = [bb]
+                assert depth > 0
+                if depth == 1:
+                    stack = [bb]
+                else:
+                    stack = stack[:depth - 1]
+                    parent = stack[-1]
+                    if parent is not sentinel:
+                        tree[bb] = parent
+                    stack.append(bb)
+
+                    assert depth == len(stack)
+            elif nodename == '<<exit node>>':
+                stack.append(sentinel)
             else:
-                stack = stack[:depth - 1]
-                parent = stack[-1]
-                tree[bb] = parent
-                stack.append(bb)
-
-                assert depth == len(stack)
+                raise ValueError("unknown format: nodename={0!r}".format(
+                    nodename))
 
         return tree
 
