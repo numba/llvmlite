@@ -194,23 +194,22 @@ class BasicBlockRef(_WeakValueRef):
     A weak reference to a LLVM BasicBlock
     """
 
-    def __init__(self, ptr, func):
-        assert func.type.is_function_pointer
-        self._func = func
+    def __init__(self, ptr, module):
+        self._module = module
         super(BasicBlockRef, self).__init__(ptr)
 
     @property
     def function(self):
-        return self._func
+        return ValueRef(ffi.lib.LLVMGetBasicBlockParent(self._ptr), self.module)
 
     @property
-    def moduel(self):
-        return self._func.module
+    def module(self):
+        return self._module
 
     @property
     def as_value(self):
         return ValueRef(ffi.lib.LLVMPY_BasicBlockAsValue(self),
-                        self._func.module)
+                        self.module)
 
     def __str__(self):
         return str(self.as_value)
@@ -230,23 +229,23 @@ class BasicBlockRef(_WeakValueRef):
     def next(self):
         """The next basic block of the function"""
         return BasicBlockRef(ffi.lib.LLVMPY_GetNextBasicBlock(self),
-                             self.function)
+                             self.module)
 
     @property
     def prev(self):
         """The previous basic block of the function"""
         return BasicBlockRef(ffi.lib.LLVMPY_GetPreviousBasicBlock(self),
-                             self.function)
+                             self.module)
 
     @property
     def first_instruction(self):
         return InstructionRef(ffi.lib.LLVMPY_GetFirstInstruction(self),
-                              self)
+                              self.module)
 
     @property
     def last_instruction(self):
         return InstructionRef(ffi.lib.LLVMPY_GetLastInstruction(self),
-                              self)
+                              self.module)
 
     def iter_instructions(self):
         cur = self.first_instruction
@@ -266,8 +265,8 @@ class InstructionRef(_WeakValueRef):
     def is_instruction(ptr):
         return ffi.lib.LLVMPY_IsInstruction(ptr)
 
-    def __init__(self, ptr, block):
-        self._block = block
+    def __init__(self, ptr, module):
+        self._module = module
         super(InstructionRef, self).__init__(ptr)
         if not self.is_instruction(self._ptr):
             raise ValueError("pointer is not an instruction")
@@ -296,25 +295,26 @@ class InstructionRef(_WeakValueRef):
 
     @property
     def basic_block(self):
-        return self._block
+        return BasicBlockRef(ffi.lib.LLVMPY_GetInstructionParent(self),
+                             self._module)
 
     @property
     def function(self):
-        return self._block.function
+        return self.basic_block.function
 
     @property
     def module(self):
-        return self._block.function.module
+        return self._module
 
     @property
     def next(self):
         return InstructionRef(ffi.lib.LLVMPY_GetNextInstruction(self),
-                              self.basic_block)
+                              self.module)
 
     @property
     def prev(self):
         return InstructionRef(ffi.lib.LLVMPY_GetPreviousInstruction(self),
-                              self.basic_block)
+                              self.module)
 
     @property
     def first_use(self):
@@ -325,13 +325,17 @@ class InstructionRef(_WeakValueRef):
 
 
 class UseRef(_WeakValueRef):
-    def __init__(self, ptr, value):
-        self._value = value
+    def __init__(self, ptr, module):
+        self._module = module
         super(UseRef, self).__init__(ptr)
 
     @property
     def value(self):
-        return self._value
+        ptr = ffi.lib.LLVMPY_GetUsedValue(self)
+        cls = (InstructionRef
+               if InstructionRef.is_instruction(ptr)
+               else ValueRef)
+        return cls(ptr, self._module)
 
     @property
     def next(self):
@@ -343,11 +347,10 @@ class UseRef(_WeakValueRef):
     @property
     def user(self):
         ptr = ffi.lib.LLVMPY_GetUser(self)
-        if InstructionRef.is_instruction(ptr):
-            return InstructionRef(ptr, self.value.basic_block)
-
-        else:
-            return ValueRef(ptr, self.value.module)
+        cls = (InstructionRef
+               if InstructionRef.is_instruction(ptr)
+               else ValueRef)
+        return cls(ptr, self._module)
 
 
 class TypeRef(_WeakValueRef):
@@ -474,8 +477,6 @@ ffi.lib.LLVMPY_GetPreviousInstruction.restype = ffi.LLVMValueRef
 ffi.lib.LLVMPY_IsInstruction.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_IsInstruction.restype = c_int
 
-
-
 ffi.lib.LLVMPY_GetFirstUse.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetFirstUse.restype = ffi.LLVMUseRef
 
@@ -484,3 +485,12 @@ ffi.lib.LLVMPY_GetNextUse.restype = ffi.LLVMUseRef
 
 ffi.lib.LLVMPY_GetUser.argtypes = [ffi.LLVMUseRef]
 ffi.lib.LLVMPY_GetUser.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetUsedValue.argtypes = [ffi.LLVMUseRef]
+ffi.lib.LLVMPY_GetUsedValue.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetInstructionParent.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetInstructionParent.restype = ffi.LLVMBasicBlockRef
+
+ffi.lib.LLVMPY_GetBasicBlockParent.argtypes = [ffi.LLVMBasicBlockRef]
+ffi.lib.LLVMPY_GetBasicBlockParent.restype = ffi.LLVMValueRef

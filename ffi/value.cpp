@@ -162,13 +162,29 @@ LLVMPY_GetLastInstruction(LLVMBasicBlockRef BB) {
 }
 
 API_EXPORT(LLVMValueRef)
+LLVMPY_GetBasicBlockParent(LLVMBasicBlockRef BB) {
+    return LLVMGetBasicBlockParent(BB);
+}
+
+API_EXPORT(LLVMValueRef)
 LLVMPY_GetNextInstruction(LLVMValueRef Val) {
     return LLVMGetNextInstruction(Val);
+}
+
+API_EXPORT(LLVMBasicBlockRef)
+LLVMPY_GetInstructionParent(LLVMValueRef V) {
+    return LLVMGetInstructionParent(V);
 }
 
 API_EXPORT(int)
 LLVMPY_IsInstruction(LLVMValueRef Val) {
     return LLVMIsAInstruction(Val) != nullptr;
+}
+
+
+API_EXPORT(int)
+LLVMPY_IsCallInst(LLVMValueRef Val) {
+    return LLVMIsACallInst(Val) != nullptr;
 }
 
 API_EXPORT(LLVMValueRef)
@@ -188,6 +204,11 @@ LLVMPY_GetNextUse(LLVMUseRef U) {
 
 API_EXPORT(LLVMValueRef)
 LLVMPY_GetUser(LLVMUseRef U) {
+    return LLVMGetUser(U);
+}
+
+API_EXPORT(LLVMValueRef)
+LLVMPY_GetUsedValue(LLVMUseRef U) {
     return LLVMGetUser(U);
 }
 
