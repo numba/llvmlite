@@ -1,4 +1,4 @@
-from ctypes import POINTER, c_char_p, c_int, cast, c_void_p
+from ctypes import POINTER, c_char_p, c_int, cast, c_void_p, c_uint
 import enum
 
 from . import ffi
@@ -97,6 +97,7 @@ def _make_value(ptr, module):
            if InstructionRef.is_instruction(ptr)
            else ValueRef)
     return cls(ptr, module)
+
 
 class ValueRef(_WeakValueRef):
     """A weak reference to a LLVM value.
@@ -278,6 +279,10 @@ class InstructionRef(_WeakValueRef):
             raise ValueError("pointer is not an instruction")
 
     @property
+    def as_user(self):
+        return UserRef(self._ptr, self._module)
+
+    @property
     def is_call(self):
         """
         Returns True if this is a call instruction
@@ -340,6 +345,35 @@ class InstructionRef(_WeakValueRef):
             return UseRef(ffi.lib.LLVMPY_GetFirstUse(self), self)
         except ValueError:
             return None
+
+
+class UserRef(_WeakValueRef):
+    @staticmethod
+    def is_user(ptr):
+        return ffi.lib.LLVMPY_IsUser(ptr)
+
+    def __init__(self, ptr, module):
+        self._module = module
+        super(UserRef, self).__init__(ptr)
+        if not self.is_user(self):
+            raise ValueError("value is not a User")
+        self._count = ffi.lib.LLVMPY_GetNumOperands(self)
+
+    def __len__(self):
+        return self._count
+
+    def operand(self, idx):
+        if 0 > idx >= self._count:
+            raise ValueError("index out-of-bound")
+        return _make_value(ffi.lib.LLVMPY_GetOperand(self, idx), self._module)
+
+    def operand_use(self, idx):
+        if 0 > idx >= self._count:
+            raise ValueError("index out-of-bound")
+        return UseRef(ffi.lib.LLVMPY_GetOperandUse(self, idx), self._module)
+
+    def __getitem__(self, idx):
+        return self.operand_use(idx)
 
 
 class UseRef(_WeakValueRef):
@@ -485,7 +519,8 @@ ffi.lib.LLVMPY_GetPreviousInstruction.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetPreviousInstruction.restype = ffi.LLVMValueRef
 
 for _isa_xxx_api in [ffi.lib.LLVMPY_IsInstruction,
-                     ffi.lib.LLVMPY_IsCallInst]:
+                     ffi.lib.LLVMPY_IsCallInst,
+                     ffi.lib.LLVMPY_IsUser]:
 
     _isa_xxx_api.argtypes = [ffi.LLVMValueRef]
     _isa_xxx_api.restype = c_int
@@ -511,3 +546,12 @@ ffi.lib.LLVMPY_GetBasicBlockParent.restype = ffi.LLVMValueRef
 
 ffi.lib.LLVMPY_GetCalledValue.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetCalledValue.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetOperand.argtypes = [ffi.LLVMValueRef, c_uint]
+ffi.lib.LLVMPY_GetOperand.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetOperandUse.argtypes = [ffi.LLVMValueRef, c_uint]
+ffi.lib.LLVMPY_GetOperandUse.restype = ffi.LLVMUseRef
+
+ffi.lib.LLVMPY_GetNumOperands.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetNumOperands.restype = c_int

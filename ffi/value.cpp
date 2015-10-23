@@ -194,6 +194,11 @@ LLVMPY_IsCallInst(LLVMValueRef Val) {
     return LLVMIsACallInst(Val) != nullptr;
 }
 
+API_EXPORT(int)
+LLVMPY_IsUser(LLVMValueRef Val) {
+    return LLVMIsAUser(Val) != nullptr;
+}
+
 API_EXPORT(LLVMValueRef)
 LLVMPY_GetPreviousInstruction(LLVMValueRef Val) {
     return LLVMGetPreviousInstruction(Val);
@@ -216,8 +221,25 @@ LLVMPY_GetUser(LLVMUseRef U) {
 
 API_EXPORT(LLVMValueRef)
 LLVMPY_GetUsedValue(LLVMUseRef U) {
-    return LLVMGetUser(U);
+    return LLVMGetUsedValue(U);
 }
+
+API_EXPORT(LLVMValueRef)
+LLVMPY_GetOperand(LLVMValueRef Val, unsigned Idx) {
+    return LLVMGetOperand(Val, Idx);
+}
+
+
+API_EXPORT(LLVMUseRef)
+LLVMPY_GetOperandUse(LLVMValueRef Val, unsigned Idx) {
+    return LLVMGetOperandUse(Val, Idx);
+}
+
+API_EXPORT(int)
+LLVMPY_GetNumOperands(LLVMValueRef Val) {
+    return LLVMGetNumOperands(Val);
+}
+
 
 API_EXPORT(void)
 LLVMPY_WriteCFG(LLVMValueRef Fval, const char **OutStr, int ShowInst) {

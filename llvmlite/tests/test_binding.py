@@ -1123,7 +1123,7 @@ class TestBasicBlocksInstructions(BaseTest):
         # All users are in the instruction set
         self.assertEqual(insts & users, users)
 
-    def test_callinst(self):
+    def test_callinst_and_user(self):
         m = ir.Module()
         fnty = ir.FunctionType(ir.VoidType(), [ir.IntType(32)])
         fn = ir.Function(m, fnty, name='foo')
@@ -1140,6 +1140,16 @@ class TestBasicBlocksInstructions(BaseTest):
         self.assertTrue(inst.is_call)
         # Its callee is foo
         self.assertEqual(inst.callee, foo)
+
+        user = inst.as_user
+
+        self.assertEqual(len(user), 2)
+        for i in range(len(user)):
+            self.assertEqual(user[i].value, user.operand(i))
+
+        self.assertEqual(str(user[0].value.type), 'i32')
+        # Callee is the last index
+        self.assertEqual(user[1].value, foo)
 
 
 if __name__ == "__main__":
