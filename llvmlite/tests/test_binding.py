@@ -1102,12 +1102,44 @@ class TestAnalysis(BaseTest):
 
 
 class TestBasicBlocksInstructions(BaseTest):
-    def test_basic_block(self):
+    def test_bb_inst_use(self):
         m = self.module()
         fn = m.get_function('sum')
         bb = fn.basic_blocks[0]
+
+        users = set()
+        insts = set()
+        ct = 0
         for inst in bb:
-            print(inst.name)
+            ct += 1
+            insts.add(inst)
+            use = inst.first_use
+            while use is not None:
+                users.add(use.user)
+                use = use.next
+
+        # Each instructions are unique
+        self.assertEqual(ct, len(insts))
+        # All users are in the instruction set
+        self.assertEqual(insts & users, users)
+
+    def test_callinst(self):
+        m = ir.Module()
+        fnty = ir.FunctionType(ir.VoidType(), [ir.IntType(32)])
+        fn = ir.Function(m, fnty, name='foo')
+        bd = ir.IRBuilder(fn.append_basic_block())
+        bd.call(fn, fn.args)
+        bd.ret_void()
+
+        mod = llvm.parse_assembly(str(m))
+        foo = mod.get_function('foo')
+
+        bb = foo.basic_blocks[0]
+        inst = bb.first_instruction
+        # The instruction is a call
+        self.assertTrue(inst.is_call)
+        # Its callee is foo
+        self.assertEqual(inst.callee, foo)
 
 
 if __name__ == "__main__":

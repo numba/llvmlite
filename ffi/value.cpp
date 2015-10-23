@@ -176,6 +176,13 @@ LLVMPY_GetInstructionParent(LLVMValueRef V) {
     return LLVMGetInstructionParent(V);
 }
 
+API_EXPORT(LLVMValueRef)
+LLVMPY_GetCalledValue(LLVMValueRef V) {
+    using namespace llvm;
+    CallInst *ci = reinterpret_cast<CallInst*>(unwrap(V));
+    return wrap(ci->getCalledValue());
+}
+
 API_EXPORT(int)
 LLVMPY_IsInstruction(LLVMValueRef Val) {
     return LLVMIsAInstruction(Val) != nullptr;

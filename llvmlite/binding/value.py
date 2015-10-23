@@ -92,6 +92,12 @@ class _WeakValueRef(ffi.ObjectRef):
             return self._address == other._address
 
 
+def _make_value(ptr, module):
+    cls = (InstructionRef
+           if InstructionRef.is_instruction(ptr)
+           else ValueRef)
+    return cls(ptr, module)
+
 class ValueRef(_WeakValueRef):
     """A weak reference to a LLVM value.
     """
@@ -272,6 +278,18 @@ class InstructionRef(_WeakValueRef):
             raise ValueError("pointer is not an instruction")
 
     @property
+    def is_call(self):
+        """
+        Returns True if this is a call instruction
+        """
+        return ffi.lib.LLVMPY_IsCallInst(self)
+
+    @property
+    def callee(self):
+        assert self.is_call
+        return _make_value(ffi.lib.LLVMPY_GetCalledValue(self), self._module)
+
+    @property
     def as_value(self):
         return ValueRef(self._ptr, self.module)
 
@@ -331,11 +349,7 @@ class UseRef(_WeakValueRef):
 
     @property
     def value(self):
-        ptr = ffi.lib.LLVMPY_GetUsedValue(self)
-        cls = (InstructionRef
-               if InstructionRef.is_instruction(ptr)
-               else ValueRef)
-        return cls(ptr, self._module)
+        return _make_value(ffi.lib.LLVMPY_GetUsedValue(self), self._module)
 
     @property
     def next(self):
@@ -346,11 +360,7 @@ class UseRef(_WeakValueRef):
 
     @property
     def user(self):
-        ptr = ffi.lib.LLVMPY_GetUser(self)
-        cls = (InstructionRef
-               if InstructionRef.is_instruction(ptr)
-               else ValueRef)
-        return cls(ptr, self._module)
+        return _make_value(ffi.lib.LLVMPY_GetUser(self), self._module)
 
 
 class TypeRef(_WeakValueRef):
@@ -474,8 +484,12 @@ ffi.lib.LLVMPY_GetNextInstruction.restype = ffi.LLVMValueRef
 ffi.lib.LLVMPY_GetPreviousInstruction.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetPreviousInstruction.restype = ffi.LLVMValueRef
 
-ffi.lib.LLVMPY_IsInstruction.argtypes = [ffi.LLVMValueRef]
-ffi.lib.LLVMPY_IsInstruction.restype = c_int
+for _isa_xxx_api in [ffi.lib.LLVMPY_IsInstruction,
+                     ffi.lib.LLVMPY_IsCallInst]:
+
+    _isa_xxx_api.argtypes = [ffi.LLVMValueRef]
+    _isa_xxx_api.restype = c_int
+del _isa_xxx_api
 
 ffi.lib.LLVMPY_GetFirstUse.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetFirstUse.restype = ffi.LLVMUseRef
@@ -494,3 +508,6 @@ ffi.lib.LLVMPY_GetInstructionParent.restype = ffi.LLVMBasicBlockRef
 
 ffi.lib.LLVMPY_GetBasicBlockParent.argtypes = [ffi.LLVMBasicBlockRef]
 ffi.lib.LLVMPY_GetBasicBlockParent.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetCalledValue.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetCalledValue.restype = ffi.LLVMValueRef
