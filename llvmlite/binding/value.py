@@ -1,4 +1,4 @@
-from ctypes import POINTER, c_char_p, c_int
+from ctypes import POINTER, c_char_p, c_int, cast, c_void_p
 import enum
 
 from . import ffi
@@ -74,13 +74,31 @@ class StorageClass(enum.IntEnum):
     dllexport = 2
 
 
-class ValueRef(ffi.ObjectRef):
+class _WeakValueRef(ffi.ObjectRef):
+    """A weak reference to a LLVM value or type.
+
+    Comparison and hash is based on the C-pointer value.
+    """
+
+    @property
+    def _address(self):
+        return cast(self._ptr, c_void_p).value
+
+    def __hash__(self):
+        return hash(self._address)
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self._address == other._address
+
+
+class ValueRef(_WeakValueRef):
     """A weak reference to a LLVM value.
     """
 
     def __init__(self, ptr, module):
         self._module = module
-        ffi.ObjectRef.__init__(self, ptr)
+        super(ValueRef, self).__init__(ptr)
 
     def __str__(self):
         with ffi.OutputString() as outstr:
@@ -151,37 +169,48 @@ class ValueRef(ffi.ObjectRef):
     @property
     def entry_basic_block(self):
         assert self.type.is_function_pointer
-        return BasicBlockRef(ffi.lib.LLVMPY_GetEntryBasicBlock(self),
-                             self._module)
+        return BasicBlockRef(ffi.lib.LLVMPY_GetEntryBasicBlock(self), self)
+
+    def iter_basic_blocks(self):
+        assert self.type.is_function_pointer
+        cur = self.entry_basic_block
+        while True:
+            yield cur
+            try:
+                cur = cur.next
+            except ValueError:
+                break
 
     @property
     def basic_blocks(self):
-        assert self.type.is_function_pointer
-        bb_iter = self.entry_basic_block
-        out = []
+        return list(self.iter_basic_blocks())
 
-        while True:
-            out.append(bb_iter)
-            try:
-                bb_iter = bb_iter.next
-            except:
-                break
-
-        return out
+    def __iter__(self):
+        return iter(self.iter_basic_blocks())
 
 
-class BasicBlockRef(ffi.ObjectRef):
+class BasicBlockRef(_WeakValueRef):
     """
     A weak reference to a LLVM BasicBlock
     """
-    def __init__(self, ptr, module):
-        self._module = module
+
+    def __init__(self, ptr, func):
+        assert func.type.is_function_pointer
+        self._func = func
         super(BasicBlockRef, self).__init__(ptr)
+
+    @property
+    def function(self):
+        return self._func
+
+    @property
+    def moduel(self):
+        return self._func.module
 
     @property
     def as_value(self):
         return ValueRef(ffi.lib.LLVMPY_BasicBlockAsValue(self),
-                        self._module)
+                        self._func.module)
 
     def __str__(self):
         return str(self.as_value)
@@ -201,28 +230,133 @@ class BasicBlockRef(ffi.ObjectRef):
     def next(self):
         """The next basic block of the function"""
         return BasicBlockRef(ffi.lib.LLVMPY_GetNextBasicBlock(self),
-                             self._module)
+                             self.function)
 
     @property
     def prev(self):
         """The previous basic block of the function"""
         return BasicBlockRef(ffi.lib.LLVMPY_GetPreviousBasicBlock(self),
-                             self._module)
+                             self.function)
 
-    def __hash__(self):
-        return hash(self.name)
+    @property
+    def first_instruction(self):
+        return InstructionRef(ffi.lib.LLVMPY_GetFirstInstruction(self),
+                              self)
 
-    def __eq__(self, other):
-        if isinstance(other, BasicBlockRef):
-            return self.name == other.name
+    @property
+    def last_instruction(self):
+        return InstructionRef(ffi.lib.LLVMPY_GetLastInstruction(self),
+                              self)
+
+    def iter_instructions(self):
+        cur = self.first_instruction
+        while True:
+            yield cur
+            try:
+                cur = cur.next
+            except ValueError:
+                break
+
+    def __iter__(self):
+        return iter(self.iter_instructions())
 
 
-class TypeRef(ffi.ObjectRef):
+class InstructionRef(_WeakValueRef):
+    @staticmethod
+    def is_instruction(ptr):
+        return ffi.lib.LLVMPY_IsInstruction(ptr)
+
+    def __init__(self, ptr, block):
+        self._block = block
+        super(InstructionRef, self).__init__(ptr)
+        if not self.is_instruction(self._ptr):
+            raise ValueError("pointer is not an instruction")
+
+    @property
+    def as_value(self):
+        return ValueRef(self._ptr, self.module)
+
+    @property
+    def name(self):
+        return self.as_value.name
+
+    @name.setter
+    def name(self, name):
+        self.as_value.name = name
+
+    @property
+    def type(self):
+        return self.as_value.type
+
+    def __str__(self):
+        return str(self.as_value)
+
+    def __repr__(self):
+        return "<Instruction {0!r}>".format(self.name)
+
+    @property
+    def basic_block(self):
+        return self._block
+
+    @property
+    def function(self):
+        return self._block.function
+
+    @property
+    def module(self):
+        return self._block.function.module
+
+    @property
+    def next(self):
+        return InstructionRef(ffi.lib.LLVMPY_GetNextInstruction(self),
+                              self.basic_block)
+
+    @property
+    def prev(self):
+        return InstructionRef(ffi.lib.LLVMPY_GetPreviousInstruction(self),
+                              self.basic_block)
+
+    @property
+    def first_use(self):
+        try:
+            return UseRef(ffi.lib.LLVMPY_GetFirstUse(self), self)
+        except ValueError:
+            return None
+
+
+class UseRef(_WeakValueRef):
+    def __init__(self, ptr, value):
+        self._value = value
+        super(UseRef, self).__init__(ptr)
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def next(self):
+        try:
+            return UseRef(ffi.lib.LLVMPY_GetNextUse(self), self.value)
+        except ValueError:
+            return None
+
+    @property
+    def user(self):
+        ptr = ffi.lib.LLVMPY_GetUser(self)
+        if InstructionRef.is_instruction(ptr):
+            return InstructionRef(ptr, self.value.basic_block)
+
+        else:
+            return ValueRef(ptr, self.value.module)
+
+
+class TypeRef(_WeakValueRef):
     """
     A weak reference to a LLVM Type
     """
+
     def __init__(self, ptr):
-        ffi.ObjectRef.__init__(self, ptr)
+        super(TypeRef, self).__init__(ptr)
         self._id = ffi.lib.LLVMPY_TypeID(self)
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_PrintType(self, out)
@@ -324,3 +458,29 @@ ffi.lib.LLVMPY_ValueAsBasicBlock.restype = ffi.LLVMBasicBlockRef
 
 ffi.lib.LLVMPY_BasicBlockAsValue.argtypes = [ffi.LLVMBasicBlockRef]
 ffi.lib.LLVMPY_BasicBlockAsValue.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetFirstInstruction.argtypes = [ffi.LLVMBasicBlockRef]
+ffi.lib.LLVMPY_GetFirstInstruction.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetLastInstruction.argtypes = [ffi.LLVMBasicBlockRef]
+ffi.lib.LLVMPY_GetLastInstruction.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetNextInstruction.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetNextInstruction.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetPreviousInstruction.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetPreviousInstruction.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_IsInstruction.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_IsInstruction.restype = c_int
+
+
+
+ffi.lib.LLVMPY_GetFirstUse.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetFirstUse.restype = ffi.LLVMUseRef
+
+ffi.lib.LLVMPY_GetNextUse.argtypes = [ffi.LLVMUseRef]
+ffi.lib.LLVMPY_GetNextUse.restype = ffi.LLVMUseRef
+
+ffi.lib.LLVMPY_GetUser.argtypes = [ffi.LLVMUseRef]
+ffi.lib.LLVMPY_GetUser.restype = ffi.LLVMValueRef

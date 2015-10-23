@@ -13,6 +13,7 @@ def _make_opaque_ref(name):
 LLVMContextRef = _make_opaque_ref("LLVMContext")
 LLVMModuleRef = _make_opaque_ref("LLVMModule")
 LLVMValueRef = _make_opaque_ref("LLVMValue")
+LLVMUseRef = _make_opaque_ref("LLVMUse")
 LLVMBasicBlockRef = _make_opaque_ref("LLVMBasicBlockRef")
 LLVMTypeRef = _make_opaque_ref("LLVMType")
 LLVMExecutionEngineRef = _make_opaque_ref("LLVMExecutionEngine")
@@ -167,7 +168,7 @@ class ObjectRef(object):
 
     __nonzero__ = __bool__
 
-    # XXX useful?
     def __hash__(self):
         return hash(ctypes.cast(self._ptr, ctypes.c_void_p).value)
+
 

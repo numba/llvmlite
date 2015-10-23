@@ -151,6 +151,45 @@ LLVMPY_GetPreviousBasicBlock(LLVMBasicBlockRef BB) {
     return LLVMGetPreviousBasicBlock(BB);
 }
 
+API_EXPORT(LLVMValueRef)
+LLVMPY_GetFirstInstruction(LLVMBasicBlockRef BB) {
+    return LLVMGetFirstInstruction(BB);
+}
+
+API_EXPORT(LLVMValueRef)
+LLVMPY_GetLastInstruction(LLVMBasicBlockRef BB) {
+    return LLVMGetLastInstruction(BB);
+}
+
+API_EXPORT(LLVMValueRef)
+LLVMPY_GetNextInstruction(LLVMValueRef Val) {
+    return LLVMGetNextInstruction(Val);
+}
+
+API_EXPORT(int)
+LLVMPY_IsInstruction(LLVMValueRef Val) {
+    return LLVMIsAInstruction(Val) != nullptr;
+}
+
+API_EXPORT(LLVMValueRef)
+LLVMPY_GetPreviousInstruction(LLVMValueRef Val) {
+    return LLVMGetPreviousInstruction(Val);
+}
+
+API_EXPORT(LLVMUseRef)
+LLVMPY_GetFirstUse(LLVMValueRef Val) {
+    return LLVMGetFirstUse(Val);
+}
+
+API_EXPORT(LLVMUseRef)
+LLVMPY_GetNextUse(LLVMUseRef U) {
+    return LLVMGetNextUse(U);
+}
+
+API_EXPORT(LLVMValueRef)
+LLVMPY_GetUser(LLVMUseRef U) {
+    return LLVMGetUser(U);
+}
 
 API_EXPORT(void)
 LLVMPY_WriteCFG(LLVMValueRef Fval, const char **OutStr, int ShowInst) {

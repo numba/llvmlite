@@ -1064,7 +1064,7 @@ class TestAnalysis(BaseTest):
         ir_mod = self.build_ir_module_complex_cfg()
         mod = llvm.parse_assembly(str(ir_mod))
         foo = mod.get_function('foo')
-        
+
         cs = llvm.control_structures_analysis(foo)
         blocks = set(foo.basic_blocks)
         blockmap = dict((b.name, b) for b in blocks)
@@ -1099,6 +1099,15 @@ class TestAnalysis(BaseTest):
         self.assertEqual(domfronts[blockmap['body.endif']],
                          set([blockmap['header']]))
         self.assertEqual(domfronts[blockmap['tail']], set())
+
+
+class TestBasicBlocksInstructions(BaseTest):
+    def test_basic_block(self):
+        m = self.module()
+        fn = m.get_function('sum')
+        bb = fn.basic_blocks[0]
+        for inst in bb:
+            print(inst.name)
 
 
 if __name__ == "__main__":
