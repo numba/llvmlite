@@ -77,31 +77,40 @@ class StorageClass(enum.IntEnum):
 class _WeakValueRef(ffi.ObjectRef):
     """A weak reference to a LLVM value or type.
 
-    Comparison and hash is based on the C-pointer value.
+    Comparable and hashable using the C-pointer value.
     """
 
     @property
-    def _address(self):
+    def _intptr(self):
+        """
+        Returns C-Pointer as int
+        """
         return cast(self._ptr, c_void_p).value
 
     def __hash__(self):
-        return hash(self._address)
+        return hash(self._intptr)
 
     def __eq__(self, other):
-        if isinstance(other, type(self)):
-            return self._address == other._address
+        # Comparision requires the type equivalence
+        if type(self) is type(other):
+            return self._intptr == other._intptr
 
 
 class ValueRef(_WeakValueRef):
     """A weak reference to a LLVM value.
+
+    The ``__new__`` method is defined to downcast the class type to a provide
+    additional features in a typesafe fashion.
     """
 
     def __new__(cls, ptr, module):
         cls = ValueRef
         if ffi.lib.LLVMPY_IsGlobalValue(ptr):
             cls = GlobalValueRef
+
         elif ffi.lib.LLVMPY_IsBasicBlock(ptr):
             cls = BasicBlockRef
+
         elif ffi.lib.LLVMPY_IsInstruction(ptr):
             cls = InstructionRef
             if ffi.lib.LLVMPY_IsUser(ptr):
@@ -110,6 +119,7 @@ class ValueRef(_WeakValueRef):
         return object.__new__(cls)
 
     def __init__(self, ptr, module):
+        # Owns the module to prevent it from being released prematurely.
         self._module = module
         super(ValueRef, self).__init__(ptr)
 
@@ -118,12 +128,22 @@ class ValueRef(_WeakValueRef):
             ffi.lib.LLVMPY_PrintValueToString(self, outstr)
             return str(outstr)
 
+    def __repr__(self):
+        return "<{0} {1!r}>".format(type(self).__name__, self.name)
+
     @property
     def _valueref(self):
+        """Override this method to return the pointer as a LLVMValueRef object.
+        The LLVM C-API uses different opaque types for some llvm::Value
+        subclass.
+        """
         return self
 
     @property
     def type(self):
+        """
+        Returns the value type of the value
+        """
         return TypeRef(ffi.lib.LLVMPY_TypeOf(self._valueref))
 
     @property
@@ -134,40 +154,64 @@ class ValueRef(_WeakValueRef):
 
     @property
     def name(self):
+        """
+        Returns the name of the value as a string
+        """
         return _decode_string(ffi.lib.LLVMPY_GetValueName(self._valueref))
 
     @name.setter
     def name(self, val):
+        """
+        Set the name of value
+        """
         ffi.lib.LLVMPY_SetValueName(self._valueref, _encode_string(val))
 
 
 class GlobalValueRef(ValueRef):
     @property
     def linkage(self):
+        """
+        Get the linkage of the global value
+        """
         return Linkage(ffi.lib.LLVMPY_GetLinkage(self))
 
     @linkage.setter
     def linkage(self, value):
+        """
+        Set the linkage of the global value
+        """
         if not isinstance(value, Linkage):
             value = Linkage[value]
         ffi.lib.LLVMPY_SetLinkage(self, value)
 
     @property
     def visibility(self):
+        """
+        Get the visibility of the global value
+        """
         return Visibility(ffi.lib.LLVMPY_GetVisibility(self))
 
     @visibility.setter
     def visibility(self, value):
+        """
+        Set the visibility of the global value
+        """
         if not isinstance(value, Visibility):
             value = Visibility[value]
         ffi.lib.LLVMPY_SetVisibility(self, value)
 
     @property
     def storage_class(self):
+        """
+        Get the storage class of the global value
+        """
         return StorageClass(ffi.lib.LLVMPY_GetDLLStorageClass(self))
 
     @storage_class.setter
     def storage_class(self, value):
+        """
+        Set the visibility of the global value
+        """
         if not isinstance(value, StorageClass):
             value = StorageClass[value]
         ffi.lib.LLVMPY_SetDLLStorageClass(self, value)
@@ -187,10 +231,17 @@ class GlobalValueRef(ValueRef):
 
     @property
     def entry_basic_block(self):
+        """
+        Get the entry basic block of a function GlobalValue
+        """
         assert self.type.is_function_pointer
         return ValueRef(ffi.lib.LLVMPY_GetEntryBasicBlock(self), self)
 
     def iter_basic_blocks(self):
+        """
+        Returns an iterable for each basic block of the function in
+        sequential order
+        """
         assert self.type.is_function_pointer
         cur = self.entry_basic_block
         while True:
@@ -202,6 +253,9 @@ class GlobalValueRef(ValueRef):
 
     @property
     def basic_blocks(self):
+        """
+        Returns a list of basic block in order
+        """
         return list(self.iter_basic_blocks())
 
     def __iter__(self):
@@ -210,7 +264,11 @@ class GlobalValueRef(ValueRef):
 
 class BasicBlockRef(ValueRef):
     """
-    A weak reference to a LLVM BasicBlock
+    A weak reference to a LLVM BasicBlock.
+
+    LLVM C-API differentiate between LLVMValueRef and LLVMBasicBlockRef.
+    Therefore, this class MUST override `_valueref` property to that will
+    convert a LLVMBasicBlockRef to a LLVMValueRef.
     """
     @property
     def function(self):
@@ -218,10 +276,8 @@ class BasicBlockRef(ValueRef):
 
     @property
     def _valueref(self):
-        return ffi.lib.LLVMPY_BasicBlockAsValue(self)
 
-    def __repr__(self):
-        return "<BasicBlock {0!r}>".format(self.name)
+        return ffi.lib.LLVMPY_BasicBlockAsValue(self)
 
     @property
     def next(self):
@@ -236,13 +292,21 @@ class BasicBlockRef(ValueRef):
 
     @property
     def first_instruction(self):
+        """The first instruction in the basic block"""
         return ValueRef(ffi.lib.LLVMPY_GetFirstInstruction(self), self.module)
 
     @property
     def last_instruction(self):
+        """
+        The last instruction (the terminator is a well formed basicblock)
+        """
         return ValueRef(ffi.lib.LLVMPY_GetLastInstruction(self), self.module)
 
     def iter_instructions(self):
+        """
+        Returns an iterable object that yields each instruction of the basic
+        block in sequential order.
+        """
         cur = self.first_instruction
         while True:
             yield cur
@@ -256,41 +320,52 @@ class BasicBlockRef(ValueRef):
 
 
 class InstructionRef(ValueRef):
+    """
+    A weak reference to a LLVM BasicBlock.
+    """
 
     @property
     def is_call(self):
-        """
-        Returns True if this is a call instruction
-        """
+        """Returns True if this is a call instruction"""
         return ffi.lib.LLVMPY_IsCallInst(self)
 
     @property
     def callee(self):
-        assert self.is_call
+        """Get the callee for a call instruction."""
+        if not self.is_call:
+            raise ValueError("not a call instruction")
         return ValueRef(ffi.lib.LLVMPY_GetCalledValue(self), self._module)
-
-    def __repr__(self):
-        return "<Instruction {0!r}>".format(self.name)
 
     @property
     def basic_block(self):
+        """Get the parent basic block"""
         return ValueRef(ffi.lib.LLVMPY_GetInstructionParent(self), self._module)
 
     @property
     def function(self):
+        """Get the parent function"""
         return self.basic_block.function
 
     @property
     def next(self):
+        """
+        Get the next instruction.
+        Raise ValueError if this is the last instruction.
+        """
         return ValueRef(ffi.lib.LLVMPY_GetNextInstruction(self), self.module)
 
     @property
     def prev(self):
+        """
+        Get the previous instruction.
+        Raise ValueError if this is the first instruction.
+        """
         return ValueRef(ffi.lib.LLVMPY_GetPreviousInstruction(self),
                         self.module)
 
     @property
     def first_use(self):
+        """Returns the first use of this value"""
         try:
             return UseRef(ffi.lib.LLVMPY_GetFirstUse(self), self)
         except ValueError:
