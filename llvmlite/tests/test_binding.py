@@ -1141,15 +1141,15 @@ class TestBasicBlocksInstructions(BaseTest):
         # Its callee is foo
         self.assertEqual(inst.callee, foo)
 
-        user = inst.as_user
+        self.assertIsInstance(inst, llvm.UserRef)
+        user = inst
+        self.assertEqual(user.operand_count, 2)
+        for i in range(user.operand_count):
+            self.assertEqual(user.operand_use(i).value, user.operand(i))
 
-        self.assertEqual(len(user), 2)
-        for i in range(len(user)):
-            self.assertEqual(user[i].value, user.operand(i))
-
-        self.assertEqual(str(user[0].value.type), 'i32')
+        self.assertEqual(str(user.operand_use(0).value.type), 'i32')
         # Callee is the last index
-        self.assertEqual(user[1].value, foo)
+        self.assertEqual(user.operand_use(1).value, foo)
 
 
 if __name__ == "__main__":

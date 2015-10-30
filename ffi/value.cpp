@@ -188,6 +188,10 @@ LLVMPY_IsInstruction(LLVMValueRef Val) {
     return LLVMIsAInstruction(Val) != nullptr;
 }
 
+API_EXPORT(int)
+LLVMPY_IsBasicBlock(LLVMValueRef Val) {
+    return LLVMIsABasicBlock(Val) != nullptr;
+}
 
 API_EXPORT(int)
 LLVMPY_IsCallInst(LLVMValueRef Val) {
@@ -197,6 +201,11 @@ LLVMPY_IsCallInst(LLVMValueRef Val) {
 API_EXPORT(int)
 LLVMPY_IsUser(LLVMValueRef Val) {
     return LLVMIsAUser(Val) != nullptr;
+}
+
+API_EXPORT(int)
+LLVMPY_IsGlobalValue(LLVMValueRef Val) {
+    return LLVMIsAGlobalValue(Val) != nullptr;
 }
 
 API_EXPORT(LLVMValueRef)
