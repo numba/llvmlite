@@ -105,16 +105,15 @@ class ValueRef(_WeakValueRef):
 
     def __new__(cls, ptr, module):
         cls = ValueRef
-        if ffi.lib.LLVMPY_IsGlobalValue(ptr):
-            cls = GlobalValueRef
 
-        elif ffi.lib.LLVMPY_IsBasicBlock(ptr):
+        if ffi.lib.LLVMPY_IsBasicBlock(ptr):
             cls = BasicBlockRef
-
-        elif ffi.lib.LLVMPY_IsInstruction(ptr):
-            cls = InstructionRef
-            if ffi.lib.LLVMPY_IsUser(ptr):
-                cls = UserRef
+        elif ffi.lib.LLVMPY_IsUser(ptr):
+            cls = UserRef
+            if ffi.lib.LLVMPY_IsGlobalValue(ptr):
+                cls = GlobalValueRef
+            elif ffi.lib.LLVMPY_IsInstruction(ptr):
+                cls = InstructionRef
 
         return object.__new__(cls)
 
@@ -167,7 +166,32 @@ class ValueRef(_WeakValueRef):
         ffi.lib.LLVMPY_SetValueName(self._valueref, _encode_string(val))
 
 
-class GlobalValueRef(ValueRef):
+class UserRef(ValueRef):
+    def __init__(self, ptr, module):
+        super(UserRef, self).__init__(ptr, module)
+        self._count = ffi.lib.LLVMPY_GetNumOperands(self)
+
+    @property
+    def operand_count(self):
+        return self._count
+
+    def _normalize_idx(self, idx):
+        if idx < 0:
+            idx += self._count
+        if 0 > idx >= self._count:
+            raise IndexError("index out-of-bound")
+        return idx
+
+    def operand(self, idx):
+        idx = self._normalize_idx(idx)
+        return ValueRef(ffi.lib.LLVMPY_GetOperand(self, idx), self._module)
+
+    def operand_use(self, idx):
+        idx = self._normalize_idx(idx)
+        return UseRef(ffi.lib.LLVMPY_GetOperandUse(self, idx), self._module)
+
+
+class GlobalValueRef(UserRef):
     @property
     def linkage(self):
         """
@@ -319,7 +343,7 @@ class BasicBlockRef(ValueRef):
         return iter(self.iter_instructions())
 
 
-class InstructionRef(ValueRef):
+class InstructionRef(UserRef):
     """
     A weak reference to a LLVM BasicBlock.
     """
@@ -370,32 +394,6 @@ class InstructionRef(ValueRef):
             return UseRef(ffi.lib.LLVMPY_GetFirstUse(self), self)
         except ValueError:
             return None
-
-
-class UserRef(InstructionRef):
-    def __init__(self, ptr, module):
-        super(UserRef, self).__init__(ptr, module)
-        self._count = ffi.lib.LLVMPY_GetNumOperands(self)
-
-    @property
-    def operand_count(self):
-        return self._count
-
-    def _normalize_idx(self, idx):
-        if idx < 0:
-            idx += self._count
-        if 0 > idx >= self._count:
-            raise IndexError("index out-of-bound")
-        return idx
-
-    def operand(self, idx):
-        idx = self._normalize_idx(idx)
-        return ValueRef(ffi.lib.LLVMPY_GetOperand(self, idx), self._module)
-
-    def operand_use(self, idx):
-        idx = self._normalize_idx(idx)
-        return UseRef(ffi.lib.LLVMPY_GetOperandUse(self, idx), self._module)
-
 
 class UseRef(_WeakValueRef):
     def __init__(self, ptr, module):
