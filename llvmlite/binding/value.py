@@ -167,15 +167,21 @@ class ValueRef(_WeakValueRef):
 
 
 class UserRef(ValueRef):
+    """
+    A User is a value that depends on other values, which are operands of
+    this the user.
+    """
     def __init__(self, ptr, module):
         super(UserRef, self).__init__(ptr, module)
         self._count = ffi.lib.LLVMPY_GetNumOperands(self)
 
     @property
     def operand_count(self):
+        """Returns the number of operands"""
         return self._count
 
     def _normalize_idx(self, idx):
+        """Fix negative values and check for bound."""
         if idx < 0:
             idx += self._count
         if 0 > idx >= self._count:
@@ -183,10 +189,12 @@ class UserRef(ValueRef):
         return idx
 
     def operand(self, idx):
+        """Returns the operand value at the given index"""
         idx = self._normalize_idx(idx)
         return ValueRef(ffi.lib.LLVMPY_GetOperand(self, idx), self._module)
 
     def operand_use(self, idx):
+        """Returns the operand use at the given index"""
         idx = self._normalize_idx(idx)
         return UseRef(ffi.lib.LLVMPY_GetOperandUse(self, idx), self._module)
 
@@ -263,8 +271,7 @@ class GlobalValueRef(UserRef):
 
     def iter_basic_blocks(self):
         """
-        Returns an iterable for each basic block of the function in
-        sequential order
+        Returns an iterable for each basic block of the function in order
         """
         assert self.type.is_function_pointer
         cur = self.entry_basic_block
@@ -395,17 +402,23 @@ class InstructionRef(UserRef):
         except ValueError:
             return None
 
+
 class UseRef(_WeakValueRef):
+    """A Use forms a singly-linked-list of usage information.
+     Each Use object contains refers to the value being used and the User.
+    """
     def __init__(self, ptr, module):
         self._module = module
         super(UseRef, self).__init__(ptr)
 
     @property
     def value(self):
+        """The used value"""
         return ValueRef(ffi.lib.LLVMPY_GetUsedValue(self), self._module)
 
     @property
     def next(self):
+        """The next usage"""
         try:
             return UseRef(ffi.lib.LLVMPY_GetNextUse(self), self.value)
         except ValueError:
@@ -413,6 +426,7 @@ class UseRef(_WeakValueRef):
 
     @property
     def user(self):
+        """The user value"""
         return ValueRef(ffi.lib.LLVMPY_GetUser(self), self._module)
 
 
