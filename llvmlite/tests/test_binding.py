@@ -1134,7 +1134,10 @@ class TestBasicBlocksInstructions(BaseTest):
         mod = llvm.parse_assembly(str(m))
         foo = mod.get_function('foo')
 
+        self.assertIsInstance(foo, llvm.FunctionRef)
+
         bb = foo.basic_blocks[0]
+        self.assertEqual(bb, foo.entry_basic_block)
         inst = bb.first_instruction
         # The instruction is a call
         self.assertTrue(inst.is_call)

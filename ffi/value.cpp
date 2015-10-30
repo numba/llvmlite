@@ -208,6 +208,11 @@ LLVMPY_IsGlobalValue(LLVMValueRef Val) {
     return LLVMIsAGlobalValue(Val) != nullptr;
 }
 
+API_EXPORT(int)
+LLVMPY_IsFunction(LLVMValueRef Val) {
+    return LLVMIsAFunction(Val) != nullptr;
+}
+
 API_EXPORT(LLVMValueRef)
 LLVMPY_GetPreviousInstruction(LLVMValueRef Val) {
     return LLVMGetPreviousInstruction(Val);

@@ -112,6 +112,8 @@ class ValueRef(_WeakValueRef):
             cls = UserRef
             if ffi.lib.LLVMPY_IsGlobalValue(ptr):
                 cls = GlobalValueRef
+                if ffi.lib.LLVMPY_IsFunction(ptr):
+                    cls = FunctionRef
             elif ffi.lib.LLVMPY_IsInstruction(ptr):
                 cls = InstructionRef
 
@@ -171,6 +173,7 @@ class UserRef(ValueRef):
     A User is a value that depends on other values, which are operands of
     this the user.
     """
+
     def __init__(self, ptr, module):
         super(UserRef, self).__init__(ptr, module)
         self._count = ffi.lib.LLVMPY_GetNumOperands(self)
@@ -248,6 +251,8 @@ class GlobalValueRef(UserRef):
             value = StorageClass[value]
         ffi.lib.LLVMPY_SetDLLStorageClass(self, value)
 
+
+class FunctionRef(GlobalValueRef):
     def add_function_attribute(self, attr):
         """Only works on function value"""
         # XXX unused?
@@ -266,14 +271,12 @@ class GlobalValueRef(UserRef):
         """
         Get the entry basic block of a function GlobalValue
         """
-        assert self.type.is_function_pointer
         return ValueRef(ffi.lib.LLVMPY_GetEntryBasicBlock(self), self)
 
     def iter_basic_blocks(self):
         """
         Returns an iterable for each basic block of the function in order
         """
-        assert self.type.is_function_pointer
         cur = self.entry_basic_block
         while True:
             yield cur
@@ -301,6 +304,7 @@ class BasicBlockRef(ValueRef):
     Therefore, this class MUST override `_valueref` property to that will
     convert a LLVMBasicBlockRef to a LLVMValueRef.
     """
+
     @property
     def function(self):
         return ValueRef(ffi.lib.LLVMGetBasicBlockParent(self._ptr), self.module)
@@ -407,6 +411,7 @@ class UseRef(_WeakValueRef):
     """A Use forms a singly-linked-list of usage information.
      Each Use object contains refers to the value being used and the User.
     """
+
     def __init__(self, ptr, module):
         self._module = module
         super(UseRef, self).__init__(ptr)
