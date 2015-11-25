@@ -1,22 +1,14 @@
 # References https://gist.github.com/dan-blanchard/7045057
-language: python
+# and https://docs.travis-ci.com/user/trusty-ci-environment/
 
-#sudo: required
 dist: trusty
-
-#addons:
-  #apt:
-    #sources:
-      #- ubuntu-toolchain-r-test
-    #packages:
-      #- g++-4.8
 
 matrix:
     include:
         - env: PYTHON=2.6
-        #- env: PYTHON=2.7
-        #- env: PYTHON=3.3
-        #- env: PYTHON=3.4
+        - env: PYTHON=2.7
+        - env: PYTHON=3.3
+        - env: PYTHON=3.4
         - env: PYTHON=3.5
 
 before_install:
