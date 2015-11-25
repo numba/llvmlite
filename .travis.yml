@@ -11,12 +11,13 @@ dist: trusty
     #packages:
       #- g++-4.8
 
-python:
-  - env: PYTHON=2.6
-  #- env: PYTHON=2.7
-  #- env: PYTHON=3.3
-  #- env: PYTHON=3.4
-  - env: PYTHON=3.5
+matrix:
+    include:
+        - env: PYTHON=2.6
+        #- env: PYTHON=2.7
+        #- env: PYTHON=3.3
+        #- env: PYTHON=3.4
+        - env: PYTHON=3.5
 
 before_install:
     # Install Miniconda
@@ -46,7 +47,7 @@ script:
     - cd $TRAVIS_BUILD_DIR; python runtests.py -v
 
 notifications:
-  email: false
-  flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
-  on_success: "change"
-  on_failure: "always" # "change"
+    email: false
+    flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
+    on_success: "change"
+    on_failure: "always" # "change"
