@@ -17,6 +17,10 @@ TYPE_STRUCT = _type_enum()
 TYPE_METADATA = _type_enum()
 
 
+def _wrapname(x):
+    return '"{0}"'.format(x).replace(' ', '_')
+
+
 class Type(object):
     """
     The base class for all LLVM types.
@@ -391,7 +395,7 @@ class IdentifiedStructType(BaseStructType):
         self.elements = None
 
     def __str__(self):
-        return "%{name}".format(name=self.name)
+        return "%{name}".format(name=_wrapname(self.name))
 
     def get_declaration(self):
         """Returns the string for the declaration of the type
