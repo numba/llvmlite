@@ -1100,7 +1100,11 @@ class TestTypes(TestBase):
         # Avoid polluting the namespace
         context = ir.Context()
         mytype = context.get_identified_type("MyType")
-        self.assertEqual(str(mytype), "%MyType")
+        self.assertEqual(str(mytype), "%\"MyType\"")
+        mytype1 = context.get_identified_type("MyType\\")
+        self.assertEqual(str(mytype1), "%\"MyType\\5c\"")
+        mytype2 = context.get_identified_type("MyType\"")
+        self.assertEqual(str(mytype2), "%\"MyType\\22\"")
 
     def test_gep(self):
         def check_constant(tp, i, expected):

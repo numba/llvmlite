@@ -35,7 +35,7 @@ Undefined = _Undefined()
 
 
 def _wrapname(x):
-    return '"{0}"'.format(x).replace(' ', '_')
+    return '"{0}"'.format(x.replace('\\', '\\5c').replace('"', '\\22'))
 
 
 class ConstOp(object):
