@@ -36,6 +36,27 @@ Enumerations
    .. data:: linker_private
    .. data:: linker_private_weak
 
+
+.. class:: Visibility
+
+   The different visibility styles allowed for global values.  The following
+   values are provided:
+
+   .. data:: default
+   .. data:: hidden
+   .. data:: protected
+
+
+.. class:: StorageClass
+
+   The different storage classes allowed for global values.  The following
+   values are provided:
+
+   .. data:: default
+   .. data:: dllimport
+   .. data:: dllexport
+
+
 The ValueRef class
 ------------------
 
@@ -66,3 +87,12 @@ The ValueRef class
       This value's LLVM type.  An opaque object is returned.  It can be used
       with e.g. :meth:`TargetData.get_abi_size`.
 
+   .. attribute:: storage_class
+
+      The storage class (a :class:`StorageClass` instance) for this value.
+      This attribute is settable.
+
+   .. attribute:: visibility
+
+      The visibility style (a :class:`Visibility` instance) for this value.
+      This attribute is settable.

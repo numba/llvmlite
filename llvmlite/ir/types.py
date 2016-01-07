@@ -17,6 +17,10 @@ TYPE_STRUCT = _type_enum()
 TYPE_METADATA = _type_enum()
 
 
+def _wrapname(x):
+    return '"{0}"'.format(x.replace('\\', '\\5c').replace('"', '\\22'))
+
+
 class Type(object):
     """
     The base class for all LLVM types.
@@ -38,31 +42,34 @@ class Type(object):
     def __ne__(self, other):
         return not (self == other)
 
-    def _get_ll_pointer_type(self, target_data):
+    def _get_ll_pointer_type(self, target_data, context=None):
         """
         Convert this type object to an LLVM type.
         """
         from . import Module, GlobalVariable
         from ..binding import parse_assembly
 
-        m = Module()
+        if context is None:
+            m = Module()
+        else:
+            m = Module(context=context)
         foo = GlobalVariable(m, self, name="foo")
         with parse_assembly(str(m)) as llmod:
             return llmod.get_global_variable(foo.name).type
 
-    def get_abi_size(self, target_data):
+    def get_abi_size(self, target_data, context=None):
         """
         Get the ABI size of this type according to data layout *target_data*.
         """
-        llty = self._get_ll_pointer_type(target_data)
+        llty = self._get_ll_pointer_type(target_data, context)
         return target_data.get_pointee_abi_size(llty)
 
-    def get_abi_alignment(self, target_data):
+    def get_abi_alignment(self, target_data, context=None):
         """
         Get the minimum ABI alignment of this type according to data layout
         *target_data*.
         """
-        llty = self._get_ll_pointer_type(target_data)
+        llty = self._get_ll_pointer_type(target_data, context)
         return target_data.get_pointee_abi_alignment(llty)
 
     def format_const(self, val):
@@ -391,7 +398,7 @@ class IdentifiedStructType(BaseStructType):
         self.elements = None
 
     def __str__(self):
-        return "%{name}".format(name=self.name)
+        return "%{name}".format(name=_wrapname(self.name))
 
     def get_declaration(self):
         """Returns the string for the declaration of the type

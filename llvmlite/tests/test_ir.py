@@ -1110,7 +1110,11 @@ class TestTypes(TestBase):
         # Avoid polluting the namespace
         context = ir.Context()
         mytype = context.get_identified_type("MyType")
-        self.assertEqual(str(mytype), "%MyType")
+        self.assertEqual(str(mytype), "%\"MyType\"")
+        mytype1 = context.get_identified_type("MyType\\")
+        self.assertEqual(str(mytype1), "%\"MyType\\5c\"")
+        mytype2 = context.get_identified_type("MyType\"")
+        self.assertEqual(str(mytype2), "%\"MyType\\22\"")
 
     def test_gep(self):
         def check_constant(tp, i, expected):
@@ -1180,6 +1184,14 @@ class TestTypes(TestBase):
         self.assertFalse(mytype.is_opaque)
         self.assert_valid_ir(module)
         self.assertNotEqual(oldstr, str(module))
+
+    def test_target_data_non_default_context(self):
+        context = ir.Context()
+        mytype = context.get_identified_type("MyType")
+        mytype.elements = [ir.IntType(32)]
+        module = ir.Module(context=context)
+        td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+        self.assertEqual(mytype.get_abi_size(td, context=context), 4)
 
 
 c32 = lambda i: ir.Constant(int32, i)

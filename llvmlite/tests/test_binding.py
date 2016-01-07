@@ -616,6 +616,30 @@ class TestValueRef(BaseTest):
             self.assertIsInstance(glob.linkage, llvm.Linkage)
             self.assertEqual(glob.linkage.name, linkage)
 
+    def test_visibility(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        visibility = glob.visibility
+        self.assertIsInstance(glob.visibility, llvm.Visibility)
+        glob.visibility = visibility
+        self.assertEqual(glob.visibility, visibility)
+        for visibility in ("hidden", "protected", "default"):
+            glob.visibility = visibility
+            self.assertIsInstance(glob.visibility, llvm.Visibility)
+            self.assertEqual(glob.visibility.name, visibility)
+
+    def test_storage_class(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        storage_class = glob.storage_class
+        self.assertIsInstance(glob.storage_class, llvm.StorageClass)
+        glob.storage_class = storage_class
+        self.assertEqual(glob.storage_class, storage_class)
+        for storage_class in ("dllimport", "dllexport", "default"):
+            glob.storage_class = storage_class
+            self.assertIsInstance(glob.storage_class, llvm.StorageClass)
+            self.assertEqual(glob.storage_class.name, storage_class)
+
     def test_add_function_attribute(self):
         mod = self.module()
         fn = mod.get_function("sum")

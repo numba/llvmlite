@@ -1,8 +1,14 @@
-v0.8.0 (in development)
+v0.9.0 (in development)
 -----------------------
+
+
+v0.8.0
+------
 
 * Update LLVM to 3.6.2
 * Add an *align* parameter to IRBuilder.load() and IRBuilder.store().
+* Allow setting visibility, DLL storageclass of ValueRef
+* Support profiling with OProfile
 
 v0.7.0
 ------
