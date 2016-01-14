@@ -282,7 +282,7 @@ class TestBuildInstructions(TestBase):
     def test_binops(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
+        a, b, ff = builder.function.args[:3]
         builder.add(a, b, 'c')
         builder.fadd(a, b, 'd')
         builder.sub(a, b, 'e')
@@ -301,6 +301,10 @@ class TestBuildInstructions(TestBase):
         builder.shl(a, b, 'r')
         builder.ashr(a, b, 's')
         builder.lshr(a, b, 't')
+        with self.assertRaises(ValueError) as cm:
+            builder.add(a, ff)
+        self.assertEqual(str(cm.exception),
+                         "Operands must be the same type, got (i32, double)")
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
