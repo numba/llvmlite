@@ -1217,13 +1217,14 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'double undef')
 
     def test_arrays(self):
-        # XXX Test byte array special case
         c = ir.Constant(ir.ArrayType(int32, 3), (c32(5), c32(6), c32(4)))
         self.assertEqual(str(c), '[3 x i32] [i32 5, i32 6, i32 4]')
         c = ir.Constant(ir.ArrayType(int32, 2), (c32(5), c32(ir.Undefined)))
         self.assertEqual(str(c), '[2 x i32] [i32 5, i32 undef]')
         c = ir.Constant(ir.ArrayType(int32, 2), ir.Undefined)
         self.assertEqual(str(c), '[2 x i32] undef')
+        c = ir.Constant(ir.ArrayType(int8, 3), bytearray(b"\x01\x04\xff"))
+        self.assertEqual(str(c), r'[3 x i8] c"\01\04\ff"')
 
     def test_structs(self):
         c = ir.Constant(ir.LiteralStructType((flt, int1)),
