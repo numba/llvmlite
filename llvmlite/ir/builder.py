@@ -19,7 +19,9 @@ def _binop(opname, cls=instructions.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, lhs, rhs, name='', flags=()):
-            assert lhs.type == rhs.type, "Operands must be the same type"
+            if lhs.type != rhs.type:
+                raise ValueError("Operands must be the same type, got (%s, %s)"
+                                 % (lhs.type, rhs.type))
             instr = cls(self.block, lhs.type, opname, (lhs, rhs), name, flags)
             self._insert(instr)
             return instr
@@ -33,7 +35,9 @@ def _binop_with_overflow(opname, cls=instructions.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, lhs, rhs, name=''):
-            assert lhs.type == rhs.type, "Operands must be the same type"
+            if lhs.type != rhs.type:
+                raise ValueError("Operands must be the same type, got (%s, %s)"
+                                 % (lhs.type, rhs.type))
             ty = lhs.type
             if not isinstance(ty, types.IntType):
                 raise TypeError("expected an integer type, got %s" % (ty,))
