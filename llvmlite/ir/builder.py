@@ -504,7 +504,10 @@ class IRBuilder(object):
         return self._set_terminator(
             instructions.Ret(self.block, "ret void"))
 
-    def ret(self, value):
+    def ret(self, value=None):
+        if value is None:
+            return self.ret_void()
+
         return self._set_terminator(
             instructions.Ret(self.block, "ret", value))
 
