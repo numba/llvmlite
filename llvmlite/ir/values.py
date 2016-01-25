@@ -466,7 +466,7 @@ class _BaseArgument(Value):
         self.attributes = ArgumentAttributes()
 
     def __repr__(self):
-        return "<Argument %r (#%s) of type %s>" % (self.name, self.pos, self.type)
+        return "<Argument %r of type %s>" % (self.name, self.type)
 
     def add_attribute(self, attr):
         self.attributes.add(attr)
