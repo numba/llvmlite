@@ -4,6 +4,17 @@ CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF \
     "
 
+platform='unknown'
+unamestr="$(uname)"
+
+if [[ "$unamestr" == 'Linux' ]]; then
+    platform='linux'
+elif [[ "$unamestr" == 'FreeBSD' ]]; then
+    platform='freebsd'
+elif [[ "$unamestr" == 'Darwin' ]]; then
+    platform='osx'
+fi
+
 # If available, enable newer toolset on old RH / CentOS machines
 toolset=/opt/rh/devtoolset-2
 
@@ -16,23 +27,15 @@ fi
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     # OSX needs 10.7 or above with libc++ enabled
     export MACOSX_DEPLOYMENT_TARGET=10.7
-    ./configure \
-        --enable-pic \
-        --enable-optimized \
-        --disable-docs \
-        --enable-targets=host \
-        --disable-terminfo \
-        --disable-libedit \
-        --prefix=$PREFIX \
-        --with-python=$SYS_PYTHON \
-        --enable-libcpp=yes
+fi
 
-else
-    # Use CMake-based build procedure
-    mkdir build
-    cd build
+# Use CMake-based build procedure
+mkdir build
+cd build
+if [[ "$platform" == 'linux' ]]; then
     cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
-
+else
+    cmake $CMAKE_COMMON_VARIABLES ..
 fi
 
 make -j4

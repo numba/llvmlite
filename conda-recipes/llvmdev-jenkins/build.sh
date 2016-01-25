@@ -29,17 +29,6 @@ if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     export MACOSX_DEPLOYMENT_TARGET=10.7
 fi
 
-#     ./configure \
-#         --enable-pic \
-#         --enable-optimized \
-#         --disable-docs \
-#         --enable-targets=host \
-#         --disable-terminfo \
-#         --disable-libedit \
-#         --prefix=$PREFIX \
-#         --with-python=$SYS_PYTHON \
-#         --enable-libcpp=yes
-
 # Use CMake-based build procedure
 mkdir build
 cd build
