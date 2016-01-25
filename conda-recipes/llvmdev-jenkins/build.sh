@@ -4,6 +4,17 @@ CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF \
     "
 
+platform='unknown'
+unamestr="$(uname)"
+
+if [[ "$unamestr" == 'Linux' ]]; then
+    platform='linux'
+elif [[ "$unamestr" == 'FreeBSD' ]]; then
+    platform='freebsd'
+elif [[ "$unamestr" == 'Darwin' ]]; then
+    platform='osx'
+fi
+
 # If available, enable newer toolset on old RH / CentOS machines
 toolset=/opt/rh/devtoolset-2
 
@@ -32,7 +43,11 @@ fi
 # Use CMake-based build procedure
 mkdir build
 cd build
-cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
+if [[ "$platform" == 'linux' ]]; then
+    cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
+else
+    cmake $CMAKE_COMMON_VARIABLES ..
+fi
 
 make -j4
 make install
