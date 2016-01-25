@@ -1,30 +1,31 @@
 package:
   name: llvmdev
-  version: "3.6.2"
+  version: "3.7.1"
 
 source:
-  fn: llvm-3.6.2.src.tar.xz
-  url: http://llvm.org/releases/3.6.2/llvm-3.6.2.src.tar.xz
-  sha1: 7a00257eb2bc9431e4c77c3a36b033072c54bc7e
+  fn: llvm-3.7.1.src.tar.xz
+  url: http://llvm.org/releases/3.7.1/llvm-3.7.1.src.tar.xz
+  sha1: 5dbdcafac105273dcbff94c68837a66c6dd78cef
   patches:
     # From http://reviews.llvm.org/D6052
     - ../llvm-elf-relocation.patch
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
+    - cmake
     - system           [linux and not armv7l]
   run:
     - system           [linux and not armv7l]
 
 test:
   commands:
-    - llvm-config --libs   [linux]
-    - llc -version         [linux]
+    - llvm-config --libs   [not win]
+    - llc -version         [not win]
 
 about:
   home: http://llvm.org/
-  license: Open Source (http://llvm.org/releases/3.5.0/LICENSE.TXT)
+  license: Open Source (http://llvm.org/releases/3.7.0/LICENSE.TXT)
   summary: Development headers and libraries for LLVM

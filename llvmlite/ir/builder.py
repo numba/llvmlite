@@ -463,6 +463,9 @@ class IRBuilder(object):
         if not isinstance(ptr.type, types.PointerType):
             raise TypeError("cannot store to value of type %s (%r): not a pointer"
                             % (ptr.type, str(ptr)))
+        if ptr.type.pointee != value.type:
+            raise TypeError("cannot store %s to %s: mismatching types"
+                            % (value.type, ptr.type))
         st = instructions.StoreInstr(self.block, value, ptr)
         st.align = align
         self._insert(st)

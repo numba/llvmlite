@@ -29,6 +29,21 @@ def try_cmake(cmake_dir, build_dir, generator):
         os.chdir(old_dir)
 
 
+def run_llvm_config(llvm_config, args):
+    cmd = [llvm_config] + args
+    p = subprocess.Popen(cmd,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    out = out.decode()
+    err = err.decode()
+    rc = p.wait()
+    if rc != 0:
+        raise RuntimeError("Command %s returned with code %d; stderr follows:\n%s\n"
+                           % (cmd, rc, err))
+    return out
+
+
 def find_win32_generator():
     """
     Find a suitable cmake "generator" under Windows.
@@ -91,6 +106,24 @@ def main_posix(kind, library_ext):
     except (OSError, subprocess.CalledProcessError):
         raise RuntimeError("%s failed executing, please point LLVM_CONFIG "
                            "to the path for llvm-config" % (llvm_config,))
+
+    # Get LLVM information for building
+    # Note we can't use "--libs all" anymore:
+    # https://llvm.org/bugs/show_bug.cgi?id=25088
+    # https://llvm.org/bugs/show_bug.cgi?id=25089
+    libs = run_llvm_config(llvm_config,
+                           "--system-libs --libs engine bitreader "
+                           "bitwriter instrumentation lto irreader "
+                           "asmprinter".split())
+    # Normalize whitespace (trim newlines)
+    os.environ['LLVM_LIBS'] = ' '.join(libs.split())
+
+    cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
+    cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
+    os.environ['LLVM_CXXFLAGS'] = ' '.join(cxxflags)
+
+    ldflags = run_llvm_config(llvm_config, ["--ldflags"])
+    os.environ['LLVM_LDFLAGS'] = ldflags.strip()
 
     makefile = "Makefile.%s" % (kind,)
     subprocess.check_call(['make', '-f', makefile])
