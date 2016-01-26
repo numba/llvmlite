@@ -1,0 +1,18 @@
+LTO is the only shared library built by LLVM.  It breaks llvmlite
+builds under Windows with the following message:
+
+LINK : fatal error LNK1181: cannot open input file 'LTO-NOTFOUND.obj'
+
+diff --git a/tools/lto/CMakeLists.txt b/tools/lto/CMakeLists.txt
+index c479fa9..6c0dbd4 100644
+--- a/tools/lto/CMakeLists.txt
++++ b/tools/lto/CMakeLists.txt
+@@ -15,7 +15,7 @@ set(SOURCES
+ 
+ set(LLVM_EXPORTED_SYMBOL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lto.exports)
+ 
+-add_llvm_library(LTO SHARED ${SOURCES})
++add_llvm_library(LTO ${SOURCES})
+ 
+ install(FILES ${LLVM_MAIN_INCLUDE_DIR}/llvm-c/lto.h
+   DESTINATION include/llvm-c)

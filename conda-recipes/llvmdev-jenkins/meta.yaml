@@ -9,6 +9,7 @@ source:
   patches:
     # From http://reviews.llvm.org/D6052
     - ../llvm-elf-relocation.patch
+    - ../llvm-lto-static.patch
 
 build:
   number: 2

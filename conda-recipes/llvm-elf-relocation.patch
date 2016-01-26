@@ -1,3 +1,5 @@
+Workaround for https://llvm.org/bugs/show_bug.cgi?id=15356
+
 diff --git a/lib/MC/MCObjectFileInfo.cpp b/lib/MC/MCObjectFileInfo.cpp
 index 858181d..6b7d0c4 100644
 --- lib/MC/MCObjectFileInfo.cpp
