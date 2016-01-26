@@ -229,12 +229,39 @@ class NamedMetaData(object):
         self.operands.append(md)
 
 
+
+class MetaDataNull(object):
+    """
+    A metadata null
+    """
+    type = types.NullMetaData()
+
+    def descr(self, buf):
+        print("null", file=buf)
+
+    def get_reference(self):
+        return "null"
+
+    def __str__(self):
+        return self.get_reference()
+
+    def __eq__(self, other):
+        return isinstance(other, MetaDataNull)
+
+    def __hash__(self):
+        return object.__hash__(self)
+
+
 class MDValue(Value):
     name_prefix = '!'
 
     def __init__(self, parent, values, name):
+        if not name:
+            # Provide custom numbering because LLVM3.5 only allow integer name
+            # for metadata
+            name = str(len(parent.metadata))
         super(MDValue, self).__init__(parent, types.MetaData(), name=name)
-        self.operands = tuple(values)
+        self.operands = list(values)
         parent.metadata.append(self)
 
     @property
@@ -253,7 +280,7 @@ class MDValue(Value):
         print("!{{ {0} }}".format(operands), file=buf)
 
     def get_reference(self):
-        return self.name_prefix + str(self.name)
+        return self.name_prefix + '{0}'.format(self.name.lstrip('.'))
 
     def __eq__(self, other):
         if isinstance(other, MDValue):
@@ -265,7 +292,10 @@ class MDValue(Value):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(self.operands)
+        return hash(tuple(self.operands))
+
+    def append(self, val):
+        self.operands.append(val)
 
 
 class GlobalValue(Value, ConstOpMixin):

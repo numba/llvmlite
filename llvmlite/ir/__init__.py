@@ -8,4 +8,5 @@ from .module import *
 from .builder import *
 from .instructions import *
 from .transforms import *
+from .debuginfo import *
 from .context import Context, global_context
