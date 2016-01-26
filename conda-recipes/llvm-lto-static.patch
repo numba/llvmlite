@@ -5,8 +5,8 @@ LINK : fatal error LNK1181: cannot open input file 'LTO-NOTFOUND.obj'
 
 diff --git a/tools/lto/CMakeLists.txt b/tools/lto/CMakeLists.txt
 index c479fa9..6c0dbd4 100644
---- a/tools/lto/CMakeLists.txt
-+++ b/tools/lto/CMakeLists.txt
+--- tools/lto/CMakeLists.txt
++++ tools/lto/CMakeLists.txt
 @@ -15,7 +15,7 @@ set(SOURCES
  
  set(LLVM_EXPORTED_SYMBOL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lto.exports)
