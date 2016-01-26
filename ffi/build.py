@@ -52,9 +52,8 @@ def find_win32_generator():
     # compatible with, the one which was used to compile LLVM... cmake
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
-    # LLVM 3.5 needs VS 2012 minimum.
-    for generator in ['Visual Studio 12 2013',
-                      'Visual Studio 11 2012']:
+    # LLVM 3.7 needs VS 2013 minimum.
+    for generator in ['Visual Studio 12 2013']:
         if is_64bit:
             generator += ' Win64'
         build_dir = tempfile.mkdtemp()
@@ -76,6 +75,7 @@ def main_win32():
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
+    # Run configuration step
     try_cmake(here_dir, build_dir, generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
