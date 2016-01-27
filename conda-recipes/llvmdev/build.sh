@@ -26,7 +26,7 @@ fi
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     # OSX needs 10.7 or above with libc++ enabled
-    export MACOSX_DEPLOYMENT_TARGET=10.7
+    export MACOSX_DEPLOYMENT_TARGET=10.9
 fi
 
 # Use CMake-based build procedure
