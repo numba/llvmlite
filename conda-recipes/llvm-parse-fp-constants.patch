@@ -1,0 +1,25 @@
+http://reviews.llvm.org/D15375
+
+Index: lib/AsmParser/LLLexer.cpp
+===================================================================
+--- lib/AsmParser/LLLexer.cpp
++++ lib/AsmParser/LLLexer.cpp
+@@ -937,7 +937,8 @@
+     }
+   }
+ 
+-  APFloatVal = APFloat(std::atof(TokStart));
++  APFloatVal = APFloat(APFloat::IEEEdouble,
++                       StringRef(TokStart, CurPtr - TokStart));
+   return lltok::APFloat;
+ }
+ 
+@@ -973,6 +974,7 @@
+     }
+   }
+ 
+-  APFloatVal = APFloat(std::atof(TokStart));
++  APFloatVal = APFloat(APFloat::IEEEdouble,
++                       StringRef(TokStart, CurPtr - TokStart));
+   return lltok::APFloat;
+ }
