@@ -36,10 +36,6 @@ class _Undefined(object):
 Undefined = _Undefined()
 
 
-def _wrapname(x):
-    return '"{0}"'.format(x.replace('\\', '\\5c').replace('"', '\\22'))
-
-
 class ConstOp(object):
     """
     A simple value-like object representing the result of a constant operation.
@@ -139,7 +135,7 @@ class Constant(_StrCaching, _StringReferenceCaching, ConstOpMixin):
 class Value(_StrCaching, _StringReferenceCaching):
     name_prefix = '%'
     deduplicate_name = True
-    nested_scope = False
+    creates_nested_scope = False
 
     def __init__(self, parent, type, name):
         assert parent is not None
@@ -147,9 +143,8 @@ class Value(_StrCaching, _StringReferenceCaching):
         self.parent = parent
         self.type = type
         pscope = self.parent.scope
-        self.scope = pscope.get_child() if self.nested_scope else pscope
-        self._name = None
-        self.name = name
+        self.scope = pscope.get_child() if self.creates_nested_scope else pscope
+        self._set_name(name)
 
     def _to_string(self):
         buf = []
@@ -161,20 +156,21 @@ class Value(_StrCaching, _StringReferenceCaching):
     def descr(self, buf):
         raise NotImplementedError
 
-    @property
-    def name(self):
+    def _get_name(self):
         return self._name
 
-    @name.setter
-    def name(self, name):
-        if self.deduplicate_name:
-            name = self.scope.deduplicate(name)
-
-        self.scope.register(name)
+    def _set_name(self, name):
+        name = self.scope.register(name, deduplicate=self.deduplicate_name)
         self._name = name
 
+    name = property(_get_name, _set_name)
+
     def _get_reference(self):
-        return self.name_prefix + _wrapname(self.name)
+        name = self.name
+        # Quote and escape value name
+        if '\\' in name or '"' in name:
+            name = name.replace('\\', '\\5c').replace('"', '\\22')
+        return '{0}"{1}"'.format(self.name_prefix, name)
 
     @property
     def function_type(self):
@@ -365,7 +361,7 @@ class Function(GlobalValue):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
-    nested_scope = True
+    creates_nested_scope = True
 
     def __init__(self, module, ftype, name):
         assert isinstance(ftype, types.Type)

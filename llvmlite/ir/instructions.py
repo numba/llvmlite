@@ -17,7 +17,6 @@ class Instruction(Value):
         self.opname = opname
         self.operands = operands
         self.flags = list(flags)
-
         self.metadata = {}
 
     def _stringify_metadata(self):
@@ -109,13 +108,13 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
-        buf.append("{tail}{opname} {callee}({args}){attributes}{metadata}\n".format(
-            tail='tail ' if self.tail else '',
-            opname=self.opname,
-            callee=callee_ref,
-            args=args,
-            attributes=''.join([" " + attr for attr in self.attributes]),
-            metadata=self._stringify_metadata() if add_metadata else "",
+        buf.append("{0}{1} {2}({3}){4}{5}\n".format(
+            'tail ' if self.tail else '',
+            self.opname,
+            callee_ref,
+            args,
+            ''.join([" " + attr for attr in self.attributes]),
+            self._stringify_metadata() if add_metadata else "",
             ))
 
     def descr(self, buf):
@@ -148,8 +147,8 @@ class Terminator(Instruction):
 
     def descr(self, buf):
         opname = self.opname
-        operands = ', '.join("{0} {1}".format(op.type, op.get_reference())
-                             for op in self.operands)
+        operands = ', '.join(["{0} {1}".format(op.type, op.get_reference())
+                              for op in self.operands])
         metadata = self._stringify_metadata()
         buf.append("{0} {1}{2}".format(opname, operands, metadata))
 
