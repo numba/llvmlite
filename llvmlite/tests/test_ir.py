@@ -6,6 +6,7 @@ from __future__ import print_function, absolute_import
 
 import copy
 import itertools
+import pickle
 import re
 import textwrap
 import unittest
@@ -1053,8 +1054,17 @@ class TestBuilderMisc(TestBase):
 
 class TestTypes(TestBase):
 
-    def test_comparisons(self):
-        # A bunch of mutually unequal types
+    def has_logical_equality(self, ty):
+        while isinstance(ty, ir.PointerType):
+            ty = ty.pointee
+        return not isinstance(ty, ir.LabelType)
+
+    def assorted_types(self):
+        """
+        A bunch of mutually unequal types
+        """
+        # Avoid polluting the namespace
+        context = ir.Context()
         types = [
             ir.LabelType(), ir.VoidType(),
             ir.FunctionType(int1, (int8, int8)), ir.FunctionType(int1, (int8,)),
@@ -1063,9 +1073,26 @@ class TestTypes(TestBase):
             int1, int8, int32, flt, dbl,
             ir.ArrayType(flt, 5), ir.ArrayType(dbl, 5), ir.ArrayType(dbl, 4),
             ir.LiteralStructType((int1, int8)), ir.LiteralStructType((int8, int1)),
+            context.get_identified_type("MyType1"),
+            context.get_identified_type("MyType2"),
             ]
-        types.extend([ir.PointerType(tp) for tp in types
-                      if not isinstance(tp, ir.VoidType)])
+        types += [ir.PointerType(tp) for tp in types
+                  if not isinstance(tp, (ir.VoidType, ir.LabelType))]
+
+        return types
+
+    def test_pickling(self):
+        types = self.assorted_types()
+        for ty in types:
+            data = pickle.dumps(ty, protocol=-1)
+            newty = pickle.loads(data)
+            self.assertIs(newty.__class__, ty.__class__)
+            self.assertEqual(str(newty), str(ty))
+            if self.has_logical_equality(ty):
+                self.assertEqual(newty, ty)
+
+    def test_comparisons(self):
+        types = self.assorted_types()
         for a, b in itertools.product(types, types):
             if a is not b:
                 self.assertFalse(a == b, (a, b))
@@ -1073,13 +1100,12 @@ class TestTypes(TestBase):
         # We assume copy.copy() works fine here...
         for tp in types:
             other = copy.copy(tp)
-            self.assertIsNot(other, tp)
-            if isinstance(tp, ir.LabelType):
-                self.assertFalse(tp == other, (tp, other))
-                self.assertTrue(tp != other, (tp, other))
-            else:
+            if self.has_logical_equality(tp):
                 self.assertTrue(tp == other, (tp, other))
                 self.assertFalse(tp != other, (tp, other))
+            else:
+                self.assertFalse(tp == other, (tp, other))
+                self.assertTrue(tp != other, (tp, other))
 
     def test_str(self):
         """

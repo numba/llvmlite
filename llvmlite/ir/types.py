@@ -6,6 +6,8 @@ from __future__ import print_function, absolute_import
 
 import struct
 
+from ._utils import _StrCaching
+
 
 # XXX This doesn't seem to be used
 _type_state = iter(range(50))
@@ -21,7 +23,7 @@ def _wrapname(x):
     return '"{0}"'.format(x.replace('\\', '\\5c').replace('"', '\\22'))
 
 
-class Type(object):
+class Type(_StrCaching):
     """
     The base class for all LLVM types.
     """
@@ -33,7 +35,7 @@ class Type(object):
     def __repr__(self):
         return "<%s %s>" % (type(self), str(self))
 
-    def __str__(self):
+    def _to_string(self):
         raise NotImplementedError
 
     def as_pointer(self, addrspace=0):
@@ -83,7 +85,7 @@ class Type(object):
 class MetaData(Type):
     kind = TYPE_METADATA
 
-    def __str__(self):
+    def _to_string(self):
         return "metadata"
 
     def as_pointer(self):
@@ -95,7 +97,7 @@ class LabelType(Type):
     The label type is the type of e.g. basic blocks.
     """
 
-    def __str__(self):
+    def _to_string(self):
         return "label"
 
 
@@ -112,7 +114,7 @@ class PointerType(Type):
         self.pointee = pointee
         self.addrspace = addrspace
 
-    def __str__(self):
+    def _to_string(self):
         if self.addrspace != 0:
             return "{0} addrspace({1})* ".format(self.pointee, self.addrspace)
         else:
@@ -143,7 +145,7 @@ class VoidType(Type):
     The type for empty values (e.g. a function returning no value).
     """
 
-    def __str__(self):
+    def _to_string(self):
         return 'void'
 
     def __eq__(self, other):
@@ -160,9 +162,9 @@ class FunctionType(Type):
         self.args = tuple(args)
         self.var_arg = var_arg
 
-    def __str__(self):
+    def _to_string(self):
         if self.args:
-            strargs = ', '.join(str(a) for a in self.args)
+            strargs = ', '.join([str(a) for a in self.args])
             if self.var_arg:
                 return '{0} ({1}, ...)'.format(self.return_type, strargs)
             else:
@@ -185,12 +187,32 @@ class IntType(Type):
     The type for integers.
     """
     null = '0'
+    _instance_cache = {}
 
-    def __init__(self, bits):
-        assert isinstance(bits, int)
+    def __new__(cls, bits):
+        # Cache all common integer types
+        if 0 <= bits <= 128:
+            try:
+                return cls._instance_cache[bits]
+            except KeyError:
+                inst = cls._instance_cache[bits] = cls.__new(bits)
+                return inst
+        return cls.__new(bits)
+
+    @classmethod
+    def __new(cls, bits):
+        assert isinstance(bits, int) and bits >= 0
+        self = super(IntType, cls).__new__(cls)
         self.width = bits
+        return self
 
-    def __str__(self):
+    def __getnewargs__(self):
+        return self.width,
+
+    def __copy__(self):
+        return self
+
+    def _to_string(self):
         return 'i%u' % (self.width,)
 
     def __eq__(self, other):
@@ -230,7 +252,20 @@ def _format_double(value):
     return _format_float_as_hex(value, 'd', 'Q', 16)
 
 
-class FloatType(Type):
+class _BaseFloatType(Type):
+
+    def __new__(cls):
+        return cls._instance_cache
+
+    def __eq__(self, other):
+        return isinstance(other, type(self))
+
+    @classmethod
+    def _create_instance(cls):
+        cls._instance_cache = super(_BaseFloatType, cls).__new__(cls)
+
+
+class FloatType(_BaseFloatType):
     """
     The type for single-precision floats.
     """
@@ -240,28 +275,29 @@ class FloatType(Type):
     def __str__(self):
         return 'float'
 
-    def __eq__(self, other):
-        return isinstance(other, type(self))
-
     def format_const(self, val):
         return _format_double(_as_float(val))
 
 
-class DoubleType(Type):
+class DoubleType(_BaseFloatType):
     """
     The type for double-precision floats.
     """
     null = '0.0'
     intrinsic_name = 'f64'
 
+    def __new__(cls):
+        return cls._instance_cache
+
     def __str__(self):
         return 'double'
 
-    def __eq__(self, other):
-        return isinstance(other, type(self))
-
     def format_const(self, val):
         return _format_double(val)
+
+
+for _cls in (FloatType, DoubleType):
+    _cls._create_instance()
 
 
 class _Repeat(object):
@@ -302,8 +338,8 @@ class ArrayType(Aggregate):
     def __len__(self):
         return self.count
 
-    def __str__(self):
-        return '[{0:d} x {1}]'.format(self.count, self.element)
+    def _to_string(self):
+        return "[%d x %s]" % (self.count, self.element)
 
     def __eq__(self, other):
         if isinstance(other, ArrayType):
@@ -318,8 +354,9 @@ class ArrayType(Aggregate):
         return self.element
 
     def format_const(self, val):
-        fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
-        return "[{0}]".format(', '.join(map(fmter, val)))
+        itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
+                                 for x in val])
+        return "[{0}]".format(itemstring)
 
 
 class BaseStructType(Aggregate):
@@ -330,11 +367,11 @@ class BaseStructType(Aggregate):
     kind = TYPE_STRUCT
 
     def __len__(self):
-        assert not self.is_opaque
+        assert self.elements is not None
         return len(self.elements)
 
     def __iter__(self):
-        assert not self.is_opaque
+        assert self.elements is not None
         return iter(self.elements)
 
     @property
@@ -344,11 +381,12 @@ class BaseStructType(Aggregate):
     def structure_repr(self):
         """Return the LLVM IR for the structure representation
         """
-        return '{%s}' % ', '.join(map(str, self.elements))
+        return '{%s}' % ', '.join([str(x) for x in self.elements])
 
     def format_const(self, val):
-        fmter = lambda x: "{0} {1}".format(x.type, x.get_reference())
-        return "{{{0}}}".format(', '.join(map(fmter, val)))
+        itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
+                                 for x in val])
+        return "{{{0}}}".format(itemstring)
 
     def gep(self, i):
         """
@@ -373,7 +411,7 @@ class LiteralStructType(BaseStructType):
     def __init__(self, elems):
         self.elements = tuple(elems)
 
-    def __str__(self):
+    def _to_string(self):
         return self.structure_repr()
 
     def __eq__(self, other):
@@ -397,7 +435,7 @@ class IdentifiedStructType(BaseStructType):
         self.name = name
         self.elements = None
 
-    def __str__(self):
+    def _to_string(self):
         return "%{name}".format(name=_wrapname(self.name))
 
     def get_declaration(self):

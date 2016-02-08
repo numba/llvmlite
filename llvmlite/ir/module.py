@@ -101,7 +101,7 @@ class Module(object):
     def get_identified_types(self):
         return self.context.identified_types
 
-    def _stringify_metadata(self):
+    def _get_metadata_lines(self):
         mdbuf = []
         for k, v in self.namedmetadata.items():
             mdbuf.append("!{name} = !{{ {operands} }}".format(
@@ -109,22 +109,26 @@ class Module(object):
                                           for i in v.operands)))
         for md in self.metadata:
             mdbuf.append(str(md))
-        return '\n'.join(mdbuf)
+        return mdbuf
+
+    def _stringify_metadata(self):
+        # For testing
+        return "\n".join(self._get_metadata_lines())
 
     def __repr__(self):
-        body = '\n'.join(str(self.globals[k]) for k in self._sequence)
+        lines = []
+        # Header
+        lines += [
+            '; ModuleID = "%s"' % (self.name,),
+            'target triple = "%s"' % (self.triple,),
+            'target datalayout = "%s"' % (self.data_layout,),
+            '']
+        # Type declarations
+        lines += [it.get_declaration()
+                  for it in self.get_identified_types().values()]
+        # Body
+        lines += [str(self.globals[k]) for k in self._sequence]
+        # Metadata
+        lines += self._get_metadata_lines()
 
-        fmt = ('; ModuleID = "{name}"\n'
-               'target triple = "{triple}"\n'
-               'target datalayout = "{data}"\n'
-               '\n'
-               '{typedecl}\n'
-               '{body}\n'
-               '{md}\n')
-
-        idtypes = [it.get_declaration()
-                   for it in self.get_identified_types().values()]
-        return fmt.format(name=self.name, triple=self.triple, body=body,
-                          md=self._stringify_metadata(),
-                          data=self.data_layout,
-                          typedecl='\n'.join(idtypes))
+        return "\n".join(lines)

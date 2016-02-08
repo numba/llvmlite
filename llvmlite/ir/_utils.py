@@ -36,3 +36,23 @@ class NameScope(object):
 
     def get_child(self):
         return type(self)(parent=self)
+
+
+class _StrCaching(object):
+
+    def __str__(self):
+        try:
+            return self.__cached_str
+        except AttributeError:
+            s = self.__cached_str = self._to_string()
+            return s
+
+
+class _StringReferenceCaching(object):
+
+    def get_reference(self):
+        try:
+            return self.__cached_refstr
+        except AttributeError:
+            s = self.__cached_refstr = self._get_reference()
+            return s

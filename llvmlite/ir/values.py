@@ -9,6 +9,8 @@ import string
 
 from ..six import StringIO
 from . import types
+from ._utils import _StrCaching, _StringReferenceCaching
+
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
@@ -39,16 +41,19 @@ def _wrapname(x):
 
 
 class ConstOp(object):
+    """
+    A simple value-like object representing the result of a constant operation.
+    """
+
     def __init__(self, typ, op):
         assert isinstance(typ, types.Type)
         self.type = typ
         self.op = op
 
     def __str__(self):
-        return "{0}".format(self.op)
+        return self.op
 
-    def get_reference(self):
-        return str(self)
+    get_reference = __str__
 
 
 class ConstOpMixin(object):
@@ -84,7 +89,7 @@ class ConstOpMixin(object):
         return ConstOp(outtype.as_pointer(), op)
 
 
-class Constant(ConstOpMixin):
+class Constant(_StrCaching, _StringReferenceCaching, ConstOpMixin):
     """
     Constant values
     """
@@ -95,10 +100,10 @@ class Constant(ConstOpMixin):
         self.type = typ
         self.constant = constant
 
-    def __str__(self):
+    def _to_string(self):
         return '{0} {1}'.format(self.type, self.get_reference())
 
-    def get_reference(self):
+    def _get_reference(self):
         if isinstance(self.constant, bytearray):
             val = 'c"{0}"'.format(_escape_string(self.constant))
 
@@ -131,7 +136,7 @@ class Constant(ConstOpMixin):
         return hash(str(self))
 
 
-class Value(object):
+class Value(_StrCaching, _StringReferenceCaching):
     name_prefix = '%'
     deduplicate_name = True
     nested_scope = False
@@ -146,7 +151,7 @@ class Value(object):
         self._name = None
         self.name = name
 
-    def __str__(self):
+    def _to_string(self):
         buf = StringIO()
         if self.type == types.VoidType():
             self.descr(buf)
@@ -155,7 +160,7 @@ class Value(object):
             name = self.get_reference()
             self.descr(buf)
             descr = buf.getvalue().rstrip()
-            return "{name} = {descr}".format(**locals())
+            return "{0} = {1}".format(name, descr)
 
     def descr(self, buf):
         raise NotImplementedError
@@ -172,7 +177,7 @@ class Value(object):
         self.scope.register(name)
         self._name = name
 
-    def get_reference(self):
+    def _get_reference(self):
         return self.name_prefix + _wrapname(self.name)
 
     @property
@@ -199,11 +204,10 @@ class MetaDataString(Value):
     def descr(self, buf):
         print(self.get_reference(), file=buf)
 
-    def get_reference(self):
+    def _get_reference(self):
         return '!"{0}"'.format(self.string)
 
-    def __str__(self):
-        return self.get_reference()
+    _to_string = _get_reference
 
     def __eq__(self, other):
         if isinstance(other, MetaDataString):
@@ -252,7 +256,7 @@ class MDValue(Value):
         operands = ', '.join(operands)
         print("!{{ {0} }}".format(operands), file=buf)
 
-    def get_reference(self):
+    def _get_reference(self):
         return self.name_prefix + str(self.name)
 
     def __eq__(self, other):
@@ -538,7 +542,7 @@ class Block(Value):
                 instr.replace_usage(old, new)
 
 
-class BlockAddress:
+class BlockAddress(object):
     """
     The address of a basic block.
     """
