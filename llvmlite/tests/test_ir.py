@@ -60,9 +60,9 @@ class TestBase(TestCase):
         return func.append_basic_block(name)
 
     def descr(self, thing):
-        sio = six.StringIO()
-        thing.descr(sio)
-        return sio.getvalue()
+        buf = []
+        thing.descr(buf)
+        return "".join(buf)
 
     def _normalize_asm(self, asm):
         asm = textwrap.dedent(asm)

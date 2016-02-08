@@ -152,15 +152,11 @@ class Value(_StrCaching, _StringReferenceCaching):
         self.name = name
 
     def _to_string(self):
-        buf = StringIO()
-        if self.type == types.VoidType():
-            self.descr(buf)
-            return buf.getvalue().rstrip()
-        else:
-            name = self.get_reference()
-            self.descr(buf)
-            descr = buf.getvalue().rstrip()
-            return "{0} = {1}".format(name, descr)
+        buf = []
+        if self.type != types.VoidType():
+            buf.append("{0} = ".format(self.get_reference()))
+        self.descr(buf)
+        return "".join(buf).rstrip()
 
     def descr(self, buf):
         raise NotImplementedError
@@ -202,7 +198,7 @@ class MetaDataString(Value):
         self.string = string
 
     def descr(self, buf):
-        print(self.get_reference(), file=buf)
+        buf += (self.get_reference(), "\n")
 
     def _get_reference(self):
         return '!"{0}"'.format(self.string)
@@ -223,7 +219,6 @@ class MetaDataString(Value):
 
 
 class NamedMetaData(object):
-    name_prefix = '!'
 
     def __init__(self, parent):
         self.parent = parent
@@ -254,7 +249,7 @@ class MDValue(Value):
             else:
                 operands.append("{0} {1}".format(op.type, op.get_reference()))
         operands = ', '.join(operands)
-        print("!{{ {0} }}".format(operands), file=buf)
+        buf += ("!{{ {0} }}".format(operands), "\n")
 
     def _get_reference(self):
         return self.name_prefix + str(self.name)
@@ -316,22 +311,17 @@ class GlobalVariable(GlobalValue):
         else:
             unnamed_addr = ''
 
-        print("{linkage} {storage_class} {unnamed_addr} {addrspace} {kind} {type} ".format(
-            linkage=linkage,
-            storage_class=self.storage_class,
-            unnamed_addr=unnamed_addr,
-            addrspace=addrspace,
-            kind=kind,
-            type=self.gtype),
-              file=buf,
-              end='')
+        buf.append("{linkage} {storage_class} {unnamed_addr} {addrspace} {kind} {type} "
+                   .format(linkage=linkage,
+                           storage_class=self.storage_class,
+                           unnamed_addr=unnamed_addr,
+                           addrspace=addrspace,
+                           kind=kind,
+                           type=self.gtype))
 
         if self.initializer is not None:
-            print(self.initializer.get_reference(), file=buf, end='')
-            # else:
-        #     print('undef', file=buf, end='')
-
-        print(file=buf)
+            buf.append(self.initializer.get_reference())
+        buf.append("\n")
 
 
 class AttributeSet(set):
@@ -429,8 +419,8 @@ class Function(GlobalValue):
         linkage = self.linkage
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
-        prototype = "{prefix} {name}({args}{vararg}) {attrs}".format(**locals())
-        print(prototype, file=buf)
+        prototype = "{prefix} {name}({args}{vararg}) {attrs}\n".format(**locals())
+        buf.append(prototype)
 
     def descr_body(self, buf):
         """
@@ -442,14 +432,14 @@ class Function(GlobalValue):
     def descr(self, buf):
         self.descr_prototype(buf)
         if self.blocks:
-            print('{', file=buf)
+            buf.append("{\n")
             self.descr_body(buf)
-            print('}', file=buf)
+            buf.append("}\n")
 
     def __str__(self):
-        buf = StringIO()
+        buf = []
         self.descr(buf)
-        return buf.getvalue()
+        return "".join(buf)
 
     @property
     def is_declaration(self):
@@ -524,10 +514,8 @@ class Block(Value):
         return self.parent
 
     def descr(self, buf):
-        print("{0}:".format(self.name), file=buf)
-        for instr in self.instructions:
-            print('  ', end='', file=buf)
-            print(instr, file=buf)
+        buf.append("{0}:\n".format(self.name))
+        buf += ["  {0}\n".format(instr) for instr in self.instructions]
 
     def replace(self, old, new):
         """Replace an instruction"""
