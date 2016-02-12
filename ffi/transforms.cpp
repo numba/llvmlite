@@ -2,8 +2,96 @@
 #include "llvm-c/Transforms/PassManagerBuilder.h"
 #include "llvm-c/Target.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Analysis/PostDominators.h"
+#include "llvm/Analysis/DominanceFrontier.h"
+#include "llvm/Analysis/RegionInfo.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/RegionPrinter.h"
 
 
+#include <iostream>
+
+///////// Implement a FunctionPass to extract CFG Structures /////////
+
+namespace {
+
+using namespace llvm;
+
+
+/// A simple pass that dumps several control-flow analysis passes
+struct ControlStructuresDump : FunctionPass{
+    static char ID;
+
+    raw_ostream & out;
+
+    ControlStructuresDump (raw_ostream & out)
+        : FunctionPass(ID), out(out) { }
+
+    bool runOnFunction(Function &F) {
+        const Module *M = F.getParent();
+        const char prefix[] = ">>> ";
+        out << prefix << "regions\n";
+        printRegionInfo(F, getAnalysis<RegionInfoPass>().getRegionInfo());
+
+        out << prefix << "postdoms\n";
+        getAnalysis<PostDominatorTree>().print(out, M);
+        out << prefix << "domfront\n";
+        getAnalysis<DominanceFrontier>().print(out, M);
+        out << prefix << "doms\n";
+        getAnalysis<DominatorTreeWrapperPass>().print(out, M);
+        out << prefix << "loops\n";
+        getAnalysis<LoopInfo>().print(out, M);
+
+        return false;
+    }
+
+    void printRegionInfo(Function &F, RegionInfo &RI) {
+        for (auto it = F.begin(); it != F.end(); ++it) {
+            Region *R = RI.getRegionFor(&*it);
+
+            // Print the block and the region
+            out << it->getName()
+                << "|"
+                << R->getNameStr();
+
+            // Print all parent region
+            for (R = R->getParent(); R; R = R->getParent()){
+                out << "|" << R->getNameStr();
+            }
+
+            out << '\n';
+        }
+        out << RI.getTopLevelRegion()->getNameStr();
+    }
+
+    void getAnalysisUsage(AnalysisUsage &AU) const {
+        AU.setPreservesAll();
+        AU.addRequired<RegionInfoPass>();
+        AU.addRequired<PostDominatorTree>();
+        AU.addRequired<DominanceFrontier>();
+        AU.addRequired<DominatorTreeWrapperPass>();
+        AU.addRequired<LoopInfo>();
+    }
+
+    const char * getPassName() const {
+        return "llvmlite Control Structure Dump ";
+    }
+
+    static void AddPasses(FunctionPassManager &FPM, raw_ostream &out) {
+        FPM.add(new LoopInfo());
+        FPM.add(new RegionInfoPass());
+        FPM.add(new ControlStructuresDump(out));
+    }
+};
+
+char ControlStructuresDump::ID = 0;
+
+}
+
+
+
+///////// C-API Bindings /////////
 extern "C" {
 
 namespace llvm {
@@ -138,6 +226,27 @@ LLVMPY_PassManagerBuilderGetSLPVectorize(LLVMPassManagerBuilderRef PMB)
 {
     llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
     return pmb->SLPVectorize;
+}
+
+API_EXPORT(void)
+LLVMPY_RunControlStructuresAnalysis(LLVMValueRef Fval, const char **Out)
+{
+    using namespace llvm;
+    Function *F = unwrap<Function>(Fval);
+    FunctionPassManager FPM(F->getParent());
+
+    std::string buf;
+    raw_string_ostream out(buf);
+
+    ControlStructuresDump::AddPasses(FPM, out);
+
+    FPM.doInitialization();
+    FPM.run(*F);
+    FPM.doFinalization();
+
+    out.flush();
+
+    *Out = LLVMPY_CreateString(out.str().c_str());
 }
 
 
