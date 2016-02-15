@@ -1,6 +1,11 @@
 v0.9.0 (in development)
 -----------------------
 
+Enhancements:
+
+* Switch from LLVM 3.6 to LLVM 3.7.  The generated IR for some memory
+  operations has changed.
+
 
 v0.8.0
 ------
