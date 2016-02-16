@@ -45,8 +45,11 @@ def get_object_format(triple=None):
     return _object_formats[res]
 
 
-def create_target_data(strrep):
-    return TargetData(ffi.lib.LLVMPY_CreateTargetData(_encode_string(strrep)))
+def create_target_data(layout):
+    """
+    Create a TargetData instance for the given *layout* string.
+    """
+    return TargetData(ffi.lib.LLVMPY_CreateTargetData(_encode_string(layout)))
 
 
 class TargetData(ffi.ObjectRef):
@@ -111,11 +114,17 @@ class Target(ffi.ObjectRef):
 
     @classmethod
     def from_default_triple(cls):
+        """
+        Create a Target instance for the default triple.
+        """
         triple = get_default_triple()
         return cls.from_triple(triple)
 
     @classmethod
     def from_triple(cls, triple):
+        """
+        Create a Target instance for the given triple (a string).
+        """
         with ffi.OutputString() as outerr:
             target = ffi.lib.LLVMPY_GetTargetFromTriple(triple.encode('utf8'),
                                                         outerr)
@@ -145,6 +154,9 @@ class Target(ffi.ObjectRef):
     def create_target_machine(self, cpu='', features='',
                               opt=2, reloc='default', codemodel='jitdefault',
                               jitdebug=False, printmc=False):
+        """
+        Create a new TargetMachine for this target and the given options.
+        """
         assert 0 <= opt <= 3
         assert reloc in RELOC
         assert codemodel in CODEMODEL

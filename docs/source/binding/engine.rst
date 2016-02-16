@@ -103,4 +103,3 @@ The ExecutionEngine class
    .. attribute:: target_data
 
       The :class:`TargetData` used by the execution engine.
-

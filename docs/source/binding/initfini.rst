@@ -26,3 +26,11 @@ These functions need only be called once per process invocation.
 .. function:: shutdown()
 
    Shutdown the LLVM core.
+
+
+.. data:: llvm_version_info
+
+   A three-integer tuple representing the LLVM version number,
+   for example ``(3, 7, 1)``.  Since LLVM is statically linked into
+   the ``llvmlite`` DLL, this is guaranteed to represent the true LLVM
+   version in use.

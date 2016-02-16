@@ -27,6 +27,9 @@ class ModulePassManager(PassManager):
         PassManager.__init__(self, ptr)
 
     def run(self, module):
+        """
+        Run optimization passes on the given module.
+        """
         return ffi.lib.LLVMPY_RunPassManager(self, module)
 
 
@@ -53,6 +56,9 @@ class FunctionPassManager(PassManager):
         return ffi.lib.LLVMPY_FinalizeFunctionPassManager(self)
 
     def run(self, function):
+        """
+        Run optimization passes on the given function.
+        """
         return ffi.lib.LLVMPY_RunFunctionPassManager(self, function)
 
 
