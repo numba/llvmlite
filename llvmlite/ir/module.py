@@ -41,27 +41,36 @@ class Module(object):
 
     @property
     def functions(self):
+        """
+        A list of functions declared or defined in this module.
+        """
         return [v for v in self.globals.values()
                 if isinstance(v, values.Function)]
 
     @property
     def global_values(self):
+        """
+        An iterable of global values in this module.
+        """
         return self.globals.values()
 
     def get_global(self, name):
-        """Get a global value by name.
+        """
+        Get a global value by name.
         """
         return self.globals.get(name)
 
     def add_global(self, globalvalue):
-        """Add a global value
+        """
+        Add a new global value.
         """
         assert globalvalue.name not in self.globals
         self.globals[globalvalue.name] = globalvalue
         self._sequence.append(globalvalue.name)
 
     def get_unique_name(self, name=''):
-        """Util for getting a unique name.
+        """
+        Get a unique global name with the following *name* hint.
         """
         return self.scope.deduplicate(name)
 

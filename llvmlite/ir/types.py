@@ -286,9 +286,6 @@ class DoubleType(_BaseFloatType):
     null = '0.0'
     intrinsic_name = 'f64'
 
-    def __new__(cls):
-        return cls._instance_cache
-
     def __str__(self):
         return 'double'
 
@@ -379,7 +376,8 @@ class BaseStructType(Aggregate):
         return self.elements is None
 
     def structure_repr(self):
-        """Return the LLVM IR for the structure representation
+        """
+        Return the LLVM IR for the structure representation
         """
         return '{%s}' % ', '.join([str(x) for x in self.elements])
 
@@ -439,7 +437,8 @@ class IdentifiedStructType(BaseStructType):
         return "%{name}".format(name=_wrapname(self.name))
 
     def get_declaration(self):
-        """Returns the string for the declaration of the type
+        """
+        Returns the string for the declaration of the type
         """
         if self.is_opaque:
             out = "{strrep} = type opaque".format(strrep=str(self))

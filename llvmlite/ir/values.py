@@ -53,7 +53,14 @@ class ConstOp(object):
 
 
 class ConstOpMixin(object):
+    """
+    A mixin defining constant operations, for use in constant-like classes.
+    """
+
     def bitcast(self, typ):
+        """
+        Bitcast this pointer constant to the given type.
+        """
         if typ == self.type:
             return self
         op = "bitcast ({0} {1} to {2})".format(self.type, self.get_reference(),
@@ -61,6 +68,9 @@ class ConstOpMixin(object):
         return ConstOp(typ, op)
 
     def inttoptr(self, typ):
+        """
+        Cast this integer constant to the given pointer type.
+        """
         assert isinstance(self.type, types.IntType)
         assert isinstance(typ, types.PointerType)
         op = "inttoptr ({0} {1} to {2})".format(self.type,
@@ -69,6 +79,9 @@ class ConstOpMixin(object):
         return ConstOp(typ, op)
 
     def gep(self, indices):
+        """
+        Call getelementptr on this pointer constant.
+        """
         if not isinstance(self.type, types.PointerType):
             raise TypeError("cannot only call gep() on pointer constants")
 
@@ -87,7 +100,7 @@ class ConstOpMixin(object):
 
 class Constant(_StrCaching, _StringReferenceCaching, ConstOpMixin):
     """
-    Constant values
+    A constant LLVM value.
     """
 
     def __init__(self, typ, constant):
@@ -116,6 +129,9 @@ class Constant(_StrCaching, _StringReferenceCaching, ConstOpMixin):
 
     @classmethod
     def literal_struct(cls, elems):
+        """
+        Construct a literal structure constant made of the given members.
+        """
         tys = [el.type for el in elems]
         return cls(types.LiteralStructType(tys), elems)
 
@@ -264,6 +280,9 @@ class MDValue(Value):
 
 
 class GlobalValue(Value, ConstOpMixin):
+    """
+    A global value.
+    """
     name_prefix = '@'
     deduplicate_name = False
 
@@ -274,6 +293,10 @@ class GlobalValue(Value, ConstOpMixin):
 
 
 class GlobalVariable(GlobalValue):
+    """
+    A global variable.
+    """
+
     def __init__(self, module, typ, name, addrspace=0):
         assert isinstance(typ, types.Type)
         super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),

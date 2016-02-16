@@ -180,6 +180,9 @@ serving as modifiers of the instruction's semantics.  Examples include the
 fast-math flags for floating-point operations, or whether wraparound on
 overflow can be ignored on integer operations.
 
+Integer
+"""""""
+
 .. method:: IRBuilder.shl(lhs, rhs, name='', flags=())
 
    Left-shift *lhs* by *rhs* bits.
@@ -196,25 +199,28 @@ overflow can be ignored on integer operations.
 
    Integer add *lhs* and *rhs*.
 
-.. method:: IRBuilder.fadd(lhs, rhs, name='', flags=())
+.. method:: IRBuilder.sadd_with_overflow(lhs, rhs, name='', flags=())
 
-   Floating-point add *lhs* and *rhs*.
+   Integer add *lhs* and *rhs*.  A ``{ result, overflow bit }``
+   structure is returned.
 
 .. method:: IRBuilder.sub(lhs, rhs, name='', flags=())
 
-   Integer subtract*rhs* from *lhs*.
+   Integer subtract *rhs* from *lhs*.
 
-.. method:: IRBuilder.fadd(lhs, rhs, name='', flags=())
+.. method:: IRBuilder.sadd_with_overflow(lhs, rhs, name='', flags=())
 
-   Floating-point subtract *rhs* from *lhs*.
+   Integer subtract *rhs* from *lhs*.  A ``{ result, overflow bit }``
+   structure is returned.
 
 .. method:: IRBuilder.mul(lhs, rhs, name='', flags=())
 
    Integer multiply *lhs* with *rhs*.
 
-.. method:: IRBuilder.fmul(lhs, rhs, name='', flags=())
+.. method:: IRBuilder.smul_with_overflow(lhs, rhs, name='', flags=())
 
-   Floating-point multiply *lhs* with *rhs*.
+   Integer multiply *lhs* with *rhs*.  A ``{ result, overflow bit }``
+   structure is returned.
 
 .. method:: IRBuilder.sdiv(lhs, rhs, name='', flags=())
 
@@ -224,10 +230,6 @@ overflow can be ignored on integer operations.
 
    Unsigned integer divide *lhs* by *rhs*.
 
-.. method:: IRBuilder.fdiv(lhs, rhs, name='', flags=())
-
-   Floating-point divide *lhs* by *rhs*.
-
 .. method:: IRBuilder.srem(lhs, rhs, name='', flags=())
 
    Signed integer remainder of *lhs* divided by *rhs*.
@@ -235,10 +237,6 @@ overflow can be ignored on integer operations.
 .. method:: IRBuilder.urem(lhs, rhs, name='', flags=())
 
    Unsigned integer remainder of *lhs* divided by *rhs*.
-
-.. method:: IRBuilder.frem(lhs, rhs, name='', flags=())
-
-   Floating-point remainder of *lhs* divided by *rhs*.
 
 .. method:: IRBuilder.and_(lhs, rhs, name='', flags=())
 
@@ -259,6 +257,30 @@ overflow can be ignored on integer operations.
 .. method:: IRBuilder.neg(value, name='')
 
    Negate *value*.
+
+Floating-point
+""""""""""""""
+
+.. method:: IRBuilder.fadd(lhs, rhs, name='', flags=())
+
+   Floating-point add *lhs* and *rhs*.
+
+.. method:: IRBuilder.fsub(lhs, rhs, name='', flags=())
+
+   Floating-point subtract *rhs* from *lhs*.
+
+.. method:: IRBuilder.fmul(lhs, rhs, name='', flags=())
+
+   Floating-point multiply *lhs* by *rhs*.
+
+.. method:: IRBuilder.fdiv(lhs, rhs, name='', flags=())
+
+   Floating-point divide *lhs* by *rhs*.
+
+.. method:: IRBuilder.frem(lhs, rhs, name='', flags=())
+
+   Floating-point remainder of *lhs* divided by *rhs*.
+
 
 Conversions
 '''''''''''

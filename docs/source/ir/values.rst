@@ -42,6 +42,19 @@ Values are what a :term:`module` mostly consists of.
       sequence of values (:class:`Constant` or otherwise).  A constant
       struct containing the *elems* in order is returned
 
+   .. method:: bitcast(typ)
+
+      Convert this pointer constant to a constant of the given pointer type.
+
+   .. method:: gep(indices)
+
+      Compute the address of the inner element given by the sequence of
+      *indices*.  The constant must have a pointer type.
+
+   .. method:: inttoptr(typ)
+
+      Convert this integer constant to a constant of the given pointer type.
+
    .. note::
       You cannot define constant functions.  Use a :term:`function declaration`
       instead.
