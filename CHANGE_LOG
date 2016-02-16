@@ -5,7 +5,11 @@ Enhancements:
 
 * Switch from LLVM 3.6 to LLVM 3.7.  The generated IR for some memory
   operations has changed.
-
+* Improved performance of IR serialization.
+* Issue #116: improve error message when the operands of a binop have
+  differing types.
+* PR #113: Let Type.get_abi_{size,alignment} not choke on identified types.
+* PR #112: Support non-alphanumeric characters in type names.
 
 v0.8.0
 ------

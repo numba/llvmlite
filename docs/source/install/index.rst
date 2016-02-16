@@ -38,7 +38,7 @@ if you run into this problem.
 Prerequisites (Windows)
 '''''''''''''''''''''''
 
-You must have Visual Studio 2012 or later (the free "Express" edition is ok)
+You must have Visual Studio 2013 or later (the free "Express" edition is ok)
 in order to compile LLVM and llvmlite.  In addition, you must have cmake_
 installed, and LLVM should have been built using cmake, in Release mode.
 Be careful to use the right bitness (32- or 64-bit) for your Python
