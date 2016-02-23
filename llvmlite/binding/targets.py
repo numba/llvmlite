@@ -45,8 +45,29 @@ def get_host_cpu_name():
         ffi.lib.LLVMPY_GetHostCPUName(out)
         return str(out)
 
-def create_target_data(strrep):
-    return TargetData(ffi.lib.LLVMPY_CreateTargetData(_encode_string(strrep)))
+_object_formats = {
+    1: "COFF",
+    2: "ELF",
+    3: "MachO",
+    }
+
+def get_object_format(triple=None):
+    """
+    Get the object format for the given *triple* string (or the default
+    triple if omitted).
+    A string is returned
+    """
+    if triple is None:
+        triple = get_default_triple()
+    res = ffi.lib.LLVMPY_GetTripleObjectFormat(_encode_string(triple))
+    return _object_formats[res]
+
+
+def create_target_data(layout):
+    """
+    Create a TargetData instance for the given *layout* string.
+    """
+    return TargetData(ffi.lib.LLVMPY_CreateTargetData(_encode_string(layout)))
 
 
 class TargetData(ffi.ObjectRef):
@@ -111,14 +132,17 @@ class Target(ffi.ObjectRef):
 
     @classmethod
     def from_default_triple(cls):
+        """
+        Create a Target instance for the default triple.
+        """
         triple = get_default_triple()
-        # For MCJIT under Windows, see http://lists.cs.uiuc.edu/pipermail/llvmdev/2013-December/068381.html
-        if os.name == 'nt':
-            triple += '-elf'
         return cls.from_triple(triple)
 
     @classmethod
     def from_triple(cls, triple):
+        """
+        Create a Target instance for the given triple (a string).
+        """
         with ffi.OutputString() as outerr:
             target = ffi.lib.LLVMPY_GetTargetFromTriple(triple.encode('utf8'),
                                                         outerr)
@@ -148,11 +172,20 @@ class Target(ffi.ObjectRef):
     def create_target_machine(self, cpu='', features='',
                               opt=2, reloc='default', codemodel='jitdefault',
                               jitdebug=False, printmc=False):
+        """
+        Create a new TargetMachine for this target and the given options.
+        """
         assert 0 <= opt <= 3
         assert reloc in RELOC
         assert codemodel in CODEMODEL
+        triple = self._triple
+        # MCJIT under Windows only supports ELF objects, see
+        # http://lists.llvm.org/pipermail/llvm-dev/2013-December/068341.html
+        # Note we still want to produce regular COFF files in AOT mode.
+        if os.name == 'nt' and codemodel == 'jitdefault':
+            triple += '-elf'
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
-                                                _encode_string(self._triple),
+                                                _encode_string(triple),
                                                 _encode_string(cpu),
                                                 _encode_string(features),
                                                 opt,
@@ -221,54 +254,12 @@ class TargetMachine(ffi.ObjectRef):
         td._owned = True
         return td
 
+    @property
+    def triple(self):
+        with ffi.OutputString() as out:
+            ffi.lib.LLVMPY_GetTargetMachineTriple(self, out)
+            return str(out)
 
-def create_target_library_info(triple):
-    return TargetLibraryInfo(
-        ffi.lib.LLVMPY_CreateTargetLibraryInfo(_encode_string(triple, ))
-    )
-
-
-class TargetLibraryInfo(ffi.ObjectRef):
-    """
-    A LLVM TargetLibraryInfo.  Use :func:`create_target_library_info`
-    to create instances.
-    """
-
-    def _dispose(self):
-        self._capi.LLVMPY_DisposeTargetLibraryInfo(self)
-
-    def add_pass(self, pm):
-        """
-        Add this library info as a pass to PassManager *pm*.
-        """
-        ffi.lib.LLVMPY_AddTargetLibraryInfo(self, pm)
-        # Once added to a PassManager, we can never get it back.
-        self._owned = True
-
-    def disable_all(self):
-        """
-        Disable all "builtin" functions.
-        """
-        ffi.lib.LLVMPY_DisableAllBuiltins(self)
-
-    def get_libfunc(self, name):
-        """
-        Get the library function *name*.  NameError is raised if not found.
-        """
-        lf = c_int()
-        if not ffi.lib.LLVMPY_GetLibFunc(self, _encode_string(name),
-                                         byref(lf)):
-            raise NameError("LibFunc '{name}' not found".format(name=name))
-        return LibFunc(name=name, identity=lf.value)
-
-    def set_unavailable(self, libfunc):
-        """
-        Mark the given library function (*libfunc*) as unavailable.
-        """
-        ffi.lib.LLVMPY_SetUnavailableLibFunc(self, libfunc.identity)
-
-
-LibFunc = collections.namedtuple("LibFunc", ["identity", "name"])
 
 # ============================================================================
 # FFI
@@ -280,6 +271,9 @@ ffi.lib.LLVMPY_GetHostCPUFeatures.argtypes = [POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetDefaultTargetTriple.argtypes = [POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_GetHostCPUName.argtypes = [POINTER(c_char_p)]
+
+ffi.lib.LLVMPY_GetTripleObjectFormat.argtypes = [c_char_p]
+ffi.lib.LLVMPY_GetTripleObjectFormat.restype = c_int
 
 ffi.lib.LLVMPY_CreateTargetData.argtypes = [c_char_p]
 ffi.lib.LLVMPY_CreateTargetData.restype = ffi.LLVMTargetDataRef
@@ -336,6 +330,9 @@ ffi.lib.LLVMPY_CreateTargetMachine.restype = ffi.LLVMTargetMachineRef
 
 ffi.lib.LLVMPY_DisposeTargetMachine.argtypes = [ffi.LLVMTargetMachineRef]
 
+ffi.lib.LLVMPY_GetTargetMachineTriple.argtypes = [ffi.LLVMTargetMachineRef,
+                                                  POINTER(c_char_p)]
+
 ffi.lib.LLVMPY_AddAnalysisPasses.argtypes = [
     ffi.LLVMTargetMachineRef,
     ffi.LLVMPassManagerRef,
@@ -356,34 +353,6 @@ ffi.lib.LLVMPY_GetBufferSize.argtypes = [ffi.LLVMMemoryBufferRef]
 ffi.lib.LLVMPY_GetBufferSize.restype = c_size_t
 
 ffi.lib.LLVMPY_DisposeMemoryBuffer.argtypes = [ffi.LLVMMemoryBufferRef]
-
-ffi.lib.LLVMPY_CreateTargetLibraryInfo.argtypes = [c_char_p]
-ffi.lib.LLVMPY_CreateTargetLibraryInfo.restype = ffi.LLVMTargetLibraryInfoRef
-
-ffi.lib.LLVMPY_DisposeTargetLibraryInfo.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-]
-
-ffi.lib.LLVMPY_AddTargetLibraryInfo.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-    ffi.LLVMPassManagerRef,
-]
-
-ffi.lib.LLVMPY_DisableAllBuiltins.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-]
-
-ffi.lib.LLVMPY_GetLibFunc.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-    c_char_p,
-    POINTER(c_int),
-]
-ffi.lib.LLVMPY_GetLibFunc.restype = c_int
-
-ffi.lib.LLVMPY_SetUnavailableLibFunc.argtypes = [
-    ffi.LLVMTargetLibraryInfoRef,
-    c_int,
-]
 
 ffi.lib.LLVMPY_GetTargetMachineData.argtypes = [
     ffi.LLVMTargetMachineRef,

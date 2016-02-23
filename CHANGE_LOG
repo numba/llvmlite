@@ -1,3 +1,34 @@
+v0.9.0 (in development)
+-----------------------
+
+Enhancements:
+
+* Switch from LLVM 3.6 to LLVM 3.7.  The generated IR for some memory
+  operations has changed.
+* Improved performance of IR serialization.
+* Issue #116: improve error message when the operands of a binop have
+  differing types.
+* PR #113: Let Type.get_abi_{size,alignment} not choke on identified types.
+* PR #112: Support non-alphanumeric characters in type names.
+
+v0.8.0
+------
+
+* Update LLVM to 3.6.2
+* Add an *align* parameter to IRBuilder.load() and IRBuilder.store().
+* Allow setting visibility, DLL storageclass of ValueRef
+* Support profiling with OProfile
+
+v0.7.0
+------
+
+* PR #88: Provide hooks into the MCJIT object cache
+* PR #87: Add indirect branches and exception handling APIs to ir.Builder.
+* PR #86: Add ir.Builder APIs for integer arithmetic with overflow
+* Issue #76: Fix non-Windows builds when LLVM was built using CMake
+* Deprecate .get_pointer_to_global() and add .get_function_address() and
+  .get_global_value_address() in ExecutionEngine.
+
 v0.6.0
 ------
 

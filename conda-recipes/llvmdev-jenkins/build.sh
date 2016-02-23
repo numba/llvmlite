@@ -1,37 +1,43 @@
-if [ -z "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    # Enable devtoolset-2, a newer gcc toolchain
-    . /opt/rh/devtoolset-2/enable
-    # Statically link the standard C/C++ library, because
-    # we are building on an old centos5 machine.
-    export CC=gcc
-    export CXX=g++
-    # Linux
-    ./configure \
-        --enable-pic \
-        --enable-optimized \
-        --disable-docs \
-        --enable-targets=host \
-        --disable-terminfo \
-        --disable-libedit \
-        --prefix=$PREFIX \
-        --with-python=$SYS_PYTHON
+CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$PREFIX \
+    -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=host \
+    -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_UTILS=OFF \
+    -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF \
+    -DLLVM_ENABLE_TERMINFO=OFF \
+    "
 
-else
-    # OSX needs 10.7 or above with libc++ enabled
-    export MACOSX_DEPLOYMENT_TARGET=10.7
-    ./configure \
-        --enable-pic \
-        --enable-optimized \
-        --disable-docs \
-        --enable-targets=host \
-        --disable-terminfo \
-        --disable-libedit \
-        --prefix=$PREFIX \
-        --with-python=$SYS_PYTHON \
-        --enable-libcpp=yes
+platform='unknown'
+unamestr="$(uname)"
 
+if [[ "$unamestr" == 'Linux' ]]; then
+    platform='linux'
+elif [[ "$unamestr" == 'FreeBSD' ]]; then
+    platform='freebsd'
+elif [[ "$unamestr" == 'Darwin' ]]; then
+    platform='osx'
 fi
 
-make -j4 libs-only
-make install-libs
+# If available, enable newer toolset on old RH / CentOS machines
+toolset=/opt/rh/devtoolset-2
 
+if [ -d $toolset ]; then
+    . /opt/rh/devtoolset-2/enable
+    export CC=gcc
+    export CXX=g++
+fi
+
+if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
+    # OSX needs 10.7 or above with libc++ enabled
+    export MACOSX_DEPLOYMENT_TARGET=10.9
+fi
+
+# Use CMake-based build procedure
+mkdir build
+cd build
+if [[ "$platform" == 'linux' ]]; then
+    cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
+else
+    cmake $CMAKE_COMMON_VARIABLES ..
+fi
+
+make -j4
+make install

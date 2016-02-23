@@ -91,6 +91,10 @@ The ModuleRef class
       An iterator over the global variables defined in this module.
       Each global variable is a :class:`ValueRef` instance.
 
+   .. attribute:: name
+
+      The module's identifier, as a string.  This attribute is settable.
+
    .. attribute:: triple
 
       The platform "triple" string for this module.  This attribute is settable.

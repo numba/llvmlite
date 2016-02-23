@@ -48,6 +48,30 @@ LLVMPY_GetLinkage(LLVMValueRef Val)
 }
 
 API_EXPORT(void)
+LLVMPY_SetVisibility(LLVMValueRef Val, int Visibility)
+{
+    LLVMSetVisibility(Val, (LLVMVisibility)Visibility);
+}
+
+API_EXPORT(int)
+LLVMPY_GetVisibility(LLVMValueRef Val)
+{
+    return (int)LLVMGetVisibility(Val);
+}
+
+API_EXPORT(void)
+LLVMPY_SetDLLStorageClass(LLVMValueRef Val, int DLLStorageClass)
+{
+    LLVMSetDLLStorageClass(Val, (LLVMDLLStorageClass)DLLStorageClass);
+}
+
+API_EXPORT(int)
+LLVMPY_GetDLLStorageClass(LLVMValueRef Val)
+{
+    return (int)LLVMGetDLLStorageClass(Val);
+}
+
+API_EXPORT(void)
 LLVMPY_AddFunctionAttr(LLVMValueRef Fn, int Attr)
 {
     LLVMAddFunctionAttr(Fn, (LLVMAttribute)Attr);

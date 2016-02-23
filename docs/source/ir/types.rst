@@ -60,6 +60,10 @@ Atomic types
    The type of integers.  *bits*, a Python integer, specifies the bitwidth
    of the integers having this type.
 
+   .. attribute:: width
+
+      The width in bits.
+
 
 .. class:: FloatType()
 

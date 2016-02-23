@@ -19,6 +19,10 @@ pointer inside the block's list of instructions.  When adding a new
 instruction, it is inserted at that point and the pointer is then advanced
 after the new instruction.
 
+A :class:`IRBuilder` also maintains a reference to metadata describing
+the current source location, which will be attached to all inserted
+instructions.
+
 Instantiation
 -------------
 
@@ -45,6 +49,10 @@ Properties
 
    The module the builder's function is defined in.
 
+.. attribute:: IRBuilder.debug_metadata
+
+   If not `None`, the metadata that will be attached to any inserted
+   instructions as `!dbg`, unless the instruction already has `!dbg` set.
 
 Utilities
 ---------
@@ -172,6 +180,9 @@ serving as modifiers of the instruction's semantics.  Examples include the
 fast-math flags for floating-point operations, or whether wraparound on
 overflow can be ignored on integer operations.
 
+Integer
+"""""""
+
 .. method:: IRBuilder.shl(lhs, rhs, name='', flags=())
 
    Left-shift *lhs* by *rhs* bits.
@@ -188,25 +199,28 @@ overflow can be ignored on integer operations.
 
    Integer add *lhs* and *rhs*.
 
-.. method:: IRBuilder.fadd(lhs, rhs, name='', flags=())
+.. method:: IRBuilder.sadd_with_overflow(lhs, rhs, name='', flags=())
 
-   Floating-point add *lhs* and *rhs*.
+   Integer add *lhs* and *rhs*.  A ``{ result, overflow bit }``
+   structure is returned.
 
 .. method:: IRBuilder.sub(lhs, rhs, name='', flags=())
 
-   Integer subtract*rhs* from *lhs*.
+   Integer subtract *rhs* from *lhs*.
 
-.. method:: IRBuilder.fadd(lhs, rhs, name='', flags=())
+.. method:: IRBuilder.sadd_with_overflow(lhs, rhs, name='', flags=())
 
-   Floating-point subtract *rhs* from *lhs*.
+   Integer subtract *rhs* from *lhs*.  A ``{ result, overflow bit }``
+   structure is returned.
 
 .. method:: IRBuilder.mul(lhs, rhs, name='', flags=())
 
    Integer multiply *lhs* with *rhs*.
 
-.. method:: IRBuilder.fmul(lhs, rhs, name='', flags=())
+.. method:: IRBuilder.smul_with_overflow(lhs, rhs, name='', flags=())
 
-   Floating-point multiply *lhs* with *rhs*.
+   Integer multiply *lhs* with *rhs*.  A ``{ result, overflow bit }``
+   structure is returned.
 
 .. method:: IRBuilder.sdiv(lhs, rhs, name='', flags=())
 
@@ -216,10 +230,6 @@ overflow can be ignored on integer operations.
 
    Unsigned integer divide *lhs* by *rhs*.
 
-.. method:: IRBuilder.fdiv(lhs, rhs, name='', flags=())
-
-   Floating-point divide *lhs* by *rhs*.
-
 .. method:: IRBuilder.srem(lhs, rhs, name='', flags=())
 
    Signed integer remainder of *lhs* divided by *rhs*.
@@ -227,10 +237,6 @@ overflow can be ignored on integer operations.
 .. method:: IRBuilder.urem(lhs, rhs, name='', flags=())
 
    Unsigned integer remainder of *lhs* divided by *rhs*.
-
-.. method:: IRBuilder.frem(lhs, rhs, name='', flags=())
-
-   Floating-point remainder of *lhs* divided by *rhs*.
 
 .. method:: IRBuilder.and_(lhs, rhs, name='', flags=())
 
@@ -251,6 +257,30 @@ overflow can be ignored on integer operations.
 .. method:: IRBuilder.neg(value, name='')
 
    Negate *value*.
+
+Floating-point
+""""""""""""""
+
+.. method:: IRBuilder.fadd(lhs, rhs, name='', flags=())
+
+   Floating-point add *lhs* and *rhs*.
+
+.. method:: IRBuilder.fsub(lhs, rhs, name='', flags=())
+
+   Floating-point subtract *rhs* from *lhs*.
+
+.. method:: IRBuilder.fmul(lhs, rhs, name='', flags=())
+
+   Floating-point multiply *lhs* by *rhs*.
+
+.. method:: IRBuilder.fdiv(lhs, rhs, name='', flags=())
+
+   Floating-point divide *lhs* by *rhs*.
+
+.. method:: IRBuilder.frem(lhs, rhs, name='', flags=())
+
+   Floating-point remainder of *lhs* divided by *rhs*.
+
 
 Conversions
 '''''''''''
@@ -375,13 +405,15 @@ Memory
    Statically allocate a stack slot for *size* values of type *typ*.
    If *size* is not given, a stack slot for one value is allocated.
 
-.. method:: IRBuilder.load(ptr, name='')
+.. method:: IRBuilder.load(ptr, name='', align=None)
 
-   Load value from pointer *ptr*.
+   Load value from pointer *ptr*.  If *align* is passed, it should
+   be a Python integer specifying the guaranteed pointer alignment.
 
-.. method:: IRBuilder.store(value, ptr)
+.. method:: IRBuilder.store(value, ptr, align=None)
 
-   Store *value* to pointer *ptr*.
+   Store *value* to pointer *ptr*.  If *align* is passed, it should
+   be a Python integer specifying the guaranteed pointer alignment.
 
 .. method:: IRBuilder.gep(ptr, indices, inbounds=False, name='')
 
@@ -443,6 +475,68 @@ These instructions are all :term:`terminators <terminator>`.
 
    Add non-default targets using the :meth:`~SwitchInstr.add_case`
    method on the return value.
+
+.. method:: IRBuilder.indirectbr(address)
+
+   Jump to basic block with address *address* (a value of type
+   `IntType(8).as_pointer()`). A block address can be obtained
+   using the :class:`BlockAddress` constant.
+
+   Add all possible jump destinations using
+   the :meth:`~IndirectBranch.add_destination` method on the return
+   value.
+
+
+Exception handling
+''''''''''''''''''
+
+.. method:: IRBuilder.invoke(self, fn, args, normal_to, unwind_to,
+                             name='', cconv=None, tail=False)
+
+   Call function *fn* with arguments *args* (a sequence of values).
+   *cconc* is the optional calling convention.  *tail*, if true, is
+   a hint for the optimizer to perform tail-call optimization.
+
+   If the function *fn* returns normally, control is transferred to
+   *normal_to*. Otherwise, it is transferred to *unwind_to*,
+   the first non-phi instruction of which must be :class:`LandingPad`.
+
+.. method:: IRBuilder.landingpad(typ, personality, name='', cleanup=False)
+
+   Describe which exceptions this basic block can handle.
+
+   *typ* specifies the return type of the landing pad. It is a structure
+   with two pointer-sized fields.
+   *personality* specifies an exception personality function.
+   *cleanup* specifies whether control should be always transferred
+   to this landing pad, even when no matching exception is caught.
+
+   Add landing pad clauses using the :meth:`~LandingPad.add_clause`
+   method on the return value.
+
+   There are two kinds of landing pad clauses:
+
+      * A :class:`CatchClause`, which specifies a typeinfo for
+        a single exception to be caught. The typeinfo is a value
+        of type `IntType(8).as_pointer().as_pointer()`;
+
+      * A :class:`FilterClause`, which specifies an array of
+        typeinfos.
+
+   Every landing pad must either contain at least one clause,
+   or be marked for cleanup.
+
+   The semantics of a landing pad are entirely determined by the personality
+   function. See `Exception handling in LLVM <http://llvm.org/docs/ExceptionHandling.html>`_
+   for details on the way LLVM handles landing pads in the optimizer, and
+   `Itanium exception handling ABI <https://mentorembedded.github.io/cxx-abi/abi-eh.html>`_
+   for details on the implementation of personality functions.
+
+.. method:: IRBuilder.resume(landingpad)
+
+   Resume an exception caught by landing pad *landingpad*. Used to indicate
+   that the landing pad did not catch the exception after all (perhaps
+   because it only performed cleanup).
 
 
 Miscellaneous

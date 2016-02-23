@@ -94,5 +94,3 @@ configure a :class:`PassManagerBuilder`.
       Run optimization passes on the *function* (a :class:`ValueRef` instance).
       True is returned if the optimizations made any modification to the
       module, False instead.
-
-

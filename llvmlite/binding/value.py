@@ -60,6 +60,22 @@ class Attribute(enum.Enum):
     nonlazybind = 1 << 31
 
 
+class Visibility(enum.IntEnum):
+    # The LLVMVisibility enum from llvm-c/Core.h
+
+    default = 0
+    hidden = 1
+    protected = 2
+
+
+class StorageClass(enum.IntEnum):
+    # The LLVMDLLStorageClass enum from llvm-c/Core.h
+
+    default = 0
+    dllimport = 1
+    dllexport = 2
+
+
 class ValueRef(ffi.ObjectRef):
     """A weak reference to a LLVM value.
     """
@@ -75,7 +91,8 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def module(self):
-        """The module this value is defined in.
+        """
+        The module this value was obtained from.
         """
         return self._module
 
@@ -97,6 +114,26 @@ class ValueRef(ffi.ObjectRef):
             value = Linkage[value]
         ffi.lib.LLVMPY_SetLinkage(self, value)
 
+    @property
+    def visibility(self):
+        return Visibility(ffi.lib.LLVMPY_GetVisibility(self))
+
+    @visibility.setter
+    def visibility(self, value):
+        if not isinstance(value, Visibility):
+            value = Visibility[value]
+        ffi.lib.LLVMPY_SetVisibility(self, value)
+
+    @property
+    def storage_class(self):
+        return StorageClass(ffi.lib.LLVMPY_GetDLLStorageClass(self))
+
+    @storage_class.setter
+    def storage_class(self, value):
+        if not isinstance(value, StorageClass):
+            value = StorageClass[value]
+        ffi.lib.LLVMPY_SetDLLStorageClass(self, value)
+
     def add_function_attribute(self, attr):
         """Only works on function value"""
         # XXX unused?
@@ -106,12 +143,17 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def type(self):
+        """
+        This value's LLVM type.
+        """
         # XXX what does this return?
         return ffi.lib.LLVMPY_TypeOf(self)
 
     @property
     def is_declaration(self):
-        """Is this global defined in the current module?
+        """
+        Whether this value (presumably global) is defined in the current
+        module.
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
@@ -137,6 +179,16 @@ ffi.lib.LLVMPY_GetLinkage.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetLinkage.restype = c_int
 
 ffi.lib.LLVMPY_SetLinkage.argtypes = [ffi.LLVMValueRef, c_int]
+
+ffi.lib.LLVMPY_GetVisibility.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetVisibility.restype = c_int
+
+ffi.lib.LLVMPY_SetVisibility.argtypes = [ffi.LLVMValueRef, c_int]
+
+ffi.lib.LLVMPY_GetDLLStorageClass.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetDLLStorageClass.restype = c_int
+
+ffi.lib.LLVMPY_SetDLLStorageClass.argtypes = [ffi.LLVMValueRef, c_int]
 
 ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_int]
 

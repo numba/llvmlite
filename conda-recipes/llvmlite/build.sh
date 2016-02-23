@@ -1,15 +1,19 @@
 
-# If there is a system LLVM install of 3.5 or higher, prefer it over llvmdev
-# as it is synchronized with the system's libstdc++.
+# If available, enable newer toolset on old RH / CentOS machines
+toolset=/opt/rh/devtoolset-2
 
-llvm_config_candidate=/usr/bin/llvm-config
+if [ -d $toolset ]; then
+    . /opt/rh/devtoolset-2/enable
+    export CC=gcc
+    export CXX=g++
+fi
 
-if [ -x ${llvm_config_candidate} \
-     -a "$(${llvm_config_candidate} --version)" \> "3.5" ]
-then export LLVM_CONFIG=${llvm_config_candidate}
+if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
+    # OSX needs 10.7 or above with libc++ enabled
+    export MACOSX_DEPLOYMENT_TARGET=10.9
 fi
 
 export PYTHONNOUSERSITE=1
 
-python setup.py build
+python setup.py build --force
 python setup.py install

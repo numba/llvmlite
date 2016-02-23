@@ -3,15 +3,29 @@ from __future__ import print_function, absolute_import
 import ctypes
 from ctypes import *
 from ctypes.util import find_library
+import gc
 import subprocess
 import sys
 import unittest
 import platform
+import locale
 
 from llvmlite import six
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from . import TestCase
+
+
+def no_de_locale():
+    cur = locale.setlocale(locale.LC_ALL)
+    try:
+        locale.setlocale(locale.LC_ALL, 'de_DE')
+    except locale.Error:
+        return True
+    else:
+        return False
+    finally:
+        locale.setlocale(locale.LC_ALL, cur)
 
 
 asm_sum = r"""
@@ -79,12 +93,35 @@ asm_sum_declare = r"""
     declare i32 @sum(i32 %.1, i32 %.2)
     """
 
+
+asm_double_locale = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @foo() {{
+      %const = fadd double 0.0, 3.14
+      ret void
+    }}
+    """
+
 class BaseTest(TestCase):
 
     def setUp(self):
         llvm.initialize()
         llvm.initialize_native_target()
         llvm.initialize_native_asmprinter()
+        gc.collect()
+        self.old_garbage = gc.garbage[:]
+        gc.garbage[:] = []
+
+    def tearDown(self):
+        # Test that no uncollectable objects were created
+        # (llvmlite objects have a __del__ so a reference cycle could
+        # create some).
+        gc.collect()
+        self.assertEqual(gc.garbage, [])
+        # This will probably put any existing garbage in gc.garbage again
+        del self.old_garbage
 
     def module(self, asm=asm_sum):
         asm = asm.format(triple=llvm.get_default_triple())
@@ -173,8 +210,23 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertIn((major, minor), [(3, 5), (3, 6)])
+        self.assertIn((major, minor), [(3, 6), (3, 7)])
         self.assertIn(patch, range(10))
+
+    def test_check_jit_execution(self):
+        llvm.check_jit_execution()
+
+    @unittest.skipIf(no_de_locale(), "Locale not available")
+    def test_print_double_locale(self):
+        m = self.module(asm_double_locale)
+        expect = str(m)
+        # Change the locale so that comma is used as decimal-point
+        # to trigger the LLVM bug (llvmlite issue #80)
+        locale.setlocale(locale.LC_ALL, 'de_DE')
+        # The LLVM bug is trigged by print the module with double constant
+        got = str(m)
+        # Changing the locale should not affect the LLVM IR
+        self.assertEqual(expect, got)
 
 
 class TestModuleRef(BaseTest):
@@ -202,6 +254,13 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(RuntimeError):
             with mod:
                 pass
+
+    def test_name(self):
+        mod = self.module()
+        mod.name = "foo"
+        self.assertEqual(mod.name, "foo")
+        mod.name = "bar"
+        self.assertEqual(mod.name, "bar")
 
     def test_data_layout(self):
         mod = self.module()
@@ -334,13 +393,16 @@ class JITTestMixin(object):
     Mixin for ExecutionEngine tests.
     """
 
+    def get_sum(self, ee, func_name="sum"):
+        ee.finalize_object()
+        cfptr = ee.get_function_address(func_name)
+        self.assertTrue(cfptr)
+        return CFUNCTYPE(c_int, c_int, c_int)(cfptr)
+
     def test_run_code(self):
         mod = self.module()
         with self.jit(mod) as ee:
-            ee.finalize_object()
-            cfptr = ee.get_pointer_to_global(mod.get_function('sum'))
-
-            cfunc = CFUNCTYPE(c_int, c_int, c_int)(cfptr)
+            cfunc = self.get_sum(ee)
             res = cfunc(2, -5)
             self.assertEqual(-3, res)
 
@@ -439,6 +501,77 @@ class JITTestMixin(object):
         self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
         self.assertIn(td.get_pointee_abi_alignment(gv_struct.type), (4, 8))
 
+    def test_object_cache_notify(self):
+        notifies = []
+
+        def notify(mod, buf):
+            notifies.append((mod, buf))
+
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.set_object_cache(notify)
+
+        self.assertEqual(len(notifies), 0)
+        cfunc = self.get_sum(ee)
+        cfunc(2, -5)
+        self.assertEqual(len(notifies), 1)
+        # The right module object was found
+        self.assertIs(notifies[0][0], mod)
+        self.assertIsInstance(notifies[0][1], bytes)
+
+        notifies[:] = []
+        mod2 = self.module(asm_mul)
+        ee.add_module(mod2)
+        cfunc = self.get_sum(ee, "mul")
+        self.assertEqual(len(notifies), 1)
+        # The right module object was found
+        self.assertIs(notifies[0][0], mod2)
+        self.assertIsInstance(notifies[0][1], bytes)
+
+    def test_object_cache_getbuffer(self):
+        notifies = []
+        getbuffers = []
+
+        def notify(mod, buf):
+            notifies.append((mod, buf))
+
+        def getbuffer(mod):
+            getbuffers.append(mod)
+
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.set_object_cache(notify, getbuffer)
+
+        # First return None from getbuffer(): the object is compiled normally
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 0)
+        cfunc = self.get_sum(ee)
+        self.assertEqual(len(notifies), 1)
+        self.assertEqual(len(getbuffers), 1)
+        self.assertIs(getbuffers[0], mod)
+        sum_buffer = notifies[0][1]
+
+        # Recreate a new EE, and use getbuffer() to return the previously
+        # compiled object.
+
+        def getbuffer_successful(mod):
+            getbuffers.append(mod)
+            return sum_buffer
+
+        notifies[:] = []
+        getbuffers[:] = []
+        # Use another source module to make sure it is ignored
+        mod = self.module(asm_mul)
+        ee = self.jit(mod)
+        ee.set_object_cache(notify, getbuffer_successful)
+
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 0)
+        cfunc = self.get_sum(ee)
+        self.assertEqual(cfunc(2, -5), -3)
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 1)
+
 
 class JITWithTMTestMixin(JITTestMixin):
 
@@ -498,6 +631,30 @@ class TestValueRef(BaseTest):
             glob.linkage = linkage
             self.assertIsInstance(glob.linkage, llvm.Linkage)
             self.assertEqual(glob.linkage.name, linkage)
+
+    def test_visibility(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        visibility = glob.visibility
+        self.assertIsInstance(glob.visibility, llvm.Visibility)
+        glob.visibility = visibility
+        self.assertEqual(glob.visibility, visibility)
+        for visibility in ("hidden", "protected", "default"):
+            glob.visibility = visibility
+            self.assertIsInstance(glob.visibility, llvm.Visibility)
+            self.assertEqual(glob.visibility.name, visibility)
+
+    def test_storage_class(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        storage_class = glob.storage_class
+        self.assertIsInstance(glob.storage_class, llvm.StorageClass)
+        glob.storage_class = storage_class
+        self.assertEqual(glob.storage_class, storage_class)
+        for storage_class in ("dllimport", "dllexport", "default"):
+            glob.storage_class = storage_class
+            self.assertIsInstance(glob.storage_class, llvm.StorageClass)
+            self.assertEqual(glob.storage_class.name, storage_class)
 
     def test_add_function_attribute(self):
         mod = self.module()
@@ -598,42 +755,6 @@ class TestTargetMachine(BaseTest):
         # A global is a pointer, it has the ABI size of a pointer
         pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
         self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
-
-
-class TestTargetLibraryInfo(BaseTest):
-
-    def tli(self):
-        return llvm.create_target_library_info(llvm.get_default_triple())
-
-    def test_create_target_library_info(self):
-        tli = llvm.create_target_library_info(llvm.get_default_triple())
-        with tli:
-            pass
-        tli.close()
-
-    def test_get_libfunc(self):
-        tli = self.tli()
-        with self.assertRaises(NameError):
-            tli.get_libfunc("xyzzy")
-        fmin = tli.get_libfunc("fmin")
-        self.assertEqual(fmin.name, "fmin")
-        self.assertIsInstance(fmin.identity, int)
-        fmax = tli.get_libfunc("fmax")
-        self.assertNotEqual(fmax.identity, fmin.identity)
-
-    def test_set_unavailable(self):
-        tli = self.tli()
-        fmin = tli.get_libfunc("fmin")
-        tli.set_unavailable(fmin)
-
-    def test_disable_all(self):
-        tli = self.tli()
-        tli.disable_all()
-
-    def test_add_pass(self):
-        tli = self.tli()
-        pm = llvm.create_module_pass_manager()
-        tli.add_pass(pm)
 
 
 class TestPassManagerBuilder(BaseTest):

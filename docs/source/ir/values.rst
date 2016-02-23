@@ -42,6 +42,19 @@ Values are what a :term:`module` mostly consists of.
       sequence of values (:class:`Constant` or otherwise).  A constant
       struct containing the *elems* in order is returned
 
+   .. method:: bitcast(typ)
+
+      Convert this pointer constant to a constant of the given pointer type.
+
+   .. method:: gep(indices)
+
+      Compute the address of the inner element given by the sequence of
+      *indices*.  The constant must have a pointer type.
+
+   .. method:: inttoptr(typ)
+
+      Convert this integer constant to a constant of the given pointer type.
+
    .. note::
       You cannot define constant functions.  Use a :term:`function declaration`
       instead.
@@ -111,6 +124,20 @@ Values are what a :term:`module` mostly consists of.
 
       The block's :term:`terminator instruction`, if any.  Otherwise None.
 
+.. class:: BlockAddress
+
+   A constant representing an address of a basic block.
+
+   Block address constants have the following attributes:
+
+   .. attribute:: function
+
+      The function the basic block is defined in.
+
+   .. attribute:: basic_block
+
+      The basic block. Must be a part of :attr:`function`.
+
 
 Global values
 -------------
@@ -127,6 +154,12 @@ Global values are values accessible using a module-wide name.
       A Python string describing the linkage behaviour of the global value
       (e.g. whether it is visible from other modules).  Default is the
       empty string, meaning "external".
+
+   .. attribute:: storage_class
+
+      A Python string describing the storage class of the global value.
+      Default is the empty string, meaning "default".  Other possible
+      values include "dllimport" and "dllexport".
 
 
 .. class:: GlobalVariable(module, typ, name, addrspace=0)
@@ -150,6 +183,12 @@ Global values are values accessible using a module-wide name.
 
       If true, the variable is declared a constant, i.e. its contents
       cannot be ever modified.  Default is False.
+
+   .. attribute:: unnamed_addr
+
+      If true, the address of the variable is deemed insignificant, i.e.
+      it will be merged with other variables which have the same initializer.
+      Default is False.
 
    .. attribute:: initializer
 
@@ -250,14 +289,25 @@ use the helper methods on the :class:`IRBuilder` class.
 
 .. class:: SwitchInstr
 
-   A switch statement.  Switch statements have the following method:
+   A switch instruction.  Switch instructions have the following method:
 
    .. method:: add_case(val, block)
 
-      Add a case to the switch statements.  *val* should be a :class:`Constant`
-      or a Python value compatible with the switch statement's operand type.
+      Add a case to the switch instruction.  *val* should be a :class:`Constant`
+      or a Python value compatible with the switch instruction's operand type.
       *block* is a :class:`Block` to jump to if, and only if, *val* and
       the switch operand compare equal.
+
+
+.. class:: IndirectBranch
+
+   An indirect branch instruction.  Indirect branch instructions have
+   the following method:
+
+   .. method:: add_destination(value, block)
+
+      Add an outgoing edge.  The indirect branch instruction must
+      refer to every basic block it can transfer control to.
 
 
 .. class:: PhiInstr
@@ -269,3 +319,30 @@ use the helper methods on the :class:`IRBuilder` class.
       Add an incoming edge.  Whenever transfer is controlled from *block*
       (a :class:`Block`), the phi instruction takes the given *value*.
 
+
+.. class:: LandingPad
+
+   A landing pad.  Landing pads have the following method:
+
+   .. method:: add_clause(value, block)
+
+      Add a catch or filter clause.  Create catch clauses using
+      :class:`CatchClause`, and filter clauses using :class:`FilterClause`.
+
+Landing pad clauses
+-------------------
+
+Landing pads have the following classes associated with them:
+
+.. class:: CatchClause(value)
+
+   A catch clause. Instructs the personality function to compare
+   the in-flight exception typeinfo with *value*, which should have type
+   `IntType(8).as_pointer().as_pointer()`.
+
+.. class:: FilterClause(value)
+
+   A filter clause. Instructs the personality function to check
+   inclusion of the the in-flight exception typeinfo in *value*,
+   which should have type
+   `ArrayType(IntType(8).as_pointer().as_pointer(), ...)`.

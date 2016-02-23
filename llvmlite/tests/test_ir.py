@@ -6,6 +6,7 @@ from __future__ import print_function, absolute_import
 
 import copy
 import itertools
+import pickle
 import re
 import textwrap
 import unittest
@@ -59,9 +60,9 @@ class TestBase(TestCase):
         return func.append_basic_block(name)
 
     def descr(self, thing):
-        sio = six.StringIO()
-        thing.descr(sio)
-        return sio.getvalue()
+        buf = []
+        thing.descr(buf)
+        return "".join(buf)
 
     def _normalize_asm(self, asm):
         asm = textwrap.dedent(asm)
@@ -269,6 +270,8 @@ class TestBuildInstructions(TestBase):
     Test IR generation of LLVM instructions through the IRBuilder class.
     """
 
+    maxDiff = 4000
+
     def test_simple(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -282,7 +285,7 @@ class TestBuildInstructions(TestBase):
     def test_binops(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
+        a, b, ff = builder.function.args[:3]
         builder.add(a, b, 'c')
         builder.fadd(a, b, 'd')
         builder.sub(a, b, 'e')
@@ -301,6 +304,10 @@ class TestBuildInstructions(TestBase):
         builder.shl(a, b, 'r')
         builder.ashr(a, b, 's')
         builder.lshr(a, b, 't')
+        with self.assertRaises(ValueError) as cm:
+            builder.add(a, ff)
+        self.assertEqual(str(cm.exception),
+                         "Operands must be the same type, got (i32, double)")
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
@@ -336,6 +343,26 @@ class TestBuildInstructions(TestBase):
             my_block:
                 %"c" = add nuw i32 %".1", %".2"
                 %"d" = sub nuw nsw i32 %".1", %".2"
+            """)
+
+    def test_binops_with_overflow(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        builder.sadd_with_overflow(a, b, 'c')
+        builder.smul_with_overflow(a, b, 'd')
+        builder.ssub_with_overflow(a, b, 'e')
+        builder.uadd_with_overflow(a, b, 'f')
+        builder.umul_with_overflow(a, b, 'g')
+        builder.usub_with_overflow(a, b, 'h')
+        self.check_block(block, """\
+            my_block:
+                %"c" = call {i32, i1} (i32, i32) @"llvm.sadd.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"d" = call {i32, i1} (i32, i32) @"llvm.smul.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"e" = call {i32, i1} (i32, i32) @"llvm.ssub.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"f" = call {i32, i1} (i32, i32) @"llvm.uadd.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"g" = call {i32, i1} (i32, i32) @"llvm.umul.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"h" = call {i32, i1} (i32, i32) @"llvm.usub.with.overflow.i32"(i32 %".1", i32 %".2")
             """)
 
     def test_unary_ops(self):
@@ -463,26 +490,42 @@ class TestBuildInstructions(TestBase):
     def test_mem_ops(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
+        a, b, z = builder.function.args[:3]
         c = builder.alloca(int32, name='c')
         d = builder.alloca(int32, size=42, name='d')
-        e = builder.alloca(int32, size=a, name='e')
-        self.assertEqual(e.type, ir.PointerType(int32))
+        e = builder.alloca(dbl, size=a, name='e')
+        self.assertEqual(e.type, ir.PointerType(dbl))
+        ee = builder.store(z, e)
+        self.assertEqual(ee.type, ir.VoidType())
         f = builder.store(b, c)
         self.assertEqual(f.type, ir.VoidType())
         g = builder.load(c, 'g')
         self.assertEqual(g.type, int32)
+        # With alignment
+        h = builder.store(b, c, align=1)
+        self.assertEqual(h.type, ir.VoidType())
+        i = builder.load(c, 'i', align=1)
+        self.assertEqual(i.type, int32)
+        # Not pointer types
         with self.assertRaises(TypeError):
             builder.store(b, a)
         with self.assertRaises(TypeError):
             builder.load(b)
+        # Mismatching pointer type
+        with self.assertRaises(TypeError) as cm:
+            builder.store(b, e)
+        self.assertEqual(str(cm.exception),
+                         "cannot store i32 to double*: mismatching types")
         self.check_block(block, """\
             my_block:
                 %"c" = alloca i32
                 %"d" = alloca i32, i32 42
-                %"e" = alloca i32, i32 %".1"
+                %"e" = alloca double, i32 %".1"
+                store double %".3", double* %"e"
                 store i32 %".2", i32* %"c"
-                %"g" = load i32* %"c"
+                %"g" = load i32, i32* %"c"
+                store i32 %".2", i32* %"c", align 1
+                %"i" = load i32, i32* %"c", align 1
             """)
 
     def test_gep(self):
@@ -495,7 +538,7 @@ class TestBuildInstructions(TestBase):
         self.check_block(block, """\
             my_block:
                 %"c" = alloca i32*
-                %"d" = getelementptr i32** %"c", i32 5, i32 %".1"
+                %"d" = getelementptr i32*, i32** %"c", i32 5, i32 %".1"
             """)
         # XXX test with more complex types
 
@@ -551,7 +594,7 @@ class TestBuildInstructions(TestBase):
                 %"d" = insertvalue {i32, i1} {i32 4, i1 true}, i32 %".1", 0
                 %"e" = insertvalue {i32, i1} %"d", i1 false, 1
                 %"ptr" = alloca {i8, {i32, i1}}
-                %"j" = load {i8, {i32, i1}}* %"ptr"
+                %"j" = load {i8, {i32, i1}}, {i8, {i32, i1}}* %"ptr"
                 %"k" = extractvalue {i8, {i32, i1}} %"j", 0
                 %"l" = extractvalue {i8, {i32, i1}} %"j", 1
                 %"m" = extractvalue {i8, {i32, i1}} %"j", 1, 0
@@ -645,6 +688,20 @@ class TestBuildInstructions(TestBase):
             !0 = !{ !"branch_weights", i32 5, i32 42 }
             """)
 
+    def test_branch_indirect(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        bb_1 = builder.function.append_basic_block(name='b_1')
+        bb_2 = builder.function.append_basic_block(name='b_2')
+        indirectbr = builder.branch_indirect(ir.BlockAddress(builder.function, bb_1))
+        indirectbr.add_destination(bb_1)
+        indirectbr.add_destination(bb_2)
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            my_block:
+                indirectbr i8* blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2"]
+            """)
+
     def test_returns(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -693,11 +750,49 @@ class TestBuildInstructions(TestBase):
         builder.call(f, (a, b), 'res_f')
         builder.call(g, (b, a), 'res_g')
         builder.call(f, (a, b), 'res_f_fast', cconv='fastcc')
+        res_f_readonly = builder.call(f, (a, b), 'res_f_readonly')
+        res_f_readonly.attributes.add('readonly')
         self.check_block(block, """\
             my_block:
-                %"res_f" = call float (i32, i32)* @"f"(i32 %".1", i32 %".2")
-                %"res_g" = call double (i32, ...)* @"g"(i32 %".2", i32 %".1")
-                %"res_f_fast" = call fastcc float (i32, i32)* @"f"(i32 %".1", i32 %".2")
+                %"res_f" = call float (i32, i32) @"f"(i32 %".1", i32 %".2")
+                %"res_g" = call double (i32, ...) @"g"(i32 %".2", i32 %".1")
+                %"res_f_fast" = call fastcc float (i32, i32) @"f"(i32 %".1", i32 %".2")
+                %"res_f_readonly" = call float (i32, i32) @"f"(i32 %".1", i32 %".2") readonly
+            """)
+
+    def test_invoke(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        tp_f = ir.FunctionType(flt, (int32, int32))
+        f = ir.Function(builder.function.module, tp_f, 'f')
+        bb_normal = builder.function.append_basic_block(name='normal')
+        bb_unwind = builder.function.append_basic_block(name='unwind')
+        builder.invoke(f, (a, b), bb_normal, bb_unwind, 'res_f')
+        self.check_block(block, """\
+            my_block:
+                %"res_f" = invoke float (i32, i32) @"f"(i32 %".1", i32 %".2")
+                    to label %"normal" unwind label %"unwind"
+            """)
+
+    def test_landingpad(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        tp_pers = ir.FunctionType(int8, (), var_arg=True)
+        pers = ir.Function(builder.function.module, tp_pers, '__gxx_personality_v0')
+        lp = builder.landingpad(ir.LiteralStructType([int32, int8.as_pointer()]), pers, 'lp')
+        int_typeinfo = ir.GlobalVariable(builder.function.module, int8.as_pointer(), "_ZTIi")
+        int_typeinfo.global_constant = True
+        lp.add_clause(ir.CatchClause(int_typeinfo))
+        lp.add_clause(ir.FilterClause(ir.Constant(ir.ArrayType(int_typeinfo.type, 1),
+                                                  [int_typeinfo])))
+        builder.resume(lp)
+        self.check_block(block, """\
+            my_block:
+                %"lp" = landingpad {i32, i8*} personality i8 (...)* @"__gxx_personality_v0"
+                    catch i8** @"_ZTIi"
+                    filter [1 x i8**] [i8** @"_ZTIi"]
+                resume {i32, i8*} %"lp"
             """)
 
     def test_assume(self):
@@ -709,7 +804,7 @@ class TestBuildInstructions(TestBase):
         self.check_block(block, """\
             my_block:
                 %"c" = icmp sgt i32 %".1", %".2"
-                call void (i1)* @"llvm.assume"(i1 %"c")
+                call void (i1) @"llvm.assume"(i1 %"c")
             """)
 
 
@@ -946,11 +1041,30 @@ class TestBuilderMisc(TestBase):
             three:
             """)
 
+    def test_metadata(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        builder.debug_metadata = builder.module.add_metadata([])
+        a = builder.alloca(ir.PointerType(int32), name='c')
+        self.check_block(block, """\
+            my_block:
+                %"c" = alloca i32*, !dbg !0
+            """)
+
 
 class TestTypes(TestBase):
 
-    def test_comparisons(self):
-        # A bunch of mutually unequal types
+    def has_logical_equality(self, ty):
+        while isinstance(ty, ir.PointerType):
+            ty = ty.pointee
+        return not isinstance(ty, ir.LabelType)
+
+    def assorted_types(self):
+        """
+        A bunch of mutually unequal types
+        """
+        # Avoid polluting the namespace
+        context = ir.Context()
         types = [
             ir.LabelType(), ir.VoidType(),
             ir.FunctionType(int1, (int8, int8)), ir.FunctionType(int1, (int8,)),
@@ -959,9 +1073,26 @@ class TestTypes(TestBase):
             int1, int8, int32, flt, dbl,
             ir.ArrayType(flt, 5), ir.ArrayType(dbl, 5), ir.ArrayType(dbl, 4),
             ir.LiteralStructType((int1, int8)), ir.LiteralStructType((int8, int1)),
+            context.get_identified_type("MyType1"),
+            context.get_identified_type("MyType2"),
             ]
-        types.extend([ir.PointerType(tp) for tp in types
-                      if not isinstance(tp, ir.VoidType)])
+        types += [ir.PointerType(tp) for tp in types
+                  if not isinstance(tp, (ir.VoidType, ir.LabelType))]
+
+        return types
+
+    def test_pickling(self):
+        types = self.assorted_types()
+        for ty in types:
+            data = pickle.dumps(ty, protocol=-1)
+            newty = pickle.loads(data)
+            self.assertIs(newty.__class__, ty.__class__)
+            self.assertEqual(str(newty), str(ty))
+            if self.has_logical_equality(ty):
+                self.assertEqual(newty, ty)
+
+    def test_comparisons(self):
+        types = self.assorted_types()
         for a, b in itertools.product(types, types):
             if a is not b:
                 self.assertFalse(a == b, (a, b))
@@ -969,13 +1100,12 @@ class TestTypes(TestBase):
         # We assume copy.copy() works fine here...
         for tp in types:
             other = copy.copy(tp)
-            self.assertIsNot(other, tp)
-            if isinstance(tp, ir.LabelType):
-                self.assertFalse(tp == other, (tp, other))
-                self.assertTrue(tp != other, (tp, other))
-            else:
+            if self.has_logical_equality(tp):
                 self.assertTrue(tp == other, (tp, other))
                 self.assertFalse(tp != other, (tp, other))
+            else:
+                self.assertFalse(tp == other, (tp, other))
+                self.assertTrue(tp != other, (tp, other))
 
     def test_str(self):
         """
@@ -1010,7 +1140,11 @@ class TestTypes(TestBase):
         # Avoid polluting the namespace
         context = ir.Context()
         mytype = context.get_identified_type("MyType")
-        self.assertEqual(str(mytype), "%MyType")
+        self.assertEqual(str(mytype), "%\"MyType\"")
+        mytype1 = context.get_identified_type("MyType\\")
+        self.assertEqual(str(mytype1), "%\"MyType\\5c\"")
+        mytype2 = context.get_identified_type("MyType\"")
+        self.assertEqual(str(mytype2), "%\"MyType\\22\"")
 
     def test_gep(self):
         def check_constant(tp, i, expected):
@@ -1081,6 +1215,14 @@ class TestTypes(TestBase):
         self.assert_valid_ir(module)
         self.assertNotEqual(oldstr, str(module))
 
+    def test_target_data_non_default_context(self):
+        context = ir.Context()
+        mytype = context.get_identified_type("MyType")
+        mytype.elements = [ir.IntType(32)]
+        module = ir.Module(context=context)
+        td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+        self.assertEqual(mytype.get_abi_size(td, context=context), 4)
+
 
 c32 = lambda i: ir.Constant(int32, i)
 
@@ -1115,13 +1257,14 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'double undef')
 
     def test_arrays(self):
-        # XXX Test byte array special case
         c = ir.Constant(ir.ArrayType(int32, 3), (c32(5), c32(6), c32(4)))
         self.assertEqual(str(c), '[3 x i32] [i32 5, i32 6, i32 4]')
         c = ir.Constant(ir.ArrayType(int32, 2), (c32(5), c32(ir.Undefined)))
         self.assertEqual(str(c), '[2 x i32] [i32 5, i32 undef]')
         c = ir.Constant(ir.ArrayType(int32, 2), ir.Undefined)
         self.assertEqual(str(c), '[2 x i32] undef')
+        c = ir.Constant(ir.ArrayType(int8, 3), bytearray(b"\x01\x04\xff"))
+        self.assertEqual(str(c), r'[3 x i8] c"\01\04\ff"')
 
     def test_structs(self):
         c = ir.Constant(ir.LiteralStructType((flt, int1)),
@@ -1150,6 +1293,15 @@ class TestConstant(TestBase):
         # Make sure the encoding does not modify the IR
         reparsed = llvm.parse_assembly(str(parsed))
         self.assertEqual(str(parsed), str(reparsed))
+
+    def test_gep(self):
+        m = self.module()
+        tp = ir.LiteralStructType((flt, int1))
+        gv = ir.GlobalVariable(m, tp, "myconstant")
+        c = gv.gep([ir.Constant(int32, x) for x in (0, 1)])
+        self.assertEqual(str(c),
+            'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0, i32 1)')
+        self.assertEqual(c.type, ir.PointerType(int1))
 
 
 class TestTransforms(TestBase):

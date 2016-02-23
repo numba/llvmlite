@@ -24,6 +24,12 @@ Functions
    Return the default target triple LLVM is configured to produce code for,
    as a string.  This represents the host's architecture and platform.
 
+.. function:: get_object_format(triple=None)
+
+   Get the object format for the given *triple* string (or the default
+   triple if None).  A string is returned such as ``"ELF"``, ``"COFF"``
+   or ``"MachO"``.
+
 .. function:: get_host_cpu_name()
 
    Get the name of the host's CPU as a string.  You can use the
@@ -34,9 +40,6 @@ Functions
    Create a :class:`TargetData` representing the given *data_layout* (a
    string).
 
-.. function:: create_target_library_info(triple)
-
-   Create a :class:`TargetLibraryInfo` for the given *triple* string.
 
 
 Classes
@@ -144,31 +147,3 @@ Classes
    .. attribute:: target_data
 
       The :class:`TargetData` associated with this target machine.
-
-
-.. class:: TargetLibraryInfo
-
-   This class provides information about what library functions are
-   available for the current target.  Instantiate using
-   :func:`create_target_library_info`.
-
-   .. method:: add_pass(pm)
-
-      Add an optimization pass based on this library info to the
-      :class:`PassManager` instance *pm*.
-
-   .. method:: disable_all()
-
-      Disable all "builtin" functions.
-
-   .. method:: get_libfunc(name)
-
-      Get the library function *name*.  :exc:`NameError` is raised if
-      not found.
-
-   .. method:: set_unavailable(libfunc)
-
-      Mark the library function *libfunc* (as returned by :meth:`get_libfunc`)
-      unavailable.
-
-

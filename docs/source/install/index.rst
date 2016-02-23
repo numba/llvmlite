@@ -25,10 +25,10 @@ Building manually
 Prerequisites (UNIX)
 ''''''''''''''''''''
 
-You must have a LLVM 3.6 build (libraries and header files) available
+You must have a LLVM 3.7 build (libraries and header files) available
 somewhere.
 
-Under a recent Ubuntu or Debian system, you may install the ``llvm-3.6-dev``
+Under a recent Ubuntu or Debian system, you may install the ``llvm-3.7-dev``
 package if available.
 
 If building LLVM on Ubuntu, the linker may report an error if the
@@ -38,7 +38,7 @@ if you run into this problem.
 Prerequisites (Windows)
 '''''''''''''''''''''''
 
-You must have Visual Studio 2012 or later (the free "Express" edition is ok)
+You must have Visual Studio 2013 or later (the free "Express" edition is ok)
 in order to compile LLVM and llvmlite.  In addition, you must have cmake_
 installed, and LLVM should have been built using cmake, in Release mode.
 Be careful to use the right bitness (32- or 64-bit) for your Python

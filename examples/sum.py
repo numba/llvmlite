@@ -96,7 +96,7 @@ target_machine = llvm.Target.from_default_triple().create_target_machine()
 
 with llvm.create_mcjit_compiler(llmod, target_machine) as ee:
     ee.finalize_object()
-    cfptr = ee.get_pointer_to_global(llmod.get_function('sum'))
+    cfptr = ee.get_function_address("sum")
 
     t8 = time()
     print("-- JIT compile:", t8 - t7)
