@@ -25,15 +25,23 @@ class CpuFeatures(dict):
     """
     Extends ``dict`` to add `.flatten()` method.
     """
-    def flatten(self):
+    def flatten(self, sort=True):
         """
+        Args
+        ----
+        sort: bool
+            Optional.  If True, the features are sorted by name; otherwise,
+            the ordering is unstable between python session due to hash
+            randomization.  Defaults to True.
+
         Returns a string suitable for use as the ``features`` argument to
         ``Target.create_target_machine()``.
+
         """
+        iterator = sorted(self.items()) if sort else iter(self.items())
         flag_map = {True: '+', False: '-'}
         return ','.join('{0}{1}'.format(flag_map[v], k)
-                        for k, v in self.items())
-
+                        for k, v in iterator)
 
 def get_host_cpu_features():
     """
