@@ -181,6 +181,7 @@ class TestMisc(BaseTest):
     def test_get_host_cpu_features(self):
         features = llvm.get_host_cpu_features()
         self.assertIsInstance(features, dict)
+        self.assertIsInstance(features, llvm.FeatureMap)
         for k, v in features.items():
             self.assertIsInstance(k, str)
             self.assertTrue(k)  # feature string cannot be empty

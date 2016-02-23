@@ -21,8 +21,9 @@ def get_process_triple():
         return str(out)
 
 
-class CpuFeatures(dict):
+class FeatureMap(dict):
     """
+    Maps feature name to a boolean indicating the availability of the feature.
     Extends ``dict`` to add `.flatten()` method.
     """
     def flatten(self, sort=True):
@@ -43,18 +44,19 @@ class CpuFeatures(dict):
         return ','.join('{0}{1}'.format(flag_map[v], k)
                         for k, v in iterator)
 
+
 def get_host_cpu_features():
     """
     Returns a dictionary-like object indicating the CPU features for current
     architecture and whether they are enabled for this CPU.  The key-value pairs
     are the feature name as string and a boolean indicating whether the feature
-    is available.  The returned value is an instance of ``CpuFeatures`` class,
+    is available.  The returned value is an instance of ``FeatureMap`` class,
     which adds a new method ``.flatten()`` for returning a string stuiable for
     use as the "features" argument to ``Target.create_target_machine()``.
     """
     with ffi.OutputString() as out:
         ffi.lib.LLVMPY_GetHostCPUFeatures(out)
-        outdict = CpuFeatures()
+        outdict = FeatureMap()
         flag_map = {'+': True, '-': False}
         for feat in str(out).split(','):
             outdict[feat[1:]] = flag_map[feat[0]]
