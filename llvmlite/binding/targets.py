@@ -11,8 +11,10 @@ from .common import _decode_string, _encode_string
 
 def get_process_triple():
     """
-    Returns the target triple of the process when using jit for the current
-    process.
+    Return a target triple suitable for generating code for the current process.
+    An example when the default triple from ``get_default_triple()`` is not be
+    suitable is when LLVM is compiled for 32-bit but the process is executing
+    in 64-bit mode.
     """
     with ffi.OutputString() as out:
         ffi.lib.LLVMPY_GetProcessTriple(out)
@@ -35,10 +37,12 @@ class CpuFeatures(dict):
 
 def get_host_cpu_features():
     """
-    Returns a ``CpuFeatures`` (subclass of dict) indicating the available
-    CPU features for current architecture and whether they are enabled for
-    this CPU.  The keys are string of the feature.  The corresponding value to
-    each key indicates whether a particular feature is available.
+    Returns a dictionary-like object indicating the CPU features for current
+    architecture and whether they are enabled for this CPU.  The key-value pairs
+    are the feature name as string and a boolean indicating whether the feature
+    is available.  The returned value is an instance of ``CpuFeatures`` class,
+    which adds a new method ``.flatten()`` for returning a string stuiable for
+    use as the "features" argument to ``Target.create_target_machine()``.
     """
     with ffi.OutputString() as out:
         ffi.lib.LLVMPY_GetHostCPUFeatures(out)
