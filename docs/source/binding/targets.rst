@@ -49,7 +49,7 @@ Functions
    are the feature name as string and a boolean indicating whether the feature
    is available.  The returned value is an instance of ``FeatureMap`` class,
    which adds a new method ``.flatten()`` for returning a string stuiable for
-   use as the "features" argument to ``Target.create_target_machine()``.
+   use as the "features" argument to :meth:`Target.create_target_machine()`.
 
 .. function:: create_target_data(data_layout)
 
@@ -163,3 +163,17 @@ Classes
    .. attribute:: target_data
 
       The :class:`TargetData` associated with this target machine.
+
+
+.. class:: FeatureMap
+
+   For storing processor feature information in a dictionary-like object.
+   This class extends ``dict`` and only adds the ``.flatten()`` method.
+
+   .. method:: flatten(sort=True)
+
+      Returns a string representation of the stored information that is suitable
+      for use in the "features" argument of
+      :meth:`Target.create_target_machine()`.
+      If ``sort`` keyword argument is True (the default), the features are
+      sorted by name to give a stable ordering between python session.
