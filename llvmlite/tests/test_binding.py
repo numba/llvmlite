@@ -9,6 +9,7 @@ import sys
 import unittest
 import platform
 import locale
+import re
 
 from llvmlite import six
 from llvmlite import binding as llvm
@@ -168,19 +169,32 @@ class TestMisc(BaseTest):
 
     def test_get_process_triple(self):
         triple = llvm.get_process_triple()
+        default = llvm.get_default_triple()
         self.assertIsInstance(triple, str)
         self.assertTrue(triple)
 
-    @unittest.expectedFailure
+        default_parts = default.split('-')
+        triple_parts = triple.split('-')
+        # Arch must be equal
+        self.assertEqual(default_parts[0], triple_parts[0])
+
     def test_get_host_cpu_features(self):
-        """
-        It is not implemented for x86 yet.
-        Wait for llvm3.7 and this test will pass thus triggering a
-        not failing as expected.
-        """
         features = llvm.get_host_cpu_features()
-        self.assertIsInstance(features, str)
-        self.assertTrue(features)
+        self.assertIsInstance(features, dict)
+        for k, v in features.items():
+            self.assertIsInstance(k, str)
+            self.assertTrue(k)  # feature string cannot be empty
+            self.assertIsInstance(v, bool)
+        self.assertIsInstance(features.flatten(), str)
+
+        re_term = r"[+\-][a-zA-Z0-9\._]+"
+        regex = r"^({0}|{0}(,{0})*)?$".format(re_term)
+        # quick check for our regex
+        self.assertIsNotNone(re.match(regex, ""))
+        self.assertIsNotNone(re.match(regex, "+aa"))
+        self.assertIsNotNone(re.match(regex, "+a,-bb"))
+        # check CpuFeature.flatten()
+        self.assertIsNotNone(re.match(regex, features.flatten()))
 
     def test_get_host_cpu_name(self):
         cpu = llvm.get_host_cpu_name()

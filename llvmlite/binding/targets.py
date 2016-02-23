@@ -18,14 +18,35 @@ def get_process_triple():
         ffi.lib.LLVMPY_GetProcessTriple(out)
         return str(out)
 
+
+class CpuFeatures(dict):
+    """
+    Extends ``dict`` to add `.flatten()` method.
+    """
+    def flatten(self):
+        """
+        Returns a string suitable for use as the ``features`` argument to
+        ``Target.create_target_machine()``.
+        """
+        flag_map = {True: '+', False: '-'}
+        return ','.join('{0}{1}'.format(flag_map[v], k)
+                        for k, v in self.items())
+
+
 def get_host_cpu_features():
     """
-    Returns a string (e.g. "+sse,-avx) indicating the available CPU features.
-    May return an empty string if LLVM cannot detect the CPU features.
+    Returns a ``CpuFeatures`` (subclass of dict) indicating the available
+    CPU features for current architecture and whether they are enabled for
+    this CPU.  The keys are string of the feature.  The corresponding value to
+    each key indicates whether a particular feature is available.
     """
     with ffi.OutputString() as out:
         ffi.lib.LLVMPY_GetHostCPUFeatures(out)
-        return str(out)
+        outdict = CpuFeatures()
+        flag_map = {'+': True, '-': False}
+        for feat in str(out).split(','):
+            outdict[feat[1:]] = flag_map[feat[0]]
+        return outdict
 
 
 def get_default_triple():

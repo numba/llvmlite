@@ -11,6 +11,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <sstream>
 
 
 namespace llvm {
@@ -41,19 +42,24 @@ LLVMPY_GetProcessTriple(const char **Out) {
     *Out = LLVMPY_CreateString(llvm::sys::getProcessTriple().c_str());
 }
 
+/**
+ * Output the feature string to the output argument.
+ * Features are prefixed with '+' or '-' for enabled or disabled, respectively.
+ * Features are separated by ','.
+ */
 API_EXPORT(void)
 LLVMPY_GetHostCPUFeatures(const char **Out){
     llvm::StringMap<bool> features;
-    std::string buf;
+    std::ostringstream buf;
     if ( llvm::sys::getHostCPUFeatures(features) ) {
         for (auto &F : features) {
-            if (buf.size()){
-                buf += ',';
+            if (buf.tellp()){
+                buf << ',';
             }
-            buf += ((F.second? "+": "-") + F.first()).str();
+            buf << ((F.second? "+": "-") + F.first()).str();
         }
     }
-    *Out = LLVMPY_CreateString(buf.c_str());
+    *Out = LLVMPY_CreateString(buf.str().c_str());
 }
 
 API_EXPORT(void)
