@@ -50,9 +50,13 @@ Compiling
 Run ``python setup.py build``.  This builds the llvmlite C wrapper,
 which embeds a statically-linked copy of the required subset of LLVM.
 
-If your LLVM is installed in a non-standard location, first point the
-``LLVM_CONFIG`` environment variable to the path of the corresponding
-``llvm-config`` (or ``llvm-config.exe``) executable.
+If your LLVM is installed in a non-standard location, first set the
+``LLVM_CONFIG`` environment variable to the location of the corresponding
+``llvm-config`` (or ``llvm-config.exe``) executable. For example if LLVM
+is installed in ``/opt/llvm/`` with the ``llvm-config`` binary located at
+``/opt/llvm/bin/llvm-config`` then set
+``LLVM_CONFIG=/opt/llvm/bin/llvm-config``. This variable must be persisted
+through into the installation of llvmlite e.g. into a python environment.
 
 Installing
 ''''''''''
