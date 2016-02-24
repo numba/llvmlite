@@ -48,7 +48,7 @@ Functions
    architecture and whether they are enabled for this CPU.  The key-value pairs
    are the feature name as string and a boolean indicating whether the feature
    is available.  The returned value is an instance of ``FeatureMap`` class,
-   which adds a new method ``.flatten()`` for returning a string stuiable for
+   which adds a new method ``.flatten()`` for returning a string suitable for
    use as the "features" argument to :meth:`Target.create_target_machine()`.
 
 .. function:: create_target_data(data_layout)
