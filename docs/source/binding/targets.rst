@@ -24,6 +24,13 @@ Functions
    Return the default target triple LLVM is configured to produce code for,
    as a string.  This represents the host's architecture and platform.
 
+.. function:: get_process_triple()
+
+   Return a target triple suitable for generating code for the current process.
+   An example when the default triple from ``get_default_triple()`` is not be
+   suitable is when LLVM is compiled for 32-bit but the process is executing
+   in 64-bit mode.
+
 .. function:: get_object_format(triple=None)
 
    Get the object format for the given *triple* string (or the default
@@ -34,6 +41,15 @@ Functions
 
    Get the name of the host's CPU as a string.  You can use the
    return value with :meth:`Target.create_target_machine()`.
+
+.. function:: get_host_cpu_features()
+
+   Returns a dictionary-like object indicating the CPU features for current
+   architecture and whether they are enabled for this CPU.  The key-value pairs
+   are the feature name as string and a boolean indicating whether the feature
+   is available.  The returned value is an instance of ``FeatureMap`` class,
+   which adds a new method ``.flatten()`` for returning a string suitable for
+   use as the "features" argument to :meth:`Target.create_target_machine()`.
 
 .. function:: create_target_data(data_layout)
 
@@ -147,3 +163,17 @@ Classes
    .. attribute:: target_data
 
       The :class:`TargetData` associated with this target machine.
+
+
+.. class:: FeatureMap
+
+   For storing processor feature information in a dictionary-like object.
+   This class extends ``dict`` and only adds the ``.flatten()`` method.
+
+   .. method:: flatten(sort=True)
+
+      Returns a string representation of the stored information that is suitable
+      for use in the "features" argument of
+      :meth:`Target.create_target_machine()`.
+      If ``sort`` keyword argument is True (the default), the features are
+      sorted by name to give a stable ordering between python session.

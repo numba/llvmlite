@@ -6,8 +6,61 @@ from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
                     c_void_p, string_at, byref)
 
 from . import ffi
-from .module import parse_assembly
 from .common import _decode_string, _encode_string
+
+
+def get_process_triple():
+    """
+    Return a target triple suitable for generating code for the current process.
+    An example when the default triple from ``get_default_triple()`` is not be
+    suitable is when LLVM is compiled for 32-bit but the process is executing
+    in 64-bit mode.
+    """
+    with ffi.OutputString() as out:
+        ffi.lib.LLVMPY_GetProcessTriple(out)
+        return str(out)
+
+
+class FeatureMap(dict):
+    """
+    Maps feature name to a boolean indicating the availability of the feature.
+    Extends ``dict`` to add `.flatten()` method.
+    """
+    def flatten(self, sort=True):
+        """
+        Args
+        ----
+        sort: bool
+            Optional.  If True, the features are sorted by name; otherwise,
+            the ordering is unstable between python session due to hash
+            randomization.  Defaults to True.
+
+        Returns a string suitable for use as the ``features`` argument to
+        ``Target.create_target_machine()``.
+
+        """
+        iterator = sorted(self.items()) if sort else iter(self.items())
+        flag_map = {True: '+', False: '-'}
+        return ','.join('{0}{1}'.format(flag_map[v], k)
+                        for k, v in iterator)
+
+
+def get_host_cpu_features():
+    """
+    Returns a dictionary-like object indicating the CPU features for current
+    architecture and whether they are enabled for this CPU.  The key-value pairs
+    are the feature name as string and a boolean indicating whether the feature
+    is available.  The returned value is an instance of ``FeatureMap`` class,
+    which adds a new method ``.flatten()`` for returning a string suitable for
+    use as the "features" argument to ``Target.create_target_machine()``.
+    """
+    with ffi.OutputString() as out:
+        ffi.lib.LLVMPY_GetHostCPUFeatures(out)
+        outdict = FeatureMap()
+        flag_map = {'+': True, '-': False}
+        for feat in str(out).split(','):
+            outdict[feat[1:]] = flag_map[feat[0]]
+        return outdict
 
 
 def get_default_triple():
@@ -245,6 +298,10 @@ class TargetMachine(ffi.ObjectRef):
 
 # ============================================================================
 # FFI
+
+ffi.lib.LLVMPY_GetProcessTriple.argtypes = [POINTER(c_char_p)]
+
+ffi.lib.LLVMPY_GetHostCPUFeatures.argtypes = [POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_GetDefaultTargetTriple.argtypes = [POINTER(c_char_p)]
 
