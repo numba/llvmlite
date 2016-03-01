@@ -62,8 +62,8 @@ Pre-built binaries
 ==================
 
 We recommend you use the binaries provided by the Numba_ team for
-the Conda_ package manager.  You can find them in Numba's `binstar
-channel <https://binstar.org/numba>`.  For example::
+the Conda_ package manager.  You can find them in Numba's `anaconda.org
+channel <https://anaconda.org/numba>`_.  For example::
 
    $ conda install --channel=numba llvmlite
 
