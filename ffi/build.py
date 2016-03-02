@@ -108,13 +108,7 @@ def main_posix(kind, library_ext):
                            "to the path for llvm-config" % (llvm_config,))
 
     # Get LLVM information for building
-    # Note we can't use "--libs all" anymore:
-    # https://llvm.org/bugs/show_bug.cgi?id=25088
-    # https://llvm.org/bugs/show_bug.cgi?id=25089
-    libs = run_llvm_config(llvm_config,
-                           "--system-libs --libs engine bitreader "
-                           "bitwriter instrumentation lto irreader "
-                           "asmprinter".split())
+    libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = ' '.join(libs.split())
 

@@ -4,9 +4,7 @@ CXX ?= g++
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
 CXXFLAGS = $(LLVM_CXXFLAGS) -flto
 LDFLAGS = $(LLVM_LDFLAGS) -flto -Wl,--exclude-libs=ALL
-# Need to add LLVMOProfileJIT by hand
-# see https://llvm.org/bugs/show_bug.cgi?id=25091
-LIBS = $(LLVM_LIBS) -lLLVMOProfileJIT
+LIBS = $(LLVM_LIBS)
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
 	  linker.cpp
