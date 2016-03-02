@@ -1263,8 +1263,10 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '[2 x i32] [i32 5, i32 undef]')
         c = ir.Constant(ir.ArrayType(int32, 2), ir.Undefined)
         self.assertEqual(str(c), '[2 x i32] undef')
-        c = ir.Constant(ir.ArrayType(int8, 3), bytearray(b"\x01\x04\xff"))
-        self.assertEqual(str(c), r'[3 x i8] c"\01\04\ff"')
+        c = ir.Constant(ir.ArrayType(int8, 3), bytearray(b"foobar_123\x80"))
+        self.assertEqual(str(c), r'[3 x i8] c"foobar\5f123\80"')
+        c = ir.Constant(ir.ArrayType(int8, 3), bytearray(b"\x00\x01\x04\xff"))
+        self.assertEqual(str(c), r'[3 x i8] c"\00\01\04\ff"')
 
     def test_structs(self):
         c = ir.Constant(ir.LiteralStructType((flt, int1)),

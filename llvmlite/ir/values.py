@@ -17,16 +17,20 @@ _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset('._-$'))
 
 
-def _escape_string(text):
-    buf = []
-    for ch in text:
-        if ch in _VALID_CHARS:
-            buf.append(chr(ch))
-        else:
-            ashex = hex(ch)[2:]
-            if len(ashex) == 1:
-                ashex = '0' + ashex
-            buf.append('\\' + ashex)
+def _escape_string(text, _map={}):
+    """
+    Escape the given bytestring for safe use as a LLVM array constant.
+    """
+    assert isinstance(text, (bytes, bytearray))
+
+    if not _map:
+        for ch in range(256):
+            if ch in _VALID_CHARS:
+                _map[ch] = chr(ch)
+            else:
+                _map[ch] = '\\%02x' % ch
+
+    buf = [_map[ch] for ch in text]
     return ''.join(buf)
 
 
