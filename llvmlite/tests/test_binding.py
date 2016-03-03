@@ -170,7 +170,7 @@ class TestDependencies(BaseTest):
             self.fail("failed parsing dependencies? got %r" % (deps,))
         # Ensure all dependencies are expected
         allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
-                       'libgcc_s', 'libc'])
+                       'libgcc_s', 'libc', 'ld-linux'])
         for dep in deps:
             if not dep.startswith('ld-linux-') and dep not in allowed:
                 self.fail("unexpected dependency %r in %r" % (dep, deps))
