@@ -6,10 +6,11 @@ from __future__ import print_function, absolute_import
 
 from ..six import StringIO
 from . import types
-from .values import Block, Function, Value, Constant, MetaDataString, AttributeSet
+from .values import (Block, Function, Value, NamedValue, Constant,
+                     MetaDataString, AttributeSet)
 
 
-class Instruction(Value):
+class Instruction(NamedValue):
     def __init__(self, parent, typ, opname, operands, name='', flags=()):
         super(Instruction, self).__init__(parent, typ, name=name)
         assert isinstance(parent, Block)
@@ -55,6 +56,11 @@ class Instruction(Value):
             for op in self.operands:
                 ops.append(new if op is old else op)
             self.operands = tuple(ops)
+
+    def __repr__(self):
+        return "<ir.%s %r of type '%s', opname %r, operands %r>" % (
+            self.__class__.__name__, self.name, self.type,
+            self.opname, self.operands)
 
 
 class CallInstrAttributes(AttributeSet):
@@ -232,7 +238,7 @@ class SwitchInstr(PredictableInstr, Terminator):
 
     def add_case(self, val, block):
         assert isinstance(block, Block)
-        if not isinstance(val, (Value, Constant)):
+        if not isinstance(val, Value):
             val = Constant(self.value.type, val)
         self.cases.append((val, block))
 

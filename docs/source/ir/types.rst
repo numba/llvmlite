@@ -34,6 +34,18 @@ immutable.
          :meth:`get_abi_size` and :meth:`get_abi_alignment` call into the
          LLVM C++ API to get the requested information.
 
+   .. method:: __call__(value)
+
+      Convenience method to create a :class:`Constant` of this type with
+      the given *value*::
+
+         >>> int32 = ir.IntType(32)
+         >>> c = int32(42)
+         >>> c
+         <ir.Constant type='i32' value=42>
+         >>> print(c)
+         i32 42
+
 
 Atomic types
 ------------

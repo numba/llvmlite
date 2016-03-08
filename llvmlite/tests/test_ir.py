@@ -173,6 +173,9 @@ class TestIR(TestBase):
         self.assertEqual(mod.get_global('foo'), foo)
         self.assertEqual(mod.get_global('globdouble'), globdouble)
         self.assertIsNone(mod.get_global('kkk'))
+        # Globals should have a useful repr()
+        self.assertEqual(repr(globdouble),
+                         "<ir.GlobalVariable 'globdouble' of type 'double*'>")
 
     def test_functions_global_values_access(self):
         mod = self.module()
@@ -264,6 +267,14 @@ class TestBlock(TestBase):
                 %"e" = mul i32 %"f", %".2"
             """)
 
+    def test_repr(self):
+        """
+        Blocks should have a useful repr()
+        """
+        func = self.function()
+        block = ir.Block(parent=func, name='start')
+        self.assertEqual(repr(block), "<ir.Block 'start' of type 'label'>")
+
 
 class TestBuildInstructions(TestBase):
     """
@@ -276,11 +287,15 @@ class TestBuildInstructions(TestBase):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         a, b = builder.function.args[:2]
-        builder.add(a, b, 'res')
+        inst = builder.add(a, b, 'res')
         self.check_block(block, """\
             my_block:
                 %"res" = add i32 %".1", %".2"
             """)
+        # Instructions should have a useful repr()
+        self.assertEqual(repr(inst),
+                         "<ir.Instruction 'res' of type 'i32', opname 'add', "
+                         "operands (<ir.Argument '.1' of type i32>, <ir.Argument '.2' of type i32>)>")
 
     def test_binops(self):
         block = self.block(name='my_block')
@@ -1263,24 +1278,78 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '[2 x i32] [i32 5, i32 undef]')
         c = ir.Constant(ir.ArrayType(int32, 2), ir.Undefined)
         self.assertEqual(str(c), '[2 x i32] undef')
-        c = ir.Constant(ir.ArrayType(int8, 3), bytearray(b"foobar_123\x80"))
-        self.assertEqual(str(c), r'[3 x i8] c"foobar\5f123\80"')
-        c = ir.Constant(ir.ArrayType(int8, 3), bytearray(b"\x00\x01\x04\xff"))
-        self.assertEqual(str(c), r'[3 x i8] c"\00\01\04\ff"')
+        c = ir.Constant(ir.ArrayType(int8, 11), bytearray(b"foobar_123\x80"))
+        self.assertEqual(str(c), r'[11 x i8] c"foobar\5f123\80"')
+        c = ir.Constant(ir.ArrayType(int8, 4), bytearray(b"\x00\x01\x04\xff"))
+        self.assertEqual(str(c), r'[4 x i8] c"\00\01\04\ff"')
+        # Recursive instantiation of inner constants
+        c = ir.Constant(ir.ArrayType(int32, 3), (5, ir.Undefined, 6))
+        self.assertEqual(str(c), '[3 x i32] [i32 5, i32 undef, i32 6]')
+        # Invalid number of args
+        with self.assertRaises(ValueError):
+            ir.Constant(ir.ArrayType(int32, 3), (5, 6))
 
     def test_structs(self):
-        c = ir.Constant(ir.LiteralStructType((flt, int1)),
-                        (ir.Constant(ir.FloatType(), 1.5),
-                         ir.Constant(int1, True)))
+        st1 = ir.LiteralStructType((flt, int1))
+        st2 = ir.LiteralStructType((int32, st1))
+        c = ir.Constant(st1, (ir.Constant(ir.FloatType(), 1.5),
+                              ir.Constant(int1, True)))
         self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 true}')
         c = ir.Constant.literal_struct((ir.Constant(ir.FloatType(), 1.5),
                                         ir.Constant(int1, True)))
+        self.assertEqual(c.type, st1)
         self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 true}')
         c = ir.Constant.literal_struct((ir.Constant(ir.FloatType(), 1.5),
                                         ir.Constant(int1, ir.Undefined)))
+        self.assertEqual(c.type, st1)
         self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 undef}')
-        c = ir.Constant(ir.LiteralStructType((flt, int1)), ir.Undefined)
+        c = ir.Constant(st1, ir.Undefined)
         self.assertEqual(str(c), '{float, i1} undef')
+        # Recursive instantiation of inner constants
+        c1 = ir.Constant(st1, (1.5, True))
+        self.assertEqual(str(c1), '{float, i1} {float 0x3ff8000000000000, i1 true}')
+        c2 = ir.Constant(st2, (42, c1))
+        self.assertEqual(str(c2), '{i32, {float, i1}} '
+                                  '{i32 42, {float, i1} {float 0x3ff8000000000000, i1 true}}')
+        c3 = ir.Constant(st2, (42, (1.5, True)))
+        self.assertEqual(str(c3), str(c2))
+        # Invalid number of args
+        with self.assertRaises(ValueError):
+            ir.Constant(st2, (4, 5, 6))
+
+    def test_type_instantiaton(self):
+        """
+        Instantiating a type should create a constant.
+        """
+        c = int8(42)
+        self.assertIsInstance(c, ir.Constant)
+        self.assertEqual(str(c), 'i8 42')
+        c = int1(True)
+        self.assertIsInstance(c, ir.Constant)
+        self.assertEqual(str(c), 'i1 true')
+        # Arrays
+        at = ir.ArrayType(int32, 3)
+        c = at([c32(4), c32(5), c32(6)])
+        self.assertEqual(str(c), '[3 x i32] [i32 4, i32 5, i32 6]')
+        c = at([4, 5, 6])
+        self.assertEqual(str(c), '[3 x i32] [i32 4, i32 5, i32 6]')
+        with self.assertRaises(ValueError):
+            at([4, 5, 6, 7])
+        # Structs
+        st1 = ir.LiteralStructType((flt, int1))
+        st2 = ir.LiteralStructType((int32, st1))
+        c = st1((1.5, True))
+        self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 true}')
+        c = st2((42, (1.5, True)))
+        self.assertEqual(str(c), '{i32, {float, i1}} '
+                                 '{i32 42, {float, i1} {float 0x3ff8000000000000, i1 true}}')
+
+    def test_repr(self):
+        """
+        Constants should have a useful repr().
+        """
+        c = int32(42)
+        self.assertEqual(repr(c), "<ir.Constant type='i32' value=42>")
 
     def test_encoding_problem(self):
         c = ir.Constant(ir.ArrayType(ir.IntType(8), 256),
