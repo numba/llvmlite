@@ -1,0 +1,30 @@
+# Environment based on https://github.com/rmcgibbo/python-appveyor-conda-example
+
+environment:
+
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\conda-recipes\\appveyor\\run_with_env.cmd"
+
+  matrix:
+    # Since appveyor is quite slow, we only use a single configuration
+    # and a subset of the test suite (see build_and_test.bat)
+
+    - PYTHON: "C:\\Python35_64"
+      PYTHON_VERSION: "3.5"
+      PYTHON_ARCH: "64"
+      CONDA_PY: "3.5"
+
+install:
+  # This installs the appropriate Miniconda (Py2/Py3, 32/64 bit)
+  - powershell .\\conda-recipes\\appveyor\\install.ps1
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - conda config --set always_yes true
+
+build: false
+
+test_script:
+  # Build and test the package
+  - cmd /C .\\conda-recipes\\appveyor\\build_and_test.bat
