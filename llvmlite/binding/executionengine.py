@@ -277,9 +277,6 @@ ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [
 ffi.lib.LLVMPY_GetGlobalValueAddress.restype = c_uint64
 
 
-# To workaround a ctypes/libffi issue on Python 2.6 and Windows 64,
-# we avoid passing more than 2 parameters and instead use a structure
-# (probably https://bugs.python.org/issue8275)
 class _ObjectCacheData(Structure):
     _fields_ = [
         ('module_ptr', ffi.LLVMModuleRef),
