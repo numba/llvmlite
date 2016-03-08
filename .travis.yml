@@ -5,9 +5,7 @@ dist: trusty
 
 matrix:
     include:
-        - env: PYTHON=2.6
         - env: PYTHON=2.7
-        - env: PYTHON=3.3
         - env: PYTHON=3.4
         - env: PYTHON=3.5
 
@@ -23,8 +21,6 @@ before_install:
     - source activate travisci
     # Install llvmdev (separate channel, for now)
     - $CONDA_INSTALL -c numba llvmdev="3.7*"
-    # Install unittest2 and argparse for Python 2.6
-    - if [ $PYTHON == "2.6" ]; then $CONDA_INSTALL unittest2 argparse; fi
     # Install enum34 for Python < 3.4
     - if [ $PYTHON \< "3.4" ]; then $CONDA_INSTALL enum34; fi
     # Install dependencies for building the docs
