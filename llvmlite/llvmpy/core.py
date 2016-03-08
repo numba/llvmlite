@@ -1,6 +1,7 @@
+import itertools
+
 from llvmlite import ir
 from llvmlite import binding as llvm
-import itertools
 
 CallOrInvokeInstruction = ir.CallInstr
 
@@ -47,9 +48,6 @@ INTR_COS = "llvm.cos"
 INTR_POWI = 'llvm.powi'
 INTR_POW = 'llvm.pow'
 INTR_FLOOR = 'llvm.floor'
-
-TYPE_STRUCT = ir.TYPE_STRUCT
-TYPE_POINTER = ir.TYPE_POINTER
 
 LINKAGE_EXTERNAL = 'external'
 LINKAGE_INTERNAL = 'internal'
@@ -150,9 +148,6 @@ class Constant(object):
 
 
 class Module(ir.Module):
-    @classmethod
-    def new(cls, name=''):
-        return cls(name=name)
 
     def get_or_insert_function(self, fnty, name):
         if name in self.globals:
@@ -194,56 +189,57 @@ class Function(ir.Function):
         return module.declare_intrinsic(intrinsic, tys)
 
 
+
+_icmp_umap = {
+    ICMP_EQ: '==',
+    ICMP_NE: '!=',
+    ICMP_ULT: '<',
+    ICMP_ULE: '<=',
+    ICMP_UGT: '>',
+    ICMP_UGE: '>=',
+    }
+
+_icmp_smap = {
+    ICMP_SLT: '<',
+    ICMP_SLE: '<=',
+    ICMP_SGT: '>',
+    ICMP_SGE: '>=',
+    }
+
+_fcmp_omap = {
+    FCMP_OEQ: '==',
+    FCMP_OGT: '>',
+    FCMP_OGE: '>=',
+    FCMP_OLT: '<',
+    FCMP_OLE: '<=',
+    FCMP_ONE: '!=',
+    FCMP_ORD: 'ord',
+    }
+
+_fcmp_umap = {
+    FCMP_UEQ: '==',
+    FCMP_UGT: '>',
+    FCMP_UGE: '>=',
+    FCMP_ULT: '<',
+    FCMP_ULE: '<=',
+    FCMP_UNE: '!=',
+    FCMP_UNO: 'uno',
+    }
+
+
 class Builder(ir.IRBuilder):
-    @classmethod
-    def new(cls, bb):
-        return cls(bb)
 
     def icmp(self, pred, lhs, rhs, name=''):
-        umap = {ICMP_EQ: '==',
-                ICMP_NE: '!=',
-                ICMP_ULT: '<',
-                ICMP_ULE: '<=',
-                ICMP_UGT: '>',
-                ICMP_UGE: '>='}
-
-        smap = {ICMP_SLT: '<',
-                ICMP_SLE: '<=',
-                ICMP_SGT: '>',
-                ICMP_SGE: '>='}
-
-        if pred in umap:
-            return self.icmp_unsigned(umap[pred], lhs, rhs, name=name)
+        if pred in _icmp_umap:
+            return self.icmp_unsigned(_icmp_umap[pred], lhs, rhs, name=name)
         else:
-            return self.icmp_signed(smap[pred], lhs, rhs, name=name)
+            return self.icmp_signed(_icmp_smap[pred], lhs, rhs, name=name)
 
     def fcmp(self, pred, lhs, rhs, name=''):
-        omap = {FCMP_OEQ: '==',
-                FCMP_OGT: '>',
-                FCMP_OGE: '>=',
-                FCMP_OLT: '<',
-                FCMP_OLE: '<=',
-                FCMP_ONE: '!=',
-                FCMP_ORD: 'ord'}
-
-        umap = {FCMP_UEQ: '==',
-                FCMP_UGT: '>',
-                FCMP_UGE: '>=',
-                FCMP_ULT: '<',
-                FCMP_ULE: '<=',
-                FCMP_UNE: '!=',
-                FCMP_UNO: 'uno'}
-
-        if pred in umap:
-            return self.fcmp_unordered(umap[pred], lhs, rhs, name=name)
+        if pred in _fcmp_umap:
+            return self.fcmp_unordered(_fcmp_umap[pred], lhs, rhs, name=name)
         else:
-            return self.fcmp_ordered(omap[pred], lhs, rhs, name=name)
-
-    def switch(self, val, elseblk, n=0):
-        """
-        n is ignored
-        """
-        return super(Builder, self).switch(val, elseblk)
+            return self.fcmp_ordered(_fcmp_omap[pred], lhs, rhs, name=name)
 
 
 class MetaDataString(ir.MetaDataString):
@@ -262,4 +258,3 @@ class InlineAsm(ir.InlineAsm):
     @staticmethod
     def get(*args, **kwargs):
         return InlineAsm(*args, **kwargs)
-
