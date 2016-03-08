@@ -106,7 +106,10 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         assert isinstance(typ, types.Type)
         assert not isinstance(typ, types.VoidType)
         self.type = typ
-        self.constant = typ.wrap_constant_value(constant)
+        if isinstance(constant, (list, tuple)):
+            # Recursively wrap aggregate constants
+            constant = typ.wrap_constant_value(constant)
+        self.constant = constant
 
     def _to_string(self):
         return '{0} {1}'.format(self.type, self.get_reference())
