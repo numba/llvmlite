@@ -20,7 +20,7 @@ if __name__ == "__main__":
     # otherwise some lines will be missed.
     config_file = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
-        'coverage.conf')
+        '.coveragerc')
     os.environ['COVERAGE_PROCESS_START'] = config_file
     cov = coverage.coverage(config_file=config_file)
     cov.start()
