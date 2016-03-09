@@ -21,7 +21,7 @@ checks:
 
 filter:
     excluded_paths:
-        #- 'llvmlite/tests/*'
+        - 'llvmlite/tests/*'
         - 'llvmlite/six.py'
         - 'llvmlite/_version.py'
         - 'llvmlite/versioneer.py'
