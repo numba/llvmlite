@@ -1,0 +1,27 @@
+checks:
+    python:
+        code_rating: true
+        duplicate_code: true
+        variables_used_before_assignment: true
+        variables_unused_variable: true
+        variables_undefined_variable: true
+        variables_undefined_all_variable: true
+        variables_no_name_in_module: true
+        variables_invalid_all_object: true
+        variables_global_variable_undefined: true
+        string_too_many_format_args: true
+        string_too_few_format_args: true
+        imports_relative_import: true
+        imports_cyclic_import: true
+        format_unnecessary_semicolon: true
+        format_bad_whitespace: true
+        basic_unreachable: true
+        basic_empty_docstring: true
+        basic_duplicate_key: true
+
+filter:
+    excluded_paths:
+        - 'llvmlite/tests/*'
+        - 'llvmlite/six.py'
+        - 'llvmlite/_version.py'
+        - 'llvmlite/versioneer.py'
