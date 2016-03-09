@@ -27,7 +27,7 @@ before_install:
     # Install dependencies for building the docs
     - $CONDA_INSTALL pip sphinx sphinx_rtd_theme pygments
     # Install dependencies for code coverage (codecov.io)
-    - pip install codecov
+    - if [ "$RUN_COVERAGE" == "yes" ]; then pip install codecov; fi
 
 install:
     - python setup.py build
@@ -37,10 +37,10 @@ script:
     # Ensure that the documentation builds without warnings nor missing references
     - cd docs ; make SPHINXOPTS=-Wn clean html ; cd ..
     - python runtests.py -v
-    - if [ "$RUN_COVERAGE" == "yes"]; then coverage run runtests.py; fi
+    - if [ "$RUN_COVERAGE" == "yes" ]; then coverage run runtests.py; fi
 
 after_success:
-    - codecov
+    - if [ "$RUN_COVERAGE" == "yes" ]; then codecov; fi
 
 notifications:
     email: false
