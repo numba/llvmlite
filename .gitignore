@@ -9,6 +9,7 @@ dist/
 ffi/build/
 htmlcov/
 .coverage
+coverage.xml
 MANIFEST
 docs/_build/
 docs/gh-pages/
