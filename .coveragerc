@@ -9,9 +9,13 @@ exclude_lines =
     pragma: no cover
     if __name__ == .__main__.:
 
+# General support infrastructure (third-party libs, testing machinery)
+# that we don't bother covering.
 omit =
     */__main__.py
     llvmlite/enum.py
     llvmlite/six.py
+    llvmlite/_version.py
+    llvmlite/tests/customize.py
 
 [html]

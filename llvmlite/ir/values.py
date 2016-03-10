@@ -53,8 +53,13 @@ class _ConstOpMixin(object):
         """
         Cast this integer constant to the given pointer type.
         """
-        assert isinstance(self.type, types.IntType)
-        assert isinstance(typ, types.PointerType)
+        if not isinstance(self.type, types.IntType):
+            raise TypeError("can only call inttoptr() on integer constants, not '%s'"
+                            % (self.type,))
+        if not isinstance(typ, types.PointerType):
+            raise TypeError("can only inttoptr() to pointer type, not '%s'"
+                            % (typ,))
+
         op = "inttoptr ({0} {1} to {2})".format(self.type,
                                                 self.get_reference(),
                                                 typ)
@@ -65,7 +70,8 @@ class _ConstOpMixin(object):
         Call getelementptr on this pointer constant.
         """
         if not isinstance(self.type, types.PointerType):
-            raise TypeError("cannot only call gep() on pointer constants")
+            raise TypeError("can only call gep() on pointer constants, not '%s'"
+                            % (self.type,))
 
         outtype = self.type
         for i in indices:

@@ -1257,6 +1257,8 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'i1 false')
         c = ir.Constant(int1, ir.Undefined)
         self.assertEqual(str(c), 'i1 undef')
+        c = ir.Constant(int1, None)
+        self.assertEqual(str(c), 'i1 0')
 
     def test_reals(self):
         # XXX Test NaNs and infs
@@ -1270,6 +1272,8 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'double 0xbff8000000000000')
         c = ir.Constant(dbl, ir.Undefined)
         self.assertEqual(str(c), 'double undef')
+        c = ir.Constant(dbl, None)
+        self.assertEqual(str(c), 'double 0.0')
 
     def test_arrays(self):
         c = ir.Constant(ir.ArrayType(int32, 3), (c32(5), c32(6), c32(4)))
@@ -1278,6 +1282,9 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '[2 x i32] [i32 5, i32 undef]')
         c = ir.Constant(ir.ArrayType(int32, 2), ir.Undefined)
         self.assertEqual(str(c), '[2 x i32] undef')
+        c = ir.Constant(ir.ArrayType(int32, 2), None)
+        self.assertEqual(str(c), '[2 x i32] zeroinitializer')
+        # Raw array syntax
         c = ir.Constant(ir.ArrayType(int8, 11), bytearray(b"foobar_123\x80"))
         self.assertEqual(str(c), r'[11 x i8] c"foobar\5f123\80"')
         c = ir.Constant(ir.ArrayType(int8, 4), bytearray(b"\x00\x01\x04\xff"))
@@ -1305,6 +1312,8 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '{float, i1} {float 0x3ff8000000000000, i1 undef}')
         c = ir.Constant(st1, ir.Undefined)
         self.assertEqual(str(c), '{float, i1} undef')
+        c = ir.Constant(st1, None)
+        self.assertEqual(str(c), '{float, i1} zeroinitializer')
         # Recursive instantiation of inner constants
         c1 = ir.Constant(st1, (1.5, True))
         self.assertEqual(str(c1), '{float, i1} {float 0x3ff8000000000000, i1 true}')
@@ -1333,6 +1342,8 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '[3 x i32] [i32 4, i32 5, i32 6]')
         c = at([4, 5, 6])
         self.assertEqual(str(c), '[3 x i32] [i32 4, i32 5, i32 6]')
+        c = at(None)
+        self.assertEqual(str(c), '[3 x i32] zeroinitializer')
         with self.assertRaises(ValueError):
             at([4, 5, 6, 7])
         # Structs
@@ -1373,6 +1384,16 @@ class TestConstant(TestBase):
         self.assertEqual(str(c),
             'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0, i32 1)')
         self.assertEqual(c.type, ir.PointerType(int1))
+
+    def test_bitcast(self):
+        m = self.module()
+        gv = ir.GlobalVariable(m, int32, "myconstant")
+        c = gv.bitcast(int64.as_pointer())
+        self.assertEqual(str(c), 'bitcast (i32* @"myconstant" to i64*)')
+
+    def test_inttoptr(self):
+        c = ir.Constant(int32, 0).inttoptr(int64.as_pointer())
+        self.assertEqual(str(c), 'inttoptr (i32 0 to i64*)')
 
 
 class TestTransforms(TestBase):

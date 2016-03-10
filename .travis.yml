@@ -4,12 +4,11 @@
 dist: trusty
 
 matrix:
+    # Note coverage is run in only one configuration
     include:
-        - env: PYTHON=2.6
         - env: PYTHON=2.7
-        - env: PYTHON=3.3
         - env: PYTHON=3.4
-        - env: PYTHON=3.5
+        - env: PYTHON=3.5 RUN_COVERAGE=yes
 
 before_install:
     # Install Miniconda
@@ -23,20 +22,25 @@ before_install:
     - source activate travisci
     # Install llvmdev (separate channel, for now)
     - $CONDA_INSTALL -c numba llvmdev="3.7*"
-    # Install unittest2 and argparse for Python 2.6
-    - if [ $PYTHON == "2.6" ]; then $CONDA_INSTALL unittest2 argparse; fi
     # Install enum34 for Python < 3.4
     - if [ $PYTHON \< "3.4" ]; then $CONDA_INSTALL enum34; fi
     # Install dependencies for building the docs
     - $CONDA_INSTALL pip sphinx sphinx_rtd_theme pygments
+    # Install dependencies for code coverage (codecov.io)
+    - if [ "$RUN_COVERAGE" == "yes" ]; then pip install codecov; fi
 
 install:
     - python setup.py build
 
 script:
+    - cd $TRAVIS_BUILD_DIR
     # Ensure that the documentation builds without warnings nor missing references
-    - cd $TRAVIS_BUILD_DIR/docs ; make SPHINXOPTS=-Wn clean html
-    - cd $TRAVIS_BUILD_DIR; python runtests.py -v
+    - cd docs ; make SPHINXOPTS=-Wn clean html ; cd ..
+    - python runtests.py -v
+    - if [ "$RUN_COVERAGE" == "yes" ]; then coverage run runtests.py; fi
+
+after_success:
+    - if [ "$RUN_COVERAGE" == "yes" ]; then codecov; fi
 
 notifications:
     email: false
