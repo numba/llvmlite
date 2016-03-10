@@ -34,29 +34,7 @@ def _escape_string(text, _map={}):
     return ''.join(buf)
 
 
-class _Undefined(object):
-    pass
-
-Undefined = _Undefined()
-
-
-class ConstOp(object):
-    """
-    A simple value-like object representing the result of a constant operation.
-    """
-
-    def __init__(self, typ, op):
-        assert isinstance(typ, types.Type)
-        self.type = typ
-        self.op = op
-
-    def __str__(self):
-        return self.op
-
-    get_reference = __str__
-
-
-class ConstOpMixin(object):
+class _ConstOpMixin(object):
     """
     A mixin defining constant operations, for use in constant-like classes.
     """
@@ -69,25 +47,31 @@ class ConstOpMixin(object):
             return self
         op = "bitcast ({0} {1} to {2})".format(self.type, self.get_reference(),
                                                typ)
-        return ConstOp(typ, op)
+        return FormattedConstant(typ, op)
 
     def inttoptr(self, typ):
         """
         Cast this integer constant to the given pointer type.
         """
-        assert isinstance(self.type, types.IntType)
-        assert isinstance(typ, types.PointerType)
+        if not isinstance(self.type, types.IntType):
+            raise TypeError("can only call inttoptr() on integer constants, not '%s'"
+                            % (self.type,))
+        if not isinstance(typ, types.PointerType):
+            raise TypeError("can only inttoptr() to pointer type, not '%s'"
+                            % (typ,))
+
         op = "inttoptr ({0} {1} to {2})".format(self.type,
                                                 self.get_reference(),
                                                 typ)
-        return ConstOp(typ, op)
+        return FormattedConstant(typ, op)
 
     def gep(self, indices):
         """
         Call getelementptr on this pointer constant.
         """
         if not isinstance(self.type, types.PointerType):
-            raise TypeError("cannot only call gep() on pointer constants")
+            raise TypeError("can only call gep() on pointer constants, not '%s'"
+                            % (self.type,))
 
         outtype = self.type
         for i in indices:
@@ -99,10 +83,27 @@ class ConstOpMixin(object):
         op = "getelementptr ({0}, {1} {2}, {3})".format(
             self.type.pointee, self.type,
             self.get_reference(), ', '.join(strindices))
-        return ConstOp(outtype.as_pointer(), op)
+        return FormattedConstant(outtype.as_pointer(), op)
 
 
-class Constant(_StrCaching, _StringReferenceCaching, ConstOpMixin):
+class Value(object):
+    """
+    The base class for all values.
+    """
+
+    def __repr__(self):
+        return "<ir.%s type='%s' ...>" % (self.__class__.__name__, self.type,)
+
+
+class _Undefined(object):
+    """
+    'undef': a value for undefined values.
+    """
+
+Undefined = _Undefined()
+
+
+class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
     """
     A constant LLVM value.
     """
@@ -111,23 +112,26 @@ class Constant(_StrCaching, _StringReferenceCaching, ConstOpMixin):
         assert isinstance(typ, types.Type)
         assert not isinstance(typ, types.VoidType)
         self.type = typ
+        if isinstance(constant, (list, tuple)):
+            # Recursively wrap aggregate constants
+            constant = typ.wrap_constant_value(constant)
         self.constant = constant
 
     def _to_string(self):
         return '{0} {1}'.format(self.type, self.get_reference())
 
     def _get_reference(self):
-        if isinstance(self.constant, bytearray):
-            val = 'c"{0}"'.format(_escape_string(self.constant))
-
-        elif self.constant is None:
+        if self.constant is None:
             val = self.type.null
 
         elif self.constant is Undefined:
             val = "undef"
 
+        elif isinstance(self.constant, bytearray):
+            val = 'c"{0}"'.format(_escape_string(self.constant))
+
         else:
-            val = self.type.format_const(self.constant)
+            val = self.type.format_constant(self.constant)
 
         return val
 
@@ -151,8 +155,30 @@ class Constant(_StrCaching, _StringReferenceCaching, ConstOpMixin):
     def __hash__(self):
         return hash(str(self))
 
+    def __repr__(self):
+        return "<ir.Constant type='%s' value=%r>" % (self.type, self.constant)
 
-class Value(_StrCaching, _StringReferenceCaching):
+
+class FormattedConstant(Constant):
+    """
+    A constant with an already formatted IR representation.
+    """
+
+    def __init__(self, typ, constant):
+        assert isinstance(constant, str)
+        Constant.__init__(self, typ, constant)
+
+    def _to_string(self):
+        return self.constant
+
+    def _get_reference(self):
+        return self.constant
+
+
+class NamedValue(_StrCaching, _StringReferenceCaching, Value):
+    """
+    The base class for named values.
+    """
     name_prefix = '%'
     deduplicate_name = True
     creates_nested_scope = False
@@ -192,6 +218,10 @@ class Value(_StrCaching, _StringReferenceCaching):
             name = name.replace('\\', '\\5c').replace('"', '\\22')
         return '{0}"{1}"'.format(self.name_prefix, name)
 
+    def __repr__(self):
+        return "<ir.%s %r of type '%s'>" % (
+            self.__class__.__name__, self.name, self.type)
+
     @property
     def function_type(self):
         ty = self.type
@@ -203,7 +233,7 @@ class Value(_StrCaching, _StringReferenceCaching):
             raise TypeError("Not a function: {0}".format(self.type))
 
 
-class MetaDataString(Value):
+class MetaDataString(NamedValue):
     """
     A metadata string, i.e. a constant string used as a value in a metadata
     node.
@@ -244,7 +274,7 @@ class NamedMetaData(object):
         self.operands.append(md)
 
 
-class MDValue(Value):
+class MDValue(NamedValue):
     name_prefix = '!'
 
     def __init__(self, parent, values, name):
@@ -283,7 +313,7 @@ class MDValue(Value):
         return hash(self.operands)
 
 
-class GlobalValue(Value, ConstOpMixin):
+class GlobalValue(NamedValue, _ConstOpMixin):
     """
     A global value.
     """
@@ -475,7 +505,7 @@ class ArgumentAttributes(AttributeSet):
                         'sret', 'zeroext'])
 
 
-class _BaseArgument(Value):
+class _BaseArgument(NamedValue):
     def __init__(self, parent, typ, name=''):
         assert isinstance(typ, types.Type)
         super(_BaseArgument, self).__init__(parent, typ, name=name)
@@ -483,7 +513,7 @@ class _BaseArgument(Value):
         self.attributes = ArgumentAttributes()
 
     def __repr__(self):
-        return "<Argument %r of type %s>" % (self.name, self.type)
+        return "<ir.%s %r of type %s>" % (self.__class__.__name__, self.name, self.type)
 
     def add_attribute(self, attr):
         self.attributes.add(attr)
@@ -514,7 +544,7 @@ class ReturnValue(_BaseArgument):
             return str(self.type)
 
 
-class Block(Value):
+class Block(NamedValue):
     """
     A LLVM IR basic block. A basic block is a sequence of
     instructions whose execution always goes from start to end.  That
@@ -553,7 +583,7 @@ class Block(Value):
                 instr.replace_usage(old, new)
 
 
-class BlockAddress(object):
+class BlockAddress(Value):
     """
     The address of a basic block.
     """

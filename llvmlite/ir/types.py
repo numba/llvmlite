@@ -74,12 +74,26 @@ class Type(_StrCaching):
         llty = self._get_ll_pointer_type(target_data, context)
         return target_data.get_pointee_abi_alignment(llty)
 
-    def format_const(self, val):
+    def format_constant(self, value):
         """
-        Format constant *val* of this type.  This method may be overriden
+        Format constant *value* of this type.  This method may be overriden
         by subclasses.
         """
-        return str(val)
+        return str(value)
+
+    def wrap_constant_value(self, value):
+        """
+        Wrap constant *value* if necessary.  This method may be overriden
+        by subclasses (especially aggregate types).
+        """
+        return value
+
+    def __call__(self, value):
+        """
+        Create a LLVM constant of this type with the given Python value.
+        """
+        from . import Constant
+        return Constant(self, value)
 
 
 class MetaData(Type):
@@ -221,7 +235,7 @@ class IntType(Type):
         else:
             return False
 
-    def format_const(self, val):
+    def format_constant(self, val):
         if isinstance(val, bool):
             return str(val).lower()
         else:
@@ -275,8 +289,8 @@ class FloatType(_BaseFloatType):
     def __str__(self):
         return 'float'
 
-    def format_const(self, val):
-        return _format_double(_as_float(val))
+    def format_constant(self, value):
+        return _format_double(_as_float(value))
 
 
 class DoubleType(_BaseFloatType):
@@ -289,8 +303,8 @@ class DoubleType(_BaseFloatType):
     def __str__(self):
         return 'double'
 
-    def format_const(self, val):
-        return _format_double(val)
+    def format_constant(self, value):
+        return _format_double(value)
 
 
 for _cls in (FloatType, DoubleType):
@@ -317,6 +331,17 @@ class Aggregate(Type):
     Base class for aggregate types.
     See http://llvm.org/docs/LangRef.html#t-aggregate
     """
+
+    def wrap_constant_value(self, values):
+        from . import Value, Constant
+
+        if not isinstance(values, (list, tuple)):
+            return values
+        if len(values) != len(self):
+            raise ValueError("wrong constant size for %s: got %d elements"
+                             % (self, len(values)))
+        return [Constant(ty, val) if not isinstance(val, Value) else val
+                for ty, val in zip(self.elements, values)]
 
 
 class ArrayType(Aggregate):
@@ -350,9 +375,9 @@ class ArrayType(Aggregate):
             raise TypeError(i.type)
         return self.element
 
-    def format_const(self, val):
+    def format_constant(self, value):
         itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
-                                 for x in val])
+                                 for x in value])
         return "[{0}]".format(itemstring)
 
 
@@ -381,9 +406,9 @@ class BaseStructType(Aggregate):
         """
         return '{%s}' % ', '.join([str(x) for x in self.elements])
 
-    def format_const(self, val):
+    def format_constant(self, value):
         itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
-                                 for x in val])
+                                 for x in value])
         return "{{{0}}}".format(itemstring)
 
     def gep(self, i):
