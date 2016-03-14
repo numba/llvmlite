@@ -2,8 +2,11 @@
 CXX ?= g++
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
-CXXFLAGS = $(LLVM_CXXFLAGS) -flto
-LDFLAGS = $(LLVM_LDFLAGS) -flto -Wl,--exclude-libs=ALL
+CXX_FLTO_FLAGS ?= -flto
+LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
+
+CXXFLAGS = $(LLVM_CXXFLAGS) $(CXX_FLTO_FLAGS)
+LDFLAGS = $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
 LIBS = $(LLVM_LIBS)
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
@@ -18,4 +21,4 @@ $(OUTPUT): $(SRC)
 	$(CXX) -static-libstdc++ -shared $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
 
 clean:
-	rm -rf test
+	rm -rf test $(OUTPUT)
