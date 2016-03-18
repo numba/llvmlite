@@ -1,10 +1,10 @@
 try:
-    from setuptools import setup, Extension
+    from setuptools import setup, Extension, Command
     from setuptools.command.build_py import build_py as build
     from setuptools.command.build_ext import build_ext
     from setuptools.command.install import install
 except ImportError:
-    from distutils.core import setup, Extension
+    from distutils.core import setup, Extension, Command
     from distutils.command.build import build
     from distutils.command.build_ext import build_ext
     from distutils.command.install import install
@@ -74,9 +74,22 @@ class LlvmliteInstall(install):
         install.run(self)
 
 
+class LlvmliteClean(Command):
+    """Custom clean command to tidy up the project root."""
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        os.system('rm -vrf ./build ./dist ./ffi/*.so ./*.egg-info')
+        os.system('find . -name "*.pyc" -delete')
+
+
 cmdclass.update({'build': LlvmliteBuild,
                  'build_ext': LlvmliteBuildExt,
                  'install': LlvmliteInstall,
+                 'clean': LlvmliteClean,
                  })
 
 packages = ['llvmlite',
