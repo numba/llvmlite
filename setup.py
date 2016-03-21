@@ -11,6 +11,7 @@ except ImportError:
 from distutils.spawn import spawn
 import os
 import sys
+import shutil
 
 if os.environ.get('READTHEDOCS', None) == 'True':
     sys.exit("setup.py disabled on readthedocs: called with %s"
@@ -27,8 +28,7 @@ versioneer.tag_prefix = 'v' # tags are like v1.2.0
 versioneer.parentdir_prefix = 'llvmlite-' # dirname like 'myproject-1.2.0'
 
 
-here_dir = os.path.dirname(__file__)
-
+here_dir = os.path.dirname(os.path.abspath(__file__))
 
 cmdclass = versioneer.get_cmdclass()
 build = cmdclass.get('build', build)
@@ -82,8 +82,31 @@ class LlvmliteClean(Command):
     def finalize_options(self):
         pass
     def run(self):
-        os.system('rm -vrf ./build ./dist ./ffi/*.so ./*.egg-info')
-        os.system('find . -name "*.pyc" -delete')
+        self._rm_dirs()
+        self._rm_files()
+
+    def _rm_dirs(self):
+        items = 'build', 'llvmlite.egg-info'
+        for item in items:
+            path = os.path.join(here_dir, item)
+            if os.path.isdir(path):
+                try:
+                    shutil.rmtree(path)
+                except OSError:
+                    # May fail after package installation by root
+                    print(path + " could not be removed")
+
+    def _rm_files(self):
+        for path, dirs, files in os.walk(here_dir):
+            if any(p.startswith('.') for p in path.split(os.path.sep)):
+                # Skip hidden directories like the git folder right away
+                continue
+            if path.endswith('__pycache__'):
+                shutil.rmtree(path)
+            else:
+                for fname in files:
+                    if fname.endswith('.pyc') or fname.endswith('.so'):
+                        os.remove(os.path.join(path, fname))
 
 
 cmdclass.update({'build': LlvmliteBuild,
