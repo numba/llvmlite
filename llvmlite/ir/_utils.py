@@ -8,18 +8,12 @@ class DuplicatedNameError(NameError):
 
 
 class NameScope(object):
-    def __init__(self, parent=None):
-        self.parent = parent
+    def __init__(self):
         self._useset = set([''])
         self._basenamemap = defaultdict(int)
 
     def is_used(self, name):
-        scope = self
-        while scope is not None:
-            if name in scope._useset:
-                return True
-            scope = scope.parent
-        return False
+        return name in self._useset
 
     def register(self, name, deduplicate=False):
         if deduplicate:

@@ -8,7 +8,7 @@ from __future__ import print_function, absolute_import
 import string
 
 from ..six import StringIO
-from . import types
+from . import types, _utils
 from ._utils import _StrCaching, _StringReferenceCaching
 
 
@@ -181,15 +181,12 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
     """
     name_prefix = '%'
     deduplicate_name = True
-    creates_nested_scope = False
 
     def __init__(self, parent, type, name):
         assert parent is not None
         assert isinstance(type, types.Type)
         self.parent = parent
         self.type = type
-        pscope = self.parent.scope
-        self.scope = pscope.get_child() if self.creates_nested_scope else pscope
         self._set_name(name)
 
     def _to_string(self):
@@ -206,7 +203,7 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
         return self._name
 
     def _set_name(self, name):
-        name = self.scope.register(name, deduplicate=self.deduplicate_name)
+        name = self.parent.scope.register(name, deduplicate=self.deduplicate_name)
         self._name = name
 
     name = property(_get_name, _set_name)
@@ -418,12 +415,11 @@ class Function(GlobalValue):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
-    creates_nested_scope = True
-
     def __init__(self, module, ftype, name):
         assert isinstance(ftype, types.Type)
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
         self.ftype = ftype
+        self.scope = _utils.NameScope()
         self.blocks = []
         self.attributes = FunctionAttributes()
         self.args = tuple([Argument(self, t)
@@ -555,6 +551,7 @@ class Block(NamedValue):
 
     def __init__(self, parent, name=''):
         super(Block, self).__init__(parent, types.LabelType(), name=name)
+        self.scope = parent.scope
         self.instructions = []
         self.terminator = None
 
