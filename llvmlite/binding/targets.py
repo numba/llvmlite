@@ -149,9 +149,9 @@ class TargetData(ffi.ObjectRef):
         """
         Add a DataLayout pass to PassManager *pm*.
         """
-        ffi.lib.LLVMPY_AddTargetData(self, pm)
-        # Once added to a PassManager, we can never get it back.
-        self._owned = True
+        # AddTargetData claims ownership, so create a copy.
+        target_data = create_target_data(str(self))
+        ffi.lib.LLVMPY_AddTargetData(target_data, pm)
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
