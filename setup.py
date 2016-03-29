@@ -1,13 +1,18 @@
 try:
-    from setuptools import setup, Extension, Command
+    from setuptools import setup, Extension
     from setuptools.command.build_py import build_py as build
     from setuptools.command.build_ext import build_ext
     from setuptools.command.install import install
+    from setuptools.command.clean import clean
 except ImportError:
-    from distutils.core import setup, Extension, Command
+    from distutils.core import setup, Extension
     from distutils.command.build import build
     from distutils.command.build_ext import build_ext
     from distutils.command.install import install
+    from distutils.command.clean import clean
+
+from distutils import log
+from distutils.dir_util import remove_tree
 from distutils.spawn import spawn
 import os
 import sys
@@ -74,39 +79,29 @@ class LlvmliteInstall(install):
         install.run(self)
 
 
-class LlvmliteClean(Command):
+class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
-    user_options = []
-    def initialize_options(self):
-        pass
-    def finalize_options(self):
-        pass
     def run(self):
-        self._rm_dirs()
-        self._rm_files()
+        clean.run(self)
+        path = os.path.join(here_dir, 'llvmlite.egg-info')
+        if os.path.isdir(path):
+            remove_tree(path, dry_run=self.dry_run)
+        if not self.dry_run:
+            self._rm_walk()
 
-    def _rm_dirs(self):
-        items = 'build', 'llvmlite.egg-info'
-        for item in items:
-            path = os.path.join(here_dir, item)
-            if os.path.isdir(path):
-                try:
-                    shutil.rmtree(path)
-                except OSError:
-                    # May fail after package installation by root
-                    print(path + " could not be removed")
-
-    def _rm_files(self):
+    def _rm_walk(self):
         for path, dirs, files in os.walk(here_dir):
             if any(p.startswith('.') for p in path.split(os.path.sep)):
                 # Skip hidden directories like the git folder right away
                 continue
             if path.endswith('__pycache__'):
-                shutil.rmtree(path)
+                remove_tree(path, dry_run=self.dry_run)
             else:
                 for fname in files:
                     if fname.endswith('.pyc') or fname.endswith('.so'):
-                        os.remove(os.path.join(path, fname))
+                        fpath = os.path.join(path, fname)
+                        os.remove(fpath)
+                        log.info("removing '%s'", fpath)
 
 
 cmdclass.update({'build': LlvmliteBuild,
