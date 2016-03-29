@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from . import context, values, types
+from . import context, values, types, _utils
 
 
 class Module(object):
@@ -11,7 +11,7 @@ class Module(object):
         self._metadatacache = {}
         self.data_layout = ""
         self.namedmetadata = {}
-        self.scope = context.scope.get_child()
+        self.scope = _utils.NameScope()
         self.triple = 'unknown-unknown-unknown'
         self._sequence = []
 
