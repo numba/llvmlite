@@ -1,16 +1,12 @@
 try:
     from setuptools import setup, Extension
-    from setuptools.command.build_py import build_py as build
-    from setuptools.command.build_ext import build_ext
-    from setuptools.command.install import install
-    from setuptools.command.clean import clean
 except ImportError:
     from distutils.core import setup, Extension
-    from distutils.command.build import build
-    from distutils.command.build_ext import build_ext
-    from distutils.command.install import install
-    from distutils.command.clean import clean
 
+from distutils.command.build import build
+from distutils.command.build_ext import build_ext
+from distutils.command.install import install
+from distutils.command.clean import clean
 from distutils import log
 from distutils.dir_util import remove_tree
 from distutils.spawn import spawn
