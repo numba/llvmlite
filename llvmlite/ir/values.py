@@ -394,6 +394,7 @@ class FunctionAttributes(AttributeSet):
 
     def __init__(self):
         self._alignstack = 0
+        self._personality = None
 
     @property
     def alignstack(self):
@@ -404,10 +405,23 @@ class FunctionAttributes(AttributeSet):
         assert val >= 0
         self._alignstack = val
 
+    @property
+    def personality(self):
+        return self._personality
+
+    @personality.setter
+    def personality(self, val):
+        assert val is None or isinstance(val, GlobalValue)
+        self._personality = val
+
     def __repr__(self):
         attrs = sorted(self)
         if self.alignstack:
             attrs.append('alignstack({0:d})'.format(self.alignstack))
+        if self.personality:
+            attrs.append('personality {persty} {persfn}'.format(
+                            persty=self.personality.type,
+                            persfn=self.personality.get_reference()))
         return ' '.join(attrs)
 
 

@@ -108,9 +108,13 @@ class TestFunction(TestBase):
         func.attributes.add("optsize")
         func.attributes.add("alwaysinline")
         func.attributes.alignstack = 16
+        tp_pers = ir.FunctionType(int8, (), var_arg=True)
+        pers = ir.Function(self.module(), tp_pers, '__gxx_personality_v0')
+        func.attributes.personality = pers
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-            "declare %s alwaysinline optsize alignstack(16)" % self.proto)
+            ("declare %s alwaysinline optsize alignstack(16) "
+             "personality i8 (...)* @\"__gxx_personality_v0\"") % self.proto)
 
     def test_function_attributes(self):
         # Now with parameter attributes
@@ -793,9 +797,7 @@ class TestBuildInstructions(TestBase):
     def test_landingpad(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        tp_pers = ir.FunctionType(int8, (), var_arg=True)
-        pers = ir.Function(builder.function.module, tp_pers, '__gxx_personality_v0')
-        lp = builder.landingpad(ir.LiteralStructType([int32, int8.as_pointer()]), pers, 'lp')
+        lp = builder.landingpad(ir.LiteralStructType([int32, int8.as_pointer()]), 'lp')
         int_typeinfo = ir.GlobalVariable(builder.function.module, int8.as_pointer(), "_ZTIi")
         int_typeinfo.global_constant = True
         lp.add_clause(ir.CatchClause(int_typeinfo))
@@ -804,7 +806,7 @@ class TestBuildInstructions(TestBase):
         builder.resume(lp)
         self.check_block(block, """\
             my_block:
-                %"lp" = landingpad {i32, i8*} personality i8 (...)* @"__gxx_personality_v0"
+                %"lp" = landingpad {i32, i8*}
                     catch i8** @"_ZTIi"
                     filter [1 x i8**] [i8** @"_ZTIi"]
                 resume {i32, i8*} %"lp"
