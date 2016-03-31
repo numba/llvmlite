@@ -30,10 +30,6 @@ Fixes:
 v0.9.0
 ------
 
-Fixes:
-
-* Remove the libcurses dependency on Linux.
-
 Enhancements:
 
 * PR #73: Add get_process_triple() and get_host_cpu_features()
@@ -44,6 +40,10 @@ Enhancements:
   differing types.
 * PR #113: Let Type.get_abi_{size,alignment} not choke on identified types.
 * PR #112: Support non-alphanumeric characters in type names.
+
+Fixes:
+
+* Remove the libcurses dependency on Linux.
 
 v0.8.0
 ------
