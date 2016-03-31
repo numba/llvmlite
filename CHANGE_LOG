@@ -102,12 +102,14 @@ v0.4.0
 ------
 
 Enhancements:
+
 * Add Module.get_global()
 * Renamd Module.global_variables to Module.global_values
 * Support loading library parmanently
 * Add Type.get_abi_alignment()
 
 Fixes:
+
 * Expose LLVM version as a tuple
 
 Patched LLVM 3.5.1:
@@ -118,11 +120,13 @@ v0.2.2
 -------
 
 Enhancements:
+
 * Support for addrspacescast
 * Support for tail call, calling convention attribute
 * Support for IdentifiedStructType
 
 Fixes:
+
 * GEP addrspace propagation
 * Various installation process fixes
 
