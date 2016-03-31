@@ -29,6 +29,10 @@ inline Target *unwrap(LLVMTargetRef T) {
     return reinterpret_cast<Target*>(T);
 }
 
+inline TargetMachine *unwrap(LLVMTargetMachineRef TM) {
+    return reinterpret_cast<TargetMachine *>(TM);
+}
+
 inline LLVMTargetMachineRef wrap(TargetMachine *TM) {
     return reinterpret_cast<LLVMTargetMachineRef>(TM);
 }
@@ -268,9 +272,9 @@ LLVMPY_TargetMachineEmitToMemory (
 }
 
 API_EXPORT(LLVMTargetDataRef)
-LLVMPY_GetTargetMachineData(LLVMTargetMachineRef TM)
+LLVMPY_CreateTargetMachineData(LLVMTargetMachineRef TM)
 {
-    return LLVMGetTargetMachineData(TM);
+    return llvm::wrap(new llvm::DataLayout(llvm::unwrap(TM)->createDataLayout()));
 }
 
 API_EXPORT(void)

@@ -285,9 +285,7 @@ class TargetMachine(ffi.ObjectRef):
 
     @property
     def target_data(self):
-        td = TargetData(ffi.lib.LLVMPY_GetTargetMachineData(self))
-        td._owned = True
-        return td
+        return TargetData(ffi.lib.LLVMPY_CreateTargetMachineData(self))
 
     @property
     def triple(self):
@@ -389,7 +387,7 @@ ffi.lib.LLVMPY_GetBufferSize.restype = c_size_t
 
 ffi.lib.LLVMPY_DisposeMemoryBuffer.argtypes = [ffi.LLVMMemoryBufferRef]
 
-ffi.lib.LLVMPY_GetTargetMachineData.argtypes = [
+ffi.lib.LLVMPY_CreateTargetMachineData.argtypes = [
     ffi.LLVMTargetMachineRef,
 ]
-ffi.lib.LLVMPY_GetTargetMachineData.restype = ffi.LLVMTargetDataRef
+ffi.lib.LLVMPY_CreateTargetMachineData.restype = ffi.LLVMTargetDataRef
