@@ -1,3 +1,32 @@
+v0.10.0
+-------
+
+Enhancements:
+
+* PR #146: Improve ``setup.py clean`` to wipe more leftovers.
+* PR #135: Remove some llvmpy compatibility APIs.
+* PR #151: Always copy TargetData when adding to a pass manager.
+* PR #148: Make errors more explicit on loading the binding DLL.
+* PR #144: Allow overriding ``-flto`` in Linux builds.
+* PR #136: Remove Python 2.6 and 3.3 compatibility.
+* Issue #131: Allow easier creation of constants by making type instances
+  callable.
+* Issue #130: The test suite now ensures the runtime DLL dependencies
+  are within a certain expected set.
+* Issue #121: Simplify build process on Unix and remove hardcoded linking
+  with LLVMOProfileJIT.
+* Issue #125: Speed up formatting of raw array constants.
+
+Fixes:
+
+* PR #155: Properly emit IR for metadata null.
+* PR #153: Remove deprecated uses of ``TargetMachine::getDataLayout()``.
+* PR #156: Move personality from LandingPadInstr to FunctionAttributes.
+  It was moved in LLVM 3.7.
+* PR #149: Implement LLVM scoping correctly.
+* PR #141: Ensure no CMakeCache.txt file is included in sdist.
+* PR #132: Correct constant in ``llvmir.py`` example.
+
 v0.9.0
 ------
 
