@@ -633,9 +633,8 @@ class FilterClause(_LandingPadClause):
         super(FilterClause, self).__init__(value)
 
 class LandingPadInstr(Instruction):
-    def __init__(self, parent, typ, personality, name='', cleanup=False):
+    def __init__(self, parent, typ, name='', cleanup=False):
         super(LandingPadInstr, self).__init__(parent, typ, "landingpad", [], name=name)
-        self.personality = personality
         self.cleanup = cleanup
         self.clauses = []
 
@@ -644,11 +643,8 @@ class LandingPadInstr(Instruction):
         self.clauses.append(clause)
 
     def descr(self, buf):
-        pers = self.personality
-        fmt = "landingpad {type} personality {persty} {persfn}{cleanup}{clauses}\n"
+        fmt = "landingpad {type}{cleanup}{clauses}\n"
         buf.append(fmt.format(type=self.type,
-                              persty=pers.type,
-                              persfn=pers.get_reference(),
                               cleanup=' cleanup' if self.cleanup else '',
                               clauses=''.join(["\n      {0}".format(clause)
                                                for clause in self.clauses]),

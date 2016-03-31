@@ -807,8 +807,8 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
-    def landingpad(self, typ, personality, name='', cleanup=False):
-        inst = instructions.LandingPadInstr(self.block, typ, personality, name, cleanup)
+    def landingpad(self, typ, name='', cleanup=False):
+        inst = instructions.LandingPadInstr(self.block, typ, name, cleanup)
         self._insert(inst)
         return inst
 
