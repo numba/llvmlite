@@ -634,6 +634,10 @@ class JITWithTMTestMixin(JITTestMixin):
         ee = self.jit(mod, target_machine)
         raw_asm = target_machine.emit_assembly(mod)
         self.assertIn("sum", raw_asm)
+        target_machine.set_asm_verbosity(True)
+        raw_asm_verbose = target_machine.emit_assembly(mod)
+        self.assertIn("sum", raw_asm)
+        self.assertNotEqual(raw_asm, raw_asm_verbose)
 
     def test_emit_object(self):
         """Test TargetMachineRef.emit_object()"""
