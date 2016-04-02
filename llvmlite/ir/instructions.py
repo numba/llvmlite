@@ -8,9 +8,10 @@ from ..six import StringIO
 from . import types
 from .values import (Block, Function, Value, NamedValue, Constant,
                      MetaDataString, AttributeSet)
+from ._utils import _HasMetadata
 
 
-class Instruction(NamedValue):
+class Instruction(NamedValue, _HasMetadata):
     def __init__(self, parent, typ, opname, operands, name='', flags=()):
         super(Instruction, self).__init__(parent, typ, name=name)
         assert isinstance(parent, Block)
@@ -20,15 +21,6 @@ class Instruction(NamedValue):
         self.flags = list(flags)
         self.metadata = {}
 
-    def _stringify_metadata(self):
-        if self.metadata:
-            buf = [""]
-            buf += ["!{0} {1}".format(k, v.get_reference())
-                    for k, v in self.metadata.items()]
-            return ', '.join(buf)
-        else:
-            return ''
-
     @property
     def function(self):
         return self.parent.function
@@ -37,16 +29,13 @@ class Instruction(NamedValue):
     def module(self):
         return self.parent.function.module
 
-    def set_metadata(self, name, node):
-        self.metadata[name] = node
-
     def descr(self, buf):
         opname = self.opname
         if self.flags:
             opname = ' '.join([opname] + self.flags)
         operands = ', '.join([op.get_reference() for op in self.operands])
         typ = self.type
-        metadata = self._stringify_metadata()
+        metadata = self._stringify_metadata(leading_comma=True)
         buf.append("{0} {1} {2}{3}\n"
                    .format(opname, typ, operands, metadata))
 
@@ -120,7 +109,7 @@ class CallInstr(Instruction):
             callee_ref,
             args,
             ''.join([" " + attr for attr in self.attributes]),
-            self._stringify_metadata() if add_metadata else "",
+            self._stringify_metadata(leading_comma=True) if add_metadata else "",
             ))
 
     def descr(self, buf):
@@ -141,7 +130,7 @@ class InvokeInstr(CallInstr):
         buf.append("      to label {0} unwind label {1}{metadata}\n".format(
             self.normal_to.get_reference(),
             self.unwind_to.get_reference(),
-            metadata=self._stringify_metadata(),
+            metadata=self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -155,7 +144,7 @@ class Terminator(Instruction):
         opname = self.opname
         operands = ', '.join(["{0} {1}".format(op.type, op.get_reference())
                               for op in self.operands])
-        metadata = self._stringify_metadata()
+        metadata = self._stringify_metadata(leading_comma=True)
         buf.append("{0} {1}{2}".format(opname, operands, metadata))
 
 
@@ -221,7 +210,7 @@ class IndirectBranch(PredictableInstr, Terminator):
             self.address.type,
             self.address.get_reference(),
             ', '.join(destinations),
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -251,7 +240,7 @@ class SwitchInstr(PredictableInstr, Terminator):
             self.value.get_reference(),
             self.default.get_reference(),
             ' '.join(cases),
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -282,7 +271,7 @@ class SelectInstr(Instruction):
             self.cond.type, self.cond.get_reference(),
             self.lhs.type, self.lhs.get_reference(),
             self.rhs.type, self.rhs.get_reference(),
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -305,7 +294,7 @@ class CompareInstr(Instruction):
             self.operands[0].type,
             self.operands[0].get_reference(),
             self.operands[1].get_reference(),
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -357,7 +346,7 @@ class CastInstr(Instruction):
             self.operands[0].type,
             self.operands[0].get_reference(),
             self.type,
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -379,7 +368,7 @@ class LoadInstr(Instruction):
             val.type,
             val.get_reference(),
             align,
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -400,7 +389,7 @@ class StoreInstr(Instruction):
             ptr.type,
             ptr.get_reference(),
             align,
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -416,7 +405,7 @@ class AllocaInstr(Instruction):
             op, = self.operands
             buf.append(", {0} {1}".format(op.type, op.get_reference()))
         if self.metadata:
-            buf.append(self._stringify_metadata())
+            buf.append(self._stringify_metadata(leading_comma=True))
 
 
 class GEPInstr(Instruction):
@@ -448,7 +437,7 @@ class GEPInstr(Instruction):
                    self.pointer.type,
                    self.pointer.get_reference(),
                    ', '.join(indices),
-                   self._stringify_metadata(),
+                   self._stringify_metadata(leading_comma=True),
                    ))
 
 
@@ -464,7 +453,7 @@ class PhiInstr(Instruction):
         buf.append("phi {0} {1} {2}\n".format(
                    self.type,
                    incs,
-                   self._stringify_metadata(),
+                   self._stringify_metadata(leading_comma=True),
                    ))
 
     def add_incoming(self, value, block):
@@ -499,7 +488,7 @@ class ExtractValue(Instruction):
                    self.aggregate.type,
                    self.aggregate.get_reference(),
                    ', '.join(indices),
-                   self._stringify_metadata(),
+                   self._stringify_metadata(leading_comma=True),
                    ))
 
 
@@ -529,7 +518,7 @@ class InsertValue(Instruction):
                    self.aggregate.type, self.aggregate.get_reference(),
                    self.value.type, self.value.get_reference(),
                    ', '.join(indices),
-                   self._stringify_metadata(),
+                   self._stringify_metadata(leading_comma=True),
                    ))
 
 
@@ -581,7 +570,7 @@ class AtomicRMW(Instruction):
                               valty=val.type,
                               val=val.get_reference(),
                               ordering=self.ordering,
-                              metadata=self._stringify_metadata(),
+                              metadata=self._stringify_metadata(leading_comma=True),
                               ))
 
 
@@ -607,7 +596,7 @@ class CmpXchg(Instruction):
                               val=val.get_reference(),
                               ordering=self.ordering,
                               failordering=self.failordering,
-                              metadata=self._stringify_metadata(),
+                              metadata=self._stringify_metadata(leading_comma=True),
                               ))
 
 

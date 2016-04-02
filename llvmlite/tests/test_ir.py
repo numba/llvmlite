@@ -127,6 +127,16 @@ class TestFunction(TestBase):
             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 %".2", double %".3", i32* nonnull %".4")"""
             )
 
+    def test_function_metadata(self):
+        # Now with function metadata
+        module = self.module()
+        func = self.function(module)
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+            """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") !dbg !0"""
+            )
+
     def test_define(self):
         # A simple definition
         func = self.function()

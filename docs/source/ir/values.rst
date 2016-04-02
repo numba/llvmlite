@@ -219,6 +219,11 @@ Global values are values accessible using a module-wide name.
       Similar to :meth:`append_basic_block`, but inserts it before the basic
       block *before* in the function's list of basic blocks.
 
+   .. method:: set_metadata(name, node)
+
+      Add a function-specific metadata named *name* pointing to the given
+      metadata *node* (a :class:`MDValue`).
+
    .. attribute:: args
 
       The function's arguments as a tuple of :class:`Argument` instances.

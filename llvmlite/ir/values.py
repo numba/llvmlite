@@ -9,7 +9,7 @@ import string
 
 from ..six import StringIO
 from . import types, _utils
-from ._utils import _StrCaching, _StringReferenceCaching
+from ._utils import _StrCaching, _StringReferenceCaching, _HasMetadata
 
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
@@ -428,7 +428,7 @@ class FunctionAttributes(AttributeSet):
         return ' '.join(attrs)
 
 
-class Function(GlobalValue):
+class Function(GlobalValue, _HasMetadata):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
@@ -444,6 +444,7 @@ class Function(GlobalValue):
         self.return_value = ReturnValue(self, ftype.return_type)
         self.parent.add_global(self)
         self.calling_convention = ''
+        self.metadata = {}
 
     @property
     def module(self):
@@ -485,7 +486,10 @@ class Function(GlobalValue):
         linkage = self.linkage
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
-        prototype = "{prefix} {name}({args}{vararg}) {attrs}\n".format(**locals())
+        metadata = self._stringify_metadata()
+        prototype = "{prefix} {name}({args}{vararg}) {attrs}{metadata}\n".format(
+            prefix=prefix, name=name, args=args, vararg=vararg,
+            attrs=attrs, metadata=metadata)
         buf.append(prototype)
 
     def descr_body(self, buf):
