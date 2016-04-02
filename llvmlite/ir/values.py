@@ -7,7 +7,8 @@ from __future__ import print_function, absolute_import
 
 import string
 
-from ..six import StringIO, text_type
+from .. import six
+from ..six import StringIO
 from . import types, _utils
 from ._utils import _StrCaching, _StringReferenceCaching, _HasMetadata
 
@@ -31,6 +32,8 @@ def _escape_string(text, _map={}):
                 _map[ch] = chr(ch)
             else:
                 _map[ch] = '\\%02x' % ch
+            if six.PY2:
+                _map[chr(ch)] = _map[ch]
 
     buf = [_map[ch] for ch in text]
     return ''.join(buf)
