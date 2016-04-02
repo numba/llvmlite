@@ -298,14 +298,9 @@ class MDValue(NamedValue):
         self.operands = tuple(values)
         parent.metadata.append(self)
 
-    @property
-    def operand_count(self):
-        return len(self.operands)
-
     def descr(self, buf):
         operands = []
         for op in self.operands:
-            typestr = str(op.type)
             if isinstance(op.type, types.MetaData):
                 if isinstance(op, Constant) and op.constant == None:
                     operands.append("null")
@@ -330,6 +325,70 @@ class MDValue(NamedValue):
 
     def __hash__(self):
         return hash(self.operands)
+
+
+class DIToken:
+    """
+    A debug information enumeration value that should appear bare in
+    the emitted metadata.
+    """
+    def __init__(self, value):
+        self.value = value
+
+
+class DIValue(NamedValue):
+    """
+    A debug information descriptor, containing key-value pairs.
+    """
+    name_prefix = '!'
+
+    def __init__(self, parent, is_distinct, kind, operands, name):
+        super(DIValue, self).__init__(parent, types.MetaData(), name=name)
+        self.is_distinct = is_distinct
+        self.kind = kind
+        self.operands = tuple(operands)
+        parent.metadata.append(self)
+
+    def descr(self, buf):
+        if self.is_distinct:
+            buf += ("distinct ",)
+        operands = []
+        for key, value in self.operands:
+            if value is None:
+                strvalue = "null"
+            elif value is True:
+                strvalue = "true"
+            elif value is False:
+                strvalue = "false"
+            elif isinstance(value, DIToken):
+                strvalue = value.value
+            elif isinstance(value, str):
+                strvalue = '"{}"'.format(_escape_string(value))
+            elif isinstance(value, int):
+                strvalue = str(value)
+            else:
+                assert isinstance(value, NamedValue)
+                strvalue = value.get_reference()
+            operands.append("{0}: {1}".format(key, strvalue))
+        operands = ', '.join(operands)
+        buf += ("!", self.kind, "(", operands, ")\n")
+
+    def _get_reference(self):
+        return self.name_prefix + str(self.name)
+
+    def __eq__(self, other):
+        if isinstance(other, DIValue):
+            return self.is_distinct == other.is_distinct and \
+                self.kind == other.kind and \
+                self.operands == other.operands
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.is_distinct, self.kind, self.operands))
 
 
 class GlobalValue(NamedValue, _ConstOpMixin):

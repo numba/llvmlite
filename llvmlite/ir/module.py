@@ -31,6 +31,23 @@ class Module(object):
             md = self._metadatacache[key]
         return md
 
+    def add_debug_info(self, kind, operands, is_distinct=False):
+        """
+        Add debug information metadata to the module with the given
+        *operands* (a dict of values with string keys) or return
+        a previous equivalent metadata. A DIValue instance is returned,
+        it can then be associated to e.g. an instruction.
+        """
+        n = len(self.metadata)
+        operands = tuple(sorted(operands.items()))
+        key = (kind, operands, is_distinct)
+        if key not in self._metadatacache:
+            di = values.DIValue(self, is_distinct, kind, operands, name=str(n))
+            self._metadatacache[key] = di
+        else:
+            di = self._metadatacache[key]
+        return di
+
     def add_named_metadata(self, name):
         nmd = values.NamedMetaData(self)
         self.namedmetadata[name] = nmd

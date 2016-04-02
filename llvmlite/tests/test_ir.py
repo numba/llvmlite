@@ -11,6 +11,7 @@ import re
 import textwrap
 import unittest
 from array import array
+from collections import OrderedDict
 
 from . import TestCase
 from llvmlite import ir
@@ -233,6 +234,31 @@ class TestIR(TestBase):
         md = mod.add_metadata([ir.Constant(ir.PointerType(ir.IntType(32)), None)])
         self.assertInText("!{ i32* null }", str(mod))
         self.assert_valid_ir(mod)
+
+    def test_debug_info(self):
+        mod = self.module()
+        difile = mod.add_debug_info("DIFile", {
+            "filename":        "foo",
+            "directory":       "bar",
+        })
+        disubprograms = mod.add_metadata([])
+        dicompileunit = mod.add_debug_info("DICompileUnit", {
+            "language":        ir.DIToken("DW_LANG_Python"),
+            "file":            difile,
+            "producer":        "ARTIQ",
+            "runtimeVersion":  0,
+            "subprograms":     disubprograms,
+            "isOptimized":     True,
+            "somethingFalsy":  False
+        }, is_distinct=True)
+        strmod = str(mod)
+        self.assertInText('!0 = !DIFile(directory: "bar", filename: "foo")',
+                          strmod)
+        self.assertInText('!1 = !{ }', strmod)
+        self.assertInText('!2 = distinct !DICompileUnit(file: !0, '
+                          'isOptimized: true, language: DW_LANG_Python, '
+                          'producer: "ARTIQ", runtimeVersion: 0, '
+                          'somethingFalsy: false, subprograms: !1)', strmod)
 
     def test_inline_assembly(self):
         mod = self.module()
