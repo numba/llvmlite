@@ -246,6 +246,8 @@ class TestMisc(BaseTest):
             llvm.initialize()
             llvm.initialize_native_target()
             llvm.initialize_native_asmprinter()
+            llvm.initialize_all_targets()
+            llvm.initialize_all_asmprinters()
             llvm.shutdown()
             """
         subprocess.check_call([sys.executable, "-c", code])
