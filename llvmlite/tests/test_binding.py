@@ -940,6 +940,31 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         self.assertNotIn("%.4", opt_asm)
 
 
+class TestPasses(BaseTest, PassManagerTestMixin):
+
+    def pm(self):
+        return llvm.create_module_pass_manager()
+
+    def test_populate(self):
+        pm = self.pm()
+        pm.add_constant_merge_pass()
+        pm.add_dead_arg_elimination_pass()
+        pm.add_function_attrs_pass()
+        pm.add_function_inlining_pass(225)
+        pm.add_global_dce_pass()
+        pm.add_global_optimizer_pass()
+        pm.add_ipsccp_pass()
+        pm.add_dead_code_elimination_pass()
+        pm.add_cfg_simplification_pass()
+        pm.add_gvn_pass()
+        pm.add_instruction_combining_pass()
+        pm.add_licm_pass()
+        pm.add_sccp_pass()
+        pm.add_sroa_pass()
+        pm.add_type_based_alias_analysis_pass()
+        pm.add_basic_alias_analysis_pass()
+
+
 class TestDylib(BaseTest):
 
     def test_bad_library(self):

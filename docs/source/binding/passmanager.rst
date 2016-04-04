@@ -56,13 +56,79 @@ configure a :class:`PassManagerBuilder`.
 
 .. class:: PassManager
 
-   The base class for pass managers.
+   The base class for pass managers. Use individual ``add_*`` methods
+   or :meth:`PassManagerBuilder.populate` to add optimization passes.
 
+
+   .. function:: add_constant_merge_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants>`_.
+
+   .. function:: add_dead_arg_elimination_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination>`_.
+
+   .. function:: add_function_attrs_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes>`_.
+
+   .. function:: add_function_inlining_pass(self, )
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#inline-function-integration-inlining>`_.
+
+   .. function:: add_global_dce_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination>`_.
+
+   .. function:: add_global_optimizer_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer>`_.
+
+   .. function:: add_ipsccp_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation>`_.
+
+   .. function:: add_dead_code_elimination_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#dce-dead-code-elimination>`_.
+
+   .. function:: add_cfg_simplification_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#simplifycfg-simplify-the-cfg>`_.
+
+   .. function:: add_gvn_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#gvn-global-value-numbering>`_.
+
+   .. function:: add_instruction_combining_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#passes-instcombine>`_.
+
+   .. function:: add_licm_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion>`_.
+
+   .. function:: add_sccp_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation>`_.
+
+   .. function:: add_sroa_pass()
+
+      See `pass documentation <http://llvm.org/docs/Passes.html#scalarrepl-scalar-replacement-of-aggregates>`_.
+
+      Note that while the link above describes the transformation performed by the pass
+      added by this function, it corresponds to the ``opt -sroa`` command-line option
+      and not ``opt -scalarrepl``.
+
+   .. function:: add_type_based_alias_analysis_pass()
+
+   .. function:: add_basic_alias_analysis_pass()
+
+      See `pass documentation <http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass>`_.
 
 .. class:: ModulePassManager()
 
    Create a new pass manager to run optimization passes on a module.
-   Use :meth:`PassManagerBuilder.populate` to add optimization passes.
 
    The following method is available:
 
@@ -77,7 +143,6 @@ configure a :class:`PassManagerBuilder`.
 
    Create a new pass manager to run optimization passes on a function of
    the given *module* (an :class:`ModuleRef` instance).
-   Use :meth:`PassManagerBuilder.populate` to add optimization passes.
 
    The following methods are available:
 
