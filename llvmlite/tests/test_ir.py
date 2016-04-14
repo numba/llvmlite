@@ -1288,6 +1288,14 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '[3 x i32] [i32 5, i32 6, i32 4]')
         c = ir.Constant(ir.ArrayType(int32, 2), (c32(5), c32(ir.Undefined)))
         self.assertEqual(str(c), '[2 x i32] [i32 5, i32 undef]')
+
+        c = ir.Constant.literal_array((c32(5), c32(6), c32(ir.Undefined)))
+        self.assertEqual(str(c), '[3 x i32] [i32 5, i32 6, i32 undef]')
+        with self.assertRaises(TypeError) as raises:
+            ir.Constant.literal_array((c32(5), ir.Constant(flt, 1.5)))
+        self.assertEqual(str(raises.exception),
+                         "all elements must have the same type")
+
         c = ir.Constant(ir.ArrayType(int32, 2), ir.Undefined)
         self.assertEqual(str(c), '[2 x i32] undef')
         c = ir.Constant(ir.ArrayType(int32, 2), None)
