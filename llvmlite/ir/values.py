@@ -136,6 +136,20 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         return val
 
     @classmethod
+    def literal_array(cls, elems):
+        """
+        Construct a literal array constant made of the given members.
+        """
+        tys = [el.type for el in elems]
+        if len(tys) == 0:
+            raise ValueError("need at least one element")
+        ty = tys[0]
+        for other in tys:
+            if ty != other:
+                raise TypeError("all elements must have the same type")
+        return cls(types.ArrayType(ty, len(elems)), elems)
+
+    @classmethod
     def literal_struct(cls, elems):
         """
         Construct a literal structure constant made of the given members.
