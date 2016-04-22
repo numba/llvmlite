@@ -8,67 +8,70 @@ from __future__ import print_function, absolute_import
 import string
 
 from ..six import StringIO
-from . import types
+from . import types, _utils
+from ._utils import _StrCaching, _StringReferenceCaching
+
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
                 frozenset('._-$'))
 
 
-def _escape_string(text):
-    buf = []
-    for ch in text:
-        if ch in _VALID_CHARS:
-            buf.append(chr(ch))
-        else:
-            ashex = hex(ch)[2:]
-            if len(ashex) == 1:
-                ashex = '0' + ashex
-            buf.append('\\' + ashex)
+def _escape_string(text, _map={}):
+    """
+    Escape the given bytestring for safe use as a LLVM array constant.
+    """
+    assert isinstance(text, (bytes, bytearray))
+
+    if not _map:
+        for ch in range(256):
+            if ch in _VALID_CHARS:
+                _map[ch] = chr(ch)
+            else:
+                _map[ch] = '\\%02x' % ch
+
+    buf = [_map[ch] for ch in text]
     return ''.join(buf)
 
 
-class _Undefined(object):
-    pass
+class _ConstOpMixin(object):
+    """
+    A mixin defining constant operations, for use in constant-like classes.
+    """
 
-Undefined = _Undefined()
-
-
-def _wrapname(x):
-    return '"{0}"'.format(x).replace(' ', '_')
-
-
-class ConstOp(object):
-    def __init__(self, typ, op):
-        assert isinstance(typ, types.Type)
-        self.type = typ
-        self.op = op
-
-    def __str__(self):
-        return "{0}".format(self.op)
-
-    def get_reference(self):
-        return str(self)
-
-
-class ConstOpMixin(object):
     def bitcast(self, typ):
+        """
+        Bitcast this pointer constant to the given type.
+        """
         if typ == self.type:
             return self
         op = "bitcast ({0} {1} to {2})".format(self.type, self.get_reference(),
                                                typ)
-        return ConstOp(typ, op)
+        return FormattedConstant(typ, op)
 
     def inttoptr(self, typ):
-        assert isinstance(self.type, types.IntType)
-        assert isinstance(typ, types.PointerType)
+        """
+        Cast this integer constant to the given pointer type.
+        """
+        if not isinstance(self.type, types.IntType):
+            raise TypeError("can only call inttoptr() on integer constants, not '%s'"
+                            % (self.type,))
+        if not isinstance(typ, types.PointerType):
+            raise TypeError("can only inttoptr() to pointer type, not '%s'"
+                            % (typ,))
+
         op = "inttoptr ({0} {1} to {2})".format(self.type,
                                                 self.get_reference(),
                                                 typ)
-        return ConstOp(typ, op)
+        return FormattedConstant(typ, op)
 
     def gep(self, indices):
-        assert isinstance(self.type, types.PointerType)
+        """
+        Call getelementptr on this pointer constant.
+        """
+        if not isinstance(self.type, types.PointerType):
+            raise TypeError("can only call gep() on pointer constants, not '%s'"
+                            % (self.type,))
 
         outtype = self.type
         for i in indices:
@@ -77,43 +80,80 @@ class ConstOpMixin(object):
         strindices = ["{0} {1}".format(idx.type, idx.get_reference())
                       for idx in indices]
 
-        op = "getelementptr ({0} {1}, {2})".format(self.type,
-                                                   self.get_reference(),
-                                                   ', '.join(strindices))
-        return ConstOp(outtype.as_pointer(), op)
+        op = "getelementptr ({0}, {1} {2}, {3})".format(
+            self.type.pointee, self.type,
+            self.get_reference(), ', '.join(strindices))
+        return FormattedConstant(outtype.as_pointer(), op)
 
 
-class Constant(ConstOpMixin):
+class Value(object):
     """
-    Constant values
+    The base class for all values.
+    """
+
+    def __repr__(self):
+        return "<ir.%s type='%s' ...>" % (self.__class__.__name__, self.type,)
+
+
+class _Undefined(object):
+    """
+    'undef': a value for undefined values.
+    """
+
+Undefined = _Undefined()
+
+
+class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
+    """
+    A constant LLVM value.
     """
 
     def __init__(self, typ, constant):
         assert isinstance(typ, types.Type)
         assert not isinstance(typ, types.VoidType)
         self.type = typ
+        if isinstance(constant, (list, tuple)):
+            # Recursively wrap aggregate constants
+            constant = typ.wrap_constant_value(constant)
         self.constant = constant
 
-    def __str__(self):
+    def _to_string(self):
         return '{0} {1}'.format(self.type, self.get_reference())
 
-    def get_reference(self):
-        if isinstance(self.constant, bytearray):
-            val = 'c"{0}"'.format(_escape_string(self.constant))
-
-        elif self.constant is None:
+    def _get_reference(self):
+        if self.constant is None:
             val = self.type.null
 
         elif self.constant is Undefined:
             val = "undef"
 
+        elif isinstance(self.constant, bytearray):
+            val = 'c"{0}"'.format(_escape_string(self.constant))
+
         else:
-            val = self.type.format_const(self.constant)
+            val = self.type.format_constant(self.constant)
 
         return val
 
     @classmethod
+    def literal_array(cls, elems):
+        """
+        Construct a literal array constant made of the given members.
+        """
+        tys = [el.type for el in elems]
+        if len(tys) == 0:
+            raise ValueError("need at least one element")
+        ty = tys[0]
+        for other in tys:
+            if ty != other:
+                raise TypeError("all elements must have the same type")
+        return cls(types.ArrayType(ty, len(elems)), elems)
+
+    @classmethod
     def literal_struct(cls, elems):
+        """
+        Construct a literal structure constant made of the given members.
+        """
         tys = [el.type for el in elems]
         return cls(types.LiteralStructType(tys), elems)
 
@@ -129,50 +169,69 @@ class Constant(ConstOpMixin):
     def __hash__(self):
         return hash(str(self))
 
+    def __repr__(self):
+        return "<ir.Constant type='%s' value=%r>" % (self.type, self.constant)
 
-class Value(object):
+
+class FormattedConstant(Constant):
+    """
+    A constant with an already formatted IR representation.
+    """
+
+    def __init__(self, typ, constant):
+        assert isinstance(constant, str)
+        Constant.__init__(self, typ, constant)
+
+    def _to_string(self):
+        return self.constant
+
+    def _get_reference(self):
+        return self.constant
+
+
+class NamedValue(_StrCaching, _StringReferenceCaching, Value):
+    """
+    The base class for named values.
+    """
     name_prefix = '%'
     deduplicate_name = True
-    nested_scope = False
 
     def __init__(self, parent, type, name):
         assert parent is not None
         assert isinstance(type, types.Type)
         self.parent = parent
         self.type = type
-        pscope = self.parent.scope
-        self.scope = pscope.get_child() if self.nested_scope else pscope
-        self._name = None
-        self.name = name
+        self._set_name(name)
 
-    def __str__(self):
-        buf = StringIO()
-        if self.type == types.VoidType():
-            self.descr(buf)
-            return buf.getvalue().rstrip()
-        else:
-            name = self.get_reference()
-            self.descr(buf)
-            descr = buf.getvalue().rstrip()
-            return "{name} = {descr}".format(**locals())
+    def _to_string(self):
+        buf = []
+        if self.type != types.VoidType():
+            buf.append("{0} = ".format(self.get_reference()))
+        self.descr(buf)
+        return "".join(buf).rstrip()
 
     def descr(self, buf):
         raise NotImplementedError
 
-    @property
-    def name(self):
+    def _get_name(self):
         return self._name
 
-    @name.setter
-    def name(self, name):
-        if self.deduplicate_name:
-            name = self.scope.deduplicate(name)
-
-        self.scope.register(name)
+    def _set_name(self, name):
+        name = self.parent.scope.register(name, deduplicate=self.deduplicate_name)
         self._name = name
 
-    def get_reference(self):
-        return self.name_prefix + _wrapname(self.name)
+    name = property(_get_name, _set_name)
+
+    def _get_reference(self):
+        name = self.name
+        # Quote and escape value name
+        if '\\' in name or '"' in name:
+            name = name.replace('\\', '\\5c').replace('"', '\\22')
+        return '{0}"{1}"'.format(self.name_prefix, name)
+
+    def __repr__(self):
+        return "<ir.%s %r of type '%s'>" % (
+            self.__class__.__name__, self.name, self.type)
 
     @property
     def function_type(self):
@@ -185,7 +244,7 @@ class Value(object):
             raise TypeError("Not a function: {0}".format(self.type))
 
 
-class MetaDataString(Value):
+class MetaDataString(NamedValue):
     """
     A metadata string, i.e. a constant string used as a value in a metadata
     node.
@@ -196,13 +255,12 @@ class MetaDataString(Value):
         self.string = string
 
     def descr(self, buf):
-        print(self.get_reference(), file=buf)
+        buf += (self.get_reference(), "\n")
 
-    def get_reference(self):
+    def _get_reference(self):
         return '!"{0}"'.format(self.string)
 
-    def __str__(self):
-        return self.get_reference()
+    _to_string = _get_reference
 
     def __eq__(self, other):
         if isinstance(other, MetaDataString):
@@ -218,7 +276,6 @@ class MetaDataString(Value):
 
 
 class NamedMetaData(object):
-    name_prefix = '!'
 
     def __init__(self, parent):
         self.parent = parent
@@ -228,7 +285,7 @@ class NamedMetaData(object):
         self.operands.append(md)
 
 
-class MDValue(Value):
+class MDValue(NamedValue):
     name_prefix = '!'
 
     def __init__(self, parent, values, name):
@@ -245,13 +302,16 @@ class MDValue(Value):
         for op in self.operands:
             typestr = str(op.type)
             if isinstance(op.type, types.MetaData):
-                operands.append(op.get_reference())
+                if isinstance(op, Constant) and op.constant == None:
+                    operands.append("null")
+                else:
+                    operands.append(op.get_reference())
             else:
                 operands.append("{0} {1}".format(op.type, op.get_reference()))
         operands = ', '.join(operands)
-        print("!{{ {0} }}".format(operands), file=buf)
+        buf += ("!{{ {0} }}".format(operands), "\n")
 
-    def get_reference(self):
+    def _get_reference(self):
         return self.name_prefix + str(self.name)
 
     def __eq__(self, other):
@@ -267,7 +327,10 @@ class MDValue(Value):
         return hash(self.operands)
 
 
-class GlobalValue(Value, ConstOpMixin):
+class GlobalValue(NamedValue, _ConstOpMixin):
+    """
+    A global value.
+    """
     name_prefix = '@'
     deduplicate_name = False
 
@@ -278,6 +341,10 @@ class GlobalValue(Value, ConstOpMixin):
 
 
 class GlobalVariable(GlobalValue):
+    """
+    A global variable.
+    """
+
     def __init__(self, module, typ, name, addrspace=0):
         assert isinstance(typ, types.Type)
         super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),
@@ -311,22 +378,17 @@ class GlobalVariable(GlobalValue):
         else:
             unnamed_addr = ''
 
-        print("{linkage} {storage_class} {unnamed_addr} {addrspace} {kind} {type} ".format(
-            linkage=linkage,
-            storage_class=self.storage_class,
-            unnamed_addr=unnamed_addr,
-            addrspace=addrspace,
-            kind=kind,
-            type=self.gtype),
-              file=buf,
-              end='')
+        buf.append("{linkage} {storage_class} {unnamed_addr} {addrspace} {kind} {type} "
+                   .format(linkage=linkage,
+                           storage_class=self.storage_class,
+                           unnamed_addr=unnamed_addr,
+                           addrspace=addrspace,
+                           kind=kind,
+                           type=self.gtype))
 
         if self.initializer is not None:
-            print(self.initializer.get_reference(), file=buf, end='')
-            # else:
-        #     print('undef', file=buf, end='')
-
-        print(file=buf)
+            buf.append(self.initializer.get_reference())
+        buf.append("\n")
 
 
 class AttributeSet(set):
@@ -349,6 +411,7 @@ class FunctionAttributes(AttributeSet):
 
     def __init__(self):
         self._alignstack = 0
+        self._personality = None
 
     @property
     def alignstack(self):
@@ -359,10 +422,23 @@ class FunctionAttributes(AttributeSet):
         assert val >= 0
         self._alignstack = val
 
+    @property
+    def personality(self):
+        return self._personality
+
+    @personality.setter
+    def personality(self, val):
+        assert val is None or isinstance(val, GlobalValue)
+        self._personality = val
+
     def __repr__(self):
         attrs = sorted(self)
         if self.alignstack:
             attrs.append('alignstack({0:d})'.format(self.alignstack))
+        if self.personality:
+            attrs.append('personality {persty} {persfn}'.format(
+                            persty=self.personality.type,
+                            persfn=self.personality.get_reference()))
         return ' '.join(attrs)
 
 
@@ -370,12 +446,11 @@ class Function(GlobalValue):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
-    nested_scope = True
-
     def __init__(self, module, ftype, name):
         assert isinstance(ftype, types.Type)
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
         self.ftype = ftype
+        self.scope = _utils.NameScope()
         self.blocks = []
         self.attributes = FunctionAttributes()
         self.args = tuple([Argument(self, t)
@@ -424,8 +499,8 @@ class Function(GlobalValue):
         linkage = self.linkage
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
-        prototype = "{prefix} {name}({args}{vararg}) {attrs}".format(**locals())
-        print(prototype, file=buf)
+        prototype = "{prefix} {name}({args}{vararg}) {attrs}\n".format(**locals())
+        buf.append(prototype)
 
     def descr_body(self, buf):
         """
@@ -437,14 +512,14 @@ class Function(GlobalValue):
     def descr(self, buf):
         self.descr_prototype(buf)
         if self.blocks:
-            print('{', file=buf)
+            buf.append("{\n")
             self.descr_body(buf)
-            print('}', file=buf)
+            buf.append("}\n")
 
     def __str__(self):
-        buf = StringIO()
+        buf = []
         self.descr(buf)
-        return buf.getvalue()
+        return "".join(buf)
 
     @property
     def is_declaration(self):
@@ -457,7 +532,7 @@ class ArgumentAttributes(AttributeSet):
                         'sret', 'zeroext'])
 
 
-class _BaseArgument(Value):
+class _BaseArgument(NamedValue):
     def __init__(self, parent, typ, name=''):
         assert isinstance(typ, types.Type)
         super(_BaseArgument, self).__init__(parent, typ, name=name)
@@ -465,7 +540,7 @@ class _BaseArgument(Value):
         self.attributes = ArgumentAttributes()
 
     def __repr__(self):
-        return "<Argument %r (#%s) of type %s>" % (self.name, self.pos, self.type)
+        return "<ir.%s %r of type %s>" % (self.__class__.__name__, self.name, self.type)
 
     def add_attribute(self, attr):
         self.attributes.add(attr)
@@ -496,7 +571,7 @@ class ReturnValue(_BaseArgument):
             return str(self.type)
 
 
-class Block(Value):
+class Block(NamedValue):
     """
     A LLVM IR basic block. A basic block is a sequence of
     instructions whose execution always goes from start to end.  That
@@ -507,6 +582,7 @@ class Block(Value):
 
     def __init__(self, parent, name=''):
         super(Block, self).__init__(parent, types.LabelType(), name=name)
+        self.scope = parent.scope
         self.instructions = []
         self.terminator = None
 
@@ -519,10 +595,8 @@ class Block(Value):
         return self.parent
 
     def descr(self, buf):
-        print("{0}:".format(self.name), file=buf)
-        for instr in self.instructions:
-            print('  ', end='', file=buf)
-            print(instr, file=buf)
+        buf.append("{0}:\n".format(self.name))
+        buf += ["  {0}\n".format(instr) for instr in self.instructions]
 
     def replace(self, old, new):
         """Replace an instruction"""
@@ -537,7 +611,7 @@ class Block(Value):
                 instr.replace_usage(old, new)
 
 
-class BlockAddress:
+class BlockAddress(Value):
     """
     The address of a basic block.
     """

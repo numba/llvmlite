@@ -1,21 +1,14 @@
 # References https://gist.github.com/dan-blanchard/7045057
-language: python
+# and https://docs.travis-ci.com/user/trusty-ci-environment/
 
-sudo: false
+dist: trusty
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-4.8
-
-python:
-  - "2.6"
-  - "2.7"
-  - "3.3"
-  - "3.4"
-  - "3.5-dev"
+matrix:
+    # Note coverage is run in only one configuration
+    include:
+        - env: PYTHON=2.7
+        - env: PYTHON=3.4
+        - env: PYTHON=3.5 RUN_COVERAGE=yes
 
 before_install:
     # Install Miniconda
@@ -23,31 +16,34 @@ before_install:
     - chmod +x miniconda.sh
     - ./miniconda.sh -b
     - export PATH=$HOME/miniconda3/bin:$PATH
-    - PY_MAJOR_MINOR=${TRAVIS_PYTHON_VERSION:0:3}
     - CONDA_INSTALL="conda install --yes -q"
     # Setup environment
-    - conda create -n travisci --yes python=$PY_MAJOR_MINOR
+    - conda create -n travisci --yes python=$PYTHON
     - source activate travisci
     # Install llvmdev (separate channel, for now)
-    - $CONDA_INSTALL -c numba llvmdev="3.6*"
-    # Install unittest2 and argparse for Python 2.6
-    - if [ $PY_MAJOR_MINOR == "2.6" ]; then $CONDA_INSTALL unittest2 argparse; fi
+    - $CONDA_INSTALL -c numba llvmdev="3.7*"
     # Install enum34 for Python < 3.4
-    - if [ $PY_MAJOR_MINOR \< "3.4" ]; then $CONDA_INSTALL enum34; fi
+    - if [ $PYTHON \< "3.4" ]; then $CONDA_INSTALL enum34; fi
     # Install dependencies for building the docs
     - $CONDA_INSTALL pip sphinx sphinx_rtd_theme pygments
+    # Install dependencies for code coverage (codecov.io)
+    - if [ "$RUN_COVERAGE" == "yes" ]; then pip install codecov; fi
 
 install:
-    - export CXX=g++-4.8
     - python setup.py build
 
 script:
+    - cd $TRAVIS_BUILD_DIR
     # Ensure that the documentation builds without warnings nor missing references
-    - cd $TRAVIS_BUILD_DIR/docs ; make SPHINXOPTS=-Wn clean html
-    - cd $TRAVIS_BUILD_DIR; python runtests.py -v
+    - cd docs ; make SPHINXOPTS=-Wn clean html ; cd ..
+    - python runtests.py -v
+    - if [ "$RUN_COVERAGE" == "yes" ]; then coverage run runtests.py; fi
+
+after_success:
+    - if [ "$RUN_COVERAGE" == "yes" ]; then codecov; fi
 
 notifications:
-  email: false
-  flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
-  on_success: "change"
-  on_failure: "always" # "change"
+    email: false
+    flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
+    on_success: "change"
+    on_failure: "always" # "change"

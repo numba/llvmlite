@@ -18,6 +18,9 @@ class PassManagerBuilder(ffi.ObjectRef):
 
     @property
     def opt_level(self):
+        """
+        The general optimization level as an integer between 0 and 3.
+        """
         return ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel(self)
 
     @opt_level.setter
@@ -26,6 +29,9 @@ class PassManagerBuilder(ffi.ObjectRef):
 
     @property
     def size_level(self):
+        """
+        Whether and how much to optimize for size.  An integer between 0 and 2.
+        """
         return ffi.lib.LLVMPY_PassManagerBuilderGetSizeLevel(self)
 
     @size_level.setter
@@ -34,6 +40,10 @@ class PassManagerBuilder(ffi.ObjectRef):
 
     @property
     def inlining_threshold(self):
+        """
+        The integer threshold for inlining a function into another.  The higher,
+        the more likely inlining a function is.  This attribute is write-only.
+        """
         raise NotImplementedError("inlining_threshold is write-only")
 
     @inlining_threshold.setter
@@ -50,6 +60,9 @@ class PassManagerBuilder(ffi.ObjectRef):
 
     @property
     def disable_unroll_loops(self):
+        """
+        If true, disable loop unrolling.
+        """
         return ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops(self)
 
     @disable_unroll_loops.setter
@@ -58,6 +71,9 @@ class PassManagerBuilder(ffi.ObjectRef):
 
     @property
     def loop_vectorize(self):
+        """
+        If true, allow vectorizing loops.
+        """
         return ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize(self)
 
     @loop_vectorize.setter
@@ -66,6 +82,10 @@ class PassManagerBuilder(ffi.ObjectRef):
 
     @property
     def slp_vectorize(self):
+        """
+        If true, enable the "SLP vectorizer", which uses a different algorithm
+        from the loop vectorizer.  Both may be enabled at the same time.
+        """
         return ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize(self)
 
     @slp_vectorize.setter

@@ -1,8 +1,57 @@
-v0.8.0 (in development)
------------------------
+v0.10.0
+-------
+
+Enhancements:
+
+* PR #146: Improve ``setup.py clean`` to wipe more leftovers.
+* PR #135: Remove some llvmpy compatibility APIs.
+* PR #151: Always copy TargetData when adding to a pass manager.
+* PR #148: Make errors more explicit on loading the binding DLL.
+* PR #144: Allow overriding ``-flto`` in Linux builds.
+* PR #136: Remove Python 2.6 and 3.3 compatibility.
+* Issue #131: Allow easier creation of constants by making type instances
+  callable.
+* Issue #130: The test suite now ensures the runtime DLL dependencies
+  are within a certain expected set.
+* Issue #121: Simplify build process on Unix and remove hardcoded linking
+  with LLVMOProfileJIT.
+* Issue #125: Speed up formatting of raw array constants.
+
+Fixes:
+
+* PR #155: Properly emit IR for metadata null.
+* PR #153: Remove deprecated uses of ``TargetMachine::getDataLayout()``.
+* PR #156: Move personality from LandingPadInstr to FunctionAttributes.
+  It was moved in LLVM 3.7.
+* PR #149: Implement LLVM scoping correctly.
+* PR #141: Ensure no CMakeCache.txt file is included in sdist.
+* PR #132: Correct constant in ``llvmir.py`` example.
+
+v0.9.0
+------
+
+Enhancements:
+
+* PR #73: Add get_process_triple() and get_host_cpu_features()
+* Switch from LLVM 3.6 to LLVM 3.7.  The generated IR for some memory
+  operations has changed.
+* Improved performance of IR serialization.
+* Issue #116: improve error message when the operands of a binop have
+  differing types.
+* PR #113: Let Type.get_abi_{size,alignment} not choke on identified types.
+* PR #112: Support non-alphanumeric characters in type names.
+
+Fixes:
+
+* Remove the libcurses dependency on Linux.
+
+v0.8.0
+------
 
 * Update LLVM to 3.6.2
 * Add an *align* parameter to IRBuilder.load() and IRBuilder.store().
+* Allow setting visibility, DLL storageclass of ValueRef
+* Support profiling with OProfile
 
 v0.7.0
 ------
@@ -53,12 +102,14 @@ v0.4.0
 ------
 
 Enhancements:
+
 * Add Module.get_global()
 * Renamd Module.global_variables to Module.global_values
 * Support loading library parmanently
 * Add Type.get_abi_alignment()
 
 Fixes:
+
 * Expose LLVM version as a tuple
 
 Patched LLVM 3.5.1:
@@ -69,11 +120,13 @@ v0.2.2
 -------
 
 Enhancements:
+
 * Support for addrspacescast
 * Support for tail call, calling convention attribute
 * Support for IdentifiedStructType
 
 Fixes:
+
 * GEP addrspace propagation
 * Various installation process fixes
 

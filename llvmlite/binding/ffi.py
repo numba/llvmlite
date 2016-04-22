@@ -3,6 +3,7 @@ import os
 
 from .common import _decode_string, _is_shutting_down
 from ..utils import get_library_name
+from ..six import PY2
 
 
 def _make_opaque_ref(name):
@@ -37,10 +38,15 @@ if os.name == 'nt':
 _lib_name = get_library_name()
 try:
     lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name))
-except Exception:
+except OSError as e:
     # Allow finding the llvmlite DLL in the current directory, for ease
     # of bundling with frozen applications.
-    lib = ctypes.CDLL(_lib_name)
+    try:
+        lib = ctypes.CDLL(_lib_name)
+    except OSError:
+        if PY2:
+            raise e
+        raise
 
 
 class _DeadPointer(object):

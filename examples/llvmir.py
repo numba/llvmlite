@@ -11,7 +11,7 @@ builder = ll.IRBuilder()
 builder.position_at_end(bb_entry)
 
 stackint = builder.alloca(ll.IntType(32))
-builder.store(builder.constant(stackint.type.pointee, 123), stackint)
+builder.store(ll.Constant(stackint.type.pointee, 123), stackint)
 myint = builder.load(stackint)
 
 addinstr = builder.add(func.args[0], func.args[1])

@@ -1,16 +1,18 @@
 try:
     from setuptools import setup, Extension
-    from setuptools.command.build_py import build_py as build
-    from setuptools.command.build_ext import build_ext
-    from setuptools.command.install import install
 except ImportError:
     from distutils.core import setup, Extension
-    from distutils.command.build import build
-    from distutils.command.build_ext import build_ext
-    from distutils.command.install import install
+
+from distutils.command.build import build
+from distutils.command.build_ext import build_ext
+from distutils.command.install import install
+from distutils.command.clean import clean
+from distutils import log
+from distutils.dir_util import remove_tree
 from distutils.spawn import spawn
 import os
 import sys
+import shutil
 
 if os.environ.get('READTHEDOCS', None) == 'True':
     sys.exit("setup.py disabled on readthedocs: called with %s"
@@ -27,8 +29,7 @@ versioneer.tag_prefix = 'v' # tags are like v1.2.0
 versioneer.parentdir_prefix = 'llvmlite-' # dirname like 'myproject-1.2.0'
 
 
-here_dir = os.path.dirname(__file__)
-
+here_dir = os.path.dirname(os.path.abspath(__file__))
 
 cmdclass = versioneer.get_cmdclass()
 build = cmdclass.get('build', build)
@@ -74,9 +75,35 @@ class LlvmliteInstall(install):
         install.run(self)
 
 
+class LlvmliteClean(clean):
+    """Custom clean command to tidy up the project root."""
+    def run(self):
+        clean.run(self)
+        path = os.path.join(here_dir, 'llvmlite.egg-info')
+        if os.path.isdir(path):
+            remove_tree(path, dry_run=self.dry_run)
+        if not self.dry_run:
+            self._rm_walk()
+
+    def _rm_walk(self):
+        for path, dirs, files in os.walk(here_dir):
+            if any(p.startswith('.') for p in path.split(os.path.sep)):
+                # Skip hidden directories like the git folder right away
+                continue
+            if path.endswith('__pycache__'):
+                remove_tree(path, dry_run=self.dry_run)
+            else:
+                for fname in files:
+                    if fname.endswith('.pyc') or fname.endswith('.so'):
+                        fpath = os.path.join(path, fname)
+                        os.remove(fpath)
+                        log.info("removing '%s'", fpath)
+
+
 cmdclass.update({'build': LlvmliteBuild,
                  'build_ext': LlvmliteBuildExt,
                  'install': LlvmliteInstall,
+                 'clean': LlvmliteClean,
                  })
 
 packages = ['llvmlite',
@@ -98,10 +125,9 @@ setup(name='llvmlite',
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
         "Topic :: Software Development :: Code Generators",
         "Topic :: Software Development :: Compilers",
       ],
@@ -115,4 +141,3 @@ setup(name='llvmlite',
       license="BSD",
       cmdclass=cmdclass,
       )
-

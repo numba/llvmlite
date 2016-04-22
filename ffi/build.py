@@ -29,6 +29,21 @@ def try_cmake(cmake_dir, build_dir, generator):
         os.chdir(old_dir)
 
 
+def run_llvm_config(llvm_config, args):
+    cmd = [llvm_config] + args
+    p = subprocess.Popen(cmd,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    out = out.decode()
+    err = err.decode()
+    rc = p.wait()
+    if rc != 0:
+        raise RuntimeError("Command %s returned with code %d; stderr follows:\n%s\n"
+                           % (cmd, rc, err))
+    return out
+
+
 def find_win32_generator():
     """
     Find a suitable cmake "generator" under Windows.
@@ -37,9 +52,8 @@ def find_win32_generator():
     # compatible with, the one which was used to compile LLVM... cmake
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
-    # LLVM 3.5 needs VS 2012 minimum.
-    for generator in ['Visual Studio 12 2013',
-                      'Visual Studio 11 2012']:
+    # LLVM 3.7 needs VS 2013 minimum.
+    for generator in ['Visual Studio 12 2013']:
         if is_64bit:
             generator += ' Win64'
         build_dir = tempfile.mkdtemp()
@@ -61,6 +75,7 @@ def main_win32():
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
+    # Run configuration step
     try_cmake(here_dir, build_dir, generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
@@ -91,6 +106,18 @@ def main_posix(kind, library_ext):
     except (OSError, subprocess.CalledProcessError):
         raise RuntimeError("%s failed executing, please point LLVM_CONFIG "
                            "to the path for llvm-config" % (llvm_config,))
+
+    # Get LLVM information for building
+    libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
+    # Normalize whitespace (trim newlines)
+    os.environ['LLVM_LIBS'] = ' '.join(libs.split())
+
+    cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
+    cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
+    os.environ['LLVM_CXXFLAGS'] = ' '.join(cxxflags)
+
+    ldflags = run_llvm_config(llvm_config, ["--ldflags"])
+    os.environ['LLVM_LDFLAGS'] = ldflags.strip()
 
     makefile = "Makefile.%s" % (kind,)
     subprocess.check_call(['make', '-f', makefile])

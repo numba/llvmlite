@@ -4,11 +4,13 @@ import ctypes
 from ctypes import *
 from ctypes.util import find_library
 import gc
+import locale
+import os
+import platform
+import re
 import subprocess
 import sys
 import unittest
-import platform
-import locale
 
 from llvmlite import six
 from llvmlite import binding as llvm
@@ -139,6 +141,42 @@ class BaseTest(TestCase):
         return target.create_target_machine()
 
 
+class TestDependencies(BaseTest):
+    """
+    Test DLL dependencies are within a certain expected set.
+    """
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), "Linux-specific test")
+    def test_linux(self):
+        lib_path = ffi.lib._name
+        env = os.environ.copy()
+        env['LANG'] = 'C'
+        p = subprocess.Popen(["objdump", "-p", lib_path],
+                             stdout=subprocess.PIPE, env=env)
+        out, _ = p.communicate()
+        self.assertEqual(0, p.returncode)
+        # Parse library dependencies
+        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+)?$')
+        deps = set()
+        for line in out.decode().splitlines():
+            parts = line.split()
+            if parts and parts[0] == 'NEEDED':
+                dep = parts[1]
+                m = lib_pat.match(dep)
+                if len(parts) != 2 or not m:
+                    self.fail("invalid NEEDED line: %r" % (line,))
+                deps.add(m.group(1))
+        # Sanity check that our dependencies were parsed ok
+        if 'libc' not in deps or 'libpthread' not in deps:
+            self.fail("failed parsing dependencies? got %r" % (deps,))
+        # Ensure all dependencies are expected
+        allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
+                       'libgcc_s', 'libc', 'ld-linux'])
+        for dep in deps:
+            if not dep.startswith('ld-linux-') and dep not in allowed:
+                self.fail("unexpected dependency %r in %r" % (dep, deps))
+
+
 class TestMisc(BaseTest):
     """
     Test miscellaneous functions in llvm.binding.
@@ -167,6 +205,36 @@ class TestMisc(BaseTest):
         self.assertIsInstance(triple, str)
         self.assertTrue(triple)
 
+    def test_get_process_triple(self):
+        triple = llvm.get_process_triple()
+        default = llvm.get_default_triple()
+        self.assertIsInstance(triple, str)
+        self.assertTrue(triple)
+
+        default_parts = default.split('-')
+        triple_parts = triple.split('-')
+        # Arch must be equal
+        self.assertEqual(default_parts[0], triple_parts[0])
+
+    def test_get_host_cpu_features(self):
+        features = llvm.get_host_cpu_features()
+        self.assertIsInstance(features, dict)
+        self.assertIsInstance(features, llvm.FeatureMap)
+        for k, v in features.items():
+            self.assertIsInstance(k, str)
+            self.assertTrue(k)  # feature string cannot be empty
+            self.assertIsInstance(v, bool)
+        self.assertIsInstance(features.flatten(), str)
+
+        re_term = r"[+\-][a-zA-Z0-9\._]+"
+        regex = r"^({0}|{0}(,{0})*)?$".format(re_term)
+        # quick check for our regex
+        self.assertIsNotNone(re.match(regex, ""))
+        self.assertIsNotNone(re.match(regex, "+aa"))
+        self.assertIsNotNone(re.match(regex, "+a,-bb"))
+        # check CpuFeature.flatten()
+        self.assertIsNotNone(re.match(regex, features.flatten()))
+
     def test_get_host_cpu_name(self):
         cpu = llvm.get_host_cpu_name()
         self.assertIsInstance(cpu, str)
@@ -179,6 +247,8 @@ class TestMisc(BaseTest):
             llvm.initialize()
             llvm.initialize_native_target()
             llvm.initialize_native_asmprinter()
+            llvm.initialize_all_targets()
+            llvm.initialize_all_asmprinters()
             llvm.shutdown()
             """
         subprocess.check_call([sys.executable, "-c", code])
@@ -195,7 +265,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertIn((major, minor), [(3, 5), (3, 6)])
+        self.assertIn((major, minor), [(3, 6), (3, 7)])
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -727,6 +797,11 @@ class TestTargetData(BaseTest):
 
 class TestTargetMachine(BaseTest):
 
+    def test_add_target_data_pass(self):
+        tm = self.target_machine()
+        pm = llvm.create_module_pass_manager()
+        tm.target_data.add_pass(pm)
+
     def test_add_analysis_passes(self):
         tm = self.target_machine()
         pm = llvm.create_module_pass_manager()
@@ -740,42 +815,6 @@ class TestTargetMachine(BaseTest):
         # A global is a pointer, it has the ABI size of a pointer
         pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
         self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
-
-
-class TestTargetLibraryInfo(BaseTest):
-
-    def tli(self):
-        return llvm.create_target_library_info(llvm.get_default_triple())
-
-    def test_create_target_library_info(self):
-        tli = llvm.create_target_library_info(llvm.get_default_triple())
-        with tli:
-            pass
-        tli.close()
-
-    def test_get_libfunc(self):
-        tli = self.tli()
-        with self.assertRaises(NameError):
-            tli.get_libfunc("xyzzy")
-        fmin = tli.get_libfunc("fmin")
-        self.assertEqual(fmin.name, "fmin")
-        self.assertIsInstance(fmin.identity, int)
-        fmax = tli.get_libfunc("fmax")
-        self.assertNotEqual(fmax.identity, fmin.identity)
-
-    def test_set_unavailable(self):
-        tli = self.tli()
-        fmin = tli.get_libfunc("fmin")
-        tli.set_unavailable(fmin)
-
-    def test_disable_all(self):
-        tli = self.tli()
-        tli.disable_all()
-
-    def test_add_pass(self):
-        tli = self.tli()
-        pm = llvm.create_module_pass_manager()
-        tli.add_pass(pm)
 
 
 class TestPassManagerBuilder(BaseTest):
@@ -900,6 +939,31 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         # Quick check that optimizations were run
         self.assertIn("%.4", orig_asm)
         self.assertNotIn("%.4", opt_asm)
+
+
+class TestPasses(BaseTest, PassManagerTestMixin):
+
+    def pm(self):
+        return llvm.create_module_pass_manager()
+
+    def test_populate(self):
+        pm = self.pm()
+        pm.add_constant_merge_pass()
+        pm.add_dead_arg_elimination_pass()
+        pm.add_function_attrs_pass()
+        pm.add_function_inlining_pass(225)
+        pm.add_global_dce_pass()
+        pm.add_global_optimizer_pass()
+        pm.add_ipsccp_pass()
+        pm.add_dead_code_elimination_pass()
+        pm.add_cfg_simplification_pass()
+        pm.add_gvn_pass()
+        pm.add_instruction_combining_pass()
+        pm.add_licm_pass()
+        pm.add_sccp_pass()
+        pm.add_sroa_pass()
+        pm.add_type_based_alias_analysis_pass()
+        pm.add_basic_alias_analysis_pass()
 
 
 class TestDylib(BaseTest):

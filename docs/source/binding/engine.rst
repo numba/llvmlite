@@ -6,7 +6,7 @@ Execution engine
 
 
 The execution engine is where actual code generation and execution happens.
-The currently supported LLVM version (LLVM 3.6) exposes one execution engine,
+The currently supported LLVM version (LLVM 3.7) exposes one execution engine,
 named MCJIT.
 
 
@@ -103,4 +103,3 @@ The ExecutionEngine class
    .. attribute:: target_data
 
       The :class:`TargetData` used by the execution engine.
-

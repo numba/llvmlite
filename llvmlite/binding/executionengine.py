@@ -67,12 +67,18 @@ class ExecutionEngine(ffi.ObjectRef):
         return ptr
 
     def get_function_address(self, name):
+        """
+        Return the address of the function named *name* as an integer.
+        """
         ptr = ffi.lib.LLVMPY_GetFunctionAddress(self, name.encode("ascii"))
         if ptr is None:
             raise ValueError("Cannot find given function %s" % name)
         return ptr
 
     def get_global_value_address(self, name):
+        """
+        Return the address of the global value named *name* as an integer.
+        """
         ptr = ffi.lib.LLVMPY_GetGlobalValueAddress(self, name.encode("ascii"))
         if ptr is None:
             raise ValueError("Cannot find given global value %s" % name)
@@ -93,6 +99,10 @@ class ExecutionEngine(ffi.ObjectRef):
         self._modules.add(module)
 
     def finalize_object(self):
+        """
+        Make sure all modules owned by the execution engine are fully processed
+        and "usable" for execution.
+        """
         ffi.lib.LLVMPY_FinalizeObject(self)
 
     def remove_module(self, module):
@@ -267,9 +277,6 @@ ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [
 ffi.lib.LLVMPY_GetGlobalValueAddress.restype = c_uint64
 
 
-# To workaround a ctypes/libffi issue on Python 2.6 and Windows 64,
-# we avoid passing more than 2 parameters and instead use a structure
-# (probably https://bugs.python.org/issue8275)
 class _ObjectCacheData(Structure):
     _fields_ = [
         ('module_ptr', ffi.LLVMModuleRef),

@@ -48,8 +48,10 @@ layer.
 Compatibility
 =============
 
-llvmlite works with Python 2.6 or greater (including Python 3.3 or greater).
+llvmlite works with Python 2.7 and Python 3.4 or greater.
 
+As of version 0.10, llvmlite requires LLVM 3.7.  It does not support earlier
+or later versions of LLVM.
 
 Documentation
 =============
@@ -61,8 +63,8 @@ Pre-built binaries
 ==================
 
 We recommend you use the binaries provided by the Numba_ team for
-the Conda_ package manager.  You can find them in Numba's `binstar
-channel <https://binstar.org/numba>`.  For example::
+the Conda_ package manager.  You can find them in Numba's `anaconda.org
+channel <https://anaconda.org/numba>`_.  For example::
 
    $ conda install --channel=numba llvmlite
 

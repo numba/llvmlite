@@ -1,11 +1,13 @@
 # Using g++ is recommended for linking
 CXX ?= g++
-LLVM_CONFIG ?= llvm-config
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
-CXXFLAGS = -flto `$(LLVM_CONFIG) --cxxflags` -fno-rtti -g
-LDFLAGS = -flto `$(LLVM_CONFIG) --ldflags` -Wl,--exclude-libs=ALL
-LIBS = `$(LLVM_CONFIG) --system-libs --libs all`
+CXX_FLTO_FLAGS ?= -flto
+LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
+
+CXXFLAGS = $(LLVM_CXXFLAGS) $(CXX_FLTO_FLAGS)
+LDFLAGS = $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
+LIBS = $(LLVM_LIBS)
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
 	  linker.cpp
@@ -18,6 +20,5 @@ $(OUTPUT): $(SRC)
 	# particular libstdc++ version.
 	$(CXX) -static-libstdc++ -shared $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
 
-
 clean:
-	rm -rf test
+	rm -rf test $(OUTPUT)

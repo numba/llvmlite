@@ -91,7 +91,8 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def module(self):
-        """The module this value is defined in.
+        """
+        The module this value was obtained from.
         """
         return self._module
 
@@ -142,12 +143,17 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def type(self):
+        """
+        This value's LLVM type.
+        """
         # XXX what does this return?
         return ffi.lib.LLVMPY_TypeOf(self)
 
     @property
     def is_declaration(self):
-        """Is this global defined in the current module?
+        """
+        Whether this value (presumably global) is defined in the current
+        module.
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
