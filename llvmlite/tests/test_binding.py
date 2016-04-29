@@ -12,7 +12,7 @@ import subprocess
 import sys
 import unittest
 
-from llvmlite import six
+from llvmlite import six, ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from . import TestCase
@@ -980,6 +980,24 @@ class TestDylib(BaseTest):
         elif system == "Darwin":
             libm = find_library("libm")
         llvm.load_library_permanently(libm)
+
+
+class TestGlobalVariables(BaseTest):
+    def check_global_variable_linkage(self, linkage):
+        mod = ir.Module()
+        typ = ir.IntType(32)
+        gv = ir.GlobalVariable(mod, typ, "foo")
+        gv.linkage = linkage
+        self.module(str(mod))
+
+    def test_internal_linkage(self):
+        self.check_global_variable_linkage('internal')
+
+    def test_common_linkage(self):
+        self.check_global_variable_linkage('common')
+
+    def test_external_linkage(self):
+        self.check_global_variable_linkage('external')
 
 
 if __name__ == "__main__":
