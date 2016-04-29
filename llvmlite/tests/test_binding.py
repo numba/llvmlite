@@ -999,6 +999,30 @@ class TestGlobalVariables(BaseTest):
     def test_external_linkage(self):
         self.check_global_variable_linkage('external')
 
+    def test_available_externally_linkage(self):
+        self.check_global_variable_linkage('available_externally')
+
+    def test_private_linkage(self):
+        self.check_global_variable_linkage('private')
+
+    def test_linkonce_linkage(self):
+        self.check_global_variable_linkage('linkonce')
+
+    def test_weak_linkage(self):
+        self.check_global_variable_linkage('weak')
+
+    def test_appending_linkage(self):
+        self.check_global_variable_linkage('appending')
+
+    def test_extern_weak_linkage(self):
+        self.check_global_variable_linkage('extern_weak')
+
+    def test_linkonce_odr_linkage(self):
+        self.check_global_variable_linkage('linkonce_odr')
+
+    def test_weak_odr_linkage(self):
+        self.check_global_variable_linkage('weak_odr')
+
 
 if __name__ == "__main__":
     unittest.main()
