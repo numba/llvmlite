@@ -176,810 +176,821 @@ class TestDependencies(BaseTest):
                 self.fail("unexpected dependency %r in %r" % (dep, deps))
 
 
-#class TestMisc(BaseTest):
-    #"""
-    #Test miscellaneous functions in llvm.binding.
-    #"""
-
-    #def test_parse_assembly(self):
-        #self.module(asm_sum)
-
-    #def test_parse_assembly_error(self):
-        #with self.assertRaises(RuntimeError) as cm:
-            #self.module(asm_parse_error)
-        #s = str(cm.exception)
-        #self.assertIn("parsing error", s)
-        #self.assertIn("invalid operand type", s)
-
-    #def test_dylib_symbols(self):
-        #llvm.add_symbol("__xyzzy", 1234)
-        #llvm.add_symbol("__xyzzy", 5678)
-        #addr = llvm.address_of_symbol("__xyzzy")
-        #self.assertEqual(addr, 5678)
-        #addr = llvm.address_of_symbol("__foobar")
-        #self.assertIs(addr, None)
-
-    #def test_get_default_triple(self):
-        #triple = llvm.get_default_triple()
-        #self.assertIsInstance(triple, str)
-        #self.assertTrue(triple)
-
-    #def test_get_process_triple(self):
-        #triple = llvm.get_process_triple()
-        #default = llvm.get_default_triple()
-        #self.assertIsInstance(triple, str)
-        #self.assertTrue(triple)
-
-        #default_parts = default.split('-')
-        #triple_parts = triple.split('-')
-        ## Arch must be equal
-        #self.assertEqual(default_parts[0], triple_parts[0])
-
-    #def test_get_host_cpu_features(self):
-        #features = llvm.get_host_cpu_features()
-        #self.assertIsInstance(features, dict)
-        #self.assertIsInstance(features, llvm.FeatureMap)
-        #for k, v in features.items():
-            #self.assertIsInstance(k, str)
-            #self.assertTrue(k)  # feature string cannot be empty
-            #self.assertIsInstance(v, bool)
-        #self.assertIsInstance(features.flatten(), str)
-
-        #re_term = r"[+\-][a-zA-Z0-9\._]+"
-        #regex = r"^({0}|{0}(,{0})*)?$".format(re_term)
-        ## quick check for our regex
-        #self.assertIsNotNone(re.match(regex, ""))
-        #self.assertIsNotNone(re.match(regex, "+aa"))
-        #self.assertIsNotNone(re.match(regex, "+a,-bb"))
-        ## check CpuFeature.flatten()
-        #self.assertIsNotNone(re.match(regex, features.flatten()))
-
-    #def test_get_host_cpu_name(self):
-        #cpu = llvm.get_host_cpu_name()
-        #self.assertIsInstance(cpu, str)
-        #self.assertTrue(cpu)
-
-    #def test_initfini(self):
-        #code = """if 1:
-            #from llvmlite import binding as llvm
-
-            #llvm.initialize()
-            #llvm.initialize_native_target()
-            #llvm.initialize_native_asmprinter()
-            #llvm.initialize_all_targets()
-            #llvm.initialize_all_asmprinters()
-            #llvm.shutdown()
-            #"""
-        #subprocess.check_call([sys.executable, "-c", code])
-
-    #def test_set_option(self):
-        ## We cannot set an option multiple times (LLVM would exit() the
-        ## process), so run the code in a subprocess.
-        #code = """if 1:
-            #from llvmlite import binding as llvm
-
-            #llvm.set_option("progname", "-debug-pass=Disabled")
-            #"""
-        #subprocess.check_call([sys.executable, "-c", code])
-
-    #def test_version(self):
-        #major, minor, patch = llvm.llvm_version_info
-        #self.assertIn((major, minor), [(3, 6), (3, 7)])
-        #self.assertIn(patch, range(10))
-
-    #def test_check_jit_execution(self):
-        #llvm.check_jit_execution()
-
-    #@unittest.skipIf(no_de_locale(), "Locale not available")
-    #def test_print_double_locale(self):
-        #m = self.module(asm_double_locale)
-        #expect = str(m)
-        ## Change the locale so that comma is used as decimal-point
-        ## to trigger the LLVM bug (llvmlite issue #80)
-        #locale.setlocale(locale.LC_ALL, 'de_DE')
-        ## The LLVM bug is trigged by print the module with double constant
-        #got = str(m)
-        ## Changing the locale should not affect the LLVM IR
-        #self.assertEqual(expect, got)
-
-
-#class TestModuleRef(BaseTest):
-
-    #def test_str(self):
-        #mod = self.module()
-        #s = str(mod).strip()
-        #self.assertTrue(s.startswith('; ModuleID ='), s)
-
-    #def test_close(self):
-        #mod = self.module()
-        #str(mod)
-        #mod.close()
-        #with self.assertRaises(ctypes.ArgumentError):
-            #str(mod)
-        #mod.close()
-
-    #def test_with(self):
-        #mod = self.module()
-        #str(mod)
-        #with mod:
-            #str(mod)
-        #with self.assertRaises(ctypes.ArgumentError):
-            #str(mod)
-        #with self.assertRaises(RuntimeError):
-            #with mod:
-                #pass
-
-    #def test_name(self):
-        #mod = self.module()
-        #mod.name = "foo"
-        #self.assertEqual(mod.name, "foo")
-        #mod.name = "bar"
-        #self.assertEqual(mod.name, "bar")
-
-    #def test_data_layout(self):
-        #mod = self.module()
-        #s = mod.data_layout
-        #self.assertIsInstance(s, str)
-        #mod.data_layout = s
-        #self.assertEqual(s, mod.data_layout)
-
-    #def test_triple(self):
-        #mod = self.module()
-        #s = mod.triple
-        #self.assertEqual(s, llvm.get_default_triple())
-        #mod.triple = ''
-        #self.assertEqual(mod.triple, '')
-
-    #def test_verify(self):
-        ## Verify successful
-        #mod = self.module()
-        #self.assertIs(mod.verify(), None)
-        ## Verify failed
-        #mod = self.module(asm_verification_fail)
-        #with self.assertRaises(RuntimeError) as cm:
-            #mod.verify()
-        #s = str(cm.exception)
-        #self.assertIn("%.bug = add i32 1, %.bug", s)
-
-    #def test_get_function(self):
-        #mod = self.module()
-        #fn = mod.get_function("sum")
-        #self.assertIsInstance(fn, llvm.ValueRef)
-        #self.assertEqual(fn.name, "sum")
-
-        #with self.assertRaises(NameError):
-            #mod.get_function("foo")
-
-        ## Check that fn keeps the module instance alive
-        #del mod
-        #str(fn.module)
-
-    #def test_get_global_variable(self):
-        #mod = self.module()
-        #gv = mod.get_global_variable("glob")
-        #self.assertIsInstance(gv, llvm.ValueRef)
-        #self.assertEqual(gv.name, "glob")
-
-        #with self.assertRaises(NameError):
-            #mod.get_global_variable("bar")
-
-        ## Check that gv keeps the module instance alive
-        #del mod
-        #str(gv.module)
-
-    #def test_global_variables(self):
-        #mod = self.module()
-        #it = mod.global_variables
-        #del mod
-        #globs = sorted(it, key=lambda value: value.name)
-        #self.assertEqual(len(globs), 4)
-        #self.assertEqual([g.name for g in globs],
-                         #["glob", "glob_b", "glob_f", "glob_struct"])
-
-    #def test_functions(self):
-        #mod = self.module()
-        #it = mod.functions
-        #del mod
-        #funcs = list(it)
-        #self.assertEqual(len(funcs), 1)
-        #self.assertEqual(funcs[0].name, "sum")
-
-    #def test_link_in(self):
-        #dest = self.module()
-        #src = self.module(asm_mul)
-        #dest.link_in(src)
-        #self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
-        #dest.get_function("mul")
-        #dest.close()
-        #with self.assertRaises(ctypes.ArgumentError):
-            #src.get_function("mul")
-
-    #def test_link_in_preserve(self):
-        #dest = self.module()
-        #src2 = self.module(asm_mul)
-        #dest.link_in(src2, preserve=True)
-        #self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
-        #dest.close()
-        #self.assertEqual(sorted(f.name for f in src2.functions), ["mul"])
-        #src2.get_function("mul")
-
-    #def test_link_in_error(self):
-        ## Raise an error by trying to link two modules with the same global
-        ## definition "sum".
-        #dest = self.module()
-        #src = self.module(asm_sum2)
-        #with self.assertRaises(RuntimeError) as cm:
-            #dest.link_in(src)
-        #self.assertIn("symbol multiply defined", str(cm.exception))
-
-    #def test_as_bitcode(self):
-        #mod = self.module()
-        #bc = mod.as_bitcode()
-        ## Refer to http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00064
-        ## and http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00092
-        #bitcode_wrapper_magic = b'\xde\xc0\x17\x0b'
-        #bitcode_magic = b'BC'
-        #self.assertTrue(bc.startswith(bitcode_magic) or
-                        #bc.startswith(bitcode_wrapper_magic))
-
-    #def test_parse_bitcode_error(self):
-        #with self.assertRaises(RuntimeError) as cm:
-            #llvm.parse_bitcode(b"")
-        #self.assertIn("LLVM bitcode parsing error", str(cm.exception))
-        #self.assertIn("Invalid bitcode signature", str(cm.exception))
-
-    #def test_bitcode_roundtrip(self):
-        #bc = self.module().as_bitcode()
-        #mod = llvm.parse_bitcode(bc)
-        #self.assertEqual(mod.as_bitcode(), bc)
-        #mod.get_function("sum")
-        #mod.get_global_variable("glob")
-
-    #def test_cloning(self):
-        #m = self.module()
-        #cloned = m.clone()
-        #self.assertIsNot(cloned, m)
-        #self.assertEqual(cloned.as_bitcode(), m.as_bitcode())
-
-
-#class JITTestMixin(object):
-    #"""
-    #Mixin for ExecutionEngine tests.
-    #"""
-
-    #def get_sum(self, ee, func_name="sum"):
-        #ee.finalize_object()
-        #cfptr = ee.get_function_address(func_name)
-        #self.assertTrue(cfptr)
-        #return CFUNCTYPE(c_int, c_int, c_int)(cfptr)
-
-    #def test_run_code(self):
-        #mod = self.module()
-        #with self.jit(mod) as ee:
-            #cfunc = self.get_sum(ee)
-            #res = cfunc(2, -5)
-            #self.assertEqual(-3, res)
-
-    #def test_close(self):
-        #ee = self.jit(self.module())
-        #ee.close()
-        #ee.close()
-        #with self.assertRaises(ctypes.ArgumentError):
-            #ee.finalize_object()
-
-    #def test_with(self):
-        #ee = self.jit(self.module())
-        #with ee:
-            #pass
-        #with self.assertRaises(RuntimeError):
-            #with ee:
-                #pass
-        #with self.assertRaises(ctypes.ArgumentError):
-            #ee.finalize_object()
-
-    #def test_module_lifetime(self):
-        #mod = self.module()
-        #ee = self.jit(mod)
-        #ee.close()
-        #mod.close()
-
-    #def test_module_lifetime2(self):
-        #mod = self.module()
-        #ee = self.jit(mod)
-        #mod.close()
-        #ee.close()
-
-    #def test_add_module(self):
-        #ee = self.jit(self.module())
-        #mod = self.module(asm_mul)
-        #ee.add_module(mod)
-        #with self.assertRaises(KeyError):
-            #ee.add_module(mod)
-        #self.assertFalse(mod.closed)
-        #ee.close()
-        #self.assertTrue(mod.closed)
-
-    #def test_add_module_lifetime(self):
-        #ee = self.jit(self.module())
-        #mod = self.module(asm_mul)
-        #ee.add_module(mod)
-        #mod.close()
-        #ee.close()
-
-    #def test_add_module_lifetime2(self):
-        #ee = self.jit(self.module())
-        #mod = self.module(asm_mul)
-        #ee.add_module(mod)
-        #ee.close()
-        #mod.close()
-
-    #def test_remove_module(self):
-        #ee = self.jit(self.module())
-        #mod = self.module(asm_mul)
-        #ee.add_module(mod)
-        #ee.remove_module(mod)
-        #with self.assertRaises(KeyError):
-            #ee.remove_module(mod)
-        #self.assertFalse(mod.closed)
-        #ee.close()
-        #self.assertFalse(mod.closed)
-
-    #def test_target_data(self):
-        #mod = self.module()
-        #ee = self.jit(mod)
-        #td = ee.target_data
-        ## A singleton is returned
-        #self.assertIs(ee.target_data, td)
-        #str(td)
-        #del mod, ee
-        #str(td)
-
-    #def test_target_data_abi_enquiries(self):
-        #mod = self.module()
-        #ee = self.jit(mod)
-        #td = ee.target_data
-        #gv_i32 = mod.get_global_variable("glob")
-        #gv_i8 = mod.get_global_variable("glob_b")
-        #gv_struct = mod.get_global_variable("glob_struct")
-        ## A global is a pointer, it has the ABI size of a pointer
-        #pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
-        #for g in (gv_i32, gv_i8, gv_struct):
-            #self.assertEqual(td.get_abi_size(g.type), pointer_size)
-
-        #self.assertEqual(td.get_pointee_abi_size(gv_i32.type), 4)
-        #self.assertEqual(td.get_pointee_abi_alignment(gv_i32.type), 4)
-
-        #self.assertEqual(td.get_pointee_abi_size(gv_i8.type), 1)
-        #self.assertIn(td.get_pointee_abi_alignment(gv_i8.type), (1, 2, 4))
-
-        #self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
-        #self.assertIn(td.get_pointee_abi_alignment(gv_struct.type), (4, 8))
-
-    #def test_object_cache_notify(self):
-        #notifies = []
-
-        #def notify(mod, buf):
-            #notifies.append((mod, buf))
-
-        #mod = self.module()
-        #ee = self.jit(mod)
-        #ee.set_object_cache(notify)
-
-        #self.assertEqual(len(notifies), 0)
-        #cfunc = self.get_sum(ee)
-        #cfunc(2, -5)
-        #self.assertEqual(len(notifies), 1)
-        ## The right module object was found
-        #self.assertIs(notifies[0][0], mod)
-        #self.assertIsInstance(notifies[0][1], bytes)
-
-        #notifies[:] = []
-        #mod2 = self.module(asm_mul)
-        #ee.add_module(mod2)
-        #cfunc = self.get_sum(ee, "mul")
-        #self.assertEqual(len(notifies), 1)
-        ## The right module object was found
-        #self.assertIs(notifies[0][0], mod2)
-        #self.assertIsInstance(notifies[0][1], bytes)
-
-    #def test_object_cache_getbuffer(self):
-        #notifies = []
-        #getbuffers = []
-
-        #def notify(mod, buf):
-            #notifies.append((mod, buf))
-
-        #def getbuffer(mod):
-            #getbuffers.append(mod)
-
-        #mod = self.module()
-        #ee = self.jit(mod)
-        #ee.set_object_cache(notify, getbuffer)
-
-        ## First return None from getbuffer(): the object is compiled normally
-        #self.assertEqual(len(notifies), 0)
-        #self.assertEqual(len(getbuffers), 0)
-        #cfunc = self.get_sum(ee)
-        #self.assertEqual(len(notifies), 1)
-        #self.assertEqual(len(getbuffers), 1)
-        #self.assertIs(getbuffers[0], mod)
-        #sum_buffer = notifies[0][1]
-
-        ## Recreate a new EE, and use getbuffer() to return the previously
-        ## compiled object.
-
-        #def getbuffer_successful(mod):
-            #getbuffers.append(mod)
-            #return sum_buffer
-
-        #notifies[:] = []
-        #getbuffers[:] = []
-        ## Use another source module to make sure it is ignored
-        #mod = self.module(asm_mul)
-        #ee = self.jit(mod)
-        #ee.set_object_cache(notify, getbuffer_successful)
-
-        #self.assertEqual(len(notifies), 0)
-        #self.assertEqual(len(getbuffers), 0)
-        #cfunc = self.get_sum(ee)
-        #self.assertEqual(cfunc(2, -5), -3)
-        #self.assertEqual(len(notifies), 0)
-        #self.assertEqual(len(getbuffers), 1)
-
-
-#class JITWithTMTestMixin(JITTestMixin):
-
-    #def test_emit_assembly(self):
-        #"""Test TargetMachineRef.emit_assembly()"""
-        #target_machine = self.target_machine()
-        #mod = self.module()
-        #ee = self.jit(mod, target_machine)
-        #raw_asm = target_machine.emit_assembly(mod)
-        #self.assertIn("sum", raw_asm)
-
-    #def test_emit_object(self):
-        #"""Test TargetMachineRef.emit_object()"""
-        #target_machine = self.target_machine()
-        #mod = self.module()
-        #ee = self.jit(mod, target_machine)
-        #code_object = target_machine.emit_object(mod)
-        #self.assertIsInstance(code_object, six.binary_type)
-        #if sys.platform.startswith('linux'):
-            ## Sanity check
-            #self.assertIn(b"ELF", code_object[:10])
-
-
-#class TestMCJit(BaseTest, JITWithTMTestMixin):
-    #"""
-    #Test JIT engines created with create_mcjit_compiler().
-    #"""
-
-    #def jit(self, mod, target_machine=None):
-        #if target_machine is None:
-            #target_machine = self.target_machine()
-        #return llvm.create_mcjit_compiler(mod, target_machine)
-
-
-#class TestValueRef(BaseTest):
-
-    #def test_str(self):
-        #mod = self.module()
-        #glob = mod.get_global_variable("glob")
-        #self.assertEqual(str(glob), "@glob = global i32 0")
-
-    #def test_name(self):
-        #mod = self.module()
-        #glob = mod.get_global_variable("glob")
-        #self.assertEqual(glob.name, "glob")
-        #glob.name = "foobar"
-        #self.assertEqual(glob.name, "foobar")
-
-    #def test_linkage(self):
-        #mod = self.module()
-        #glob = mod.get_global_variable("glob")
-        #linkage = glob.linkage
-        #self.assertIsInstance(glob.linkage, llvm.Linkage)
-        #glob.linkage = linkage
-        #self.assertEqual(glob.linkage, linkage)
-        #for linkage in ("internal", "external"):
-            #glob.linkage = linkage
-            #self.assertIsInstance(glob.linkage, llvm.Linkage)
-            #self.assertEqual(glob.linkage.name, linkage)
-
-    #def test_visibility(self):
-        #mod = self.module()
-        #glob = mod.get_global_variable("glob")
-        #visibility = glob.visibility
-        #self.assertIsInstance(glob.visibility, llvm.Visibility)
-        #glob.visibility = visibility
-        #self.assertEqual(glob.visibility, visibility)
-        #for visibility in ("hidden", "protected", "default"):
-            #glob.visibility = visibility
-            #self.assertIsInstance(glob.visibility, llvm.Visibility)
-            #self.assertEqual(glob.visibility.name, visibility)
-
-    #def test_storage_class(self):
-        #mod = self.module()
-        #glob = mod.get_global_variable("glob")
-        #storage_class = glob.storage_class
-        #self.assertIsInstance(glob.storage_class, llvm.StorageClass)
-        #glob.storage_class = storage_class
-        #self.assertEqual(glob.storage_class, storage_class)
-        #for storage_class in ("dllimport", "dllexport", "default"):
-            #glob.storage_class = storage_class
-            #self.assertIsInstance(glob.storage_class, llvm.StorageClass)
-            #self.assertEqual(glob.storage_class.name, storage_class)
-
-    #def test_add_function_attribute(self):
-        #mod = self.module()
-        #fn = mod.get_function("sum")
-        #fn.add_function_attribute("zext")
-
-    #def test_module(self):
-        #mod = self.module()
-        #glob = mod.get_global_variable("glob")
-        #self.assertIs(glob.module, mod)
-
-    #def test_type(self):
-        #mod = self.module()
-        #glob = mod.get_global_variable("glob")
-        #tp = glob.type
-        #self.assertIsInstance(tp, ffi.LLVMTypeRef)
-
-    #def test_close(self):
-        #glob = self.glob()
-        #glob.close()
-        #glob.close()
-
-    #def test_is_declaration(self):
-        #defined = self.module().get_function('sum')
-        #declared = self.module(asm_sum_declare).get_function('sum')
-        #self.assertFalse(defined.is_declaration)
-        #self.assertTrue(declared.is_declaration)
-
-
-#class TestTarget(BaseTest):
-
-    #def test_from_triple(self):
-        #f = llvm.Target.from_triple
-        #with self.assertRaises(RuntimeError) as cm:
-            #f("foobar")
-        #self.assertIn("No available targets are compatible with this triple",
-                      #str(cm.exception))
-        #triple = llvm.get_default_triple()
-        #target = f(triple)
-        #self.assertEqual(target.triple, triple)
-        #target.close()
-
-    #def test_create_target_machine(self):
-        #target = llvm.Target.from_triple(llvm.get_default_triple())
-        ## With the default settings
-        #target.create_target_machine('', '', 1, 'default', 'default')
-        ## With the host's CPU
-        #cpu = llvm.get_host_cpu_name()
-        #target.create_target_machine(cpu, '', 1, 'default', 'default')
-
-    #def test_name(self):
-        #t = llvm.Target.from_triple(llvm.get_default_triple())
-        #u = llvm.Target.from_default_triple()
-        #self.assertIsInstance(t.name, str)
-        #self.assertEqual(t.name, u.name)
-
-    #def test_description(self):
-        #t = llvm.Target.from_triple(llvm.get_default_triple())
-        #u = llvm.Target.from_default_triple()
-        #self.assertIsInstance(t.description, str)
-        #self.assertEqual(t.description, u.description)
-
-    #def test_str(self):
-        #target = llvm.Target.from_triple(llvm.get_default_triple())
-        #s = str(target)
-        #self.assertIn(target.name, s)
-        #self.assertIn(target.description, s)
-
-
-#class TestTargetData(BaseTest):
-
-    #def target_data(self):
-        #return llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
-
-    #def test_get_abi_size(self):
-        #td = self.target_data()
-        #glob = self.glob()
-        #self.assertEqual(td.get_abi_size(glob.type), 8)
-
-    #def test_add_pass(self):
-        #td = self.target_data()
-        #pm = llvm.create_module_pass_manager()
-        #td.add_pass(pm)
-
-
-#class TestTargetMachine(BaseTest):
-
-    #def test_add_target_data_pass(self):
-        #tm = self.target_machine()
-        #pm = llvm.create_module_pass_manager()
-        #tm.target_data.add_pass(pm)
-
-    #def test_add_analysis_passes(self):
-        #tm = self.target_machine()
-        #pm = llvm.create_module_pass_manager()
-        #tm.add_analysis_passes(pm)
-
-    #def test_target_data_from_tm(self):
-        #tm = self.target_machine()
-        #td = tm.target_data
-        #mod = self.module()
-        #gv_i32 = mod.get_global_variable("glob")
-        ## A global is a pointer, it has the ABI size of a pointer
-        #pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
-        #self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
-
-
-#class TestPassManagerBuilder(BaseTest):
-
-    #def pmb(self):
-        #return llvm.PassManagerBuilder()
-
-    #def test_old_api(self):
-        ## Test the create_pass_manager_builder() factory function
-        #pmb = llvm.create_pass_manager_builder()
-        #pmb.inlining_threshold = 2
-        #pmb.opt_level = 3
-
-    #def test_close(self):
-        #pmb = self.pmb()
-        #pmb.close()
-        #pmb.close()
-
-    #def test_opt_level(self):
-        #pmb = self.pmb()
-        #self.assertIsInstance(pmb.opt_level, six.integer_types)
-        #for i in range(4):
-            #pmb.opt_level = i
-            #self.assertEqual(pmb.opt_level, i)
-
-    #def test_size_level(self):
-        #pmb = self.pmb()
-        #self.assertIsInstance(pmb.size_level, six.integer_types)
-        #for i in range(4):
-            #pmb.size_level = i
-            #self.assertEqual(pmb.size_level, i)
-
-    #def test_inlining_threshold(self):
-        #pmb = self.pmb()
-        #with self.assertRaises(NotImplementedError):
-            #pmb.inlining_threshold
-        #for i in (25, 80, 350):
-            #pmb.inlining_threshold = i
-
-    #def test_disable_unit_at_a_time(self):
-        #pmb = self.pmb()
-        #self.assertIsInstance(pmb.disable_unit_at_a_time, bool)
-        #for b in (True, False):
-            #pmb.disable_unit_at_a_time = b
-            #self.assertEqual(pmb.disable_unit_at_a_time, b)
-
-    #def test_disable_unroll_loops(self):
-        #pmb = self.pmb()
-        #self.assertIsInstance(pmb.disable_unroll_loops, bool)
-        #for b in (True, False):
-            #pmb.disable_unroll_loops = b
-            #self.assertEqual(pmb.disable_unroll_loops, b)
-
-    #def test_populate_module_pass_manager(self):
-        #pmb = self.pmb()
-        #pm = llvm.create_module_pass_manager()
-        #pmb.populate(pm)
-        #pmb.close()
-        #pm.close()
-
-    #def test_populate_function_pass_manager(self):
-        #mod = self.module()
-        #pmb = self.pmb()
-        #pm = llvm.create_function_pass_manager(mod)
-        #pmb.populate(pm)
-        #pmb.close()
-        #pm.close()
-
-
-#class PassManagerTestMixin(object):
-
-    #def pmb(self):
-        #pmb = llvm.create_pass_manager_builder()
-        #pmb.opt_level = 2
-        #return pmb
-
-    #def test_close(self):
-        #pm = self.pm()
-        #pm.close()
-        #pm.close()
-
-
-#class TestModulePassManager(BaseTest, PassManagerTestMixin):
-
-    #def pm(self):
-        #return llvm.create_module_pass_manager()
-
-    #def test_run(self):
-        #pm = self.pm()
-        #self.pmb().populate(pm)
-        #mod = self.module()
-        #orig_asm = str(mod)
-        #pm.run(mod)
-        #opt_asm = str(mod)
-        ## Quick check that optimizations were run
-        #self.assertIn("%.3", orig_asm)
-        #self.assertNotIn("%.3", opt_asm)
-
-
-#class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
-
-    #def pm(self, mod=None):
-        #mod = mod or self.module()
-        #return llvm.create_function_pass_manager(mod)
-
-    #def test_initfini(self):
-        #pm = self.pm()
-        #pm.initialize()
-        #pm.finalize()
-
-    #def test_run(self):
-        #mod = self.module()
-        #fn = mod.get_function("sum")
-        #pm = self.pm(mod)
-        #self.pmb().populate(pm)
-        #mod.close()
-        #orig_asm = str(fn)
-        #pm.initialize()
-        #pm.run(fn)
-        #pm.finalize()
-        #opt_asm = str(fn)
-        ## Quick check that optimizations were run
-        #self.assertIn("%.4", orig_asm)
-        #self.assertNotIn("%.4", opt_asm)
-
-
-#class TestPasses(BaseTest, PassManagerTestMixin):
-
-    #def pm(self):
-        #return llvm.create_module_pass_manager()
-
-    #def test_populate(self):
-        #pm = self.pm()
-        #pm.add_constant_merge_pass()
-        #pm.add_dead_arg_elimination_pass()
-        #pm.add_function_attrs_pass()
-        #pm.add_function_inlining_pass(225)
-        #pm.add_global_dce_pass()
-        #pm.add_global_optimizer_pass()
-        #pm.add_ipsccp_pass()
-        #pm.add_dead_code_elimination_pass()
-        #pm.add_cfg_simplification_pass()
-        #pm.add_gvn_pass()
-        #pm.add_instruction_combining_pass()
-        #pm.add_licm_pass()
-        #pm.add_sccp_pass()
-        #pm.add_sroa_pass()
-        #pm.add_type_based_alias_analysis_pass()
-        #pm.add_basic_alias_analysis_pass()
-
-
-#class TestDylib(BaseTest):
-
-    #def test_bad_library(self):
-        #with self.assertRaises(RuntimeError):
-            #llvm.load_library_permanently("zzzasdkf;jasd;l")
-
-    #@unittest.skipUnless(platform.system() in ["Linux", "Darwin"],
-                         #"test only works on Linux and Darwin")
-    #def test_libm(self):
-        #system = platform.system()
-        #if system == "Linux":
-            #libm = find_library("m")
-        #elif system == "Darwin":
-            #libm = find_library("libm")
-        #llvm.load_library_permanently(libm)
+@unittest.skipIf(True, "foo")
+class TestMisc(BaseTest):
+    """
+    Test miscellaneous functions in llvm.binding.
+    """
+
+    def test_parse_assembly(self):
+        self.module(asm_sum)
+
+    def test_parse_assembly_error(self):
+        with self.assertRaises(RuntimeError) as cm:
+            self.module(asm_parse_error)
+        s = str(cm.exception)
+        self.assertIn("parsing error", s)
+        self.assertIn("invalid operand type", s)
+
+    def test_dylib_symbols(self):
+        llvm.add_symbol("__xyzzy", 1234)
+        llvm.add_symbol("__xyzzy", 5678)
+        addr = llvm.address_of_symbol("__xyzzy")
+        self.assertEqual(addr, 5678)
+        addr = llvm.address_of_symbol("__foobar")
+        self.assertIs(addr, None)
+
+    def test_get_default_triple(self):
+        triple = llvm.get_default_triple()
+        self.assertIsInstance(triple, str)
+        self.assertTrue(triple)
+
+    def test_get_process_triple(self):
+        triple = llvm.get_process_triple()
+        default = llvm.get_default_triple()
+        self.assertIsInstance(triple, str)
+        self.assertTrue(triple)
+
+        default_parts = default.split('-')
+        triple_parts = triple.split('-')
+        # Arch must be equal
+        self.assertEqual(default_parts[0], triple_parts[0])
+
+    def test_get_host_cpu_features(self):
+        features = llvm.get_host_cpu_features()
+        self.assertIsInstance(features, dict)
+        self.assertIsInstance(features, llvm.FeatureMap)
+        for k, v in features.items():
+            self.assertIsInstance(k, str)
+            self.assertTrue(k)  # feature string cannot be empty
+            self.assertIsInstance(v, bool)
+        self.assertIsInstance(features.flatten(), str)
+
+        re_term = r"[+\-][a-zA-Z0-9\._]+"
+        regex = r"^({0}|{0}(,{0})*)?$".format(re_term)
+        # quick check for our regex
+        self.assertIsNotNone(re.match(regex, ""))
+        self.assertIsNotNone(re.match(regex, "+aa"))
+        self.assertIsNotNone(re.match(regex, "+a,-bb"))
+        # check CpuFeature.flatten()
+        self.assertIsNotNone(re.match(regex, features.flatten()))
+
+    def test_get_host_cpu_name(self):
+        cpu = llvm.get_host_cpu_name()
+        self.assertIsInstance(cpu, str)
+        self.assertTrue(cpu)
+
+    def test_initfini(self):
+        code = """if 1:
+            from llvmlite import binding as llvm
+
+            llvm.initialize()
+            llvm.initialize_native_target()
+            llvm.initialize_native_asmprinter()
+            llvm.initialize_all_targets()
+            llvm.initialize_all_asmprinters()
+            llvm.shutdown()
+            """
+        subprocess.check_call([sys.executable, "-c", code])
+
+    def test_set_option(self):
+        # We cannot set an option multiple times (LLVM would exit() the
+        # process), so run the code in a subprocess.
+        code = """if 1:
+            from llvmlite import binding as llvm
+
+            llvm.set_option("progname", "-debug-pass=Disabled")
+            """
+        subprocess.check_call([sys.executable, "-c", code])
+
+    def test_version(self):
+        major, minor, patch = llvm.llvm_version_info
+        self.assertIn((major, minor), [(3, 6), (3, 7)])
+        self.assertIn(patch, range(10))
+
+    def test_check_jit_execution(self):
+        llvm.check_jit_execution()
+
+    @unittest.skipIf(no_de_locale(), "Locale not available")
+    def test_print_double_locale(self):
+        m = self.module(asm_double_locale)
+        expect = str(m)
+        # Change the locale so that comma is used as decimal-point
+        # to trigger the LLVM bug (llvmlite issue #80)
+        locale.setlocale(locale.LC_ALL, 'de_DE')
+        # The LLVM bug is trigged by print the module with double constant
+        got = str(m)
+        # Changing the locale should not affect the LLVM IR
+        self.assertEqual(expect, got)
+
+
+@unittest.skipIf(True, "foo")
+class TestModuleRef(BaseTest):
+
+    def test_str(self):
+        mod = self.module()
+        s = str(mod).strip()
+        self.assertTrue(s.startswith('; ModuleID ='), s)
+
+    def test_close(self):
+        mod = self.module()
+        str(mod)
+        mod.close()
+        with self.assertRaises(ctypes.ArgumentError):
+            str(mod)
+        mod.close()
+
+    def test_with(self):
+        mod = self.module()
+        str(mod)
+        with mod:
+            str(mod)
+        with self.assertRaises(ctypes.ArgumentError):
+            str(mod)
+        with self.assertRaises(RuntimeError):
+            with mod:
+                pass
+
+    def test_name(self):
+        mod = self.module()
+        mod.name = "foo"
+        self.assertEqual(mod.name, "foo")
+        mod.name = "bar"
+        self.assertEqual(mod.name, "bar")
+
+    def test_data_layout(self):
+        mod = self.module()
+        s = mod.data_layout
+        self.assertIsInstance(s, str)
+        mod.data_layout = s
+        self.assertEqual(s, mod.data_layout)
+
+    def test_triple(self):
+        mod = self.module()
+        s = mod.triple
+        self.assertEqual(s, llvm.get_default_triple())
+        mod.triple = ''
+        self.assertEqual(mod.triple, '')
+
+    def test_verify(self):
+        # Verify successful
+        mod = self.module()
+        self.assertIs(mod.verify(), None)
+        # Verify failed
+        mod = self.module(asm_verification_fail)
+        with self.assertRaises(RuntimeError) as cm:
+            mod.verify()
+        s = str(cm.exception)
+        self.assertIn("%.bug = add i32 1, %.bug", s)
+
+    def test_get_function(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        self.assertIsInstance(fn, llvm.ValueRef)
+        self.assertEqual(fn.name, "sum")
+
+        with self.assertRaises(NameError):
+            mod.get_function("foo")
+
+        # Check that fn keeps the module instance alive
+        del mod
+        str(fn.module)
+
+    def test_get_global_variable(self):
+        mod = self.module()
+        gv = mod.get_global_variable("glob")
+        self.assertIsInstance(gv, llvm.ValueRef)
+        self.assertEqual(gv.name, "glob")
+
+        with self.assertRaises(NameError):
+            mod.get_global_variable("bar")
+
+        # Check that gv keeps the module instance alive
+        del mod
+        str(gv.module)
+
+    def test_global_variables(self):
+        mod = self.module()
+        it = mod.global_variables
+        del mod
+        globs = sorted(it, key=lambda value: value.name)
+        self.assertEqual(len(globs), 4)
+        self.assertEqual([g.name for g in globs],
+                         ["glob", "glob_b", "glob_f", "glob_struct"])
+
+    def test_functions(self):
+        mod = self.module()
+        it = mod.functions
+        del mod
+        funcs = list(it)
+        self.assertEqual(len(funcs), 1)
+        self.assertEqual(funcs[0].name, "sum")
+
+    def test_link_in(self):
+        dest = self.module()
+        src = self.module(asm_mul)
+        dest.link_in(src)
+        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
+        dest.get_function("mul")
+        dest.close()
+        with self.assertRaises(ctypes.ArgumentError):
+            src.get_function("mul")
+
+    def test_link_in_preserve(self):
+        dest = self.module()
+        src2 = self.module(asm_mul)
+        dest.link_in(src2, preserve=True)
+        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
+        dest.close()
+        self.assertEqual(sorted(f.name for f in src2.functions), ["mul"])
+        src2.get_function("mul")
+
+    def test_link_in_error(self):
+        # Raise an error by trying to link two modules with the same global
+        # definition "sum".
+        dest = self.module()
+        src = self.module(asm_sum2)
+        with self.assertRaises(RuntimeError) as cm:
+            dest.link_in(src)
+        self.assertIn("symbol multiply defined", str(cm.exception))
+
+    def test_as_bitcode(self):
+        mod = self.module()
+        bc = mod.as_bitcode()
+        # Refer to http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00064
+        # and http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00092
+        bitcode_wrapper_magic = b'\xde\xc0\x17\x0b'
+        bitcode_magic = b'BC'
+        self.assertTrue(bc.startswith(bitcode_magic) or
+                        bc.startswith(bitcode_wrapper_magic))
+
+    def test_parse_bitcode_error(self):
+        with self.assertRaises(RuntimeError) as cm:
+            llvm.parse_bitcode(b"")
+        self.assertIn("LLVM bitcode parsing error", str(cm.exception))
+        self.assertIn("Invalid bitcode signature", str(cm.exception))
+
+    def test_bitcode_roundtrip(self):
+        bc = self.module().as_bitcode()
+        mod = llvm.parse_bitcode(bc)
+        self.assertEqual(mod.as_bitcode(), bc)
+        mod.get_function("sum")
+        mod.get_global_variable("glob")
+
+    def test_cloning(self):
+        m = self.module()
+        cloned = m.clone()
+        self.assertIsNot(cloned, m)
+        self.assertEqual(cloned.as_bitcode(), m.as_bitcode())
+
+
+class JITTestMixin(object):
+    """
+    Mixin for ExecutionEngine tests.
+    """
+
+    def get_sum(self, ee, func_name="sum"):
+        ee.finalize_object()
+        cfptr = ee.get_function_address(func_name)
+        self.assertTrue(cfptr)
+        return CFUNCTYPE(c_int, c_int, c_int)(cfptr)
+
+    def test_run_code(self):
+        mod = self.module()
+        with self.jit(mod) as ee:
+            cfunc = self.get_sum(ee)
+            res = cfunc(2, -5)
+            self.assertEqual(-3, res)
+
+    def test_close(self):
+        ee = self.jit(self.module())
+        ee.close()
+        ee.close()
+        with self.assertRaises(ctypes.ArgumentError):
+            ee.finalize_object()
+
+    def test_with(self):
+        ee = self.jit(self.module())
+        with ee:
+            pass
+        with self.assertRaises(RuntimeError):
+            with ee:
+                pass
+        with self.assertRaises(ctypes.ArgumentError):
+            ee.finalize_object()
+
+    def test_module_lifetime(self):
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.close()
+        mod.close()
+
+    def test_module_lifetime2(self):
+        mod = self.module()
+        ee = self.jit(mod)
+        mod.close()
+        ee.close()
+
+    def test_add_module(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        with self.assertRaises(KeyError):
+            ee.add_module(mod)
+        self.assertFalse(mod.closed)
+        ee.close()
+        self.assertTrue(mod.closed)
+
+    def test_add_module_lifetime(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        mod.close()
+        ee.close()
+
+    def test_add_module_lifetime2(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        ee.close()
+        mod.close()
+
+    def test_remove_module(self):
+        ee = self.jit(self.module())
+        mod = self.module(asm_mul)
+        ee.add_module(mod)
+        ee.remove_module(mod)
+        with self.assertRaises(KeyError):
+            ee.remove_module(mod)
+        self.assertFalse(mod.closed)
+        ee.close()
+        self.assertFalse(mod.closed)
+
+    def test_target_data(self):
+        mod = self.module()
+        ee = self.jit(mod)
+        td = ee.target_data
+        # A singleton is returned
+        self.assertIs(ee.target_data, td)
+        str(td)
+        del mod, ee
+        str(td)
+
+    def test_target_data_abi_enquiries(self):
+        mod = self.module()
+        ee = self.jit(mod)
+        td = ee.target_data
+        gv_i32 = mod.get_global_variable("glob")
+        gv_i8 = mod.get_global_variable("glob_b")
+        gv_struct = mod.get_global_variable("glob_struct")
+        # A global is a pointer, it has the ABI size of a pointer
+        pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
+        for g in (gv_i32, gv_i8, gv_struct):
+            self.assertEqual(td.get_abi_size(g.type), pointer_size)
+
+        self.assertEqual(td.get_pointee_abi_size(gv_i32.type), 4)
+        self.assertEqual(td.get_pointee_abi_alignment(gv_i32.type), 4)
+
+        self.assertEqual(td.get_pointee_abi_size(gv_i8.type), 1)
+        self.assertIn(td.get_pointee_abi_alignment(gv_i8.type), (1, 2, 4))
+
+        self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
+        self.assertIn(td.get_pointee_abi_alignment(gv_struct.type), (4, 8))
+
+    def test_object_cache_notify(self):
+        notifies = []
+
+        def notify(mod, buf):
+            notifies.append((mod, buf))
+
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.set_object_cache(notify)
+
+        self.assertEqual(len(notifies), 0)
+        cfunc = self.get_sum(ee)
+        cfunc(2, -5)
+        self.assertEqual(len(notifies), 1)
+        # The right module object was found
+        self.assertIs(notifies[0][0], mod)
+        self.assertIsInstance(notifies[0][1], bytes)
+
+        notifies[:] = []
+        mod2 = self.module(asm_mul)
+        ee.add_module(mod2)
+        cfunc = self.get_sum(ee, "mul")
+        self.assertEqual(len(notifies), 1)
+        # The right module object was found
+        self.assertIs(notifies[0][0], mod2)
+        self.assertIsInstance(notifies[0][1], bytes)
+
+    def test_object_cache_getbuffer(self):
+        notifies = []
+        getbuffers = []
+
+        def notify(mod, buf):
+            notifies.append((mod, buf))
+
+        def getbuffer(mod):
+            getbuffers.append(mod)
+
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.set_object_cache(notify, getbuffer)
+
+        # First return None from getbuffer(): the object is compiled normally
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 0)
+        cfunc = self.get_sum(ee)
+        self.assertEqual(len(notifies), 1)
+        self.assertEqual(len(getbuffers), 1)
+        self.assertIs(getbuffers[0], mod)
+        sum_buffer = notifies[0][1]
+
+        # Recreate a new EE, and use getbuffer() to return the previously
+        # compiled object.
+
+        def getbuffer_successful(mod):
+            getbuffers.append(mod)
+            return sum_buffer
+
+        notifies[:] = []
+        getbuffers[:] = []
+        # Use another source module to make sure it is ignored
+        mod = self.module(asm_mul)
+        ee = self.jit(mod)
+        ee.set_object_cache(notify, getbuffer_successful)
+
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 0)
+        cfunc = self.get_sum(ee)
+        self.assertEqual(cfunc(2, -5), -3)
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 1)
+
+
+class JITWithTMTestMixin(JITTestMixin):
+
+    def test_emit_assembly(self):
+        """Test TargetMachineRef.emit_assembly()"""
+        target_machine = self.target_machine()
+        mod = self.module()
+        ee = self.jit(mod, target_machine)
+        raw_asm = target_machine.emit_assembly(mod)
+        self.assertIn("sum", raw_asm)
+
+    def test_emit_object(self):
+        """Test TargetMachineRef.emit_object()"""
+        target_machine = self.target_machine()
+        mod = self.module()
+        ee = self.jit(mod, target_machine)
+        code_object = target_machine.emit_object(mod)
+        self.assertIsInstance(code_object, six.binary_type)
+        if sys.platform.startswith('linux'):
+            # Sanity check
+            self.assertIn(b"ELF", code_object[:10])
+
+
+@unittest.skipIf(True, "foo")
+class TestMCJit(BaseTest, JITWithTMTestMixin):
+    """
+    Test JIT engines created with create_mcjit_compiler().
+    """
+
+    def jit(self, mod, target_machine=None):
+        if target_machine is None:
+            target_machine = self.target_machine()
+        return llvm.create_mcjit_compiler(mod, target_machine)
+
+
+@unittest.skipIf(True, "foo")
+class TestValueRef(BaseTest):
+
+    def test_str(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(str(glob), "@glob = global i32 0")
+
+    def test_name(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(glob.name, "glob")
+        glob.name = "foobar"
+        self.assertEqual(glob.name, "foobar")
+
+    def test_linkage(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        linkage = glob.linkage
+        self.assertIsInstance(glob.linkage, llvm.Linkage)
+        glob.linkage = linkage
+        self.assertEqual(glob.linkage, linkage)
+        for linkage in ("internal", "external"):
+            glob.linkage = linkage
+            self.assertIsInstance(glob.linkage, llvm.Linkage)
+            self.assertEqual(glob.linkage.name, linkage)
+
+    def test_visibility(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        visibility = glob.visibility
+        self.assertIsInstance(glob.visibility, llvm.Visibility)
+        glob.visibility = visibility
+        self.assertEqual(glob.visibility, visibility)
+        for visibility in ("hidden", "protected", "default"):
+            glob.visibility = visibility
+            self.assertIsInstance(glob.visibility, llvm.Visibility)
+            self.assertEqual(glob.visibility.name, visibility)
+
+    def test_storage_class(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        storage_class = glob.storage_class
+        self.assertIsInstance(glob.storage_class, llvm.StorageClass)
+        glob.storage_class = storage_class
+        self.assertEqual(glob.storage_class, storage_class)
+        for storage_class in ("dllimport", "dllexport", "default"):
+            glob.storage_class = storage_class
+            self.assertIsInstance(glob.storage_class, llvm.StorageClass)
+            self.assertEqual(glob.storage_class.name, storage_class)
+
+    def test_add_function_attribute(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        fn.add_function_attribute("zext")
+
+    def test_module(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertIs(glob.module, mod)
+
+    def test_type(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        tp = glob.type
+        self.assertIsInstance(tp, ffi.LLVMTypeRef)
+
+    def test_close(self):
+        glob = self.glob()
+        glob.close()
+        glob.close()
+
+    def test_is_declaration(self):
+        defined = self.module().get_function('sum')
+        declared = self.module(asm_sum_declare).get_function('sum')
+        self.assertFalse(defined.is_declaration)
+        self.assertTrue(declared.is_declaration)
+
+
+@unittest.skipIf(True, "foo")
+class TestTarget(BaseTest):
+
+    def test_from_triple(self):
+        f = llvm.Target.from_triple
+        with self.assertRaises(RuntimeError) as cm:
+            f("foobar")
+        self.assertIn("No available targets are compatible with this triple",
+                      str(cm.exception))
+        triple = llvm.get_default_triple()
+        target = f(triple)
+        self.assertEqual(target.triple, triple)
+        target.close()
+
+    def test_create_target_machine(self):
+        target = llvm.Target.from_triple(llvm.get_default_triple())
+        # With the default settings
+        target.create_target_machine('', '', 1, 'default', 'default')
+        # With the host's CPU
+        cpu = llvm.get_host_cpu_name()
+        target.create_target_machine(cpu, '', 1, 'default', 'default')
+
+    def test_name(self):
+        t = llvm.Target.from_triple(llvm.get_default_triple())
+        u = llvm.Target.from_default_triple()
+        self.assertIsInstance(t.name, str)
+        self.assertEqual(t.name, u.name)
+
+    def test_description(self):
+        t = llvm.Target.from_triple(llvm.get_default_triple())
+        u = llvm.Target.from_default_triple()
+        self.assertIsInstance(t.description, str)
+        self.assertEqual(t.description, u.description)
+
+    def test_str(self):
+        target = llvm.Target.from_triple(llvm.get_default_triple())
+        s = str(target)
+        self.assertIn(target.name, s)
+        self.assertIn(target.description, s)
+
+
+@unittest.skipIf(True, "foo")
+class TestTargetData(BaseTest):
+
+    def target_data(self):
+        return llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+
+    def test_get_abi_size(self):
+        td = self.target_data()
+        glob = self.glob()
+        self.assertEqual(td.get_abi_size(glob.type), 8)
+
+    def test_add_pass(self):
+        td = self.target_data()
+        pm = llvm.create_module_pass_manager()
+        td.add_pass(pm)
+
+
+@unittest.skipIf(True, "foo")
+class TestTargetMachine(BaseTest):
+
+    def test_add_target_data_pass(self):
+        tm = self.target_machine()
+        pm = llvm.create_module_pass_manager()
+        tm.target_data.add_pass(pm)
+
+    def test_add_analysis_passes(self):
+        tm = self.target_machine()
+        pm = llvm.create_module_pass_manager()
+        tm.add_analysis_passes(pm)
+
+    def test_target_data_from_tm(self):
+        tm = self.target_machine()
+        td = tm.target_data
+        mod = self.module()
+        gv_i32 = mod.get_global_variable("glob")
+        # A global is a pointer, it has the ABI size of a pointer
+        pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
+        self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
+
+
+class TestPassManagerBuilder(BaseTest):
+
+    def pmb(self):
+        return llvm.PassManagerBuilder()
+
+    def test_old_api(self):
+        # Test the create_pass_manager_builder() factory function
+        pmb = llvm.create_pass_manager_builder()
+        pmb.inlining_threshold = 2
+        pmb.opt_level = 3
+
+    def test_close(self):
+        pmb = self.pmb()
+        pmb.close()
+        pmb.close()
+
+    def test_opt_level(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.opt_level, six.integer_types)
+        for i in range(4):
+            pmb.opt_level = i
+            self.assertEqual(pmb.opt_level, i)
+
+    def test_size_level(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.size_level, six.integer_types)
+        for i in range(4):
+            pmb.size_level = i
+            self.assertEqual(pmb.size_level, i)
+
+    def test_inlining_threshold(self):
+        pmb = self.pmb()
+        with self.assertRaises(NotImplementedError):
+            pmb.inlining_threshold
+        for i in (25, 80, 350):
+            pmb.inlining_threshold = i
+
+    def test_disable_unit_at_a_time(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.disable_unit_at_a_time, bool)
+        for b in (True, False):
+            pmb.disable_unit_at_a_time = b
+            self.assertEqual(pmb.disable_unit_at_a_time, b)
+
+    def test_disable_unroll_loops(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.disable_unroll_loops, bool)
+        for b in (True, False):
+            pmb.disable_unroll_loops = b
+            self.assertEqual(pmb.disable_unroll_loops, b)
+
+    def test_populate_module_pass_manager(self):
+        pmb = self.pmb()
+        pm = llvm.create_module_pass_manager()
+        pmb.populate(pm)
+        pmb.close()
+        pm.close()
+
+    def test_populate_function_pass_manager(self):
+        mod = self.module()
+        pmb = self.pmb()
+        pm = llvm.create_function_pass_manager(mod)
+        pmb.populate(pm)
+        pmb.close()
+        pm.close()
+
+
+class PassManagerTestMixin(object):
+
+    def pmb(self):
+        pmb = llvm.create_pass_manager_builder()
+        pmb.opt_level = 2
+        return pmb
+
+    def test_close(self):
+        pm = self.pm()
+        pm.close()
+        pm.close()
+
+
+@unittest.skipIf(True, "foo")
+class TestModulePassManager(BaseTest, PassManagerTestMixin):
+
+    def pm(self):
+        return llvm.create_module_pass_manager()
+
+    def test_run(self):
+        pm = self.pm()
+        self.pmb().populate(pm)
+        mod = self.module()
+        orig_asm = str(mod)
+        pm.run(mod)
+        opt_asm = str(mod)
+        # Quick check that optimizations were run
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", opt_asm)
+
+
+@unittest.skipIf(True, "foo")
+class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
+
+    def pm(self, mod=None):
+        mod = mod or self.module()
+        return llvm.create_function_pass_manager(mod)
+
+    def test_initfini(self):
+        pm = self.pm()
+        pm.initialize()
+        pm.finalize()
+
+    def test_run(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        pm = self.pm(mod)
+        self.pmb().populate(pm)
+        mod.close()
+        orig_asm = str(fn)
+        pm.initialize()
+        pm.run(fn)
+        pm.finalize()
+        opt_asm = str(fn)
+        # Quick check that optimizations were run
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", opt_asm)
+
+
+@unittest.skipIf(True, "foo")
+class TestPasses(BaseTest, PassManagerTestMixin):
+
+    def pm(self):
+        return llvm.create_module_pass_manager()
+
+    def test_populate(self):
+        pm = self.pm()
+        pm.add_constant_merge_pass()
+        pm.add_dead_arg_elimination_pass()
+        pm.add_function_attrs_pass()
+        pm.add_function_inlining_pass(225)
+        pm.add_global_dce_pass()
+        pm.add_global_optimizer_pass()
+        pm.add_ipsccp_pass()
+        pm.add_dead_code_elimination_pass()
+        pm.add_cfg_simplification_pass()
+        pm.add_gvn_pass()
+        pm.add_instruction_combining_pass()
+        pm.add_licm_pass()
+        pm.add_sccp_pass()
+        pm.add_sroa_pass()
+        pm.add_type_based_alias_analysis_pass()
+        pm.add_basic_alias_analysis_pass()
+
+
+@unittest.skipIf(True, "foo")
+class TestDylib(BaseTest):
+
+    def test_bad_library(self):
+        with self.assertRaises(RuntimeError):
+            llvm.load_library_permanently("zzzasdkf;jasd;l")
+
+    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"],
+                         "test only works on Linux and Darwin")
+    def test_libm(self):
+        system = platform.system()
+        if system == "Linux":
+            libm = find_library("m")
+        elif system == "Darwin":
+            libm = find_library("libm")
+        llvm.load_library_permanently(libm)
 
 
 if __name__ == "__main__":
