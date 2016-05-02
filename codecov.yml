@@ -1,14 +1,18 @@
 # Configuration for codecov.io
 
-foo:
-    bar
 comment:
     layout: "header, changes, diff"
 
+coverage:
+    ignore:
+        - "numba/cuda/.*"
+        - "numba/hsa/.*"
+
 status:
+    patch:
+        # This check can mark a build failed if too much new code
+        # is not covered (which happens often with JITted functions).
+        enabled: no
     project:
         # The build fails if total project coverage drops by more than 3%
-        target: autoz
-        threshold: 3z
-    patch:
         enabled: no
