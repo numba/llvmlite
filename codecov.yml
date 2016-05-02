@@ -1,0 +1,12 @@
+# Configuration for codecov.io
+
+comment:
+    layout: "header, changes, diff, suggestions, uncovered"
+
+status:
+    project:
+        # The build fails if total project coverage drops by more than 3%
+        target: auto
+        threshold: 3
+    patch:
+        enabled: no
