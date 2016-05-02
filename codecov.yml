@@ -1,4 +1,6 @@
 # Configuration for codecov.io
+# When editing this file, please validate its contents using:
+#   curl -X POST --data-binary @- https://codecov.io/validate < codecov.yml
 
 comment:
     layout: "header, diff, changes, uncovered"
