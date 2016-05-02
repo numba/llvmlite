@@ -6,7 +6,7 @@ engines:
         config:
             languages:
                 python:
-                    mass_threshold: 40
+                    mass_threshold: 50
     fixme:
         enabled: true
     pep8:
@@ -16,9 +16,8 @@ engines:
 
 ratings:
     paths:
-        - "**.py"
+        - "llvmlite/**.py"
 
 exclude_paths:
-    - "versioneer.py"
     - "**/six.py"
     - "**/_version.py"
