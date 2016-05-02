@@ -1,0 +1,24 @@
+# Configuration for landscape.io
+# See http://docs.landscape.io/configuration.html
+# and also http://prospector.landscape.io/en/master/profiles.html
+
+doc-warnings: false
+
+test-warnings: false
+
+strictness: medium
+
+max-line-length: 85
+
+autodetect: yes
+
+ignore-paths:
+    - docs/
+    - setup.py
+    - llvmlite/six.py
+    - llvmlite/_version.py
+    - versioneer.py
+
+python-targets:
+    - 2
+    - 3
