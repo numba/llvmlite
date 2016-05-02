@@ -1,7 +1,7 @@
 # Configuration for codecov.io
 
 comment:
-    layout: "header, changes, diff, suggestions, uncovered"
+    layout: "header, changes, diff"
 
 status:
     project:
