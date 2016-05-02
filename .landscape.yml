@@ -6,7 +6,7 @@ doc-warnings: false
 
 test-warnings: false
 
-strictness: high
+strictness: medium
 
 max-line-length: 85
 
