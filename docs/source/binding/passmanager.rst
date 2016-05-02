@@ -62,59 +62,59 @@ configure a :class:`PassManagerBuilder`.
 
    .. function:: add_constant_merge_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants>`_.
+      See `constmerge pass documentation <http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants>`_.
 
    .. function:: add_dead_arg_elimination_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination>`_.
+      See `deadargelim pass documentation <http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination>`_.
 
    .. function:: add_function_attrs_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes>`_.
+      See `functionattrs pass documentation <http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes>`_.
 
    .. function:: add_function_inlining_pass(self, )
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#inline-function-integration-inlining>`_.
+      See `inline pass documentation <http://llvm.org/docs/Passes.html#inline-function-integration-inlining>`_.
 
    .. function:: add_global_dce_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination>`_.
+      See `globaldce pass documentation <http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination>`_.
 
    .. function:: add_global_optimizer_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer>`_.
+      See `globalopt pass documentation <http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer>`_.
 
    .. function:: add_ipsccp_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation>`_.
+      See `ipsccp pass documentation <http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation>`_.
 
    .. function:: add_dead_code_elimination_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#dce-dead-code-elimination>`_.
+      See `dce pass documentation <http://llvm.org/docs/Passes.html#dce-dead-code-elimination>`_.
 
    .. function:: add_cfg_simplification_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#simplifycfg-simplify-the-cfg>`_.
+      See `simplifycfg pass documentation <http://llvm.org/docs/Passes.html#simplifycfg-simplify-the-cfg>`_.
 
    .. function:: add_gvn_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#gvn-global-value-numbering>`_.
+      See `gvn pass documentation <http://llvm.org/docs/Passes.html#gvn-global-value-numbering>`_.
 
    .. function:: add_instruction_combining_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#passes-instcombine>`_.
+      See `instcombine pass documentation <http://llvm.org/docs/Passes.html#passes-instcombine>`_.
 
    .. function:: add_licm_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion>`_.
+      See `licm pass documentation <http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion>`_.
 
    .. function:: add_sccp_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation>`_.
+      See `sccp pass documentation <http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation>`_.
 
    .. function:: add_sroa_pass()
 
-      See `pass documentation <http://llvm.org/docs/Passes.html#scalarrepl-scalar-replacement-of-aggregates>`_.
+      See `scalarrepl pass documentation <http://llvm.org/docs/Passes.html#scalarrepl-scalar-replacement-of-aggregates>`_.
 
       Note that while the link above describes the transformation performed by the pass
       added by this function, it corresponds to the ``opt -sroa`` command-line option
@@ -124,7 +124,7 @@ configure a :class:`PassManagerBuilder`.
 
    .. function:: add_basic_alias_analysis_pass()
 
-      See `pass documentation <http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass>`_.
+      See `basicaa pass documentation <http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass>`_.
 
 .. class:: ModulePassManager()
 
