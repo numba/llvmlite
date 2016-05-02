@@ -176,7 +176,6 @@ class TestDependencies(BaseTest):
                 self.fail("unexpected dependency %r in %r" % (dep, deps))
 
 
-@unittest.skipIf(True, "foo")
 class TestMisc(BaseTest):
     """
     Test miscellaneous functions in llvm.binding.
@@ -284,7 +283,6 @@ class TestMisc(BaseTest):
         self.assertEqual(expect, got)
 
 
-@unittest.skipIf(True, "foo")
 class TestModuleRef(BaseTest):
 
     def test_str(self):
@@ -651,7 +649,6 @@ class JITWithTMTestMixin(JITTestMixin):
             self.assertIn(b"ELF", code_object[:10])
 
 
-@unittest.skipIf(True, "foo")
 class TestMCJit(BaseTest, JITWithTMTestMixin):
     """
     Test JIT engines created with create_mcjit_compiler().
@@ -663,7 +660,6 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         return llvm.create_mcjit_compiler(mod, target_machine)
 
 
-@unittest.skipIf(True, "foo")
 class TestValueRef(BaseTest):
 
     def test_str(self):
@@ -742,7 +738,6 @@ class TestValueRef(BaseTest):
         self.assertTrue(declared.is_declaration)
 
 
-@unittest.skipIf(True, "foo")
 class TestTarget(BaseTest):
 
     def test_from_triple(self):
@@ -783,7 +778,6 @@ class TestTarget(BaseTest):
         self.assertIn(target.description, s)
 
 
-@unittest.skipIf(True, "foo")
 class TestTargetData(BaseTest):
 
     def target_data(self):
@@ -800,7 +794,6 @@ class TestTargetData(BaseTest):
         td.add_pass(pm)
 
 
-@unittest.skipIf(True, "foo")
 class TestTargetMachine(BaseTest):
 
     def test_add_target_data_pass(self):
@@ -903,7 +896,6 @@ class PassManagerTestMixin(object):
         pm.close()
 
 
-@unittest.skipIf(True, "foo")
 class TestModulePassManager(BaseTest, PassManagerTestMixin):
 
     def pm(self):
@@ -921,7 +913,6 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         self.assertNotIn("%.3", opt_asm)
 
 
-@unittest.skipIf(True, "foo")
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
 
     def pm(self, mod=None):
@@ -949,7 +940,6 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         self.assertNotIn("%.4", opt_asm)
 
 
-@unittest.skipIf(True, "foo")
 class TestPasses(BaseTest, PassManagerTestMixin):
 
     def pm(self):
@@ -975,7 +965,6 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_basic_alias_analysis_pass()
 
 
-@unittest.skipIf(True, "foo")
 class TestDylib(BaseTest):
 
     def test_bad_library(self):
