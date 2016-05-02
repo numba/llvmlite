@@ -15,4 +15,5 @@ status:
         enabled: no
     project:
         # The build fails if total project coverage drops by more than 3%
-        enabled: no
+        target: auto
+        threshold: "3%"
