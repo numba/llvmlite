@@ -35,7 +35,7 @@ install:
 script:
     - cd $TRAVIS_BUILD_DIR
     # Ensure that the documentation builds without warnings nor missing references
-    - cd docs ; make SPHINXOPTS=-Wn clean html ; cd ..
+    - cd docs && make SPHINXOPTS=-Wn clean html && cd ..
     - python runtests.py -v
     - if [ "$RUN_COVERAGE" == "yes" ]; then coverage run runtests.py; fi
 
