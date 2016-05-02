@@ -3,10 +3,10 @@
 engines:
     duplication:
         enabled: true
-    config:
-        languages:
-            python:
-                mass_threshold: 40
+        config:
+            languages:
+                python:
+                    mass_threshold: 40
     fixme:
         enabled: true
     pep8:
