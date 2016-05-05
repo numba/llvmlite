@@ -102,10 +102,21 @@ def main_posix(kind, library_ext):
     print("LLVM version... ", end='')
     sys.stdout.flush()
     try:
-        subprocess.check_call([llvm_config, '--version'])
+        out = subprocess.check_output([llvm_config, '--version'])
     except (OSError, subprocess.CalledProcessError):
         raise RuntimeError("%s failed executing, please point LLVM_CONFIG "
                            "to the path for llvm-config" % (llvm_config,))
+
+    out = out.decode('latin1')
+    print(out)
+    if not out.startswith('3.7.'):
+        msg = (
+            "Building llvmlite requires LLVM 3.7.x. Be sure to "
+            "set LLVM_CONFIG to the right executable path.\n"
+            "Read the documentation at http://llvmlite.pydata.org/ for more "
+            "information about building llvmlite.\n"
+            )
+        raise RuntimeError(msg)
 
     # Get LLVM information for building
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
