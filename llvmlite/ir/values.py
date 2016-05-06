@@ -388,6 +388,9 @@ class GlobalVariable(GlobalValue):
 
         if self.initializer is not None:
             buf.append(self.initializer.get_reference())
+        elif linkage not in ('external', 'extern_weak'):
+            # emit 'undef' for non-external linkage GV
+            buf.append(Constant(self.gtype, Undefined).get_reference())
         buf.append("\n")
 
 

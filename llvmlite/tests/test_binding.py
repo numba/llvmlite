@@ -12,7 +12,7 @@ import subprocess
 import sys
 import unittest
 
-from llvmlite import six
+from llvmlite import six, ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from . import TestCase
@@ -980,6 +980,61 @@ class TestDylib(BaseTest):
         elif system == "Darwin":
             libm = find_library("libm")
         llvm.load_library_permanently(libm)
+
+
+class TestGlobalVariables(BaseTest):
+    def check_global_variable_linkage(self, linkage, has_undef=True):
+        # This test default initializer on global variables with different
+        # linkages.  Some linkages requires an initializer be present, while
+        # it is optional for others.  This test uses ``parse_assembly()``
+        # to verify that we are adding an `undef` automatically if user didn't
+        # specific one for certain linkages.  It is a IR syntax error if the
+        # initializer is not present for certain linkages e.g. "external".
+        mod = ir.Module()
+        typ = ir.IntType(32)
+        gv = ir.GlobalVariable(mod, typ, "foo")
+        gv.linkage = linkage
+        asm = str(mod)
+        # check if 'undef' is present
+        if has_undef:
+            self.assertIn('undef', asm)
+        else:
+            self.assertNotIn('undef', asm)
+        # parse assembly to ensure correctness
+        self.module(asm)
+
+    def test_internal_linkage(self):
+        self.check_global_variable_linkage('internal')
+
+    def test_common_linkage(self):
+        self.check_global_variable_linkage('common')
+
+    def test_external_linkage(self):
+        self.check_global_variable_linkage('external', has_undef=False)
+
+    def test_available_externally_linkage(self):
+        self.check_global_variable_linkage('available_externally')
+
+    def test_private_linkage(self):
+        self.check_global_variable_linkage('private')
+
+    def test_linkonce_linkage(self):
+        self.check_global_variable_linkage('linkonce')
+
+    def test_weak_linkage(self):
+        self.check_global_variable_linkage('weak')
+
+    def test_appending_linkage(self):
+        self.check_global_variable_linkage('appending')
+
+    def test_extern_weak_linkage(self):
+        self.check_global_variable_linkage('extern_weak', has_undef=False)
+
+    def test_linkonce_odr_linkage(self):
+        self.check_global_variable_linkage('linkonce_odr')
+
+    def test_weak_odr_linkage(self):
+        self.check_global_variable_linkage('weak_odr')
 
 
 if __name__ == "__main__":
