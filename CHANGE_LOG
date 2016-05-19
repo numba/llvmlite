@@ -1,3 +1,13 @@
+v0.11.0
+-------
+
+Enhancements:
+
+* PR #175: Check LLVM version at build time
+* PR #169: Default initializer for non-external global variable
+* PR #168: add ir.Constant.literal_array()
+
+
 v0.10.0
 -------
 
