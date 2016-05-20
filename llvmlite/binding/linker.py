@@ -3,12 +3,11 @@ from ctypes import c_int, c_char_p, POINTER
 from . import ffi
 
 
-def link_modules(dst, src, preserve):
+def link_modules(dst, src):
     dst.verify()
     src.verify()
-    with ffi.OutputString() as outerr:
-        if ffi.lib.LLVMPY_LinkModules(dst, src, int(preserve), outerr):
-            raise RuntimeError(str(outerr))
+    if ffi.lib.LLVMPY_LinkModules(dst, src):
+        raise RuntimeError("linking modules failed")
 
 
 ffi.lib.LLVMPY_LinkModules.argtypes = [
