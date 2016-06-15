@@ -7,7 +7,11 @@ def link_modules(dst, src, preserve):
     dst.verify()
     src.verify()
     with ffi.OutputString() as outerr:
-        if ffi.lib.LLVMPY_LinkModules(dst, src, int(preserve), outerr):
+        err = ffi.lib.LLVMPY_LinkModules(dst, src, int(preserve), outerr)
+        if not preserve:
+            # The underlying module was destroyed
+            src.detach()
+        if err:
             raise RuntimeError(str(outerr))
 
 
