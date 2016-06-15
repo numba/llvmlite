@@ -17,7 +17,7 @@ representation of the :term:`IR`.
 .. seealso::
    To make use of this module, you should be familiar with the concepts
    presented in the `LLVM Language Reference
-   <http://llvm.org/releases/3.7.1/docs/LangRef.html>`_.
+   <http://llvm.org/releases/3.8.0/docs/LangRef.html>`_.
 
 .. toctree::
    :maxdepth: 3
