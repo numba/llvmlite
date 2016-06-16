@@ -461,6 +461,7 @@ class TestBuildInstructions(TestBase):
         builder.fcmp_ordered('uno', a, b, 'v')
         builder.fcmp_unordered('ord', a, b, 'w')
         builder.fcmp_unordered('uno', a, b, 'x')
+        builder.fcmp_unordered('olt', a, b, 'y', flags=['nnan', 'ninf', 'nsz', 'arcp', 'fast'])
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
@@ -480,6 +481,7 @@ class TestBuildInstructions(TestBase):
                 %"v" = fcmp uno i32 %".1", %".2"
                 %"w" = fcmp ord i32 %".1", %".2"
                 %"x" = fcmp uno i32 %".1", %".2"
+                %"y" = fcmp nnan ninf nsz arcp fast olt i32 %".1", %".2"
             """)
 
     def test_misc_ops(self):

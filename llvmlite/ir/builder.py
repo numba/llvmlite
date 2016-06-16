@@ -472,7 +472,7 @@ class IRBuilder(object):
         """
         return self._icmp('u', cmpop, lhs, rhs, name)
 
-    def fcmp_ordered(self, cmpop, lhs, rhs, name=''):
+    def fcmp_ordered(self, cmpop, lhs, rhs, name='', flags=[]):
         """
         Floating-point ordered comparison:
             name = lhs <cmpop> rhs
@@ -483,11 +483,11 @@ class IRBuilder(object):
             op = 'o' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name)
+        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name, flags=flags)
         self._insert(instr)
         return instr
 
-    def fcmp_unordered(self, cmpop, lhs, rhs, name=''):
+    def fcmp_unordered(self, cmpop, lhs, rhs, name='', flags=[]):
         """
         Floating-point unordered comparison:
             name = lhs <cmpop> rhs
@@ -498,7 +498,7 @@ class IRBuilder(object):
             op = 'u' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name)
+        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name, flags=flags)
         self._insert(instr)
         return instr
 

@@ -291,16 +291,20 @@ class CompareInstr(Instruction):
     OPNAME = 'invalid-compare'
     VALID_OP = {}
 
-    def __init__(self, parent, op, lhs, rhs, name=''):
+    def __init__(self, parent, op, lhs, rhs, name='', flags=[]):
         if op not in self.VALID_OP:
             raise ValueError("invalid comparison %r for %s" % (op, self.OPNAME))
+        for flag in flags:
+            if flag not in self.VALID_FLAG:
+                raise ValueError("invalid flag %r for %s" % (flag, self.OPNAME))
+        opname = " ".join([self.OPNAME] + flags)
         super(CompareInstr, self).__init__(parent, types.IntType(1),
-                                           self.OPNAME, [lhs, rhs], name=name)
+                                           opname, [lhs, rhs], name=name)
         self.op = op
 
     def descr(self, buf):
         buf.append("{0} {1} {2} {3}, {4} {5}\n".format(
-            self.OPNAME,
+            self.opname,
             self.op,
             self.operands[0].type,
             self.operands[0].get_reference(),
@@ -323,6 +327,7 @@ class ICMPInstr(CompareInstr):
         'slt': 'signed less than',
         'sle': 'signed less or equal',
     }
+    VALID_FLAG = set()
 
 
 class FCMPInstr(CompareInstr):
@@ -345,6 +350,7 @@ class FCMPInstr(CompareInstr):
         'uno': 'unordered (either nans)',
         'true': 'no comparison, always returns true',
     }
+    VALID_FLAG = {'nnan', 'ninf', 'nsz', 'arcp', 'fast'}
 
 
 class CastInstr(Instruction):
