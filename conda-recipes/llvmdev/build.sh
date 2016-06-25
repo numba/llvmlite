@@ -7,6 +7,7 @@ CMAKE_COMMON_VARIABLES=" -DCMAKE_INSTALL_PREFIX=$PREFIX \
 
 platform='unknown'
 unamestr="$(uname)"
+machine="$(uname -m)"
 
 if [[ "$unamestr" == 'Linux' ]]; then
     platform='linux'
@@ -33,7 +34,7 @@ fi
 # Use CMake-based build procedure
 mkdir build
 cd build
-if [[ "$platform" == 'linux' ]]; then
+if [ "$platform" == 'linux' -a "$machine" != 'armv7l' ]; then
     cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
 else
     cmake $CMAKE_COMMON_VARIABLES ..
