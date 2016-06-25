@@ -18,6 +18,14 @@ from llvmlite.binding import ffi
 from . import TestCase
 
 
+# arvm7l needs extra ABI symbols to link successfully
+if platform.machine() == 'armv7l':
+    libgcc_s = ctypes.cdll.LoadLibrary('libgcc_s.so.1')    
+    llvm.add_symbol('__aeabi_unwind_cpp_pr0',
+                    ctypes.cast(libgcc_s.__aeabi_unwind_cpp_pr0,
+                                ctypes.c_void_p).value)
+
+    
 def no_de_locale():
     cur = locale.setlocale(locale.LC_ALL)
     try:
@@ -225,7 +233,7 @@ class TestMisc(BaseTest):
             self.assertIsInstance(v, bool)
         self.assertIsInstance(features.flatten(), str)
 
-        re_term = r"[+\-][a-zA-Z0-9\._]+"
+        re_term = r"[+\-][a-zA-Z0-9\._-]+"
         regex = r"^({0}|{0}(,{0})*)?$".format(re_term)
         # quick check for our regex
         self.assertIsNotNone(re.match(regex, ""))
