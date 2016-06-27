@@ -154,6 +154,11 @@ Classes
       a code object, suitable for use with the platform's linker.
       A bytestring is returned.
 
+   .. method:: set_asm_verbosity(is_verbose)
+
+      Set whether this target machine will emit assembly with human-readable
+      comments describing control flow, debug information, and so on.
+
    .. method:: emit_assembly(module)
 
       Return the compiled *module*'s native assembler, as a string.
