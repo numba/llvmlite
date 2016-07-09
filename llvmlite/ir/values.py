@@ -225,7 +225,7 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
     def _get_reference(self):
         name = self.name
         # Quote and escape value name
-        if '\\' in name or '"' in name:
+        if isinstance(name, str) and ('\\' in name or '"' in name):
             name = name.replace('\\', '\\5c').replace('"', '\\22')
         return '{0}"{1}"'.format(self.name_prefix, name)
 
