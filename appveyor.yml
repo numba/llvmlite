@@ -24,7 +24,7 @@ install:
   - conda info
   - conda list
   - conda config --add channels numba
-  - conda create -q -n testenv python=%PYTHON_VERSION% llvmdev
+  - conda create -q -n testenv python=%PYTHON_VERSION% llvmdev="3.8.*"
   - call activate testenv
 
 build: false
