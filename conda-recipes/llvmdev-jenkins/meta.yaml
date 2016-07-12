@@ -29,7 +29,7 @@ requirements:
 test:
   commands:
     - llvm-config --libs   [not win]
-    - llc -version         [not win]
+    - llc -version
 
 about:
   home: http://llvm.org/
