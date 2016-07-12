@@ -1,10 +1,10 @@
 http://reviews.llvm.org/D15375
 
-Index: lib/AsmParser/LLLexer.cpp
-===================================================================
---- lib/AsmParser/LLLexer.cpp
-+++ lib/AsmParser/LLLexer.cpp
-@@ -937,7 +937,8 @@
+diff --git a/lib/AsmParser/LLLexer.cpp b/lib/AsmParser/LLLexer.cpp
+index 26eca23..8e1efde 100644
+--- a/lib/AsmParser/LLLexer.cpp
++++ b/lib/AsmParser/LLLexer.cpp
+@@ -941,7 +941,8 @@ lltok::Kind LLLexer::LexDigitOrNegative() {
      }
    }
  
@@ -14,7 +14,7 @@ Index: lib/AsmParser/LLLexer.cpp
    return lltok::APFloat;
  }
  
-@@ -973,6 +974,7 @@
+@@ -977,6 +978,7 @@ lltok::Kind LLLexer::LexPositive() {
      }
    }
  

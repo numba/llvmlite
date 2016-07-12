@@ -11,7 +11,7 @@ if "%ARCH%"=="32" (
 )
 set CMAKE_GENERATOR_TOOLSET=v120_xp
 
-@rem Reduce build times and package size by removing unused stuff
+REM Reduce build times and package size by removing unused stuff
 set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_INCLUDE_TESTS=OFF ^
     -DLLVM_INCLUDE_UTILS=OFF -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF
 
