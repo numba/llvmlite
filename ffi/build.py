@@ -52,7 +52,7 @@ def find_win32_generator():
     # compatible with, the one which was used to compile LLVM... cmake
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
-    # LLVM 3.7 needs VS 2013 minimum.
+    # LLVM 3.8 needs VS 2013 minimum.
     for generator in ['Visual Studio 12 2013']:
         if is_64bit:
             generator += ' Win64'
@@ -109,9 +109,9 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not out.startswith('3.7.'):
+    if not out.startswith('3.8.'):
         msg = (
-            "Building llvmlite requires LLVM 3.7.x. Be sure to "
+            "Building llvmlite requires LLVM 3.8.x. Be sure to "
             "set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n"

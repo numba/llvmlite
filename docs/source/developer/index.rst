@@ -69,7 +69,7 @@ Platform support
 
 llvmlite is to be kept compatible with Python 2.7, 3.4 and later under
 at least Linux, OS X and Windows.  It only needs to be compatible with
-the currently supported LLVM version (currently, the 3.7 series).
+the currently supported LLVM version (currently, the 3.8 series).
 
 We don't expect contributors to test their code on all platforms.  Pull
 requests are automatically built and tested using

@@ -57,8 +57,8 @@ Despite minimizing the API surface with LLVM, llvmlite is impacted
 by changes to LLVM's C++ API (which can occur at every feature release).
 Therefore, each llvmlite version is targetted to a specific LLVM feature
 version.  It should work accross all given bugfix releases of that version
-(for example, llvmlite 0.9.0 would work with LLVM 3.7.0 and 3.7.1, but
-with neither LLVM 3.6.0 nor 3.8.0).
+(for example, llvmlite 0.12.0 would work with LLVM 3.8.0 and 3.8.1, but
+with neither LLVM 3.7.0 nor 3.9.0).
 
 Which LLVM version is supported is driven by Numba_'s requirements.
 

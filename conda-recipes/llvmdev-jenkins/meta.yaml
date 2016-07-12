@@ -1,21 +1,23 @@
 package:
   name: llvmdev
-  version: "3.7.1"
+  version: "3.8.1"
 
 source:
-  fn: llvm-3.7.1.src.tar.xz
-  url: http://llvm.org/releases/3.7.1/llvm-3.7.1.src.tar.xz
-  sha1: 5dbdcafac105273dcbff94c68837a66c6dd78cef
+  fn: llvm-3.8.1.src.tar.xz
+  url: http://llvm.org/releases/3.8.1/llvm-3.8.1.src.tar.xz
+  sha1: e0c48c4c182424b99999367d688cd8ce7876827b
   patches:
     # https://llvm.org/bugs/show_bug.cgi?id=15356
     - ../llvm-elf-relocation.patch
     # https://llvm.org/bugs/show_bug.cgi?id=25788
     - ../llvm-parse-fp-constants.patch
+    # https://llvm.org/bugs/show_bug.cgi?id=25565
+    - ../llvm-build-race-condition.patch
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   [win]
 
 build:
-  number: 4
+  number: 3
 
 requirements:
   build:
@@ -31,5 +33,5 @@ test:
 
 about:
   home: http://llvm.org/
-  license: Open Source (http://llvm.org/releases/3.7.0/LICENSE.TXT)
+  license: Open Source (http://llvm.org/docs/DeveloperPolicy.html#llvm-license)
   summary: Development headers and libraries for LLVM

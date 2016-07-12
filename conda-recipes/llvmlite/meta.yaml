@@ -6,7 +6,6 @@ package:
 source:
   # Using the local source tree helps test building without pushing changes
   path: ../..
-  #git_url: https://github.com/numba/llvmlite.git
 
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
@@ -15,7 +14,7 @@ requirements:
   build:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 3.7*
+    - llvmdev 3.8*
     - enum34         [py27]
   run:
     - python
