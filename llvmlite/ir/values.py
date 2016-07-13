@@ -382,12 +382,13 @@ class GlobalVariable(GlobalValue):
 
         if self.initializer is not None:
             if self.initializer.type != self.value_type:
-                raise TypeError("got initializer of type %s for global value type %s"
+                raise TypeError("got initializer of type %s "
+                                "for global value type %s"
                                 % (self.initializer.type, self.value_type))
             buf.append(" " + self.initializer.get_reference())
         elif linkage not in ('external', 'extern_weak'):
             # emit 'undef' for non-external linkage GV
-            buf.append(" " + Constant(self.value_type, Undefined).get_reference())
+            buf.append(" " + self.value_type(Undefined).get_reference())
 
         if self.align is not None:
             buf.append(", align %d" % (self.align,))
