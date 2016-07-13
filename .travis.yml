@@ -7,8 +7,8 @@ matrix:
     # Note coverage is run in only one configuration.  Longest build first.
     include:
         - env: PYTHON=3.5 RUN_COVERAGE=yes
-        #- env: PYTHON=3.4
-        #- env: PYTHON=2.7
+        - env: PYTHON=3.4
+        - env: PYTHON=2.7
 
 before_install:
     # Install Miniconda
