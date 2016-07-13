@@ -349,11 +349,12 @@ class GlobalVariable(GlobalValue):
         assert isinstance(typ, types.Type)
         super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),
                                              name=name)
-        self.gtype = typ
+        self.value_type = typ
         self.initializer = None
         self.unnamed_addr = False
         self.global_constant = False
         self.addrspace = addrspace
+        self.align = None
         self.parent.add_global(self)
 
     def descr(self, buf):
@@ -368,29 +369,29 @@ class GlobalVariable(GlobalValue):
         else:
             linkage = self.linkage
 
-        if self.addrspace != 0:
-            addrspace = 'addrspace({0:d})'.format(self.addrspace)
-        else:
-            addrspace = ''
-
+        if linkage:
+            buf.append(linkage + " ")
+        if self.storage_class:
+            buf.append(self.storage_class + " ")
         if self.unnamed_addr:
-            unnamed_addr = 'unnamed_addr'
-        else:
-            unnamed_addr = ''
+            buf.append("unnamed_addr ")
+        if self.addrspace != 0:
+            buf.append('addrspace({0:d}) '.format(self.addrspace))
 
-        buf.append("{linkage} {storage_class} {unnamed_addr} {addrspace} {kind} {type} "
-                   .format(linkage=linkage,
-                           storage_class=self.storage_class,
-                           unnamed_addr=unnamed_addr,
-                           addrspace=addrspace,
-                           kind=kind,
-                           type=self.gtype))
+        buf.append("{kind} {type}" .format(kind=kind, type=self.value_type))
 
         if self.initializer is not None:
-            buf.append(self.initializer.get_reference())
+            if self.initializer.type != self.value_type:
+                raise TypeError("got initializer of type %s for global value type %s"
+                                % (self.initializer.type, self.value_type))
+            buf.append(" " + self.initializer.get_reference())
         elif linkage not in ('external', 'extern_weak'):
             # emit 'undef' for non-external linkage GV
-            buf.append(Constant(self.gtype, Undefined).get_reference())
+            buf.append(" " + Constant(self.value_type, Undefined).get_reference())
+
+        if self.align is not None:
+            buf.append(", align %d" % (self.align,))
+
         buf.append("\n")
 
 

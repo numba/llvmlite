@@ -110,6 +110,14 @@ class Module(object):
     def get_identified_types(self):
         return self.context.identified_types
 
+    def _get_body_lines(self):
+        # Type declarations
+        lines = [it.get_declaration()
+                 for it in self.get_identified_types().values()]
+        # Global values (including function definitions)
+        lines += [str(self.globals[k]) for k in self._sequence]
+        return lines
+
     def _get_metadata_lines(self):
         mdbuf = []
         for k, v in self.namedmetadata.items():
@@ -119,6 +127,10 @@ class Module(object):
         for md in self.metadata:
             mdbuf.append(str(md))
         return mdbuf
+
+    def _stringify_body(self):
+        # For testing
+        return "\n".join(self._get_body_lines())
 
     def _stringify_metadata(self):
         # For testing
@@ -132,11 +144,8 @@ class Module(object):
             'target triple = "%s"' % (self.triple,),
             'target datalayout = "%s"' % (self.data_layout,),
             '']
-        # Type declarations
-        lines += [it.get_declaration()
-                  for it in self.get_identified_types().values()]
         # Body
-        lines += [str(self.globals[k]) for k in self._sequence]
+        lines += self._get_body_lines()
         # Metadata
         lines += self._get_metadata_lines()
 
