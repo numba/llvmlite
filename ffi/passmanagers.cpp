@@ -15,7 +15,6 @@
 
 using namespace llvm;
 
-extern "C" {
 
 /* Helpers to override the diagnostic handler when running
  * optimizations.
@@ -56,8 +55,10 @@ UnsetOptimizationDiagnosticHandler(LLVMContext &Ctx, diag_handler_t OldHandler)
 
 
 /*
- * Exposed optimization API
+ * Exposed API
  */
+
+extern "C" {
 
 API_EXPORT(LLVMPassManagerRef)
 LLVMPY_CreatePassManager()
