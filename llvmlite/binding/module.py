@@ -142,7 +142,9 @@ class ModuleRef(ffi.ObjectRef):
         Link the *other* module into this one.  The *other* module will
         be destroyed unless *preserve* is true.
         """
-        link_modules(self, other, preserve)
+        if preserve:
+            other = other.clone()
+        link_modules(self, other)
 
     @property
     def global_variables(self):

@@ -10,8 +10,7 @@
 extern "C" {
 
 API_EXPORT(int)
-LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, int Preserve,
-                   const char **Err)
+LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, const char **Err)
 {
     using namespace llvm;
     std::string errorstring;
@@ -35,9 +34,6 @@ LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, int Preserve,
         llvm::DiagnosticPrinterRawOStream DP(*errstream);
         DI.print(DP);
     };
-
-    if (Preserve)
-        Src = LLVMCloneModule(Src);
 
     Module *D = unwrap(Dest);
     LLVMContext &Ctx = D->getContext();
