@@ -1,0 +1,12 @@
+package:
+  name: vs2013_runtime
+  version: "12.0.21005"
+
+build:
+  number: 1
+  msvc_compiler: 12.0
+
+about:
+  home: http://www.microsoft.com
+  license: Proprietary
+  summary: Bundles of the MSVC 12 (VS 2013) runtime
