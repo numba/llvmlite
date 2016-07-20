@@ -22,9 +22,12 @@ build:
 requirements:
   build:
     - cmake
-    - m2-xz            [win32]
-    - m2w64-xz         [win64]
-    # Need Python 2.7 to build LLVM
+    # Needed to unpack the source tarball
+    - m2-xz            [py27 and win32]
+    - m2w64-xz         [py27 and win64]
+    # Needed during the build phase (to run llvm-tblgen.exe)
+    - vs2013_runtime   [win]
+    # Needed to build LLVM
     - python
     - system           [linux and not armv7l]
   run:
