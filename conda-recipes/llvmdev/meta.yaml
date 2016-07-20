@@ -22,6 +22,7 @@ build:
 requirements:
   build:
     - cmake
+    - m2-xz            [win]
     # Need Python 2.7 to build LLVM
     - python
     - system           [linux and not armv7l]
