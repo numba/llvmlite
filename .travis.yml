@@ -14,7 +14,7 @@ before_install:
     # Add gcc for newer libstdc++ version (compatible with llvmdev builds)
     - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
     - sudo apt-get update -qq
-    - sudo apt-get install g++-4.9
+    - sudo apt-get install -qy g++-4.9
 
     - export CONDA_ENV=travisci
     - buildscripts/incremental/install_miniconda.sh
