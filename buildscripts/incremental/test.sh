@@ -3,7 +3,7 @@
 source activate $CONDA_ENV
 
 # Make sure any error below is reported as such
-set -v -e
+set -e -x
 
 
 # Ensure that the documentation builds without warnings nor missing references
