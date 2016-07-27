@@ -3,6 +3,6 @@
 source activate $CONDA_ENV
 
 # Make sure any error below is reported as such
-set -e -x
+set -v -e
 
 python setup.py build

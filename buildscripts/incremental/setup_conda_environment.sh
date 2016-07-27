@@ -1,12 +1,12 @@
 #!/bin/bash
 
-set -x
-
 CONDA_INSTALL="conda install -q -y"
 PIP_INSTALL="pip install -q"
 
 # Deactivate any environment
+set +v
 source deactivate
+set -v
 # Display root environment (for debugging)
 conda list
 # Clean up any left-over from a previous build
@@ -16,7 +16,9 @@ conda remove --all -q -y -n $CONDA_ENV
 # Scipy, CFFI, jinja2 and IPython are optional dependencies, but exercised in the test suite
 conda create -n $CONDA_ENV -q -y python=$PYTHON
 
+set +v
 source activate $CONDA_ENV
+set -v
 
 # Install llvmdev (separate channel, for now)
 $CONDA_INSTALL -c numba llvmdev="3.8*"
