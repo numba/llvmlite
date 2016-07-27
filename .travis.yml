@@ -11,6 +11,11 @@ matrix:
         - env: PYTHON=2.7
 
 before_install:
+    # Add gcc for newer libstdc++ version (compatible with llvmdev builds)
+    - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+    - sudo apt-get update -qq
+    - sudo apt-get install g++-4.9
+
     - export CONDA_ENV=travisci
     - buildscripts/incremental/install_miniconda.sh
     - export PATH=$HOME/miniconda3/bin:$PATH
@@ -25,8 +30,8 @@ script:
 after_success:
     - if [ "$RUN_COVERAGE" == "yes" ]; then codecov; coveralls; fi
 
-#notifications:
-    #email: false
-    #flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
-    #on_success: "change"
-    #on_failure: "always" # "change"
+notifications:
+    email: false
+    flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
+    on_success: "change"
+    on_failure: "always" # "change"
