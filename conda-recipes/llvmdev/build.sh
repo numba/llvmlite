@@ -40,5 +40,5 @@ else
     cmake $CMAKE_COMMON_VARIABLES ..
 fi
 
-make -j4
+make -j8
 make install
