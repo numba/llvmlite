@@ -10,11 +10,11 @@ matrix:
         - env: PYTHON=3.4
         - env: PYTHON=2.7
 
-#before_install:
-    #- export CONDA_ENV=travisci
-    #- buildscripts/incremental/install_miniconda.sh
-    #- export PATH=$HOME/miniconda3/bin:$PATH
-    #- buildscripts/incremental/setup_conda_environment.sh
+before_install:
+    - export CONDA_ENV=travisci
+    - buildscripts/incremental/install_miniconda.sh
+    - export PATH=$HOME/miniconda3/bin:$PATH
+    - buildscripts/incremental/setup_conda_environment.sh
 
 #install:
     #- buildscripts/incremental/build.sh
