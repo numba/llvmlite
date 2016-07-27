@@ -8,14 +8,14 @@ environment:
 
   matrix:
     # Since appveyor is quite slow, we only use a single configuration
-    # and a subset of the test suite (see test_script below)
-    - PYTHON_VERSION: "3.5"
-      PYTHON_ARCH: "64"
+    - PYTHON: "3.5"
+      ARCH: "64"
+      CONDA_ENV: testenv
 
 init:
   # Use AppVeyor's provided Miniconda: https://www.appveyor.com/docs/installed-software#python
-  - if "%PYTHON_ARCH%" == "64" set MINICONDA=C:\Miniconda35-x64
-  - if "%PYTHON_ARCH%" == "32" set MINICONDA=C:\Miniconda35
+  - if "%ARCH%" == "64" set MINICONDA=C:\Miniconda35-x64
+  - if "%ARCH%" == "32" set MINICONDA=C:\Miniconda35
   - set PATH=%MINICONDA%;%MINICONDA%/Scripts;%MINICONDA%/Library/bin;%PATH%
 
 install:
