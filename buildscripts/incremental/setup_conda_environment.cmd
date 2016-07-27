@@ -16,7 +16,7 @@ conda remove --all -q -y -n %CONDA_ENV%
 conda create -n %CONDA_ENV% -q -y python=%PYTHON%
 
 call activate %CONDA_ENV%
-@rem Install llvmdev (separate channel, for now)
-%CONDA_INSTALL% -c numba -n %CONDA_ENV% llvmdev="3.7*" llvmlite
-@rem Install required backports for older Pythons
+@rem Install llvmdev
+%CONDA_INSTALL% -c numba llvmdev="3.8*"
+@rem Install enum34 for Python < 3.4
 if %PYTHON% LSS 3.4 (%CONDA_INSTALL% enum34)
