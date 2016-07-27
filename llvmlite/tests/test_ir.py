@@ -325,7 +325,7 @@ class TestBlock(TestBase):
         block.replace(d, f)
         self.check_block(block, """\
             my_block:
-                %"cz" = add i32 %".1", %".2"
+                %"c" = add i32 %".1", %".2"
                 %"f" = sdiv i32 %"c", %".2"
                 %"e" = mul i32 %"f", %".2"
             """)
