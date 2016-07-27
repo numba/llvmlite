@@ -10,23 +10,23 @@ matrix:
         - env: PYTHON=3.4
         - env: PYTHON=2.7
 
-before_install:
-    - export CONDA_ENV=travisci
-    - buildscripts/incremental/install_miniconda.sh
-    - export PATH=$HOME/miniconda3/bin:$PATH
-    - buildscripts/incremental/setup_conda_environment.sh
+#before_install:
+    #- export CONDA_ENV=travisci
+    #- buildscripts/incremental/install_miniconda.sh
+    #- export PATH=$HOME/miniconda3/bin:$PATH
+    #- buildscripts/incremental/setup_conda_environment.sh
 
-install:
-    - buildscripts/incremental/build.sh
+#install:
+    #- buildscripts/incremental/build.sh
 
 script:
     - buildscripts/incremental/test.sh
 
-after_success:
-    - if [ "$RUN_COVERAGE" == "yes" ]; then codecov; coveralls; fi
+#after_success:
+    #- if [ "$RUN_COVERAGE" == "yes" ]; then codecov; coveralls; fi
 
-notifications:
-    email: false
-    flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
-    on_success: "change"
-    on_failure: "always" # "change"
+#notifications:
+    #email: false
+    #flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
+    #on_success: "change"
+    #on_failure: "always" # "change"
