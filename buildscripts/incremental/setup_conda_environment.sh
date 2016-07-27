@@ -6,7 +6,9 @@ CONDA_INSTALL="conda install -q -y"
 PIP_INSTALL="pip install -q"
 
 # Deactivate any environment
+set +v
 source deactivate
+set -v
 # Display root environment (for debugging)
 conda list
 # Clean up any left-over from a previous build
