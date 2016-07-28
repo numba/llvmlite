@@ -17,7 +17,7 @@ source:
     - ../llvm-lto-static.patch   [win]
 
 build:
-  number: 5
+  number: 6
 
 requirements:
   build:
