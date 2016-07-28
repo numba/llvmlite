@@ -13,7 +13,7 @@ conda list
 conda remove --all -q -y -n %CONDA_ENV%
 
 @rem Create and populate environment
-conda create -n %CONDA_ENV% -q -y python=%PYTHON%
+conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
 
 call activate %CONDA_ENV%
 @rem Install llvmdev

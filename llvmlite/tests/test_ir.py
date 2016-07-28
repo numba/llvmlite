@@ -327,7 +327,7 @@ class TestBlock(TestBase):
             my_block:
                 %"c" = add i32 %".1", %".2"
                 %"f" = sdiv i32 %"c", %".2"
-                %"ez" = mul i32 %"f", %".2"
+                %"e" = mul i32 %"f", %".2"
             """)
 
     def test_repr(self):
