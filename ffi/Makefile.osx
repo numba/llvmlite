@@ -11,7 +11,7 @@ OUTPUT = libllvmlite.dylib
 MACOSX_DEPLOYMENT_TARGET ?= 10.9
 
 all: $(SRC) $(INCLUDE)
-	$(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
+	MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET) $(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
 
 clean:
 	rm -rf test
