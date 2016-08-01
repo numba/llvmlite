@@ -82,3 +82,4 @@ Other build methods
 If you don't want to use our pre-built packages, you can compile
 and install llvmlite yourself.  The documentation will teach you how:
 http://llvmlite.pydata.org/en/latest/install/index.html
+
