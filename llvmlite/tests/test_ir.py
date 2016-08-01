@@ -118,7 +118,7 @@ class TestFunction(TestBase):
         func.attributes.personality = pers
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-            ("zdeclare %s alwaysinline optsize alignstack(16) "
+            ("declare %s alwaysinline optsize alignstack(16) "
              "personality i8 (...)* @\"__gxx_personality_v0\"") % self.proto)
 
     def test_function_attributes(self):
