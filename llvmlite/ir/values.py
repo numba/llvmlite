@@ -405,14 +405,15 @@ class AttributeSet(set):
 
 
 class FunctionAttributes(AttributeSet):
-    _known = frozenset(['alwaysinline', 'builtin', 'cold', 'inlinehint',
-                        'jumptable', 'minsize', 'naked', 'nobuiltin',
-                        'noduplicate', 'noimplicitfloat', 'noinline',
-                        'nonlazybind', 'noredzone', 'noreturn', 'nounwind',
-                        'optnone', 'optsize', 'readnone', 'readonly',
-                        'returns_twice', 'sanitize_address',
-                        'sanitize_memory', 'sanitize_thread', 'ssp',
-                        'sspreg', 'sspstrong', 'uwtable'])
+    _known = frozenset([
+        'argmemonly', 'alwaysinline', 'builtin', 'cold',
+        'inaccessiblememonly', 'inaccessiblemem_or_argmemonly', 'inlinehint',
+        'jumptable', 'minsize', 'naked', 'nobuiltin', 'noduplicate',
+        'noimplicitfloat', 'noinline', 'nonlazybind', 'norecurse',
+        'noredzone', 'noreturn', 'nounwind', 'optnone', 'optsize',
+        'readnone', 'readonly', 'returns_twice', 'sanitize_address',
+        'sanitize_memory', 'sanitize_thread', 'ssp',
+        'sspreg', 'sspstrong', 'uwtable'])
 
     def __init__(self):
         self._alignstack = 0
