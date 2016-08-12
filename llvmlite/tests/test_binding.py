@@ -269,7 +269,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual((major, minor), (3, 8))
+        self.assertEqual((major, minor), (3, 9))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -797,18 +797,12 @@ class TestTargetData(BaseTest):
         glob = self.glob()
         self.assertEqual(td.get_abi_size(glob.type), 8)
 
-    def test_add_pass(self):
-        td = self.target_data()
-        pm = llvm.create_module_pass_manager()
-        td.add_pass(pm)
-
 
 class TestTargetMachine(BaseTest):
 
     def test_add_target_data_pass(self):
         tm = self.target_machine()
         pm = llvm.create_module_pass_manager()
-        tm.target_data.add_pass(pm)
 
     def test_add_analysis_passes(self):
         tm = self.target_machine()

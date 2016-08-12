@@ -145,14 +145,6 @@ class TargetData(ffi.ObjectRef):
             raise RuntimeError("Not a pointer type: %s" % (ty,))
         return size
 
-    def add_pass(self, pm):
-        """
-        Add a DataLayout pass to PassManager *pm*.
-        """
-        # AddTargetData claims ownership, so create a copy.
-        target_data = create_target_data(str(self))
-        ffi.lib.LLVMPY_AddTargetData(target_data, pm)
-
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
 CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel',
@@ -326,9 +318,6 @@ ffi.lib.LLVMPY_CopyStringRepOfTargetData.argtypes = [
 ffi.lib.LLVMPY_DisposeTargetData.argtypes = [
     ffi.LLVMTargetDataRef,
 ]
-
-ffi.lib.LLVMPY_AddTargetData.argtypes = [ffi.LLVMTargetDataRef,
-                                         ffi.LLVMPassManagerRef]
 
 ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
                                          ffi.LLVMTypeRef]
