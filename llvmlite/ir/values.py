@@ -7,6 +7,7 @@ from __future__ import print_function, absolute_import
 
 import string
 
+from .. import six
 from ..six import StringIO
 from . import types, _utils
 from ._utils import _StrCaching, _StringReferenceCaching, _HasMetadata
@@ -14,13 +15,15 @@ from ._utils import _StrCaching, _StringReferenceCaching, _HasMetadata
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
-                frozenset('._-$'))
+                frozenset(map(ord, ' !#$%&\'()*+,-./:;<=>?@[]^_`{|}~')))
 
 
 def _escape_string(text, _map={}):
     """
     Escape the given bytestring for safe use as a LLVM array constant.
     """
+    if isinstance(text, str):
+        text = text.encode('ascii')
     assert isinstance(text, (bytes, bytearray))
 
     if not _map:
@@ -29,6 +32,8 @@ def _escape_string(text, _map={}):
                 _map[ch] = chr(ch)
             else:
                 _map[ch] = '\\%02x' % ch
+            if six.PY2:
+                _map[chr(ch)] = _map[ch]
 
     buf = [_map[ch] for ch in text]
     return ''.join(buf)
@@ -258,7 +263,7 @@ class MetaDataString(NamedValue):
         buf += (self.get_reference(), "\n")
 
     def _get_reference(self):
-        return '!"{0}"'.format(self.string)
+        return '!"{0}"'.format(_escape_string(self.string))
 
     _to_string = _get_reference
 

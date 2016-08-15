@@ -202,6 +202,12 @@ class TestIR(TestBase):
         self.assertInText(pat1, str(mod))
         self.assertInText(pat2, str(mod))
 
+    def test_metadata_string(self):
+        mod = self.module()
+        mod.add_metadata([ir.MetaDataString(mod, "\"\\$")])
+        pat = '!0 = !{ !"\\22\\5c$" }'
+        self.assertInText(pat, str(mod))
+
     def test_named_metadata(self):
         mod = self.module()
         md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
@@ -1357,7 +1363,7 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '[2 x i32] zeroinitializer')
         # Raw array syntax
         c = ir.Constant(ir.ArrayType(int8, 11), bytearray(b"foobar_123\x80"))
-        self.assertEqual(str(c), r'[11 x i8] c"foobar\5f123\80"')
+        self.assertEqual(str(c), r'[11 x i8] c"foobar_123\80"')
         c = ir.Constant(ir.ArrayType(int8, 4), bytearray(b"\x00\x01\x04\xff"))
         self.assertEqual(str(c), r'[4 x i8] c"\00\01\04\ff"')
         # Recursive instantiation of inner constants
