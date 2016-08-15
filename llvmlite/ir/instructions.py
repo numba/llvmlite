@@ -7,7 +7,7 @@ from __future__ import print_function, absolute_import
 from ..six import StringIO
 from . import types
 from .values import (Block, Function, Value, NamedValue, Constant,
-                     MetaDataString, AttributeSet)
+                     MetaDataArgument, MetaDataString, AttributeSet)
 from ._utils import _HasMetadata
 
 
@@ -63,14 +63,23 @@ class CallInstr(Instruction):
                       else cconv)
         self.tail = tail
         self.attributes = CallInstrAttributes()
+
+        # Fix and validate arguments
+        args = list(args)
+        for i in range(len(func.function_type.args)):
+            arg = args[i]
+            expected_type = func.function_type.args[i]
+            if (isinstance(expected_type, types.MetaDataType) and
+                arg.type != expected_type):
+                arg = MetaDataArgument(arg)
+            if arg.type != expected_type:
+                msg = ("Type of #{0} arg mismatch: {1} != {2}"
+                       .format(1 + i, expected_type, arg.type))
+                raise TypeError(msg)
+            args[i] = arg
+
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
-        # Validate
-        for argno, (arg, exptype) in enumerate(zip(self.args,
-                                               self.callee.function_type.args)):
-            if arg.type != exptype:
-                msg = "Type of #{0} arg mismatch: {1} != {2}"
-                raise TypeError(msg.format(1 + argno, exptype, arg.type))
 
     @property
     def callee(self):
@@ -138,7 +147,6 @@ class Terminator(Instruction):
     def __init__(self, parent, opname, operands):
         super(Terminator, self).__init__(parent, types.VoidType(), opname,
                                          operands)
-        self.metadata = {}
 
     def descr(self, buf):
         opname = self.opname
@@ -174,12 +182,14 @@ class Ret(Terminator):
 
     def descr(self, buf):
         return_value = self.return_value
+        metadata = self._stringify_metadata(leading_comma=True)
         if return_value is not None:
-            buf.append("{0} {1} {2}\n"
+            buf.append("{0} {1} {2}{3}\n"
                        .format(self.opname, return_value.type,
-                               return_value.get_reference()))
+                               return_value.get_reference(),
+                               metadata))
         else:
-            buf.append("{0}\n".format(self.opname))
+            buf.append("{0}{1}\n".format(self.opname, metadata))
 
 
 class Branch(Terminator):

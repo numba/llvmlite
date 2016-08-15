@@ -825,11 +825,28 @@ class TestBuildInstructions(TestBase):
             """)
         block = self.block(name='other_block')
         builder = ir.IRBuilder(block)
-        builder.ret(ir.Constant(int32, 5))
-        self.assertTrue(block.is_terminated)
+        builder.ret(int32(5))
         self.check_block(block, """\
             other_block:
                 ret i32 5
+            """)
+        # With metadata
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        inst = builder.ret_void()
+        inst.set_metadata("dbg", block.module.add_metadata(()))
+        self.assertTrue(block.is_terminated)
+        self.check_block(block, """\
+            my_block:
+                ret void, !dbg !0
+            """)
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        inst = builder.ret(int32(6))
+        inst.set_metadata("dbg", block.module.add_metadata(()))
+        self.check_block(block, """\
+            my_block:
+                ret i32 6, !dbg !0
             """)
 
     def test_switch(self):
@@ -870,6 +887,23 @@ class TestBuildInstructions(TestBase):
                 %"res_g" = call double (i32, ...) @"g"(i32 %".2", i32 %".1")
                 %"res_f_fast" = call fastcc float (i32, i32) @"f"(i32 %".1", i32 %".2")
                 %"res_f_readonly" = call float (i32, i32) @"f"(i32 %".1", i32 %".2") readonly
+            """)
+
+    def test_call_metadata(self):
+        """
+        Function calls with metadata arguments.
+        """
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        dbg_declare_ty = ir.FunctionType(ir.VoidType(), [ir.MetaDataType()] * 3)
+        dbg_declare = ir.Function(builder.module, dbg_declare_ty, 'llvm.dbg.declare')
+        a = builder.alloca(int32, name="a")
+        b = builder.module.add_metadata(())
+        builder.call(dbg_declare, (a, b, b))
+        self.check_block(block, """\
+            my_block:
+                %"a" = alloca i32
+                call void (metadata, metadata, metadata) @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
             """)
 
     def test_invoke(self):

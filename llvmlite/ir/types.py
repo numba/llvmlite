@@ -84,13 +84,19 @@ class Type(_StrCaching):
         return Constant(self, value)
 
 
-class MetaData(Type):
+class MetaDataType(Type):
 
     def _to_string(self):
         return "metadata"
 
     def as_pointer(self):
         raise TypeError
+
+    def __eq__(self, other):
+        return isinstance(other, MetaDataType)
+
+    def __ne__(self, other):
+        return not isinstance(other, MetaDataType)
 
 
 class LabelType(Type):
