@@ -58,10 +58,11 @@ def view_dot_graph(graph, filename=None, view=False):
     else:
         # Attempts to show the graph in IPython notebook
         try:
-            import IPython.display as display
-        except ImportError:
+            __IPYTHON__
+        except NameError:
             return src
         else:
+            import IPython.display as display
             format = 'svg'
             return display.SVG(data=src.pipe(format))
 
