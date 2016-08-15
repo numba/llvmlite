@@ -1,3 +1,33 @@
+v0.12.1
+-------
+
+New release to fix packages on PyPI. Same as v0.12.0.
+
+
+v0.12.0
+-------
+
+Enhancements:
+
+* PR #179: Let llvmlite build on armv7l Linux.
+* PR #161: Allow adding metadata to functions.
+* PR #163: Allow emitting fast-math ``fcmp`` instructions.
+* PR #159: Allow emitting verbose assembly in TargetMachine.
+
+Fixes:
+
+* Issue #177: Make setup.py compatible with ``pip install``.
+
+v0.11.0
+-------
+
+Enhancements:
+
+* PR #175: Check LLVM version at build time
+* PR #169: Default initializer for non-external global variable
+* PR #168: add ir.Constant.literal_array()
+
+
 v0.10.0
 -------
 

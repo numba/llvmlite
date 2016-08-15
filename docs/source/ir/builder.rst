@@ -351,15 +351,19 @@ Comparisons
    Unsigned integer compare *lhs* with *rhs*.  *cmpop*, a string, can be one
    of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``.
 
-.. method:: IRBuilder.fcmp_ordered(cmpop, lhs, rhs, name='')
+.. method:: IRBuilder.fcmp_ordered(cmpop, lhs, rhs, name='', flags=[])
 
    Floating-point ordered compare *lhs* with *rhs*.  *cmpop*, a string, can
    be one of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``, ``ord``, ``uno``.
+   *flags*, a list, can include any of ``nnan``, ``ninf``, ``nsz``, ``arcp``,
+   and ``fast`` (which implies all previous flags).
 
-.. method:: IRBuilder.fcmp_unordered(cmpop, lhs, rhs, name='')
+.. method:: IRBuilder.fcmp_unordered(cmpop, lhs, rhs, name='', flags=[])
 
    Floating-point unordered compare *lhs* with *rhs*.  *cmpop*, a string, can
    be one of ``<``, ``<=``, ``==``, ``!=``, ``>=``, ``>``, ``ord``, ``uno``.
+   *flags*, a list, can include any of ``nnan``, ``ninf``, ``nsz``, ``arcp``,
+   and ``fast`` (which implies all previous flags).
 
 
 Conditional move

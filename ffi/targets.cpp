@@ -245,6 +245,11 @@ LLVMPY_GetTargetMachineTriple(LLVMTargetMachineRef TM, const char **Out)
     *Out = LLVMGetTargetMachineTriple(TM);
 }
 
+API_EXPORT(void)
+LLVMPY_SetTargetMachineAsmVerbosity(LLVMTargetMachineRef TM, int verbose)
+{
+    LLVMSetTargetMachineAsmVerbosity(TM, verbose);
+}
 
 API_EXPORT(LLVMMemoryBufferRef)
 LLVMPY_TargetMachineEmitToMemory (

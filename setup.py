@@ -1,11 +1,14 @@
 try:
     from setuptools import setup, Extension
+    # Required for compatibility with pip (issue #177)
+    from setuptools.command.install import install
 except ImportError:
     from distutils.core import setup, Extension
+    from distutils.command.install import install
+
 
 from distutils.command.build import build
 from distutils.command.build_ext import build_ext
-from distutils.command.install import install
 from distutils.command.clean import clean
 from distutils import log
 from distutils.dir_util import remove_tree

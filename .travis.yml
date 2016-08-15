@@ -4,43 +4,26 @@
 dist: trusty
 
 matrix:
-    # Note coverage is run in only one configuration
+    # Note coverage is run in only one configuration.  Longest build first.
     include:
-        - env: PYTHON=2.7
-        - env: PYTHON=3.4
         - env: PYTHON=3.5 RUN_COVERAGE=yes
+        - env: PYTHON=3.4
+        - env: PYTHON=2.7
 
 before_install:
-    # Install Miniconda
-    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    - chmod +x miniconda.sh
-    - ./miniconda.sh -b
+    - export CONDA_ENV=travisci
+    - buildscripts/incremental/install_miniconda.sh
     - export PATH=$HOME/miniconda3/bin:$PATH
-    - CONDA_INSTALL="conda install --yes -q"
-    # Setup environment
-    - conda create -n travisci --yes python=$PYTHON
-    - source activate travisci
-    # Install llvmdev (separate channel, for now)
-    - $CONDA_INSTALL -c numba llvmdev="3.7*"
-    # Install enum34 for Python < 3.4
-    - if [ $PYTHON \< "3.4" ]; then $CONDA_INSTALL enum34; fi
-    # Install dependencies for building the docs
-    - $CONDA_INSTALL pip sphinx sphinx_rtd_theme pygments
-    # Install dependencies for code coverage (codecov.io)
-    - if [ "$RUN_COVERAGE" == "yes" ]; then pip install codecov; fi
+    - buildscripts/incremental/setup_conda_environment.sh
 
 install:
-    - python setup.py build
+    - buildscripts/incremental/build.sh
 
 script:
-    - cd $TRAVIS_BUILD_DIR
-    # Ensure that the documentation builds without warnings nor missing references
-    - cd docs ; make SPHINXOPTS=-Wn clean html ; cd ..
-    - python runtests.py -v
-    - if [ "$RUN_COVERAGE" == "yes" ]; then coverage run runtests.py; fi
+    - buildscripts/incremental/test.sh
 
 after_success:
-    - if [ "$RUN_COVERAGE" == "yes" ]; then codecov; fi
+    - if [ "$RUN_COVERAGE" == "yes" ]; then codecov; coveralls; fi
 
 notifications:
     email: false

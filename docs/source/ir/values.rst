@@ -202,6 +202,11 @@ Global values are values accessible using a module-wide name.
       The variable's initialization value (probably a :class:`Constant`
       of type *typ*).  Default is None, meaning the variable is uninitialized.
 
+   .. attribute:: align
+
+      An explicit alignment in bytes.  Default is None, meaning the
+      default alignment for the variable's type is used.
+
 
 .. class:: Function(module, typ, name)
 
@@ -225,6 +230,11 @@ Global values are values accessible using a module-wide name.
 
       Similar to :meth:`append_basic_block`, but inserts it before the basic
       block *before* in the function's list of basic blocks.
+
+   .. method:: set_metadata(name, node)
+
+      Add a function-specific metadata named *name* pointing to the given
+      metadata *node* (a :class:`MDValue`).
 
    .. attribute:: args
 

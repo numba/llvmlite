@@ -11,6 +11,7 @@ import re
 import textwrap
 import unittest
 from array import array
+from collections import OrderedDict
 
 from . import TestCase
 from llvmlite import ir
@@ -77,6 +78,11 @@ class TestBase(TestCase):
     def check_block(self, block, asm):
         self.check_descr(self.descr(block), asm)
 
+    def check_module_body(self, module, asm):
+        expected = self._normalize_asm(asm)
+        actual = module._stringify_body()
+        self.assertEqual(actual.strip(), expected.strip())
+
     def check_metadata(self, module, asm):
         """
         Check module metadata against *asm*.
@@ -127,6 +133,16 @@ class TestFunction(TestBase):
             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 %".2", double %".3", i32* nonnull %".4")"""
             )
 
+    def test_function_metadata(self):
+        # Now with function metadata
+        module = self.module()
+        func = self.function(module)
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+            """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") !dbg !0"""
+            )
+
     def test_define(self):
         # A simple definition
         func = self.function()
@@ -169,27 +185,6 @@ class TestFunction(TestBase):
 
 class TestIR(TestBase):
 
-    def test_globals_access(self):
-        mod = self.module()
-        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
-        ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'bar')
-        globdouble = ir.GlobalVariable(mod, ir.DoubleType(), 'globdouble')
-        self.assertEqual(mod.get_global('foo'), foo)
-        self.assertEqual(mod.get_global('globdouble'), globdouble)
-        self.assertIsNone(mod.get_global('kkk'))
-        # Globals should have a useful repr()
-        self.assertEqual(repr(globdouble),
-                         "<ir.GlobalVariable 'globdouble' of type 'double*'>")
-
-    def test_functions_global_values_access(self):
-        mod = self.module()
-        fty = ir.FunctionType(ir.VoidType(), [])
-        foo = ir.Function(mod, fty, 'foo')
-        bar = ir.Function(mod, fty, 'bar')
-        globdouble = ir.GlobalVariable(mod, ir.DoubleType(), 'globdouble')
-        self.assertEqual(set(mod.functions), set((foo, bar)))
-        self.assertEqual(set(mod.global_values), set((foo, bar, globdouble)))
-
     def test_metadata(self):
         mod = self.module()
         md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
@@ -207,6 +202,12 @@ class TestIR(TestBase):
         pat2 = '!1 = !{ i32 321, !"kernel" }'
         self.assertInText(pat1, str(mod))
         self.assertInText(pat2, str(mod))
+
+    def test_metadata_string(self):
+        mod = self.module()
+        mod.add_metadata([ir.MetaDataString(mod, "\"\\$")])
+        pat = '!0 = !{ !"\\22\\5c$" }'
+        self.assertInText(pat, str(mod))
 
     def test_named_metadata(self):
         mod = self.module()
@@ -234,6 +235,31 @@ class TestIR(TestBase):
         self.assertInText("!{ i32* null }", str(mod))
         self.assert_valid_ir(mod)
 
+    def test_debug_info(self):
+        mod = self.module()
+        difile = mod.add_debug_info("DIFile", {
+            "filename":        "foo",
+            "directory":       "bar",
+        })
+        disubprograms = mod.add_metadata([])
+        dicompileunit = mod.add_debug_info("DICompileUnit", {
+            "language":        ir.DIToken("DW_LANG_Python"),
+            "file":            difile,
+            "producer":        "ARTIQ",
+            "runtimeVersion":  0,
+            "subprograms":     disubprograms,
+            "isOptimized":     True,
+            "somethingFalsy":  False
+        }, is_distinct=True)
+        strmod = str(mod)
+        self.assertInText('!0 = !DIFile(directory: "bar", filename: "foo")',
+                          strmod)
+        self.assertInText('!1 = !{ }', strmod)
+        self.assertInText('!2 = distinct !DICompileUnit(file: !0, '
+                          'isOptimized: true, language: DW_LANG_Python, '
+                          'producer: "ARTIQ", runtimeVersion: 0, '
+                          'somethingFalsy: false, subprograms: !1)', strmod)
+
     def test_inline_assembly(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
@@ -245,6 +271,65 @@ class TestIR(TestBase):
         pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r" ( i32 123 )'
         self.assertInText(pat, str(mod))
         self.assert_valid_ir(mod)
+
+
+class TestGlobalValues(TestBase):
+
+    def test_globals_access(self):
+        mod = self.module()
+        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+        ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'bar')
+        globdouble = ir.GlobalVariable(mod, ir.DoubleType(), 'globdouble')
+        self.assertEqual(mod.get_global('foo'), foo)
+        self.assertEqual(mod.get_global('globdouble'), globdouble)
+        self.assertIsNone(mod.get_global('kkk'))
+        # Globals should have a useful repr()
+        self.assertEqual(repr(globdouble),
+                         "<ir.GlobalVariable 'globdouble' of type 'double*'>")
+
+    def test_functions_global_values_access(self):
+        """
+        Accessing functions and global values through Module.functions
+        and Module.global_values.
+        """
+        mod = self.module()
+        fty = ir.FunctionType(ir.VoidType(), [])
+        foo = ir.Function(mod, fty, 'foo')
+        bar = ir.Function(mod, fty, 'bar')
+        globdouble = ir.GlobalVariable(mod, ir.DoubleType(), 'globdouble')
+        self.assertEqual(set(mod.functions), set((foo, bar)))
+        self.assertEqual(set(mod.global_values), set((foo, bar, globdouble)))
+
+    def test_global_variables_ir(self):
+        """
+        IR serialization of global variables.
+        """
+        mod = self.module()
+        a = ir.GlobalVariable(mod, int8, 'a')
+        b = ir.GlobalVariable(mod, int8, 'b', addrspace=42)
+        # Initialized global variable doesn't default to "external"
+        c = ir.GlobalVariable(mod, int32, 'c')
+        c.initializer = int32(123)
+        d = ir.GlobalVariable(mod, int32, 'd')
+        d.global_constant = True
+        # Non-external linkage implies default "undef" initializer
+        e = ir.GlobalVariable(mod, int32, 'e')
+        e.linkage = "internal"
+        f = ir.GlobalVariable(mod, int32, 'f', addrspace=456)
+        f.unnamed_addr = True
+        g = ir.GlobalVariable(mod, int32, 'g')
+        g.linkage = "internal"
+        g.initializer = int32(123)
+        g.align = 16
+        self.check_module_body(mod, """\
+            @"a" = external global i8
+            @"b" = external addrspace(42) global i8
+            @"c" = global i32 123
+            @"d" = external constant i32
+            @"e" = internal global i32 undef
+            @"f" = external unnamed_addr addrspace(456) global i32
+            @"g" = internal global i32 123, align 16
+            """)
 
 
 class TestBlock(TestBase):
@@ -461,6 +546,7 @@ class TestBuildInstructions(TestBase):
         builder.fcmp_ordered('uno', a, b, 'v')
         builder.fcmp_unordered('ord', a, b, 'w')
         builder.fcmp_unordered('uno', a, b, 'x')
+        builder.fcmp_unordered('olt', a, b, 'y', flags=['nnan', 'ninf', 'nsz', 'arcp', 'fast'])
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
@@ -480,6 +566,7 @@ class TestBuildInstructions(TestBase):
                 %"v" = fcmp uno i32 %".1", %".2"
                 %"w" = fcmp ord i32 %".1", %".2"
                 %"x" = fcmp uno i32 %".1", %".2"
+                %"y" = fcmp nnan ninf nsz arcp fast olt i32 %".1", %".2"
             """)
 
     def test_misc_ops(self):
@@ -1302,7 +1389,7 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '[2 x i32] zeroinitializer')
         # Raw array syntax
         c = ir.Constant(ir.ArrayType(int8, 11), bytearray(b"foobar_123\x80"))
-        self.assertEqual(str(c), r'[11 x i8] c"foobar\5f123\80"')
+        self.assertEqual(str(c), r'[11 x i8] c"foobar_123\80"')
         c = ir.Constant(ir.ArrayType(int8, 4), bytearray(b"\x00\x01\x04\xff"))
         self.assertEqual(str(c), r'[4 x i8] c"\00\01\04\ff"')
         # Recursive instantiation of inner constants

@@ -3,18 +3,20 @@ from ctypes import c_int, c_char_p, POINTER
 from . import ffi
 
 
-def link_modules(dst, src, preserve):
+def link_modules(dst, src):
     dst.verify()
     src.verify()
     with ffi.OutputString() as outerr:
-        if ffi.lib.LLVMPY_LinkModules(dst, src, int(preserve), outerr):
+        err = ffi.lib.LLVMPY_LinkModules(dst, src, outerr)
+        # The underlying module was destroyed
+        src.detach()
+        if err:
             raise RuntimeError(str(outerr))
 
 
 ffi.lib.LLVMPY_LinkModules.argtypes = [
     ffi.LLVMModuleRef,
     ffi.LLVMModuleRef,
-    c_int,
     POINTER(c_char_p),
 ]
 

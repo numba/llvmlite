@@ -3,13 +3,15 @@ CXX = clang++ -std=c++11 -stdlib=libc++
 CXXFLAGS = $(LLVM_CXXFLAGS)
 LDFLAGS = $(LLVM_LDFLAGS)
 LIBS = $(LLVM_LIBS)
+INCLUDE = core.h
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
 	  linker.cpp
 OUTPUT = libllvmlite.dylib
+MACOSX_DEPLOYMENT_TARGET ?= 10.9
 
-all: $(SRC)
-	MACOSX_DEPLOYMENT_TARGET=10.7 $(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
+all: $(SRC) $(INCLUDE)
+	MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET) $(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
 
 clean:
 	rm -rf test

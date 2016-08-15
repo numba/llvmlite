@@ -138,9 +138,13 @@ class ModuleRef(ffi.ObjectRef):
                                      strrep.encode('utf8')))
 
     def link_in(self, other, preserve=False):
-        link_modules(self, other, preserve)
-        if not preserve:
-            other.close()
+        """
+        Link the *other* module into this one.  The *other* module will
+        be destroyed unless *preserve* is true.
+        """
+        if preserve:
+            other = other.clone()
+        link_modules(self, other)
 
     @property
     def global_variables(self):

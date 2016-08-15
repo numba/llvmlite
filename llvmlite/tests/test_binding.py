@@ -12,11 +12,16 @@ import subprocess
 import sys
 import unittest
 
-from llvmlite import six
+from llvmlite import six, ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite import ir
 from . import TestCase
+
+
+# arvm7l needs extra ABI symbols to link successfully
+if platform.machine() == 'armv7l':
+    llvm.load_library_permanently('libgcc_s.so.1')
 
 
 def no_de_locale():
@@ -226,7 +231,7 @@ class TestMisc(BaseTest):
             self.assertIsInstance(v, bool)
         self.assertIsInstance(features.flatten(), str)
 
-        re_term = r"[+\-][a-zA-Z0-9\._]+"
+        re_term = r"[+\-][a-zA-Z0-9\._-]+"
         regex = r"^({0}|{0}(,{0})*)?$".format(re_term)
         # quick check for our regex
         self.assertIsNotNone(re.match(regex, ""))
@@ -265,7 +270,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertIn((major, minor), [(3, 6), (3, 7)])
+        self.assertEqual((major, minor), (3, 8))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -637,6 +642,10 @@ class JITWithTMTestMixin(JITTestMixin):
         ee = self.jit(mod, target_machine)
         raw_asm = target_machine.emit_assembly(mod)
         self.assertIn("sum", raw_asm)
+        target_machine.set_asm_verbosity(True)
+        raw_asm_verbose = target_machine.emit_assembly(mod)
+        self.assertIn("sum", raw_asm)
+        self.assertNotEqual(raw_asm, raw_asm_verbose)
 
     def test_emit_object(self):
         """Test TargetMachineRef.emit_object()"""
@@ -1019,6 +1028,61 @@ class TestAnalysis(BaseTest):
         inst = "%.3 = add i32 %.1, %.2"
         self.assertIn(inst, dot_showing_inst)
         self.assertNotIn(inst, dot_without_inst)
+
+
+class TestGlobalVariables(BaseTest):
+    def check_global_variable_linkage(self, linkage, has_undef=True):
+        # This test default initializer on global variables with different
+        # linkages.  Some linkages requires an initializer be present, while
+        # it is optional for others.  This test uses ``parse_assembly()``
+        # to verify that we are adding an `undef` automatically if user didn't
+        # specific one for certain linkages.  It is a IR syntax error if the
+        # initializer is not present for certain linkages e.g. "external".
+        mod = ir.Module()
+        typ = ir.IntType(32)
+        gv = ir.GlobalVariable(mod, typ, "foo")
+        gv.linkage = linkage
+        asm = str(mod)
+        # check if 'undef' is present
+        if has_undef:
+            self.assertIn('undef', asm)
+        else:
+            self.assertNotIn('undef', asm)
+        # parse assembly to ensure correctness
+        self.module(asm)
+
+    def test_internal_linkage(self):
+        self.check_global_variable_linkage('internal')
+
+    def test_common_linkage(self):
+        self.check_global_variable_linkage('common')
+
+    def test_external_linkage(self):
+        self.check_global_variable_linkage('external', has_undef=False)
+
+    def test_available_externally_linkage(self):
+        self.check_global_variable_linkage('available_externally')
+
+    def test_private_linkage(self):
+        self.check_global_variable_linkage('private')
+
+    def test_linkonce_linkage(self):
+        self.check_global_variable_linkage('linkonce')
+
+    def test_weak_linkage(self):
+        self.check_global_variable_linkage('weak')
+
+    def test_appending_linkage(self):
+        self.check_global_variable_linkage('appending')
+
+    def test_extern_weak_linkage(self):
+        self.check_global_variable_linkage('extern_weak', has_undef=False)
+
+    def test_linkonce_odr_linkage(self):
+        self.check_global_variable_linkage('linkonce_odr')
+
+    def test_weak_odr_linkage(self):
+        self.check_global_variable_linkage('weak_odr')
 
 
 if __name__ == "__main__":
