@@ -1,5 +1,7 @@
 from __future__ import print_function, absolute_import
 
+import collections
+
 from . import context, values, types, _utils
 
 
@@ -10,15 +12,13 @@ class Module(object):
         self.data_layout = ""
         self.scope = _utils.NameScope()
         self.triple = 'unknown-unknown-unknown'
-        self.globals = {}
+        self.globals = collections.OrderedDict()
         # Innamed metadata nodes.
         self.metadata = []
         # Named metadata nodes
         self.namedmetadata = {}
         # Cache for metadata node deduplication
         self._metadatacache = {}
-        # Sequence of global values, in order
-        self._sequence = []
 
     def _fix_metadata_operands(self, operands):
         fixed_ops = []
@@ -143,7 +143,6 @@ class Module(object):
         """
         assert globalvalue.name not in self.globals
         self.globals[globalvalue.name] = globalvalue
-        self._sequence.append(globalvalue.name)
 
     def get_unique_name(self, name=''):
         """
@@ -192,7 +191,7 @@ class Module(object):
         lines = [it.get_declaration()
                  for it in self.get_identified_types().values()]
         # Global values (including function definitions)
-        lines += [str(self.globals[k]) for k in self._sequence]
+        lines += [str(v) for v in self.globals.values()]
         return lines
 
     def _get_metadata_lines(self):
