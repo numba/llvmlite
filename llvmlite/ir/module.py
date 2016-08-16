@@ -1,4 +1,5 @@
 from __future__ import print_function, absolute_import
+
 from . import context, values, types, _utils
 
 
@@ -6,25 +7,41 @@ class Module(object):
     def __init__(self, name='', context=context.global_context):
         self.context = context
         self.name = name   # name is for debugging/informational
-        self.globals = {}
-        self.metadata = []
-        self._metadatacache = {}
         self.data_layout = ""
-        self.namedmetadata = {}
         self.scope = _utils.NameScope()
         self.triple = 'unknown-unknown-unknown'
+        self.globals = {}
+        # Innamed metadata nodes.
+        self.metadata = []
+        # Named metadata nodes
+        self.namedmetadata = {}
+        # Cache for metadata node deduplication
+        self._metadatacache = {}
+        # Sequence of global values, in order
         self._sequence = []
 
     def _fix_metadata_operands(self, operands):
         fixed_ops = []
         for op in operands:
             if op is None:
-                # Literal None means a null metadata value
+                # A literal None creates a null metadata value
                 op = types.MetaDataType()(None)
             elif isinstance(op, str):
-                # Literal string means a metadata string value
+                # A literal string creates a metadata string value
                 op = values.MetaDataString(self, op)
+            elif isinstance(op, (list, tuple)):
+                # A sequence creates a metadata node reference
+                op = self.add_metadata(op)
             fixed_ops.append(op)
+        return fixed_ops
+
+    def _fix_di_operands(self, operands):
+        fixed_ops = []
+        for name, op in operands:
+            if isinstance(op, (list, tuple)):
+                # A sequence creates a metadata node reference
+                op = self.add_metadata(op)
+            fixed_ops.append((name, op))
         return fixed_ops
 
     def add_metadata(self, operands):
@@ -37,10 +54,10 @@ class Module(object):
         if not isinstance(operands, (list, tuple)):
             raise TypeError("expected a list or tuple of metadata values, "
                             "got %r" % (operands,))
-        n = len(self.metadata)
         operands = self._fix_metadata_operands(operands)
         key = tuple(operands)
         if key not in self._metadatacache:
+            n = len(self.metadata)
             md = values.MDValue(self, operands, name=str(n))
             self._metadatacache[key] = md
         else:
@@ -57,10 +74,10 @@ class Module(object):
         A DIValue instance is returned, it can then be associated to e.g.
         an instruction.
         """
-        n = len(self.metadata)
-        operands = tuple(sorted(operands.items()))
+        operands = tuple(sorted(self._fix_di_operands(operands.items())))
         key = (kind, operands, is_distinct)
         if key not in self._metadatacache:
+            n = len(self.metadata)
             di = values.DIValue(self, is_distinct, kind, operands, name=str(n))
             self._metadatacache[key] = di
         else:

@@ -199,14 +199,28 @@ class TestIR(TestBase):
         self.assert_valid_ir(mod)
 
     def test_unnamed_metadata_2(self):
-        # Two unnamed metadata nodes
+        # Several unnamed metadata nodes
         mod = self.module()
         # First node has a literal metadata string
         m0 = mod.add_metadata([int32(123), "kernel"])
         # Second node refers to the first one
         m1 = mod.add_metadata([int64(456), m0])
+        # Third node is the same as the second one
+        m2 = mod.add_metadata([int64(456), m0])
+        self.assertIs(m2, m1)
+        # Fourth node refers to the first three
+        m3 = mod.add_metadata([m0, m1, m2])
         self.assert_ir_line('!0 = !{ i32 123, !"kernel" }', mod)
         self.assert_ir_line('!1 = !{ i64 456, !0 }', mod)
+        self.assert_ir_line('!2 = !{ !0, !1, !1 }', mod)
+
+    def test_unnamed_metadata_3(self):
+        # Passing nested metadata as a sequence
+        mod = self.module()
+        mod.add_metadata([int32(123), [int32(456)], [int32(789)], [int32(456)]])
+        self.assert_ir_line('!0 = !{ i32 456 }', mod)
+        self.assert_ir_line('!1 = !{ i32 789 }', mod)
+        self.assert_ir_line('!2 = !{ i32 123, !0, !1, !0 }', mod)
 
     def test_metadata_string(self):
         # Escaping contents of a metadata string
@@ -237,10 +251,13 @@ class TestIR(TestBase):
         mod.add_named_metadata("foo", m0)
         mod.add_named_metadata("foo", [int64(456)])
         mod.add_named_metadata("foo", ["kernel"])
+        mod.add_named_metadata("bar", [])
         self.assert_ir_line("!foo = !{ !0, !1, !2 }", mod)
         self.assert_ir_line("!0 = !{ i32 123 }", mod)
         self.assert_ir_line("!1 = !{ i64 456 }", mod)
         self.assert_ir_line('!2 = !{ !"kernel" }', mod)
+        self.assert_ir_line("!bar = !{ !3 }", mod)
+        self.assert_ir_line('!3 = !{  }', mod)
         self.assert_valid_ir(mod)
 
     def test_metadata_null(self):
@@ -256,32 +273,80 @@ class TestIR(TestBase):
         self.assert_valid_ir(mod)
 
     def test_debug_info(self):
+        # Add real world-looking debug information to a module
+        # (with various value types)
         mod = self.module()
-        difile = mod.add_debug_info("DIFile", {
+        di_file = mod.add_debug_info("DIFile", {
             "filename":        "foo",
             "directory":       "bar",
         })
-        disubprograms = mod.add_metadata([])
-        dicompileunit = mod.add_debug_info("DICompileUnit", {
+        di_func_type = mod.add_debug_info("DISubroutineType", {
+            # None as `null`
+            "types":           mod.add_metadata([None]),
+            })
+        di_func = mod.add_debug_info("DISubprogram", {
+            "name":            "my_func",
+            "file":            di_file,
+            "line":            11,
+            "type":            di_func_type,
+            "isLocal":         False,
+            }, is_distinct=True)
+        di_compileunit = mod.add_debug_info("DICompileUnit", {
             "language":        ir.DIToken("DW_LANG_Python"),
-            "file":            difile,
+            "file":            di_file,
             "producer":        "ARTIQ",
             "runtimeVersion":  0,
-            "subprograms":     disubprograms,
+            # Passing unnamed metadata as a sequence
+            "subprograms":     [di_func],
             "isOptimized":     True,
-            "somethingFalsy":  False,
-            "somethingNull":   None,
         }, is_distinct=True)
+        # Check output
         strmod = str(mod)
         self.assert_ir_line('!0 = !DIFile(directory: "bar", filename: "foo")',
                             strmod)
-        self.assert_ir_line('!1 = !{  }', strmod)
-        self.assert_ir_line('!2 = distinct !DICompileUnit(file: !0, '
+        self.assert_ir_line('!1 = !{ null }', strmod)
+        self.assert_ir_line('!2 = !DISubroutineType(types: !1)', strmod)
+        self.assert_ir_line('!3 = distinct !DISubprogram(file: !0, isLocal: false, '
+                            'line: 11, name: "my_func", type: !2)',
+                            strmod)
+        self.assert_ir_line('!4 = !{ !3 }', strmod)
+        self.assert_ir_line('!5 = distinct !DICompileUnit(file: !0, '
                             'isOptimized: true, language: DW_LANG_Python, '
                             'producer: "ARTIQ", runtimeVersion: 0, '
-                            'somethingFalsy: false, somethingNull: null, '
-                            'subprograms: !1)',
+                            'subprograms: !4)',
                             strmod)
+        self.assert_valid_ir(mod)
+
+    def test_debug_info_2(self):
+        # Identical debug info nodes should be merged
+        mod = self.module()
+        di1 = mod.add_debug_info("DIFile",
+                                 {"filename": "foo",
+                                  "directory": "bar",
+                                 })
+        di2 = mod.add_debug_info("DIFile",
+                                 {"filename": "foo",
+                                  "directory": "bar",
+                                 })
+        di3 = mod.add_debug_info("DIFile",
+                                 {"filename": "bar",
+                                  "directory": "foo",
+                                 })
+        di4 = mod.add_debug_info("DIFile",
+                                 {"filename": "foo",
+                                  "directory": "bar",
+                                 }, is_distinct=True)
+        self.assertIs(di1, di2)
+        self.assertEqual(len({di1, di2, di3, di4}), 3)
+        # Check output
+        strmod = str(mod)
+        self.assert_ir_line('!0 = !DIFile(directory: "bar", filename: "foo")',
+                            strmod)
+        self.assert_ir_line('!1 = !DIFile(directory: "foo", filename: "bar")',
+                            strmod)
+        self.assert_ir_line('!2 = distinct !DIFile(directory: "bar", filename: "foo")',
+                            strmod)
+        self.assert_valid_ir(mod)
 
     def test_inline_assembly(self):
         mod = self.module()
