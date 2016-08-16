@@ -354,7 +354,7 @@ class TestIR(TestBase):
         builder = ir.IRBuilder(foo.append_basic_block(''))
         asmty = ir.FunctionType(int32, [int32])
         asm = ir.InlineAsm(asmty, "mov $1, $2", "=r,r", side_effect=True)
-        builder.call(asm, [int32(123)], name='xx')
+        builder.call(asm, [int32(123)])
         builder.ret_void()
         pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r" ( i32 123 )'
         self.assertInText(pat, str(mod))
@@ -903,36 +903,41 @@ class TestBuildInstructions(TestBase):
             """)
 
     def test_returns(self):
+        def check(block, expected_ir):
+            self.assertTrue(block.is_terminated)
+            self.check_block(block, expected_ir)
+
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         builder.ret_void()
-        self.assertTrue(block.is_terminated)
-        self.check_block(block, """\
+        check(block, """\
             my_block:
                 ret void
             """)
+
         block = self.block(name='other_block')
         builder = ir.IRBuilder(block)
         builder.ret(int32(5))
-        self.check_block(block, """\
+        check(block, """\
             other_block:
                 ret i32 5
             """)
+
         # With metadata
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         inst = builder.ret_void()
         inst.set_metadata("dbg", block.module.add_metadata(()))
-        self.assertTrue(block.is_terminated)
-        self.check_block(block, """\
+        check(block, """\
             my_block:
                 ret void, !dbg !0
             """)
+
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         inst = builder.ret(int32(6))
         inst.set_metadata("dbg", block.module.add_metadata(()))
-        self.check_block(block, """\
+        check(block, """\
             my_block:
                 ret i32 6, !dbg !0
             """)
