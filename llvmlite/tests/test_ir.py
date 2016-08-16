@@ -33,7 +33,9 @@ class TestBase(TestCase):
     """
 
     def assertInText(self, pattern, text):
-        """Replaces whitespace sequence in `pattern` with "\s+".
+        """
+        Assert *pattern* is in *text*, ignoring any whitespace differences
+        (including newlines).
         """
 
         def escape(c):
@@ -44,6 +46,10 @@ class TestBase(TestCase):
         pattern = ''.join(map(escape, pattern))
         regex = re.sub(r'\s+', r'\s*', pattern)
         self.assertRegexpMatches(text, regex)
+
+    def assert_ir_line(self, line, mod):
+        lines = [line.strip() for line in str(mod).splitlines()]
+        self.assertIn(line, lines)
 
     def assert_valid_ir(self, mod):
         llvm.parse_assembly(str(mod))
@@ -185,54 +191,68 @@ class TestFunction(TestBase):
 
 class TestIR(TestBase):
 
-    def test_metadata(self):
+    def test_unnamed_metadata(self):
+        # An unnamed metadata node
         mod = self.module()
-        md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        pat = "!0 = !{ i32 123 }"
-        self.assertInText(pat, str(mod))
-        self.assertInText(pat, str(md))
+        md = mod.add_metadata([int32(123), int8(42)])
+        self.assert_ir_line("!0 = !{ i32 123, i8 42 }", mod)
         self.assert_valid_ir(mod)
 
-    def test_metadata_2(self):
+    def test_unnamed_metadata_2(self):
+        # Two unnamed metadata nodes
         mod = self.module()
-        mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        mod.add_metadata([ir.Constant(ir.IntType(32), 321),
-                          ir.MetaDataString(mod, "kernel")])
-        pat1 = "!0 = !{ i32 123 }"
-        pat2 = '!1 = !{ i32 321, !"kernel" }'
-        self.assertInText(pat1, str(mod))
-        self.assertInText(pat2, str(mod))
+        # First node has a literal metadata string
+        m0 = mod.add_metadata([int32(123), "kernel"])
+        # Second node refers to the first one
+        m1 = mod.add_metadata([int64(456), m0])
+        self.assert_ir_line('!0 = !{ i32 123, !"kernel" }', mod)
+        self.assert_ir_line('!1 = !{ i64 456, !0 }', mod)
 
     def test_metadata_string(self):
+        # Escaping contents of a metadata string
         mod = self.module()
-        mod.add_metadata([ir.MetaDataString(mod, "\"\\$")])
-        pat = '!0 = !{ !"\\22\\5c$" }'
-        self.assertInText(pat, str(mod))
+        mod.add_metadata(["\"\\$"])
+        self.assert_ir_line('!0 = !{ !"\\22\\5c$" }', mod)
 
     def test_named_metadata(self):
+        # Add a named metadata node and add metadata values to it
         mod = self.module()
-        md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
+        m0 = mod.add_metadata([int32(123)])
+        m1 = mod.add_metadata([int64(456)])
         nmd = mod.add_named_metadata("foo")
-        nmd.add(md)
-        self.assertInText("!foo = !{ !0 }", str(mod))
+        nmd.add(m0)
+        nmd.add(m1)
+        nmd.add(m0)
+        self.assert_ir_line("!foo = !{ !0, !1, !0 }", mod)
         self.assert_valid_ir(mod)
+        # Check get_named_metadata()
+        self.assertIs(nmd, mod.get_named_metadata("foo"))
+        with self.assertRaises(KeyError):
+            mod.get_named_metadata("bar")
 
     def test_named_metadata_2(self):
+        # Add and set named metadata through a single add_named_metadata() call
         mod = self.module()
-        md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        nmd1 = mod.add_named_metadata("foo")
-        nmd1.add(md)
-        nmd2 = mod.add_named_metadata("bar")
-        nmd2.add(md)
-        nmd2.add(md)
-        self.assertInText("!foo = !{ !0 }", str(mod))
-        self.assertInText("!bar = !{ !0, !0 }", str(mod))
+        m0 = mod.add_metadata([int32(123)])
+        mod.add_named_metadata("foo", m0)
+        mod.add_named_metadata("foo", [int64(456)])
+        mod.add_named_metadata("foo", ["kernel"])
+        self.assert_ir_line("!foo = !{ !0, !1, !2 }", mod)
+        self.assert_ir_line("!0 = !{ i32 123 }", mod)
+        self.assert_ir_line("!1 = !{ i64 456 }", mod)
+        self.assert_ir_line('!2 = !{ !"kernel" }', mod)
         self.assert_valid_ir(mod)
 
     def test_metadata_null(self):
+        # A null metadata (typed) value
         mod = self.module()
-        md = mod.add_metadata([ir.Constant(ir.PointerType(ir.IntType(32)), None)])
-        self.assertInText("!{ i32* null }", str(mod))
+        md = mod.add_metadata([int32.as_pointer()(None)])
+        self.assert_ir_line("!0 = !{ i32* null }", mod)
+        self.assert_valid_ir(mod)
+        # A null metadata (untyped) value
+        mod = self.module()
+        md = mod.add_metadata([None, int32(123)])
+        self.assert_ir_line("!0 = !{ null, i32 123 }", mod)
         self.assert_valid_ir(mod)
 
     def test_debug_info(self):
@@ -249,24 +269,27 @@ class TestIR(TestBase):
             "runtimeVersion":  0,
             "subprograms":     disubprograms,
             "isOptimized":     True,
-            "somethingFalsy":  False
+            "somethingFalsy":  False,
+            "somethingNull":   None,
         }, is_distinct=True)
         strmod = str(mod)
-        self.assertInText('!0 = !DIFile(directory: "bar", filename: "foo")',
-                          strmod)
-        self.assertInText('!1 = !{ }', strmod)
-        self.assertInText('!2 = distinct !DICompileUnit(file: !0, '
-                          'isOptimized: true, language: DW_LANG_Python, '
-                          'producer: "ARTIQ", runtimeVersion: 0, '
-                          'somethingFalsy: false, subprograms: !1)', strmod)
+        self.assert_ir_line('!0 = !DIFile(directory: "bar", filename: "foo")',
+                            strmod)
+        self.assert_ir_line('!1 = !{  }', strmod)
+        self.assert_ir_line('!2 = distinct !DICompileUnit(file: !0, '
+                            'isOptimized: true, language: DW_LANG_Python, '
+                            'producer: "ARTIQ", runtimeVersion: 0, '
+                            'somethingFalsy: false, somethingNull: null, '
+                            'subprograms: !1)',
+                            strmod)
 
     def test_inline_assembly(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
         builder = ir.IRBuilder(foo.append_basic_block(''))
-        asmty = ir.FunctionType(ir.IntType(32), [ir.IntType(32)])
+        asmty = ir.FunctionType(int32, [int32])
         asm = ir.InlineAsm(asmty, "mov $1, $2", "=r,r", side_effect=True)
-        builder.call(asm, [ir.Constant(ir.IntType(32), 123)])
+        builder.call(asm, [int32(123)], name='xx')
         builder.ret_void()
         pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r" ( i32 123 )'
         self.assertInText(pat, str(mod))

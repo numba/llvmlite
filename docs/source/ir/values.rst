@@ -14,6 +14,11 @@ Values are what a :term:`module` mostly consists of.
    An undefined value (mapping to LLVM's "undef").
 
 
+.. class:: Value
+
+   The base class for all IR values.
+
+
 .. class:: Constant(typ, constant)
 
    A literal value.  *typ* is the type of the represented value
@@ -67,34 +72,6 @@ Values are what a :term:`module` mostly consists of.
       instead.
 
 
-.. class:: Value
-
-   The base class for non-literal values.
-
-
-.. class:: MetaDataString(module, value)
-
-   A string literal for use in :term:`metadata`.  *module* is the module
-   the metadata belongs to.  *value* is a Python string.
-
-.. class:: MDValue
-
-   A :term:`metadata` node.  To create an instance, call
-   :meth:`Module.add_metadata`.
-
-.. class:: NamedMetaData
-
-   A named metadata.  To create an instance, call
-   :meth:`Module.add_named_metadata`.  Named metadata has
-   the following method:
-
-   .. method:: add(md)
-
-      Append the given piece of metadata to the collection of operands
-      referred to by the NamedMetaData.  *md* can be either a
-      :class:`MetaDataString` or a :class:`MDValue`.
-
-
 .. class:: Argument
 
    One of a function's arguments.  Arguments have the following method:
@@ -144,6 +121,45 @@ Values are what a :term:`module` mostly consists of.
    .. attribute:: basic_block
 
       The basic block. Must be a part of :attr:`function`.
+
+
+Metadata
+--------
+
+There are several kinds of :term:`metadata` values.
+
+
+.. class:: MetaDataString(module, value)
+
+   A string literal for use in metadata.  *module* is the module
+   the metadata belongs to.  *value* is a Python string.
+
+.. class:: MDValue
+
+   A metadata node.  To create an instance, call :meth:`Module.add_metadata`.
+
+.. class:: DIValue
+
+   A debug information descriptor, containing key-value pairs.
+   To create an instance, call :meth:`Module.add_debug_info`.
+
+.. class:: DIToken(value)
+
+   A debug information "token", representing a well-known enumeration
+   value.  *value* should be the enumeration name, e.g. ``'DW_LANG_Python'``.
+
+
+.. class:: NamedMetaData
+
+   A named metadata node.  To create an instance, call
+   :meth:`Module.add_named_metadata`.  Named metadata has
+   the following method:
+
+   .. method:: add(md)
+
+      Append the given piece of metadata to the collection of operands
+      referred to by the NamedMetaData.  *md* can be either a
+      :class:`MetaDataString` or a :class:`MDValue`.
 
 
 Global values
@@ -345,6 +361,7 @@ use the helper methods on the :class:`IRBuilder` class.
 
       Add a catch or filter clause.  Create catch clauses using
       :class:`CatchClause`, and filter clauses using :class:`FilterClause`.
+
 
 Landing pad clauses
 -------------------

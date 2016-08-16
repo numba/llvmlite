@@ -286,6 +286,9 @@ class MetaDataArgument(_StrCaching, _StringReferenceCaching, Value):
     """
     An argument value to a function taking metadata arguments.
     This can wrap any other kind of LLVM value.
+
+    Do not instantiate directly, Builder.call() will create these
+    automatically.
     """
 
     def __init__(self, value):
@@ -303,6 +306,11 @@ class MetaDataArgument(_StrCaching, _StringReferenceCaching, Value):
 
 
 class NamedMetaData(object):
+    """
+    A named metadata node.
+
+    Do not instantiate directly, use Module.add_named_metadata() instead.
+    """
 
     def __init__(self, parent):
         self.parent = parent
@@ -313,6 +321,11 @@ class NamedMetaData(object):
 
 
 class MDValue(NamedValue):
+    """
+    A metadata node's value, consisting of a sequence of elements ("operands").
+
+    Do not instantiate directly, use Module.add_metadata() instead.
+    """
     name_prefix = '!'
 
     def __init__(self, parent, values, name):
@@ -355,6 +368,8 @@ class DIToken:
     """
     A debug information enumeration value that should appear bare in
     the emitted metadata.
+
+    Use this to wrap known constants, e.g. the DW_* enumerations.
     """
     def __init__(self, value):
         self.value = value
@@ -363,6 +378,8 @@ class DIToken:
 class DIValue(NamedValue):
     """
     A debug information descriptor, containing key-value pairs.
+
+    Do not instantiate directly, use Module.add_debug_info() instead.
     """
     name_prefix = '!'
 
