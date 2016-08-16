@@ -23,7 +23,7 @@ script:
     - buildscripts/incremental/test.sh
 
 after_success:
-    - if [ "$RUN_COVERAGE" == "yes" ]; then codecov; coveralls; fi
+    - buildscripts/incremental/after_success.sh
 
 notifications:
     email: false
