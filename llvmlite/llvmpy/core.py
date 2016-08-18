@@ -248,7 +248,7 @@ class MetaDataString(ir.MetaDataString):
         return MetaDataString(module, text)
 
 
-class MetaData(ir.MetaData):
+class MetaData(object):
     @staticmethod
     def get(module, values):
         return module.add_metadata(values)

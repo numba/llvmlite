@@ -256,7 +256,9 @@ class MetaDataString(NamedValue):
     """
 
     def __init__(self, parent, string):
-        super(MetaDataString, self).__init__(parent, types.MetaData(), name="")
+        super(MetaDataString, self).__init__(parent,
+                                             types.MetaDataType(),
+                                             name="")
         self.string = string
 
     def descr(self, buf):
@@ -280,7 +282,35 @@ class MetaDataString(NamedValue):
         return hash(self.string)
 
 
+class MetaDataArgument(_StrCaching, _StringReferenceCaching, Value):
+    """
+    An argument value to a function taking metadata arguments.
+    This can wrap any other kind of LLVM value.
+
+    Do not instantiate directly, Builder.call() will create these
+    automatically.
+    """
+
+    def __init__(self, value):
+        assert isinstance(value, Value)
+        assert not isinstance(value.type, types.MetaDataType)
+        self.type = types.MetaDataType()
+        self.wrapped_value = value
+
+    def _get_reference(self):
+        # e.g. "i32* %2"
+        return "{0} {1}".format(self.wrapped_value.type,
+                                self.wrapped_value.get_reference())
+
+    _to_string = _get_reference
+
+
 class NamedMetaData(object):
+    """
+    A named metadata node.
+
+    Do not instantiate directly, use Module.add_named_metadata() instead.
+    """
 
     def __init__(self, parent):
         self.parent = parent
@@ -291,17 +321,24 @@ class NamedMetaData(object):
 
 
 class MDValue(NamedValue):
+    """
+    A metadata node's value, consisting of a sequence of elements ("operands").
+
+    Do not instantiate directly, use Module.add_metadata() instead.
+    """
     name_prefix = '!'
 
     def __init__(self, parent, values, name):
-        super(MDValue, self).__init__(parent, types.MetaData(), name=name)
+        super(MDValue, self).__init__(parent,
+                                      types.MetaDataType(),
+                                      name=name)
         self.operands = tuple(values)
         parent.metadata.append(self)
 
     def descr(self, buf):
         operands = []
         for op in self.operands:
-            if isinstance(op.type, types.MetaData):
+            if isinstance(op.type, types.MetaDataType):
                 if isinstance(op, Constant) and op.constant == None:
                     operands.append("null")
                 else:
@@ -331,6 +368,8 @@ class DIToken:
     """
     A debug information enumeration value that should appear bare in
     the emitted metadata.
+
+    Use this to wrap known constants, e.g. the DW_* enumerations.
     """
     def __init__(self, value):
         self.value = value
@@ -339,11 +378,15 @@ class DIToken:
 class DIValue(NamedValue):
     """
     A debug information descriptor, containing key-value pairs.
+
+    Do not instantiate directly, use Module.add_debug_info() instead.
     """
     name_prefix = '!'
 
     def __init__(self, parent, is_distinct, kind, operands, name):
-        super(DIValue, self).__init__(parent, types.MetaData(), name=name)
+        super(DIValue, self).__init__(parent,
+                                      types.MetaDataType(),
+                                      name=name)
         self.is_distinct = is_distinct
         self.kind = kind
         self.operands = tuple(operands)
@@ -366,9 +409,11 @@ class DIValue(NamedValue):
                 strvalue = '"{}"'.format(_escape_string(value))
             elif isinstance(value, int):
                 strvalue = str(value)
-            else:
-                assert isinstance(value, NamedValue)
+            elif isinstance(value, NamedValue):
                 strvalue = value.get_reference()
+            else:
+                raise TypeError("invalid operand type for debug info: %r"
+                                % (value,))
             operands.append("{0}: {1}".format(key, strvalue))
         operands = ', '.join(operands)
         buf += ("!", self.kind, "(", operands, ")\n")
@@ -667,6 +712,10 @@ class Block(NamedValue):
     @property
     def function(self):
         return self.parent
+
+    @property
+    def module(self):
+        return self.parent.module
 
     def descr(self, buf):
         buf.append("{0}:\n".format(self.name))

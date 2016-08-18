@@ -16,6 +16,30 @@ by the :class:`Module` class.
 
    Modules have the following methods and attributes:
 
+   .. method:: add_debug_info(kind, operands, is_distinct=False)
+
+      Add debug information metadata to the module with the given
+      *operands* (a mapping of string keys to values) or return
+      a previous equivalent metadata.  *kind* is the name of the
+      debug information kind (e.g. ``'DICompileUnit'``).
+
+      A :class:`DIValue` instance is returned, it can then be associated
+      to e.g. an instruction.
+
+      Example::
+
+         di_file = module.add_debug_info("DIFile", {
+            "filename": "factorial.py",
+            "directory": "bar",
+         })
+         di_compile_unit = module.add_debug_info("DICompileUnit", {
+            "language": ir.DIToken("DW_LANG_Python"),
+            "file": di_file,
+            "producer": "llvmlite x.y",
+            "runtimeVersion": 2,
+            "isOptimized": False,
+         }, is_distinct=True)
+
    .. method:: add_global(globalvalue)
 
       Add the given *globalvalue* (a :class:`GlobalValue`) to this module.
@@ -28,10 +52,17 @@ by the :class:`Module` class.
       metadata node with equal operands already exists in the module, it
       is reused instead.  A :class:`MDValue` is returned.
 
-   .. method:: add_named_metadata(name)
+   .. method:: add_named_metadata(name, element=None)
 
-      Add a named metadata with the given *name*.  A :class:`NamedMetaData`
-      is returned.
+      Return the metadata node with the given *name*.  If it
+      doesn't already exist, the named metadata node is created first.
+      If *element* is not None, it can be a metadata value or a sequence
+      of values to append to the metadata node's elements.
+      A :class:`NamedMetaData` is returned.
+
+      Example::
+
+         module.add_named_metadata("llvm.ident", ["llvmlite/1.0"])
 
    .. method:: get_global(name)
 
@@ -40,7 +71,7 @@ by the :class:`Module` class.
 
    .. method:: get_named_metadata(name)
 
-      Return the named metadata with the given *name*.  :exc:`KeyError`
+      Return the metadata node with the given *name*.  :exc:`KeyError`
       is raised if it doesn't exist.
 
    .. method:: get_unique_name(name)

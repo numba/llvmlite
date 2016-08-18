@@ -153,8 +153,10 @@ Other types
    The type for :term:`labels <label>`.  You don't need to instantiate this
    type.
 
-.. class:: MetaData
+.. class:: MetaDataType
 
    The type for :term:`metadata`.  You don't need to instantiate this
    type.
 
+   .. note::
+      This used to be called ``MetaData`` but was renamed for clarity.
