@@ -1,3 +1,24 @@
+v0.13.0
+-------
+
+Enhancements:
+
+* PR #176: Switch from LLVM 3.7 to LLVM 3.8.
+* PR #191: Allow setting the alignment of a global variable.
+* PR #198: Add missing function attributes.
+* PR #160: Escape the contents of metadata strings, to allow embedding
+  any characters.
+* PR #162: Add support for creating debug information nodes.
+* PR #200: Improve the usability of metadata emission APIs.
+* PR #200: Allow calling functions with metadata arguments
+  (such as ``@llvm.dbg.declare``).
+
+Fixes:
+
+* PR #190: Suppress optimization remarks printed out in some cases by LLVM.
+* PR #200: Allow attaching metadata to a ``ret`` instruction.
+
+
 v0.12.1
 -------
 
