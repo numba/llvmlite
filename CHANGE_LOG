@@ -16,7 +16,7 @@ Enhancements:
 Fixes:
 
 * PR #190: Suppress optimization remarks printed out in some cases by LLVM.
-* PR #200: Allow attaching metadata to a `ret` instruction.
+* PR #200: Allow attaching metadata to a ``ret`` instruction.
 
 
 v0.12.1
