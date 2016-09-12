@@ -1,9 +1,8 @@
 from __future__ import print_function, absolute_import
 
-import collections
 import os
 from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
-                    c_void_p, string_at, byref)
+                    c_void_p, string_at)
 
 from . import ffi
 from .common import _decode_string, _encode_string
