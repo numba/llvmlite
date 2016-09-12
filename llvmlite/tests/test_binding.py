@@ -1,7 +1,7 @@
 from __future__ import print_function, absolute_import
 
 import ctypes
-from ctypes import *
+from ctypes import CFUNCTYPE, c_int
 from ctypes.util import find_library
 import gc
 import locale
@@ -15,7 +15,6 @@ import unittest
 from llvmlite import six, ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
-from llvmlite import ir
 from . import TestCase
 
 

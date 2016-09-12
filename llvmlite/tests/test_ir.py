@@ -10,13 +10,10 @@ import pickle
 import re
 import textwrap
 import unittest
-from array import array
-from collections import OrderedDict
 
 from . import TestCase
 from llvmlite import ir
 from llvmlite import binding as llvm
-from llvmlite import six
 
 
 int1 = ir.IntType(1)

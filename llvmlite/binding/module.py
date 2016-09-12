@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
 from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
-                    c_void_p, c_size_t, cast, string_at)
+                    c_size_t, string_at)
 
 from . import ffi
 from .linker import link_modules

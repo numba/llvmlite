@@ -1,10 +1,9 @@
 from __future__ import print_function, absolute_import
 
-from ctypes import (byref, POINTER, c_char_p, c_bool, c_uint, c_void_p,
+from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
                     c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast,
                     py_object, Structure)
 import warnings
-import weakref
 
 from . import ffi, targets
 

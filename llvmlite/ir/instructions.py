@@ -4,7 +4,6 @@ Implementation of LLVM IR instructions.
 
 from __future__ import print_function, absolute_import
 
-from ..six import StringIO
 from . import types
 from .values import (Block, Function, Value, NamedValue, Constant,
                      MetaDataArgument, MetaDataString, AttributeSet)

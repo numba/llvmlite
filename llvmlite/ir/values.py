@@ -8,7 +8,6 @@ from __future__ import print_function, absolute_import
 import string
 
 from .. import six
-from ..six import StringIO
 from . import types, _utils
 from ._utils import _StrCaching, _StringReferenceCaching, _HasMetadata
 
