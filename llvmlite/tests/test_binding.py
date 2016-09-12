@@ -15,6 +15,7 @@ import unittest
 from llvmlite import six, ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
+from llvmlite import ir
 from . import TestCase
 
 
@@ -989,6 +990,44 @@ class TestDylib(BaseTest):
         elif system == "Darwin":
             libm = find_library("libm")
         llvm.load_library_permanently(libm)
+
+
+class TestAnalysis(BaseTest):
+    def build_ir_module(self):
+        m = ir.Module()
+        ft = ir.FunctionType(ir.IntType(32), [ir.IntType(32), ir.IntType(32)])
+        fn = ir.Function(m, ft, "foo")
+        bd = ir.IRBuilder(fn.append_basic_block())
+        x, y = fn.args
+        z = bd.add(x, y)
+        bd.ret(z)
+        return m
+
+    def test_get_function_cfg_on_ir(self):
+        mod = self.build_ir_module()
+        foo = mod.get_global('foo')
+        dot_showing_inst = llvm.get_function_cfg(foo)
+        dot_without_inst = llvm.get_function_cfg(foo, show_inst=False)
+        inst = "%.5 = add i32 %.1, %.2"
+        self.assertIn(inst, dot_showing_inst)
+        self.assertNotIn(inst, dot_without_inst)
+
+    def test_function_cfg_on_llvm_value(self):
+        defined = self.module().get_function('sum')
+        dot_showing_inst = llvm.get_function_cfg(defined, show_inst=True)
+        dot_without_inst = llvm.get_function_cfg(defined, show_inst=False)
+        # Check "digraph"
+        prefix = 'digraph'
+        self.assertIn(prefix, dot_showing_inst)
+        self.assertIn(prefix, dot_without_inst)
+        # Check function name
+        fname = "CFG for 'sum' function"
+        self.assertIn(fname, dot_showing_inst)
+        self.assertIn(fname, dot_without_inst)
+        # Check instruction
+        inst = "%.3 = add i32 %.1, %.2"
+        self.assertIn(inst, dot_showing_inst)
+        self.assertNotIn(inst, dot_without_inst)
 
 
 class TestGlobalVariables(BaseTest):

@@ -157,6 +157,7 @@ class ValueRef(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
+
 # FFI
 
 ffi.lib.LLVMPY_PrintValueToString.argtypes = [
