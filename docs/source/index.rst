@@ -2,7 +2,8 @@
 llvmlite
 ========
 
-**A lightweight LLVM python binding for writing JIT compilers**
+A lightweight LLVM python binding for writing JIT compilers
+-----------------------------------------------------------
 
 .. toctree::
    :numbered:
