@@ -13,6 +13,8 @@ if [[ "$unamestr" == 'Linux' ]]; then
     platform='linux'
 elif [[ "$unamestr" == 'FreeBSD' ]]; then
     platform='freebsd'
+elif [[ "$unamestr" == 'NetBSD' ]]; then
+    platform='netbsd'
 elif [[ "$unamestr" == 'Darwin' ]]; then
     platform='osx'
 fi
