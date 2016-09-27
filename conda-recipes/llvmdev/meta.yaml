@@ -41,11 +41,11 @@ test:
     - llvm-config --libs   # [not win]
     - llc -version
 
-    - if not exist %LIBRARY_INC%\\include\\Pass.h exit 1       # [win]
+    - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1          # [win]
+    - if not exist %LIBRARY_LIB%\\LLVMSupport.lib exit 1       # [win]
 
     - test -f $PREFIX/include/llvm/Pass.h                      # [unix]
-    - test -f $PREFIX/lib/libLLVM-{{ shortversion }}.so        # [linux]
-    - test -f $PREFIX/lib/libLLVM-{{ shortversion }}.dylib     # [osx]
+    - test -f $PREFIX/lib/libLLVMSupport.a                     # [unix]
 
 about:
   home: http://llvm.org/
