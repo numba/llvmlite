@@ -1103,9 +1103,7 @@ class TestInlineAsm(BaseTest):
         m = self.module(asm=asm_inlineasm)
         tm = self.target_machine()
         asm = tm.emit_assembly(m)
-        self.assertIn('## InlineAsm Start', asm)
         self.assertIn('nop', asm)
-        self.assertIn('## InlineAsm End', asm)
 
 
 if __name__ == "__main__":
