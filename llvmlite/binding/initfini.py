@@ -43,6 +43,13 @@ def initialize_native_asmprinter():
     ffi.lib.LLVMPY_InitializeNativeAsmPrinter()
 
 
+def initialize_native_asmparser():
+    """
+    Initialize the native ASM parser.
+    """
+    ffi.lib.LLVMPY_InitializeNativeAsmParser()
+
+
 def shutdown():
     ffi.lib.LLVMPY_Shutdown()
 

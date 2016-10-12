@@ -111,6 +111,18 @@ asm_double_locale = r"""
     }}
     """
 
+
+asm_inlineasm = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @foo() {{
+      call void asm sideeffect "nop", ""()
+      ret void
+    }}
+    """
+
+
 class BaseTest(TestCase):
 
     def setUp(self):
@@ -1082,6 +1094,16 @@ class TestGlobalVariables(BaseTest):
 
     def test_weak_odr_linkage(self):
         self.check_global_variable_linkage('weak_odr')
+
+
+@unittest.skipUnless(platform.machine().startswith('x86'), "only on x86")
+class TestInlineAsm(BaseTest):
+    def test_inlineasm(self):
+        llvm.initialize_native_asmparser()
+        m = self.module(asm=asm_inlineasm)
+        tm = self.target_machine()
+        asm = tm.emit_assembly(m)
+        self.assertIn('nop', asm)
 
 
 if __name__ == "__main__":

@@ -33,6 +33,11 @@ These functions need only be called once per process invocation.
    Initialize the native assembly printer.
 
 
+.. function:: initialize_native_asmparser()
+
+   Initialize the native assembly parser.  This is necessary for inline assembly
+   to work.
+
 .. function:: shutdown()
 
    Shutdown the LLVM core.
