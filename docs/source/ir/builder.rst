@@ -542,6 +542,29 @@ Exception handling
    that the landing pad did not catch the exception after all (perhaps
    because it only performed cleanup).
 
+Inline assembler
+''''''''''''''''
+
+.. method:: IRBuilder.asm(ftype, asm, constraint, args, side_effect, name='')
+
+   Add an inline assembler call instruction. This is used for instance in
+   :meth:`load_reg` and :meth:`store_reg`.
+
+.. method:: IRBuilder.load_reg(reg_type, reg_name, name='')
+
+    Load a register value into an LLVM value.
+
+    Example to get the value of ``RAX``::
+
+      load_reg(IntType(64), "rax")
+
+.. method:: IRBuilder.store_reg(value, reg_type, reg_name, name='')
+
+    Store an LLVM value inside a register
+
+    Example to store ``0xAAAAAAAAAAAAAAAA`` into ``RAX``::
+
+      store_reg(Constant(IntType(64), 0xAAAAAAAAAAAAAAAA), IntType(64), "rax")
 
 Miscellaneous
 '''''''''''''

@@ -123,7 +123,6 @@ class CallInstr(Instruction):
     def descr(self, buf):
         self._descr(buf, add_metadata=True)
 
-
 class InvokeInstr(CallInstr):
     def __init__(self, parent, func, args, normal_to, unwind_to, name='', cconv=None):
         assert isinstance(normal_to, Block)
