@@ -729,6 +729,21 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
+    def asm(self, reg_size, asm, modifiers, has_sideeffects, args, name=''):
+        """
+        Inline assembler
+        """
+        inst = instructions.CallAsmInstr(self.block, reg_size, asm, modifiers,
+                                      has_sideeffects, args, name)
+        self._insert(inst)
+        return inst
+
+    def load_reg(self, reg_size, reg_name, name=''):
+        return self.asm(reg_size, "", "={%s},~{dirflag},~{fpsr},~{flags}" % reg_name, False, [], name)
+
+    def store_reg(self, v, reg_size, reg_name, name=''):
+        return self.asm(reg_size, "", "{%s},~{dirflag},~{fpsr},~{flags}" % reg_name, True, [v], name)
+
     def invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None, tail=False):
         inst = instructions.InvokeInstr(self.block, fn, args, normal_to, unwind_to, name=name,
                                         cconv=cconv)

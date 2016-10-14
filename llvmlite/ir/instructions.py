@@ -123,6 +123,29 @@ class CallInstr(Instruction):
     def descr(self, buf):
         self._descr(buf, add_metadata=True)
 
+class CallAsmInstr(Instruction):
+    def __init__(self, parent, reg_size, asm, modifiers, has_sideeffects, args, name=''):
+        ret_type = types.VoidType() if has_sideeffects else types.IntType(reg_size)
+        self.asm = asm
+        self.modifiers = modifiers
+        super(CallAsmInstr, self).__init__(parent, ret_type,
+                                        "call", args, name=name)
+
+    def _descr(self, buf, add_metadata):
+        args = ', '.join(['{0} {1}'.format(a.type, a.get_reference())
+                          for a in self.operands])
+        buf.append('{0} {1} asm "{2}", "{3}"({4}) {5}\n'.format(
+            self.opname,
+            str(self.type),
+            self.asm,
+            self.modifiers,
+            args,
+            self._stringify_metadata(leading_comma=True) if add_metadata else ""
+            ))
+
+    def descr(self, buf):
+        self._descr(buf, add_metadata=True)
+
 
 class InvokeInstr(CallInstr):
     def __init__(self, parent, func, args, normal_to, unwind_to, name='', cconv=None):
