@@ -1105,6 +1105,22 @@ class TestInlineAsm(BaseTest):
         asm = tm.emit_assembly(m)
         self.assertIn('nop', asm)
 
+class TestObjectFile(BaseTest):
+    def test_object_file(self):
+        target_machine = self.target_machine()
+        mod = self.module()
+        obj_bin = target_machine.emit_object(mod)
+        obj = llvm.ObjectFileRef.from_data(obj_bin)
+        # Check that we have a text section, and that she has a name and data
+        has_text = False
+        for s in obj.sections():
+            if s.is_text():
+                has_text = True
+                self.assertIsNotNone(s.name())
+                self.assertTrue(s.size() > 0)
+                self.assertTrue(len(s.data()) > 0)
+                break
+        self.assertTrue(has_text)
 
 if __name__ == "__main__":
     unittest.main()
