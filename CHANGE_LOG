@@ -1,3 +1,13 @@
+v0.14.0
+-------
+
+Enhancements:
+
+* PR #104: Add binding to get and view function control-flow graph.
+* PR #210: Improve llvmdev recipe.
+* PR #212: Add initializer for the native assembly parser.
+
+
 v0.13.0
 -------
 
