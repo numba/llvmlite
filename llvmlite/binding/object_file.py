@@ -50,7 +50,7 @@ ffi.lib.LLVMPY_GetSectionName.argtypes = [ffi.LLVMSectionIteratorRef]
 ffi.lib.LLVMPY_GetSectionName.restype  = c_char_p
 
 ffi.lib.LLVMPY_GetSectionSize.argtypes = [ffi.LLVMSectionIteratorRef]
-ffi.lib.LLVMPY_GetSectionSize.restype  = c_ulonglong
+ffi.lib.LLVMPY_GetSectionSize.restype  = c_uint64
 
 ffi.lib.LLVMPY_GetSectionContents.argtypes = [ffi.LLVMSectionIteratorRef]
 ffi.lib.LLVMPY_GetSectionContents.restype  = c_char_p
