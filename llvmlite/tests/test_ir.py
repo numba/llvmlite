@@ -691,6 +691,7 @@ class TestBuildInstructions(TestBase):
         c = builder.alloca(int32, name='c')
         d = builder.alloca(int32, size=42, name='d')
         e = builder.alloca(dbl, size=a, name='e')
+        e.align = 8
         self.assertEqual(e.type, ir.PointerType(dbl))
         ee = builder.store(z, e)
         self.assertEqual(ee.type, ir.VoidType())
@@ -717,7 +718,7 @@ class TestBuildInstructions(TestBase):
             my_block:
                 %"c" = alloca i32
                 %"d" = alloca i32, i32 42
-                %"e" = alloca double, i32 %".1"
+                %"e" = alloca double, i32 %".1", align 8
                 store double %".3", double* %"e"
                 store i32 %".2", i32* %"c"
                 %"g" = load i32, i32* %"c"
