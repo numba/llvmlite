@@ -172,7 +172,7 @@ class TestDependencies(BaseTest):
         out, _ = p.communicate()
         self.assertEqual(0, p.returncode)
         # Parse library dependencies
-        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+)?$')
+        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
         deps = set()
         for line in out.decode().splitlines():
             parts = line.split()
