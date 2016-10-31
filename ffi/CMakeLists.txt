@@ -20,7 +20,7 @@ add_definitions(${LLVM_DEFINITIONS})
 # Define our shared library
 add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
             module.cpp value.cpp executionengine.cpp transforms.cpp
-            passmanagers.cpp targets.cpp dylib.cpp linker.cpp)
+            passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use

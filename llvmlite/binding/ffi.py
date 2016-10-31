@@ -26,6 +26,8 @@ LLVMMemoryBufferRef = _make_opaque_ref("LLVMMemoryBuffer")
 LLVMGlobalsIterator = _make_opaque_ref("LLVMGlobalsIterator")
 LLVMFunctionsIterator = _make_opaque_ref("LLVMFunctionsIterator")
 LLVMObjectCacheRef = _make_opaque_ref("LLVMObjectCache")
+LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
+LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
 
 
 _lib_dir = os.path.dirname(__file__)
