@@ -667,8 +667,18 @@ class ArgumentAttributes(AttributeSet):
                         'sret', 'zeroext'])
 
     def __init__(self):
+        self._align = 0
         self._dereferenceable = 0
         self._dereferenceable_or_null = 0
+
+    @property
+    def align(self):
+        return self._align
+
+    @align.setter
+    def align(self, val):
+        assert isinstance(val, six.integer_types) and val >= 0
+        self._align = val
 
     @property
     def dereferenceable(self):
@@ -690,6 +700,8 @@ class ArgumentAttributes(AttributeSet):
 
     def _to_list(self):
         attrs = sorted(self)
+        if self.align:
+            attrs.append('align {0:d}'.format(self.align))
         if self.dereferenceable:
             attrs.append('dereferenceable({0:d})'.format(self.dereferenceable))
         if self.dereferenceable_or_null:
