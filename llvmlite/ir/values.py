@@ -666,6 +666,36 @@ class ArgumentAttributes(AttributeSet):
                         'nocapture', 'nonnull', 'returned', 'signext',
                         'sret', 'zeroext'])
 
+    def __init__(self):
+        self._dereferenceable = 0
+        self._dereferenceable_or_null = 0
+
+    @property
+    def dereferenceable(self):
+        return self._dereferenceable
+
+    @dereferenceable.setter
+    def dereferenceable(self, val):
+        assert isinstance(val, six.integer_types) and val >= 0
+        self._dereferenceable = val
+
+    @property
+    def dereferenceable_or_null(self):
+        return self._dereferenceable_or_null
+
+    @dereferenceable_or_null.setter
+    def dereferenceable_or_null(self, val):
+        assert isinstance(val, six.integer_types) and val >= 0
+        self._dereferenceable_or_null = val
+
+    def _to_list(self):
+        attrs = sorted(self)
+        if self.dereferenceable:
+            attrs.append('dereferenceable({0:d})'.format(self.dereferenceable))
+        if self.dereferenceable_or_null:
+            attrs.append('dereferenceable_or_null({0:d})'.format(self.dereferenceable_or_null))
+        return attrs
+
 
 class _BaseArgument(NamedValue):
     def __init__(self, parent, typ, name=''):
@@ -687,8 +717,9 @@ class Argument(_BaseArgument):
     """
 
     def __str__(self):
-        if self.attributes:
-            return "{0} {1} {2}".format(self.type, ' '.join(self.attributes),
+        attrs = self.attributes._to_list()
+        if attrs:
+            return "{0} {1} {2}".format(self.type, ' '.join(attrs),
                                         self.get_reference())
         else:
             return "{0} {1}".format(self.type, self.get_reference())
@@ -700,8 +731,9 @@ class ReturnValue(_BaseArgument):
     """
 
     def __str__(self):
-        if self.attributes:
-            return "{0} {1}".format(' '.join(self.attributes), self.type)
+        attrs = self.attributes._to_list()
+        if attrs:
+            return "{0} {1}".format(' '.join(attrs), self.type)
         else:
             return str(self.type)
 
