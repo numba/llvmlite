@@ -550,6 +550,24 @@ Inline assembler
    Add an inline assembler call instruction. This is used for instance in
    :meth:`load_reg` and :meth:`store_reg`.
 
+   Arguments:
+     * *asm* is the inline assembler, i.e.: `̀ "mov $2, $0\nadd $1, $0"`` (x86
+       inline ASM uses the AT&T syntax)
+     * *constraint* defines the input/output constraints, i.e: ``=r,r,r``
+     * *args* is the list of arguments, as IR values, according to the contraits
+     * *side_effect* (boolean), whether this instruction has side effects not
+       visible in the constraint list
+     * *name* optional name of a possible LLVM value
+
+   For more information about these parameters, see the official LLVM
+   documentation here:
+   http://llvm.org/docs/LangRef.html#inline-asm-constraint-string.
+
+   Example that adds two 64-bit values on x86 would be::
+
+      fty = FunctionType(IntType(64), [IntType(64),IntType(64)])
+      add = asm(fty, "mov $2, $0\nadd $1, $0", "=r,r,r", [arg_0,arg_1], False, "asm_add")
+
 .. method:: IRBuilder.load_reg(reg_type, reg_name, name='')
 
     Load a register value into an LLVM value.
