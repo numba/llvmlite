@@ -542,6 +542,47 @@ Exception handling
    that the landing pad did not catch the exception after all (perhaps
    because it only performed cleanup).
 
+Inline assembler
+''''''''''''''''
+
+.. method:: IRBuilder.asm(ftype, asm, constraint, args, side_effect, name='')
+
+   Add an inline assembler call instruction. This is used for instance in
+   :meth:`load_reg` and :meth:`store_reg`.
+
+   Arguments:
+     * *asm* is the inline assembler, i.e.: `̀ "mov $2, $0\nadd $1, $0"`` (x86
+       inline ASM uses the AT&T syntax)
+     * *constraint* defines the input/output constraints, i.e: ``=r,r,r``
+     * *args* is the list of arguments, as IR values, according to the contraits
+     * *side_effect* (boolean), whether this instruction has side effects not
+       visible in the constraint list
+     * *name* optional name of a possible LLVM value
+
+   For more information about these parameters, see the official LLVM
+   documentation here:
+   http://llvm.org/docs/LangRef.html#inline-asm-constraint-string.
+
+   Example that adds two 64-bit values on x86 would be::
+
+      fty = FunctionType(IntType(64), [IntType(64),IntType(64)])
+      add = asm(fty, "mov $2, $0\nadd $1, $0", "=r,r,r", [arg_0,arg_1], False, "asm_add")
+
+.. method:: IRBuilder.load_reg(reg_type, reg_name, name='')
+
+    Load a register value into an LLVM value.
+
+    Example to get the value of ``RAX``::
+
+      load_reg(IntType(64), "rax")
+
+.. method:: IRBuilder.store_reg(value, reg_type, reg_name, name='')
+
+    Store an LLVM value inside a register
+
+    Example to store ``0xAAAAAAAAAAAAAAAA`` into ``RAX``::
+
+      store_reg(Constant(IntType(64), 0xAAAAAAAAAAAAAAAA), IntType(64), "rax")
 
 Miscellaneous
 '''''''''''''

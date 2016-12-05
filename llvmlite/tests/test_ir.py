@@ -357,6 +357,38 @@ class TestIR(TestBase):
         self.assertInText(pat, str(mod))
         self.assert_valid_ir(mod)
 
+    def test_builder_asm(self):
+        mod = self.module()
+        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+        builder = ir.IRBuilder(foo.append_basic_block(''))
+        asmty = ir.FunctionType(int32, [int32])
+        builder.asm(asmty, "mov $1, $2", "=r,r", [int32(123)], side_effect=True)
+        builder.ret_void()
+        pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r" ( i32 123 )'
+        self.assertInText(pat, str(mod))
+        self.assert_valid_ir(mod)
+
+    def test_builder_load_reg(self):
+        mod = self.module()
+        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+        builder = ir.IRBuilder(foo.append_basic_block(''))
+        asmty = ir.FunctionType(int32, [int32])
+        builder.load_reg(ir.IntType(64), "rax")
+        builder.ret_void()
+        pat = 'call i64 asm "", "={rax}"'
+        self.assertInText(pat, str(mod))
+        self.assert_valid_ir(mod)
+
+    def test_builder_store_reg(self):
+        mod = self.module()
+        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+        builder = ir.IRBuilder(foo.append_basic_block(''))
+        asmty = ir.FunctionType(ir.VoidType(), [int32])
+        builder.store_reg(int64(123), ir.IntType(64), "rax")
+        builder.ret_void()
+        pat = 'call void asm sideeffect "", "{rax}" ( i64 123 )'
+        self.assertInText(pat, str(mod))
+        self.assert_valid_ir(mod)
 
 class TestGlobalValues(TestBase):
 

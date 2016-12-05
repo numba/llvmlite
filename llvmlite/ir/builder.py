@@ -729,6 +729,29 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
+    def asm(self, ftype, asm, constraint, args, side_effect, name=''):
+        """
+        Inline assembler.
+        """
+        asm = instructions.InlineAsm(ftype, asm, constraint, side_effect)
+        return self.call(asm, args, name)
+
+    def load_reg(self, reg_type, reg_name, name=''):
+        """
+        Load a register value into an LLVM value.
+          Example: v = load_reg(IntType(32), "eax")
+        """
+        ftype = types.FunctionType(reg_type, [])
+        return self.asm(ftype, "", "={%s}" % reg_name, [], False, name)
+
+    def store_reg(self, value, reg_type, reg_name, name=''):
+        """
+        Store an LLVM value inside a register
+          Example: store_reg(Constant(IntType(32), 0xAAAAAAAA), IntType(32), "eax")
+        """
+        ftype = types.FunctionType(types.VoidType(), [reg_type])
+        return self.asm(ftype, "", "{%s}" % reg_name, [value], True, name)
+
     def invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None, tail=False):
         inst = instructions.InvokeInstr(self.block, fn, args, normal_to, unwind_to, name=name,
                                         cconv=cconv)
