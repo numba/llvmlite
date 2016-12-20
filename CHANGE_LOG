@@ -1,3 +1,18 @@
+v0.15.0
+-------
+
+Enhancements:
+
+* PR #213: Add partial LLVM bindings for ObjectFile.
+* PR #215: Add inline assembly helpers in the builder.
+* PR #216: Allow specifying alignment in alloca instructions.
+* PR #219: Remove unnecessary verify in module linkage.
+
+Fixes:
+
+* PR #209, Issue #208: Fix overly restrictive test for library filenames.
+
+
 v0.14.0
 -------
 
