@@ -54,11 +54,13 @@ def get_host_cpu_features():
     use as the "features" argument to ``Target.create_target_machine()``.
     """
     with ffi.OutputString() as out:
-        ffi.lib.LLVMPY_GetHostCPUFeatures(out)
         outdict = FeatureMap()
+        ffi.lib.LLVMPY_GetHostCPUFeatures(out)
         flag_map = {'+': True, '-': False}
-        for feat in str(out).split(','):
-            outdict[feat[1:]] = flag_map[feat[0]]
+        content = str(out)
+        if content:
+            for feat in content.split(','):
+                outdict[feat[1:]] = flag_map[feat[0]]
         return outdict
 
 
