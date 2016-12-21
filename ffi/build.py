@@ -109,7 +109,7 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not out.startswith('3.8.'):
+    if not out.startswith('3.9.'):
         msg = (
             "Building llvmlite requires LLVM 3.8.x. Be sure to "
             "set LLVM_CONFIG to the right executable path.\n"
