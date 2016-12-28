@@ -52,13 +52,17 @@ def get_host_cpu_features():
     is available.  The returned value is an instance of ``FeatureMap`` class,
     which adds a new method ``.flatten()`` for returning a string suitable for
     use as the "features" argument to ``Target.create_target_machine()``.
+
+    If LLVM has not implemented this feature or it fails to get the information,
+    this function will raise a RuntimeError exception.
     """
     with ffi.OutputString() as out:
         outdict = FeatureMap()
-        ffi.lib.LLVMPY_GetHostCPUFeatures(out)
+        if not ffi.lib.LLVMPY_GetHostCPUFeatures(out):
+            raise RuntimeError("failed to get host cpu features.")
         flag_map = {'+': True, '-': False}
         content = str(out)
-        if content:
+        if content:  # protect against empty string
             for feat in content.split(','):
                 outdict[feat[1:]] = flag_map[feat[0]]
         return outdict
@@ -308,6 +312,7 @@ class TargetMachine(ffi.ObjectRef):
 ffi.lib.LLVMPY_GetProcessTriple.argtypes = [POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_GetHostCPUFeatures.argtypes = [POINTER(c_char_p)]
+ffi.lib.LLVMPY_GetHostCPUFeatures.restype = c_int
 
 ffi.lib.LLVMPY_GetDefaultTargetTriple.argtypes = [POINTER(c_char_p)]
 

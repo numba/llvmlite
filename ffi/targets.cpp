@@ -51,7 +51,7 @@ LLVMPY_GetProcessTriple(const char **Out) {
  * Features are prefixed with '+' or '-' for enabled or disabled, respectively.
  * Features are separated by ','.
  */
-API_EXPORT(void)
+API_EXPORT(int)
 LLVMPY_GetHostCPUFeatures(const char **Out){
     llvm::StringMap<bool> features;
     std::ostringstream buf;
@@ -62,8 +62,10 @@ LLVMPY_GetHostCPUFeatures(const char **Out){
             }
             buf << ((F.second? "+": "-") + F.first()).str();
         }
+        *Out = LLVMPY_CreateString(buf.str().c_str());
+        return 1;
     }
-    *Out = LLVMPY_CreateString(buf.str().c_str());
+    return 0;
 }
 
 API_EXPORT(void)
