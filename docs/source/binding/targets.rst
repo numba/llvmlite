@@ -51,6 +51,10 @@ Functions
    which adds a new method ``.flatten()`` for returning a string suitable for
    use as the "features" argument to :meth:`Target.create_target_machine()`.
 
+   If LLVM has not implemented this feature or it fails to get the information,
+   this function will raise a ``RuntimeError`` exception.
+
+
 .. function:: create_target_data(data_layout)
 
    Create a :class:`TargetData` representing the given *data_layout* (a
