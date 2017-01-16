@@ -812,10 +812,6 @@ class TestTargetData(BaseTest):
 
 class TestTargetMachine(BaseTest):
 
-    def test_add_target_data_pass(self):
-        tm = self.target_machine()
-        pm = llvm.create_module_pass_manager()
-
     def test_add_analysis_passes(self):
         tm = self.target_machine()
         pm = llvm.create_module_pass_manager()

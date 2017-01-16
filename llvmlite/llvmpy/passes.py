@@ -60,11 +60,6 @@ def build_pass_managers(**kws):
         pmb.inlining_threshold = _inlining_threshold(optlevel=opt)
 
         if mod:
-            dl = llvm.create_target_data(mod.data_layout)
-            dl.add_pass(pm)
-            if fpm is not None:
-                dl.add_pass(fpm)
-
             tli = llvm.create_target_library_info(mod.triple)
             if kws.get('nobuiltins', False):
                 # Disable all builtins (-fno-builtins)

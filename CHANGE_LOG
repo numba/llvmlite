@@ -1,3 +1,12 @@
+development
+-----------
+
+API changes:
+
+* ``TargetData.add_pass`` is removed in LLVM 3.9.
+
+
+
 v0.15.0
 -------
 
