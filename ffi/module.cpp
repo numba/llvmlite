@@ -130,7 +130,7 @@ API_EXPORT(void)
 LLVMPY_GetDataLayout(LLVMModuleRef M,
                      const char **DL)
 {
-    *DL = LLVMGetDataLayout(M);
+    *DL = LLVMGetDataLayoutStr(M);
 }
 
 
