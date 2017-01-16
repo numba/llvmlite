@@ -28,11 +28,7 @@ fi
 # Use CMake-based build procedure
 mkdir build
 cd build
-if [ "$platform" == 'linux' -a "$machine" != 'armv7l' ]; then
-    cmake $CMAKE_COMMON_VARIABLES -DLLVM_USE_OPROFILE=ON ..
-else
-    cmake $CMAKE_COMMON_VARIABLES ..
-fi
+cmake $CMAKE_COMMON_VARIABLES ..
 
 make -j8
 make install
