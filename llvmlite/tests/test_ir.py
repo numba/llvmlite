@@ -281,36 +281,35 @@ class TestIR(TestBase):
             # None as `null`
             "types":           mod.add_metadata([None]),
             })
+        di_compileunit = mod.add_debug_info("DICompileUnit", {
+            "language":        ir.DIToken("DW_LANG_Python"),
+            "file":            di_file,
+            "producer":        "ARTIQ",
+            "runtimeVersion":  0,
+            "isOptimized":     True,
+        }, is_distinct=True)
         di_func = mod.add_debug_info("DISubprogram", {
             "name":            "my_func",
             "file":            di_file,
             "line":            11,
             "type":            di_func_type,
             "isLocal":         False,
+            "unit":            di_compileunit,
             }, is_distinct=True)
-        di_compileunit = mod.add_debug_info("DICompileUnit", {
-            "language":        ir.DIToken("DW_LANG_Python"),
-            "file":            di_file,
-            "producer":        "ARTIQ",
-            "runtimeVersion":  0,
-            # Passing unnamed metadata as a sequence
-            "subprograms":     [di_func],
-            "isOptimized":     True,
-        }, is_distinct=True)
+
         # Check output
         strmod = str(mod)
         self.assert_ir_line('!0 = !DIFile(directory: "bar", filename: "foo")',
                             strmod)
         self.assert_ir_line('!1 = !{ null }', strmod)
         self.assert_ir_line('!2 = !DISubroutineType(types: !1)', strmod)
-        self.assert_ir_line('!3 = distinct !DISubprogram(file: !0, isLocal: false, '
-                            'line: 11, name: "my_func", type: !2)',
-                            strmod)
-        self.assert_ir_line('!4 = !{ !3 }', strmod)
-        self.assert_ir_line('!5 = distinct !DICompileUnit(file: !0, '
+        # self.assert_ir_line('!4 = !{ !3 }', strmod)
+        self.assert_ir_line('!3 = distinct !DICompileUnit(file: !0, '
                             'isOptimized: true, language: DW_LANG_Python, '
-                            'producer: "ARTIQ", runtimeVersion: 0, '
-                            'subprograms: !4)',
+                            'producer: "ARTIQ", runtimeVersion: 0)',
+                            strmod)
+        self.assert_ir_line('!4 = distinct !DISubprogram(file: !0, isLocal: false, '
+                            'line: 11, name: "my_func", type: !2, unit: !3)',
                             strmod)
         self.assert_valid_ir(mod)
 
