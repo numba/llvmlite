@@ -90,13 +90,6 @@ LLVMPY_CreateTargetData(const char *StringRep)
     return LLVMCreateTargetData(StringRep);
 }
 
-API_EXPORT(void)
-LLVMPY_AddTargetData(LLVMTargetDataRef TD,
-                     LLVMPassManagerRef PM)
-{
-    LLVMAddTargetData(TD, PM);
-}
-
 
 //// Nothing is creating a TargetLibraryInfo
 //    void
@@ -214,7 +207,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
     else
         cm = CodeModel::Default;
 
-    Reloc::Model rm;
+    Optional<Reloc::Model> rm;
     std::string rms(RelocModel);
     if (rms == "static")
         rm = Reloc::Static;
@@ -222,8 +215,6 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
         rm = Reloc::PIC_;
     else if (rms == "dynamicnopic")
         rm = Reloc::DynamicNoPIC;
-    else
-        rm = Reloc::Default;
 
     TargetOptions opt;
 //     opt.JITEmitDebugInfo = EmitJITDebug;

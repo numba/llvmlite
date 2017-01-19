@@ -71,11 +71,6 @@ Classes
    specifies how the different types are to be represented in memory.
    Use :func:`create_target_data` to instantiate.
 
-   .. method:: add_pass(pm)
-
-      Add an optimization pass based on this data layout to the
-      :class:`PassManager` instance *pm*.
-
    .. method:: get_abi_size(type)
 
       Get the ABI-mandated size of the LLVM *type* (as returned by
