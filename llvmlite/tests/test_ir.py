@@ -4,6 +4,7 @@ IR Construction Tests
 
 from __future__ import print_function, absolute_import
 
+import sys
 import copy
 import itertools
 import pickle
@@ -22,6 +23,9 @@ int32 = ir.IntType(32)
 int64 = ir.IntType(64)
 flt = ir.FloatType()
 dbl = ir.DoubleType()
+
+
+PY2 = sys.version_info[0] == 2
 
 
 class TestBase(TestCase):
@@ -342,6 +346,16 @@ class TestIR(TestBase):
                             strmod)
         self.assert_ir_line('!2 = distinct !DIFile(directory: "bar", filename: "foo")',
                             strmod)
+        self.assert_valid_ir(mod)
+
+    @unittest.skipUnless(PY2, 'py2 only')
+    def test_debug_info_py2_long(self):
+        mod = self.module()
+        di = mod.add_debug_info("DIBasicType",
+                                {"name": "foo",
+                                 "size": long(123)})  # long integer here
+        self.assert_ir_line('!0 = !DIBasicType(name: "foo", size: 123)',
+                            str(di))
         self.assert_valid_ir(mod)
 
     def test_inline_assembly(self):
