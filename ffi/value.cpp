@@ -77,7 +77,9 @@ LLVMPY_GetDLLStorageClass(LLVMValueRef Val)
 API_EXPORT(void)
 LLVMPY_AddFunctionAttr(LLVMValueRef Fn, int Attr)
 {
-    LLVMAddFunctionAttr(Fn, (LLVMAttribute)Attr);
+    LLVMContextRef ctx = LLVMGetModuleContext(LLVMGetGlobalParent(Fn));
+    LLVMAttributeRef attr_ref = LLVMCreateEnumAttribute(ctx, Attr, 0);
+    LLVMAddAttributeAtIndex(Fn, LLVMAttributeReturnIndex, attr_ref);
 }
 
 API_EXPORT(int)

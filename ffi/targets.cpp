@@ -124,7 +124,7 @@ LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
     llvm::Type *tp = llvm::unwrap(Ty);
     if (!tp->isPointerTy())
         return -1;
-    tp = tp->getSequentialElementType();
+    tp = tp->getPointerElementType();
     return (long long) LLVMABISizeOfType(TD, llvm::wrap(tp));
 }
 
@@ -134,7 +134,7 @@ LLVMPY_ABIAlignmentOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
     llvm::Type *tp = llvm::unwrap(Ty);
     if (!tp->isPointerTy())
         return -1;
-    tp = tp->getSequentialElementType();
+    tp = tp->getPointerElementType();
     return (long long) LLVMABIAlignmentOfType(TD, llvm::wrap(tp));
 }
 
