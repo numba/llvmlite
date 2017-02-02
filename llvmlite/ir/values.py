@@ -406,7 +406,7 @@ class DIValue(NamedValue):
                 strvalue = value.value
             elif isinstance(value, str):
                 strvalue = '"{}"'.format(_escape_string(value))
-            elif isinstance(value, int):
+            elif isinstance(value, six.integer_types):
                 strvalue = str(value)
             elif isinstance(value, NamedValue):
                 strvalue = value.get_reference()
