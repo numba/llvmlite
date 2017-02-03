@@ -585,6 +585,20 @@ class TestBuildInstructions(TestBase):
                 %"d" = sub nuw nsw i32 %".1", %".2"
             """)
 
+    def test_binop_fastmath_flags(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        # As tuple
+        builder.fadd(a, b, 'c', flags=('fast',))
+        # and as list
+        builder.fsub(a, b, 'd', flags=['ninf', 'nsz'])
+        self.check_block(block, """\
+            my_block:
+                %"c" = fadd fast i32 %".1", %".2"
+                %"d" = fsub ninf nsz i32 %".1", %".2"
+            """)
+
     def test_binops_with_overflow(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
