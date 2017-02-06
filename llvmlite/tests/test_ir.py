@@ -585,6 +585,20 @@ class TestBuildInstructions(TestBase):
                 %"d" = sub nuw nsw i32 %".1", %".2"
             """)
 
+    def test_binop_fastmath_flags(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        # As tuple
+        builder.fadd(a, b, 'c', flags=('fast',))
+        # and as list
+        builder.fsub(a, b, 'd', flags=['ninf', 'nsz'])
+        self.check_block(block, """\
+            my_block:
+                %"c" = fadd fast i32 %".1", %".2"
+                %"d" = fsub ninf nsz i32 %".1", %".2"
+            """)
+
     def test_binops_with_overflow(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -597,12 +611,12 @@ class TestBuildInstructions(TestBase):
         builder.usub_with_overflow(a, b, 'h')
         self.check_block(block, """\
             my_block:
-                %"c" = call {i32, i1} (i32, i32) @"llvm.sadd.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"d" = call {i32, i1} (i32, i32) @"llvm.smul.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"e" = call {i32, i1} (i32, i32) @"llvm.ssub.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"f" = call {i32, i1} (i32, i32) @"llvm.uadd.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"g" = call {i32, i1} (i32, i32) @"llvm.umul.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"h" = call {i32, i1} (i32, i32) @"llvm.usub.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"c" = call {i32, i1} @"llvm.sadd.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"d" = call {i32, i1} @"llvm.smul.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"e" = call {i32, i1} @"llvm.ssub.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"f" = call {i32, i1} @"llvm.uadd.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"g" = call {i32, i1} @"llvm.umul.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"h" = call {i32, i1} @"llvm.usub.with.overflow.i32"(i32 %".1", i32 %".2")
             """)
 
     def test_unary_ops(self):
@@ -1017,12 +1031,16 @@ class TestBuildInstructions(TestBase):
         builder.call(f, (a, b), 'res_f_fast', cconv='fastcc')
         res_f_readonly = builder.call(f, (a, b), 'res_f_readonly')
         res_f_readonly.attributes.add('readonly')
+        builder.call(f, (a, b), 'res_fast', fastmath='fast')
+        builder.call(f, (a, b), 'res_nnan_ninf', fastmath=('nnan', 'ninf'))
         self.check_block(block, """\
             my_block:
-                %"res_f" = call float (i32, i32) @"f"(i32 %".1", i32 %".2")
+                %"res_f" = call float @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...) @"g"(i32 %".2", i32 %".1")
-                %"res_f_fast" = call fastcc float (i32, i32) @"f"(i32 %".1", i32 %".2")
-                %"res_f_readonly" = call float (i32, i32) @"f"(i32 %".1", i32 %".2") readonly
+                %"res_f_fast" = call fastcc float @"f"(i32 %".1", i32 %".2")
+                %"res_f_readonly" = call float @"f"(i32 %".1", i32 %".2") readonly
+                %"res_fast" = call fast float @"f"(i32 %".1", i32 %".2")
+                %"res_nnan_ninf" = call ninf nnan float @"f"(i32 %".1", i32 %".2")
             """)
 
     def test_call_metadata(self):
@@ -1039,7 +1057,7 @@ class TestBuildInstructions(TestBase):
         self.check_block(block, """\
             my_block:
                 %"a" = alloca i32
-                call void (metadata, metadata, metadata) @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
+                call void @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
             """)
 
     def test_invoke(self):
@@ -1053,7 +1071,7 @@ class TestBuildInstructions(TestBase):
         builder.invoke(f, (a, b), bb_normal, bb_unwind, 'res_f')
         self.check_block(block, """\
             my_block:
-                %"res_f" = invoke float (i32, i32) @"f"(i32 %".1", i32 %".2")
+                %"res_f" = invoke float @"f"(i32 %".1", i32 %".2")
                     to label %"normal" unwind label %"unwind"
             """)
 
@@ -1084,7 +1102,7 @@ class TestBuildInstructions(TestBase):
         self.check_block(block, """\
             my_block:
                 %"c" = icmp sgt i32 %".1", %".2"
-                call void (i1) @"llvm.assume"(i1 %"c")
+                call void @"llvm.assume"(i1 %"c")
             """)
 
 
