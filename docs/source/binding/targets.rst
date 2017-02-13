@@ -51,6 +51,10 @@ Functions
    which adds a new method ``.flatten()`` for returning a string suitable for
    use as the "features" argument to :meth:`Target.create_target_machine()`.
 
+   If LLVM has not implemented this feature or it fails to get the information,
+   this function will raise a ``RuntimeError`` exception.
+
+
 .. function:: create_target_data(data_layout)
 
    Create a :class:`TargetData` representing the given *data_layout* (a
@@ -66,11 +70,6 @@ Classes
    A class providing functionality around a given data layout.  It
    specifies how the different types are to be represented in memory.
    Use :func:`create_target_data` to instantiate.
-
-   .. method:: add_pass(pm)
-
-      Add an optimization pass based on this data layout to the
-      :class:`PassManager` instance *pm*.
 
    .. method:: get_abi_size(type)
 

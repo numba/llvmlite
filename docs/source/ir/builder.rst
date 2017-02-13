@@ -442,11 +442,13 @@ Memory
 Function call
 '''''''''''''
 
-.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=False)
+.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=False, fastmath=())
 
    Call function *fn* with arguments *args* (a sequence of values).
    *cconc* is the optional calling convention.  *tail*, if true, is
-   a hint for the optimizer to perform tail-call optimization.
+   a hint for the optimizer to perform tail-call optimization. *fastmath* is a
+   string or a sequence of strings of names for `fast-math flags
+   <http://llvm.org/docs/LangRef.html#fast-math-flags>`_.
 
 
 Branches
@@ -541,6 +543,52 @@ Exception handling
    Resume an exception caught by landing pad *landingpad*. Used to indicate
    that the landing pad did not catch the exception after all (perhaps
    because it only performed cleanup).
+
+
+Inline assembler
+''''''''''''''''
+
+.. method:: IRBuilder.asm(ftype, asm, constraint, args, side_effect, name='')
+
+   Add an inline assembler call instruction. This is used for instance in
+   :meth:`load_reg` and :meth:`store_reg`.
+
+   Arguments:
+     * *ftype* is a function type specifying the inputs and output of
+       the inline assembler call;
+     * *asm* is the inline assembler snippet, e.g.
+       ``"mov $2, $0\nadd $1, $0"`` (x86 inline ASM uses the AT&T syntax);
+     * *constraint* defines the input/output constraints, e.g. ``=r,r,r``;
+     * *args* is the list of inputs, as IR values;
+     * *side_effect* (boolean), whether this instruction has side effects not
+       visible in the constraint list;
+     * *name* optional name of the returned LLVM value.
+
+   For more information about these parameters, see the official LLVM
+   documentation here:
+   http://llvm.org/docs/LangRef.html#inline-asm-constraint-string.
+
+   Example that adds two 64-bit values on x86::
+
+      fty = FunctionType(IntType(64), [IntType(64),IntType(64)])
+      add = builder.asm(fty, "mov $2, $0\nadd $1, $0", "=r,r,r",
+                        (arg_0, arg_1), name="asm_add")
+
+.. method:: IRBuilder.load_reg(reg_type, reg_name, name='')
+
+   Load a register value into an LLVM value.
+
+   Example to get the value of the ``rax`` register::
+
+      builder.load_reg(IntType(64), "rax")
+
+.. method:: IRBuilder.store_reg(value, reg_type, reg_name, name='')
+
+   Store an LLVM value inside a register
+
+   Example to store ``0xAAAAAAAAAAAAAAAA`` into the ``rax`` register::
+
+      builder.store_reg(Constant(IntType(64), 0xAAAAAAAAAAAAAAAA), IntType(64), "rax")
 
 
 Miscellaneous

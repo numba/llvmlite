@@ -51,7 +51,7 @@ LLVMPY_GetProcessTriple(const char **Out) {
  * Features are prefixed with '+' or '-' for enabled or disabled, respectively.
  * Features are separated by ','.
  */
-API_EXPORT(void)
+API_EXPORT(int)
 LLVMPY_GetHostCPUFeatures(const char **Out){
     llvm::StringMap<bool> features;
     std::ostringstream buf;
@@ -62,8 +62,10 @@ LLVMPY_GetHostCPUFeatures(const char **Out){
             }
             buf << ((F.second? "+": "-") + F.first()).str();
         }
+        *Out = LLVMPY_CreateString(buf.str().c_str());
+        return 1;
     }
-    *Out = LLVMPY_CreateString(buf.str().c_str());
+    return 0;
 }
 
 API_EXPORT(void)
@@ -86,13 +88,6 @@ API_EXPORT(LLVMTargetDataRef)
 LLVMPY_CreateTargetData(const char *StringRep)
 {
     return LLVMCreateTargetData(StringRep);
-}
-
-API_EXPORT(void)
-LLVMPY_AddTargetData(LLVMTargetDataRef TD,
-                     LLVMPassManagerRef PM)
-{
-    LLVMAddTargetData(TD, PM);
 }
 
 
@@ -212,7 +207,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
     else
         cm = CodeModel::Default;
 
-    Reloc::Model rm;
+    Optional<Reloc::Model> rm;
     std::string rms(RelocModel);
     if (rms == "static")
         rm = Reloc::Static;
@@ -220,8 +215,6 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
         rm = Reloc::PIC_;
     else if (rms == "dynamicnopic")
         rm = Reloc::DynamicNoPIC;
-    else
-        rm = Reloc::Default;
 
     TargetOptions opt;
 //     opt.JITEmitDebugInfo = EmitJITDebug;

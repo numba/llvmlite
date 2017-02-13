@@ -4,8 +4,6 @@ from . import ffi
 
 
 def link_modules(dst, src):
-    dst.verify()
-    src.verify()
     with ffi.OutputString() as outerr:
         err = ffi.lib.LLVMPY_LinkModules(dst, src, outerr)
         # The underlying module was destroyed

@@ -52,13 +52,19 @@ def get_host_cpu_features():
     is available.  The returned value is an instance of ``FeatureMap`` class,
     which adds a new method ``.flatten()`` for returning a string suitable for
     use as the "features" argument to ``Target.create_target_machine()``.
+
+    If LLVM has not implemented this feature or it fails to get the information,
+    this function will raise a RuntimeError exception.
     """
     with ffi.OutputString() as out:
-        ffi.lib.LLVMPY_GetHostCPUFeatures(out)
         outdict = FeatureMap()
+        if not ffi.lib.LLVMPY_GetHostCPUFeatures(out):
+            raise RuntimeError("failed to get host cpu features.")
         flag_map = {'+': True, '-': False}
-        for feat in str(out).split(','):
-            outdict[feat[1:]] = flag_map[feat[0]]
+        content = str(out)
+        if content:  # protect against empty string
+            for feat in content.split(','):
+                outdict[feat[1:]] = flag_map[feat[0]]
         return outdict
 
 
@@ -143,14 +149,6 @@ class TargetData(ffi.ObjectRef):
         if size == -1:
             raise RuntimeError("Not a pointer type: %s" % (ty,))
         return size
-
-    def add_pass(self, pm):
-        """
-        Add a DataLayout pass to PassManager *pm*.
-        """
-        # AddTargetData claims ownership, so create a copy.
-        target_data = create_target_data(str(self))
-        ffi.lib.LLVMPY_AddTargetData(target_data, pm)
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
@@ -306,6 +304,7 @@ class TargetMachine(ffi.ObjectRef):
 ffi.lib.LLVMPY_GetProcessTriple.argtypes = [POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_GetHostCPUFeatures.argtypes = [POINTER(c_char_p)]
+ffi.lib.LLVMPY_GetHostCPUFeatures.restype = c_int
 
 ffi.lib.LLVMPY_GetDefaultTargetTriple.argtypes = [POINTER(c_char_p)]
 
@@ -325,9 +324,6 @@ ffi.lib.LLVMPY_CopyStringRepOfTargetData.argtypes = [
 ffi.lib.LLVMPY_DisposeTargetData.argtypes = [
     ffi.LLVMTargetDataRef,
 ]
-
-ffi.lib.LLVMPY_AddTargetData.argtypes = [ffi.LLVMTargetDataRef,
-                                         ffi.LLVMPassManagerRef]
 
 ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
                                          ffi.LLVMTypeRef]

@@ -21,8 +21,6 @@ if os.environ.get('READTHEDOCS', None) == 'True':
     sys.exit("setup.py disabled on readthedocs: called with %s"
              % (sys.argv,))
 
-from llvmlite.utils import get_library_files
-
 import versioneer
 
 versioneer.VCS = 'git'
@@ -63,6 +61,7 @@ class LlvmliteBuildExt(build_ext):
         spawn(cmd, dry_run=self.dry_run)
         # HACK: this makes sure the library file (which is large) is only
         # included in binary builds, not source builds.
+        from llvmlite.utils import get_library_files
         self.distribution.package_data = {
             "llvmlite.binding": get_library_files(),
         }
@@ -72,6 +71,7 @@ class LlvmliteInstall(install):
     # Ensure install see the libllvmlite shared library
     # This seems to only be necessary on OSX.
     def run(self):
+        from llvmlite.utils import get_library_files
         self.distribution.package_data = {
             "llvmlite.binding": get_library_files(),
         }

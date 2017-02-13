@@ -233,7 +233,18 @@ class TestMisc(BaseTest):
         self.assertEqual(default_parts[0], triple_parts[0])
 
     def test_get_host_cpu_features(self):
-        features = llvm.get_host_cpu_features()
+        try:
+            features = llvm.get_host_cpu_features()
+        except RuntimeError:
+            # Allow non-x86 arch to pass even if an RuntimeError is raised
+            triple = llvm.get_process_triple()
+            # For now, we know for sure that x86 is supported.
+            # We can restrict the test if we know this works on other arch.
+            is_x86 = triple.startswith('x86')
+            self.assertFalse(is_x86,
+                             msg="get_host_cpu_features() should not raise")
+            return
+        # Check the content of `features`
         self.assertIsInstance(features, dict)
         self.assertIsInstance(features, llvm.FeatureMap)
         for k, v in features.items():
@@ -281,7 +292,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual((major, minor), (3, 8))
+        self.assertEqual((major, minor), (3, 9))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -809,18 +820,8 @@ class TestTargetData(BaseTest):
         glob = self.glob()
         self.assertEqual(td.get_abi_size(glob.type), 8)
 
-    def test_add_pass(self):
-        td = self.target_data()
-        pm = llvm.create_module_pass_manager()
-        td.add_pass(pm)
-
 
 class TestTargetMachine(BaseTest):
-
-    def test_add_target_data_pass(self):
-        tm = self.target_machine()
-        pm = llvm.create_module_pass_manager()
-        tm.target_data.add_pass(pm)
 
     def test_add_analysis_passes(self):
         tm = self.target_machine()
