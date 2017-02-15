@@ -95,9 +95,6 @@ class MetaDataType(Type):
     def __eq__(self, other):
         return isinstance(other, MetaDataType)
 
-    def __ne__(self, other):
-        return not isinstance(other, MetaDataType)
-
 
 class LabelType(Type):
     """
