@@ -893,6 +893,20 @@ class TestPassManagerBuilder(BaseTest):
             pmb.disable_unroll_loops = b
             self.assertEqual(pmb.disable_unroll_loops, b)
 
+    def test_loop_vectorize(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.loop_vectorize, bool)
+        for b in (True, False):
+            pmb.loop_vectorize = b
+            self.assertEqual(pmb.loop_vectorize, b)
+
+    def test_slp_vectorize(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.slp_vectorize, bool)
+        for b in (True, False):
+            pmb.slp_vectorize = b
+            self.assertEqual(pmb.slp_vectorize, b)
+
     def test_populate_module_pass_manager(self):
         pmb = self.pmb()
         pm = llvm.create_module_pass_manager()
