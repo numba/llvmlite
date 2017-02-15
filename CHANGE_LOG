@@ -1,10 +1,22 @@
-development
------------
+v0.16.0
+-------
 
 API changes:
 
+* Switched from LLVM 3.8 to 3.9
 * ``TargetData.add_pass`` is removed in LLVM 3.9.
 
+Enhancements:
+
+* PR #239: Enable fastmath flags
+* PR #233: Updates for llvm3.9.1
+* PR #199: Update for changes in LLVM 3.9
+
+Fixes:
+
+* PR #236: Fix metadata with long value
+* PR #231: Fix setup.py for Python2.7 so that pip auto installs dependencies
+* PR #226: Fix get_host_cpu_features() so that it fails properly
 
 
 v0.15.0
