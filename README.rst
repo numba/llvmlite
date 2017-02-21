@@ -1,6 +1,15 @@
 ========
 llvmlite
 ========
+.. image:: https://travis-ci.org/numba/llvmlite.svg?branch=master
+   :target: https://travis-ci.org/numba/llvmlite
+   :alt: Travis CI
+.. image:: https://codeclimate.com/github/numba/llvmlite/badges/gpa.svg
+   :target: https://codeclimate.com/github/numba/llvmlite
+   :alt: Code Climate
+.. image:: https://coveralls.io/repos/github/numba/llvmlite/badge.svg
+   :target: https://coveralls.io/github/numba/llvmlite
+   :alt: Coveralls.io
 
 A lightweight LLVM python binding for writing JIT compilers
 
