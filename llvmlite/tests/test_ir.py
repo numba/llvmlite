@@ -1444,6 +1444,10 @@ class TestTypes(TestBase):
         mytype2 = context.get_identified_type("MyType\"")
         self.assertEqual(str(mytype2), "%\"MyType\\22\"")
 
+    def test_hash(self):
+        for typ in filter(self.has_logical_equality, self.assorted_types()):
+            self.assertEqual(hash(typ), hash(copy.copy(typ)))
+
     def test_gep(self):
         def check_constant(tp, i, expected):
             actual = tp.gep(ir.Constant(int32, i))
