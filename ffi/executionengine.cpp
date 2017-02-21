@@ -7,6 +7,8 @@
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/ExecutionEngine/ObjectCache.h"
 #include "llvm/Support/Memory.h"
+#include "llvm/ExecutionEngine/OrcMCJITReplacement.h"
+#include "llvm/ExecutionEngine/SectionMemoryManager.h"
 
 #include <cstdio>
 
@@ -16,6 +18,11 @@ extern "C" {
 API_EXPORT(void)
 LLVMPY_LinkInMCJIT() {
     LLVMLinkInMCJIT();
+}
+
+API_EXPORT(void)
+LLVMPY_LinkInOrcMCJITReplacement() {
+    LLVMLinkInOrcMCJITReplacement();
 }
 
 API_EXPORT(void)
@@ -64,7 +71,8 @@ static
 LLVMExecutionEngineRef
 create_execution_engine(LLVMModuleRef M,
                         LLVMTargetMachineRef TM,
-                        char **OutError
+                        char **OutError,
+                        bool useOrcJit=false
                         )
 {
     LLVMExecutionEngineRef ee = nullptr;
@@ -73,10 +81,16 @@ create_execution_engine(LLVMModuleRef M,
     std::string err;
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);
-
+    eb.setUseOrcMCJITReplacement(useOrcJit);
+    if (useOrcJit) {
+        // The OrcMCJITReplacement does not auto-initialize a
+        // SectionMemoryManager.  This fixes a null ptr access at runtime.
+        eb.setMCJITMemoryManager(
+            std::unique_ptr<llvm::RTDyldMemoryManager>(
+                new llvm::SectionMemoryManager()));
+    }
     /* EngineBuilder::create loads the current process symbols */
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
-
 
     if (!engine)
         *OutError = strdup(err.c_str());
@@ -91,6 +105,14 @@ LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
                            char **OutError)
 {
     return create_execution_engine(M, TM, OutError);
+}
+
+API_EXPORT(LLVMExecutionEngineRef)
+LLVMPY_CreateOrcJITCompiler(LLVMModuleRef M,
+                           LLVMTargetMachineRef TM,
+                           char **OutError)
+{
+    return create_execution_engine(M, TM, OutError, true);
 }
 
 API_EXPORT(void *)

@@ -10,6 +10,7 @@ from . import ffi, targets, object_file
 
 # Just check these weren't optimized out of the DLL.
 ffi.lib.LLVMPY_LinkInMCJIT
+ffi.lib.LLVMPY_LinkInOrcMCJITReplacement
 
 
 def create_mcjit_compiler(module, target_machine):
@@ -19,6 +20,21 @@ def create_mcjit_compiler(module, target_machine):
     """
     with ffi.OutputString() as outerr:
         engine = ffi.lib.LLVMPY_CreateMCJITCompiler(
+                module, target_machine, outerr)
+        if not engine:
+            raise RuntimeError(str(outerr))
+
+    target_machine._owned = True
+    return ExecutionEngine(engine, module=module)
+
+
+def create_orc_mcjit_compiler(module, target_machine):
+    """
+    Create a ORC-JIT ExecutionEngine from the given *module* and
+    *target_machine* using the OrcMCJITReplacement API.
+    """
+    with ffi.OutputString() as outerr:
+        engine = ffi.lib.LLVMPY_CreateOrcJITCompiler(
                 module, target_machine, outerr)
         if not engine:
             raise RuntimeError(str(outerr))
@@ -232,6 +248,14 @@ ffi.lib.LLVMPY_CreateMCJITCompiler.argtypes = [
     POINTER(c_char_p),
 ]
 ffi.lib.LLVMPY_CreateMCJITCompiler.restype = ffi.LLVMExecutionEngineRef
+
+
+ffi.lib.LLVMPY_CreateOrcJITCompiler.argtypes = [
+    ffi.LLVMModuleRef,
+    ffi.LLVMTargetMachineRef,
+    POINTER(c_char_p),
+]
+ffi.lib.LLVMPY_CreateOrcJITCompiler.restype = ffi.LLVMExecutionEngineRef
 
 ffi.lib.LLVMPY_RemoveModule.argtypes = [
     ffi.LLVMExecutionEngineRef,

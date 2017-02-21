@@ -692,6 +692,71 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         return llvm.create_mcjit_compiler(mod, target_machine)
 
 
+class TestOrcMCJit(BaseTest, JITWithTMTestMixin):
+    """
+    Test JIT engines created with create_orc_mcjit_compiler().
+    """
+
+    def jit(self, mod, target_machine=None):
+        if target_machine is None:
+            target_machine = self.target_machine()
+        return llvm.create_orc_mcjit_compiler(mod, target_machine)
+
+    def test_object_cache_getbuffer(self):   # overrides
+        # The ORC JIT needs a different test because it will fail at the
+        # second phase if loading function "sum" in a module without one.
+        # Instead, we will supply another "sum" implementation and make sure it
+        # is not used.
+        notifies = []
+        getbuffers = []
+
+        def notify(mod, buf):
+            notifies.append((mod, buf))
+
+        def getbuffer(mod):
+            getbuffers.append(mod)
+
+        mod = self.module()
+        ee = self.jit(mod)
+        ee.set_object_cache(notify, getbuffer)
+
+        # First return None from getbuffer(): the object is compiled normally
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 0)
+        cfunc = self.get_sum(ee)
+        self.assertEqual(len(notifies), 1)
+        self.assertEqual(len(getbuffers), 1)
+        self.assertIs(getbuffers[0], mod)
+        sum_buffer = notifies[0][1]
+
+        # Recreate a new EE, and use getbuffer() to return the previously
+        # compiled object.
+
+        def getbuffer_successful(mod):
+            getbuffers.append(mod)
+            return sum_buffer
+
+        notifies[:] = []
+        getbuffers[:] = []
+
+        # Supply a different implementation for sum and make sure that it is
+        # not used
+        mod = llvm.parse_assembly(r"""
+    define i32 @sum(i32, i32) {
+        ret i32 0 ; always return 0
+    }
+""")
+        ee = self.jit(mod)
+        ee.set_object_cache(notify, getbuffer_successful)
+
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 0)
+        cfunc = self.get_sum(ee)
+        self.assertEqual(cfunc(2, -5), -3)
+        self.assertEqual(len(notifies), 0)
+        self.assertEqual(len(getbuffers), 1)
+
+
 class TestValueRef(BaseTest):
 
     def test_str(self):
