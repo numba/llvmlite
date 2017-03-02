@@ -25,10 +25,10 @@ Building manually
 Prerequisites (UNIX)
 ''''''''''''''''''''
 
-You must have a LLVM 3.8 build (libraries and header files) available
+You must have a LLVM 3.9 build (libraries and header files) available
 somewhere.
 
-Under a recent Ubuntu or Debian system, you may install the ``llvm-3.8-dev``
+Under a recent Ubuntu or Debian system, you may install the ``llvm-3.9-dev``
 package if available.
 
 If building LLVM on Ubuntu, the linker may report an error if the
