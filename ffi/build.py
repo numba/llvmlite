@@ -129,6 +129,9 @@ def main_posix(kind, library_ext):
 
     ldflags = run_llvm_config(llvm_config, ["--ldflags"])
     os.environ['LLVM_LDFLAGS'] = ldflags.strip()
+    # static link libstdc++ for portability
+    if int(os.environ.get('LLVMLITE_CXX_STATIC_LINK', 0)):
+        os.environ['CXX_STATIC_LINK'] = "-static-libstdc++"
 
     makefile = "Makefile.%s" % (kind,)
     subprocess.check_call(['make', '-f', makefile])
