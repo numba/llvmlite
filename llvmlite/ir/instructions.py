@@ -55,12 +55,18 @@ class CallInstrAttributes(AttributeSet):
     _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone'])
 
 
+class FastMathFlags(AttributeSet):
+    _known = frozenset(['fast', 'nnan', 'ninf', 'nsz', 'arcp'])
+
+
 class CallInstr(Instruction):
-    def __init__(self, parent, func, args, name='', cconv=None, tail=False):
+    def __init__(self, parent, func, args, name='', cconv=None, tail=False,
+                 fastmath=()):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
         self.tail = tail
+        self.fastmath = FastMathFlags(fastmath)
         self.attributes = CallInstrAttributes()
 
         # Fix and validate arguments
@@ -105,23 +111,32 @@ class CallInstr(Instruction):
     def _descr(self, buf, add_metadata):
         args = ', '.join(['{0} {1}'.format(a.type, a.get_reference())
                           for a in self.args])
-        fnty = self.callee.type
-        if isinstance(fnty, types.PointerType):
-            fnty = fnty.pointee
-        callee_ref = "{0} {1}".format(fnty, self.callee.get_reference())
+
+        fnty = self.callee.function_type
+        # Only print function type if variable-argument
+        if fnty.var_arg:
+            ty = fnty
+        # Otherwise, just print the return type.
+        else:
+            # Fastmath flag work only in this case
+            ty = fnty.return_type
+        callee_ref = "{0} {1}".format(ty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
-        buf.append("{0}{1} {2}({3}){4}{5}\n".format(
-            'tail ' if self.tail else '',
-            self.opname,
-            callee_ref,
-            args,
-            ''.join([" " + attr for attr in self.attributes]),
-            self._stringify_metadata(leading_comma=True) if add_metadata else "",
-            ))
+        buf.append("{tail}{op}{fastmath} {callee}({args}){attr}{meta}\n".format(
+            tail='tail ' if self.tail else '',
+            op=self.opname,
+            callee=callee_ref,
+            fastmath=''.join([" " + attr for attr in self.fastmath]),
+            args=args,
+            attr=''.join([" " + attr for attr in self.attributes]),
+            meta=(self._stringify_metadata(leading_comma=True)
+                  if add_metadata else ""),
+        ))
 
     def descr(self, buf):
         self._descr(buf, add_metadata=True)
+
 
 class InvokeInstr(CallInstr):
     def __init__(self, parent, func, args, normal_to, unwind_to, name='', cconv=None):
@@ -294,19 +309,21 @@ class CompareInstr(Instruction):
         for flag in flags:
             if flag not in self.VALID_FLAG:
                 raise ValueError("invalid flag %r for %s" % (flag, self.OPNAME))
-        opname = " ".join([self.OPNAME] + flags)
+        opname = self.OPNAME
         super(CompareInstr, self).__init__(parent, types.IntType(1),
-                                           opname, [lhs, rhs], name=name)
+                                           opname, [lhs, rhs], flags=flags,
+                                           name=name)
         self.op = op
 
     def descr(self, buf):
-        buf.append("{0} {1} {2} {3}, {4} {5}\n".format(
-            self.opname,
-            self.op,
-            self.operands[0].type,
-            self.operands[0].get_reference(),
-            self.operands[1].get_reference(),
-            self._stringify_metadata(leading_comma=True),
+        buf.append("{opname}{flags} {op} {ty} {lhs}, {rhs} {meta}\n".format(
+            opname=self.opname,
+            flags=''.join(' ' + it for it in self.flags),
+            op=self.op,
+            ty=self.operands[0].type,
+            lhs=self.operands[0].get_reference(),
+            rhs=self.operands[1].get_reference(),
+            meta=self._stringify_metadata(leading_comma=True),
             ))
 
 

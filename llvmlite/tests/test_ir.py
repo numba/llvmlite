@@ -4,6 +4,7 @@ IR Construction Tests
 
 from __future__ import print_function, absolute_import
 
+import sys
 import copy
 import itertools
 import pickle
@@ -22,6 +23,9 @@ int32 = ir.IntType(32)
 int64 = ir.IntType(64)
 flt = ir.FloatType()
 dbl = ir.DoubleType()
+
+
+PY2 = sys.version_info[0] == 2
 
 
 class TestBase(TestCase):
@@ -344,6 +348,16 @@ class TestIR(TestBase):
                             strmod)
         self.assert_valid_ir(mod)
 
+    @unittest.skipUnless(PY2, 'py2 only')
+    def test_debug_info_py2_long(self):
+        mod = self.module()
+        di = mod.add_debug_info("DIBasicType",
+                                {"name": "foo",
+                                 "size": long(123)})  # long integer here
+        self.assert_ir_line('!0 = !DIBasicType(name: "foo", size: 123)',
+                            str(di))
+        self.assert_valid_ir(mod)
+
     def test_inline_assembly(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
@@ -571,6 +585,20 @@ class TestBuildInstructions(TestBase):
                 %"d" = sub nuw nsw i32 %".1", %".2"
             """)
 
+    def test_binop_fastmath_flags(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        # As tuple
+        builder.fadd(a, b, 'c', flags=('fast',))
+        # and as list
+        builder.fsub(a, b, 'd', flags=['ninf', 'nsz'])
+        self.check_block(block, """\
+            my_block:
+                %"c" = fadd fast i32 %".1", %".2"
+                %"d" = fsub ninf nsz i32 %".1", %".2"
+            """)
+
     def test_binops_with_overflow(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -583,12 +611,12 @@ class TestBuildInstructions(TestBase):
         builder.usub_with_overflow(a, b, 'h')
         self.check_block(block, """\
             my_block:
-                %"c" = call {i32, i1} (i32, i32) @"llvm.sadd.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"d" = call {i32, i1} (i32, i32) @"llvm.smul.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"e" = call {i32, i1} (i32, i32) @"llvm.ssub.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"f" = call {i32, i1} (i32, i32) @"llvm.uadd.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"g" = call {i32, i1} (i32, i32) @"llvm.umul.with.overflow.i32"(i32 %".1", i32 %".2")
-                %"h" = call {i32, i1} (i32, i32) @"llvm.usub.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"c" = call {i32, i1} @"llvm.sadd.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"d" = call {i32, i1} @"llvm.smul.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"e" = call {i32, i1} @"llvm.ssub.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"f" = call {i32, i1} @"llvm.uadd.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"g" = call {i32, i1} @"llvm.umul.with.overflow.i32"(i32 %".1", i32 %".2")
+                %"h" = call {i32, i1} @"llvm.usub.with.overflow.i32"(i32 %".1", i32 %".2")
             """)
 
     def test_unary_ops(self):
@@ -1003,12 +1031,16 @@ class TestBuildInstructions(TestBase):
         builder.call(f, (a, b), 'res_f_fast', cconv='fastcc')
         res_f_readonly = builder.call(f, (a, b), 'res_f_readonly')
         res_f_readonly.attributes.add('readonly')
+        builder.call(f, (a, b), 'res_fast', fastmath='fast')
+        builder.call(f, (a, b), 'res_nnan_ninf', fastmath=('nnan', 'ninf'))
         self.check_block(block, """\
             my_block:
-                %"res_f" = call float (i32, i32) @"f"(i32 %".1", i32 %".2")
+                %"res_f" = call float @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...) @"g"(i32 %".2", i32 %".1")
-                %"res_f_fast" = call fastcc float (i32, i32) @"f"(i32 %".1", i32 %".2")
-                %"res_f_readonly" = call float (i32, i32) @"f"(i32 %".1", i32 %".2") readonly
+                %"res_f_fast" = call fastcc float @"f"(i32 %".1", i32 %".2")
+                %"res_f_readonly" = call float @"f"(i32 %".1", i32 %".2") readonly
+                %"res_fast" = call fast float @"f"(i32 %".1", i32 %".2")
+                %"res_nnan_ninf" = call ninf nnan float @"f"(i32 %".1", i32 %".2")
             """)
 
     def test_call_metadata(self):
@@ -1025,7 +1057,7 @@ class TestBuildInstructions(TestBase):
         self.check_block(block, """\
             my_block:
                 %"a" = alloca i32
-                call void (metadata, metadata, metadata) @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
+                call void @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
             """)
 
     def test_invoke(self):
@@ -1039,7 +1071,7 @@ class TestBuildInstructions(TestBase):
         builder.invoke(f, (a, b), bb_normal, bb_unwind, 'res_f')
         self.check_block(block, """\
             my_block:
-                %"res_f" = invoke float (i32, i32) @"f"(i32 %".1", i32 %".2")
+                %"res_f" = invoke float @"f"(i32 %".1", i32 %".2")
                     to label %"normal" unwind label %"unwind"
             """)
 
@@ -1070,7 +1102,7 @@ class TestBuildInstructions(TestBase):
         self.check_block(block, """\
             my_block:
                 %"c" = icmp sgt i32 %".1", %".2"
-                call void (i1) @"llvm.assume"(i1 %"c")
+                call void @"llvm.assume"(i1 %"c")
             """)
 
 
@@ -1411,6 +1443,10 @@ class TestTypes(TestBase):
         self.assertEqual(str(mytype1), "%\"MyType\\5c\"")
         mytype2 = context.get_identified_type("MyType\"")
         self.assertEqual(str(mytype2), "%\"MyType\\22\"")
+
+    def test_hash(self):
+        for typ in filter(self.has_logical_equality, self.assorted_types()):
+            self.assertEqual(hash(typ), hash(copy.copy(typ)))
 
     def test_gep(self):
         def check_constant(tp, i, expected):

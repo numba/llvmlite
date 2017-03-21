@@ -95,8 +95,8 @@ class MetaDataType(Type):
     def __eq__(self, other):
         return isinstance(other, MetaDataType)
 
-    def __ne__(self, other):
-        return not isinstance(other, MetaDataType)
+    def __hash__(self):
+        return hash(MetaDataType)
 
 
 class LabelType(Type):
@@ -133,6 +133,9 @@ class PointerType(Type):
         else:
             return False
 
+    def __hash__(self):
+        return hash(PointerType)
+
     def gep(self, i):
         """
         Resolve the type of the i-th element (for getelementptr lookups).
@@ -156,6 +159,9 @@ class VoidType(Type):
 
     def __eq__(self, other):
         return isinstance(other, VoidType)
+
+    def __hash__(self):
+        return hash(VoidType)
 
 
 class FunctionType(Type):
@@ -186,6 +192,9 @@ class FunctionType(Type):
                     self.args == other.args and self.var_arg == other.var_arg)
         else:
             return False
+
+    def __hash__(self):
+        return hash(FunctionType)
 
 
 class IntType(Type):
@@ -227,6 +236,9 @@ class IntType(Type):
         else:
             return False
 
+    def __hash__(self):
+        return hash(IntType)
+
     def format_constant(self, val):
         if isinstance(val, bool):
             return str(val).lower()
@@ -265,6 +277,9 @@ class _BaseFloatType(Type):
 
     def __eq__(self, other):
         return isinstance(other, type(self))
+
+    def __hash__(self):
+        return hash(type(self))
 
     @classmethod
     def _create_instance(cls):
@@ -359,6 +374,9 @@ class ArrayType(Aggregate):
         if isinstance(other, ArrayType):
             return self.element == other.element and self.count == other.count
 
+    def __hash__(self):
+        return hash(ArrayType)
+
     def gep(self, i):
         """
         Resolve the type of the i-th element (for getelementptr lookups).
@@ -431,6 +449,9 @@ class LiteralStructType(BaseStructType):
         if isinstance(other, LiteralStructType):
             return self.elements == other.elements
 
+    def __hash__(self):
+        return hash(LiteralStructType)
+
 
 class IdentifiedStructType(BaseStructType):
     """
@@ -465,6 +486,9 @@ class IdentifiedStructType(BaseStructType):
     def __eq__(self, other):
         if isinstance(other, IdentifiedStructType):
             return self.name == other.name
+
+    def __hash__(self):
+        return hash(IdentifiedStructType)
 
     def set_body(self, *elems):
         if not self.is_opaque:

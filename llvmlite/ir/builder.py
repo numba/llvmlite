@@ -719,13 +719,13 @@ class IRBuilder(object):
 
     # Call APIs
 
-    def call(self, fn, args, name='', cconv=None, tail=False):
+    def call(self, fn, args, name='', cconv=None, tail=False, fastmath=()):
         """
         Call function *fn* with *args*:
             name = fn(args...)
         """
         inst = instructions.CallInstr(self.block, fn, args, name=name,
-                                      cconv=cconv, tail=tail)
+                                      cconv=cconv, tail=tail, fastmath=fastmath)
         self._insert(inst)
         return inst
 

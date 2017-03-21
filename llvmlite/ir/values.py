@@ -406,7 +406,7 @@ class DIValue(NamedValue):
                 strvalue = value.value
             elif isinstance(value, str):
                 strvalue = '"{}"'.format(_escape_string(value))
-            elif isinstance(value, int):
+            elif isinstance(value, six.integer_types):
                 strvalue = str(value)
             elif isinstance(value, NamedValue):
                 strvalue = value.get_reference()
@@ -505,11 +505,28 @@ class GlobalVariable(GlobalValue):
 
 
 class AttributeSet(set):
+    """A set of string attribute.
+    Only accept items listed in *_known*.
+
+    Properties:
+    * Iterate in sorted order
+    """
     _known = ()
 
+    def __init__(self, args=()):
+        if isinstance(args, str):
+            args = [args]
+        for name in args:
+            self.add(name)
+
     def add(self, name):
-        assert name in self._known
+        if name not in self._known:
+            raise ValueError('unknown attr {!r} for {}'.format(name, self))
         return super(AttributeSet, self).add(name)
+
+    def __iter__(self):
+        # In sorted order
+        return iter(sorted(super(AttributeSet, self).__iter__()))
 
 
 class FunctionAttributes(AttributeSet):
@@ -546,7 +563,7 @@ class FunctionAttributes(AttributeSet):
         self._personality = val
 
     def __repr__(self):
-        attrs = sorted(self)
+        attrs = list(self)
         if self.alignstack:
             attrs.append('alignstack({0:d})'.format(self.alignstack))
         if self.personality:

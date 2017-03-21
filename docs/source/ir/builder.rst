@@ -442,11 +442,13 @@ Memory
 Function call
 '''''''''''''
 
-.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=False)
+.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=False, fastmath=())
 
    Call function *fn* with arguments *args* (a sequence of values).
    *cconc* is the optional calling convention.  *tail*, if true, is
-   a hint for the optimizer to perform tail-call optimization.
+   a hint for the optimizer to perform tail-call optimization. *fastmath* is a
+   string or a sequence of strings of names for `fast-math flags
+   <http://llvm.org/docs/LangRef.html#fast-math-flags>`_.
 
 
 Branches
