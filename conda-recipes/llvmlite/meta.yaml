@@ -14,7 +14,7 @@ requirements:
   build:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 3.9*
+    - llvmdev 4.0*
     # Those are copied into the llvmlite packages
     - vs2013_runtime [win]
     # The DLL build uses cmake on Windows

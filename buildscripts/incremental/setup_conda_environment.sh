@@ -21,7 +21,7 @@ source activate $CONDA_ENV
 set -v
 
 # Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c numba llvmdev="3.9*"
+$CONDA_INSTALL -c numba llvmdev="4.0*"
 # Install enum34 for Python < 3.4
 if [ $PYTHON \< "3.4" ]; then $CONDA_INSTALL enum34; fi
 # Install dependencies for building the docs
