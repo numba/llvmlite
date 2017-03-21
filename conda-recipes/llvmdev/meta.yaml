@@ -1,18 +1,15 @@
 
 {% set shortversion = "4.0" %}
-{% set version = "4.0.0rc1" %}
-{% set sha256 = "1fd90354b9cf19232e8f168faf2220e79be555df3aa743242700879e8fd329ee" %}
+{% set version = "4.0.0" %}
+{% set sha256 = "8d10511df96e73b8ff9e7abbfb4d4d432edbdbe965f1f4f07afaf370b8a533be" %}
 
 package:
   name: llvmdev
-  version: "4.0.0rc1"
+  version: "4.0.0"
 
 source:
-  fn: ./llvm-{{ version }}.src.tar.xz
-  # url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
-  # url: http://www.llvm.org/pre-releases/4.0.0/rc1/llvm-4.0.0rc1.src.tar.xz
-
-  # sha256: {{ sha256 }}
+  url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
+  sha256: {{ sha256 }}
   patches:
     # https://llvm.org/bugs/show_bug.cgi?id=15356
     - ../llvm-elf-relocation.patch
