@@ -163,6 +163,7 @@ class TestDependencies(BaseTest):
     """
 
     @unittest.skipUnless(sys.platform.startswith('linux'), "Linux-specific test")
+    @unittest.skipUnless(os.environ.get('LLVMLITE_DIST_TEST'), "Distribution-specific test")
     def test_linux(self):
         lib_path = ffi.lib._name
         env = os.environ.copy()
