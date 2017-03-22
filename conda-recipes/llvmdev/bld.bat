@@ -9,7 +9,7 @@ if "%ARCH%"=="32" (
 ) else (
     set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
 )
-set CMAKE_GENERATOR_TOOLSET=v120_xp
+set CMAKE_GENERATOR_TOOLSET=v140_xp
 
 REM Reduce build times and package size by removing unused stuff
 set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_INCLUDE_TESTS=OFF ^
