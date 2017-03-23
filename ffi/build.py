@@ -52,8 +52,8 @@ def find_win32_generator():
     # compatible with, the one which was used to compile LLVM... cmake
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
-    # LLVM 3.8 needs VS 2013 minimum.
-    for generator in ['Visual Studio 12 2013']:
+    # LLVM 4.0 needs VS 2015 minimum.
+    for generator in ['Visual Studio 14 2015']:
         if is_64bit:
             generator += ' Win64'
         build_dir = tempfile.mkdtemp()
@@ -86,7 +86,7 @@ def main_win32():
         search_path = r'c:\windows\syswow64'
     else:
         search_path = r'c:\windows\system32'
-    for lib in ['msvcr120.dll', 'msvcp120.dll']:
+    for lib in ['msvcr140.dll', 'msvcp140.dll']:
         lib_path = os.path.join(search_path, lib)
         if not os.path.exists(lib_path):
             lib_path = find_library(lib)
