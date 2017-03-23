@@ -4,15 +4,15 @@ builds under Windows with the following message:
 LINK : fatal error LNK1181: cannot open input file 'LTO-NOTFOUND.obj'
 
 diff --git a/tools/lto/CMakeLists.txt b/tools/lto/CMakeLists.txt
-index 62447ee..5f538d6 100644
+index 6e91351..66bea35 100644
 --- a/tools/lto/CMakeLists.txt
 +++ b/tools/lto/CMakeLists.txt
-@@ -15,7 +15,7 @@ set(SOURCES
- 
+@@ -16,7 +16,7 @@ set(SOURCES
+
  set(LLVM_EXPORTED_SYMBOL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lto.exports)
- 
--add_llvm_library(LTO SHARED ${SOURCES})
-+add_llvm_library(LTO ${SOURCES})
- 
+
+-add_llvm_library(LTO SHARED ${SOURCES} DEPENDS intrinsics_gen)
++add_llvm_library(LTO ${SOURCES} DEPENDS intrinsics_gen)
+
  install(FILES ${LLVM_MAIN_INCLUDE_DIR}/llvm-c/lto.h
-   DESTINATION include/llvm-c)
+   DESTINATION include/llvm-c
