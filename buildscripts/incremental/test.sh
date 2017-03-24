@@ -11,5 +11,6 @@ make SPHINXOPTS=-Wn clean html
 
 # Run test suite
 cd ..
+python --version
 python runtests.py -v
 if [ "$RUN_COVERAGE" == "yes" ]; then coverage run runtests.py; fi

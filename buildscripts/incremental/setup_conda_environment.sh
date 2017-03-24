@@ -14,7 +14,11 @@ conda list
 #  `conda env remove` issue)
 conda remove --all -q -y -n $CONDA_ENV
 # Scipy, CFFI, jinja2 and IPython are optional dependencies, but exercised in the test suite
-conda create -n $CONDA_ENV -q -y python=$PYTHON
+if [ "$PYTHON" == "pypy" ]; then
+    conda create -c gmarkall -n $CONDA_ENV -q -y pypy
+else
+    conda create -n $CONDA_ENV -q -y python=$PYTHON
+fi
 
 set +v
 source activate $CONDA_ENV
@@ -22,9 +26,19 @@ set -v
 
 # Install llvmdev (separate channel, for now)
 $CONDA_INSTALL -c numba llvmdev="3.9*"
-# Install enum34 for Python < 3.4
-if [ $PYTHON \< "3.4" ]; then $CONDA_INSTALL enum34; fi
-# Install dependencies for building the docs
-$CONDA_INSTALL sphinx sphinx_rtd_theme pygments
+
+# Install enum34 for Python < 3.4 and PyPy, and install dependencies for
+# building the docs
+if [ "$PYTHON" == "pypy" ]; then
+  python -m ensurepip
+  $PIP_INSTALL enum34
+  $PIP_INSTALL sphinx sphinx_rtd_theme pygments
+else
+  $CONDA_INSTALL sphinx sphinx_rtd_theme pygments
+  if [ "$PYTHON" \< "3.4" ]; then
+    $CONDA_INSTALL enum34
+  fi
+fi
+
 # Install dependencies for code coverage (codecov.io)
 if [ "$RUN_COVERAGE" == "yes" ]; then $PIP_INSTALL codecov coveralls; fi
