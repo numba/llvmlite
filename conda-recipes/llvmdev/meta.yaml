@@ -13,8 +13,6 @@ source:
   patches:
     # https://llvm.org/bugs/show_bug.cgi?id=15356
     - ../llvm-elf-relocation.patch
-    # https://llvm.org/bugs/show_bug.cgi?id=25565
-    # - ../llvm-build-race-condition.patch
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
 
