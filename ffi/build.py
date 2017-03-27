@@ -52,8 +52,8 @@ def find_win32_generator():
     # compatible with, the one which was used to compile LLVM... cmake
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
-    # LLVM 3.8 needs VS 2013 minimum.
-    for generator in ['Visual Studio 12 2013']:
+    # LLVM 4.0 needs VS 2015 minimum.
+    for generator in ['Visual Studio 14 2015']:
         if is_64bit:
             generator += ' Win64'
         build_dir = tempfile.mkdtemp()
@@ -79,20 +79,6 @@ def main_win32():
     try_cmake(here_dir, build_dir, generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
-    # Copy CRT libraries as well, so as to package them.
-    if os.environ.get('PROCESSOR_ARCHITEW6432'):
-        # Hard-code WoW64 path if we're a 32-bit Python in a 64-bit system,
-        # otherwise the wrong DLL file will be found by find_library().
-        search_path = r'c:\windows\syswow64'
-    else:
-        search_path = r'c:\windows\system32'
-    for lib in ['msvcr120.dll', 'msvcp120.dll']:
-        lib_path = os.path.join(search_path, lib)
-        if not os.path.exists(lib_path):
-            lib_path = find_library(lib)
-            if lib_path is None:
-                raise RuntimeError("%r not found" % (lib,))
-        shutil.copy(lib_path, target_dir)
 
 
 def main_posix(kind, library_ext):
@@ -109,9 +95,9 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not out.startswith('3.9.'):
+    if not out.startswith('4.0.'):
         msg = (
-            "Building llvmlite requires LLVM 3.9.x. Be sure to "
+            "Building llvmlite requires LLVM 4.0.x. Be sure to "
             "set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n"

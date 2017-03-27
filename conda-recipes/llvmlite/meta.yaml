@@ -14,15 +14,15 @@ requirements:
   build:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 3.9*
-    # Those are copied into the llvmlite packages
-    - vs2013_runtime [win]
+    - llvmdev 4.0*
+    - vs2015_runtime [win]
     # The DLL build uses cmake on Windows
     - cmake          [win]
     - enum34         [py27]
   run:
     - python
     - enum34         [py27]
+    - vs2015_runtime [win]
 
 test:
   imports:
