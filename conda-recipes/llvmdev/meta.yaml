@@ -1,21 +1,18 @@
 
-{% set shortversion = "3.9" %}
-{% set version = "3.9.1" %}
-{% set sha256 = "1fd90354b9cf19232e8f168faf2220e79be555df3aa743242700879e8fd329ee" %}
+{% set shortversion = "4.0" %}
+{% set version = "4.0.0" %}
+{% set sha256 = "8d10511df96e73b8ff9e7abbfb4d4d432edbdbe965f1f4f07afaf370b8a533be" %}
 
 package:
   name: llvmdev
-  version: "3.9.1"
+  version: "4.0.0"
 
 source:
-  fn: llvm-{{ version }}.src.tar.xz
   url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
   sha256: {{ sha256 }}
   patches:
     # https://llvm.org/bugs/show_bug.cgi?id=15356
     - ../llvm-elf-relocation.patch
-    # https://llvm.org/bugs/show_bug.cgi?id=25565
-    - ../llvm-build-race-condition.patch
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
 
