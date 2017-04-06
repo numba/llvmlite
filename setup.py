@@ -109,6 +109,12 @@ cmdclass.update({'build': LlvmliteBuild,
                  'clean': LlvmliteClean,
                  })
 
+
+# A stub C-extension to make bdist_wheel build an arch dependent build
+ext_stub = Extension(name="llvmlite.binding._stub",
+                     sources=["llvmlite/binding/_stub.c"])
+
+
 packages = ['llvmlite',
             'llvmlite.binding',
             'llvmlite.ir',
@@ -143,4 +149,10 @@ setup(name='llvmlite',
       install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
+      ext_modules=[ext_stub],
+
+      package_data={
+          "llvmlite.binding": ["libllvmlite.dylib", "libllvmlite.so",
+                               "libllvmlite.dll"],
+        },
       )
