@@ -1,3 +1,20 @@
+v0.17.0
+-------
+
+In this release, we are upgrading to LLVM 4.0.  We are also starting to
+provide wheel packages for 64-bit Linux platforms (manylinux).
+
+Fixes:
+
+* Issue #249, PR #250: Disable static linking of libstdc++ by default.
+
+Enhancements:
+
+* PR #246: Add requirements.txt for pip dependency resolving
+* PR #238: LLVM 4.0
+* PR #222: Enable wheel builds
+
+
 v0.16.0
 -------
 
