@@ -149,7 +149,7 @@ setup(name='llvmlite',
       install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
-      ext_modules=[ext_stub] if not os.name.startswith('win32') else [],
+      ext_modules=[ext_stub] if not sys.platform.startswith('win32') else [],
       package_data={
           "llvmlite.binding": ["libllvmlite.dylib", "libllvmlite.so",
                                "libllvmlite.dll"],
