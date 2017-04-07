@@ -25,6 +25,7 @@ $CONDA_INSTALL -c numba llvmdev="4.0*"
 # Install enum34 for Python < 3.4
 if [ $PYTHON \< "3.4" ]; then $CONDA_INSTALL enum34; fi
 # Install dependencies for building the docs
-$CONDA_INSTALL sphinx sphinx_rtd_theme pygments
+# Note: sphinx 1.5.4 has a bug
+$CONDA_INSTALL sphinx=1.4 sphinx_rtd_theme pygments
 # Install dependencies for code coverage (codecov.io)
 if [ "$RUN_COVERAGE" == "yes" ]; then $PIP_INSTALL codecov coveralls; fi
