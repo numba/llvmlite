@@ -112,9 +112,12 @@ if bdist_wheel:
     class LLvmliteBDistWheel(bdist_wheel):
         def run(self):
             from llvmlite.utils import get_library_files
-            self.distribution.package_data = {
-                "llvmlite.binding": get_library_files(),
-            }
+            # Hack to ensure the binding file exist when running wheel build
+            for fn in get_library_files():
+                path = os.path.join('llvmlite', 'binding', fn)
+                if not os.path.isfile(path):
+                    raise RuntimeError("missing {}".format(path))
+            # Run wheel build command
             bdist_wheel.run(self)
 
 
