@@ -1,3 +1,10 @@
+v0.17.1
+-------
+
+This is a bugfix release that addresses issue #258 that our LLVM
+binding shared library is missing from the wheel builds.
+
+
 v0.17.0
 -------
 
