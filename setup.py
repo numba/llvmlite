@@ -117,6 +117,9 @@ if bdist_wheel:
                 path = os.path.join('llvmlite', 'binding', fn)
                 if not os.path.isfile(path):
                     raise RuntimeError("missing {}".format(path))
+            self.distribution.package_data.update({
+                "llvmlite.binding": get_library_files(),
+            })
             # Run wheel build command
             bdist_wheel.run(self)
 
