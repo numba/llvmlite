@@ -32,7 +32,7 @@ $CONDA_INSTALL -c numba llvmdev="4.0*"
 if [ "$PYTHON" == "pypy" ]; then
   python -m ensurepip
   $PIP_INSTALL enum34
-  $PIP_INSTALL sphinx=1.5.1 sphinx_rtd_theme pygments
+  $PIP_INSTALL sphinx==1.5.1 sphinx_rtd_theme pygments
 else
   $CONDA_INSTALL sphinx=1.5.1 sphinx_rtd_theme pygments
   if [ "$PYTHON" \< "3.4" ]; then
