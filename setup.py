@@ -7,6 +7,11 @@ except ImportError:
     from distutils.command.install import install
 
 
+try:
+    from wheel.bdist_wheel import bdist_wheel
+except ImportError:
+    bdist_wheel = None
+
 from distutils.command.build import build
 from distutils.command.build_ext import build_ext
 from distutils.command.clean import clean
@@ -103,11 +108,35 @@ class LlvmliteClean(clean):
                         log.info("removing '%s'", fpath)
 
 
+if bdist_wheel:
+    class LLvmliteBDistWheel(bdist_wheel):
+        def run(self):
+            from llvmlite.utils import get_library_files
+            # Hack to ensure the binding file exist when running wheel build
+            for fn in get_library_files():
+                path = os.path.join('llvmlite', 'binding', fn)
+                if not os.path.isfile(path):
+                    raise RuntimeError("missing {}".format(path))
+            self.distribution.package_data.update({
+                "llvmlite.binding": get_library_files(),
+            })
+            # Run wheel build command
+            bdist_wheel.run(self)
+
+
 cmdclass.update({'build': LlvmliteBuild,
                  'build_ext': LlvmliteBuildExt,
                  'install': LlvmliteInstall,
                  'clean': LlvmliteClean,
                  })
+
+if bdist_wheel:
+    cmdclass.update({'bdist_wheel': LLvmliteBDistWheel})
+
+# A stub C-extension to make bdist_wheel build an arch dependent build
+ext_stub = Extension(name="llvmlite.binding._stub",
+                     sources=["llvmlite/binding/_stub.c"])
+
 
 packages = ['llvmlite',
             'llvmlite.binding',
@@ -143,4 +172,5 @@ setup(name='llvmlite',
       install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
+      ext_modules=[ext_stub] if not sys.platform.startswith('win32') else [],
       )

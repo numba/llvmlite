@@ -28,13 +28,13 @@ set -v
 $CONDA_INSTALL -c numba llvmdev="4.0*"
 
 # Install enum34 for Python < 3.4 and PyPy, and install dependencies for
-# building the docs
+# building the docs. Sphinx 1.5.4 has a bug.
 if [ "$PYTHON" == "pypy" ]; then
   python -m ensurepip
   $PIP_INSTALL enum34
-  $PIP_INSTALL sphinx sphinx_rtd_theme pygments
+  $PIP_INSTALL sphinx=1.5.1 sphinx_rtd_theme pygments
 else
-  $CONDA_INSTALL sphinx sphinx_rtd_theme pygments
+  $CONDA_INSTALL sphinx=1.5.1 sphinx_rtd_theme pygments
   if [ "$PYTHON" \< "3.4" ]; then
     $CONDA_INSTALL enum34
   fi
