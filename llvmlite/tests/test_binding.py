@@ -189,6 +189,9 @@ class TestDependencies(BaseTest):
         # Ensure all dependencies are expected
         allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
                        'libgcc_s', 'libc', 'ld-linux'])
+        if platform.python_implementation() == 'PyPy':
+            allowed.add('libtinfo')
+
         for dep in deps:
             if not dep.startswith('ld-linux-') and dep not in allowed:
                 self.fail("unexpected dependency %r in %r" % (dep, deps))
@@ -889,6 +892,20 @@ class TestPassManagerBuilder(BaseTest):
         for b in (True, False):
             pmb.disable_unroll_loops = b
             self.assertEqual(pmb.disable_unroll_loops, b)
+
+    def test_loop_vectorize(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.loop_vectorize, bool)
+        for b in (True, False):
+            pmb.loop_vectorize = b
+            self.assertEqual(pmb.loop_vectorize, b)
+
+    def test_slp_vectorize(self):
+        pmb = self.pmb()
+        self.assertIsInstance(pmb.slp_vectorize, bool)
+        for b in (True, False):
+            pmb.slp_vectorize = b
+            self.assertEqual(pmb.slp_vectorize, b)
 
     def test_populate_module_pass_manager(self):
         pmb = self.pmb()
