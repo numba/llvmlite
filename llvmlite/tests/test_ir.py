@@ -174,6 +174,8 @@ class TestFunction(TestBase):
         memset = module.declare_intrinsic('llvm.memset', [pint8, int32])
         memcpy = module.declare_intrinsic('llvm.memcpy', [pint8, pint8, int32])
         assume = module.declare_intrinsic('llvm.assume')
+        _pow = module.declare_intrinsic('llvm.pow', [dbl, dbl])
+        maxnum = module.declare_intrinsic('llvm.maxnum', [dbl, dbl])
         self.check_descr(self.descr(powi).strip(), """\
             declare double @"llvm.powi.f64"(double %".1", i32 %".2")""")
         self.check_descr(self.descr(memset).strip(), """\
@@ -182,6 +184,10 @@ class TestFunction(TestBase):
             declare void @"llvm.memcpy.p0i8.p0i8.i32"(i8* %".1", i8* %".2", i32 %".3", i32 %".4", i1 %".5")""")
         self.check_descr(self.descr(assume).strip(), """\
             declare void @"llvm.assume"(i1 %".1")""")
+        self.check_descr(self.descr(_pow).strip(), """\
+            declare double @"llvm.pow.f64"(double %".1", double %".2")""")
+        self.check_descr(self.descr(maxnum).strip(), """\
+            declare double @"llvm.maxnum.f64"(double %".1", double %".2")""")
 
     def test_redeclare_intrinsic(self):
         module = self.module()

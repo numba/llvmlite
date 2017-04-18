@@ -155,7 +155,13 @@ class Module(object):
             raise NotImplementedError("unknown intrinsic %r with %d types"
                                       % (intrinsic, len(tys)))
 
-        name = '.'.join([intrinsic] + [t.intrinsic_name for t in tys])
+        name = [intrinsic]
+        if intrinsic in ('llvm.memcpy', 'llvm.memset'):
+            name.extend((t.intrinsic_name for t in tys))
+        elif tys:
+            name.append(tys[0].intrinsic_name)
+        name = '.'.join(name)
+
         if name in self.globals:
             return self.globals[name]
 
@@ -172,10 +178,13 @@ class Module(object):
                 fnty = types.FunctionType(tys[0], tys*2)
             else:
                 fnty = types.FunctionType(tys[0], tys)
-        elif len(tys) == 2 and intrinsic == 'llvm.memset':
-            tys = [tys[0], types.IntType(8), tys[1],
-                   types.IntType(32), types.IntType(1)]
-            fnty = types.FunctionType(types.VoidType(), tys)
+        elif len(tys) == 2:
+            if intrinsic == 'llvm.memset':
+                tys = [tys[0], types.IntType(8), tys[1],
+                       types.IntType(32), types.IntType(1)]
+                fnty = types.FunctionType(types.VoidType(), tys)
+            else:
+                fnty = types.FunctionType(tys[0], tys)
         elif len(tys) == 3 and intrinsic in ('llvm.memcpy', 'llvm.memmove'):
             tys = tys + [types.IntType(32), types.IntType(1)]
             fnty = types.FunctionType(types.VoidType(), tys)
