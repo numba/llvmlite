@@ -188,7 +188,7 @@ class TestDependencies(BaseTest):
             self.fail("failed parsing dependencies? got %r" % (deps,))
         # Ensure all dependencies are expected
         allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
-                       'libgcc_s', 'libc', 'ld-linux'])
+                       'libgcc_s', 'libc', 'ld-linux', 'ld64'])
         if platform.python_implementation() == 'PyPy':
             allowed.add('libtinfo')
 
