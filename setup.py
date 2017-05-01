@@ -41,6 +41,12 @@ cmdclass = versioneer.get_cmdclass()
 build = cmdclass.get('build', build)
 build_ext = cmdclass.get('build_ext', build_ext)
 
+
+def build_library_files(dry_run):
+    cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
+    spawn(cmd, dry_run=dry_run)
+
+
 class LlvmliteBuild(build):
 
     def finalize_options(self):
@@ -62,8 +68,7 @@ class LlvmliteBuildExt(build_ext):
 
     def run(self):
         build_ext.run(self)
-        cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
-        spawn(cmd, dry_run=self.dry_run)
+        build_library_files(self.dry_run)
         # HACK: this makes sure the library file (which is large) is only
         # included in binary builds, not source builds.
         from llvmlite.utils import get_library_files
@@ -111,12 +116,14 @@ class LlvmliteClean(clean):
 if bdist_wheel:
     class LLvmliteBDistWheel(bdist_wheel):
         def run(self):
+            # Ensure the binding file exist when running wheel build
             from llvmlite.utils import get_library_files
-            # Hack to ensure the binding file exist when running wheel build
+            build_library_files(self.dry_run)
             for fn in get_library_files():
                 path = os.path.join('llvmlite', 'binding', fn)
                 if not os.path.isfile(path):
                     raise RuntimeError("missing {}".format(path))
+
             self.distribution.package_data.update({
                 "llvmlite.binding": get_library_files(),
             })
