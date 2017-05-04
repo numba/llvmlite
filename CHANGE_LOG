@@ -1,5 +1,9 @@
-v0.18.0.dev
------------
+v0.18.0
+-------
+
+This is a minor release that fixes several issues (#263, #262, #258, #237) with
+the wheel build.  In addition, we have minor fixes for running on PPC64LE
+platforms (#261).  And, we added CI testing against PyPy (#253).
 
 
 v0.17.1
