@@ -114,10 +114,11 @@ Aggregate types
    The class for array types.  *element* is the type of every element, *count*
    the number of elements (a Python integer).
 
-.. class:: LiteralStructType(elements)
+.. class:: LiteralStructType(elements, [packed=False])
 
    The class for literal struct types.  *elements* is a sequence of element
-   types for each member of the structure.
+   types for each member of the structure.  *packed* controls whether to
+   use packed layout.
 
 .. .. class:: IdentifiedStructType
 

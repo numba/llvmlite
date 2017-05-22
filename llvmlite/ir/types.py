@@ -464,6 +464,10 @@ class LiteralStructType(BaseStructType):
     null = 'zeroinitializer'
 
     def __init__(self, elems, packed=False):
+        """
+        *elems* is a sequence of types to be used as members.
+        *packed* controls the use of packed layout.
+        """
         self.elements = tuple(elems)
         self.packed = packed
 
@@ -489,6 +493,11 @@ class IdentifiedStructType(BaseStructType):
     null = 'zeroinitializer'
 
     def __init__(self, context, name, packed=False):
+        """
+        *context* is a llvmlite.ir.Context.
+        *name* is the identifier for the new struct type.
+        *packed* controls the use of packed layout.
+        """
         assert name
         self.context = context
         self.name = name
