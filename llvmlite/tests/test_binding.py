@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import unittest
+from contextlib import contextmanager
 
 from llvmlite import six, ir
 from llvmlite import binding as llvm
@@ -1058,6 +1059,34 @@ class TestAnalysis(BaseTest):
         inst = "%.3 = add i32 %.1, %.2"
         self.assertIn(inst, dot_showing_inst)
         self.assertNotIn(inst, dot_without_inst)
+
+
+class TestTypeParsing(BaseTest):
+    @contextmanager
+    def check_parsing(self):
+        mod = ir.Module()
+        # Yield to caller and provide the module for adding
+        # new GV.
+        yield mod
+        # Caller yield back and continue with testing
+        asm = str(mod)
+        llvm.parse_assembly(asm)
+
+    def test_literal_struct(self):
+        # Natural layout
+        with self.check_parsing() as mod:
+            typ = ir.LiteralStructType([ir.IntType(32)])
+            gv = ir.GlobalVariable(mod, typ, "foo")
+            # Also test constant text repr
+            gv.initializer = ir.Constant(typ, [1])
+
+        # Packed layout
+        with self.check_parsing() as mod:
+            typ = ir.LiteralStructType([ir.IntType(32)],
+                                       packed=True)
+            gv = ir.GlobalVariable(mod, typ, "foo")
+            # Also test constant text repr
+            gv.initializer = ir.Constant(typ, [1])
 
 
 class TestGlobalVariables(BaseTest):
