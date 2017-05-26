@@ -1434,6 +1434,10 @@ class TestTypes(TestBase):
         self.assertEqual(str(ir.LiteralStructType((
             ir.PointerType(int1), ir.LiteralStructType((int32, int8))))),
             '{i1*, {i32, i8}}')
+        self.assertEqual(str(ir.LiteralStructType((int1,), packed=True)),
+                         '<{i1}>')
+        self.assertEqual(str(ir.LiteralStructType((int1,flt), packed=True)),
+                         '<{i1, float}>')
 
         # Avoid polluting the namespace
         context = ir.Context()

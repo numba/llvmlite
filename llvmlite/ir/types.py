@@ -395,6 +395,19 @@ class BaseStructType(Aggregate):
     """
     The base type for heterogenous struct types.
     """
+    _packed = False
+
+    @property
+    def packed(self):
+        """
+        A boolean attribute that indicates whether the structure uses
+        packed layout.
+        """
+        return self._packed
+
+    @packed.setter
+    def packed(self, val):
+        self._packed = bool(val)
 
     def __len__(self):
         assert self.elements is not None
@@ -412,12 +425,14 @@ class BaseStructType(Aggregate):
         """
         Return the LLVM IR for the structure representation
         """
-        return '{%s}' % ', '.join([str(x) for x in self.elements])
+        ret = '{%s}' % ', '.join([str(x) for x in self.elements])
+        return self._wrap_packed(ret)
 
     def format_constant(self, value):
         itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
                                  for x in value])
-        return "{{{0}}}".format(itemstring)
+        ret = "{{{0}}}".format(itemstring)
+        return self._wrap_packed(ret)
 
     def gep(self, i):
         """
@@ -430,6 +445,15 @@ class BaseStructType(Aggregate):
             raise TypeError(i.type)
         return self.elements[i.constant]
 
+    def _wrap_packed(self, textrepr):
+        """
+        Internal helper to wrap textual repr of struct type into packed struct
+        """
+        if self.packed:
+            return '<{}>'.format(textrepr)
+        else:
+            return textrepr
+
 
 class LiteralStructType(BaseStructType):
     """
@@ -439,8 +463,13 @@ class LiteralStructType(BaseStructType):
 
     null = 'zeroinitializer'
 
-    def __init__(self, elems):
+    def __init__(self, elems, packed=False):
+        """
+        *elems* is a sequence of types to be used as members.
+        *packed* controls the use of packed layout.
+        """
         self.elements = tuple(elems)
+        self.packed = packed
 
     def _to_string(self):
         return self.structure_repr()
@@ -463,11 +492,17 @@ class IdentifiedStructType(BaseStructType):
     """
     null = 'zeroinitializer'
 
-    def __init__(self, context, name):
+    def __init__(self, context, name, packed=False):
+        """
+        *context* is a llvmlite.ir.Context.
+        *name* is the identifier for the new struct type.
+        *packed* controls the use of packed layout.
+        """
         assert name
         self.context = context
         self.name = name
         self.elements = None
+        self.packed = packed
 
     def _to_string(self):
         return "%{name}".format(name=_wrapname(self.name))
