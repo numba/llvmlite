@@ -412,7 +412,8 @@ class TestGlobalValues(TestBase):
         globdouble = ir.GlobalVariable(mod, ir.DoubleType(), 'globdouble')
         self.assertEqual(mod.get_global('foo'), foo)
         self.assertEqual(mod.get_global('globdouble'), globdouble)
-        self.assertIsNone(mod.get_global('kkk'))
+        with self.assertRaises(KeyError):
+            mod.get_global('kkk')
         # Globals should have a useful repr()
         self.assertEqual(repr(globdouble),
                          "<ir.GlobalVariable 'globdouble' of type 'double*'>")
