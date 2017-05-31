@@ -135,7 +135,7 @@ class Module(object):
         """
         Get a global value by name.
         """
-        return self.globals.get(name)
+        return self.globals[name]
 
     def add_global(self, globalvalue):
         """
