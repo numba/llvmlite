@@ -459,7 +459,7 @@ class IRBuilder(object):
         Signed integer comparison:
             name = lhs <cmpop> rhs
 
-        where lhs can be '==', '!=', '<', '<=', '>', '>='
+        where cmpop can be '==', '!=', '<', '<=', '>', '>='
         """
         return self._icmp('s', cmpop, lhs, rhs, name)
 
@@ -468,7 +468,7 @@ class IRBuilder(object):
         Unsigned integer (or pointer) comparison:
             name = lhs <cmpop> rhs
 
-        where lhs can be '==', '!=', '<', '<=', '>', '>='
+        where cmpop can be '==', '!=', '<', '<=', '>', '>='
         """
         return self._icmp('u', cmpop, lhs, rhs, name)
 
@@ -477,7 +477,7 @@ class IRBuilder(object):
         Floating-point ordered comparison:
             name = lhs <cmpop> rhs
 
-        where lhs can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
+        where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
         """
         if cmpop in _CMP_MAP:
             op = 'o' + _CMP_MAP[cmpop]
@@ -492,7 +492,7 @@ class IRBuilder(object):
         Floating-point unordered comparison:
             name = lhs <cmpop> rhs
 
-        where lhs can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
+        where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
         """
         if cmpop in _CMP_MAP:
             op = 'u' + _CMP_MAP[cmpop]
