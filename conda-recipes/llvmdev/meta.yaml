@@ -18,6 +18,10 @@ source:
 
 build:
   number: 0
+  script_env:
+    - CFLAGS
+    - CXXFLAGS
+    - PY_VCRUNTIME_REDIST
 
 requirements:
   build:
