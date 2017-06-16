@@ -10,6 +10,9 @@ llvmlite
 .. image:: https://coveralls.io/repos/github/numba/llvmlite/badge.svg
    :target: https://coveralls.io/github/numba/llvmlite
    :alt: Coveralls.io
+.. image:: https://readthedocs.org/projects/llvmlite/badge/
+   :target: https://llvmlite.readthedocs.io
+   :alt: Readthedocs.io
 
 A lightweight LLVM python binding for writing JIT compilers
 
