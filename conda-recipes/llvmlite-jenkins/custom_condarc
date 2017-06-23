@@ -1,4 +1,0 @@
-binstar_upload: true
-channels:
-- https://conda.binstar.org/numba
-- defaults
