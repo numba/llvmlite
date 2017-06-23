@@ -122,7 +122,7 @@ class PointerType(Type):
 
     def _to_string(self):
         if self.addrspace != 0:
-            return "{0} addrspace({1})* ".format(self.pointee, self.addrspace)
+            return "{0} addrspace({1})*".format(self.pointee, self.addrspace)
         else:
             return "{0}*".format(self.pointee)
 
