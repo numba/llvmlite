@@ -87,7 +87,7 @@ class _ConstOpMixin(object):
         op = "getelementptr ({0}, {1} {2}, {3})".format(
             self.type.pointee, self.type,
             self.get_reference(), ', '.join(strindices))
-        return FormattedConstant(outtype.as_pointer(), op)
+        return FormattedConstant(outtype.as_pointer(self.addrspace), op)
 
 
 class Value(object):

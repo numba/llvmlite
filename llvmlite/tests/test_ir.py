@@ -800,6 +800,25 @@ class TestBuildInstructions(TestBase):
             """)
         # XXX test with more complex types
 
+    def test_gep_addrspace(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        addrspace = 4
+        c = builder.alloca(ir.PointerType(int32, addrspace=addrspace), name='c')
+        self.assertEqual(str(c.type), 'i32 addrspace(4)**')
+        self.assertEqual(c.type.pointee.addrspace, addrspace)
+        d = builder.gep(c, [ir.Constant(int32, 5), a], name='d')
+        self.assertEqual(d.type.addrspace, addrspace)
+        e = builder.gep(d, [ir.Constant(int32, 10)], name='e')
+        self.assertEqual(e.type.addrspace, addrspace)
+        self.check_block(block, """\
+            my_block:
+                %"c" = alloca i32 addrspace(4)*
+                %"d" = getelementptr i32 addrspace(4)*, i32 addrspace(4)** %"c", i32 5, i32 %".1"
+                %"e" = getelementptr i32, i32 addrspace(4)* %"d", i32 10
+            """)
+
     def test_extract_insert_value(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -1684,6 +1703,19 @@ class TestConstant(TestBase):
         self.assertEqual(str(c),
             'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0, i32 1)')
         self.assertEqual(c.type, ir.PointerType(int1))
+
+    def test_gep_addrspace_globalvar(self):
+        m = self.module()
+        tp = ir.LiteralStructType((flt, int1))
+        addrspace = 4
+
+        gv = ir.GlobalVariable(m, tp, "myconstant", addrspace=addrspace)
+        self.assertEqual(gv.addrspace, addrspace)
+        c = gv.gep([ir.Constant(int32, x) for x in (0, 1)])
+        self.assertEqual(c.type.addrspace, addrspace)
+        self.assertEqual(str(c),
+            'getelementptr ({float, i1}, {float, i1} addrspace(4)* @"myconstant", i32 0, i32 1)')
+        self.assertEqual(c.type, ir.PointerType(int1, addrspace=addrspace))
 
     def test_bitcast(self):
         m = self.module()
