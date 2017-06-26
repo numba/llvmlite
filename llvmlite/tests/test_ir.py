@@ -799,6 +799,23 @@ class TestBuildInstructions(TestBase):
                 %"d" = getelementptr i32*, i32** %"c", i32 5, i32 %".1"
             """)
         # XXX test with more complex types
+        
+    def test_gep_castinstr(self):
+        # similar to:
+        # numba::runtime::nrtdynmod.py_define_nrt_meminfo_data()
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        int8ptr = int8.as_pointer()
+        ls = ir.LiteralStructType([int64, int8ptr, int8ptr, int8ptr, int64])
+        d = builder.bitcast(a, ls.as_pointer(), name='d')
+        e = builder.gep(d, [ir.Constant(int32, x) for x in [0, 3]], name='e')
+        self.assertEqual(e.type, ir.PointerType(int8ptr))
+        self.check_block(block, """\
+            my_block:
+                %"d" = bitcast i32 %".1" to {i64, i8*, i8*, i8*, i64}*
+                %"e" = getelementptr {i64, i8*, i8*, i8*, i64}, {i64, i8*, i8*, i8*, i64}* %"d", i32 0, i32 3
+            """)
 
     def test_gep_addrspace(self):
         block = self.block(name='my_block')

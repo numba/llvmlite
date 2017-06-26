@@ -453,7 +453,7 @@ class GEPInstr(Instruction):
                 isinstance(lasttyp, types.PointerType)):
             typ = lasttyp
         else:
-            typ = typ.as_pointer(ptr.addrspace)
+            typ = typ.as_pointer(getattr(ptr, 'addrspace', 0))
 
         super(GEPInstr, self).__init__(parent, typ, "getelementptr",
                                        [ptr] + list(indices), name=name)
