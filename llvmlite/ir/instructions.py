@@ -446,14 +446,18 @@ class GEPInstr(Instruction):
     def __init__(self, parent, ptr, indices, inbounds, name):
         typ = ptr.type
         lasttyp = None
+        lastaddrspace = 0
         for i in indices:
             lasttyp, typ = typ, typ.gep(i)
+            # inherit the addrspace from the last seen pointer
+            if isinstance(lasttyp, types.PointerType):
+                lastaddrspace = lasttyp.addrspace
 
         if (not isinstance(typ, types.PointerType) and
                 isinstance(lasttyp, types.PointerType)):
             typ = lasttyp
         else:
-            typ = typ.as_pointer(ptr.addrspace)
+            typ = typ.as_pointer(lastaddrspace)
 
         super(GEPInstr, self).__init__(parent, typ, "getelementptr",
                                        [ptr] + list(indices), name=name)
