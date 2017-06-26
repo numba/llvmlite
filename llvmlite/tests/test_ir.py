@@ -799,7 +799,7 @@ class TestBuildInstructions(TestBase):
                 %"d" = getelementptr i32*, i32** %"c", i32 5, i32 %".1"
             """)
         # XXX test with more complex types
-        
+
     def test_gep_castinstr(self):
         # similar to:
         # numba::runtime::nrtdynmod.py_define_nrt_meminfo_data()
