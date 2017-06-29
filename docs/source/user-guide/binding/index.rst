@@ -1,0 +1,30 @@
+.. _binding-layer:
+
+=====================================
+LLVM binding layer---llvmlite.binding
+=====================================
+
+.. module:: llvmlite.binding
+   :synopsis: Interacting with the LLVM library.
+
+The :mod:`llvmlite.binding` module provides classes to interact
+with functionalities of the LLVM library. Generally, they closely
+mirror concepts of the C++ API. Only a small subset of the LLVM
+API is mirrored: those parts that have proven useful to
+implement Numba_'s JIT compiler.
+
+.. _Numba: http://numba.pydata.org/
+
+
+.. toctree::
+   :maxdepth: 1
+
+   initialization-finalization
+   dynamic-libraries
+   target-information
+   modules
+   value-references
+   execution-engine
+   optimization-passes
+   analysis-utilities
+   examples

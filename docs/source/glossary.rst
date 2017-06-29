@@ -1,72 +1,128 @@
 
+========
 Glossary
 ========
 
-.. glossary::
+.. contents::
+   :local:
+   :depth: 1
 
-   basic block
-      A sequence of instructions inside a function.  A basic block always
-      starts with a :term:`label` and ends with a :term:`terminator`.
-      No other instruction inside the basic block can transfer control out
-      of the block.
 
-   function declaration
-      The specification of a function's prototype (including the argument
-      and return types, and other information such as the calling
-      convention), without an associated implementation.  This is like
-      a ``extern`` function declaration in C.
+.. _basic block:
 
-   function definition
-      A function's prototype (like in a :term:`function declaration`)
-      plus a body implementing the function.
+Basic block
+===========
 
-   getelementptr
-      A LLVM :term:`instruction` allowing to get the address of a subelement
-      of an aggregate data structure.
+A sequence of instructions inside a function. A basic block
+always starts with a :ref:`label` and ends with a
+:ref:`terminator <terminator>`. No other instruction inside the
+basic block can transfer control out of the block.
 
-      .. seealso::
-         Official documentation: :llvm:ref:`i_getelementptr`
+.. _function declaration:
 
-   global value
-      A named value accessible to all members of a module.
+Function declaration
+====================
 
-   global variable
-      A variable whose value is accessible to all members of a module.
-      Under the hood, it is a constant pointer to a module-allocated
-      slot of the given type.
+The specification of a function's prototype without an
+associated implementation. A declaration includes the argument
+types, return types and other information such as the calling
+convention. This is like an ``extern`` function declaration in C.
 
-      All global variables are global values.  However, the converse is
-      not true: a function declaration or definition is not a global
-      variable; it is only a :term:`global value`.
+.. _function definition:
 
-   instruction
-      The fundamental element(s) used in implementing a LLVM function.
-      LLVM instructions define a procedural assembly-like language.
+Function definition
+===================
 
-   IR
-   Intermediate Representation
-      A high-level assembly language describing to LLVM the code to be
-      compiled to native code.
+A function's prototype, as in a :ref:`function declaration`,
+plus a body implementing the function.
 
-   label
-      A branch target inside a function.  A label always denotes the start
-      of a :term:`basic block`.
+.. _getelementptr:
 
-   metadata
-      Optional ancillary information which can be associated with LLVM
-      instructions, functions, etc.  Metadata is used to convey certain
-      information which is not critical to the compiling of LLVM :term:`IR`
-      (such as the likelihood of a condition branch or the source code
-      location corresponding to a given instruction).
+getelementptr
+=============
 
-   module
-      A compilation unit for LLVM :term:`IR`.  A module can contain any
-      number of function declarations and definitions, global variables,
-      and metadata.
+An LLVM :ref:`instruction` that lets you get the address of a
+subelement of an aggregate data structure.
 
-   terminator
-   terminator instruction
-      A kind of :term:`instruction` which explicitly transfers control
-      to another part of the program (instead of simply going to the next
-      instruction after it is executed).  Examples are branches and
-      function returns.
+See :llvm:ref:`i_getelementptr` in the official LLVM
+documentation.
+
+
+.. _global value:
+
+Global value
+============
+
+A named value accessible to all members of a module.
+
+.. _global variable:
+
+Global variable
+===============
+
+A variable whose value is accessible to all members of a module.
+It is a constant pointer to a module-allocated slot of the given
+type.
+
+All global variables are global values.  However, the opposite is
+not true---function declarations and function definitions are not
+global variables, they are only :ref:`global values <global value>`.
+
+.. _instruction:
+
+Instruction
+===========
+
+The fundamental element used in implementing an LLVM function.
+LLVM instructions define a procedural, assembly-like language.
+
+.. _IR:
+
+.. _intermediate representation:
+
+Intermediate representation (IR)
+================================
+
+High-level assembly-language code describing to LLVM the
+program to be compiled to native code.
+
+.. _label:
+
+Label
+=====
+
+A branch target inside a function. A label always denotes the
+start of a :ref:`basic block`.
+
+.. _metadata:
+
+Metadata
+========
+
+Optional information associated with LLVM instructions,
+functions and other code. Metadata provides information that is
+not critical to the compiling of an
+LLVM :ref:`intermediate representation <IR>`, such as the
+likelihood of a condition branch or the source code location
+corresponding to a given instruction.
+
+.. _module:
+
+Module
+======
+
+A compilation unit for LLVM :ref:`intermediate representation <IR>`.
+A module can contain any number of function declarations and
+definitions, global variables and metadata.
+
+.. _terminator:
+
+.. _terminator instruction:
+
+Terminator, terminator instruction
+==================================
+
+A kind of :ref:`instruction` that explicitly transfers control
+to another part of the program instead of going to the next
+instruction after it is executed. Examples are branches and
+function returns.
