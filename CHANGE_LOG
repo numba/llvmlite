@@ -1,7 +1,20 @@
-v0.19.0.dev
------------
+v0.19.0
+-------
 
-Current development version.
+This is a minor release with the following fixes.
+
+* PR #281, Issue #280: Fix GEP addrspace issue
+* PR #279: Fix #274 addrspace in gep
+* PR #278: add Readthedocs badge
+* PR #275: Add variables to pass through when doing conda-build
+* PR #273: Fix the behavior of module.get_global
+* PR #272: cmpop contains comparison type, not lhs
+* PR #268, Fix #267: Support packed struct
+
+The following are CI build related changes:
+
+* PR #277: Add pass through gcc flags for llvmdev
+* PR #276: Remove jenkins build scripts
 
 
 v0.18.0
