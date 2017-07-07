@@ -131,7 +131,7 @@ create and configure a :class:`PassManagerBuilder`.
 
    * .. function:: add_type_based_alias_analysis_pass()
 
-        [@sklam: link missing for this function.]
+        See `tbaa metadata documentation <http://llvm.org/docs/LangRef.html#tbaa-metadata>`_.
 
    * .. function:: add_basic_alias_analysis_pass()
 
