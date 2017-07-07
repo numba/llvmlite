@@ -11,7 +11,7 @@ Values
    :local:
    :depth: 1
 
-A :ref:`module` consists mostly of values. 
+A :ref:`module` consists mostly of values.
 
 .. data:: Undefined
 
@@ -303,7 +303,7 @@ Global values are values accessible using a module-wide name.
 
         A set of function attributes. Each optional attribute is
         a Python string. By default this is empty. Use the
-        :meth:`add()` method to add an attribute::
+        `.add()` method to add an attribute::
 
          fnty = ir.FunctionType(ir.DoubleType(), (ir.DoubleType(),))
          fn = Function(module, fnty, "sqrt")

@@ -24,42 +24,42 @@ create and configure a :class:`PassManagerBuilder`.
 
    The ``populate`` method is available:
 
-.. method:: populate(pm)
+  .. method:: populate(pm)
 
-   Populate the pass manager *pm* with the optimization passes
-   configured in this pass manager builder.
+    Populate the pass manager *pm* with the optimization passes
+    configured in this pass manager builder.
 
-   The following writable attributes are available:
+    The following writable attributes are available:
 
-   * .. attribute:: disable_unroll_loops
+    * .. attribute:: disable_unroll_loops
 
-        If ``True``, disable loop unrolling.
+          If ``True``, disable loop unrolling.
 
-   * .. attribute:: inlining_threshold
+    * .. attribute:: inlining_threshold
 
-        The integer threshold for inlining one function into
-        another. The higher the number, the more likely that
-        inlining will occur. This attribute is write-only.
+          The integer threshold for inlining one function into
+          another. The higher the number, the more likely that
+          inlining will occur. This attribute is write-only.
 
-   * .. attribute:: loop_vectorize
+    * .. attribute:: loop_vectorize
 
-        If ``True``, allow vectorizing loops.
+          If ``True``, allow vectorizing loops.
 
-   * .. attribute:: opt_level
+    * .. attribute:: opt_level
 
-        The general optimization level, as an integer between 0
-        and 3.
+          The general optimization level, as an integer between 0
+          and 3.
 
-   * .. attribute:: size_level
+    * .. attribute:: size_level
 
-        Whether and how much to optimize for size, as an integer
-        between 0 and 2.
+          Whether and how much to optimize for size, as an integer
+          between 0 and 2.
 
-   * .. attribute:: slp_vectorize
+    * .. attribute:: slp_vectorize
 
-        If ``True``, enable the SLP vectorizer, which uses a
-        different algorithm than the loop vectorizer. Both may
-        be enabled at the same time.
+          If ``True``, enable the SLP vectorizer, which uses a
+          different algorithm than the loop vectorizer. Both may
+          be enabled at the same time.
 
 
 .. class:: PassManager
