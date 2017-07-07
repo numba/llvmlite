@@ -81,7 +81,7 @@ Atomic types
    bitwidth of the integers having this type.
 
    .. attribute:: width
-   
+
       The width in bits.
 
 .. class:: FloatType()
@@ -131,7 +131,20 @@ Aggregate types
    * *elements* is a sequence of element types for each member of the structure.
    * *packed* controls whether to use packed layout.
 
-.. .. class:: IdentifiedStructType
+.. class:: IdentifiedStructType
+
+   The class for identified struct types.  Identified structs are
+   compared by name.  It can be used to make opaque types.
+
+   Users should not create new instance directly.  Use the
+   ``Context.get_identified_type`` method instead.
+
+   An identified struct is created without a body (thus opaque).  To define the
+   struct body, use the ``.set_body`` method.
+
+   .. method:: set_body(*elems)
+
+      Define the structure body with a sequence of element types.
 
 
 Other types
