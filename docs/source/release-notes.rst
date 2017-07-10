@@ -1,5 +1,289 @@
-======================
+=============
 Release Notes
-======================
+=============
 
-.. include:: ../../CHANGE_LOG
+v0.19.0.dev
+===========
+
+Current development version.
+
+v0.18.0
+=======
+
+This is a minor release that fixes several issues (#263, #262, #258, #237) with
+the wheel build. In addition, we have minor fixes for running on PPC64LE
+platforms (#261). And, we added CI testing against PyPy (#253).
+
+v0.17.1
+=======
+
+This is a bugfix release that addresses issue #258 that our LLVM
+binding shared library is missing from the wheel builds.
+
+
+v0.17.0
+=======
+
+In this release, we are upgrading to LLVM 4.0.  We are also starting to
+provide wheel packages for 64-bit Linux platforms (manylinux).
+
+Fixes:
+
+* Issue #249, PR #250: Disable static linking of libstdc++ by default.
+
+Enhancements:
+
+* PR #246: Add requirements.txt for pip dependency resolving
+* PR #238: LLVM 4.0
+* PR #222: Enable wheel builds
+
+
+v0.16.0
+=======
+
+API changes:
+
+* Switched from LLVM 3.8 to 3.9
+* ``TargetData.add_pass`` is removed in LLVM 3.9.
+
+Enhancements:
+
+* PR #239: Enable fastmath flags
+* PR #233: Updates for llvm3.9.1
+* PR #199: Update for changes in LLVM 3.9
+
+Fixes:
+
+* PR #236: Fix metadata with long value
+* PR #231: Fix setup.py for Python2.7 so that pip auto installs dependencies
+* PR #226: Fix get_host_cpu_features() so that it fails properly
+
+
+v0.15.0
+=======
+
+Enhancements:
+
+* PR #213: Add partial LLVM bindings for ObjectFile.
+* PR #215: Add inline assembly helpers in the builder.
+* PR #216: Allow specifying alignment in alloca instructions.
+* PR #219: Remove unnecessary verify in module linkage.
+
+Fixes:
+
+* PR #209, Issue #208: Fix overly restrictive test for library filenames.
+
+
+v0.14.0
+=======
+
+Enhancements:
+
+* PR #104: Add binding to get and view function control-flow graph.
+* PR #210: Improve llvmdev recipe.
+* PR #212: Add initializer for the native assembly parser.
+
+
+v0.13.0
+=======
+
+Enhancements:
+
+* PR #176: Switch from LLVM 3.7 to LLVM 3.8.
+* PR #191: Allow setting the alignment of a global variable.
+* PR #198: Add missing function attributes.
+* PR #160: Escape the contents of metadata strings, to allow embedding
+  any characters.
+* PR #162: Add support for creating debug information nodes.
+* PR #200: Improve the usability of metadata emission APIs.
+* PR #200: Allow calling functions with metadata arguments
+  (such as ``@llvm.dbg.declare``).
+
+Fixes:
+
+* PR #190: Suppress optimization remarks printed out in some cases by LLVM.
+* PR #200: Allow attaching metadata to a ``ret`` instruction.
+
+
+v0.12.1
+=======
+
+New release to fix packages on PyPI. Same as v0.12.0.
+
+
+v0.12.0
+=======
+
+Enhancements:
+
+* PR #179: Let llvmlite build on armv7l Linux.
+* PR #161: Allow adding metadata to functions.
+* PR #163: Allow emitting fast-math ``fcmp`` instructions.
+* PR #159: Allow emitting verbose assembly in TargetMachine.
+
+Fixes:
+
+* Issue #177: Make setup.py compatible with ``pip install``.
+
+v0.11.0
+=======
+
+Enhancements:
+
+* PR #175: Check LLVM version at build time
+* PR #169: Default initializer for non-external global variable
+* PR #168: add ir.Constant.literal_array()
+
+
+v0.10.0
+=======
+
+Enhancements:
+
+* PR #146: Improve ``setup.py clean`` to wipe more leftovers.
+* PR #135: Remove some llvmpy compatibility APIs.
+* PR #151: Always copy TargetData when adding to a pass manager.
+* PR #148: Make errors more explicit on loading the binding DLL.
+* PR #144: Allow overriding ``-flto`` in Linux builds.
+* PR #136: Remove Python 2.6 and 3.3 compatibility.
+* Issue #131: Allow easier creation of constants by making type instances
+  callable.
+* Issue #130: The test suite now ensures the runtime DLL dependencies
+  are within a certain expected set.
+* Issue #121: Simplify build process on Unix and remove hardcoded linking
+  with LLVMOProfileJIT.
+* Issue #125: Speed up formatting of raw array constants.
+
+Fixes:
+
+* PR #155: Properly emit IR for metadata null.
+* PR #153: Remove deprecated uses of ``TargetMachine::getDataLayout()``.
+* PR #156: Move personality from LandingPadInstr to FunctionAttributes.
+  It was moved in LLVM 3.7.
+* PR #149: Implement LLVM scoping correctly.
+* PR #141: Ensure no CMakeCache.txt file is included in sdist.
+* PR #132: Correct constant in ``llvmir.py`` example.
+
+v0.9.0
+======
+
+Enhancements:
+
+* PR #73: Add get_process_triple() and get_host_cpu_features()
+* Switch from LLVM 3.6 to LLVM 3.7.  The generated IR for some memory
+  operations has changed.
+* Improved performance of IR serialization.
+* Issue #116: improve error message when the operands of a binop have
+  differing types.
+* PR #113: Let Type.get_abi_{size,alignment} not choke on identified types.
+* PR #112: Support non-alphanumeric characters in type names.
+
+Fixes:
+
+* Remove the libcurses dependency on Linux.
+
+v0.8.0
+======
+
+* Update LLVM to 3.6.2
+* Add an *align* parameter to IRBuilder.load() and IRBuilder.store().
+* Allow setting visibility, DLL storageclass of ValueRef
+* Support profiling with OProfile
+
+v0.7.0
+======
+
+* PR #88: Provide hooks into the MCJIT object cache
+* PR #87: Add indirect branches and exception handling APIs to ir.Builder.
+* PR #86: Add ir.Builder APIs for integer arithmetic with overflow
+* Issue #76: Fix non-Windows builds when LLVM was built using CMake
+* Deprecate .get_pointer_to_global() and add .get_function_address() and
+  .get_global_value_address() in ExecutionEngine.
+
+v0.6.0
+======
+
+Enhancements:
+
+* Switch from LLVM 3.5 to LLVM 3.6.  The generated IR for metadata nodes
+  has slightly changed, and the "old JIT" engine has been removed. Only
+  MCJIT is now available.
+* Add an optional flags argument to arithmetic instructions on IRBuilder.
+* Support attributes on the return type of a function.
+
+
+v0.5.1
+======
+
+Fixes:
+
+* Fix implicit termination of basic block in nested if_then()
+
+
+v0.5.0
+======
+
+New documentation hosted at http://llvmlite.pydata.org
+
+Enhancements:
+
+* Add code-generation helpers from numba.cgutils
+* Support for memset, memcpy, memmove intrinsics
+
+Fixes:
+
+* Fix string encoding problem when round-triping parse_assembly()
+
+
+v0.4.0
+======
+
+Enhancements:
+
+* Add Module.get_global()
+* Renamd Module.global_variables to Module.global_values
+* Support loading library parmanently
+* Add Type.get_abi_alignment()
+
+Fixes:
+
+* Expose LLVM version as a tuple
+
+Patched LLVM 3.5.1:
+Updated to 3.5.1 with the same ELF relocation patched for v0.2.2.
+
+
+v0.2.2
+=======
+
+Enhancements:
+
+* Support for addrspacescast
+* Support for tail call, calling convention attribute
+* Support for IdentifiedStructType
+
+Fixes:
+
+* GEP addrspace propagation
+* Various installation process fixes
+
+Patched LLVM 3.5:
+The binaries from the numba binstar channel use a patched LLVM3.5 for fixing
+a LLVM ELF relocation bug that is caused by the use of 32-bit relative offset
+in 64-bit binaries.  The problem appears to occur more often on hardened
+kernels, like in CentOS.  The patched source code is available at:
+https://github.com/numba/llvm-mirror/releases/tag/3.5p1
+
+
+v0.2.0
+=======
+
+This is the first official release. It contains a few feature additions
+and bug fixes. It meets all requirements to replace llvmpy in numba and
+numbapro.
+
+v0.1.0
+=======
+
+This is the first release. This is released for beta testing llvmlite
+and numba before the official release.
