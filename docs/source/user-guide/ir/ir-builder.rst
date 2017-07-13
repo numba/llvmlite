@@ -576,7 +576,7 @@ Exception handling
      LLVM <http://llvm.org/docs/ExceptionHandling.html>`_.
      For details on the implementation of personality functions,
      see `Itanium exception handling
-     ABI <https://mentorembedded.github.io/cxx-abi/abi-eh.html>`_.
+     ABI <https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html>`_.
 
 
 * .. method:: IRBuilder.resume(landingpad)
