@@ -119,11 +119,6 @@ if bdist_wheel:
             # Ensure the binding file exist when running wheel build
             from llvmlite.utils import get_library_files
             build_library_files(self.dry_run)
-            for fn in get_library_files():
-                path = os.path.join('llvmlite', 'binding', fn)
-                if not os.path.isfile(path):
-                    raise RuntimeError("missing {}".format(path))
-
             self.distribution.package_data.update({
                 "llvmlite.binding": get_library_files(),
             })
@@ -179,5 +174,5 @@ setup(name='llvmlite',
       install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
-      ext_modules=[ext_stub] if not sys.platform.startswith('win32') else [],
+      ext_modules=[ext_stub],
       )
