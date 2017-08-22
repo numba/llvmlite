@@ -174,5 +174,7 @@ setup(name='llvmlite',
       install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
-      ext_modules=[ext_stub],
+      # The `ext_stub` is only needed for making bdist_wheel
+      # thinks this package has compiled code.
+      ext_modules=[ext_stub] if bdist_wheel else [],
       )
