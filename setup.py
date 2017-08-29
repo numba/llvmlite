@@ -125,6 +125,11 @@ if bdist_wheel:
             # Run wheel build command
             bdist_wheel.run(self)
 
+        def finalize_options(self):
+            bdist_wheel.finalize_options(self)
+            # The build isn't platform-independent
+            self.root_is_pure = False
+
 
 cmdclass.update({'build': LlvmliteBuild,
                  'build_ext': LlvmliteBuildExt,
@@ -174,7 +179,4 @@ setup(name='llvmlite',
       install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
-      # The `ext_stub` is only needed for making bdist_wheel
-      # thinks this package has compiled code.
-      ext_modules=[ext_stub] if bdist_wheel else [],
       )
