@@ -87,6 +87,12 @@ class LlvmliteInstall(install):
         }
         install.run(self)
 
+    def finalize_options(self):
+        install.finalize_options(self)
+        # Force use of "platlib" dir for auditwheel to recognize this
+        # is a non-pure build
+        self.install_libbase = self.install_platlib
+        self.install_lib = self.install_platlib
 
 class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
