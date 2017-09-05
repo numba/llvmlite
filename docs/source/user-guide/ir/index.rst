@@ -16,9 +16,9 @@ The provided APIs may sometimes look like LLVM's C++ APIs, but
 they never call into LLVM, unless otherwise noted. Instead, they 
 construct a pure Python representation of the IR.
 
-To use this module, you should be familiar with the concepts 
-in the `LLVM Language Reference 
-<http://llvm.org/releases/3.8.0/docs/LangRef.html>`_.
+To use this module, you should be familiar with the concepts
+in the `LLVM Language Reference
+<http://llvm.org/releases/4.0.0/docs/LangRef.html>`_.
 
 .. toctree::
    :maxdepth: 1
