@@ -1,7 +1,9 @@
-v0.20.0.dev
-------------
+v0.20.0
+-------
 
-In development
+Beginning with this minor release, we support wheels for Linux, OSX and Windows.
+Pull requests related to enabling wheels are #294, #295, #296 and #297.
+There are also fixes to the documentation (#283 and #289).
 
 
 v0.19.0
