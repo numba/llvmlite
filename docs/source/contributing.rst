@@ -23,11 +23,11 @@ Mailing list
 ------------
 
 Send email to the Numba users public mailing list at
-numba-users@continuum.io. You are welcome to send any questions
+numba-users@anaconda.com. You are welcome to send any questions
 about contributing to llvmlite to this mailing list.
 
 You can subscribe and read the archives on
-`Google Groups <https://groups.google.com/a/continuum.io/forum/#!forum/numba-users>`_.
+`Google Groups <https://groups.google.com/a/anaconda.com/forum/#!forum/numba-users>`_.
 The `Gmane mirror <http://news.gmane.org/gmane.comp.python.numba.user>`_
 allows NNTP access.
 
@@ -94,7 +94,7 @@ Pull requests are automatically built and tested using
 `Travis-CI <https://travis-ci.org/numba/llvmlite>`_, which
 addresses Linux compatibility. Other operating systems are tested
 on an internal continuous integration platform at
-Continuum Analytics\ |reg|.
+Anaconda\ |reg|.
 
 
 Documentation
