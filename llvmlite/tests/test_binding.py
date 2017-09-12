@@ -123,6 +123,35 @@ asm_inlineasm = r"""
     }}
     """
 
+asm_global_ctors = r"""
+    ; ModuleID = "<string>"
+    target triple = "{triple}"
+
+    @A = global i32 undef
+
+    define void @ctor_A()
+    {{
+      store i32 10, i32* @A
+      ret void
+    }}
+
+    define void @dtor_A()
+    {{
+      store i32 20, i32* @A
+      ret void
+    }}
+
+    define i32 @foo()
+    {{
+      %.2 = load i32, i32* @A
+      %.3 = add i32 %.2, 2
+      ret i32 %.3
+    }}
+
+    @llvm.global_ctors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @ctor_A, i8* null}}]
+    @llvm.global_dtors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @dtor_A, i8* null}}]
+    """
+
 
 class BaseTest(TestCase):
 
@@ -1087,6 +1116,32 @@ class TestTypeParsing(BaseTest):
             gv = ir.GlobalVariable(mod, typ, "foo")
             # Also test constant text repr
             gv.initializer = ir.Constant(typ, [1])
+
+
+class TestGlobalConstructors(TestMCJit):
+    def test_global_ctors_dtors(self):
+        # test issue #303
+        # (https://github.com/numba/llvmlite/issues/303)
+        mod = self.module(asm_global_ctors)
+        ee  = self.jit(mod)
+        ee.finalize_object()
+
+        ee.run_static_constructors()
+
+        # global variable should have been initialized
+        ptr_addr = ee.get_global_value_address("A")
+        ptr_t    = ctypes.POINTER(ctypes.c_int32)
+        ptr      = ctypes.cast(ptr_addr, ptr_t)
+        self.assertEqual(ptr.contents.value, 10)
+
+        foo_addr = ee.get_function_address("foo")
+        foo      = ctypes.CFUNCTYPE(ctypes.c_int32)(foo_addr)
+        self.assertEqual(foo(), 12)
+
+        ee.run_static_destructors()
+
+        # destructor should have run
+        self.assertEqual(ptr.contents.value, 20)
 
 
 class TestGlobalVariables(BaseTest):
