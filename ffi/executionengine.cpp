@@ -115,6 +115,18 @@ LLVMPY_GetFunctionAddress(LLVMExecutionEngineRef EE,
 }
 
 API_EXPORT(void)
+LLVMPY_RunStaticConstructors(LLVMExecutionEngineRef EE)
+{
+    return LLVMRunStaticConstructors(EE);
+}
+
+API_EXPORT(void)
+LLVMPY_RunStaticDestructors(LLVMExecutionEngineRef EE)
+{
+    return LLVMRunStaticDestructors(EE);
+}
+
+API_EXPORT(void)
 LLVMPY_AddGlobalMapping(LLVMExecutionEngineRef EE,
                         LLVMValueRef Global,
                         void *Addr)
