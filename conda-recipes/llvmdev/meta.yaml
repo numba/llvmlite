@@ -1,11 +1,11 @@
 
-{% set shortversion = "4.0" %}
-{% set version = "4.0.0" %}
-{% set sha256 = "8d10511df96e73b8ff9e7abbfb4d4d432edbdbe965f1f4f07afaf370b8a533be" %}
+{% set shortversion = "5.0" %}
+{% set version = "5.0.0" %}
+{% set sha256 = "e35dcbae6084adcf4abb32514127c5eabd7d63b733852ccdb31e06f1373136da" %}
 
 package:
   name: llvmdev
-  version: "4.0.0"
+  version: "5.0.0"
 
 source:
   url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz

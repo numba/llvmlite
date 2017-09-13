@@ -52,7 +52,7 @@ def find_win32_generator():
     # compatible with, the one which was used to compile LLVM... cmake
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
-    # LLVM 4.0 needs VS 2015 minimum.
+    # LLVM 4.0+ needs VS 2015 minimum.
     for generator in ['Visual Studio 14 2015']:
         if is_64bit:
             generator += ' Win64'
@@ -95,9 +95,9 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not out.startswith('4.0.'):
+    if not out.startswith('5.0.'):
         msg = (
-            "Building llvmlite requires LLVM 4.0.x. Be sure to "
+            "Building llvmlite requires LLVM 5.0.x. Be sure to "
             "set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n"
