@@ -109,7 +109,7 @@ class ExecutionEngine(ffi.ObjectRef):
         ffi.lib.LLVMPY_RunStaticConstructors(self)
     
     def run_static_destructors(self):
-        """Run static destructors which perform module-level cleanup of static resoruces."""
+        """Run static destructors which perform module-level cleanup of static resources."""
         ffi.lib.LLVMPY_RunStaticDestructors(self)
 
     def remove_module(self, module):
