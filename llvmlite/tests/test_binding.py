@@ -297,7 +297,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual((major, minor), (4, 0))
+        self.assertEqual((major, minor), (5, 0))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -750,7 +750,11 @@ class TestValueRef(BaseTest):
     def test_add_function_attribute(self):
         mod = self.module()
         fn = mod.get_function("sum")
-        fn.add_function_attribute("zext")
+        fn.add_function_attribute("nocapture")
+        with self.assertRaises(ValueError) as raises:
+            fn.add_function_attribute("zext")
+        self.assertEqual(str(raises.exception), "no such attribute 'zext'")
+
 
     def test_module(self):
         mod = self.module()

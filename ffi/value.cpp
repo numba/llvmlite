@@ -74,11 +74,18 @@ LLVMPY_GetDLLStorageClass(LLVMValueRef Val)
     return (int)LLVMGetDLLStorageClass(Val);
 }
 
+API_EXPORT(unsigned)
+LLVMPY_GetEnumAttributeKindForName(const char *name, size_t len)
+{
+    /* zero is returned if no match */
+    return LLVMGetEnumAttributeKindForName(name, len);
+}
+
 API_EXPORT(void)
-LLVMPY_AddFunctionAttr(LLVMValueRef Fn, int Attr)
+LLVMPY_AddFunctionAttr(LLVMValueRef Fn, unsigned AttrKind)
 {
     LLVMContextRef ctx = LLVMGetModuleContext(LLVMGetGlobalParent(Fn));
-    LLVMAttributeRef attr_ref = LLVMCreateEnumAttribute(ctx, Attr, 0);
+    LLVMAttributeRef attr_ref = LLVMCreateEnumAttribute(ctx, AttrKind, 0);
     LLVMAddAttributeAtIndex(Fn, LLVMAttributeReturnIndex, attr_ref);
 }
 
