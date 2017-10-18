@@ -57,11 +57,13 @@ The ExecutionEngine class
    * .. method:: get_function_address(name)
 
         Return the address of the function *name* as an integer.
+        It's a fatal error in LLVM if the symbol of *name* doesn't exist.
 
    * .. method:: get_global_value_address(name)
 
         Return the address of the global value *name* as an
         integer.
+        It's a fatal error in LLVM if the symbol of *name* doesn't exist.
 
    * .. method:: remove_module(module)
 

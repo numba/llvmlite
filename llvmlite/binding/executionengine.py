@@ -60,20 +60,18 @@ class ExecutionEngine(ffi.ObjectRef):
     def get_function_address(self, name):
         """
         Return the address of the function named *name* as an integer.
+
+        It's a fatal error in LLVM if the symbol of *name* doesn't exist.
         """
-        ptr = ffi.lib.LLVMPY_GetFunctionAddress(self, name.encode("ascii"))
-        if ptr is None:
-            raise ValueError("Cannot find given function %s" % name)
-        return ptr
+        return ffi.lib.LLVMPY_GetFunctionAddress(self, name.encode("ascii"))
 
     def get_global_value_address(self, name):
         """
         Return the address of the global value named *name* as an integer.
+
+        It's a fatal error in LLVM if the symbol of *name* doesn't exist.
         """
-        ptr = ffi.lib.LLVMPY_GetGlobalValueAddress(self, name.encode("ascii"))
-        if ptr is None:
-            raise ValueError("Cannot find given global value %s" % name)
-        return ptr
+        return ffi.lib.LLVMPY_GetGlobalValueAddress(self, name.encode("ascii"))
 
     def add_global_mapping(self, gv, addr):
         # XXX unused?
