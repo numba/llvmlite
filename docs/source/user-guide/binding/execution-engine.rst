@@ -54,24 +54,6 @@ The ExecutionEngine class
         Make sure all modules owned by the execution engine are
         fully processed and usable for execution.
 
-   * .. method:: get_pointer_to_function(gv)
-
-        CAUTION: This method is deprecated. Use
-        :meth:`ExecutionEngine.get_function_address` and
-        :meth:`ExecutionEngine.get_global_value_address` instead.
-
-        Return the address of the function value *gv*, as an
-        integer. The value should have been looked up on one of
-        the modules owned by the execution engine.
-
-        NOTE: This method may implicitly generate code for the
-        object being looked up.
-
-        This method is formerly an alias to
-        ``get_pointer_to_global()``, which is now removed
-        because it returns an invalid address in MCJIT when
-        given a non-function global value.
-
    * .. method:: get_function_address(name)
 
         Return the address of the function *name* as an integer.

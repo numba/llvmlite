@@ -57,14 +57,6 @@ class ExecutionEngine(ffi.ObjectRef):
         module._owned = True
         ffi.ObjectRef.__init__(self, ptr)
 
-    def get_pointer_to_function(self, gv):
-        warnings.warn(".get_pointer_to_function() is deprecated.  Use "
-                      ".get_function_address() instead.", DeprecationWarning)
-        ptr = ffi.lib.LLVMPY_GetPointerToGlobal(self, gv)
-        if ptr is None:
-            raise ValueError("Cannot find given global value %r" % (gv.name))
-        return ptr
-
     def get_function_address(self, name):
         """
         Return the address of the function named *name* as an integer.
@@ -244,10 +236,6 @@ ffi.lib.LLVMPY_AddModule.argtypes = [
     ffi.LLVMExecutionEngineRef,
     ffi.LLVMModuleRef
 ]
-
-ffi.lib.LLVMPY_GetPointerToGlobal.argtypes = [ffi.LLVMExecutionEngineRef,
-                                              ffi.LLVMValueRef]
-ffi.lib.LLVMPY_GetPointerToGlobal.restype = c_void_p
 
 ffi.lib.LLVMPY_AddGlobalMapping.argtypes = [ffi.LLVMExecutionEngineRef,
                                             ffi.LLVMValueRef,
