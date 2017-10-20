@@ -18,7 +18,7 @@ requirements:
   build:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 4.0*
+    - llvmdev 5.0*
     - vs2015_runtime [win]
     # The DLL build uses cmake on Windows
     - cmake          [win]

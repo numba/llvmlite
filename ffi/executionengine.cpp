@@ -93,12 +93,6 @@ LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
     return create_execution_engine(M, TM, OutError);
 }
 
-API_EXPORT(void *)
-LLVMPY_GetPointerToGlobal(LLVMExecutionEngineRef EE,
-                          LLVMValueRef Global)
-{
-    return LLVMGetPointerToGlobal(EE, Global);
-}
 
 API_EXPORT(uint64_t)
 LLVMPY_GetGlobalValueAddress(LLVMExecutionEngineRef EE,
