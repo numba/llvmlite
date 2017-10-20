@@ -1,4 +1,3 @@
-import warnings
 from ctypes import POINTER, c_char_p, c_int, c_size_t, c_uint
 import enum
 
