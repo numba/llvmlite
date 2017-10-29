@@ -332,6 +332,54 @@ class _Repeat(object):
         else:
             raise IndexError(item)
 
+class VectorType(Type):
+    """
+    The type for vectors of primitive data items (e.g. "<f32 x 4>").
+    """
+
+    def __init__(self, elementtype, count):
+        self.elementtype = elementtype
+        self.count = count
+
+    @property
+    def elements(self):
+        return _Repeat(self.elementtype, self.count)
+
+    def __len__(self):
+        return self.count
+
+    def _to_string(self):
+        return "<%d x %s>" % (self.count, self.elementtype)
+
+    def __eq__(self, other):
+        if isinstance(other, VectorType):
+            return self.elementtype == other.elementtype and self.count == other.count
+
+    def __hash__(self):
+        # TODO: why does this not take self.elementtype/self.count into account?
+        return hash(VectorType)
+
+    def format_constant(self, value):
+        itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
+                                 for x in value])
+        return "<{0}>".format(itemstring)
+
+    def wrap_constant_value(self, values):
+        from . import Value, Constant
+        if not isinstance(values, (list, tuple)):
+            if isinstance(values, Constant):
+                if values.type != self.elementtype:
+                    raise TypeError("expected % for %"
+                                    % (self.elementtype, values.type))
+                return (values, ) * self.count
+            return (Constant(self.elementtype, values), ) * self.count
+        if len(values) != len(self):
+            raise ValueError("wrong constant size for %s: got %d elements"
+                             % (self, len(values)))
+        return [Constant(ty, val) if not isinstance(val, Value) else val
+                for ty, val in zip(self.elements, values)]
+
+
 
 class Aggregate(Type):
     """
