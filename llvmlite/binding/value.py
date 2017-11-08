@@ -1,5 +1,4 @@
-
-from ctypes import POINTER, c_char_p, c_int
+from ctypes import POINTER, c_char_p, c_int, c_size_t, c_uint
 import enum
 
 from . import ffi
@@ -26,37 +25,6 @@ class Linkage(enum.IntEnum):
     common = 14
     linker_private = 15
     linker_private_weak = 16
-
-
-class Attribute(enum.Enum):
-    # The LLVMAttribute enum from llvm-c/Core.h
-
-    zext = 1 << 0
-    sext = 1 << 1
-    noreturn = 1 << 2
-    inreg = 1 << 3
-    structret = 1 << 4
-    nounwind = 1 << 5
-    noalias = 1 << 6
-    byval = 1 << 7
-    nest = 1 << 8
-    readnone = 1 << 9
-    readonly = 1 << 10
-    noinline = 1 << 11
-    alwaysinline = 1 << 12
-    optimizeforsize = 1 << 13
-    stackprotect = 1 << 14
-    stackprotectreq = 1 << 15
-
-    nocapture = 1 << 21
-    noredzone = 1 << 22
-    noimplicitfloat = 1 << 23
-    naked = 1 << 24
-    inlinehint = 1 << 25
-
-    returnstwice = 1 << 29
-    uwtable = 1 << 30
-    nonlazybind = 1 << 31
 
 
 class Visibility(enum.IntEnum):
@@ -134,11 +102,19 @@ class ValueRef(ffi.ObjectRef):
         ffi.lib.LLVMPY_SetDLLStorageClass(self, value)
 
     def add_function_attribute(self, attr):
-        """Only works on function value"""
-        # XXX unused?
-        if not isinstance(attr, Attribute):
-            attr = Attribute[attr]
-        ffi.lib.LLVMPY_AddFunctionAttr(self, attr.value)
+        """Only works on function value
+
+        Parameters
+        -----------
+        attr : str
+            attribute name
+        """
+        attrname = str(attr)
+        attrval = ffi.lib.LLVMPY_GetEnumAttributeKindForName(
+            _encode_string(attrname), len(attrname))
+        if attrval == 0:
+            raise ValueError('no such attribute {!r}'.format(attrname))
+        ffi.lib.LLVMPY_AddFunctionAttr(self, attrval)
 
     @property
     def type(self):
@@ -190,7 +166,10 @@ ffi.lib.LLVMPY_GetDLLStorageClass.restype = c_int
 
 ffi.lib.LLVMPY_SetDLLStorageClass.argtypes = [ffi.LLVMValueRef, c_int]
 
-ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_int]
+ffi.lib.LLVMPY_GetEnumAttributeKindForName.argtypes = [c_char_p, c_size_t]
+ffi.lib.LLVMPY_GetEnumAttributeKindForName.restype = c_uint
+
+ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_uint]
 
 ffi.lib.LLVMPY_IsDeclaration.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_IsDeclaration.restype = c_int

@@ -25,7 +25,7 @@ source activate $CONDA_ENV
 set -v
 
 # Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c numba llvmdev="4.0*"
+$CONDA_INSTALL -c numba llvmdev="5.0*"
 
 # Install enum34 for Python < 3.4 and PyPy, and install dependencies for
 # building the docs. Sphinx 1.5.4 has a bug.
