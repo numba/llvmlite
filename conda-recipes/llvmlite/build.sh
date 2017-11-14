@@ -12,3 +12,4 @@ export LLVMLITE_CXX_STATIC_LINK=1
 
 python setup.py build --force
 python setup.py install
+python runtests.py
