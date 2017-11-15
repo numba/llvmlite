@@ -4,6 +4,10 @@ source activate $CONDA_ENV
 
 # need to build with Anaconda compilers on osx, but they conflict with llvmdev... bootstap
 if [[ $(uname) == Darwin ]]; then
+  # export LLVM_CONFIG explicitly as the one installed from llvmdev
+  # in the build root env, the one in the bootstrap location needs to be ignored.
+  export LLVM_CONFIG=$(ls $(which llvm-config))
+  # now bootstrap the toolchain for building
   conda create -y -p ${PWD}/bootstrap clangxx_osx-64
   SRC_DIR=${PWD}
   export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
@@ -14,9 +18,6 @@ if [[ $(uname) == Darwin ]]; then
   export CFLAGS=${CFLAGS}" -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
   SYSROOT_DIR=${CONDA_BUILD_SYSROOT}
   CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
-  # export LLVM_CONFIG explicitly as the one installed from llvmdev
-  # in the build root env, the one in the bootstrap location needs to be ignored.
-  export LLVM_CONFIG="${PREFIX}/bin/llvm-config"
   ${LLVM_CONFIG} --version
 fi
 
