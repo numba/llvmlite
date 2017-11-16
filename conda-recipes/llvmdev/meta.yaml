@@ -43,6 +43,9 @@ requirements:
     # as extensions for py27 need vs2008
     - vs2015_runtime # [win]
     - make # [unix]
+    - zlib # make sure windows matches linux/osx
+  host:
+    - zlib # needed for llc at runtime
    
 test:
   commands:
