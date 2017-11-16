@@ -78,5 +78,5 @@ cmake -G'Unix Makefiles'     \
       "${_cmake_config[@]}"  \
       ..
 
-make -j${CPU_COUNT} ${VERBOSE_CM}
+make -j${CPU_COUNT} VERBOSE=1
 make install

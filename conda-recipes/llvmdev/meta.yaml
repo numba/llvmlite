@@ -42,6 +42,7 @@ requirements:
     # need vs2015_runtime to build, do not want it at run time
     # as extensions for py27 need vs2008
     - vs2015_runtime # [win]
+    - make # [unix]
    
 test:
   commands:
