@@ -25,9 +25,13 @@ build:
     
 requirements:
   build:
-    # We cannot do this on macOS
-    - {{ compiler('c') }}    # [not osx]
-    - {{ compiler('cxx') }}  # [not osx]
+    # We cannot do this on macOS or windows
+    # OSX already has llvm so has to be handled
+    # at build.sh time
+    # Windows needs to build using vs2015_runtime
+    # irrespective of python version
+    - {{ compiler('c') }}    # [linux]
+    - {{ compiler('cxx') }}  # [linux]
     - cmake
     # Needed to unpack the source tarball
     - m2w64-xz  # [py27 and win]
@@ -35,9 +39,10 @@ requirements:
     - ninja  # [win]
     # Needed to build LLVM
     - python
-  run:
-    - vs2015_runtime  # [win]
-
+    # need vs2015_runtime to build, do not want it at run time
+    # as extensions for py27 need vs2008
+    - vs2015_runtime # [win]
+   
 test:
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
