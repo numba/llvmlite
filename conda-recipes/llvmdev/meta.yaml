@@ -1,13 +1,14 @@
-
 {% set shortversion = "5.0" %}
 {% set version = "5.0.0" %}
 {% set sha256 = "e35dcbae6084adcf4abb32514127c5eabd7d63b733852ccdb31e06f1373136da" %}
+{% set build_number = "1" %}
 
 package:
   name: llvmdev
-  version: "5.0.0"
+  version: {{ version }}
 
 source:
+  fn: llvm-{{ version }}.src.tar.xz
   url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
   sha256: {{ sha256 }}
   patches:
@@ -16,37 +17,52 @@ source:
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
 
-build:
-  number: 0
-  script_env:
-    - CFLAGS
-    - CXXFLAGS
-    - PY_VCRUNTIME_REDIST
 
+build:
+  number: {{ build_number }}
+  script_env:
+    - PY_VCRUNTIME_REDIST
+    
 requirements:
   build:
+    # We cannot do this on macOS or windows
+    # OSX already has llvm so has to be handled
+    # at build.sh time
+    # Windows needs to build using vs2015_runtime
+    # irrespective of python version
+    - {{ compiler('c') }}    # [linux]
+    - {{ compiler('cxx') }}  # [linux]
     - cmake
     # Needed to unpack the source tarball
-    - m2w64-xz         # [py27 and win]
+    - m2w64-xz  # [py27 and win]
+    # ninja not currently used, bld.bat needs an update
+    - ninja  # [win]
     # Needed to build LLVM
     - python
-    - system           # [linux and not armv7l]
-  run:
-    - system           # [linux and not armv7l]
-
+    # need vs2015_runtime to build, do not want it at run time
+    # as extensions for py27 need vs2008
+    - vs2015_runtime # [win]
+    - make # [unix]
+  host:
+    # needed for llc at runtime
+    - zlib # [not win]
+   
 test:
   commands:
-    - llvm-config --libs   # [not win]
-    - llc -version
+    - $PREFIX/bin/llvm-config --libs                         # [not win]
+    - $PREFIX/bin/llc -version                               # [not win]
 
-    - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1          # [win]
-    - if not exist %LIBRARY_LIB%\\LLVMSupport.lib exit 1       # [win]
+    - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1        # [win]
+    - if not exist %LIBRARY_LIB%\\LLVMSupport.lib exit 1     # [win]
 
-    - test -f $PREFIX/include/llvm/Pass.h                      # [unix]
-    - test -f $PREFIX/lib/libLLVMSupport.a                     # [unix]
+    - test -f $PREFIX/include/llvm/Pass.h                    # [unix]
+    - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
+    
+    - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
 
 about:
   home: http://llvm.org/
+  dev_url: https://github.com/llvm-mirror/llvm
   license: NCSA
   license_file: LICENSE.TXT
   summary: Development headers and libraries for LLVM
