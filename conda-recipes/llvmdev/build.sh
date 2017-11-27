@@ -4,11 +4,6 @@
 
 set -x
 
-# this is so we can cross compile on linux 64 -> linux 32
-if [[ $(uname) == Linux ]]; then
-    export _PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata_x86_64_conda_cos6_linux_gnu"
-fi
-
 if [[ $(uname) == Darwin ]]; then
   ${SYS_PREFIX}/bin/conda create -y -p ${SRC_DIR}/bootstrap clangxx_osx-64
   export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
