@@ -3,7 +3,7 @@ v0.21.0
 
 In this release, we upgrade to LLVM 5.  Our build scripts now use
 conda-build 3.  For our prebuilt binaries, GCC 7 toolchain is used
-on  *nix systems and the OSX minimum deployment target is 10.9.
+on unix-like systems and the OSX minimum deployment target is 10.9.
 
 The following PRs are closed in this release:
 
