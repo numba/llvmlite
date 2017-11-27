@@ -1,5 +1,6 @@
 import ctypes
 import os
+import threading
 
 from .common import _decode_string, _is_shutting_down
 from ..utils import get_library_name
@@ -30,6 +31,45 @@ LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
 
 
+class _lib_wrapper(object):
+    """Wrap the libllvmlite with a lock such that only one thread is
+    accessing it at a time.
+    """
+    __slots__ = ['_lib', '_fntab', '_lock']
+
+    def __init__(self, lib):
+        self._lib = lib
+        self._fntab = {}
+        self._lock = threading.RLock()
+
+    def __getattr__(self, name):
+        try:
+            return self._fntab[name]
+        except KeyError:
+            cfn = getattr(self._lib, name)
+            wrapped = _lib_fn_wrapper(self._lock, cfn)
+            self._fntab[name] = wrapped
+            return wrapped
+
+
+class _lib_fn_wrapper(object):
+    __slots__ = ['_lock', '_cfn']
+
+    def __init__(self, lock, cfn):
+        self._lock = lock
+        self._cfn = cfn
+
+    def __setattr__(self, name, value):
+        if name in ['argtypes', 'restype']:
+            return setattr(self._cfn, name, value)
+        else:
+            return object.__setattr__(self, name, value)
+
+    def __call__(self, *args, **kwargs):
+        with self._lock:
+            return self._cfn(*args, **kwargs)
+
+
 _lib_dir = os.path.dirname(__file__)
 
 if os.name == 'nt':
@@ -49,6 +89,8 @@ except OSError as e:
         if PY2:
             raise e
         raise
+
+lib = _lib_wrapper(lib)
 
 
 class _DeadPointer(object):
