@@ -1,7 +1,15 @@
-v0.21.0.dev
------------
+v0.21.0
+-------
 
-Development version for v0.21.0.
+In this release, we upgrade to LLVM 5.  Our build scripts now use
+conda-build 3.  For our prebuilt binaries, GCC 7 toolchain is used
+on  *nix systems and the OSX minimum deployment target is 10.9.
+
+The following PRs are closed in this release:
+
+* PR #315: Updates for conda build 3.
+* PR #307: Fixes for LLVM5.
+* PR #306: Working towards LLVM 5.0 support.
 
 
 v0.20.0
