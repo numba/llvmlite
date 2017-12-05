@@ -30,9 +30,6 @@ requirements:
     - m2w64-xz         # [py27 and win]
     # Needed to build LLVM
     - python
-    - system           # [linux and not armv7l]
-  run:
-    - system           # [linux and not armv7l]
 
 test:
   commands:
