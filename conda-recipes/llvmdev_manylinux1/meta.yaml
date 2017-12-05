@@ -18,6 +18,7 @@ source:
 
 build:
   number: 0
+  string: "manylinux1h{{ PKG_HASH }}"
   script_env:
     - CFLAGS
     - CXXFLAGS
