@@ -32,8 +32,8 @@ LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
 
 
 class _lib_wrapper(object):
-    """Wrap the libllvmlite with a lock such that only one thread is
-    accessing it at a time.
+    """Wrap libllvmlite with a lock such that only one thread may access it at
+    a time.
 
     This class duck-types a CDLL.
     """
@@ -42,7 +42,7 @@ class _lib_wrapper(object):
     def __init__(self, lib):
         self._lib = lib
         self._fntab = {}
-        # The recursive lock is needed for callbacks that re-enter
+        # The reentrant lock is needed for callbacks that re-enter
         # the Python interpreter.
         self._lock = threading.RLock()
 
@@ -74,7 +74,7 @@ class _lib_wrapper(object):
 
 
 class _lib_fn_wrapper(object):
-    """Wraps and duck-type a ctypes.CFUNCTYPE to provide
+    """Wraps and duck-types a ctypes.CFUNCTYPE to provide
     automatic locking when the wrapped function is called.
 
     TODO: we can add methods to mark the function as threadsafe
