@@ -1,5 +1,6 @@
 import ctypes
 import os
+import threading
 
 from .common import _decode_string, _is_shutting_down
 from ..utils import get_library_name
@@ -30,6 +31,82 @@ LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
 
 
+class _lib_wrapper(object):
+    """Wrap libllvmlite with a lock such that only one thread may access it at
+    a time.
+
+    This class duck-types a CDLL.
+    """
+    __slots__ = ['_lib', '_fntab', '_lock']
+
+    def __init__(self, lib):
+        self._lib = lib
+        self._fntab = {}
+        # The reentrant lock is needed for callbacks that re-enter
+        # the Python interpreter.
+        self._lock = threading.RLock()
+
+    def __getattr__(self, name):
+        try:
+            return self._fntab[name]
+        except KeyError:
+            # Lazily wraps new functions as they are requested
+            cfn = getattr(self._lib, name)
+            wrapped = _lib_fn_wrapper(self._lock, cfn)
+            self._fntab[name] = wrapped
+            return wrapped
+
+    @property
+    def _name(self):
+        """The name of the library passed in the CDLL constructor.
+
+        For duck-typing a ctypes.CDLL
+        """
+        return self._lib._name
+
+    @property
+    def _handle(self):
+        """The system handle used to access the library.
+
+        For duck-typing a ctypes.CDLL
+        """
+        return self._lib._handle
+
+
+class _lib_fn_wrapper(object):
+    """Wraps and duck-types a ctypes.CFUNCTYPE to provide
+    automatic locking when the wrapped function is called.
+
+    TODO: we can add methods to mark the function as threadsafe
+          and remove the locking-step on call when marked.
+    """
+    __slots__ = ['_lock', '_cfn']
+
+    def __init__(self, lock, cfn):
+        self._lock = lock
+        self._cfn = cfn
+
+    @property
+    def argtypes(self):
+        return self._cfn.argtypes
+
+    @argtypes.setter
+    def argtypes(self, argtypes):
+        self._cfn.argtypes = argtypes
+
+    @property
+    def restype(self):
+        return self._cfn.restype
+
+    @restype.setter
+    def restype(self, restype):
+        self._cfn.restype = restype
+
+    def __call__(self, *args, **kwargs):
+        with self._lock:
+            return self._cfn(*args, **kwargs)
+
+
 _lib_dir = os.path.dirname(__file__)
 
 if os.name == 'nt':
@@ -49,6 +126,8 @@ except OSError as e:
         if PY2:
             raise e
         raise
+
+lib = _lib_wrapper(lib)
 
 
 class _DeadPointer(object):
