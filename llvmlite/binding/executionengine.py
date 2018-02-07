@@ -93,6 +93,14 @@ class ExecutionEngine(ffi.ObjectRef):
         and "usable" for execution.
         """
         ffi.lib.LLVMPY_FinalizeObject(self)
+    
+    def run_static_constructors(self):
+        """Run static constructors which initialize module-level static objects."""
+        ffi.lib.LLVMPY_RunStaticConstructors(self)
+    
+    def run_static_destructors(self):
+        """Run static destructors which perform module-level cleanup of static resources."""
+        ffi.lib.LLVMPY_RunStaticDestructors(self)
 
     def remove_module(self, module):
         """
