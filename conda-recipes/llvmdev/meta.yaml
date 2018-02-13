@@ -16,6 +16,8 @@ source:
     - ../llvm-elf-relocation.patch
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
+    # Intel SVML optimizations
+    - ../intel-svml.patch
 
 
 build:
