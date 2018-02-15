@@ -1,7 +1,18 @@
-v0.22.0dev
+v0.22.0
 ----------
 
-In Development.
+In this release, we have changed the locking strategy that protects LLVM from
+race conditions.  Before, the llvmlite user (like Numba) was responsible for
+this locking.  Now, llvmlite imposes a global thread lock on all calls into
+the LLVM API.  This should be significantly less error prone.  Future llvmlite
+releases may manually exempt some functions from locking once they are
+determined to be thread-safe.
+
+The following PRs are closed in this release:
+
+* PR#318: Ensuring threadsafety in concurrent usage of LLVM C-API
+* PR#221: Add all function/return value attributes from LLVM 3.9
+* PR#304: Expose support for static constructors/destructors
 
 
 v0.21.0
