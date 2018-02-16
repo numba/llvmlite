@@ -7,6 +7,7 @@ from __future__ import print_function
 
 from ctypes.util import find_library
 import re
+import multiprocessing
 import os
 import subprocess
 import shutil
@@ -199,7 +200,11 @@ def main_posix(kind, library_ext):
         os.environ['CXX_STATIC_LINK'] = "-static-libstdc++"
 
     makefile = "Makefile.%s" % (kind,)
-    makeopts = os.environ.get('LLVMLITE_MAKEOPTS', '').split()
+    try:
+        default_makeopts = "-j%d" % (multiprocessing.cpu_count(),)
+    except NotImplementedError:
+        default_makeopts = ""
+    makeopts = os.environ.get('LLVMLITE_MAKEOPTS', default_makeopts).split()
     subprocess.check_call(['make', '-f', makefile] + makeopts)
     shutil.copy('libllvmlite' + library_ext, target_dir)
 
