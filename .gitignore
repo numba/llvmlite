@@ -1,5 +1,6 @@
 *.pyc
 *.pyd
+*.o
 *.so
 *.dylib
 *.dll
