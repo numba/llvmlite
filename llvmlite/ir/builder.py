@@ -872,6 +872,15 @@ class IRBuilder(object):
         fn = self.module.declare_intrinsic("llvm.assume")
         return self.call(fn, [cond])
 
+    def fence(self, ordering, targetscope=None, name=''):
+        """
+        Add a memory barrier, preventing certain reorderings of load and/or store accesses with
+        respect to other processors and devices.
+        """
+        inst = instructions.Fence(self.block, ordering, targetscope, name=name)
+        self._insert(inst)
+        return inst
+
     @_uniop_intrinsic("llvm.bswap")
     def bswap(self, cond):
         """
