@@ -1,15 +1,27 @@
-#include <tuple>
+#include <sstream>
 
 #include "core.h"
 
+#include "llvm-c/Transforms/IPO.h"
+#include "llvm-c/Transforms/Scalar.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/ToolOutputFile.h"
+#include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include "llvm-c/Transforms/IPO.h"
 #include "llvm-c/Transforms/Scalar.h"
 #include "llvm/IR/LegacyPassManager.h"
+#if LLVM_VERSION_MAJOR > 11
+#include "llvm/IR/RemarkStreamer.h"
+#endif
+#include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/Remarks/RemarkStreamer.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/Scalar.h"
 
@@ -49,8 +61,49 @@ LLVMPY_CreateFunctionPassManager(LLVMModuleRef M) {
 }
 
 API_EXPORT(int)
+LLVMPY_RunPassManagerWithRemarks(LLVMPassManagerRef PM, LLVMModuleRef M,
+                                 const char *remarks_format,
+                                 const char *record_filename) {
+    auto setupResult = llvm::setupLLVMOptimizationRemarks(
+        unwrap(M)->getContext(), record_filename, "", remarks_format, true);
+    if (!setupResult) {
+        return -1;
+    }
+    auto optimisationFile = std::move(*setupResult);
+    auto r = LLVMRunPassManager(PM, M);
+
+    unwrap(M)->getContext().setMainRemarkStreamer(nullptr);
+    unwrap(M)->getContext().setLLVMRemarkStreamer(nullptr);
+
+    optimisationFile->keep();
+    optimisationFile->os().flush();
+    return r;
+}
+
+API_EXPORT(int)
 LLVMPY_RunPassManager(LLVMPassManagerRef PM, LLVMModuleRef M) {
     return LLVMRunPassManager(PM, M);
+}
+
+API_EXPORT(int)
+LLVMPY_RunFunctionPassManagerWithRemarks(LLVMPassManagerRef PM, LLVMValueRef F,
+                                         const char *remarks_format,
+                                         const char *record_filename) {
+    auto setupResult = llvm::setupLLVMOptimizationRemarks(
+        unwrap(F)->getContext(), record_filename, "", remarks_format, true);
+    if (!setupResult) {
+        return -1;
+    }
+    auto optimisationFile = std::move(*setupResult);
+
+    auto r = LLVMRunFunctionPassManager(PM, F);
+
+    unwrap(F)->getContext().setMainRemarkStreamer(nullptr);
+    unwrap(F)->getContext().setLLVMRemarkStreamer(nullptr);
+
+    optimisationFile->keep();
+    optimisationFile->os().flush();
+    return r;
 }
 
 API_EXPORT(int)
