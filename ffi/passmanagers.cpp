@@ -6,12 +6,14 @@
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/Support/raw_ostream.h"
-
 #include "llvm-c/Transforms/Scalar.h"
 #include "llvm-c/Transforms/IPO.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Support/ToolOutputFile.h"
+#include "llvm/Support/YAMLTraits.h"
+#include "llvm/Support/FileSystem.h"
 
 using namespace llvm;
 
@@ -22,6 +24,54 @@ using namespace llvm;
  * see http://lists.llvm.org/pipermail/llvm-dev/2016-July/102252.html
  */
 typedef std::tuple<LLVMContext::DiagnosticHandlerTy, void *> diag_handler_t;
+
+
+
+/*
+A single RAII object to keep track of the optimization remark file.
+*/
+struct OptRemarkContext {
+    LLVMContext &Ctx;
+    std::unique_ptr<llvm::tool_output_file> OptRecordFile;
+
+    OptRemarkContext(LLVMContext &Ctx, const std::string &record_filename="")
+    : Ctx(Ctx) {
+
+        if (record_filename.size()) {
+            // Make OptRecordFile to contain the optimization remark
+            std::error_code EC;
+
+            auto Flags = sys::fs::F_None;
+
+            OptRecordFile =
+                llvm::make_unique<llvm::tool_output_file>(record_filename,
+                                                          EC, Flags);
+            if (EC) {
+                // Failed to open file
+                raw_ostream &out = errs();
+                DiagnosticPrinterRawOStream DP(out);
+                out << "llvmlite failed to open optimization remark file "
+                    << record_filename
+                    << ". Error: "
+                    << EC.message()
+                    << "\n";
+            } else {
+                // This will enable optimization remarks
+                Ctx.setDiagnosticsOutputFile(
+                    llvm::make_unique<yaml::Output>(OptRecordFile->os()));
+            }
+        }
+    }
+
+    ~OptRemarkContext() {
+        if (OptRecordFile) {
+            // Don't delete the remark file
+            OptRecordFile->keep();
+            // Reset remark file
+            Ctx.setDiagnosticsOutputFile(nullptr);
+        }
+    }
+};
 
 static diag_handler_t
 SetOptimizationDiagnosticHandler(LLVMContext &Ctx)
@@ -51,6 +101,7 @@ static void
 UnsetOptimizationDiagnosticHandler(LLVMContext &Ctx, diag_handler_t OldHandler)
 {
     Ctx.setDiagnosticHandler(std::get<0>(OldHandler), std::get<1>(OldHandler));
+
 }
 
 
@@ -79,12 +130,14 @@ LLVMPY_CreateFunctionPassManager(LLVMModuleRef M)
 }
 
 API_EXPORT(int)
-LLVMPY_RunPassManager(LLVMPassManagerRef PM,
-                      LLVMModuleRef M)
+LLVMPY_RunPassManagerWithRemarks(LLVMPassManagerRef PM,
+                                 LLVMModuleRef M,
+                                 const char *record_filename)
 {
     /* Save the current diagnostic handler and set our own */
     LLVMContext &Ctx = unwrap(M)->getContext();
     auto OldHandler = SetOptimizationDiagnosticHandler(Ctx);
+    OptRemarkContext remarkcontext(Ctx, record_filename);
 
     int r = LLVMRunPassManager(PM, M);
 
@@ -93,17 +146,35 @@ LLVMPY_RunPassManager(LLVMPassManagerRef PM,
 }
 
 API_EXPORT(int)
-LLVMPY_RunFunctionPassManager(LLVMPassManagerRef PM,
-                              LLVMValueRef F)
+LLVMPY_RunPassManager(LLVMPassManagerRef PM,
+                      LLVMModuleRef M)
+{
+    return LLVMPY_RunPassManagerWithRemarks(PM, M, "");
+}
+
+
+API_EXPORT(int)
+LLVMPY_RunFunctionPassManagerWithRemarks(LLVMPassManagerRef PM,
+                                         LLVMValueRef F,
+                                         const char *record_filename)
 {
     /* Save the current diagnostic handler and set our own */
     LLVMContext &Ctx = unwrap(F)->getContext();
     auto OldHandler = SetOptimizationDiagnosticHandler(Ctx);
+    OptRemarkContext remarkcontext(Ctx, record_filename);
 
     int r = LLVMRunFunctionPassManager(PM, F);
 
     UnsetOptimizationDiagnosticHandler(Ctx, OldHandler);
     return r;
+}
+
+
+API_EXPORT(int)
+LLVMPY_RunFunctionPassManager(LLVMPassManagerRef PM,
+                              LLVMValueRef F)
+{
+    return LLVMPY_RunFunctionPassManagerWithRemarks(PM, F, "");
 }
 
 API_EXPORT(int)

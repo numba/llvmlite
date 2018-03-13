@@ -11,7 +11,8 @@ import re
 import subprocess
 import sys
 import unittest
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
+from tempfile import NamedTemporaryFile
 
 from llvmlite import six, ir
 from llvmlite import binding as llvm
@@ -150,6 +151,28 @@ asm_global_ctors = r"""
 
     @llvm.global_ctors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @ctor_A, i8* null}}]
     @llvm.global_dtors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @dtor_A, i8* null}}]
+    """
+
+asm_inlining = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @inlineme() {{
+        ret void
+    }}
+
+    define i32 @caller(i32 %.1, i32 %.2) {{
+    entry:
+      %stack = alloca i32
+      store i32 %.1, i32* %stack
+      br label %main
+    main:
+      %loaded = load i32, i32* %stack
+      %.3 = add i32 %loaded, %.2
+      %.4 = add i32 0, %.3
+      call void @inlineme()
+      ret i32 %.4
+    }}
     """
 
 
@@ -962,6 +985,7 @@ class PassManagerTestMixin(object):
     def pmb(self):
         pmb = llvm.create_pass_manager_builder()
         pmb.opt_level = 2
+        pmb.inlining_threshold = 300
         return pmb
 
     def test_close(self):
@@ -985,6 +1009,17 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         # Quick check that optimizations were run
         self.assertIn("%.3", orig_asm)
         self.assertNotIn("%.3", opt_asm)
+
+    def test_run_with_remarks(self):
+        pm = self.pm()
+        self.pmb().populate(pm)
+        mod = self.module(asm_inlining)
+        remarkfile = NamedTemporaryFile()
+        with closing(remarkfile):
+            pm.run(mod, remarks_file=remarkfile.name)
+            with open(remarkfile.name) as fin:
+                # Inlining has happened?  The remark will tell us.
+                self.assertIn("CanBeInlined", fin.read())
 
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
@@ -1012,6 +1047,32 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         # Quick check that optimizations were run
         self.assertIn("%.4", orig_asm)
         self.assertNotIn("%.4", opt_asm)
+
+    def test_run_with_remarks(self):
+        mod = self.module(asm_inlining)
+        fn = mod.get_function("caller")
+        pm = self.pm(mod)
+        self.pmb().populate(pm)
+        mod.close()
+
+        pm.initialize()
+        remarkfile = NamedTemporaryFile()
+
+        with closing(remarkfile):
+            # Cannot find a trivial IR that will trigger a function pass to
+            # write a remark. So instead we write some junk into the file to
+            # observe that it has been overwritten.
+            magicstr = "deadbeef"
+            with open(remarkfile.name, 'w') as fout:
+                fout.write(magicstr)
+
+            pm.run(fn, remarks_file=remarkfile.name)
+
+            with open(remarkfile.name) as fin:
+                # Check that our magic string is not in the file
+                self.assertNotIn(magicstr, fin.read())
+
+        pm.finalize()
 
 
 class TestPasses(BaseTest, PassManagerTestMixin):

@@ -1,6 +1,7 @@
 from __future__ import print_function, absolute_import
-from ctypes import c_bool, c_int
+from ctypes import c_bool, c_int, c_char_p
 from . import ffi
+from .common import _encode_string
 
 
 def create_module_pass_manager():
@@ -91,11 +92,22 @@ class ModulePassManager(PassManager):
             ptr = ffi.lib.LLVMPY_CreatePassManager()
         PassManager.__init__(self, ptr)
 
-    def run(self, module):
+    def run(self, module, remarks_file=None):
         """
         Run optimization passes on the given module.
+
+        Parameters
+        ----------
+        module : llvmlite.binding.ModuleRef
+            The module to be optimized inplace
+        remarks_file : str; optional
+            If not `None`, it is the file to store the optimization remarks.
         """
-        return ffi.lib.LLVMPY_RunPassManager(self, module)
+        if remarks_file is None:
+            return ffi.lib.LLVMPY_RunPassManager(self, module)
+        else:
+            return ffi.lib.LLVMPY_RunPassManagerWithRemarks(
+                        self, module, _encode_string(remarks_file))
 
 
 class FunctionPassManager(PassManager):
@@ -120,12 +132,22 @@ class FunctionPassManager(PassManager):
         """
         return ffi.lib.LLVMPY_FinalizeFunctionPassManager(self)
 
-    def run(self, function):
+    def run(self, function, remarks_file=None):
         """
         Run optimization passes on the given function.
-        """
-        return ffi.lib.LLVMPY_RunFunctionPassManager(self, function)
 
+        Parameters
+        ----------
+        funciton : llvmlite.binding.FunctionRef
+            The function to be optimized inplace
+        remarks_file : str; optional
+            If not `None`, it is the file to store the optimization remarks.
+        """
+        if remarks_file is None:
+            return ffi.lib.LLVMPY_RunFunctionPassManager(self, function)
+        else:
+            return ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks(
+                        self, function, _encode_string(remarks_file))
 
 # ============================================================================
 # FFI
@@ -141,6 +163,11 @@ ffi.lib.LLVMPY_RunPassManager.argtypes = [ffi.LLVMPassManagerRef,
                                           ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_RunPassManager.restype = c_bool
 
+ffi.lib.LLVMPY_RunPassManagerWithRemarks.argtypes = [ffi.LLVMPassManagerRef,
+                                                     ffi.LLVMModuleRef,
+                                                     c_char_p]
+ffi.lib.LLVMPY_RunPassManagerWithRemarks.restype = c_bool
+
 ffi.lib.LLVMPY_InitializeFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_InitializeFunctionPassManager.restype = c_bool
 
@@ -150,6 +177,11 @@ ffi.lib.LLVMPY_FinalizeFunctionPassManager.restype = c_bool
 ffi.lib.LLVMPY_RunFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef,
                                                   ffi.LLVMValueRef]
 ffi.lib.LLVMPY_RunFunctionPassManager.restype = c_bool
+
+ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks.argtypes = [
+    ffi.LLVMPassManagerRef, ffi.LLVMValueRef, c_char_p
+    ]
+ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks.restype = c_bool
 
 ffi.lib.LLVMPY_AddConstantMergePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadArgEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
