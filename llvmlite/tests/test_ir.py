@@ -19,6 +19,7 @@ from llvmlite import binding as llvm
 
 int1 = ir.IntType(1)
 int8 = ir.IntType(8)
+int16 = ir.IntType(16)
 int32 = ir.IntType(32)
 int64 = ir.IntType(64)
 flt = ir.FloatType()
@@ -1162,6 +1163,42 @@ class TestBuildInstructions(TestBase):
             my_block:
                 %"c" = icmp sgt i32 %".1", %".2"
                 call void @"llvm.assume"(i1 %"c")
+            """)
+
+    def test_bitreverse(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int64, 5)
+        c = builder.bitreverse(a, name='c')
+        builder.ret(c)
+        self.check_block(block, """\
+            my_block:
+                %"c" = call i64 @"llvm.bitreverse.i64"(i64 5)
+                ret i64 %"c"
+            """)
+
+    def test_bswap(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int32, 5)
+        c = builder.bswap(a, name='c')
+        builder.ret(c)
+        self.check_block(block, """\
+            my_block:
+                %"c" = call i32 @"llvm.bswap.i32"(i32 5)
+                ret i32 %"c"
+            """)
+
+    def test_ctpop(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int16, 5)
+        c = builder.ctpop(a, name='c')
+        builder.ret(c)
+        self.check_block(block, """\
+            my_block:
+                %"c" = call i16 @"llvm.ctpop.i16"(i16 5)
+                ret i16 %"c"
             """)
 
 

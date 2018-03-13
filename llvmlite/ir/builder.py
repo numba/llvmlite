@@ -69,6 +69,18 @@ def _uniop(opname, cls=instructions.Instruction):
     return wrap
 
 
+def _uniop_intrinsic(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, operand, name=''):
+            fn = self.module.declare_intrinsic(opname, [operand.type])
+            return self.call(fn, [operand], name)
+
+        return wrapped
+
+    return wrap
+
+
 def _castop(opname, cls=instructions.CastInstr):
     def wrap(fn):
         @functools.wraps(fn)
@@ -841,3 +853,21 @@ class IRBuilder(object):
         """
         fn = self.module.declare_intrinsic("llvm.assume")
         return self.call(fn, [cond])
+
+    @_uniop_intrinsic("llvm.bswap")
+    def bswap(self, cond):
+        """
+        Used to byte swap integer values with an even number of bytes (positive multiple of 16 bits)
+        """
+
+    @_uniop_intrinsic("llvm.bitreverse")
+    def bitreverse(self, cond):
+        """
+        Reverse the bitpattern of an integer value; for example 0b10110110 becomes 0b01101101.
+        """
+
+    @_uniop_intrinsic("llvm.ctpop")
+    def ctpop(self, cond):
+        """
+        Counts the number of bits set in a value.
+        """
