@@ -1201,6 +1201,32 @@ class TestBuildInstructions(TestBase):
                 ret i16 %"c"
             """)
 
+    def test_ctlz(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int16, 5)
+        b = ir.Constant(int1, 1)
+        c = builder.ctlz(a, b, name='c')
+        builder.ret(c)
+        self.check_block(block, """\
+            my_block:
+                %"c" = call i16 @"llvm.ctlz.i16"(i16 5, i1 1)
+                ret i16 %"c"
+            """)
+
+    def test_cttz(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int64, 5)
+        b = ir.Constant(int1, 1)
+        c = builder.cttz(a, b, name='c')
+        builder.ret(c)
+        self.check_block(block, """\
+            my_block:
+                %"c" = call i64 @"llvm.cttz.i64"(i64 5, i1 1)
+                ret i64 %"c"
+            """)
+
 
 class TestBuilderMisc(TestBase):
     """
