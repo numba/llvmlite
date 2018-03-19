@@ -1177,6 +1177,17 @@ class TestBuildInstructions(TestBase):
                 ret i64 %"c"
             """)
 
+    def test_bitreverse_wrongtype(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.bitreverse(a, name='c')
+        self.assertIn(
+            "expected an integer type, got float",
+            str(raises.exception))
+
     def test_bswap(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -1226,6 +1237,30 @@ class TestBuildInstructions(TestBase):
                 %"c" = call i64 @"llvm.cttz.i64"(i64 5, i1 1)
                 ret i64 %"c"
             """)
+
+    def test_cttz_wrongflag(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int64, 5)
+        b = ir.Constant(int32, 3)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.cttz(a, b, name='c')
+        self.assertIn(
+            "expected an i1 type, got i32",
+            str(raises.exception))
+
+    def test_cttz_wrongtype(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5)
+        b = ir.Constant(int1, 1)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.cttz(a, b, name='c')
+        self.assertIn(
+            "expected an integer type, got float",
+            str(raises.exception))
 
 
 class TestBuilderMisc(TestBase):
