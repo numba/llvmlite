@@ -110,6 +110,8 @@ def main_posix(kind, library_ext):
     os.environ['LLVM_LIBS'] = ' '.join(libs.split())
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
+    # on OSX cxxflags has null bytes at the end of the string, remove them
+    cxxflags = cxxflags.replace('\0', '')
     cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
     os.environ['LLVM_CXXFLAGS'] = ' '.join(cxxflags)
 
