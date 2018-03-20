@@ -194,9 +194,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
 
     CodeModel::Model cm;
     std::string cms(CodeModel);
-    if (cms == "jitdefault")
-        cm = CodeModel::JITDefault;
-    else if (cms == "small")
+    if (cms == "small")
         cm = CodeModel::Small;
     else if (cms == "kernel")
         cm = CodeModel::Kernel;
@@ -205,7 +203,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
     else if (cms == "large")
         cm = CodeModel::Large;
     else
-        cm = CodeModel::Default;
+        cm = CodeModel::Large;
 
     Optional<Reloc::Model> rm;
     std::string rms(RelocModel);

@@ -45,11 +45,11 @@ Before building, you must have the following:
 
 * On Unix:
 
-  * An LLVM 5.0 build---libraries and header files---available
+  * An LLVM 6.0 build---libraries and header files---available
     somewhere.
 
   * On recent Ubuntu or Debian systems, you may install the
-    ``llvm-5.0-dev`` package, if it is available.
+    ``llvm-6.0-dev`` package, if it is available.
 
   * If building LLVM on Ubuntu, the linker may report an error
     if the development version of ``libedit`` is not installed. If

@@ -326,7 +326,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual((major, minor), (5, 0))
+        self.assertEqual((major, minor), (6, 0))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -912,13 +912,6 @@ class TestPassManagerBuilder(BaseTest):
             pmb.inlining_threshold
         for i in (25, 80, 350):
             pmb.inlining_threshold = i
-
-    def test_disable_unit_at_a_time(self):
-        pmb = self.pmb()
-        self.assertIsInstance(pmb.disable_unit_at_a_time, bool)
-        for b in (True, False):
-            pmb.disable_unit_at_a_time = b
-            self.assertEqual(pmb.disable_unit_at_a_time, b)
 
     def test_disable_unroll_loops(self):
         pmb = self.pmb()

@@ -301,5 +301,5 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'llvm': ('http://llvm.org/releases/5.0.0/docs', None),
+    'llvm': ('http://llvm.org/releases/6.0.0/docs', None),
     }

@@ -95,9 +95,9 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not out.startswith('5.0.'):
+    if not out.startswith('6.0.'):
         msg = (
-            "Building llvmlite requires LLVM 5.0.x. Be sure to "
+            "Building llvmlite requires LLVM 6.0.x. Be sure to "
             "set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n"

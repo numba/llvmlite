@@ -51,14 +51,6 @@ class PassManagerBuilder(ffi.ObjectRef):
         ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(self, threshold)
 
     @property
-    def disable_unit_at_a_time(self):
-        return ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnitAtATime(self)
-
-    @disable_unit_at_a_time.setter
-    def disable_unit_at_a_time(self, disable=True):
-        ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnitAtATime(self, disable)
-
-    @property
     def disable_unroll_loops(self):
         """
         If true, disable loop unrolling.
@@ -145,15 +137,13 @@ for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel,
 
 # Boolean PassManagerBuilder properties
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnitAtATime,
-              ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops,
+for _func in (ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops,
               ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize,
               ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize,
               ):
     _func.argtypes = [ffi.LLVMPassManagerBuilderRef, c_bool]
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnitAtATime,
-              ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
+for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
               ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize,
               ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize,
               ):
