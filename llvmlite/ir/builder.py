@@ -73,8 +73,26 @@ def _uniop_intrinsic(opname):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, operand, name=''):
+            if not isinstance(operand.type, types.IntType):
+                raise TypeError("expected an integer type, got %s" % operand.type)
             fn = self.module.declare_intrinsic(opname, [operand.type])
             return self.call(fn, [operand], name)
+
+        return wrapped
+
+    return wrap
+
+
+def _uniop_intrinsic_with_flag(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, operand, flag, name=''):
+            if not isinstance(operand.type, types.IntType):
+                raise TypeError("expected an integer type, got %s" % operand.type)
+            if flag.type != types.IntType(1):
+                raise TypeError("expected an i1 type, got %s" % flag.type)
+            fn = self.module.declare_intrinsic(opname, [operand.type, flag.type])
+            return self.call(fn, [operand, flag], name)
 
         return wrapped
 
@@ -870,4 +888,16 @@ class IRBuilder(object):
     def ctpop(self, cond):
         """
         Counts the number of bits set in a value.
+        """
+
+    @_uniop_intrinsic_with_flag("llvm.ctlz")
+    def ctlz(self, cond, flag):
+        """
+        Counts the number of leading zeros in a variable.
+        """
+
+    @_uniop_intrinsic_with_flag("llvm.cttz")
+    def cttz(self, cond, flag):
+        """
+        Counts the number of trailing zeros in a variable.
         """
