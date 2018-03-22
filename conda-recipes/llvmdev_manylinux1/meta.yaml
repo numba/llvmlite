@@ -19,7 +19,7 @@ source:
     - ../intel-svml.patch
 
 build:
-  number: 0
+  number: 1
   string: "manylinux1h{{ PKG_HASH }}"
   script_env:
     - CFLAGS
