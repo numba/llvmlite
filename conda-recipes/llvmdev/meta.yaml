@@ -1,7 +1,7 @@
 {% set shortversion = "5.0" %}
 {% set version = "5.0.0" %}
 {% set sha256 = "e35dcbae6084adcf4abb32514127c5eabd7d63b733852ccdb31e06f1373136da" %}
-{% set build_number = "1" %}
+{% set build_number = "2" %}
 
 package:
   name: llvmdev
@@ -24,7 +24,7 @@ build:
   number: {{ build_number }}
   script_env:
     - PY_VCRUNTIME_REDIST
-    
+
 requirements:
   build:
     # We cannot do this on macOS or windows
@@ -48,7 +48,7 @@ requirements:
   host:
     # needed for llc at runtime
     - zlib # [not win]
-   
+
 test:
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
@@ -59,7 +59,7 @@ test:
 
     - test -f $PREFIX/include/llvm/Pass.h                    # [unix]
     - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
-    
+
     - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
 
 about:
