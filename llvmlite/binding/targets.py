@@ -152,8 +152,7 @@ class TargetData(ffi.ObjectRef):
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
-CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel',
-                       'medium', 'large'])
+CODEMODEL = frozenset(['default', 'small', 'kernel', 'medium', 'large'])
 
 
 class Target(ffi.ObjectRef):
@@ -202,10 +201,13 @@ class Target(ffi.ObjectRef):
         return "<Target {0} ({1})>".format(self.name, self.description)
 
     def create_target_machine(self, cpu='', features='',
-                              opt=2, reloc='default', codemodel='jitdefault',
+                              opt=2, reloc='default', codemodel='default',
                               jitdebug=False, printmc=False):
         """
         Create a new TargetMachine for this target and the given options.
+
+        Specifying codemodel='default' will result in a code model being
+        picked based on platform bitness (32="small", 64="large").
         """
         assert 0 <= opt <= 3
         assert reloc in RELOC
@@ -214,7 +216,7 @@ class Target(ffi.ObjectRef):
         # MCJIT under Windows only supports ELF objects, see
         # http://lists.llvm.org/pipermail/llvm-dev/2013-December/068341.html
         # Note we still want to produce regular COFF files in AOT mode.
-        if os.name == 'nt' and codemodel == 'jitdefault':
+        if os.name == 'nt' and codemodel == 'default':
             triple += '-elf'
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
                                                 _encode_string(triple),

@@ -202,8 +202,14 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
         cm = CodeModel::Medium;
     else if (cms == "large")
         cm = CodeModel::Large;
-    else
-        cm = CodeModel::Large;
+    else {
+        // fall through, use model based on bitness
+        int bits = sizeof(void *);
+        if (bits == 4)
+            cm = CodeModel::Small;
+        else
+            cm = CodeModel::Large;
+    }
 
     Optional<Reloc::Model> rm;
     std::string rms(RelocModel);
