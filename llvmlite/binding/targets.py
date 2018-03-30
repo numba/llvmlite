@@ -152,7 +152,8 @@ class TargetData(ffi.ObjectRef):
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
-CODEMODEL = frozenset(['default', 'small', 'kernel', 'medium', 'large'])
+CODEMODEL = frozenset(['default', 'defaultjit', 'small', 'kernel', 'medium',
+                       'large'])
 
 
 class Target(ffi.ObjectRef):
