@@ -202,7 +202,9 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
         cm = CodeModel::Medium;
     else if (cms == "large")
         cm = CodeModel::Large;
-    else {
+    else if (cms == "default") // As per LLVM 5, needed for AOT
+        cm = CodeModel::Small;
+    else { // catches "jitdefault" and not set, as per LLVM 5, needed for MCJIT
         // fall through, use model based on bitness
         int bits = sizeof(void *);
         if (bits == 4)
