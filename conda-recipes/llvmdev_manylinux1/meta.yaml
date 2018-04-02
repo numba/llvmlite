@@ -18,7 +18,7 @@ source:
     - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch
 
 build:
-  number: 1
+  number: 0
   string: "manylinux1h{{ PKG_HASH }}"
   script_env:
     - CFLAGS
