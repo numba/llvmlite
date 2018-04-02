@@ -152,8 +152,8 @@ class TargetData(ffi.ObjectRef):
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
-CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel',
-                       'medium', 'large'])
+CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel', 'medium',
+                       'large'])
 
 
 class Target(ffi.ObjectRef):
@@ -206,6 +206,10 @@ class Target(ffi.ObjectRef):
                               jitdebug=False, printmc=False):
         """
         Create a new TargetMachine for this target and the given options.
+
+        Specifying codemodel='default' will result in the use of the "small"
+        code model. Specifying codemodel='jitdefault' will result in the code
+        model being picked based on platform bitness (32="small", 64="large").
         """
         assert 0 <= opt <= 3
         assert reloc in RELOC

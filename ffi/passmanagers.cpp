@@ -15,45 +15,6 @@
 
 using namespace llvm;
 
-
-/* Helpers to override the diagnostic handler when running
- * optimizations.
- * The default diagnostic handler prints some remarks unconditionally,
- * see http://lists.llvm.org/pipermail/llvm-dev/2016-July/102252.html
- */
-typedef std::tuple<LLVMContext::DiagnosticHandlerTy, void *> diag_handler_t;
-
-static diag_handler_t
-SetOptimizationDiagnosticHandler(LLVMContext &Ctx)
-{
-    auto diagnose = [] (const DiagnosticInfo &DI, void *c) {
-        // If an error, print the message and bail out (as the default
-        // handler does).
-        DiagnosticSeverity DS = DI.getSeverity();
-        if (DS == DS_Error) {
-            raw_ostream &out = errs();
-            DiagnosticPrinterRawOStream DP(out);
-            out << "LLVM error: ";
-            DI.print(DP);
-            out << "\n";
-            exit(1);
-        }
-    };
-    /* Save the current diagnostic handler and set our own */
-    diag_handler_t OldHandler(Ctx.getDiagnosticHandler(),
-                              Ctx.getDiagnosticContext());
-    Ctx.setDiagnosticHandler((LLVMContext::DiagnosticHandlerTy) diagnose,
-                             nullptr);
-    return OldHandler;
-}
-
-static void
-UnsetOptimizationDiagnosticHandler(LLVMContext &Ctx, diag_handler_t OldHandler)
-{
-    Ctx.setDiagnosticHandler(std::get<0>(OldHandler), std::get<1>(OldHandler));
-}
-
-
 /*
  * Exposed API
  */
@@ -82,28 +43,14 @@ API_EXPORT(int)
 LLVMPY_RunPassManager(LLVMPassManagerRef PM,
                       LLVMModuleRef M)
 {
-    /* Save the current diagnostic handler and set our own */
-    LLVMContext &Ctx = unwrap(M)->getContext();
-    auto OldHandler = SetOptimizationDiagnosticHandler(Ctx);
-
-    int r = LLVMRunPassManager(PM, M);
-
-    UnsetOptimizationDiagnosticHandler(Ctx, OldHandler);
-    return r;
+    return LLVMRunPassManager(PM, M);
 }
 
 API_EXPORT(int)
 LLVMPY_RunFunctionPassManager(LLVMPassManagerRef PM,
                               LLVMValueRef F)
 {
-    /* Save the current diagnostic handler and set our own */
-    LLVMContext &Ctx = unwrap(F)->getContext();
-    auto OldHandler = SetOptimizationDiagnosticHandler(Ctx);
-
-    int r = LLVMRunFunctionPassManager(PM, F);
-
-    UnsetOptimizationDiagnosticHandler(Ctx, OldHandler);
-    return r;
+    return LLVMRunFunctionPassManager(PM, F);
 }
 
 API_EXPORT(int)

@@ -20,12 +20,11 @@ fi
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     # OSX needs 10.7 or above with libc++ enabled
-    export MACOSX_DEPLOYMENT_TARGET=10.9
+    export MACOSX_DEPLOYMENT_TARGET=10.10
 fi
 
-if [[ ${MACOSX_DEPLOYMENT_TARGET} == 10.9 ]]; then
-  DARWIN_TARGET=x86_64-apple-darwin13.4.0
-fi
+DARWIN_TARGET=x86_64-apple-darwin13.4.0
+
 
 export PYTHONNOUSERSITE=1
 # Enables static linking of stdlibc++

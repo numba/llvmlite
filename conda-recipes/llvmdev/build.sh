@@ -16,9 +16,9 @@ if [[ $(uname) == Darwin ]]; then
   CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
 fi
 
-if [[ ${MACOSX_DEPLOYMENT_TARGET} == 10.9 ]]; then
-  DARWIN_TARGET=x86_64-apple-darwin13.4.0
-fi
+# This is the clang compiler prefix
+DARWIN_TARGET=x86_64-apple-darwin13.4.0
+
 
 declare -a _cmake_config
 _cmake_config+=(-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX})
