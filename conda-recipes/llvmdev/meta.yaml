@@ -18,6 +18,8 @@ source:
     - ../intel-svml.patch
     # https://reviews.llvm.org/D44140 Fix LLVM-C symbol export
     - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch
+    # undefined behavior bug due to Twine usage
+    - ../twine_cfg_undefined_behavior.patch
 
 build:
   number: {{ build_number }}
