@@ -1,7 +1,7 @@
 {% set shortversion = "6.0" %}
 {% set version = "6.0.0" %}
 {% set sha256 = "1ff53c915b4e761ef400b803f07261ade637b0c269d99569f18040f3dcee4408" %}
-{% set build_number = "0" %}
+{% set build_number = "1" %}
 
 package:
   name: llvmdev
@@ -18,6 +18,8 @@ source:
     - ../intel-svml.patch
     # https://reviews.llvm.org/D44140 Fix LLVM-C symbol export
     - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch
+    # undefined behavior bug due to Twine usage
+    - ../twine_cfg_undefined_behavior.patch
 
 build:
   number: {{ build_number }}
@@ -49,6 +51,11 @@ requirements:
     - zlib # [not win]
 
 test:
+  requires:
+    - python
+  files:
+    - cfg_test.ll
+    - test_cfg_dot.py
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
     - $PREFIX/bin/llc -version                               # [not win]
@@ -60,6 +67,9 @@ test:
     - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
 
     - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
+    # Test for ../twine_cfg_undefined_behavior.patch
+    - $PREFIX/bin/opt -dot-cfg cfg_test.ll                   # [not win]
+    - python test_cfg_dot.py                                 # [not win]
 
 about:
   home: http://llvm.org/
