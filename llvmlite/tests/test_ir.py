@@ -1188,6 +1188,33 @@ class TestBuildInstructions(TestBase):
             "expected an integer type, got float",
             str(raises.exception))
 
+    def test_fence(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        with self.assertRaises(ValueError) as raises:
+            builder.fence("monotonic", None)
+        self.assertIn(
+            "Invalid fence ordering \"monotonic\"!",
+            str(raises.exception))
+        with self.assertRaises(ValueError) as raises:
+            builder.fence(None, "monotonic")
+        self.assertIn(
+            "Invalid fence ordering \"None\"!",
+            str(raises.exception))
+        builder.fence("acquire", None)
+        builder.fence("release", "singlethread")
+        builder.fence("acq_rel", "singlethread")
+        builder.fence("seq_cst")
+        builder.ret_void()
+        self.check_block(block, """\
+            my_block:
+                fence acquire
+                fence syncscope("singlethread") release
+                fence syncscope("singlethread") acq_rel
+                fence seq_cst
+                ret void
+            """)
+
     def test_bswap(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
