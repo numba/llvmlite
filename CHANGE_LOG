@@ -1,3 +1,23 @@
+v0.23.0
+-------
+
+In this release, we upgrade to LLVM 6. Two LLVM patches are added:
+
+  1. A patch to fix LLVM bug (https://bugs.llvm.org/show_bug.cgi?id=37019) that
+     causes undefined behavior during CFG printing.
+  2. A patch to enable Intel SVML auto-vectorization of transcendentals.
+
+The following PRs are closed in this release:
+
+* PR #343: Fix undefined behavior bug due to Twine usage in LLVM
+* PR #340: This moves llvmlite to use LLVM 6.0.0 as its backend.
+* PR #339: Add cttz & ctlz
+* PR #338: Add 3 Bit Manipulation Intrinsics
+* PR #330: Add support for LLVM fence instruction
+* PR #326: Enable Intel SVML-enabled auto-vectorization for all the
+           transcendentals
+
+
 v0.22.0
 ----------
 
