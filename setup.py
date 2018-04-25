@@ -159,8 +159,10 @@ packages = ['llvmlite',
             ]
 
 install_requires = []
+setup_requires = []
 if sys.version_info < (3, 4):
     install_requires.append('enum34')
+    setup_requires.append('enum34')
 
 setup(name='llvmlite',
       description="lightweight wrapper around basic LLVM functionality",
@@ -183,6 +185,7 @@ setup(name='llvmlite',
       download_url="https://github.com/numba/llvmlite",
       packages=packages,
       install_requires=install_requires,
+      setup_requires=setup_requires,
       license="BSD",
       cmdclass=cmdclass,
       )
