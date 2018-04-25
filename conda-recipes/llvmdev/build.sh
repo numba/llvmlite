@@ -4,18 +4,6 @@
 
 set -x
 
-if [[ $(uname) == Darwin ]]; then
-  ${SYS_PREFIX}/bin/conda create -y -p ${SRC_DIR}/bootstrap clangxx_osx-64
-  export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
-  CONDA_PREFIX=${SRC_DIR}/bootstrap \
-    . ${SRC_DIR}/bootstrap/etc/conda/activate.d/*
-  export CONDA_BUILD_SYSROOT=${CONDA_BUILD_SYSROOT:-/opt/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk}
-  export CXXFLAGS=${CFLAGS}" -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
-  export CFLAGS=${CFLAGS}" -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
-  SYSROOT_DIR=${CONDA_BUILD_SYSROOT}
-  CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
-fi
-
 # This is the clang compiler prefix
 DARWIN_TARGET=x86_64-apple-darwin13.4.0
 
