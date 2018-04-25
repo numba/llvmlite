@@ -13,6 +13,8 @@ matrix:
         - env: PYTHON=3.4
         - env: PYTHON=2.7
         - env: PYTHON=pypy
+        - env: PYTHON=2.7 WHEEL=yes
+        - env: PYTHON=3.6 WHEEL=yes
 
 before_install:
     - export CONDA_ENV=travisci
