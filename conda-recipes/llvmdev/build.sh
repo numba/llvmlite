@@ -15,6 +15,8 @@ _cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
 # _cmake_config+=(-DBUILD_SHARED_LIBS:BOOL=ON)
 _cmake_config+=(-DLLVM_ENABLE_ASSERTIONS:BOOL=ON)
 _cmake_config+=(-DLINK_POLLY_INTO_TOOLS:BOOL=ON)
+# Don't really require libxml2. Turn it off explicitly to avoid accidentally linking to system libs
+_cmake_config+=(-DLLVM_ENABLE_LIBXML2:BOOL=OFF)
 # Urgh, llvm *really* wants to link to ncurses / terminfo and we *really* do not want it to.
 _cmake_config+=(-DHAVE_TERMINFO_CURSES=OFF)
 # Sometimes these are reported as unused. Whatever.
