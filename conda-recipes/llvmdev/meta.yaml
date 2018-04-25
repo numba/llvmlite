@@ -25,6 +25,9 @@ build:
   number: {{ build_number }}
   script_env:
     - PY_VCRUNTIME_REDIST
+  ignore_run_exports:
+    # Is static-linked
+    - xar
 
 requirements:
   build:
@@ -49,6 +52,7 @@ requirements:
   host:
     # needed for llc at runtime
     - zlib # [not win]
+    - xar # [osx]
 
 test:
   requires:
