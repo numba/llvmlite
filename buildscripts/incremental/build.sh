@@ -37,7 +37,7 @@ set -v -e
 if [ "$WHEEL" == "yes" ]; then
   conda install wheel
   python setup.py bdist_wheel
-  conda create -p ${PWD}/wheeltest python=${PYTHON}
+  conda create -p ${PWD}/wheeltest python=${PYTHON} -y
   cd dist
   pip install *.whl
 else
