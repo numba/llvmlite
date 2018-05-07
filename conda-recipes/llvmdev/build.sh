@@ -4,18 +4,6 @@
 
 set -x
 
-if [[ $(uname) == Darwin ]]; then
-  ${SYS_PREFIX}/bin/conda create -y -p ${SRC_DIR}/bootstrap clangxx_osx-64
-  export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
-  CONDA_PREFIX=${SRC_DIR}/bootstrap \
-    . ${SRC_DIR}/bootstrap/etc/conda/activate.d/*
-  export CONDA_BUILD_SYSROOT=${CONDA_BUILD_SYSROOT:-/opt/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk}
-  export CXXFLAGS=${CFLAGS}" -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
-  export CFLAGS=${CFLAGS}" -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
-  SYSROOT_DIR=${CONDA_BUILD_SYSROOT}
-  CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
-fi
-
 # This is the clang compiler prefix
 DARWIN_TARGET=x86_64-apple-darwin13.4.0
 
@@ -27,6 +15,8 @@ _cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
 # _cmake_config+=(-DBUILD_SHARED_LIBS:BOOL=ON)
 _cmake_config+=(-DLLVM_ENABLE_ASSERTIONS:BOOL=ON)
 _cmake_config+=(-DLINK_POLLY_INTO_TOOLS:BOOL=ON)
+# Don't really require libxml2. Turn it off explicitly to avoid accidentally linking to system libs
+_cmake_config+=(-DLLVM_ENABLE_LIBXML2:BOOL=OFF)
 # Urgh, llvm *really* wants to link to ncurses / terminfo and we *really* do not want it to.
 _cmake_config+=(-DHAVE_TERMINFO_CURSES=OFF)
 # Sometimes these are reported as unused. Whatever.

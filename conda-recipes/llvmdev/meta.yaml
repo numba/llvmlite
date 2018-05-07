@@ -1,7 +1,7 @@
 {% set shortversion = "6.0" %}
 {% set version = "6.0.0" %}
 {% set sha256 = "1ff53c915b4e761ef400b803f07261ade637b0c269d99569f18040f3dcee4408" %}
-{% set build_number = "1" %}
+{% set build_number = "2" %}
 
 package:
   name: llvmdev
@@ -25,6 +25,9 @@ build:
   number: {{ build_number }}
   script_env:
     - PY_VCRUNTIME_REDIST
+  ignore_run_exports:
+    # Is static-linked
+    - xar
 
 requirements:
   build:
@@ -33,8 +36,8 @@ requirements:
     # at build.sh time
     # Windows needs to build using vs2015_runtime
     # irrespective of python version
-    - {{ compiler('c') }}    # [linux]
-    - {{ compiler('cxx') }}  # [linux]
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - cmake
     # Needed to unpack the source tarball
     - m2w64-xz  # [py27 and win]
@@ -49,6 +52,7 @@ requirements:
   host:
     # needed for llc at runtime
     - zlib # [not win]
+    - xar # [osx]
 
 test:
   requires:
