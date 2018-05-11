@@ -14,7 +14,7 @@ build:
 
 requirements:
   build:
-    # We cannot do this on macOS as the llvm-config from the 
+    # We cannot do this on macOS as the llvm-config from the
     # toolchain conflicts with the same from llvmdev, the
     # build.sh deals with it!
     - {{ compiler('c') }}    # [not osx]
@@ -27,10 +27,12 @@ requirements:
     # The DLL build uses cmake on Windows
     - cmake          [win]
     - enum34         [py27]
+    - zlib           [unix] # llvmdev is built with libz compression support
   run:
     - python
     - enum34         [py27]
     - vs2015_runtime [win]
+    - libcxx >=4.0.1 [osx] # osx has dynamically linked libstdc++
 
 test:
   imports:
