@@ -6,7 +6,7 @@ CXX_FLTO_FLAGS ?= -flto
 LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
 
 CXXFLAGS = $(LLVM_CXXFLAGS) $(CXX_FLTO_FLAGS)
-LDFLAGS = $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
+LDFLAGS = $(LDFLAGS) $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
 LIBS = $(LLVM_LIBS)
 INCLUDE = core.h
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
