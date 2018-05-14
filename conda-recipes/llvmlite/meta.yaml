@@ -23,16 +23,18 @@ requirements:
     - python
     # On channel https://anaconda.org/numba/
     - llvmdev 6.0*
-    - vs2015_runtime [win]
+    - vs2015_runtime # [win]
     # The DLL build uses cmake on Windows
-    - cmake          [win]
-    - enum34         [py27]
-    - zlib           [unix] # llvmdev is built with libz compression support
+    - cmake          # [win]
+    - enum34         # [py27]
+    # llvmdev is built with libz compression support
+    - zlib           # [unix]
   run:
     - python
-    - enum34         [py27]
-    - vs2015_runtime [win]
-    - libcxx >=4.0.1 [osx] # osx has dynamically linked libstdc++
+    - enum34         # [py27]
+    - vs2015_runtime # [win]
+    # osx has dynamically linked libstdc++
+    - libcxx >=4.0.1 # [osx]
 
 test:
   imports:
