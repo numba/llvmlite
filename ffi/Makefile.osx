@@ -1,7 +1,7 @@
 
 CXX = clang++ -std=c++11 -stdlib=libc++
 CXXFLAGS = $(LLVM_CXXFLAGS)
-LDFLAGS = $(LLVM_LDFLAGS)
+LDFLAGS :=  $(LDFLAGS) $(LLVM_LDFLAGS)
 LIBS = $(LLVM_LIBS)
 INCLUDE = core.h
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
