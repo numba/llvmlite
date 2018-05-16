@@ -133,6 +133,8 @@ def main():
         main_posix('linux', '.so')
     elif sys.platform.startswith('freebsd'):
         main_posix('freebsd', '.so')
+    elif sys.platform.startswith('openbsd'):
+        main_posix('openbsd', '.so')
     elif sys.platform == 'darwin':
         main_posix('osx', '.dylib')
     else:

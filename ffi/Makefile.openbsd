@@ -1,0 +1,18 @@
+
+CXX = clang++ -std=c++11 -stdlib=libc++
+CXXFLAGS = $(LLVM_CXXFLAGS)
+LDFLAGS = $(LLVM_LDFLAGS)
+LIBS = $(LLVM_LIBS)
+INCLUDE = core.h
+SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
+	executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
+	linker.cpp object_file.cpp
+OUTPUT = libllvmlite.so
+
+all: $(OUTPUT)
+
+$(OUTPUT): $(SRC) $(INCLUDE)
+	$(CXX) -shared $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
+
+clean:
+	rm -rf test
