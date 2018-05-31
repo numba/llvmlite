@@ -301,6 +301,15 @@ class TargetMachine(ffi.ObjectRef):
             ffi.lib.LLVMPY_GetTargetMachineTriple(self, out)
             return str(out)
 
+def has_svml():
+    """
+    Returns True if SVML was enabled at FFI support compile time.
+    """
+    if ffi.lib.LLVMPY_HasSVMLSupport() == 0:
+        return False
+    else:
+        return True
+
 
 # ============================================================================
 # FFI
@@ -400,3 +409,6 @@ ffi.lib.LLVMPY_CreateTargetMachineData.argtypes = [
     ffi.LLVMTargetMachineRef,
 ]
 ffi.lib.LLVMPY_CreateTargetMachineData.restype = ffi.LLVMTargetDataRef
+
+ffi.lib.LLVMPY_HasSVMLSupport.argtypes = []
+ffi.lib.LLVMPY_HasSVMLSupport.restype = c_int
