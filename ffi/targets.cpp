@@ -309,6 +309,17 @@ LLVMPY_DisposeMemoryBuffer(LLVMMemoryBufferRef MB)
     return LLVMDisposeMemoryBuffer(MB);
 }
 
+API_EXPORT(int)
+LLVMPY_HasSVMLSupport(void)
+{
+#ifdef HAVE_SVML
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+
 /*
 
 If needed:
