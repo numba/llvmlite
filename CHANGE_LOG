@@ -1,8 +1,9 @@
 v0.23.2
 -------
 
-This is a bug fix release to assist in addressing a critical bug in Numba:
-https://github.com/numba/numba/issues/3006
+This is a bug fix release to assist in addressing a critical Numba issue that
+can affect users who download llvmlite packages from sources other than PyPI
+(pip), Anaconda, or Intel Python: https://github.com/numba/numba/issues/3006
 
 Support for SVML is now detected at compile time and baked into a function that
 is exposed by llvmlite. This function can be queried at runtime to find out if
