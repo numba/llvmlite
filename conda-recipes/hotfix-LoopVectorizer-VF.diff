@@ -1,0 +1,19 @@
+Workaround for https://github.com/numba/numba/issues/3016
+
+diff --git a/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
+index f4b0480..f84d363 100644
+--- a/lib/Transforms/Vectorize/LoopVectorize.cpp
++++ b/lib/Transforms/Vectorize/LoopVectorize.cpp
+@@ -3974,6 +3974,12 @@ static unsigned getVectorCallCost(CallInst *CI, unsigned VF,
+   if (!TLI || !TLI->isFunctionVectorizable(FnName, VF) || CI->isNoBuiltin())
+     return Cost;
+        
++  // this goes against LLVM coding philosophy, but it'll stop bleeding
++  bool IgnoreMe;
++  StringRef FuncName = TLI->getVectorizedFunction(FnName, VF, IgnoreMe, true);
++  if (FuncName.startswith("__svml") && !TTI.isTypeLegal(RetTy))
++    return Cost;
++
+   // If the corresponding vector cost is cheaper, return its cost.
+   unsigned VectorCallCost = TTI.getCallInstrCost(nullptr, RetTy, Tys);
+   if (VectorCallCost < Cost) {
