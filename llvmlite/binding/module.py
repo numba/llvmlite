@@ -5,7 +5,7 @@ from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
 from . import ffi
 from .linker import link_modules
 from .common import _decode_string, _encode_string
-from .value import ValueRef
+from .value import ValueRef, TypeRef
 
 
 def parse_assembly(llvmir):
@@ -31,10 +31,12 @@ def parse_bitcode(bitcode):
     buf = c_char_p(bitcode)
     bufsize = len(bitcode)
     with ffi.OutputString() as errmsg:
-        mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(context, buf, bufsize, errmsg))
+        mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(
+            context, buf, bufsize, errmsg))
         if errmsg:
             mod.close()
-            raise RuntimeError("LLVM bitcode parsing error\n{0}".format(errmsg))
+            raise RuntimeError(
+                "LLVM bitcode parsing error\n{0}".format(errmsg))
     return mod
 
 
@@ -168,6 +170,15 @@ class ModuleRef(ffi.ObjectRef):
         it = ffi.lib.LLVMPY_ModuleFunctionsIter(self)
         return _FunctionsIterator(it, module=self)
 
+    @property
+    def struct_types(self):
+        """
+        Return an iterator over the struct types defined in 
+        the module. The iterator will yield a TypeRef.
+        """
+        it = ffi.lib.LLVMPY_ModuleTypesIter(self)
+        return _TypesIterator(it, module=self)
+
     def clone(self):
         return ModuleRef(ffi.lib.LLVMPY_CloneModule(self))
 
@@ -208,6 +219,22 @@ class _FunctionsIterator(_Iterator):
 
     def _next(self):
         return ffi.lib.LLVMPY_FunctionsIterNext(self)
+
+
+class _TypesIterator(_Iterator):
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeTypesIter(self)
+
+    def __next__(self):
+        vp = self._next()
+        if vp:
+            return TypeRef(vp)
+        else:
+            raise StopIteration
+
+    def _next(self):
+        return ffi.lib.LLVMPY_TypesIterNext(self)
 
 
 # =============================================================================
@@ -261,10 +288,18 @@ ffi.lib.LLVMPY_GlobalsIterNext.restype = ffi.LLVMValueRef
 ffi.lib.LLVMPY_ModuleFunctionsIter.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_ModuleFunctionsIter.restype = ffi.LLVMFunctionsIterator
 
+ffi.lib.LLVMPY_ModuleTypesIter.argtypes = [ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_ModuleTypesIter.restype = ffi.LLVMTypesIterator
+
 ffi.lib.LLVMPY_DisposeFunctionsIter.argtypes = [ffi.LLVMFunctionsIterator]
+
+ffi.lib.LLVMPY_DisposeTypesIter.argtypes = [ffi.LLVMTypesIterator]
 
 ffi.lib.LLVMPY_FunctionsIterNext.argtypes = [ffi.LLVMFunctionsIterator]
 ffi.lib.LLVMPY_FunctionsIterNext.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_TypesIterNext.argtypes = [ffi.LLVMTypesIterator]
+ffi.lib.LLVMPY_TypesIterNext.restype = ffi.LLVMTypeRef
 
 ffi.lib.LLVMPY_CloneModule.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_CloneModule.restype = ffi.LLVMModuleRef
