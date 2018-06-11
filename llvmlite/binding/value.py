@@ -1,4 +1,4 @@
-from ctypes import POINTER, c_char_p, c_int, c_size_t, c_uint
+from ctypes import POINTER, c_char_p, c_int, c_size_t, c_uint, c_bool
 import enum
 
 from . import ffi
@@ -46,6 +46,20 @@ class StorageClass(enum.IntEnum):
 class TypeRef(ffi.ObjectRef):
     """A weak reference to a LLVM type
     """
+    @property
+    def name(self):
+        return _decode_string(ffi.lib.LLVMPY_GetTypeName(self))
+
+    @property
+    def is_pointer(self):
+        return ffi.lib.LLVMPY_TypeIsPointer(self)
+
+    @property
+    def element_type(self):
+        if not self.is_pointer:
+            raise ValueError("Type {} is not a pointer".format(self))
+        return TypeRef(ffi.lib.LLVMPY_GetElementType(self))
+
     def __str__(self):
         return _decode_string(ffi.lib.LLVMPY_PrintType(self))
 
@@ -160,6 +174,16 @@ ffi.lib.LLVMPY_TypeOf.restype = ffi.LLVMTypeRef
 
 ffi.lib.LLVMPY_PrintType.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_PrintType.restype = c_char_p
+
+ffi.lib.LLVMPY_TypeIsPointer.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_TypeIsPointer.restype = c_bool
+
+ffi.lib.LLVMPY_GetElementType.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_GetElementType.restype = ffi.LLVMTypeRef
+
+
+ffi.lib.LLVMPY_GetTypeName.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_GetTypeName.restype = c_char_p
 
 ffi.lib.LLVMPY_GetLinkage.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetLinkage.restype = c_int

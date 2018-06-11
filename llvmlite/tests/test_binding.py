@@ -39,11 +39,12 @@ def no_de_locale():
 asm_sum = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
+    %struct.glob_type = type {{ i64, [2 x i64]}}
 
     @glob = global i32 0
     @glob_b = global i8 0
     @glob_f = global float 1.5
-    @glob_struct = global {{ i64, [2 x i64]}} {{i64 0, [2 x i64] [i64 0, i64 0]}}
+    @glob_struct = global %struct.glob_type {{i64 0, [2 x i64] [i64 0, i64 0]}}
 
     define i32 @sum(i32 %.1, i32 %.2) {{
       %.3 = add i32 %.1, %.2
@@ -450,7 +451,8 @@ class TestModuleRef(BaseTest):
         dest = self.module()
         src = self.module(asm_mul)
         dest.link_in(src)
-        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
+        self.assertEqual(
+            sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.get_function("mul")
         dest.close()
         with self.assertRaises(ctypes.ArgumentError):
@@ -460,7 +462,8 @@ class TestModuleRef(BaseTest):
         dest = self.module()
         src2 = self.module(asm_mul)
         dest.link_in(src2, preserve=True)
-        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
+        self.assertEqual(
+            sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.close()
         self.assertEqual(sorted(f.name for f in src2.functions), ["mul"])
         src2.get_function("mul")
@@ -493,7 +496,14 @@ class TestModuleRef(BaseTest):
     def test_bitcode_roundtrip(self):
         bc = self.module().as_bitcode()
         mod = llvm.parse_bitcode(bc)
-        self.assertEqual(mod.as_bitcode(), bc)
+        bc2 = mod.as_bitcode()
+        mod2 = llvm.parse_bitcode(bc2)
+        bc3 = mod2.as_bitcode()
+        open("/tmp/bc1.bc", 'wb').write(bc)
+        open("/tmp/bc2.bc", 'wb').write(bc2)
+        open("/tmp/bc3.bc", 'wb').write(bc3)
+        self.assertEqual(bc2, bc3)
+
         mod.get_function("sum")
         mod.get_global_variable("glob")
 
@@ -784,7 +794,6 @@ class TestValueRef(BaseTest):
             fn.add_function_attribute("zext")
         self.assertEqual(str(raises.exception), "no such attribute 'zext'")
 
-
     def test_module(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
@@ -795,6 +804,15 @@ class TestValueRef(BaseTest):
         glob = mod.get_global_variable("glob")
         tp = glob.type
         self.assertIsInstance(tp, llvm.TypeRef)
+
+    def test_type_name(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        tp = glob.type
+        self.assertEqual(tp.name, "")
+        st = mod.get_global_variable("glob_struct")
+        self.assertRegex(st.type.element_type.name,
+            r"struct\.glob_type\.[\d]+")
 
     def test_type_printing_variable(self):
         mod = self.module()
@@ -810,7 +828,11 @@ class TestValueRef(BaseTest):
     def test_type_printing_struct(self):
         mod = self.module()
         st = mod.get_global_variable("glob_struct")
-        self.assertEqual(str(st.type), "{ i64, [2 x i64] }*")
+        self.assertTrue(st.type.is_pointer)
+        self.assertRegex(str(st.type),
+                r'\%struct\.glob_type\.[\d]+\*')
+        self.assertRegex(str(st.type.element_type),
+                r"\%struct\.glob_type\.[\d]+ = type { i64, \[2 x i64\] }")
 
     def test_close(self):
         glob = self.glob()
@@ -1136,19 +1158,19 @@ class TestGlobalConstructors(TestMCJit):
         # test issue #303
         # (https://github.com/numba/llvmlite/issues/303)
         mod = self.module(asm_global_ctors)
-        ee  = self.jit(mod)
+        ee = self.jit(mod)
         ee.finalize_object()
 
         ee.run_static_constructors()
 
         # global variable should have been initialized
         ptr_addr = ee.get_global_value_address("A")
-        ptr_t    = ctypes.POINTER(ctypes.c_int32)
-        ptr      = ctypes.cast(ptr_addr, ptr_t)
+        ptr_t = ctypes.POINTER(ctypes.c_int32)
+        ptr = ctypes.cast(ptr_addr, ptr_t)
         self.assertEqual(ptr.contents.value, 10)
 
         foo_addr = ee.get_function_address("foo")
-        foo      = ctypes.CFUNCTYPE(ctypes.c_int32)(foo_addr)
+        foo = ctypes.CFUNCTYPE(ctypes.c_int32)(foo_addr)
         self.assertEqual(foo(), 12)
 
         ee.run_static_destructors()
@@ -1221,6 +1243,7 @@ class TestInlineAsm(BaseTest):
         asm = tm.emit_assembly(m)
         self.assertIn('nop', asm)
 
+
 class TestObjectFile(BaseTest):
     def test_object_file(self):
         target_machine = self.target_machine()
@@ -1237,6 +1260,7 @@ class TestObjectFile(BaseTest):
                 self.assertTrue(len(s.data()) > 0)
                 break
         self.assertTrue(has_text)
+
 
 if __name__ == "__main__":
     unittest.main()
