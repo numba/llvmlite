@@ -419,6 +419,15 @@ class TestModuleRef(BaseTest):
         del mod
         str(fn.module)
 
+    def test_get_type(self):
+        mod = self.module()
+        st_ty = mod.get_type("struct.glob_type")
+        self.assertEquals(st_ty.name, "struct.glob_type")
+        self.assertRegex(str(st_ty), r'struct\.glob_type(\.[\d]+)?')
+        self.assertRegex(str(st_ty), 
+            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }')
+
+
     def test_get_global_variable(self):
         mod = self.module()
         gv = mod.get_global_variable("glob")

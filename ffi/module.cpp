@@ -150,6 +150,13 @@ LLVMPY_GetNamedGlobalVariable(LLVMModuleRef M,
     return wrap(unwrap(M)->getGlobalVariable(Name));
 }
 
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GetNamedStructType(LLVMModuleRef M,
+                        const char *Name)
+{
+    return LLVMGetTypeByName(M, Name);
+}
+
 
 API_EXPORT(int)
 LLVMPY_VerifyModule(LLVMModuleRef M, char **OutMsg)
