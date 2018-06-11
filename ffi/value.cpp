@@ -38,6 +38,12 @@ LLVMPY_TypeOf(LLVMValueRef Val)
     return LLVMTypeOf(Val);
 }
 
+API_EXPORT(const char *)
+LLVMPY_PrintType(LLVMTypeRef type)
+{
+    return LLVMPrintTypeToString(type);
+}
+
 API_EXPORT(void)
 LLVMPY_SetLinkage(LLVMValueRef Val, int Linkage)
 {

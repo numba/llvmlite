@@ -43,6 +43,13 @@ class StorageClass(enum.IntEnum):
     dllexport = 2
 
 
+class TypeRef(ffi.ObjectRef):
+    """A weak reference to a LLVM type
+    """
+    def __str__(self):
+        return _decode_string(ffi.lib.LLVMPY_PrintType(self))
+
+
 class ValueRef(ffi.ObjectRef):
     """A weak reference to a LLVM value.
     """
@@ -55,6 +62,10 @@ class ValueRef(ffi.ObjectRef):
         with ffi.OutputString() as outstr:
             ffi.lib.LLVMPY_PrintValueToString(self, outstr)
             return str(outstr)
+
+    @staticmethod
+    def printType(ty):
+        return _decode_string(ffi.lib.LLVMPY_PrintType(ty))
 
     @property
     def module(self):
@@ -122,7 +133,7 @@ class ValueRef(ffi.ObjectRef):
         This value's LLVM type.
         """
         # XXX what does this return?
-        return ffi.lib.LLVMPY_TypeOf(self)
+        return TypeRef(ffi.lib.LLVMPY_TypeOf(self))
 
     @property
     def is_declaration(self):
@@ -150,6 +161,9 @@ ffi.lib.LLVMPY_SetValueName.argtypes = [ffi.LLVMValueRef, c_char_p]
 
 ffi.lib.LLVMPY_TypeOf.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_TypeOf.restype = ffi.LLVMTypeRef
+
+ffi.lib.LLVMPY_PrintType.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_PrintType.restype = c_char_p
 
 ffi.lib.LLVMPY_GetLinkage.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetLinkage.restype = c_int

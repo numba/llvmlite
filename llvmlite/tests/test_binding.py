@@ -794,7 +794,23 @@ class TestValueRef(BaseTest):
         mod = self.module()
         glob = mod.get_global_variable("glob")
         tp = glob.type
-        self.assertIsInstance(tp, ffi.LLVMTypeRef)
+        self.assertIsInstance(tp, llvm.TypeRef)
+
+    def test_type_printing_variable(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        tp = glob.type
+        self.assertEqual(str(tp), 'i32*')
+
+    def test_type_printing_function(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        self.assertEqual(str(fn.type), "i32 (i32, i32)*")
+
+    def test_type_printing_struct(self):
+        mod = self.module()
+        st = mod.get_global_variable("glob_struct")
+        self.assertEqual(str(st.type), "{ i64, [2 x i64] }*")
 
     def test_close(self):
         glob = self.glob()
