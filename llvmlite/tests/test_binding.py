@@ -294,8 +294,7 @@ class TestMisc(BaseTest):
         # quick check for our regex
         self.assertIsNotNone(re.match(regex, ""))
         self.assertIsNotNone(re.match(regex, "+aa"))
-        self.assertIsNotNone(re.match(regex
-        , "+a,-bb"))
+        self.assertIsNotNone(re.match(regex, "+a,-bb"))
         # check CpuFeature.flatten()
         self.assertIsNotNone(re.match(regex, features.flatten()))
 
@@ -423,10 +422,9 @@ class TestModuleRef(BaseTest):
         mod = self.module()
         st_ty = mod.get_type("struct.glob_type")
         self.assertEquals(st_ty.name, "struct.glob_type")
-        self.assertRegex(str(st_ty), r'struct\.glob_type(\.[\d]+)?')
-        self.assertRegex(str(st_ty), 
-            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }')
-
+        self.assertIsNotNone(re.match(
+            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }',
+            str(st_ty)))
 
     def test_get_global_variable(self):
         mod = self.module()
@@ -464,10 +462,11 @@ class TestModuleRef(BaseTest):
         del mod
         structs = list(it)
         self.assertEqual(len(structs), 1)
-        self.assertRegex(structs[0].name, r'struct\.glob_type(\.[\d]+)?')
-        self.assertRegex(str(structs[0]), 
-            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }')
-        
+        self.assertIsNotNone(re.match(r'struct\.glob_type(\.[\d]+)?',
+                                      structs[0].name))
+        self.assertIsNotNone(re.match(
+            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }',
+            str(structs[0])))
 
     def test_link_in(self):
         dest = self.module()
@@ -828,7 +827,7 @@ class TestValueRef(BaseTest):
         self.assertEqual(tp.name, "")
         st = mod.get_global_variable("glob_struct")
         self.assertIsNotNone(re.match(r"struct\.glob_type(\.[\d]+)?",
-            st.type.element_type.name))
+                                      st.type.element_type.name))
 
     def test_type_printing_variable(self):
         mod = self.module()
@@ -846,7 +845,7 @@ class TestValueRef(BaseTest):
         st = mod.get_global_variable("glob_struct")
         self.assertTrue(st.type.is_pointer)
         self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
-                    str(st.type)))
+                                      str(st.type)))
         self.assertIsNotNone(re.match(
             r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
             str(st.type.element_type)))
