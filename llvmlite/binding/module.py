@@ -88,6 +88,16 @@ class ModuleRef(ffi.ObjectRef):
             raise NameError(name)
         return ValueRef(p, module=self)
 
+    def get_type(self, name):
+        """
+        Get a TypeRef pointing to a structure type named *name*.
+        NameError is raised if the struct type isn't found.
+        """
+        p = ffi.lib.LLVMPY_GetNamedStructType(self, _encode_string(name))
+        if not p:
+            raise NameError(name)
+        return TypeRef(p)
+
     def verify(self):
         """
         Verify the module IR's correctness.  RuntimeError is raised on error.
@@ -276,6 +286,9 @@ ffi.lib.LLVMPY_SetTarget.argtypes = [ffi.LLVMModuleRef, c_char_p]
 
 ffi.lib.LLVMPY_GetNamedGlobalVariable.argtypes = [ffi.LLVMModuleRef, c_char_p]
 ffi.lib.LLVMPY_GetNamedGlobalVariable.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetNamedStructType.argtypes = [ffi.LLVMModuleRef, c_char_p]
+ffi.lib.LLVMPY_GetNamedStructType.restype = ffi.LLVMTypeRef
 
 ffi.lib.LLVMPY_ModuleGlobalsIter.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_ModuleGlobalsIter.restype = ffi.LLVMGlobalsIterator
