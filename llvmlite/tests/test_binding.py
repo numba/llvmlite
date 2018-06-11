@@ -294,7 +294,8 @@ class TestMisc(BaseTest):
         # quick check for our regex
         self.assertIsNotNone(re.match(regex, ""))
         self.assertIsNotNone(re.match(regex, "+aa"))
-        self.assertIsNotNone(re.match(regex, "+a,-bb"))
+        self.assertIsNotNone(re.match(regex
+        , "+a,-bb"))
         # check CpuFeature.flatten()
         self.assertIsNotNone(re.match(regex, features.flatten()))
 
@@ -447,6 +448,14 @@ class TestModuleRef(BaseTest):
         funcs = list(it)
         self.assertEqual(len(funcs), 1)
         self.assertEqual(funcs[0].name, "sum")
+
+    def test_structs(self):
+        mod = self.module()
+        it = mod.struct_types
+        del mod
+        structs = list(it)
+        self.assertEqual(len(structs), 1)
+
     def test_link_in(self):
         dest = self.module()
         src = self.module(asm_mul)
