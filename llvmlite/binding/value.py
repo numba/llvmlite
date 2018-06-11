@@ -63,10 +63,6 @@ class ValueRef(ffi.ObjectRef):
             ffi.lib.LLVMPY_PrintValueToString(self, outstr)
             return str(outstr)
 
-    @staticmethod
-    def printType(ty):
-        return _decode_string(ffi.lib.LLVMPY_PrintType(ty))
-
     @property
     def module(self):
         """
