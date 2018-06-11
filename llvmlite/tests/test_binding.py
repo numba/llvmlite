@@ -447,7 +447,6 @@ class TestModuleRef(BaseTest):
         funcs = list(it)
         self.assertEqual(len(funcs), 1)
         self.assertEqual(funcs[0].name, "sum")
-
     def test_link_in(self):
         dest = self.module()
         src = self.module(asm_mul)
@@ -806,8 +805,8 @@ class TestValueRef(BaseTest):
         tp = glob.type
         self.assertEqual(tp.name, "")
         st = mod.get_global_variable("glob_struct")
-        self.assertRegex(st.type.element_type.name,
-            r"struct\.glob_type(\.[\d]+)?")
+        self.assertIsNotNone(re.match(r"struct\.glob_type(\.[\d]+)?",
+            st.type.element_type.name))
 
     def test_type_printing_variable(self):
         mod = self.module()
@@ -824,10 +823,11 @@ class TestValueRef(BaseTest):
         mod = self.module()
         st = mod.get_global_variable("glob_struct")
         self.assertTrue(st.type.is_pointer)
-        self.assertRegex(str(st.type),
-                r'\%struct\.glob_type(\.[\d]+)?\*')
-        self.assertRegex(str(st.type.element_type),
-                r"\%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }")
+        self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
+                    str(st.type)))
+        self.assertIsNotNone(re.match(
+            r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
+            str(st.type.element_type)))
 
     def test_close(self):
         glob = self.glob()
