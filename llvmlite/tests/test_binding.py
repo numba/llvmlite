@@ -455,6 +455,10 @@ class TestModuleRef(BaseTest):
         del mod
         structs = list(it)
         self.assertEqual(len(structs), 1)
+        self.assertRegex(structs[0].name, r'struct\.glob_type(\.[\d]+)?')
+        self.assertRegex(str(structs[0]), 
+            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }')
+        
 
     def test_link_in(self):
         dest = self.module()
