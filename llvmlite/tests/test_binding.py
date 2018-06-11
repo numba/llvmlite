@@ -807,7 +807,7 @@ class TestValueRef(BaseTest):
         self.assertEqual(tp.name, "")
         st = mod.get_global_variable("glob_struct")
         self.assertRegex(st.type.element_type.name,
-            r"struct\.glob_type\.[\d]+")
+            r"struct\.glob_type(\.[\d]+)?")
 
     def test_type_printing_variable(self):
         mod = self.module()
@@ -825,9 +825,9 @@ class TestValueRef(BaseTest):
         st = mod.get_global_variable("glob_struct")
         self.assertTrue(st.type.is_pointer)
         self.assertRegex(str(st.type),
-                r'\%struct\.glob_type\.[\d]+\*')
+                r'\%struct\.glob_type(\.[\d]+)?\*')
         self.assertRegex(str(st.type.element_type),
-                r"\%struct\.glob_type\.[\d]+ = type { i64, \[2 x i64\] }")
+                r"\%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }")
 
     def test_close(self):
         glob = self.glob()
