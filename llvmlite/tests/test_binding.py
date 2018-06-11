@@ -66,6 +66,7 @@ asm_sum2 = r"""
 asm_mul = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
+    @mul_glob = global i32 0
 
     define i32 @mul(i32 %.1, i32 %.2) {{
       %.3 = mul i32 %.1, %.2
@@ -494,18 +495,12 @@ class TestModuleRef(BaseTest):
         self.assertIn("Invalid bitcode signature", str(cm.exception))
 
     def test_bitcode_roundtrip(self):
-        bc = self.module().as_bitcode()
+        bc = self.module(asm=asm_mul).as_bitcode()
         mod = llvm.parse_bitcode(bc)
-        bc2 = mod.as_bitcode()
-        mod2 = llvm.parse_bitcode(bc2)
-        bc3 = mod2.as_bitcode()
-        open("/tmp/bc1.bc", 'wb').write(bc)
-        open("/tmp/bc2.bc", 'wb').write(bc2)
-        open("/tmp/bc3.bc", 'wb').write(bc3)
-        self.assertEqual(bc2, bc3)
+        self.assertEqual(mod.as_bitcode(), bc)
 
-        mod.get_function("sum")
-        mod.get_global_variable("glob")
+        mod.get_function("mul")
+        mod.get_global_variable("mul_glob")
 
     def test_cloning(self):
         m = self.module()
