@@ -29,6 +29,7 @@ requirements:
     - enum34         # [py27]
     # llvmdev is built with libz compression support
     - zlib           # [unix]
+    - make           # [ppc64le]
   run:
     - python
     - enum34         # [py27]
