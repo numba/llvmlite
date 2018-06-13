@@ -410,9 +410,7 @@ Aggregate operations
      :ref:`aggregate value <aggregate-types>` *agg*.
 
      * *index* may be an integer or a sequence of integers.
-     * If *agg* is of an array type, indices can be arbitrary
-       values.
-     * If *agg* is of a struct type, indices must be constant.
+     * Indices must be constant.
 
 * .. method:: IRBuilder.insert_value(agg, value, index, name='')
 
