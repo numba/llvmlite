@@ -141,7 +141,7 @@ def main():
         main_win32()
     elif sys.platform.startswith('linux'):
         main_posix('linux', '.so')
-    elif sys.platform.startswith('freebsd'):
+    elif sys.platform.startswith(('freebsd','openbsd')):
         main_posix('freebsd', '.so')
     elif sys.platform == 'darwin':
         main_posix('osx', '.dylib')
