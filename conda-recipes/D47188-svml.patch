@@ -548,7 +548,7 @@ index 5bcf0c0..cef0009 100644
 +#else
 +  StringRef SvmlPrefix("__svml");
 +#endif
-+  if (FuncName.startswith("__svml") && !TTI.isTypeLegal(RetTy))
++  if (FuncName.startswith(SvmlPrefix) && !TTI.isTypeLegal(RetTy))
 +    return Cost;
 +
    // If the corresponding vector cost is cheaper, return its cost.
