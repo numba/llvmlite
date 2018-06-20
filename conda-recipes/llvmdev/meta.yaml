@@ -1,23 +1,32 @@
 {% set shortversion = "6.0" %}
 {% set version = "6.0.0" %}
-{% set sha256 = "1ff53c915b4e761ef400b803f07261ade637b0c269d99569f18040f3dcee4408" %}
+
+{% if ppc64le %}
+{% set build_number = "0" %}
+{% else %}
 {% set build_number = "3" %}
+{% set sha256 = "1ff53c915b4e761ef400b803f07261ade637b0c269d99569f18040f3dcee4408" %}
+{% endif %}
+
 
 package:
   name: llvmdev
   version: {{ version }}
 
 source:
-  fn: llvm-{{ version }}.src.tar.xz
-  url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
-  sha256: {{ sha256 }}
+  fn: llvm-{{ version }}.src.tar.xz  # [not ppc64le]
+  url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz # [not ppc64le]
+  sha256: {{ sha256 }} # [not ppc64le]
+  # build PPC64LE from 6.0 release series tracking branch
+  git_url: https://github.com/llvm-mirror/llvm.git  # [ppc64le]
+  git_tag: release_60 # [ppc64le]
   patches:
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
     # Intel SVML optimizations
-    - ../intel-svml.patch
+    - ../intel-svml.patch # [not ppc64le]
     # https://reviews.llvm.org/D44140 Fix LLVM-C symbol export
-    - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch
+    - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch # [not ppc64le]
     # undefined behavior bug due to Twine usage
     - ../twine_cfg_undefined_behavior.patch
 
