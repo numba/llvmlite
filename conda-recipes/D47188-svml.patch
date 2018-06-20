@@ -536,13 +536,18 @@ diff --git a/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectori
 index 5bcf0c0..cef0009 100644
 --- a/lib/Transforms/Vectorize/LoopVectorize.cpp
 +++ b/lib/Transforms/Vectorize/LoopVectorize.cpp
-@@ -3974,6 +3974,12 @@ static unsigned getVectorCallCost(CallInst *CI, unsigned VF,
+@@ -3974,6 +3974,17 @@ static unsigned getVectorCallCost(CallInst *CI, unsigned VF,
    if (!TLI || !TLI->isFunctionVectorizable(FnName, VF) || CI->isNoBuiltin())
      return Cost;
  
 +  // this goes against LLVM coding philosophy, but it'll stop bleeding
 +  bool IgnoreMe;
 +  StringRef FuncName = TLI->getVectorizedFunction(FnName, VF, IgnoreMe, true);
++#if LLVM_ON_WIN32
++  StringRef SvmlPrefix("\0_svml", 6); // nobody knows why symbols are like this
++#else
++  StringRef SvmlPrefix("__svml");
++#endif
 +  if (FuncName.startswith("__svml") && !TTI.isTypeLegal(RetTy))
 +    return Cost;
 +
