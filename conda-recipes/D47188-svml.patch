@@ -1,36 +1,5 @@
-From cd3867b657afce84bc6af48f20f2d693afc72e28 Mon Sep 17 00:00:00 2001
-From: Stuart Archibald <sarchibald@anaconda.com>
-Date: Fri, 23 Mar 2018 11:21:58 +0000
-Subject: [PATCH] Enable Intel SVML transcendental math functions.
-
-This patch enables Intel SVML-enabled auto-vectorization for all
-the transcendental math functions.
----
- include/llvm/Analysis/TargetLibraryInfo.h       |  17 +++-
- include/llvm/IR/CMakeLists.txt                  |   4 +
- include/llvm/IR/CallingConv.h                   |   3 +
- include/llvm/IR/SVML.td                         |  58 ++++++++++++
- lib/Analysis/CMakeLists.txt                     |   1 +
- lib/Analysis/TargetLibraryInfo.cpp              | 106 ++++------------------
- lib/AsmParser/LLLexer.cpp                       |   1 +
- lib/AsmParser/LLParser.cpp                      |   2 +
- lib/AsmParser/LLToken.h                         |   1 +
- lib/IR/AsmWriter.cpp                            |   1 +
- lib/IR/Verifier.cpp                             |   1 +
- lib/Target/X86/X86CallingConv.td                |  59 +++++++++++-
- lib/Target/X86/X86ISelLowering.cpp              |   3 +-
- lib/Target/X86/X86RegisterInfo.cpp              |  34 +++++++
- lib/Target/X86/X86Subtarget.h                   |   1 +
- lib/Transforms/Vectorize/LoopVectorize.cpp      |   8 +-
- test/Transforms/LoopVectorize/X86/svml-calls.ll |  40 +++++++++
- utils/TableGen/CMakeLists.txt                   |   1 +
- utils/TableGen/SVMLEmitter.cpp                  | 114 ++++++++++++++++++++++++
- utils/TableGen/TableGen.cpp                     |   8 +-
- utils/TableGen/TableGenBackends.h               |   1 +
- utils/vim/syntax/llvm.vim                       |   1 +
- 22 files changed, 366 insertions(+), 99 deletions(-)
- create mode 100644 include/llvm/IR/SVML.td
- create mode 100644 utils/TableGen/SVMLEmitter.cpp
+From https://reviews.llvm.org/D47188 rebased on top of LLVM 6.0.0
+With additional hot-fix in LoopVectorize.cpp for numba/numba#3016
 
 diff --git a/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
 index a3fe834..124b81d 100644
@@ -109,10 +78,10 @@ index 84fe836..46700f0 100644
    };
 diff --git a/include/llvm/IR/SVML.td b/include/llvm/IR/SVML.td
 new file mode 100644
-index 0000000..f68c086
+index 0000000..90f2902
 --- /dev/null
 +++ b/include/llvm/IR/SVML.td
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,62 @@
 +//===-- Intel_SVML.td - Defines SVML call variants ---------*- tablegen -*-===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -144,7 +113,6 @@ index 0000000..f68c086
 +def cbrt       : SvmlVariant;
 +def cdfnorm    : SvmlVariant;
 +def cdfnorminv : SvmlVariant;
-+def ceil       : SvmlVariant;
 +def cosd       : SvmlVariant;
 +def cosh       : SvmlVariant;
 +def erf        : SvmlVariant;
@@ -154,23 +122,28 @@ index 0000000..f68c086
 +def exp10      : SvmlVariant;
 +def exp2       : SvmlVariant;
 +def expm1      : SvmlVariant;
-+def floor      : SvmlVariant;
-+def fmod       : SvmlVariant;
 +def hypot      : SvmlVariant;
 +def invsqrt    : SvmlVariant;
 +def log10      : SvmlVariant;
 +def log1p      : SvmlVariant;
 +def log2       : SvmlVariant;
-+def logb       : SvmlVariant;
-+def nearbyint  : SvmlVariant;
-+def rint       : SvmlVariant;
-+def round      : SvmlVariant;
 +def sind       : SvmlVariant;
 +def sinh       : SvmlVariant;
 +def sqrt       : SvmlVariant;
 +def tan        : SvmlVariant;
 +def tanh       : SvmlVariant;
-+def trunc      : SvmlVariant;
++
++// While SVML doesn't provide _ha versions of
++// the following symbols let's disable their vectorization.
++
++// def nearbyint  : SvmlVariant;
++// def logb       : SvmlVariant;
++// def floor      : SvmlVariant;
++// def fmod       : SvmlVariant;
++// def ceil       : SvmlVariant;
++// def trunc      : SvmlVariant;
++// def rint       : SvmlVariant;
++// def round      : SvmlVariant;
 diff --git a/lib/Analysis/CMakeLists.txt b/lib/Analysis/CMakeLists.txt
 index af2e30d..fa8aaac 100644
 --- a/lib/Analysis/CMakeLists.txt
@@ -560,10 +533,28 @@ index 37ffac1..8ad2131 100644
      // This convention allows using the Win64 convention on other targets.
      case CallingConv::Win64:
 diff --git a/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
-index 5bcf0c0..0c4f666 100644
+index 5bcf0c0..cef0009 100644
 --- a/lib/Transforms/Vectorize/LoopVectorize.cpp
 +++ b/lib/Transforms/Vectorize/LoopVectorize.cpp
-@@ -4917,6 +4917,7 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
+@@ -3974,6 +3974,17 @@ static unsigned getVectorCallCost(CallInst *CI, unsigned VF,
+   if (!TLI || !TLI->isFunctionVectorizable(FnName, VF) || CI->isNoBuiltin())
+     return Cost;
+ 
++  // this goes against LLVM coding philosophy, but it'll stop bleeding
++  bool IgnoreMe;
++  StringRef FuncName = TLI->getVectorizedFunction(FnName, VF, IgnoreMe, true);
++#if LLVM_ON_WIN32
++  StringRef SvmlPrefix("\0_svml", 6); // nobody knows why symbols are like this
++#else
++  StringRef SvmlPrefix("__svml");
++#endif
++  if (FuncName.startswith(SvmlPrefix) && !TTI.isTypeLegal(RetTy))
++    return Cost;
++
+   // If the corresponding vector cost is cheaper, return its cost.
+   unsigned VectorCallCost = TTI.getCallInstrCost(nullptr, RetTy, Tys);
+   if (VectorCallCost < Cost) {
+@@ -4917,6 +4923,7 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
        }
  
        Function *VectorF;
@@ -571,19 +562,17 @@ index 5bcf0c0..0c4f666 100644
        if (UseVectorIntrinsic) {
          // Use vector version of the intrinsic.
          Type *TysForDecl[] = {CI->getType()};
-@@ -4925,7 +4926,10 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
+@@ -4925,7 +4932,8 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
          VectorF = Intrinsic::getDeclaration(M, ID, TysForDecl);
        } else {
          // Use vector version of the library call.
 -        StringRef VFnName = TLI->getVectorizedFunction(FnName, VF);
-+        // TEMPORARY. For backporting (down to release 5.0.0) purposes let's use any() from FastMathFlags instead of 
-+        // still absent isFast(). It isn't equivalent for full mask but I think it's enough there
-+        bool IsFast = CI->getFastMathFlags().any();
++        bool IsFast = CI->getFastMathFlags().isFast();
 +        std::string VFnName = TLI->getVectorizedFunction(FnName, VF, FromSVML, IsFast);
          assert(!VFnName.empty() && "Vector function name is empty.");
          VectorF = M->getFunction(VFnName);
          if (!VectorF) {
-@@ -4944,7 +4948,7 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
+@@ -4944,7 +4952,7 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
  
        if (isa<FPMathOperator>(V))
          V->copyFastMathFlags(CI);
@@ -830,6 +819,3 @@ index 42a4cf3..9198a6f 100644
        \ internal
        \ linkonce
        \ linkonce_odr
--- 
-1.8.3.1
-

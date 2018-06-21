@@ -1,7 +1,7 @@
 {% set shortversion = "6.0" %}
 {% set version = "6.0.0" %}
 {% set sha256 = "1ff53c915b4e761ef400b803f07261ade637b0c269d99569f18040f3dcee4408" %}
-{% set build_number = "3" %}
+{% set build_number = "4" %}
 
 package:
   name: llvmdev
@@ -15,7 +15,7 @@ source:
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
     # Intel SVML optimizations
-    - ../intel-svml.patch
+    - ../D47188-svml.patch
     # https://reviews.llvm.org/D44140 Fix LLVM-C symbol export
     - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch
     # undefined behavior bug due to Twine usage
@@ -59,6 +59,7 @@ test:
     - python
   files:
     - cfg_test.ll
+    - numba-3016.ll
     - test_cfg_dot.py
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
@@ -74,6 +75,10 @@ test:
     # Test for ../twine_cfg_undefined_behavior.patch
     - $PREFIX/bin/opt -dot-cfg cfg_test.ll                   # [not win]
     - python test_cfg_dot.py                                 # [not win]
+
+    - opt -S -vector-library=SVML -mcpu=haswell -O3 numba-3016.ll -o out.ll
+    - findstr __svml_sin4 out.ll                             # [win]
+    - grep __svml_sin4 out.ll                                # [unix]
 
 about:
   home: http://llvm.org/
