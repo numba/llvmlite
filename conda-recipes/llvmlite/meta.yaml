@@ -19,13 +19,13 @@ requirements:
     # build.sh deals with it!
     - {{ compiler('c') }}    # [not osx]
     - {{ compiler('cxx') }}  # [not osx]
+    # The DLL build uses cmake on Windows
+    - cmake          # [win]
   host:
     - python
     # On channel https://anaconda.org/numba/
     - llvmdev 6.0*
     - vs2015_runtime # [win]
-    # The DLL build uses cmake on Windows
-    - cmake          # [win]
     - enum34         # [py27]
     # llvmdev is built with libz compression support
     - zlib           # [unix]
