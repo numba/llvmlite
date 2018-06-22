@@ -30,5 +30,5 @@ export PYTHONNOUSERSITE=1
 # Enables static linking of stdlibc++
 export LLVMLITE_CXX_STATIC_LINK=1
 
-python setup.py build --force
-python setup.py install
+$PYTHON setup.py build --force
+$PYTHON setup.py install
