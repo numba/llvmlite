@@ -239,7 +239,8 @@ class ObjectRef(object):
         self.close()
 
     def __del__(self):
-        self.close()
+        if self.close is not None:
+            self.close()
 
     def __bool__(self):
         return bool(self._ptr)
@@ -249,4 +250,3 @@ class ObjectRef(object):
     # XXX useful?
     def __hash__(self):
         return hash(ctypes.cast(self._ptr, ctypes.c_void_p).value)
-
