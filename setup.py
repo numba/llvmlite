@@ -162,6 +162,11 @@ install_requires = []
 if sys.version_info < (3, 4):
     install_requires.append('enum34')
 
+
+with open('README.rst') as f:
+    long_description = f.read()
+
+
 setup(name='llvmlite',
       description="lightweight wrapper around basic LLVM functionality",
       version=versioneer.get_version(),
@@ -185,4 +190,5 @@ setup(name='llvmlite',
       install_requires=install_requires,
       license="BSD",
       cmdclass=cmdclass,
+      long_description=long_description,
       )
