@@ -3,8 +3,10 @@ v0.24.0
 
 This release adds support for Python 3.7 and fixes some build issues. It also
 contains an updated SVML patch for the llvmdev package that works around some
-vectorization issues.
+vectorization issues. It also adds a selective LLVM 6.0.1 llvmdev build for the
+`ppc64le` architecture.
 
+* PR #371: LLVM 6.0.1 build based on RC and fixes for PPC64LE
 * PR #369: Recipe fixes for Conda Build 3
 * PR #363: Workaround for incorrect vectorization factor computed for SVML
   functions
