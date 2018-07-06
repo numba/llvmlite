@@ -6,6 +6,7 @@ contains an updated SVML patch for the llvmdev package that works around some
 vectorization issues. It also adds a selective LLVM 6.0.1 llvmdev build for the
 `ppc64le` architecture.
 
+* PR #374: Fix up broken patch selector
 * PR #373: Add long description from readme
 * PR #371: LLVM 6.0.1 build based on RC and fixes for PPC64LE
 * PR #369: Recipe fixes for Conda Build 3
