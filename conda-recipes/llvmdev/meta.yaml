@@ -28,7 +28,7 @@ source:
     # Intel SVML optimizations
     - ../D47188-svml.patch
     # https://reviews.llvm.org/D44140 Fix LLVM-C symbol export, backport to 6.0.0 from upstream
-    - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch [ version == '6.0.0' ]
+    - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch # [not ppc64le]
     # undefined behavior bug due to Twine usage
     - ../twine_cfg_undefined_behavior.patch
 
