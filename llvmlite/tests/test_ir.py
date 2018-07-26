@@ -1289,6 +1289,46 @@ class TestBuildInstructions(TestBase):
             "expected an integer type, got float",
             str(raises.exception))
 
+    def test_fma(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5)
+        b = ir.Constant(flt, 1)
+        c = ir.Constant(flt, 2)
+        fma = builder.fma(a, b, c, name='fma')
+        builder.ret(fma)
+        self.check_block(block, """\
+            my_block:
+                %"fma" = call float @"llvm.fma.f32"(float 0x4014000000000000, float 0x3ff0000000000000, float 0x4000000000000000)
+                ret float %"fma"
+            """)
+
+    def test_fma_wrongtype(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int32, 5)
+        b = ir.Constant(int32, 1)
+        c = ir.Constant(int32, 2)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.fma(a, b, c, name='fma')
+        self.assertIn(
+            "expected an floating point type, got i32",
+            str(raises.exception))
+
+    def test_fma_mixedtypes(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5)
+        b = ir.Constant(dbl, 1)
+        c = ir.Constant(flt, 2)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.fma(a, b, c, name='fma')
+        self.assertIn(
+            "expected types to be the same, got float, double, float",
+            str(raises.exception))
+
 
 class TestBuilderMisc(TestBase):
     """

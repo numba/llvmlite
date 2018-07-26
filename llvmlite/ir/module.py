@@ -155,7 +155,7 @@ class Module(object):
             raise NotImplementedError("unknown intrinsic %r with %d types"
                                       % (intrinsic, len(tys)))
 
-        if intrinsic in {'llvm.cttz', 'llvm.ctlz'}:
+        if intrinsic in {'llvm.cttz', 'llvm.ctlz', 'llvm.fma'}:
             suffixes = [tys[0].intrinsic_name]
         else:
             suffixes = [t.intrinsic_name for t in tys]
@@ -186,9 +186,15 @@ class Module(object):
                 fnty = types.FunctionType(tys[0], tys)
             else:
                 _error()
-        elif len(tys) == 3 and intrinsic in ('llvm.memcpy', 'llvm.memmove'):
-            tys = tys + [types.IntType(32), types.IntType(1)]
-            fnty = types.FunctionType(types.VoidType(), tys)
+        elif len(tys) == 3:
+            if intrinsic in ('llvm.memcpy', 'llvm.memmove'):
+                tys = tys + [types.IntType(32), types.IntType(1)]
+                fnty = types.FunctionType(types.VoidType(), tys)
+            elif intrinsic == 'llvm.fma':
+                tys = [tys[0]] * 3
+                fnty = types.FunctionType(tys[0], tys)
+            else:
+                _error()
         else:
             _error()
         return values.Function(self, fnty, name=name)
