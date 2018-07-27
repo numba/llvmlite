@@ -165,12 +165,11 @@ static linkage to LLVM, but there are several important reasons for this:
    llvmlite, and will stay isolated.
 
 #. *We need to support Windows + Python 2.7* - Python 2.7 extensions on
-   Windows need to be built with Visual Studio 2008 for ABI compatibility
-   reasons.  This presents a serious issue as VS2008 can no longer build
-   LLVM. The best workaround we have found (until the sunset of Python 2.7)
-   is to build LLVM and the llvmlite C wrapper with VS2015 and call it
-   through ctypes.  This is not idea, but practical experience has shown it
-   seems to work.
+   Windows needs to be built with Visual Studio 2008 for ABI compatibility
+   reasons.  This presents a serious issue as VS2008 can no longer build LLVM.
+   The best workaround we have found (until the sunset of Python 2.7) is to
+   build LLVM and the llvmlite C wrapper with VS2015 and call it through
+   ctypes.  This is not ideal, but experience has shown it seems to work.
 
 Static linkage of LLVM was definitely not our goal early in Numba development,
 but seems to have become the only workable solution given our constraints.
