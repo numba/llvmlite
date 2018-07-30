@@ -256,11 +256,13 @@ def _as_float(value):
     """
     return struct.unpack('f', struct.pack('f', value))[0]
 
+
 def _format_float_as_hex(value, packfmt, unpackfmt, numdigits):
     raw = struct.pack(packfmt, float(value))
     intrep = struct.unpack(unpackfmt, raw)[0]
     out = '{{0:#{0}x}}'.format(numdigits).format(intrep)
     return out
+
 
 def _format_double(value):
     """

@@ -81,9 +81,7 @@ The ValueRef class
 
    * .. attribute:: type
 
-        This value's LLVM type. An opaque object is returned that   
-        can be used with, for example, 
-        :meth:`TargetData.get_abi_size`.
+        This value's LLVM type as :class:`TypeRef` object.
 
    * .. attribute:: storage_class
 
