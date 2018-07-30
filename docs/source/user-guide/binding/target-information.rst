@@ -81,8 +81,8 @@ Classes
 
    * .. method:: get_abi_size(type)
 
-        Get the ABI-mandated size of the LLVM *type*, as returned 
-        by :attr:`ValueRef.type`. Returns an integer.
+        Get the ABI-mandated size of a :class:`TypeRef` object. 
+        Returns an integer.
 
    * .. method:: get_pointee_abi_size(type)
 

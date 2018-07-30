@@ -48,14 +48,24 @@ class TypeRef(ffi.ObjectRef):
     """
     @property
     def name(self):
+        """
+        Get type name
+        """
         return _decode_string(ffi.lib.LLVMPY_GetTypeName(self))
 
     @property
     def is_pointer(self):
+        """
+        Returns true is the type is a pointer type.
+        """
         return ffi.lib.LLVMPY_TypeIsPointer(self)
 
     @property
     def element_type(self):
+        """
+        Returns the pointed-to type. When the type is not a pointer,
+        raises exception.
+        """
         if not self.is_pointer:
             raise ValueError("Type {} is not a pointer".format(self))
         return TypeRef(ffi.lib.LLVMPY_GetElementType(self))

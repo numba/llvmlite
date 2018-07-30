@@ -24,6 +24,7 @@ implement Numba_'s JIT compiler.
    target-information
    modules
    value-references
+   type-references
    execution-engine
    optimization-passes
    analysis-utilities
