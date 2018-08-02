@@ -70,6 +70,13 @@ The ModuleRef class
         If found, a :class:`ValueRef` is returned. Otherwise, 
         :exc:`NameError` is raised.
 
+    * .. method:: get_type(name)
+
+        Get the struct type with the given *name* in this module.
+
+        If found, a :class:`TypeRef` is returned. Otherwise,
+        :exc:`NameError` is raised.
+
    * .. method:: link_in(other, preserve=False)
 
         Link the *other* module into this module, resolving 
@@ -100,6 +107,11 @@ The ModuleRef class
         An iterator over the global variables defined in this 
         module. Each global variable is a :class:`ValueRef` 
         instance.
+
+    * .. attribute:: struct_types
+
+        An iterator over the struct types defined in this module.
+        Each type is a :class:`TypeRef` instance.
 
    * .. attribute:: name
 
