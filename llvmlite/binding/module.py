@@ -242,6 +242,8 @@ class _TypesIterator(_Iterator):
             return TypeRef(vp)
         else:
             raise StopIteration
+    
+    next = __next__
 
     def _next(self):
         return ffi.lib.LLVMPY_TypesIterNext(self)
