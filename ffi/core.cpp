@@ -29,6 +29,16 @@ LLVMPY_GetGlobalContext() {
     return LLVMGetGlobalContext();
 }
 
+API_EXPORT(LLVMContextRef)
+LLVMPY_ContextCreate() {
+    return LLVMContextCreate();
+}
+
+API_EXPORT(void)
+LLVMPY_ContextDispose(LLVMContextRef context) {
+    return LLVMContextDispose(context);
+}
+
 API_EXPORT(void)
 LLVMPY_SetCommandLine(const char *name, const char *option)
 {

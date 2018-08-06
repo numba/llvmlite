@@ -6,33 +6,36 @@ from . import ffi
 from .linker import link_modules
 from .common import _decode_string, _encode_string
 from .value import ValueRef, TypeRef
+from .context import get_global_context
 
 
-def parse_assembly(llvmir):
+def parse_assembly(llvmir, context=None):
     """
     Create Module from a LLVM IR string
     """
-    context = ffi.lib.LLVMPY_GetGlobalContext()
+    if context is None:
+        context = get_global_context()
     llvmir = _encode_string(llvmir)
     strbuf = c_char_p(llvmir)
     with ffi.OutputString() as errmsg:
-        mod = ModuleRef(ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg))
+        mod = ModuleRef(ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg), context)
         if errmsg:
             mod.close()
             raise RuntimeError("LLVM IR parsing error\n{0}".format(errmsg))
     return mod
 
 
-def parse_bitcode(bitcode):
+def parse_bitcode(bitcode, context=None):
     """
     Create Module from a LLVM *bitcode* (a bytes object).
     """
-    context = ffi.lib.LLVMPY_GetGlobalContext()
+    if context is None:
+        context = get_global_context()
     buf = c_char_p(bitcode)
     bufsize = len(bitcode)
     with ffi.OutputString() as errmsg:
         mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(
-            context, buf, bufsize, errmsg))
+            context, buf, bufsize, errmsg), context)
         if errmsg:
             mod.close()
             raise RuntimeError(
@@ -44,6 +47,10 @@ class ModuleRef(ffi.ObjectRef):
     """
     A reference to a LLVM module.
     """
+
+    def __init__(self, module_ptr, context):
+        super(ModuleRef, self).__init__(module_ptr)
+        self._context = context
 
     def __str__(self):
         with ffi.OutputString() as outstr:
@@ -183,14 +190,14 @@ class ModuleRef(ffi.ObjectRef):
     @property
     def struct_types(self):
         """
-        Return an iterator over the struct types defined in 
+        Return an iterator over the struct types defined in
         the module. The iterator will yield a TypeRef.
         """
         it = ffi.lib.LLVMPY_ModuleTypesIter(self)
         return _TypesIterator(it, module=self)
 
     def clone(self):
-        return ModuleRef(ffi.lib.LLVMPY_CloneModule(self))
+        return ModuleRef(ffi.lib.LLVMPY_CloneModule(self), self._context)
 
 
 class _Iterator(ffi.ObjectRef):
@@ -259,8 +266,6 @@ ffi.lib.LLVMPY_ParseBitcode.argtypes = [ffi.LLVMContextRef,
                                         c_char_p, c_size_t,
                                         POINTER(c_char_p)]
 ffi.lib.LLVMPY_ParseBitcode.restype = ffi.LLVMModuleRef
-
-ffi.lib.LLVMPY_GetGlobalContext.restype = ffi.LLVMContextRef
 
 ffi.lib.LLVMPY_DisposeModule.argtypes = [ffi.LLVMModuleRef]
 

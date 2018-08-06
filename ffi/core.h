@@ -30,6 +30,9 @@ LLVMPY_DisposeString(const char *msg);
 API_EXPORT(LLVMContextRef)
 LLVMPY_GetGlobalContext();
 
+API_EXPORT(LLVMContextRef)
+LLVMPY_ContextCreate();
+
 } /* end extern "C" */
 
 

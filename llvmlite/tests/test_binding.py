@@ -174,9 +174,9 @@ class BaseTest(TestCase):
         # This will probably put any existing garbage in gc.garbage again
         del self.old_garbage
 
-    def module(self, asm=asm_sum):
+    def module(self, asm=asm_sum, context=None):
         asm = asm.format(triple=llvm.get_default_triple())
-        mod = llvm.parse_assembly(asm)
+        mod = llvm.parse_assembly(asm, context)
         return mod
 
     def glob(self, name='glob', mod=None):
@@ -243,6 +243,11 @@ class TestMisc(BaseTest):
         s = str(cm.exception)
         self.assertIn("parsing error", s)
         self.assertIn("invalid operand type", s)
+
+    def test_global_context(self):
+        gcontext1 = llvm.context.get_global_context()
+        gcontext2 = llvm.context.get_global_context()
+        assert gcontext1 == gcontext2
 
     def test_dylib_symbols(self):
         llvm.add_symbol("__xyzzy", 1234)
@@ -519,12 +524,15 @@ class TestModuleRef(BaseTest):
         self.assertIn("Invalid bitcode signature", str(cm.exception))
 
     def test_bitcode_roundtrip(self):
-        bc = self.module(asm=asm_mul).as_bitcode()
-        mod = llvm.parse_bitcode(bc)
+        # create a new context to avoid struct renaming
+        context1 = llvm.create_context()
+        bc = self.module(context=context1).as_bitcode()
+        context2 = llvm.create_context()
+        mod = llvm.parse_bitcode(bc, context2)
         self.assertEqual(mod.as_bitcode(), bc)
 
-        mod.get_function("mul")
-        mod.get_global_variable("mul_glob")
+        mod.get_function("sum")
+        mod.get_global_variable("glob")
 
     def test_cloning(self):
         m = self.module()
