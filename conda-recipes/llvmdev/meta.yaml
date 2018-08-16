@@ -47,19 +47,19 @@ requirements:
     # at build.sh time
     # Windows needs to build using vs2015_runtime
     # irrespective of python version
-    - {{ compiler('c') }} # [unix]
-    - {{ compiler('cxx') }} # [unix]
+    - {{ compiler('c') }} # [unix and not (armv6l or armv7l or aarch64)]
+    - {{ compiler('cxx') }} # [unix and not (armv6l or armv7l or aarch64)]
     - cmake
     # Needed to unpack the source tarball
     - m2w64-xz  # [py27 and win]
     # ninja not currently used, bld.bat needs an update
     - ninja  # [win]
     # Needed to build LLVM
-    - python
+    - python >=3
     # need vs2015_runtime to build, do not want it at run time
     # as extensions for py27 need vs2008
     - vs2015_runtime # [win]
-    - make # [unix]
+    - make # [unix and not (armv6l or armv7l or aarch64)]
   host:
     # needed for llc at runtime
     - zlib # [not win]
