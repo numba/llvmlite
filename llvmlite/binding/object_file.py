@@ -22,6 +22,12 @@ class ObjectFileRef(ffi.ObjectRef):
     def from_data(cls, data):
         return cls(ffi.lib.LLVMPY_CreateObjectFile(data, len(data)))
 
+    @classmethod
+    def from_path(cls, path):
+        with open(path, 'rb') as f:
+            data = f.read()
+        return cls(ffi.lib.LLVMPY_CreateObjectFile(data, len(data)))
+
     def sections(self):
         it = SectionIteratorRef(ffi.lib.LLVMPY_GetSections(self))
         while not it.is_end(self):

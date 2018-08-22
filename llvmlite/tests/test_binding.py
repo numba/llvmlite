@@ -12,6 +12,7 @@ import subprocess
 import sys
 import unittest
 from contextlib import contextmanager
+from tempfile import NamedTemporaryFile
 
 from llvmlite import six, ir
 from llvmlite import binding as llvm
@@ -1288,6 +1289,64 @@ class TestObjectFile(BaseTest):
                 self.assertTrue(len(s.data()) > 0)
                 break
         self.assertTrue(has_text)
+
+    def test_add_object_file(self):
+        target_machine = self.target_machine()
+        mod = self.module()
+        obj_bin = target_machine.emit_object(mod)
+        obj = llvm.ObjectFileRef.from_data(obj_bin)
+
+        main_mod = self.module("""
+        ;ModuleID = <string>
+        target triple = "{triple}"
+
+        declare i32 @sum(i32 %.1, i32 %.2)
+
+        define i32 @sum_twice(i32 %.1, i32 %.2) {{
+            %.3 = add i32 %.1, %.2
+            %.4 = add i32 %.3, %.3
+            ret i32 %.4
+        }}
+        """)
+
+        jit = llvm.create_mcjit_compiler(main_mod, target_machine)
+
+        jit.add_object_file(obj)
+
+        sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
+            jit.get_function_address("sum_twice"))
+
+        assert sum_twice(2, 3) == 10
+
+    def test_add_object_file_from_filesystem(self):
+        target_machine = self.target_machine()
+        mod = self.module()
+        obj_bin = target_machine.emit_object(mod)
+        with NamedTemporaryFile('wb') as f:
+            f.write(obj_bin)
+            f.flush()
+
+            main_mod = self.module("""
+            ;ModuleID = <string>
+            target triple = "{triple}"
+
+            declare i32 @sum(i32 %.1, i32 %.2)
+
+            define i32 @sum_twice(i32 %.1, i32 %.2) {{
+                %.3 = add i32 %.1, %.2
+                %.4 = add i32 %.3, %.3
+                ret i32 %.4
+            }}
+            """)
+
+            jit = llvm.create_mcjit_compiler(main_mod, target_machine)
+
+            jit.add_object_file(f.name)
+
+        sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
+            jit.get_function_address("sum_twice"))
+
+        assert sum_twice(2, 3) == 10
 
 
 if __name__ == "__main__":

@@ -18,7 +18,6 @@ namespace llvm {
       return reinterpret_cast<LLVMSectionIteratorRef>
         (const_cast<object::section_iterator*>(SI));
     }
-
 } // llvm
 
 extern "C" {
