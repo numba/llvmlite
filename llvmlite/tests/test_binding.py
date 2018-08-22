@@ -1274,29 +1274,8 @@ class TestInlineAsm(BaseTest):
 
 
 class TestObjectFile(BaseTest):
-    def test_object_file(self):
-        target_machine = self.target_machine()
-        mod = self.module()
-        obj_bin = target_machine.emit_object(mod)
-        obj = llvm.ObjectFileRef.from_data(obj_bin)
-        # Check that we have a text section, and that she has a name and data
-        has_text = False
-        for s in obj.sections():
-            if s.is_text():
-                has_text = True
-                self.assertIsNotNone(s.name())
-                self.assertTrue(s.size() > 0)
-                self.assertTrue(len(s.data()) > 0)
-                break
-        self.assertTrue(has_text)
 
-    def test_add_object_file(self):
-        target_machine = self.target_machine()
-        mod = self.module()
-        obj_bin = target_machine.emit_object(mod)
-        obj = llvm.ObjectFileRef.from_data(obj_bin)
-
-        main_mod = self.module("""
+    mod_asm = """
         ;ModuleID = <string>
         target triple = "{triple}"
 
@@ -1307,9 +1286,36 @@ class TestObjectFile(BaseTest):
             %.4 = add i32 %.3, %.3
             ret i32 %.4
         }}
-        """)
+    """
 
-        jit = llvm.create_mcjit_compiler(main_mod, target_machine)
+    def test_object_file(self):
+        target_machine = self.target_machine()
+        mod = self.module()
+        obj_bin = target_machine.emit_object(mod)
+        obj = llvm.ObjectFileRef.from_data(obj_bin)
+        # Check that we have a text section, and that she has a name and data
+        has_text = False
+        last_address = -1
+        for s in obj.sections():
+            if s.is_text():
+                has_text = True
+                self.assertIsNotNone(s.name())
+                self.assertTrue(s.size() > 0)
+                self.assertTrue(len(s.data()) > 0)
+                self.assertIsNotNone(s.address())
+                self.assertTrue(last_address < s.address())
+                last_address = s.address()
+                break
+        self.assertTrue(has_text)
+
+    def test_add_object_file(self):
+        target_machine = self.target_machine()
+        mod = self.module()
+        obj_bin = target_machine.emit_object(mod)
+        obj = llvm.ObjectFileRef.from_data(obj_bin)
+
+        jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
+            target_machine)
 
         jit.add_object_file(obj)
 
@@ -1326,20 +1332,8 @@ class TestObjectFile(BaseTest):
             f.write(obj_bin)
             f.flush()
 
-            main_mod = self.module("""
-            ;ModuleID = <string>
-            target triple = "{triple}"
-
-            declare i32 @sum(i32 %.1, i32 %.2)
-
-            define i32 @sum_twice(i32 %.1, i32 %.2) {{
-                %.3 = add i32 %.1, %.2
-                %.4 = add i32 %.3, %.3
-                ret i32 %.4
-            }}
-            """)
-
-            jit = llvm.create_mcjit_compiler(main_mod, target_machine)
+            jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
+                target_machine)
 
             jit.add_object_file(f.name)
 

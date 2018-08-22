@@ -27,6 +27,7 @@ implement Numba_'s JIT compiler.
    value-references
    type-references
    execution-engine
+   object-file
    optimization-passes
    analysis-utilities
    examples

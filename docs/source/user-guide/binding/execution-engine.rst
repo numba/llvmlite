@@ -72,6 +72,14 @@ The ExecutionEngine class
         releasing the resources owned by the module without
         destroying the execution engine.
 
+    * .. method:: add_object_file(object_file)
+
+        Add the symbols from the specified object file to the execution
+        engine.
+
+        * *object_file* str or :class:`ObjectFileRef`: a path to the object file
+            or a object file instance
+
    * .. method:: set_object_cache(notify_func=None, getbuffer_func=None)
 
         Set the object cache callbacks for this engine.

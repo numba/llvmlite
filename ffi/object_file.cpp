@@ -64,6 +64,12 @@ LLVMPY_GetSectionName(LLVMSectionIteratorRef SI)
   return LLVMGetSectionName(SI);
 }
 
+API_EXPORT(uint64_t)
+LLVMPY_GetSectionAddress(LLVMSectionIteratorRef SI)
+{
+    return LLVMGetSectionAddress(SI);
+}
+
 API_EXPORT(const char*)
 LLVMPY_GetSectionContents(LLVMSectionIteratorRef SI)
 {

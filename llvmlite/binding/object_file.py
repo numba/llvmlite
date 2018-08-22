@@ -8,6 +8,8 @@ class SectionIteratorRef(ffi.ObjectRef):
         return ffi.lib.LLVMPY_IsSectionText(self)
     def size(self):
         return ffi.lib.LLVMPY_GetSectionSize(self)
+    def address(self):
+        return ffi.lib.LLVMPY_GetSectionAddress(self)
     def data(self):
         return string_at(ffi.lib.LLVMPY_GetSectionContents(self), self.size())
     def is_end(self, object_file):
@@ -57,6 +59,9 @@ ffi.lib.LLVMPY_GetSectionName.restype  = c_char_p
 
 ffi.lib.LLVMPY_GetSectionSize.argtypes = [ffi.LLVMSectionIteratorRef]
 ffi.lib.LLVMPY_GetSectionSize.restype  = c_uint64
+
+ffi.lib.LLVMPY_GetSectionAddress.argtypes = [ffi.LLVMSectionIteratorRef]
+ffi.lib.LLVMPY_GetSectionAddress.restype  = c_uint64
 
 ffi.lib.LLVMPY_GetSectionContents.argtypes = [ffi.LLVMSectionIteratorRef]
 ffi.lib.LLVMPY_GetSectionContents.restype  = c_char_p
