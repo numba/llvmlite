@@ -7,7 +7,7 @@ Object file
 The object file is an abstraction of LLVM representation of
 the static object code files. This class provides methods to examine
 the contents of the object files. It also can be passed as parameter to
-:meth:`ExecutionEngineRef.add_object_file` to make the symbols available
+:meth:`ExecutionEngine.add_object_file` to make the symbols available
 to the JIT.
 
 The ObjectFileRef class
