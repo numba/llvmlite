@@ -253,6 +253,8 @@ class _TypesIterator(_Iterator):
     def _next(self):
         return ffi.lib.LLVMPY_TypesIterNext(self)
 
+    next = __next__
+
 
 # =============================================================================
 # Set function FFI
