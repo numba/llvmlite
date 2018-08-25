@@ -1330,7 +1330,7 @@ class TestObjectFile(BaseTest):
         obj_bin = target_machine.emit_object(mod)
         temp_desc, temp_path = mkstemp()
         try:
-            f = open(temp_desc, "wb")
+            f = os.fdopen(temp_desc, "wb")
             f.write(obj_bin)
             f.flush()
 
