@@ -12,7 +12,7 @@ import subprocess
 import sys
 import unittest
 from contextlib import contextmanager
-from tempfile import NamedTemporaryFile
+from tempfile import mkstemp
 
 from llvmlite import six, ir
 from llvmlite import binding as llvm
@@ -1328,14 +1328,20 @@ class TestObjectFile(BaseTest):
         target_machine = self.target_machine()
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
-        with NamedTemporaryFile('wb') as f:
+        temp_desc, temp_path = mkstemp()
+        try:
+            f = open(temp_desc, "wb")
             f.write(obj_bin)
             f.flush()
 
             jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
                 target_machine)
 
-            jit.add_object_file(f.name)
+            f.close()
+
+            jit.add_object_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
             jit.get_function_address("sum_twice"))
