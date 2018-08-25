@@ -11,6 +11,8 @@ LLVMContextRef
 A wrapper around LLVMContext. Should not be instantiated directly, use the
 following methods:
 
+.. class:: LLVMContextRef
+
 * .. function:: create_context():
 
     Create a new LLVMContext instance.
