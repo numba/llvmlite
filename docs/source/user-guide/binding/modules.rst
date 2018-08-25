@@ -43,7 +43,7 @@ You can create a module from the following factory functions:
      LLVM bitcode of a module. If parsing is successful, a new
      :class:`ModuleRef` instance is returned.
 
-     * context: an instance of :class:`ContextRef`.
+     * context: an instance of :class:`LLVMContextRef`.
 
         Defaults to the global context.
 
