@@ -78,7 +78,8 @@ The ExecutionEngine class
         engine.
 
         * *object_file* str or :class:`ObjectFileRef`: a path to the object file
-            or a object file instance
+            or a object file instance. Object file instance is not usable after this
+            call.
 
    * .. method:: set_object_cache(notify_func=None, getbuffer_func=None)
 

@@ -1329,15 +1329,17 @@ class TestObjectFile(BaseTest):
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
         temp_desc, temp_path = mkstemp()
+
         try:
-            f = os.fdopen(temp_desc, "wb")
-            f.write(obj_bin)
-            f.flush()
+            try:
+                f = os.fdopen(temp_desc, "wb")
+                f.write(obj_bin)
+                f.flush()
+            finally:
+                f.close()
 
             jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
                 target_machine)
-
-            f.close()
 
             jit.add_object_file(temp_path)
         finally:
