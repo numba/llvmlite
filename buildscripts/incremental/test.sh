@@ -12,5 +12,11 @@ make SPHINXOPTS=-Wn clean html
 # Run test suite
 cd ..
 python --version
-python runtests.py -v
+
+if [ "$WHEEL" == "yes" ]; then
+    cd dist
+    python -m llvmlite.tests -v
+else
+    python runtests.py -v
+fi
 if [ "$RUN_COVERAGE" == "yes" ]; then coverage run runtests.py; fi

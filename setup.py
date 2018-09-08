@@ -159,8 +159,10 @@ packages = ['llvmlite',
             ]
 
 install_requires = []
+setup_requires = []
 if sys.version_info < (3, 4):
     install_requires.append('enum34')
+    setup_requires.append('enum34')
 
 
 with open('README.rst') as f:
@@ -188,6 +190,7 @@ setup(name='llvmlite',
       download_url="https://github.com/numba/llvmlite",
       packages=packages,
       install_requires=install_requires,
+      setup_requires=setup_requires,
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,

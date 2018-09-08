@@ -41,7 +41,7 @@ if [ "$PYTHON" == "pypy" ]; then
   $PIP_INSTALL sphinx==1.5.1 sphinx_rtd_theme pygments
 else
   $CONDA_INSTALL sphinx=1.5.1 sphinx_rtd_theme pygments
-  if [ "$PYTHON" \< "3.4" ]; then
+  if [ "$PYTHON" \< "3.4" && "$WHEEL" != "yes" ]; then
     $CONDA_INSTALL enum34
   fi
 fi

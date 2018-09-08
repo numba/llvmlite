@@ -34,4 +34,10 @@ fi
 # Make sure any error below is reported as such
 set -v -e
 
-python setup.py build
+if [ "$WHEEL" == "yes" ]; then
+  conda install wheel
+  python setup.py bdist_wheel
+  pip install dist/*.whl
+else
+  python setup.py build
+fi
