@@ -56,6 +56,17 @@ def find_win32_generator():
     generators = []
     if os.environ.get("CMAKE_GENERATOR"):
         generators.append(os.environ.get("CMAKE_GENERATOR"))
+
+    # Drop generators that are too old
+    vspat = re.compile('Visual Studio (\d+)')
+    def drop_old_vs(g):
+        m = vspat.match(g)
+        if m is None:
+            return True  # keep those we don't recognize
+        ver = int(m.group(1))
+        return ver >= 14
+    generators = list(filter(drop_old_vs, generators))
+
     generators.append('Visual Studio 14 2015' + (' Win64' if is_64bit else ''))
     for generator in generators:
         build_dir = tempfile.mkdtemp()
