@@ -53,9 +53,11 @@ def find_win32_generator():
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
     # LLVM 4.0+ needs VS 2015 minimum.
-    for generator in ['Visual Studio 14 2015']:
-        if is_64bit:
-            generator += ' Win64'
+    generators = []
+    if os.environ.get("CMAKE_GENERATOR"):
+        generators.append(os.environ.get("CMAKE_GENERATOR"))
+    generators.append('Visual Studio 14 2015' + (' Win64' if is_64bit else ''))
+    for generator in generators:
         build_dir = tempfile.mkdtemp()
         print("Trying generator %r" % (generator,))
         try:
