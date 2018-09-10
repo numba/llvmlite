@@ -1,3 +1,19 @@
+v0.25.0
+-------
+
+This release adds support for the FMA instruction, and has some documentation
+and build improvements.  Starting with this release, we are including
+ARMv8 (AArch64) testig in our CI process.
+
+* PR #391: Fix broken win32 py2.7 build.
+* PR #387: protect against empty features in list
+* PR #384: Read CMAKE_GENERATOR which conda-build sets
+* PR #382: rewrite of install instructions, calling out LLVM build challenges
+* PR #380: Add FMA intrinsic support
+* PR #379: ARM aarch64 test on jetson tx2
+* PR #378: add slack, drop flowdock
+
+
 v0.24.0
 -------
 
