@@ -6,6 +6,7 @@ Build script for the shared library providing the C ABI bridge to LLVM.
 from __future__ import print_function
 
 from ctypes.util import find_library
+import re
 import os
 import subprocess
 import shutil
