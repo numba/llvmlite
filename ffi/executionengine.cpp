@@ -153,15 +153,24 @@ LLVMPY_TryAllocateExecutableMemory(void)
 API_EXPORT(bool)
 LLVMPY_EnableJITEvents(LLVMExecutionEngineRef EE)
 {
+    llvm::JITEventListener *listener;
+    bool result = false;
+
 #ifdef __linux__
-    llvm::JITEventListener *listener = llvm::JITEventListener::createOProfileJITEventListener();
+    listener = llvm::JITEventListener::createOProfileJITEventListener();
     // if listener is null, then LLVM was not compiled for OProfile JIT events.
     if (listener) {
         llvm::unwrap(EE)->RegisterJITEventListener(listener);
-        return true;
+        result = true;
     }
 #endif
-    return false;
+    listener = llvm::JITEventListener::createIntelJITEventListener();
+    // if listener is null, then LLVM was not compiled for Intel JIT events.
+    if (listener) {
+        llvm::unwrap(EE)->RegisterJITEventListener(listener);
+        result = true;
+    }
+    return result;
 }
 
 

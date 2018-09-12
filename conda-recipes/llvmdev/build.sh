@@ -51,7 +51,8 @@ if [[ $(uname) == Darwin ]]; then
   # this causes link failures building the santizers since they respect DARWIN_osx_ARCHS. We may as well
   # save some compilation time by setting this for all of our llvm builds.
   _cmake_config+=(-DDARWIN_osx_ARCHS=x86_64)
-#elif [[ $(uname) == Linux ]]; then
+elif [[ $(uname) == Linux ]]; then
+  _cmake_config+=(-DLLVM_USE_INTEL_JITEVENTS=ON)
 #  _cmake_config+=(-DLLVM_BINUTILS_INCDIR=${PREFIX}/lib/gcc/${cpu_arch}-${vendor}-linux-gnu/${compiler_ver}/plugin/include)
 fi
 
