@@ -1907,6 +1907,12 @@ class TestConstant(TestBase):
         self.assertEqual(str(c),
             'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0, i32 1)')
         self.assertEqual(c.type, ir.PointerType(int1))
+        const = ir.Constant(tp.as_pointer(), None)
+        c2  = const.gep([ir.Constant(int32, 0)])
+        self.assertEqual(str(c2),
+            'getelementptr ({float, i1}, {float, i1}* null, i32 0)')
+        self.assertEqual(c.type, ir.PointerType(int1))
+
 
     def test_gep_addrspace_globalvar(self):
         m = self.module()
