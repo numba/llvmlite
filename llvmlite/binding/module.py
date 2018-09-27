@@ -5,7 +5,7 @@ from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
 from . import ffi
 from .linker import link_modules
 from .common import _decode_string, _encode_string
-from .value import ValueRef
+from .value import ValueRef, TypeRef
 
 
 def parse_assembly(llvmir):
@@ -31,10 +31,12 @@ def parse_bitcode(bitcode):
     buf = c_char_p(bitcode)
     bufsize = len(bitcode)
     with ffi.OutputString() as errmsg:
-        mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(context, buf, bufsize, errmsg))
+        mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(
+            context, buf, bufsize, errmsg))
         if errmsg:
             mod.close()
-            raise RuntimeError("LLVM bitcode parsing error\n{0}".format(errmsg))
+            raise RuntimeError(
+                "LLVM bitcode parsing error\n{0}".format(errmsg))
     return mod
 
 
@@ -85,6 +87,16 @@ class ModuleRef(ffi.ObjectRef):
         if not p:
             raise NameError(name)
         return ValueRef(p, module=self)
+
+    def get_struct_type(self, name):
+        """
+        Get a TypeRef pointing to a structure type named *name*.
+        NameError is raised if the struct type isn't found.
+        """
+        p = ffi.lib.LLVMPY_GetNamedStructType(self, _encode_string(name))
+        if not p:
+            raise NameError(name)
+        return TypeRef(p)
 
     def verify(self):
         """
@@ -168,6 +180,15 @@ class ModuleRef(ffi.ObjectRef):
         it = ffi.lib.LLVMPY_ModuleFunctionsIter(self)
         return _FunctionsIterator(it, module=self)
 
+    @property
+    def struct_types(self):
+        """
+        Return an iterator over the struct types defined in
+        the module. The iterator will yield a TypeRef.
+        """
+        it = ffi.lib.LLVMPY_ModuleTypesIter(self)
+        return _TypesIterator(it, module=self)
+
     def clone(self):
         return ModuleRef(ffi.lib.LLVMPY_CloneModule(self))
 
@@ -210,6 +231,24 @@ class _FunctionsIterator(_Iterator):
         return ffi.lib.LLVMPY_FunctionsIterNext(self)
 
 
+class _TypesIterator(_Iterator):
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeTypesIter(self)
+
+    def __next__(self):
+        vp = self._next()
+        if vp:
+            return TypeRef(vp)
+        else:
+            raise StopIteration
+
+    next = __next__
+
+    def _next(self):
+        return ffi.lib.LLVMPY_TypesIterNext(self)
+
+
 # =============================================================================
 # Set function FFI
 
@@ -250,6 +289,9 @@ ffi.lib.LLVMPY_SetTarget.argtypes = [ffi.LLVMModuleRef, c_char_p]
 ffi.lib.LLVMPY_GetNamedGlobalVariable.argtypes = [ffi.LLVMModuleRef, c_char_p]
 ffi.lib.LLVMPY_GetNamedGlobalVariable.restype = ffi.LLVMValueRef
 
+ffi.lib.LLVMPY_GetNamedStructType.argtypes = [ffi.LLVMModuleRef, c_char_p]
+ffi.lib.LLVMPY_GetNamedStructType.restype = ffi.LLVMTypeRef
+
 ffi.lib.LLVMPY_ModuleGlobalsIter.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_ModuleGlobalsIter.restype = ffi.LLVMGlobalsIterator
 
@@ -261,10 +303,18 @@ ffi.lib.LLVMPY_GlobalsIterNext.restype = ffi.LLVMValueRef
 ffi.lib.LLVMPY_ModuleFunctionsIter.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_ModuleFunctionsIter.restype = ffi.LLVMFunctionsIterator
 
+ffi.lib.LLVMPY_ModuleTypesIter.argtypes = [ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_ModuleTypesIter.restype = ffi.LLVMTypesIterator
+
 ffi.lib.LLVMPY_DisposeFunctionsIter.argtypes = [ffi.LLVMFunctionsIterator]
+
+ffi.lib.LLVMPY_DisposeTypesIter.argtypes = [ffi.LLVMTypesIterator]
 
 ffi.lib.LLVMPY_FunctionsIterNext.argtypes = [ffi.LLVMFunctionsIterator]
 ffi.lib.LLVMPY_FunctionsIterNext.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_TypesIterNext.argtypes = [ffi.LLVMTypesIterator]
+ffi.lib.LLVMPY_TypesIterNext.restype = ffi.LLVMTypeRef
 
 ffi.lib.LLVMPY_CloneModule.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_CloneModule.restype = ffi.LLVMModuleRef

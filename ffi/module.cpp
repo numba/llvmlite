@@ -3,6 +3,7 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/Analysis.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/TypeFinder.h"
 #include "core.h"
 
 
@@ -35,6 +36,26 @@ struct FunctionsIterator {
 struct OpaqueFunctionsIterator;
 typedef OpaqueFunctionsIterator* LLVMFunctionsIteratorRef;
 
+/* module types iterator */
+class TypesIterator {
+private:
+    llvm::TypeFinder finder;
+    using const_iterator = llvm::TypeFinder::const_iterator;
+    const_iterator cur;
+public:
+    TypesIterator(llvm::Module& m, bool namedOnly) : finder(llvm::TypeFinder()) {
+        finder.run(m, namedOnly);
+        cur = finder.begin();
+     }
+    const llvm::Type* next() {
+        if (cur != finder.end()) {
+            return *cur++;
+        }
+        return nullptr;
+    }
+};
+
+typedef TypesIterator* LLVMTypesIteratorRef;
 
 //
 // Local helper functions
@@ -60,6 +81,16 @@ wrap(FunctionsIterator* GI){
 static FunctionsIterator*
 unwrap(LLVMFunctionsIteratorRef GI){
     return reinterpret_cast<FunctionsIterator *>(GI);
+}
+
+static LLVMTypesIteratorRef
+wrap(TypesIterator* TyI) {
+    return reinterpret_cast<LLVMTypesIteratorRef>(TyI);
+}
+
+static TypesIterator*
+unwrap(LLVMTypesIteratorRef TyI) {
+    return reinterpret_cast<TypesIterator*>(TyI);
 }
 
 }  // end namespace llvm
@@ -117,6 +148,13 @@ LLVMPY_GetNamedGlobalVariable(LLVMModuleRef M,
 {
     using namespace llvm;
     return wrap(unwrap(M)->getGlobalVariable(Name));
+}
+
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GetNamedStructType(LLVMModuleRef M,
+                        const char *Name)
+{
+    return LLVMGetTypeByName(M, Name);
 }
 
 
@@ -177,6 +215,14 @@ LLVMPY_ModuleFunctionsIter(LLVMModuleRef M)
                                       mod->end()));
 }
 
+API_EXPORT(LLVMTypesIteratorRef)
+LLVMPY_ModuleTypesIter(LLVMModuleRef M)
+{
+    llvm::Module* mod = llvm::unwrap(M);
+    auto* iter = new TypesIterator(*mod, false);
+    return llvm::wrap(iter);
+}
+
 
 /*
   These functions return NULL if we are at the end
@@ -205,6 +251,12 @@ LLVMPY_FunctionsIterNext(LLVMFunctionsIteratorRef GI)
     }
 }
 
+API_EXPORT(LLVMTypeRef)
+LLVMPY_TypesIterNext(LLVMTypesIteratorRef TyI)
+{
+    return llvm::wrap(llvm::unwrap(TyI)->next());
+}
+
 API_EXPORT(void)
 LLVMPY_DisposeGlobalsIter(LLVMGlobalsIteratorRef GI)
 {
@@ -216,6 +268,14 @@ LLVMPY_DisposeFunctionsIter(LLVMFunctionsIteratorRef GI)
 {
     delete llvm::unwrap(GI);
 }
+
+API_EXPORT(void)
+LLVMPY_DisposeTypesIter(LLVMTypesIteratorRef TyI)
+{
+    delete llvm::unwrap(TyI);
+}
+
+
 
 API_EXPORT(LLVMModuleRef)
 LLVMPY_CloneModule(LLVMModuleRef M)
