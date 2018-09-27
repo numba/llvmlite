@@ -88,7 +88,7 @@ class ModuleRef(ffi.ObjectRef):
             raise NameError(name)
         return ValueRef(p, module=self)
 
-    def get_type(self, name):
+    def get_struct_type(self, name):
         """
         Get a TypeRef pointing to a structure type named *name*.
         NameError is raised if the struct type isn't found.
@@ -183,7 +183,7 @@ class ModuleRef(ffi.ObjectRef):
     @property
     def struct_types(self):
         """
-        Return an iterator over the struct types defined in 
+        Return an iterator over the struct types defined in
         the module. The iterator will yield a TypeRef.
         """
         it = ffi.lib.LLVMPY_ModuleTypesIter(self)
@@ -242,7 +242,7 @@ class _TypesIterator(_Iterator):
             return TypeRef(vp)
         else:
             raise StopIteration
-    
+
     next = __next__
 
     def _next(self):

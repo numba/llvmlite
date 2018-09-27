@@ -418,9 +418,9 @@ class TestModuleRef(BaseTest):
         del mod
         str(fn.module)
 
-    def test_get_type(self):
+    def test_get_struct_type(self):
         mod = self.module()
-        st_ty = mod.get_type("struct.glob_type")
+        st_ty = mod.get_struct_type("struct.glob_type")
         self.assertEquals(st_ty.name, "struct.glob_type")
         # also match struct names of form "%struct.glob_type.{some_index}"
         self.assertIsNotNone(re.match(
@@ -428,7 +428,7 @@ class TestModuleRef(BaseTest):
             str(st_ty)))
 
         with self.assertRaises(NameError):
-            mod.get_type("struct.doesnt_exist")
+            mod.get_struct_type("struct.doesnt_exist")
 
     def test_get_global_variable(self):
         mod = self.module()
