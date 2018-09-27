@@ -64,7 +64,8 @@ def get_host_cpu_features():
         content = str(out)
         if content:  # protect against empty string
             for feat in content.split(','):
-                outdict[feat[1:]] = flag_map[feat[0]]
+                if feat:  # protect against empty feature
+                    outdict[feat[1:]] = flag_map[feat[0]]
         return outdict
 
 

@@ -18,7 +18,9 @@ def parse_assembly(llvmir, context=None):
     llvmir = _encode_string(llvmir)
     strbuf = c_char_p(llvmir)
     with ffi.OutputString() as errmsg:
-        mod = ModuleRef(ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg), context)
+        mod = ModuleRef(
+            ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg),
+            context)
         if errmsg:
             mod.close()
             raise RuntimeError("LLVM IR parsing error\n{0}".format(errmsg))
@@ -95,7 +97,7 @@ class ModuleRef(ffi.ObjectRef):
             raise NameError(name)
         return ValueRef(p, module=self)
 
-    def get_type(self, name):
+    def get_struct_type(self, name):
         """
         Get a TypeRef pointing to a structure type named *name*.
         NameError is raised if the struct type isn't found.

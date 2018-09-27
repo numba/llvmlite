@@ -78,7 +78,7 @@ The ModuleRef class
         If found, a :class:`ValueRef` is returned. Otherwise,
         :exc:`NameError` is raised.
 
-    * .. method:: get_type(name)
+    * .. method:: get_struct_type(name)
 
         Get the struct type with the given *name* in this module.
 

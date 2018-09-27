@@ -6,6 +6,7 @@ Build script for the shared library providing the C ABI bridge to LLVM.
 from __future__ import print_function
 
 from ctypes.util import find_library
+import re
 import os
 import subprocess
 import shutil
@@ -53,9 +54,22 @@ def find_win32_generator():
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
     # LLVM 4.0+ needs VS 2015 minimum.
-    for generator in ['Visual Studio 14 2015']:
-        if is_64bit:
-            generator += ' Win64'
+    generators = []
+    if os.environ.get("CMAKE_GENERATOR"):
+        generators.append(os.environ.get("CMAKE_GENERATOR"))
+
+    # Drop generators that are too old
+    vspat = re.compile('Visual Studio (\d+)')
+    def drop_old_vs(g):
+        m = vspat.match(g)
+        if m is None:
+            return True  # keep those we don't recognize
+        ver = int(m.group(1))
+        return ver >= 14
+    generators = list(filter(drop_old_vs, generators))
+
+    generators.append('Visual Studio 14 2015' + (' Win64' if is_64bit else ''))
+    for generator in generators:
         build_dir = tempfile.mkdtemp()
         print("Trying generator %r" % (generator,))
         try:
