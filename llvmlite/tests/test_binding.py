@@ -916,6 +916,26 @@ class TestTargetData(BaseTest):
         glob = self.glob()
         self.assertEqual(td.get_abi_size(glob.type), 8)
 
+    def test_get_pointee_abi_size(self):
+        td = self.target_data()
+
+        glob = self.glob()
+        self.assertEqual(td.get_pointee_abi_size(glob.type), 4)
+
+        glob = self.glob("glob_struct")
+        self.assertEqual(td.get_pointee_abi_size(glob.type), 24)
+
+    def test_get_struct_element_offset(self):
+        td = self.target_data()
+        glob = self.glob("glob_struct")
+
+        with self.assertRaises(ValueError):
+            td.get_element_offset(glob.type, 0)
+
+        struct_type = glob.type.element_type
+        self.assertEqual(td.get_element_offset(struct_type, 0), 0)
+        self.assertEqual(td.get_element_offset(struct_type, 1), 8)
+
 
 class TestTargetMachine(BaseTest):
 
