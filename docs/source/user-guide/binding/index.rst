@@ -22,6 +22,7 @@ implement Numba_'s JIT compiler.
    initialization-finalization
    dynamic-libraries
    target-information
+   context
    modules
    value-references
    type-references

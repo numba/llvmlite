@@ -24,20 +24,28 @@ Factory functions
 
 You can create a module from the following factory functions:
 
-* .. function:: parse_assembly(llvmir)
+* .. function:: parse_assembly(llvmir, context=None)
 
      Parse the given *llvmir*, a string containing some LLVM IR
      code. If parsing is successful, a new :class:`ModuleRef`
      instance is returned.
 
+     * context: an instance of :class:`LLVMContextRef`.
+
+        Defaults to the global context.
+
      EXAMPLE: You can obtain *llvmir* by calling ``str()`` on an
      :class:`llvmlite.ir.Module` object.
 
-* .. function:: parse_bitcode(bitcode)
+* .. function:: parse_bitcode(bitcode, context=None)
 
      Parse the given *bitcode*, a bytestring containing the
      LLVM bitcode of a module. If parsing is successful, a new
      :class:`ModuleRef` instance is returned.
+
+     * context: an instance of :class:`LLVMContextRef`.
+
+        Defaults to the global context.
 
      EXAMPLE: You can obtain the *bitcode* by calling
      :meth:`ModuleRef.as_bitcode`.

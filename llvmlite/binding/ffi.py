@@ -246,6 +246,12 @@ class ObjectRef(object):
     def __bool__(self):
         return bool(self._ptr)
 
+    def __eq__(self, other):
+        if not hasattr(other, "_ptr"):
+            return False
+        return ctypes.addressof(self._ptr[0]) == \
+                ctypes.addressof(other._ptr[0])
+
     __nonzero__ = __bool__
 
     # XXX useful?
