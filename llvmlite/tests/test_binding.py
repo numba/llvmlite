@@ -333,7 +333,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual((major, minor), (6, 0))
+        self.assertEqual((major, minor), (7, 0))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
