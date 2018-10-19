@@ -165,7 +165,8 @@ class OutputString(object):
         # Avoid errors trying to rely on globals and modules at interpreter
         # shutdown.
         if not _is_shutting_down():
-            self.close()
+            if self.close is not None:
+                self.close()
 
     def __str__(self):
         if self._ptr is None:
@@ -239,9 +240,10 @@ class ObjectRef(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def __del__(self):
-        if self.close is not None:
-            self.close()
+    def __del__(self, _is_shutting_down=_is_shutting_down):
+        if not _is_shutting_down():
+            if self.close is not None:
+                self.close()
 
     def __bool__(self):
         return bool(self._ptr)
