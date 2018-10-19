@@ -4,13 +4,13 @@
 
 {% set version = "6.0.1" %}
 {% set sha256 = "b6d6c324f9c71494c0ccaf3dac1f16236d970002b42bb24a6c9e1634f7d0f4e2" %}
-{% set build_number = "0" %}
+{% set build_number = "1" %}
 
 {% else %}
 
 {% set version = "6.0.0" %}
 {% set sha256 = "1ff53c915b4e761ef400b803f07261ade637b0c269d99569f18040f3dcee4408" %}
-{% set build_number = "4" %}
+{% set build_number = "5" %}
 
 {% endif %}
 

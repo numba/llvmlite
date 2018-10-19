@@ -11,6 +11,7 @@ machine="$(uname -m)"
 
 if [[ "$unamestr" == 'Linux' ]]; then
     platform='linux'
+    CMAKE_PLATFORM_VARIABLES="-DLLVM_USE_INTEL_JITEVENTS=ON"
 elif [[ "$unamestr" == 'FreeBSD' ]]; then
     platform='freebsd'
 elif [[ "$unamestr" == 'Darwin' ]]; then
@@ -28,7 +29,7 @@ fi
 # Use CMake-based build procedure
 mkdir build
 cd build
-cmake $CMAKE_COMMON_VARIABLES ..
+cmake $CMAKE_COMMON_VARIABLES $CMAKE_PLATFORM_VARIABLES ..
 
 make -j8
 make install
