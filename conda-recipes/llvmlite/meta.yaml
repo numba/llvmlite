@@ -21,7 +21,7 @@ requirements:
     - {{ compiler('cxx') }}  # [not (osx or armv6l or armv7l or aarch64)]
     # The DLL build uses cmake on Windows
     - cmake          # [win]
-    - make           # [unix]
+    - make           # [unix and not (armv6l or armv7l or aarch64)]
   host:
     - python
     # On channel https://anaconda.org/numba/
