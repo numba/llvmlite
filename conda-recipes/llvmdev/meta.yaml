@@ -15,6 +15,10 @@ source:
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
     # Intel SVML optimizations
+    # The second part of this patch was published as:
+    # https://reviews.llvm.org/D53035
+    # (the first, as mentioned in the patch itself, was:
+    # https://reviews.llvm.org/D47188)
     - ../D47188-svml-VF.patch
     # undefined behavior bug due to Twine usage
     - ../twine_cfg_undefined_behavior.patch
