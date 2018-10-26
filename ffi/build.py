@@ -130,7 +130,7 @@ def main_posix(kind, library_ext):
 
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
-    svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.gen')
+    svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.td')
     if os.path.isfile(svml_indicator):
         cxxflags = cxxflags + ['-DHAVE_SVML']
         print('SVML detected')
