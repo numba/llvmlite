@@ -22,7 +22,7 @@ add_definitions(${LLVM_DEFINITIONS})
 # Look for SVML
 set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS})
 
-CHECK_INCLUDE_FILES("llvm/IR/SVML.gen" HAVE_SVML)
+CHECK_INCLUDE_FILES("llvm/IR/SVML.td" HAVE_SVML)
 if(HAVE_SVML)
     message(STATUS "SVML found")
     add_definitions(-DHAVE_SVML)
