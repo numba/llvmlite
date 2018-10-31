@@ -73,14 +73,16 @@ The LLVM build process is fully scripted by conda-build_, and the `llvmdev recip
 
 The manual instructions below describe the main steps, but refer to the recipe for details:
 
-#. Download the `LLVM 7.0.0 source code <http://releases.llvm.org/7.0.0/llvm-7.0.0.src.tar.xz>`_.
+#. Download the `LLVM 6.0.0 source code <http://releases.llvm.org/6.0.0/llvm-6.0.0.src.tar.xz>`_.
+(Note that PPC64LE requires LLVM 6.0.1 for specific bug fixes.)
 
 #. Download or git checkout the `llvmlite source code <https://github.com/numba/llvmlite>`_.
 
 #. Decompress the LLVM tar file and apply the following patches from the ``llvmlite/conda-recipes/`` directory:
 
     #. ``llvm-lto-static.patch``: Fix issue with LTO shared library on Windows
-    #. ``D47188-svml-VF.patch``: Add support for vectorized math functions via Intel SVML
+    #. ``D47188-svml.patch``: Add support for vectorized math functions via Intel SVML
+    #. ``0001-Transforms-Add-missing-header-for-InstructionCombini.patch``: Fix release bug with LLVM 6.0.0, skip on LLVM 6.0.1.
     #. ``twine_cfg_undefined_behavior.patch``: Fix obscure memory corruption bug in LLVM that hasn't been fixed in master yet
 
 #. For Linux/macOS:
