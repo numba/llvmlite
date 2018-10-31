@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 CONDA_INSTALL="conda install -q -y"
 PIP_INSTALL="pip install -q"
 
@@ -43,7 +41,7 @@ if [ "$PYTHON" == "pypy" ]; then
   $PIP_INSTALL sphinx==1.5.1 sphinx_rtd_theme pygments
 else
   $CONDA_INSTALL sphinx=1.5.1 sphinx_rtd_theme pygments
-  if [ "x$PYTHON" != "x" -a "$PYTHON" \< "3.4" -a "$WHEEL" != "yes" ]; then
+  if [ "$PYTHON" \< "3.4" && "$WHEEL" != "yes" ]; then
     $CONDA_INSTALL enum34
   fi
 fi
