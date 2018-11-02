@@ -1,9 +1,9 @@
 From bcfc1167bf4dafc776f18296b06b2048372d3cb1 Mon Sep 17 00:00:00 2001
 From: Anton Malakhov <Anton.Malakhov@intel.com>
-Date: Tue, 25 Sep 2018 11:24:55 -0500
+Date: Thu, 1 Nov 2018 17:10:55 -0500
 Subject: [PATCH] Fixes vectorizer and extends SVML support
 
-This patch is created on top of LLVM 7.0.0 collecting several fixes:
+This patch is created on top of LLVM 7.0.0 merging several fixes:
 
 1. https://reviews.llvm.org/D47188 patch fixes the problem with improper calls
 to SVML library as it has non-standard calling conventions. So accordingly it
@@ -13,18 +13,17 @@ took into consideration fast attribute and select more fast implementation in
 such case. This work is based on original Matt Masten's work.
 Author: Denis Nagorny
 
-2. implements support to legalize SVML calls by breaking down the illegal
-vector call instruction into multiple legal vector call instructions during
-code generation. Currently the vectorizer does not check legality of the
-generated SVML (or any VECLIB) call instructions, and this
-can lead to potential problems even during vector type
-legalization. This patch addresses this issue by adding
-a legality check during code generation and replaces the
-illegal SVML call with corresponding legalized instructions.
+2. https://reviews.llvm.org/D53035 patch implements support to legalize SVML
+calls by breaking down the illegal vector call instruction into multiple legal
+vector call instructions during code generation. Currently the vectorizer does
+not check legality of the generated SVML (or any VECLIB) call instructions, and
+this can lead to potential problems even during vector type legalization. This
+patch addresses this issue by adding a legality check during code generation and
+replaces the illegal SVML call with corresponding legalized instructions.
 (RFC: http://lists.llvm.org/pipermail/llvm-dev/2018-June/124357.html)
 Author: Karthik Senthil
 
-3. Functional merge of the patches above which fixes calling convention
+3. Functional merge of the patches above, which fixes calling convention
 
 
 diff --git a/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
@@ -581,7 +580,7 @@ index 85e8256a..3208a93d 100644
      // This convention allows using the Win64 convention on other targets.
      case CallingConv::Win64:
 diff --git a/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
-index 1c7d0a63..299b161d 100644
+index 1c7d0a63..64fb9e97 100644
 --- a/lib/Transforms/Vectorize/LoopVectorize.cpp
 +++ b/lib/Transforms/Vectorize/LoopVectorize.cpp
 @@ -602,6 +602,27 @@ protected:
@@ -630,20 +629,19 @@ index 1c7d0a63..299b161d 100644
          assert(!VFnName.empty() && "Vector function name is empty.");
          VectorF = M->getFunction(VFnName);
          if (!VectorF) {
-@@ -4132,9 +4155,22 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
+@@ -4132,9 +4155,21 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
  
        if (isa<FPMathOperator>(V))
          V->copyFastMathFlags(CI);
 -
 -      VectorLoopValueMap.setVectorValue(&I, Part, V);
 -      addMetadata(V, &I);
-+      if (FromSVML)
-+        V->setCallingConv(CallingConv::Intel_SVML);
 +      // Perform legalization of SVML call instruction only if original call
 +      // was not Intrinsic
-+      if (!isa<IntrinsicInst>(CI) && FromSVML) {
++      if (FromSVML) {
 +        assert((V->getCalledFunction()->getName()).startswith("__svml"));
 +        LLVM_DEBUG(dbgs() << "LV(SVML): Vector call inst:"; V->dump());
++        V->setCallingConv(CallingConv::Intel_SVML);
 +        auto *LegalV = cast<Instruction>(legalizeSVMLCall(V, CI));
 +        LLVM_DEBUG(dbgs() << "LV: Completed SVML legalization.\n LegalV: ";
 +                   LegalV->dump());
@@ -656,7 +654,7 @@ index 1c7d0a63..299b161d 100644
      }
  
      break;
-@@ -4163,6 +4199,244 @@ void InnerLoopVectorizer::updateAnalysis() {
+@@ -4163,6 +4198,242 @@ void InnerLoopVectorizer::updateAnalysis() {
    assert(DT->verify(DominatorTree::VerificationLevel::Fast));
  }
  
@@ -739,15 +737,13 @@ index 1c7d0a63..299b161d 100644
 +  assert(!LegalVFnName.empty() && (LegalVFnName != FnName) &&
 +         "Could not find legal vector function in TLI.");
 +
-+  // Since this is targeting SVML calls specifically, we know the module
-+  // will not have a vector version of the call
-+  assert(!M->getFunction(LegalVFnName) &&
-+         "Module has vector version for legal SVML call.");
-+  FunctionType *LegalFTy = FunctionType::get(NewRetTy, NewTys, false);
-+  Function *LegalVectorF =
-+      Function::Create(LegalFTy, Function::ExternalLinkage, LegalVFnName, M);
++  Function *LegalVectorF = M->getFunction(LegalVFnName);
++  if (!LegalVectorF) {
++    FunctionType *LegalFTy = FunctionType::get(NewRetTy, NewTys, false);
++    LegalVectorF = Function::Create(LegalFTy, Function::ExternalLinkage, LegalVFnName, M);
++    LegalVectorF->copyAttributesFrom(F);
++  }
 +  assert(LegalVectorF && "Can't create legal SVML vector function.");
-+  LegalVectorF->copyAttributesFrom(F);
 +
 +  LLVM_DEBUG(dbgs() << "LV(SVML): LegalVectorF: "; LegalVectorF->dump());
 +
@@ -1170,11 +1166,11 @@ index 8ff62f17..4d48d981 100644
 +!7 = !{!"llvm.loop.vectorize.enable", i1 true}
 diff --git a/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll b/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
 new file mode 100644
-index 00000000..93676abb
+index 00000000..0524c284
 --- /dev/null
 +++ b/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
-@@ -0,0 +1,508 @@
-+; Check legalization of SVML calls. Also checks that intrinsic calls are not legalizedby vectorizer.
+@@ -0,0 +1,513 @@
++; Check legalization of SVML calls, including intrinsic versions (like @llvm.<fn_name>.<type>).
 +
 +; RUN: opt -vector-library=SVML -loop-vectorize -force-vector-width=8 -force-vector-interleave=1 -mattr=avx -S < %s | FileCheck %s
 +
@@ -1256,7 +1252,8 @@ index 00000000..93676abb
 +
 +define void @sin_f64_intrinsic(double* nocapture %varray) {
 +; CHECK-LABEL: @sin_f64_intrinsic(
-+; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <8 x double> @__svml_sin8_ha(<8 x double> [[TMP2:%.*]])
++; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <4 x double> @__svml_sin4_ha(<4 x double> [[TMP2:%.*]])
++; CHECK:    [[TMP3:%.*]] = call intel_svmlcc <4 x double> @__svml_sin4_ha(<4 x double> [[TMP4:%.*]])
 +; CHECK:    ret void
 +;
 +entry:
@@ -1349,7 +1346,8 @@ index 00000000..93676abb
 +
 +define void @cos_f64_intrinsic(double* nocapture %varray) {
 +; CHECK-LABEL: @cos_f64_intrinsic(
-+; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <8 x double> @__svml_cos8_ha(<8 x double> [[TMP2:%.*]])
++; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <4 x double> @__svml_cos4_ha(<4 x double> [[TMP2:%.*]])
++; CHECK:    [[TMP3:%.*]] = call intel_svmlcc <4 x double> @__svml_cos4_ha(<4 x double> [[TMP4:%.*]])
 +; CHECK:    ret void
 +;
 +entry:
@@ -1421,7 +1419,8 @@ index 00000000..93676abb
 +
 +define void @pow_f64_intrinsic(double* nocapture %varray, double* nocapture readonly %exp) {
 +; CHECK-LABEL: @pow_f64_intrinsic(
-+; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <8 x double> @__svml_pow8_ha(<8 x double> [[TMP2:%.*]], <8 x double> [[TMP3:%.*]])
++; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <4 x double> @__svml_pow4_ha(<4 x double> [[TMP2:%.*]], <4 x double> [[TMP3:%.*]])
++; CHECK:    [[TMP4:%.*]] = call intel_svmlcc <4 x double> @__svml_pow4_ha(<4 x double> [[TMP5:%.*]], <4 x double> [[TMP6:%.*]])
 +; CHECK:    ret void
 +;
 +entry:
@@ -1543,7 +1542,8 @@ index 00000000..93676abb
 +
 +define void @exp_f64_intrinsic(double* nocapture %varray) {
 +; CHECK-LABEL: @exp_f64_intrinsic(
-+; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <8 x double> @__svml_exp8_ha(<8 x double> [[TMP2:%.*]])
++; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <4 x double> @__svml_exp4_ha(<4 x double> [[TMP2:%.*]])
++; CHECK:    [[TMP3:%.*]] = call intel_svmlcc <4 x double> @__svml_exp4_ha(<4 x double> [[TMP4:%.*]])
 +; CHECK:    ret void
 +;
 +entry:
@@ -1636,7 +1636,8 @@ index 00000000..93676abb
 +
 +define void @log_f64_intrinsic(double* nocapture %varray) {
 +; CHECK-LABEL: @log_f64_intrinsic(
-+; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <8 x double> @__svml_log8_ha(<8 x double> [[TMP2:%.*]])
++; CHECK:    [[TMP1:%.*]] = call intel_svmlcc <4 x double> @__svml_log4_ha(<4 x double> [[TMP2:%.*]])
++; CHECK:    [[TMP3:%.*]] = call intel_svmlcc <4 x double> @__svml_log4_ha(<4 x double> [[TMP4:%.*]])
 +; CHECK:    ret void
 +;
 +entry:
