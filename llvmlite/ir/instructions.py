@@ -424,6 +424,45 @@ class StoreInstr(Instruction):
             ))
 
 
+class LoadAtomicInstr(Instruction):
+    def __init__(self, parent, ptr, ordering, align, name=''):
+        super(LoadAtomicInstr, self).__init__(parent, ptr.type.pointee, "load atomic",
+                                              [ptr], name=name)
+        self.ordering = ordering
+        self.align = align
+
+    def descr(self, buf):
+        [val] = self.operands
+        buf.append("load atomic {0}, {1} {2} {3}, align {4}{5}\n".format(
+            val.type.pointee,
+            val.type,
+            val.get_reference(),
+            self.ordering,
+            self.align,
+            self._stringify_metadata(leading_comma=True),
+            ))
+
+
+class StoreAtomicInstr(Instruction):
+    def __init__(self, parent, val, ptr, ordering, align):
+        super(StoreAtomicInstr, self).__init__(parent, types.VoidType(), "store atomic",
+                                               [val, ptr])
+        self.ordering = ordering
+        self.align = align
+
+    def descr(self, buf):
+        val, ptr = self.operands
+        buf.append("store atomic {0} {1}, {2} {3} {4}, align {5}{6}\n".format(
+            val.type,
+            val.get_reference(),
+            ptr.type,
+            ptr.get_reference(),
+            self.ordering,
+            self.align,
+            self._stringify_metadata(leading_comma=True),
+            ))
+
+
 class AllocaInstr(Instruction):
     def __init__(self, parent, typ, count, name):
         operands = [count] if count else ()
