@@ -30,7 +30,7 @@ cmake --build . --config "%BUILD_CONFIG%" --target install
 if errorlevel 1 exit 1
 
 REM From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
-bin\opt -S -vector-library=SVML -mcpu=haswell -O3 %RECIPE_DIR%\numba-3016.ll | bin\FileCheck %RECIPE_DIR%\numba-3016.ll
+%BUILD_CONFIG%\bin\opt -S -vector-library=SVML -mcpu=haswell -O3 %RECIPE_DIR%\numba-3016.ll | %BUILD_CONFIG%\bin\FileCheck %RECIPE_DIR%\numba-3016.ll
 if errorlevel 1 exit 1
 cd ..\test
-..\build\bin\llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+..\%BUILD_CONFIG%\build\bin\llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
