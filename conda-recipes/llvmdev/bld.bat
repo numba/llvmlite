@@ -33,4 +33,5 @@ REM From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
 %BUILD_CONFIG%\bin\opt -S -vector-library=SVML -mcpu=haswell -O3 %RECIPE_DIR%\numba-3016.ll | %BUILD_CONFIG%\bin\FileCheck %RECIPE_DIR%\numba-3016.ll
 if errorlevel 1 exit 1
 cd ..\test
-..\%BUILD_CONFIG%\build\bin\llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+..\build\%BUILD_CONFIG%\bin\llvm-lit.py -vv Transforms ExecutionEngine Analysis CodeGen/X86
+if errorlevel 1 exit 1
