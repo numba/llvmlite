@@ -13,7 +13,7 @@ set CMAKE_GENERATOR_TOOLSET=v140_xp
 
 REM Reduce build times and package size by removing unused stuff
 set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_INCLUDE_TESTS=OFF ^
-    -DLLVM_INCLUDE_UTILS=OFF -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF ^
+    -DLLVM_INCLUDE_UTILS=ON -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF ^
     -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_USE_INTEL_JITEVENTS=ON
 
 cmake -G "%CMAKE_GENERATOR%" -T "%CMAKE_GENERATOR_TOOLSET%" ^
@@ -28,3 +28,9 @@ if errorlevel 1 exit 1
 REM Install step
 cmake --build . --config "%BUILD_CONFIG%" --target install
 if errorlevel 1 exit 1
+
+REM From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
+bin\opt -S -vector-library=SVML -mcpu=haswell -O3 %RECIPE_DIR%\numba-3016.ll | bin\FileCheck %RECIPE_DIR%\numba-3016.ll
+if errorlevel 1 exit 1
+cd ..\test
+..\build\bin\llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86

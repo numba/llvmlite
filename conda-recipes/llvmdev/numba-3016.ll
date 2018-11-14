@@ -3,7 +3,10 @@
 ; Generated from C code: int a[1<<10],b[1<<10]; void foo() { int i=0; for(i=0; i<1<<10; i++) { b[i]=sin(a[i]); }}
 ; compiled: -fvectorize -fveclib=SVML -O -S -mavx -mllvm -disable-llvm-optzns -emit-llvm
 
-; RUN: opt -vector-library=SVML -mcpu=haswell -O3 numba-3016.ll -S < %s | FileCheck %s
+; RUN: opt -vector-library=SVML -mcpu=haswell -O3 -S < %s | FileCheck %s
+; CHECK: __svml_sin4_ha
+; CHECK-NOT: __svml_sin4(
+; CHECK-NOT: __svml_sin8
 
 source_filename = "svml-3016.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
