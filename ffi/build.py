@@ -121,8 +121,9 @@ def main_posix(kind, library_ext):
     # Get LLVM information for building
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
-    os.environ['LLVM_LIBS'] = ' '.join(libs.split()) + \
-        ' -llldCOFF -llldCommon -llldCore -llldDriver -llldELF -llldMachO -llldMinGW -llldReaderWriter -llldWasm -llldYAML'
+    os.environ['LLVM_LIBS'] = \
+        '-llldCOFF -llldCommon -llldCore -llldDriver -llldELF -llldMachO -llldMinGW -llldReaderWriter -llldWasm -llldYAML ' + \
+        ' '.join(libs.split())
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
