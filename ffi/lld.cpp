@@ -1,5 +1,7 @@
 #include "lld/Common/Driver.h"
 
+extern "C" {
+
 int lld_main(int Argc, const char **Argv) {
     //InitLLVM X(Argc, Argv);
     std::vector<const char *> Args(Argv, Argv + Argc);
@@ -10,3 +12,5 @@ int lld_main_help() {
     std::vector<const char *> Args = {"ld.lld", "--help"};
     return !lld::elf::link(Args, false);
 }
+
+} // end extern "C"
