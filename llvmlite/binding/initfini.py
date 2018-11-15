@@ -2,6 +2,12 @@ from ctypes import c_uint
 
 from . import ffi
 
+def lld_main_help():
+    """
+    Shows help for lld.
+    """
+    ffi.lib.lld_main_help()
+
 
 def initialize():
     """
