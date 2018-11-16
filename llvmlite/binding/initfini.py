@@ -1,16 +1,18 @@
-from ctypes import c_uint
-from ctypes import POINTER, c_char_p, c_int
+from ctypes import c_uint, POINTER, c_char_p, c_int
 
 from . import ffi
 
-ffi.lib.lld_main_2.restype = c_int
-ffi.lib.lld_main_2.argtypes = [c_char_p, c_char_p]
+ffi.lib.lld_main.restype = c_int
+ffi.lib.lld_main.argtypes = [c_int, POINTER(c_char_p)]
 def lld_main_help():
     """
     Shows help for lld.
     """
-    r = ffi.lib.lld_main_2(c_char_p("ld.lld".encode()),
-        c_char_p("--help".encode()))
+    ldd_args = ["ld.lld", "--help"]
+    args = (c_char_p*len(ldd_args))()
+    for i, arg in enumerate(ldd_args):
+        args[i] = arg.encode()
+    r = ffi.lib.lld_main(len(ldd_args), args)
     if r != 0:
         raise Exception("lld_main() failed, error code: %d" % r)
 
