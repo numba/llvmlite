@@ -2,17 +2,24 @@ from ctypes import c_uint, POINTER, c_char_p, c_int
 
 from . import ffi
 
-ffi.lib.lld_main.restype = c_int
-ffi.lib.lld_main.argtypes = [c_int, POINTER(c_char_p)]
 def lld_main_help():
     """
     Shows help for lld.
     """
-    ldd_args = ["ld.lld", "--help"]
-    args = (c_char_p*len(ldd_args))()
-    for i, arg in enumerate(ldd_args):
+    lld_main(["ld.lld", "--help"])
+
+ffi.lib.lld_main.restype = c_int
+ffi.lib.lld_main.argtypes = [c_int, POINTER(c_char_p)]
+def lld_main(lld_args):
+    """
+    Calls the `lld::elf::link()` with the `lld_args` arguments.
+
+    lld_args ... A list of strings
+    """
+    args = (c_char_p*len(lld_args))()
+    for i, arg in enumerate(lld_args):
         args[i] = arg.encode()
-    r = ffi.lib.lld_main(len(ldd_args), args)
+    r = ffi.lib.lld_main(len(lld_args), args)
     if r != 0:
         raise Exception("lld_main() failed, error code: %d" % r)
 
