@@ -2,19 +2,22 @@ from ctypes import c_uint, POINTER, c_char_p, c_int
 
 from . import ffi
 
-def lld_main_help():
-    """
-    Shows help for lld.
-    """
-    lld_main(["ld.lld", "--help"])
-
 ffi.lib.lld_main.restype = c_int
 ffi.lib.lld_main.argtypes = [c_int, POINTER(c_char_p)]
 def lld_main(lld_args):
     """
-    Calls the `lld::elf::link()` with the `lld_args` arguments.
+    Calls LLD - the LLVM linker.
 
-    lld_args ... A list of strings
+    The function calls the `lld::elf::link()` with the `lld_args` (list of
+    strings) as arguments.
+
+    Examples
+    ~~~~~~~~
+
+    Shows help:
+
+    >>> from llvmlite.binding import lld_main
+    >>> lld_main(["ld.lld", "--help"])
     """
     args = (c_char_p*len(lld_args))()
     for i, arg in enumerate(lld_args):
