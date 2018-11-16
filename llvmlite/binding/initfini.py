@@ -1,12 +1,18 @@
 from ctypes import c_uint
+from ctypes import POINTER, c_char_p, c_int
 
 from . import ffi
 
+ffi.lib.lld_main_2.restype = c_int
+ffi.lib.lld_main_2.argtypes = [c_char_p, c_char_p]
 def lld_main_help():
     """
     Shows help for lld.
     """
-    ffi.lib.lld_main_help()
+    r = ffi.lib.lld_main_2(c_char_p("ld.lld".encode()),
+        c_char_p("--help".encode()))
+    if r != 0:
+        raise Exception("lld_main() failed, error code: %d" % r)
 
 
 def initialize():
