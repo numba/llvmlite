@@ -10,6 +10,7 @@ import platform
 import re
 import subprocess
 import sys
+from tempfile import TemporaryDirectory
 import unittest
 from contextlib import contextmanager
 from tempfile import mkstemp
@@ -153,6 +154,23 @@ asm_global_ctors = r"""
 
     @llvm.global_ctors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @ctor_A, i8* null}}]
     @llvm.global_dtors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @dtor_A, i8* null}}]
+    """
+
+asm_lld_executable = r"""
+    ; exit(int exit_code)
+    define void @exit(i64 %exit_code) {
+        call i64 asm sideeffect "syscall",
+            "={rax},{rax},{rdi},~{rcx},~{r11},~{dirflag},~{fpsr},~{flags}"
+            ( i64 60          ; {rax} SYSCALL_EXIT
+            , i64 %exit_code  ; {rdi} exit_code
+            )
+        ret void
+    }
+
+    define void @_start() {
+        call void @exit(i64 42)
+        ret void
+    }
     """
 
 
@@ -1389,6 +1407,27 @@ class TestObjectFile(BaseTest):
             jit.get_function_address("sum_twice"))
 
         self.assertEqual(sum_twice(2, 3), 10)
+
+
+@unittest.skipUnless(platform.machine().startswith('x86'), "only on x86")
+class TestLLD_x86(BaseTest):
+    def test_standalone_executable(self):
+        with TemporaryDirectory() as tmpdir:
+            objfile = os.path.join(tmpdir, "test1.o")
+            binfile = os.path.join(tmpdir, "test1")
+            llvm.initialize()
+            llvm.initialize_native_asmprinter()
+            llvm.initialize_native_asmparser()
+            llvm.initialize_native_target()
+            target = llvm.Target.from_triple(llvm.get_default_triple())
+            target_machine = target.create_target_machine()
+            mod = llvm.parse_assembly(asm_lld_executable)
+            mod.verify()
+            with open(objfile, "wb") as o:
+                o.write(target_machine.emit_object(mod))
+            llvm.lld_main(["ld.lld", "-o", binfile, objfile])
+            r = subprocess.call("%s" % binfile)
+            self.assertEqual(r, 42)
 
 
 if __name__ == "__main__":
