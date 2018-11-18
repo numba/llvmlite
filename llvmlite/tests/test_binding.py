@@ -1419,12 +1419,7 @@ class TestLLD_x86(BaseTest):
         with TemporaryDirectory() as tmpdir:
             objfile = os.path.join(tmpdir, "test1.o")
             binfile = os.path.join(tmpdir, "test1")
-            llvm.initialize()
-            llvm.initialize_native_asmprinter()
-            llvm.initialize_native_asmparser()
-            llvm.initialize_native_target()
-            target = llvm.Target.from_triple(llvm.get_default_triple())
-            target_machine = target.create_target_machine()
+            target_machine = self.target_machine()
             mod = llvm.parse_assembly(asm_lld_executable)
             mod.verify()
             with open(objfile, "wb") as o:
