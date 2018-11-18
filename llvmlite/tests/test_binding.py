@@ -10,7 +10,11 @@ import platform
 import re
 import subprocess
 import sys
-from tempfile import TemporaryDirectory
+try:
+    from tempfile import TemporaryDirectory
+except ImportError:
+    # Python 2.7
+    from backports.tempfile import TemporaryDirectory
 import unittest
 from contextlib import contextmanager
 from tempfile import mkstemp

@@ -28,6 +28,9 @@ set -v
 
 # Install llvmdev (separate channel, for now)
 $CONDA_INSTALL -c numba llvmdev="7.0*"
+if [ "$PYTHON" == "2.7" ]; then
+    pip install backports.tempfile
+fi
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
