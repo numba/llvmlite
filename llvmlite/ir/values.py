@@ -161,6 +161,12 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         tys = [el.type for el in elems]
         return cls(types.LiteralStructType(tys), elems)
 
+    @property
+    def addrspace(self):
+        if not isinstance(self.type, types.PointerType):
+            raise TypeError("Only pointer constant have address spaces")
+        return self.type.addrspace
+
     def __eq__(self, other):
         if isinstance(other, Constant):
             return str(self) == str(other)
