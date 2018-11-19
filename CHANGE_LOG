@@ -12,7 +12,9 @@ after some issues arose in testing.  LLVM 6 is still required for llvmlite.
 * PR #409: Use native cmake on armv7l
 * PR #407: Throttle thread count for llvm build on armv7l. 
 * PR #403: Add shutdown detection to ObjectRef __del__ method.
-* PR #400: conda recipe: add make as build dep 
+* PR #400: conda recipe: add make as build dep
+* PR #399: Add get_element_offset to TargetData
+* PR #398: Fix gep method call on Constant objects
 * PR #395: Fix typo in irbuilder documentation 
 * PR #394: Enable IntelJIT events for LLVM for VTune support
 
