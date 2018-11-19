@@ -133,6 +133,18 @@ class TargetData(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_ABISizeOfType(self, ty)
 
+    def get_element_offset(self, ty, position):
+        """
+        Get byte offset of type's ty element at the given position
+        """
+
+        offset = ffi.lib.LLVMPY_OffsetOfElement(self, ty, position)
+        if offset == -1:
+            raise ValueError("Could not determined offset of {}th "
+                    "element of the type '{}'. Is it a struct type?".format(
+                    position, str(ty)))
+        return offset
+
     def get_pointee_abi_size(self, ty):
         """
         Get ABI size of pointee type of LLVM pointer type *ty*.
@@ -342,6 +354,11 @@ ffi.lib.LLVMPY_DisposeTargetData.argtypes = [
 ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
                                          ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_ABISizeOfType.restype = c_longlong
+
+ffi.lib.LLVMPY_OffsetOfElement.argtypes = [ffi.LLVMTargetDataRef,
+                                           ffi.LLVMTypeRef,
+                                           c_int]
+ffi.lib.LLVMPY_OffsetOfElement.restype = c_longlong
 
 ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef,
                                                 ffi.LLVMTypeRef]
