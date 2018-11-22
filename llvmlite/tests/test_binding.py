@@ -1282,8 +1282,8 @@ class TestObjectFile(BaseTest):
         declare i32 @sum(i32 %.1, i32 %.2)
 
         define i32 @sum_twice(i32 %.1, i32 %.2) {{
-            %.3 = add i32 %.1, %.2
-            %.4 = add i32 %.3, %.3
+            %.3 = call i32 @sum(i32 %.1, i32 %.2)
+            %.4 = call i32 @sum(i32 %.3, i32 %.3)
             ret i32 %.4
         }}
     """
@@ -1322,7 +1322,7 @@ class TestObjectFile(BaseTest):
         sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
             jit.get_function_address("sum_twice"))
 
-        assert sum_twice(2, 3) == 10
+        self.assertEqual(sum_twice(2, 3), 10)
 
     def test_add_object_file_from_filesystem(self):
         target_machine = self.target_machine()
@@ -1348,7 +1348,7 @@ class TestObjectFile(BaseTest):
         sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
             jit.get_function_address("sum_twice"))
 
-        assert sum_twice(2, 3) == 10
+        self.assertEqual(sum_twice(2, 3), 10)
 
 
 if __name__ == "__main__":
