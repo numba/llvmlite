@@ -643,7 +643,7 @@ class TestBuildInstructions(TestBase):
                 %"d" = xor i32 %".2", -1
             """)
 
-    def replace_operand(self):
+    def test_replace_operand(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         a, b = builder.function.args[:2]
