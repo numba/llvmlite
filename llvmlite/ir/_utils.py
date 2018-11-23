@@ -37,6 +37,12 @@ class NameScope(object):
 
 class _StrCaching(object):
 
+    def _clear_string_cache(self):
+        try:
+            del self.__cached_str
+        except AttributeError:
+            pass
+
     def __str__(self):
         try:
             return self.__cached_str

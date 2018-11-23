@@ -44,6 +44,7 @@ class Instruction(NamedValue, _HasMetadata):
             for op in self.operands:
                 ops.append(new if op is old else op)
             self.operands = tuple(ops)
+            self._clear_string_cache()
 
     def __repr__(self):
         return "<ir.%s %r of type '%s', opname %r, operands %r>" % (

@@ -489,6 +489,12 @@ class TestBlock(TestBase):
         d = builder.sub(a, b, 'd')
         builder.mul(d, b, 'e')
         f = ir.Instruction(block, a.type, 'sdiv', (c, b), 'f')
+        self.check_block(block, """\
+            my_block:
+                %"c" = add i32 %".1", %".2"
+                %"d" = sub i32 %".1", %".2"
+                %"e" = mul i32 %"d", %".2"
+            """)
         block.replace(d, f)
         self.check_block(block, """\
             my_block:
@@ -635,6 +641,24 @@ class TestBuildInstructions(TestBase):
             my_block:
                 %"c" = sub i32 0, %".1"
                 %"d" = xor i32 %".2", -1
+            """)
+
+    def replace_operand(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        undef1 = ir.Constant(ir.IntType(32), ir.Undefined)
+        undef2 = ir.Constant(ir.IntType(32), ir.Undefined)
+        c = builder.add(undef1, undef2, 'c')
+        self.check_block(block, """\
+            my_block:
+                %"c" = add i32 undef, undef
+            """)
+        c.replace_usage(undef1, a)
+        c.replace_usage(undef2, b)
+        self.check_block(block, """\
+            my_block:
+                %"c" = add i32 %".1", %".2"
             """)
 
     def test_integer_comparisons(self):

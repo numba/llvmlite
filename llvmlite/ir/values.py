@@ -800,6 +800,7 @@ class Block(NamedValue):
                 instr.replace_usage(old, new)
 
 
+
 class BlockAddress(Value):
     """
     The address of a basic block.

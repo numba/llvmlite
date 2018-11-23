@@ -346,6 +346,10 @@ Use the helper methods on the :class:`IRBuilder` class.
         Add an instruction-specific metadata *name* pointing to the
         given metadata *node*---an :class:`MDValue`.
 
+   * .. method:: replace_usage(old, new)
+
+        Replace the operand *old* with the other instruction *new*.
+
    * .. attribute:: function
 
         The function that contains this instruction.
