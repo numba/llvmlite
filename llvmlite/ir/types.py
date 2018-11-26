@@ -316,7 +316,35 @@ class DoubleType(_BaseFloatType):
         return _format_double(value)
 
 
-for _cls in (FloatType, DoubleType):
+class DecimalType(_BaseFloatType):
+    """
+    The type for 128 bits floats.
+    """
+    null = '0.0'
+    intrinsic_name = 'f128'
+
+    def __str__(self):
+        return 'fp128'
+
+    def format_constant(self, value):
+        return _format_double(value)
+
+
+class HalfPrecisionFloatType(_BaseFloatType):
+    """
+    The type for 16 bits floats.
+    """
+    null = '0.0'
+    intrinsic_name = 'f16'
+
+    def __str__(self):
+        return 'half'
+
+    def format_constant(self, value):
+        return _format_double(value)
+
+
+for _cls in (FloatType, DoubleType, DecimalType, HalfPrecisionFloatType):
     _cls._create_instance()
 
 
