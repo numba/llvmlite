@@ -128,7 +128,7 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         if self.constant is None:
             val = self.type.null
 
-        elif self.constant is Undefined:
+        elif isinstance(self.constant, _Undefined):
             val = "undef"
 
         elif isinstance(self.constant, bytearray):

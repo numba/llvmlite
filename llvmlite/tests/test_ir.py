@@ -476,7 +476,7 @@ class TestGlobalValues(TestBase):
         mod = self.module()
         data = pickle.dumps(mod)
         new_mod = pickle.loads(data)
-        self.assertEquals(str(mod), str(new_mod))
+        self.assertEqual(str(mod), str(new_mod))
 
 
 class TestBlock(TestBase):
@@ -1860,6 +1860,13 @@ class TestConstant(TestBase):
         # Invalid number of args
         with self.assertRaises(ValueError):
             ir.Constant(st2, (4, 5, 6))
+
+    def test_undefined_literal_struct_pickling(self):
+        i8 = ir.IntType(8)
+        st = ir.Constant(ir.LiteralStructType([i8, i8]), ir.Undefined)
+        data = pickle.dumps(st)
+        new_st = pickle.loads(data)
+        self.assertEqual(str(st), str(new_st))
 
     def test_type_instantiaton(self):
         """
