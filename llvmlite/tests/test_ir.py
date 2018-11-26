@@ -193,6 +193,12 @@ class TestFunction(TestBase):
         powi2 = module.declare_intrinsic('llvm.powi', [dbl])
         self.assertIs(powi, powi2)
 
+    def test_pickling(self):
+        fn = self.function()
+        data = pickle.dumps(fn, protocol=-1)
+        new_fn = pickle.loads(data)
+        self.assertEqual(str(fn), str(new_fn))
+
 
 class TestIR(TestBase):
 
@@ -465,6 +471,12 @@ class TestGlobalValues(TestBase):
             @"f" = external unnamed_addr addrspace(456) global i32
             @"g" = internal global i32 123, align 16
             """)
+
+    def test_pickle(self):
+        mod = self.module()
+        data = pickle.dumps(mod)
+        new_mod = pickle.loads(data)
+        self.assertEquals(str(mod), str(new_mod))
 
 
 class TestBlock(TestBase):
