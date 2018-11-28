@@ -1,7 +1,6 @@
 parameters:
   name: ''
   vmImage: ''
-  CONDA_ENV: travisci
 
 jobs:
 - job: ${{ parameters.name }}
@@ -12,8 +11,10 @@ jobs:
     matrix:
       py27:
         PYTHON: '2.7'
+        CONDA_ENV: travisci
       py37:
         PYTHON: '3.7'
+        CONDA_ENV: travisci
 
   steps:
     - task: CondaEnvironment@1

@@ -17,23 +17,31 @@ jobs:
     matrix:
       py27:
         PYTHON: '2.7'
+        CONDA_ENV: travisci
       py35:      
         PYTHON: '3.5'
+        CONDA_ENV: travisci
       py36:      
         PYTHON: '3.6'
+        CONDA_ENV: travisci
         RUN_COVERAGE: yes
       py37:
         PYTHON: '3.7'
+        CONDA_ENV: travisci
       pypy:
         PYTHON: pypy
+        CONDA_ENV: travisci
       py27_wheel:
         PYTHON: '2.7'
+        CONDA_ENV: travisci
         WHEEL: 'yes'
       py36_wheel:
         PYTHON: '3.6'
+        CONDA_ENV: travisci
         WHEEL: 'yes'
       py37_wheel:
         PYTHON: '3.7'
+        CONDA_ENV: travisci
         WHEEL: 'yes'
 
 - template: buildscripts/azure/azure-windows.yml

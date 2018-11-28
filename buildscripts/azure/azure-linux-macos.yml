@@ -2,7 +2,6 @@ parameters:
   name: ''
   vmImage: ''
   matrix: []
-  CONDA_ENV: travisci
 
 
 jobs:
