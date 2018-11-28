@@ -1,6 +1,7 @@
 parameters:
   name: ''
   vmImage: ''
+  CONDA_ENV: travisci
 
 jobs:
 - job: ${{ parameters.name }}
