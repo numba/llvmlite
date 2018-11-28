@@ -7,8 +7,10 @@ jobs:
     matrix:
       py27:
         PYTHON: '2.7'
+        CONDA_ENV: travisci
       py36:
         PYTHON: '3.6'
+        CONDA_ENV: travisci
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
