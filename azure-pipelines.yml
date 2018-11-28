@@ -26,7 +26,6 @@ jobs:
       py36:      
         PYTHON: '3.6'
         CONDA_ENV: travisci
-        RUN_COVERAGE: yes
       py37:
         PYTHON: '3.7'
         CONDA_ENV: travisci
