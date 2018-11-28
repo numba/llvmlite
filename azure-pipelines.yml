@@ -1,16 +1,42 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+jobs:
+# Mac and Linux use the same template with different matrixes
+- template: buildscripts/azure/azure-linux-macos.yml
+  parameters:
+    name: macOS
+    vmImage: xcode9-macos10.13
+    matrix:
+      py27:
+        PYTHON: '2.7'
+      py36:
+        PYTHON: '3.6'
 
-pool:
-  vmImage: 'Ubuntu 16.04'
+- template: buildscripts/azure/azure-linux-macos.yml
+  parameters:
+    name: Linux
+    vmImage: ubuntu-16.04
+    matrix:
+      py27:
+        PYTHON: '2.7'
+      py35:      
+        PYTHON: '3.5'
+      py36:      
+        PYTHON: '3.6'
+        RUN_COVERAGE: yes
+      py37:
+        PYTHON: '3.7'
+      pypy:
+        PYTHON: pypy
+      py27_wheel:
+        PYTHON: '2.7'
+        WHEEL: 'yes'
+      py36_wheel:
+        PYTHON: '3.6'
+        WHEEL: 'yes'
+      py37_wheel:
+        PYTHON: '3.7'
+        WHEEL: 'yes'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- template: buildscripts/azure/azure-windows.yml
+  parameters:
+    name: Windows
+    vmImage: vs2017-win2016
