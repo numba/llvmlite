@@ -3,13 +3,14 @@
 {% if ppc64le %}
 
 {% set version = "6.0.1" %}
-{% set sha256 = "b6d6c324f9c71494c0ccaf3dac1f16236d970002b42bb24a6c9e1634f7d0f4e2" %}
+{% set sha256_llvm = "b6d6c324f9c71494c0ccaf3dac1f16236d970002b42bb24a6c9e1634f7d0f4e2" %}
 {% set build_number = "1" %}
 
 {% else %}
 
 {% set version = "6.0.0" %}
-{% set sha256 = "1ff53c915b4e761ef400b803f07261ade637b0c269d99569f18040f3dcee4408" %}
+{% set sha256_llvm = "1ff53c915b4e761ef400b803f07261ade637b0c269d99569f18040f3dcee4408" %}
+{% set sha256_lld = "6b8c4a833cf30230c0213d78dbac01af21387b298225de90ab56032ca79c0e0b" %}
 {% set build_number = "5" %}
 
 {% endif %}
@@ -19,18 +20,22 @@ package:
   version: {{ version }}
 
 source:
-  fn: llvm-{{ version }}.src.tar.xz
-  url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
-  sha256: {{ sha256 }}
-  patches:
-    # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
-    - ../llvm-lto-static.patch   # [win]
-    # Intel SVML optimizations
-    - ../D47188-svml.patch
-    # https://reviews.llvm.org/D44140 Fix LLVM-C symbol export, backport to 6.0.0 from upstream
-    - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch # [not ppc64le]
-    # undefined behavior bug due to Twine usage
-    - ../twine_cfg_undefined_behavior.patch
+  - url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
+    fn: llvm-{{ version }}.src.tar.xz
+    sha256: {{ sha256_llvm }}
+    patches:
+      # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
+      - ../llvm-lto-static.patch   # [win]
+      # Intel SVML optimizations
+      - ../D47188-svml.patch
+      # https://reviews.llvm.org/D44140 Fix LLVM-C symbol export, backport to 6.0.0 from upstream
+      - ../0001-Transforms-Add-missing-header-for-InstructionCombini.patch # [not ppc64le]
+      # undefined behavior bug due to Twine usage
+      - ../twine_cfg_undefined_behavior.patch
+  - url: http://releases.llvm.org/{{ version }}/lld-{{ version }}.src.tar.xz
+    fn: lld-{{ version }}.src.tar.xz
+    sha256: {{ sha256_lld }}
+    folder: tools/lld
 
 build:
   number: {{ build_number }}
@@ -64,6 +69,8 @@ requirements:
     # needed for llc at runtime
     - zlib # [not win]
     - xar # [osx]
+    - libxml2
+    - swig
 
 test:
   requires:
@@ -90,6 +97,10 @@ test:
     - opt -S -vector-library=SVML -mcpu=haswell -O3 numba-3016.ll -o out.ll
     - findstr __svml_sin4 out.ll                             # [win]
     - grep __svml_sin4 out.ll                                # [unix and x86_64]
+
+    # LLD tests
+    - ld.lld --version  # [linux]
+    - lld-link /?  # [win]
 
 about:
   home: http://llvm.org/
