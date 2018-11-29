@@ -34,7 +34,7 @@ jobs:
 
     - script: |
         call C:\Miniconda3\Scripts\activate.bat
-        conda info -e
+        conda activate base
         buildscripts\\incremental\\setup_conda_environment.cmd
       displayName: 'Before Install'
 
