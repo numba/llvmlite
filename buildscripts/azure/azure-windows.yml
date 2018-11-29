@@ -33,8 +33,7 @@ jobs:
       condition: eq(variables['PYTHON'], '2.7')
 
     - script: |
-        call C:\Miniconda3\Scripts\activate.bat
-        conda activate base
+        call C:\Miniconda3\Scripts\activate.bat base
         buildscripts\\incremental\\setup_conda_environment.cmd
       displayName: 'Before Install'
 
