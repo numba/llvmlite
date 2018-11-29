@@ -34,7 +34,13 @@ jobs:
 
     - script: |
         call C:\Miniconda3\Scripts\activate.bat
-        buildscripts\\incremental\\setup_conda_environment.cmd
+        conda list
+        conda remove --all -q -y -n %CONDA_ENV%
+
+        conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
+        call activate %CONDA_ENV%
+        conda install -q -y -c numba llvmdev="6.0*"
+        if %PYTHON% LSS 3.4 (conda install -q -y enum34)
       displayName: 'Before Install'
 
     - script: |
