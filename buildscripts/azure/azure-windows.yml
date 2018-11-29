@@ -34,8 +34,8 @@ jobs:
 
     - script: |
         call C:\Miniconda3\Scripts\activate.bat
-        conda list
-        conda remove --all -q -y -n %CONDA_ENV%
+        call conda list
+        call conda remove --all -q -y -n %CONDA_ENV%
 
         conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
         call activate %CONDA_ENV%
