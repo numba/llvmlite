@@ -33,13 +33,16 @@ jobs:
       condition: eq(variables['PYTHON'], '2.7')
 
     - script: |
+        call %UserProfile%\Miniconda3\Scripts\activate.bat
         buildscripts\\incremental\\setup_conda_environment.cmd
       displayName: 'Before Install'
 
     - script: |
+        call %UserProfile%\Miniconda3\Scripts\activate.bat
         buildscripts\\incremental\\build.cmd
       displayName: 'Build'
 
     - script: |
+        call %UserProfile%\Miniconda3\Scripts\activate.bat
         buildscripts\\incremental\\test.cmd
       displayName: 'Test'
