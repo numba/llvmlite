@@ -17,10 +17,12 @@ jobs:
         CONDA_ENV: travisci
 
   steps:
-    - task: CondaEnvironment@1
-      inputs:
-        updateConda: no
-        packageSpecs: ''
+
+    - powershell: |
+        $wc = New-Object net.webclient
+        $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
+        Start-Process "Miniconda3-latest-Windows-x86_64.exe" /qn -Wait
+      displayName: 'Install miniconda'
 
     # Need to install VC 9.0 only for Python 2.7
     - powershell: |
