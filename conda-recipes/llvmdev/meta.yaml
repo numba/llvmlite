@@ -4,6 +4,7 @@
 
 {% set version = "6.0.1" %}
 {% set sha256_llvm = "b6d6c324f9c71494c0ccaf3dac1f16236d970002b42bb24a6c9e1634f7d0f4e2" %}
+{% set sha256_lld = "e706745806921cea5c45700e13ebe16d834b5e3c0b7ad83bf6da1f28b0634e11" %}
 {% set build_number = "1" %}
 
 {% else %}
