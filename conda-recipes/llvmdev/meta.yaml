@@ -98,7 +98,7 @@ test:
     - grep __svml_sin4 out.ll                                # [unix and x86_64]
 
     # LLD tests
-    - ld.lld --version  # [linux]
+    - ld.lld --version  # [unix]
     - lld-link /?  # [win]
 
 about:
