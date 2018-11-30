@@ -70,8 +70,6 @@ requirements:
     # needed for llc at runtime
     - zlib # [not win]
     - xar # [osx]
-    - libxml2
-    - swig
 
 test:
   requires:
