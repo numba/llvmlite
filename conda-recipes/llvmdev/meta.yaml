@@ -56,6 +56,7 @@ requirements:
     # needed for llc at runtime
     - zlib # [not win]
     - xar # [osx]
+    - python # llvm-lit testing needs *a* python
 
 test:
   requires:
