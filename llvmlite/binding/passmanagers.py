@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from ctypes import c_bool, c_int
+from ctypes import c_bool, c_int, c_char_p, CDLL, RTLD_GLOBAL
 from . import ffi
 
 
@@ -82,6 +82,14 @@ class PassManager(ffi.ObjectRef):
     def add_basic_alias_analysis_pass(self):
         """See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass."""
         ffi.lib.LLVMPY_AddBasicAliasAnalysisPass(self)
+
+    def load_shared_lib(self, path):
+        cdll = CDLL(path)
+
+    def add_pass_by_name(self, pass_name):
+        """Add a pass using its registered name"""
+        if not ffi.lib.LLVMPY_AddPassByName(self, pass_name.encode("utf8")):
+            raise RuntimeError("Could not add pass '{}'".format(pass_name));
 
 
 class ModulePassManager(PassManager):
@@ -168,3 +176,6 @@ ffi.lib.LLVMPY_AddSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
+
+ffi.lib.LLVMPY_AddPassByName.argtypes = [ffi.LLVMPassManagerRef, c_char_p]
+ffi.lib.LLVMPY_AddPassByName.restype = c_bool

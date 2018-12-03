@@ -1085,6 +1085,14 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         else:
             raise RuntimeError("expected IR not found")
 
+    def test_load_pass(self):
+        path = "./ffi/LLVMHello/build/hello/libLLVMPYHello.so"
+        pm = self.pm()
+        mod = self.module()
+        pm.load_shared_lib(path)
+        pm.add_pass_by_name("hello")
+        pm.run(mod)
+
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
 

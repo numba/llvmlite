@@ -12,6 +12,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/PassRegistry.h"
 
 using namespace llvm;
 
@@ -159,6 +160,19 @@ API_EXPORT(void)
 LLVMPY_AddBasicAliasAnalysisPass(LLVMPassManagerRef PM)
 {
     LLVMAddBasicAliasAnalysisPass(PM);
+}
+
+API_EXPORT(bool)
+LLVMPY_AddPassByName(LLVMPassManagerRef PM, const char* passName) {
+    auto passManager = llvm::unwrap(PM);
+    auto registry = PassRegistry::getPassRegistry();
+    const auto* passInfo = registry->getPassInfo(llvm::StringRef(passName));
+    if (passInfo == nullptr) {
+        return false;
+    }
+    auto pass = passInfo->getNormalCtor()();
+    passManager->add(pass);
+    return true;
 }
 
 } // end extern "C"

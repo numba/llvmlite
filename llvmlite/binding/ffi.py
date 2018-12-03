@@ -117,12 +117,12 @@ if os.name == 'nt':
 
 _lib_name = get_library_name()
 try:
-    lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name))
+    lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name), mode=ctypes.RTLD_GLOBAL)
 except OSError as e:
     # Allow finding the llvmlite DLL in the current directory, for ease
     # of bundling with frozen applications.
     try:
-        lib = ctypes.CDLL(_lib_name)
+        lib = ctypes.CDLL(_lib_name, mode=ctypes.RTLD_GLOBAL)
     except OSError:
         if PY2:
             raise e
