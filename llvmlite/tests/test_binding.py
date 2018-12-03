@@ -10,6 +10,7 @@ import platform
 import re
 import subprocess
 import sys
+import threading
 import unittest
 from contextlib import contextmanager
 
@@ -22,6 +23,45 @@ from . import TestCase
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
+
+
+
+@contextmanager
+def capture_stderr():
+    class StringBox:
+        def __init__(self):
+            self.data = []
+
+        def append(self, data):
+            self.data.append(data)
+
+        def as_str(self):
+            return b''.join(self.data).decode('utf8')
+
+    stderr_fileno = sys.stderr.fileno()
+    stderr_copy = os.dup(stderr_fileno)
+    stderr_pipe = os.pipe()
+    os.dup2(stderr_pipe[1], stderr_fileno)
+    os.close(stderr_pipe[1])
+
+    captured = StringBox()
+
+    def drain_pipe():
+        nonlocal captured
+        while True:
+            data = os.read(stderr_pipe[0], 1024)
+            if not data:
+                break
+            captured.append(data)
+
+    t = threading.Thread(target=drain_pipe)
+    t.start()
+    yield captured
+    os.close(stderr_fileno)
+    t.join()
+    os.close(stderr_pipe[0])
+    os.dup2(stderr_copy, stderr_fileno)
+    os.close(stderr_copy)
 
 
 def no_de_locale():
@@ -1091,7 +1131,9 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         mod = self.module()
         pm.load_shared_lib(path)
         pm.add_pass_by_name("hello")
-        pm.run(mod)
+        with capture_stderr() as captured:
+            pm.run(mod)
+        self.assertEqual(captured.as_str(), "Hello: sum\n")
 
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
