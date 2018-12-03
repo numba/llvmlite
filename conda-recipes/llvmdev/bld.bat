@@ -32,6 +32,9 @@ if errorlevel 1 exit 1
 REM From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
 %BUILD_CONFIG%\bin\opt -S -vector-library=SVML -mcpu=haswell -O3 %RECIPE_DIR%\numba-3016.ll | %BUILD_CONFIG%\bin\FileCheck %RECIPE_DIR%\numba-3016.ll
 if errorlevel 1 exit 1
-cd ..\test
-%PYTHON% ..\build\%BUILD_CONFIG%\bin\llvm-lit.py -vv Transforms ExecutionEngine Analysis CodeGen/X86
-if errorlevel 1 exit 1
+
+REM This is technically how to run the suite, but it will only run in an
+REM enhanced unix-like shell which has functions like `grep` available.
+REM cd ..\test
+REM %PYTHON% ..\build\%BUILD_CONFIG%\bin\llvm-lit.py -vv Transforms ExecutionEngine Analysis CodeGen/X86
+REM if errorlevel 1 exit 1
