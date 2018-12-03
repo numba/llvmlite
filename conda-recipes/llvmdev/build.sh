@@ -78,6 +78,10 @@ fi
 
 # From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
 make install || exit $?
-bin/opt -S -vector-library=SVML -mcpu=haswell -O3 $RECIPE_DIR/numba-3016.ll | bin/FileCheck $RECIPE_DIR/numba-3016.ll || exit $?
+
+# SVML tests on x86_64 arch only
+if [[ $ARCH == 'x86_64' ]]; then
+    bin/opt -S -vector-library=SVML -mcpu=haswell -O3 $RECIPE_DIR/numba-3016.ll | bin/FileCheck $RECIPE_DIR/numba-3016.ll || exit $?
+fi
 cd ../test
 ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
