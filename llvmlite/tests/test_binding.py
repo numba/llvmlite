@@ -46,15 +46,14 @@ def capture_stderr():
 
     captured = StringBox()
 
-    def drain_pipe():
-        nonlocal captured
+    def drain_pipe(captured):
         while True:
             data = os.read(stderr_pipe[0], 1024)
             if not data:
                 break
             captured.append(data)
 
-    t = threading.Thread(target=drain_pipe)
+    t = threading.Thread(target=drain_pipe, args=[captured])
     t.start()
     yield captured
     os.close(stderr_fileno)
