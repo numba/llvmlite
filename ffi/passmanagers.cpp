@@ -165,10 +165,10 @@ LLVMPY_AddBasicAliasAnalysisPass(LLVMPassManagerRef PM)
 }
 
 API_EXPORT(bool)
-LLVMPY_AddPassByName(LLVMPassManagerRef PM, const char* passName) {
+LLVMPY_AddPassByArg(LLVMPassManagerRef PM, const char* passArg) {
     auto passManager = llvm::unwrap(PM);
     auto registry = PassRegistry::getPassRegistry();
-    const auto* passInfo = registry->getPassInfo(llvm::StringRef(passName));
+    const auto* passInfo = registry->getPassInfo(llvm::StringRef(passArg));
     if (passInfo == nullptr) {
         return false;
     }

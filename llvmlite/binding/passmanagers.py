@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 from ctypes import c_bool, c_int, c_char_p, CDLL, POINTER
+from collections import namedtuple
 from . import ffi
 
 
@@ -88,9 +89,10 @@ class PassManager(ffi.ObjectRef):
         Return the names of the registered passes as a list
         of tuples (<pass arg>, <pass name>)
         """
+        PassInfo = namedtuple("PassInfo", ["arg", "name"])
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_ListRegisteredPasses(out)
-            passes = [tuple(pass_info.split(":", maxsplit=1))\
+            passes = [PassInfo(*pass_info.split(":", maxsplit=1))\
                              for pass_info in str(out).split(',')]
             return passes
 
@@ -98,10 +100,10 @@ class PassManager(ffi.ObjectRef):
         """Load shared library containing a pass"""
         CDLL(path)
 
-    def add_pass_by_name(self, pass_name):
+    def add_pass_by_arg(self, pass_arg):
         """Add a pass using its registered name"""
-        if not ffi.lib.LLVMPY_AddPassByName(self, pass_name.encode("utf8")):
-            raise RuntimeError("Could not add pass '{}'".format(pass_name));
+        if not ffi.lib.LLVMPY_AddPassByArg(self, pass_arg.encode("utf8")):
+            raise RuntimeError("Could not add pass '{}'".format(pass_arg));
 
 
 class ModulePassManager(PassManager):
@@ -190,5 +192,5 @@ ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 
 ffi.lib.LLVMPY_ListRegisteredPasses.argtypes = [POINTER(c_char_p)]
-ffi.lib.LLVMPY_AddPassByName.argtypes = [ffi.LLVMPassManagerRef, c_char_p]
-ffi.lib.LLVMPY_AddPassByName.restype = c_bool
+ffi.lib.LLVMPY_AddPassByArg.argtypes = [ffi.LLVMPassManagerRef, c_char_p]
+ffi.lib.LLVMPY_AddPassByArg.restype = c_bool

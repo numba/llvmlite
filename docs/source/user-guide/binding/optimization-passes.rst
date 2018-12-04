@@ -68,6 +68,16 @@ create and configure a :class:`PassManagerBuilder`.
    methods or :meth:`PassManagerBuilder.populate` to add
    optimization passes.
 
+   * .. method:: list_registered_passes()
+
+        Returns the list of registered passes as a named tuple (arg, name).
+        ``arg`` is the unique identifier used to add passes with :meth:`add_pass_by_arg`,
+        ``name`` is the human-readable name of the pass.
+
+   * .. function:: add_pass_by_arg(arg)
+
+        Add a pass defined by the supplied ``arg``. See also :meth:`list_registered_passes`.
+
    * .. function:: add_constant_merge_pass()
 
         See `constmerge pass documentation <http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants>`_.
@@ -136,6 +146,11 @@ create and configure a :class:`PassManagerBuilder`.
    * .. function:: add_basic_alias_analysis_pass()
 
         See `basicaa pass documentation <http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass>`_.
+
+   * .. method:: load_shared_lib(path)
+
+        Load a shared library defined by ``path`` which contains a custom
+        LLVM optimization path. See also `'Writing an LLVM Pass' <http://llvm.org/docs/WritingAnLLVMPass.html>`_.
 
 .. class:: ModulePassManager()
 

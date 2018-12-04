@@ -1144,8 +1144,11 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         self.assertNotIn("hello", passes)
         pm.load_shared_lib(path)
         passes_after_load = set(pm.list_registered_passes())
-        self.assertEqual(passes_after_load - passes,
-                            set([("hello", "Hello World Pass")]))
+        new_info = passes_after_load - passes
+        self.assertEqual(len(new_info), 1)
+        hello_info = list(new_info)[0]
+        self.assertEqual(hello_info.arg, "hello")
+        self.assertEqual(hello_info.name, "Hello World Pass")
 
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
