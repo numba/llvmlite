@@ -15,11 +15,6 @@ namespace {
         static char ID;
         Hello() : FunctionPass(ID) { }
         bool runOnFunction(Function& F) override {
-            char buf[50];
-            const auto& mangled = F.getName();
-            int status;
-            size_t size;
-            char* demangled = itaniumDemangle(mangled.str().c_str(), buf, &size, &status);
             errs() << "Hello: ";
             errs().write_escaped(F.getName()) << "\n";
             return false;
