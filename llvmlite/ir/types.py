@@ -330,7 +330,7 @@ class DecimalType(_BaseFloatType):
         return _format_double(value)
 
 
-class HalfPrecisionFloatType(_BaseFloatType):
+class HalfFloatType(_BaseFloatType):
     """
     The type for 16 bits floats.
     """
@@ -344,7 +344,7 @@ class HalfPrecisionFloatType(_BaseFloatType):
         return _format_double(value)
 
 
-for _cls in (FloatType, DoubleType, DecimalType, HalfPrecisionFloatType):
+for _cls in (FloatType, DoubleType, DecimalType, HalfFloatType):
     _cls._create_instance()
 
 

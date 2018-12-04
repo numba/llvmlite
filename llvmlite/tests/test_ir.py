@@ -22,8 +22,10 @@ int8 = ir.IntType(8)
 int16 = ir.IntType(16)
 int32 = ir.IntType(32)
 int64 = ir.IntType(64)
+hlf = ir.HalfFloatType()
 flt = ir.FloatType()
 dbl = ir.DoubleType()
+dec = ir.DecimalType()
 
 
 PY2 = sys.version_info[0] == 2
@@ -1592,7 +1594,7 @@ class TestTypes(TestBase):
             ir.FunctionType(int1, (int8, int8)), ir.FunctionType(int1, (int8,)),
             ir.FunctionType(int1, (int8,), var_arg=True),
             ir.FunctionType(int8, (int8,)),
-            int1, int8, int32, flt, dbl,
+            int1, int8, int32, flt, dbl, hlf, dec,
             ir.ArrayType(flt, 5), ir.ArrayType(dbl, 5), ir.ArrayType(dbl, 4),
             ir.LiteralStructType((int1, int8)), ir.LiteralStructType((int8, int1)),
             context.get_identified_type("MyType1"),
@@ -1637,6 +1639,8 @@ class TestTypes(TestBase):
         self.assertEqual(str(ir.IntType(29)), 'i29')
         self.assertEqual(str(flt), 'float')
         self.assertEqual(str(dbl), 'double')
+        self.assertEqual(str(hlf), 'half')
+        self.assertEqual(str(dec), 'fp128')
         self.assertEqual(str(ir.VoidType()), 'void')
         self.assertEqual(str(ir.FunctionType(int1, ())), 'i1 ()')
         self.assertEqual(str(ir.FunctionType(int1, (flt,))), 'i1 (float)')

@@ -84,6 +84,11 @@ Atomic types
 
       The width in bits.
 
+.. class:: HalfFloatType()
+
+   The type of half-precision, floating-point, real numbers.
+
+
 .. class:: FloatType()
 
    The type of single-precision, floating-point, real numbers.
@@ -92,6 +97,11 @@ Atomic types
 .. class:: DoubleType()
 
    The type of double-precision, floating-point, real numbers.
+
+
+.. class:: DecimalType()
+
+   The type of quad-precision, floating-point, real numbers.
 
 
 .. class:: VoidType()
