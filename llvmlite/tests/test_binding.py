@@ -1131,7 +1131,7 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         pm = self.pm()
         mod = self.module()
         pm.load_shared_lib(path)
-        pm.add_pass_by_name("hello")
+        pm.add_pass_by_arg("hello")
         with capture_stderr() as captured:
             pm.run(mod)
         self.assertEqual(captured.as_str(), "Hello: sum\n")
