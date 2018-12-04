@@ -92,7 +92,7 @@ class PassManager(ffi.ObjectRef):
         PassInfo = namedtuple("PassInfo", ["arg", "name"])
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_ListRegisteredPasses(out)
-            passes = [PassInfo(*pass_info.split(":", maxsplit=1))\
+            passes = [PassInfo(*pass_info.split(":", 1))\
                              for pass_info in str(out).split(',')]
             return passes
 
