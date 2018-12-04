@@ -17,6 +17,7 @@ from contextlib import contextmanager
 from llvmlite import six, ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
+from llvmlite.utils import get_hello_pass_library
 from . import TestCase
 
 
@@ -1137,7 +1138,7 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
 
     def test_list_passes(self):
         path = os.path.join(os.path.dirname(__file__),
-                            "../binding/libLLVMPYHello.so")
+                            "../binding/", get_hello_pass_library())
         pm = self.pm()
         passes = set(pm.list_registered_passes())
         self.assertNotIn("hello", passes)

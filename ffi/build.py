@@ -15,6 +15,15 @@ import tempfile
 from contextlib import contextmanager
 
 
+if os.name == 'posix':
+    if sys.platform == 'darwin':
+        hello_pass_library = 'libLLVMPYHello.dylib'
+    else:
+        hello_pass_library = 'libLLVMPYHello.so'
+else:
+    assert os.name == 'nt'
+    hello_pass_library = 'LLVMPYHello.dll'
+
 here_dir = os.path.abspath(os.path.dirname(__file__))
 build_dir = os.path.join(here_dir, 'build')
 target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
@@ -170,10 +179,11 @@ def build_passes():
             os.makedirs("build")
         assert os.path.isdir("build"), "passes/build must be a directory"
         with cwd("build"):
-            subprocess.check_call(["cmake", "..", "-DCMAKE_BUILD_TYPE=Release"])
+            subprocess.check_call(["cmake", "..",
+                "-DCMAKE_BUILD_TYPE=Release"])
             subprocess.check_call(["make"])
             print(target_dir)
-            shutil.copy("hello/libLLVMPYHello.so", target_dir)
+            shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
 
 
 def main():
