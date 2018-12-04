@@ -34,7 +34,7 @@ namespace {
                     bool is_analysis = false) {
             auto registry = PassRegistry::getPassRegistry();
             // check if there is already a pyhello pass
-            auto passInfo = registry->getPassInfo("pyhello");
+            auto passInfo = registry->getPassInfo(arg);
             if (passInfo == nullptr) {
                 pass_info_ = make_unique<PassInfo>(name, arg, &T::ID,
                     PassInfo::NormalCtor_t(callDefaultCtor<T>), CFGOnly,
