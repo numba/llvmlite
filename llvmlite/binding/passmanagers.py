@@ -103,7 +103,7 @@ class PassManager(ffi.ObjectRef):
     def add_pass_by_arg(self, pass_arg):
         """Add a pass using its registered name"""
         if not ffi.lib.LLVMPY_AddPassByArg(self, pass_arg.encode("utf8")):
-            raise RuntimeError("Could not add pass '{}'".format(pass_arg));
+            raise ValueError("Could not add pass '{}'".format(pass_arg))
 
 
 class ModulePassManager(PassManager):

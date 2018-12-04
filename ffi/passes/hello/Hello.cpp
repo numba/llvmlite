@@ -6,6 +6,10 @@
 using namespace llvm;
 
 namespace {
+    /*
+        Sample Hello World function pass. Named pyhello to avoid conflict
+        with LLVM's built-in example pass
+    */
     struct Hello : public FunctionPass {
         static char ID;
         Hello() : FunctionPass(ID) { }
@@ -23,7 +27,7 @@ namespace {
 
     char Hello::ID = 0;
 
-    static RegisterPass<Hello> X("hello", "Hello World Pass",
+    static RegisterPass<Hello> X("pyhello", "Hello World Pass",
                                 false,
                                 false);
 } // end anonymous

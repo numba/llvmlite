@@ -1130,8 +1130,11 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
                             "../binding/libLLVMPYHello.so")
         pm = self.pm()
         mod = self.module()
+        with self.assertRaises(ValueError):
+            pm.add_pass_by_arg("doesntexist")
+
         pm.load_shared_lib(path)
-        pm.add_pass_by_arg("hello")
+        pm.add_pass_by_arg("pyhello")
         with capture_stderr() as captured:
             pm.run(mod)
         self.assertEqual(captured.as_str(), "Hello: sum\n")
@@ -1141,13 +1144,13 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
                             "../binding/", get_hello_pass_library())
         pm = self.pm()
         passes = set(pm.list_registered_passes())
-        self.assertNotIn("hello", passes)
+        self.assertNotIn("pyhello", passes)
         pm.load_shared_lib(path)
         passes_after_load = set(pm.list_registered_passes())
         new_info = passes_after_load - passes
         self.assertEqual(len(new_info), 1)
         hello_info = list(new_info)[0]
-        self.assertEqual(hello_info.arg, "hello")
+        self.assertEqual(hello_info.arg, "pyhello")
         self.assertEqual(hello_info.name, "Hello World Pass")
 
 
