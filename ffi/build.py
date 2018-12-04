@@ -174,7 +174,7 @@ def main_posix(kind, library_ext):
 
 
 def build_passes():
-    with cwd("passes"):
+    with cwd(os.path.join(os.path.dirname(__file__), "passes")):
         if not os.path.exists("build"):
             os.makedirs("build")
         assert os.path.isdir("build"), "passes/build must be a directory"
