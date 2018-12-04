@@ -179,10 +179,13 @@ def build_passes():
             os.makedirs("build")
         assert os.path.isdir("build"), "passes/build must be a directory"
         with cwd("build"):
-            subprocess.check_call(["cmake", "..",
-                "-DCMAKE_BUILD_TYPE=Release"])
-            subprocess.check_call(["make"])
-            print(target_dir)
+            if os.name == "posix":
+                subprocess.check_call(['cmake', '..'])
+            else:
+                generator = find_win32_generator()
+                try_cmake('..', '.', generator)
+
+            subprocess.check_call(['cmake', '--build', '.', '--config', 'Release'])
             shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
 
 
