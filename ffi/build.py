@@ -148,7 +148,8 @@ def main_posix(kind, library_ext):
     # we'll need for dynamically loaded pass libraries
     excluded = ['-Wl,--exclude-libs,lib{}.a'.format(lname.strip()) \
         for lname in libs.split('-l') \
-        if lname and 'LLVMCore' not in lname]
+        if lname and 'LLVMCore' not in lname
+        and 'LLVMSupport' not in lname]
     cxxflags.append(' '.join(excluded))
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
