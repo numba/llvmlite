@@ -4,8 +4,6 @@ from ctypes import c_bool, c_int, c_char_p, cdll, CDLL, POINTER
 from collections import namedtuple
 from . import ffi
 
-_loaded_libraries = set()
-
 def create_module_pass_manager():
     return ModulePassManager()
 
@@ -20,16 +18,10 @@ class PassManager(ffi.ObjectRef):
 
     def __init__(self, ptr):
         super(PassManager, self).__init__(ptr)
-        # dictionary of <absolute_library_path>:<library object> of loaded libraries
-        self._loaded_libraries = {}
+        self._loaded_libraries = []
 
     def _dispose(self):
         # unload shared libraries
-        global _loaded_libraries
-        for path in self._loaded_libraries:
-            self._loaded_libraries[path] = None
-            _loaded_libraries.discard(path)
-
         self._capi.LLVMPY_DisposePassManager(self)
 
     def add_constant_merge_pass(self):
@@ -111,13 +103,7 @@ class PassManager(ffi.ObjectRef):
 
     def load_shared_lib(self, path):
         """Load shared library containing a pass"""
-        global _loaded_libraries
-
-        abs_path = os.path.abspath(path)
-        if abs_path in _loaded_libraries:
-            raise ValueError("Library {} is already loaded".format(abs_path))
-        self._loaded_libraries[abs_path] = CDLL(abs_path)
-        _loaded_libraries.add(abs_path)
+        self._loaded_libraries.append(CDLL(path))
 
     def add_pass_by_arg(self, pass_arg):
         """Add a pass using its registered name"""
