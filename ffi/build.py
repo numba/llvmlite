@@ -12,6 +12,7 @@ import subprocess
 import shutil
 import sys
 import tempfile
+from contextlib import contextmanager
 
 
 here_dir = os.path.abspath(os.path.dirname(__file__))
@@ -19,6 +20,13 @@ build_dir = os.path.join(here_dir, 'build')
 target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 
 is_64bit = sys.maxsize >= 2**32
+
+@contextmanager
+def cwd(path):
+    old_wd = os.getcwd()
+    os.chdir(path)
+    yield
+    os.chdir(old_wd)
 
 
 def try_cmake(cmake_dir, build_dir, generator):
@@ -122,11 +130,17 @@ def main_posix(kind, library_ext):
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = ' '.join(libs.split())
-
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
     cxxflags = cxxflags.replace('\0', '')
     cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
+
+    # exclude unused symbols from all LLVM libraries except for passes, since
+    # we'll need for dynamically loaded pass libraries
+    excluded = ['-Wl,--exclude-libs,lib{}.a'.format(lname.strip()) \
+        for lname in libs.split('-l') \
+        if lname and 'libLLVMCore' in lname ]
+    cxxflags.append(' '.join(excluded))
 
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
@@ -150,6 +164,18 @@ def main_posix(kind, library_ext):
     shutil.copy('libllvmlite' + library_ext, target_dir)
 
 
+def build_passes():
+    with cwd("passes"):
+        if not os.path.exists("build"):
+            os.makedirs("build")
+        assert os.path.isdir("build"), "passes/build must be a directory"
+        with cwd("build"):
+            subprocess.check_call(["cmake", "..", "-DCMAKE_BUILD_TYPE=Release"])
+            subprocess.check_call(["make"])
+            print(target_dir)
+            shutil.copy("hello/libLLVMPYHello.so", target_dir)
+
+
 def main():
     if sys.platform == 'win32':
         main_win32()
@@ -161,6 +187,7 @@ def main():
         main_posix('osx', '.dylib')
     else:
         raise RuntimeError("unsupported platform: %r" % (sys.platform,))
+    build_passes()
 
 
 if __name__ == "__main__":
