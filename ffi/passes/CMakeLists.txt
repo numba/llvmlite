@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.2)
 
 find_package(LLVM REQUIRED CONFIG)
 
