@@ -6,6 +6,7 @@
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/ADT/SmallString.h"
 
 #include "llvm-c/Transforms/Scalar.h"
 #include "llvm-c/Transforms/IPO.h"
@@ -13,6 +14,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/PassRegistry.h"
+#include "llvm/PassSupport.h"
 
 using namespace llvm;
 
@@ -170,9 +172,39 @@ LLVMPY_AddPassByName(LLVMPassManagerRef PM, const char* passName) {
     if (passInfo == nullptr) {
         return false;
     }
-    auto pass = passInfo->getNormalCtor()();
+    auto pass = passInfo->createPass();
     passManager->add(pass);
     return true;
+}
+
+namespace {
+    class NameSavingPassRegListener : public llvm::PassRegistrationListener {
+    public:
+    NameSavingPassRegListener() : stream_buf_(), sstream_(stream_buf_) { }
+    void passEnumerate(const llvm::PassInfo* passInfo) override {
+        if (stream_buf_.size() != 0) {
+            sstream_ << ",";
+
+        }
+        sstream_ << passInfo->getPassArgument() << ":" << passInfo->getPassName();
+    }
+
+    const char* getNames() {
+        return stream_buf_.c_str();
+    }
+
+    private:
+    llvm::SmallString<128> stream_buf_;
+    llvm::raw_svector_ostream sstream_;
+    };
+}
+
+API_EXPORT(void)
+LLVMPY_ListRegisteredPasses(const char** out) {
+    auto registry = PassRegistry::getPassRegistry();
+    auto listener = llvm::make_unique<NameSavingPassRegListener>();
+    registry->enumerateWith(listener.get());
+    *out = LLVMPY_CreateString(listener->getNames());
 }
 
 } // end extern "C"

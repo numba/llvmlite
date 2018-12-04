@@ -1,5 +1,5 @@
 from __future__ import print_function, absolute_import
-from ctypes import c_bool, c_int, c_char_p, CDLL, RTLD_GLOBAL
+from ctypes import c_bool, c_int, c_char_p, CDLL, POINTER
 from . import ffi
 
 
@@ -83,8 +83,20 @@ class PassManager(ffi.ObjectRef):
         """See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass."""
         ffi.lib.LLVMPY_AddBasicAliasAnalysisPass(self)
 
+    def list_registered_passes(self):
+        """
+        Return the names of the registered passes as a list
+        of tuples (<pass arg>, <pass name>)
+        """
+        with ffi.OutputString() as out:
+            ffi.lib.LLVMPY_ListRegisteredPasses(out)
+            passes = [tuple(pass_info.split(":", maxsplit=1))\
+                             for pass_info in str(out).split(',')]
+            return passes
+
     def load_shared_lib(self, path):
-        cdll = CDLL(path)
+        """Load shared library containing a pass"""
+        CDLL(path)
 
     def add_pass_by_name(self, pass_name):
         """Add a pass using its registered name"""
@@ -177,5 +189,6 @@ ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 
+ffi.lib.LLVMPY_ListRegisteredPasses.argtypes = [POINTER(c_char_p)]
 ffi.lib.LLVMPY_AddPassByName.argtypes = [ffi.LLVMPassManagerRef, c_char_p]
 ffi.lib.LLVMPY_AddPassByName.restype = c_bool

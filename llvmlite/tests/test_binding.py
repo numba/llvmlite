@@ -1136,6 +1136,17 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
             pm.run(mod)
         self.assertEqual(captured.as_str(), "Hello: sum\n")
 
+    def test_list_passes(self):
+        path = os.path.join(os.path.dirname(__file__),
+                            "../binding/libLLVMPYHello.so")
+        pm = self.pm()
+        passes = set(pm.list_registered_passes())
+        self.assertNotIn("hello", passes)
+        pm.load_shared_lib(path)
+        passes_after_load = set(pm.list_registered_passes())
+        self.assertEqual(passes_after_load - passes,
+                            set([("hello", "Hello World Pass")]))
+
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
 
