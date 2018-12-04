@@ -6,7 +6,7 @@ set PIP_INSTALL=pip install -q
 @echo on
 
 @rem Deactivate any environment
-call activate base
+call deactivate
 @rem Display root environment (for debugging)
 conda list
 @rem Clean up any left-over from a previous build
