@@ -172,7 +172,6 @@ LLVMPY_AddPassByArg(LLVMPassManagerRef PM, const char* passArg) {
     if (passInfo == nullptr) {
         return false;
     }
-    llvm::errs() << "Found pass " << passInfo->getPassName();
     auto pass = passInfo->createPass();
     passManager->add(pass);
     return true;

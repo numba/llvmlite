@@ -1134,6 +1134,10 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
             pm.add_pass_by_arg("doesntexist")
 
         pm.load_shared_lib(path)
+
+        with self.assertRaises(ValueError):
+            pm.load_shared_lib(path)
+
         pm.add_pass_by_arg("pyhello")
         with capture_stderr() as captured:
             pm.run(mod)
