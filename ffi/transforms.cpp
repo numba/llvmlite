@@ -2,7 +2,6 @@
 #include "llvm-c/Transforms/PassManagerBuilder.h"
 #include "llvm-c/Target.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/PassRegistry.h"
 
 
 extern "C" {
@@ -15,8 +14,6 @@ namespace llvm {
     inline LLVMPassManagerBuilderRef wrap(PassManagerBuilder *P) {
         return reinterpret_cast<LLVMPassManagerBuilderRef>(P);
     }
-
-
 }
 
 
