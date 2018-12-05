@@ -73,6 +73,7 @@ create and configure a :class:`PassManagerBuilder`.
         Returns the list of registered passes as a named tuple (arg, name).
         ``arg`` is the unique identifier used to add passes with :meth:`add_pass_by_arg`,
         ``name`` is the human-readable name of the pass.
+        See also :func:`load_pass_plugin`
 
    * .. function:: add_pass_by_arg(arg)
 
@@ -148,11 +149,6 @@ create and configure a :class:`PassManagerBuilder`.
 
         See `basicaa pass documentation <http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass>`_.
 
-   * .. method:: load_shared_lib(path)
-
-        Load a shared library defined by ``path`` which contains a custom
-        LLVM optimization path. See also `'Writing an LLVM Pass' <http://llvm.org/docs/WritingAnLLVMPass.html>`_.
-
 .. class:: ModulePassManager()
 
    Create a new pass manager to run optimization passes on a
@@ -190,3 +186,8 @@ create and configure a :class:`PassManagerBuilder`.
 
         Returns ``True`` if the optimizations made any
         modification to the module. Otherwise returns ``False``.
+
+.. function:: load_pass_plugin(path)
+
+    Load a shared library defined by ``path`` which contains a custom
+    LLVM optimization path. See also `'Writing an LLVM Pass' <http://llvm.org/docs/WritingAnLLVMPass.html>`_.

@@ -1133,7 +1133,7 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         with self.assertRaises(ValueError):
             pm.add_pass_by_arg("doesntexist")
 
-        pm.load_shared_lib(path)
+        llvm.load_pass_plugin(path)
 
         pm.add_pass_by_arg("pyhello")
         with capture_stderr() as captured:
@@ -1146,7 +1146,7 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         pm = self.pm()
         passes = set(pm.list_registered_passes())
         self.assertNotIn("pyhello", passes)
-        pm.load_shared_lib(path)
+        llvm.load_pass_plugin(path)
         passes_after_load = set(pm.list_registered_passes())
         new_info = passes_after_load - passes
         self.assertEqual(len(new_info), 1)

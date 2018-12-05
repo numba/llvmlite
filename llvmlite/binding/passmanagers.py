@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 import os
+import sys
 from ctypes import c_bool, c_int, c_char_p, cdll, CDLL, POINTER
 from collections import namedtuple
 from . import ffi
@@ -12,13 +13,24 @@ def create_function_pass_manager(module):
     return FunctionPassManager(module)
 
 
+# we maintain a global list of loaded libraries. On pypy,
+# garbage collection dlcloses loaded libraries which makes it
+# virtually impossible to handle pass registration properly
+# setdlopenflags also doesn't work properly on pypy
+_loaded_libraries = []
+
+
+def load_pass_plugin(path):
+    """Load shared library containing a pass"""
+    _loaded_libraries.append(CDLL(path))
+
+
 class PassManager(ffi.ObjectRef):
     """PassManager
     """
 
     def __init__(self, ptr):
         super(PassManager, self).__init__(ptr)
-        self._loaded_libraries = []
 
     def _dispose(self):
         # unload shared libraries
@@ -100,10 +112,6 @@ class PassManager(ffi.ObjectRef):
             passes = [PassInfo(*pass_info.split(":", 1))\
                              for pass_info in str(out).split(',')]
             return passes
-
-    def load_shared_lib(self, path):
-        """Load shared library containing a pass"""
-        self._loaded_libraries.append(CDLL(path))
 
     def add_pass_by_arg(self, pass_arg):
         """Add a pass using its registered name"""
