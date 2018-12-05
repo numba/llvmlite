@@ -17,4 +17,3 @@ endif()
 include_directories(${LLVM_INCLUDE_DIRS})
 
 add_subdirectory(hello)
-add_subdirectory(refcntopt)
