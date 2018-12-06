@@ -1,7 +1,9 @@
+{% set VERSION_SUFFIX = "" %} # debug version suffix, appended to the version
+
 package:
   name: llvmlite
   # GIT_DESCRIBE_TAG may not be set
-  version: {{ environ.get('GIT_DESCRIBE_TAG', '').lstrip('v') }}
+  version: {{ "%s%s" % (environ.get('GIT_DESCRIBE_TAG', '').lstrip('v'), VERSION_SUFFIX) }}
 
 source:
   # Using the local source tree helps test building without pushing changes
@@ -25,7 +27,7 @@ requirements:
   host:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 6.0*
+    - llvmdev 7.0*
     - vs2015_runtime # [win]
     - enum34         # [py27]
     # llvmdev is built with libz compression support
