@@ -175,14 +175,7 @@ def main_posix(kind, library_ext):
 
 
 def build_passes():
-    is_osx_travis = os.name == "posix" and sys.platform == "darwin" \
-        and os.environ['CONDA_ENV'] == 'travisci'
-    bootstrap_path = os.path.expandvars('$HOME/build/numba/llvmlite/bootstrap/bin:')
     with cwd(os.path.join(os.path.dirname(__file__), "passes")):
-        if is_osx_travis:
-            # drop boostrap path from $PATH
-            os.environ['PATH'] = os.environ['PATH'].replace(bootstrap_path, '')
-            print('Using PATH: ' + os.environ['PATH'])
         if not os.path.exists("build"):
             os.makedirs("build")
         assert os.path.isdir("build"), "passes/build must be a directory"
@@ -199,8 +192,6 @@ def build_passes():
             subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
             shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
             # restore boostrap to the path
-        if is_osx_travis:
-            os.environ['PATH'] = bootstrap_path + os.environ['PATH']
 
 
 def main():
