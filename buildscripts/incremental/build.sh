@@ -2,6 +2,15 @@
 
 source activate $CONDA_ENV
 
+if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
+    # OSX needs 10.7 or above with libc++ enabled
+    export MACOSX_DEPLOYMENT_TARGET=10.9
+fi
+
+if [[ ${MACOSX_DEPLOYMENT_TARGET} == 10.9 ]]; then
+  DARWIN_TARGET=x86_64-apple-darwin13.4.0
+fi
+
 # need to build with Anaconda compilers on osx, but they conflict with llvmdev... bootstap
 if [[ $(uname) == Darwin ]]; then
   # export LLVM_CONFIG explicitly as the one installed from llvmdev
@@ -20,16 +29,6 @@ if [[ $(uname) == Darwin ]]; then
   CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
   ${LLVM_CONFIG} --version
 fi
-
-if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    # OSX needs 10.7 or above with libc++ enabled
-    export MACOSX_DEPLOYMENT_TARGET=10.9
-fi
-
-if [[ ${MACOSX_DEPLOYMENT_TARGET} == 10.9 ]]; then
-  DARWIN_TARGET=x86_64-apple-darwin13.4.0
-fi
-
 
 # Make sure any error below is reported as such
 set -v -e
