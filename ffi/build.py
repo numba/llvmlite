@@ -175,11 +175,12 @@ def main_posix(kind, library_ext):
 
 
 def build_passes():
+    is_osx_tra
     with cwd(os.path.join(os.path.dirname(__file__), "passes")):
-        if os.name == "posix" and sys.platform == "darwin":
+        if os.name == "posix" and sys.platform == "darwin" and :
             # drop boostrap path from $PATH
             os.environ['PATH'] = os.environ['PATH'].replace(
-                os.path.expandvars('$HOME/build/numba/llvmlite/boostrap/bin:', '')
+                os.path.expandvars('$HOME/build/numba/llvmlite/boostrap/bin:'), '')
             )
         if not os.path.exists("build"):
             os.makedirs("build")
@@ -197,6 +198,7 @@ def build_passes():
             subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
             shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
             # restore boostrap to the path
+            if
             os.environ['PATH'] = '$HOME/build/numba/llvmlite/boostrap/bin:' + os.environ['PATH']
 
 
