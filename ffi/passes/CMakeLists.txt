@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.2)
 if (APPLE AND "$ENV{CONDA_ENV}" STREQUAL "travisci")
     # use system clang in travis ci to avoid linking issues
     # see https://github.com/bigartm/bigartm/issues/910
-    set(CMAKE_CXX_COMPILER clang)
+    set(CMAKE_CXX_COMPILER clang++)
+    set(CMAKE_C_COMPILER clang)
 endif()
 
 find_package(LLVM REQUIRED CONFIG)
@@ -23,4 +24,3 @@ endif()
 include_directories(${LLVM_INCLUDE_DIRS})
 
 add_subdirectory(hello)
-add_subdirectory(refcntopt)
