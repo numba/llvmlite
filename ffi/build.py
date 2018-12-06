@@ -187,7 +187,10 @@ def build_passes():
                 generator = find_win32_generator()
                 try_cmake('..', '.', generator)
             if os.name == 'posix' and sys.platform == 'darwin':
-                cmake_exec = os.path.expandvars('$HOME/miniconda3/bin/cmake')
+                os.environ['CC'] = 'clang'
+                os.environ['CXX'] = 'clang++'
+                os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
+                cmake_exec = os.path.expandvars('$HOME/miniconda3/envs/travisci/bin/cmake')
             else:
                 cmake_exec = 'cmake'
             subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
