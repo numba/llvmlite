@@ -38,7 +38,7 @@ jobs:
         call conda remove --all -q -y -n %CONDA_ENV%
         call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
         call activate %CONDA_ENV%
-        call conda install -y -q -c numba llvmdev="6.0*"
+        call conda install -y -q -c numba llvmdev="7.0*"
         if %PYTHON% LSS 3.4 (call conda install -y -q enum34)
       displayName: 'Before Install'
 
