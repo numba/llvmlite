@@ -23,6 +23,11 @@ source:
     - ../D47188-svml-VF.patch
     # undefined behavior bug due to Twine usage
     - ../twine_cfg_undefined_behavior.patch
+    # Patches for X86 common symbols over-allocation and testing thereof, see
+    # https://reviews.llvm.org/D50240 and https://reviews.llvm.org/rL340788
+    # for details:
+    - 0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch
+    - 0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch
 
 build:
   number: {{ build_number }}
