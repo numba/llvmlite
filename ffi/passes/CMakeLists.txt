@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.2)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
-message( STATUS "MACOSX_DEPLOYMENT_TARGET is ${MACOSX_DEPLOYMENT_TARGET}")
+set(MACOSX_DEPLOYMENT_TARGET "10.9")
+message( STATUS "MACOSX_DEPLOYMENT_TARGET is ${CMAKE_OSX_DEPLOYMENT_TARGET}")
 
 project(llvmpy-passes)
 
