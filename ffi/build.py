@@ -176,7 +176,7 @@ def main_posix(kind, library_ext):
 
 def build_passes():
     with cwd(os.path.join(os.path.dirname(__file__), "passes")):
-        print(os.environ['CONDA_BUILD_SYSROOT'])
+        os.environ['CONDA_BUILD_SYSROOT'] = '/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk'
         if not os.path.exists("build"):
             os.makedirs("build")
         assert os.path.isdir("build"), "passes/build must be a directory"
@@ -187,10 +187,11 @@ def build_passes():
                 generator = find_win32_generator()
                 try_cmake('..', '.', generator)
             if os.name == 'posix' and sys.platform == 'darwin':
-                os.environ['CC'] = 'clang'
-                os.environ['CXX'] = 'clang++'
-                os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
-                cmake_exec = os.path.expandvars('$HOME/miniconda3/envs/travisci/bin/cmake')
+                # os.environ['CC'] = 'clang'
+                # os.environ['CXX'] = 'clang++'
+                # os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
+                # cmake_exec = os.path.expandvars('$HOME/miniconda3/envs/travisci/bin/cmake')
+                pass
             else:
                 cmake_exec = 'cmake'
             subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
