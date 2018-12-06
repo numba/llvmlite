@@ -1,3 +1,24 @@
+v0.26.0
+-------
+
+The primary new features in this release is support for generation of Intel
+JIT events, which makes profiling of JIT compiled code in Intel VTune
+possible.  This release also contains some minor build improvements for ARMv7,
+and some small fixes.
+
+LLVM 7 support was originally slated for this release, but had to be delayed
+after some issues arose in testing.  LLVM 6 is still required for llvmlite.
+
+* PR #409: Use native cmake on armv7l
+* PR #407: Throttle thread count for llvm build on armv7l. 
+* PR #403: Add shutdown detection to ObjectRef __del__ method.
+* PR #400: conda recipe: add make as build dep
+* PR #399: Add get_element_offset to TargetData
+* PR #398: Fix gep method call on Constant objects
+* PR #395: Fix typo in irbuilder documentation 
+* PR #394: Enable IntelJIT events for LLVM for VTune support
+
+
 v0.25.0
 -------
 
