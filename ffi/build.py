@@ -192,8 +192,11 @@ def build_passes():
             else:
                 generator = find_win32_generator()
                 try_cmake('..', '.', generator)
-
-            subprocess.check_call(['cmake', '--build', '.', '--config', 'Release'])
+            if os.name == 'posix' and sys.platform == 'darwin':
+                cmake_exec = os.path.expandvars('$HOME/miniconda3/bin/cmake')
+            else:
+                cmake_exec = 'cmake'
+            subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
             shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
 
 
