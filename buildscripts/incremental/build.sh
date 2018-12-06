@@ -19,6 +19,7 @@ if [[ $(uname) == Darwin ]]; then
   SYSROOT_DIR=${CONDA_BUILD_SYSROOT}
   CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
   ${LLVM_CONFIG} --version
+  ln -sf ${PWD}/bootstrap/bin/x86_64-apple-darwin13.4.0-ld ${PWD}/bootstrap/bin/ld
 fi
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then

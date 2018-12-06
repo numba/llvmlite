@@ -175,13 +175,6 @@ def main_posix(kind, library_ext):
 
 
 def build_passes():
-    if os.name == "posix" and sys.platform == "darwin" \
-        and os.environ['CONDA_ENV'] == 'travisci':
-          # use system clang in travis ci to avoid linking issues
-          # see https://github.com/bigartm/bigartm/issues/910
-        os.environ['CC'] = 'clang'
-        os.environ['CXX'] = 'clang++'
-
     with cwd(os.path.join(os.path.dirname(__file__), "passes")):
         if not os.path.exists("build"):
             os.makedirs("build")
