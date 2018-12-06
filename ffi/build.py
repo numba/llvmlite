@@ -182,6 +182,7 @@ def build_passes():
             # drop boostrap path from $PATH
             os.environ['PATH'] = os.environ['PATH'].replace(
                 os.path.expandvars('$HOME/build/numba/llvmlite/boostrap/bin:'), '')
+            print('Using PATH: ' + os.environ['PATH'])
         if not os.path.exists("build"):
             os.makedirs("build")
         assert os.path.isdir("build"), "passes/build must be a directory"
