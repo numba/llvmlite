@@ -151,7 +151,7 @@ def main_posix(kind, library_ext):
             for lname in libs.split('-l') \
             if lname and 'LLVMCore' not in lname
             and 'LLVMSupport' not in lname]
-        cxxflags.append(' '.join(excluded))
+        # cxxflags.append(' '.join(excluded))
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
     svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.inc')
@@ -191,7 +191,7 @@ def build_passes():
         assert os.path.isdir("build"), "passes/build must be a directory"
         with cwd("build"):
             if os.name == "posix":
-                subprocess.check_call(['cmake', '..'])
+                subprocess.check_call([cmake_exec, '..'])
             else:
                 generator = find_win32_generator()
                 try_cmake('..', '.', generator)
