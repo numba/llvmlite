@@ -30,8 +30,7 @@ if [[ $(uname) == Darwin ]]; then
   ${LLVM_CONFIG} --version
 fi
 
-printenv
-ls /opt
+ls /Users/travis/miniconda3/envs/travisci/lib/cmake/
 
 # Make sure any error below is reported as such
 set -v -e
