@@ -178,6 +178,9 @@ def build_passes():
     with cwd(os.path.join(os.path.dirname(__file__), "passes")):
         os.environ['CONDA_BUILD_SYSROOT'] = \
             '/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
+        os.environ['CC'] = 'clang'
+        os.environ['CXX'] = 'clang++'
+
         if not os.path.exists("build"):
             os.makedirs("build")
         assert os.path.isdir("build"), "passes/build must be a directory"
