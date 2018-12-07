@@ -7,7 +7,7 @@ if (APPLE)
     set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/miniconda3/envs/travisci")
     message( STATUS "prefix is ${CMAKE_INSTALL_PREFIX}")
     message( STATUS "MACOSX sysroot is ${CMAKE_OSX_SYSROOT}")
-    list(INSERT 0 CMAKE_MODULE_PATH "$ENV{HOME}/miniconda3/envs/travisci/lib/cmake/")
+    list(INSERT CMAKE_MODULE_PATH 0 "$ENV{HOME}/miniconda3/envs/travisci/lib/cmake/")
     message( STATUS "cmake_modules are ${CMAKE_MODULE_PATH}" )
 endif()
 
