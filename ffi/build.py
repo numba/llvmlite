@@ -177,7 +177,7 @@ def main_posix(kind, library_ext):
 def build_passes():
     with cwd(os.path.join(os.path.dirname(__file__), "passes")):
         os.environ['CONDA_BUILD_SYSROOT'] = \
-            '/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk'
+            '/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
         if not os.path.exists("build"):
             os.makedirs("build")
         assert os.path.isdir("build"), "passes/build must be a directory"
