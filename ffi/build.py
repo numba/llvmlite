@@ -187,15 +187,7 @@ def build_passes():
             else:
                 generator = find_win32_generator()
                 try_cmake('..', '.', generator)
-            if os.name == 'posix' and sys.platform == 'darwin':
-                # os.environ['CC'] = 'clang'
-                # os.environ['CXX'] = 'clang++'
-                # os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.9'
-                # cmake_exec = os.path.expandvars('$HOME/miniconda3/envs/travisci/bin/cmake')
-                pass
-            else:
-                cmake_exec = 'cmake'
-            subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
+            subprocess.check_call(['cmake', '--build', '.', '--config', 'Release'])
             shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
             # restore boostrap to the path
 

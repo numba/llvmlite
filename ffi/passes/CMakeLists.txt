@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.2)
 if (APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
     set(MACOSX_DEPLOYMENT_TARGET "10.9")
-    set(CMAKE_OSX_SYSROOT "/opt/MacOSX10.9.sdk")
+    set(CMAKE_OSX_SYSROOT "/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
     message( STATUS "MACOSX sysroot is ${CMAKE_OSX_SYSROOT}")
 endif()
 
