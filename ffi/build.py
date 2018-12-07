@@ -196,10 +196,9 @@ def build_passes():
                 generator = find_win32_generator()
                 try_cmake('..', '.', generator)
 
-
+            print("Calling " + cmake_exec)
             subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
             shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
-            # restore boostrap to the path
 
 
 def main():
