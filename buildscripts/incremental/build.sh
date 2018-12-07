@@ -17,7 +17,7 @@ if [[ $(uname) == Darwin ]]; then
   # in the build root env, the one in the bootstrap location needs to be ignored.
   export LLVM_CONFIG=$(ls $(which llvm-config))
   # now bootstrap the toolchain for building
-  conda create -y -p ${PWD}/bootstrap clangxx_osx-64 cmake
+  conda create -y -p ${PWD}/bootstrap clangxx_osx-64
   SRC_DIR=${PWD}
   export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
   CONDA_PREFIX=${SRC_DIR}/bootstrap \
