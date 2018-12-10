@@ -183,6 +183,7 @@ def build_passes():
             os.environ['CC'] = 'clang'
             os.environ['CXX'] = 'clang++'
             cmake_exec = os.path.expandvars("$HOME/miniconda3/envs/travisci/bin/cmake")
+            shutil.rmtree("/Users/travis/build/numba/llvmlite/bootstrap/lib/cmake/llvm/")
         else:
             cmake_exec = 'cmake'
 
