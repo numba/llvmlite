@@ -28,6 +28,7 @@ if [[ $(uname) == Darwin ]]; then
   SYSROOT_DIR=${CONDA_BUILD_SYSROOT}
   CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
   ${LLVM_CONFIG} --version
+  rm -rf ${SRC_DIR}/boostrap/lib/cmake/llvm
 fi
 
 
