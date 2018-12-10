@@ -13,6 +13,15 @@ project(llvmpy-passes)
 
 find_package(LLVM REQUIRED CONFIG)
 
+execute_process(
+    COMMAND llvm-config --cxxflags ${LLVM_FIND_COMPONENTS}
+    RESULT_VARIABLE result_code
+    OUTPUT_VARIABLE LLVM_CXXFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+set(CMAKE_CXX_FLAGS ${LLVM_CXXFLAGS})
+
 add_definitions(${LLVM_DEFINITIONS})
 
 if (WIN23)
