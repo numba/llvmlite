@@ -16,10 +16,7 @@ from contextlib import contextmanager
 
 
 if os.name == 'posix':
-    if sys.platform == 'darwin':
-        hello_pass_library = 'libLLVMPYHello.dylib'
-    else:
-        hello_pass_library = 'libLLVMPYHello.so'
+    hello_pass_library = 'libLLVMPYHello.so'
 else:
     assert os.name == 'nt'
     hello_pass_library = 'LLVMPYHello.dll'
