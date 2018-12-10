@@ -1127,7 +1127,7 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
 
     def test_load_pass(self):
         path = os.path.join(os.path.dirname(__file__),
-                            "../binding/libLLVMPYHello.so")
+                            "../binding/", get_hello_pass_library())
         pm = self.pm()
         mod = self.module()
         with self.assertRaises(ValueError):
