@@ -30,6 +30,8 @@ set -v
 $CONDA_INSTALL -c numba llvmdev="7.0*"
 $CONDA_INSTALL cmake
 
+ls /home/travis/miniconda3/envs/travisci/lib/cmake/
+
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
 if [[ $(uname) == Linux ]]; then
