@@ -172,31 +172,34 @@ def main_posix(kind, library_ext):
 
 
 def build_passes():
-    with cwd(os.path.join(os.path.dirname(__file__), "passes")):
-        if os.name == 'posix' and sys.platform == 'darwin':
-
-            os.environ['CONDA_BUILD_SYSROOT'] = \
-                '/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
-            os.environ['CC'] = 'clang'
-            os.environ['CXX'] = 'clang++'
-            cmake_exec = os.path.expandvars("$HOME/miniconda3/envs/travisci/bin/cmake")
-            shutil.rmtree("/Users/travis/build/numba/llvmlite/bootstrap/lib/cmake/llvm/")
-        else:
-            cmake_exec = 'cmake'
-
-        if not os.path.exists("build"):
-            os.makedirs("build")
-        assert os.path.isdir("build"), "passes/build must be a directory"
-        with cwd("build"):
-            if os.name == "posix":
-                subprocess.check_call([cmake_exec, '..'])
+    if sys.platform == 'win32':
+        # just copy the result, hello pass will be built by cmake
+        shutil.copy(os.path.join(build_dir, "hello", hello_pass_library), target_dir)
+    else:
+        with cwd(os.path.join(os.path.dirname(__file__), "passes")):
+            if os.name == 'posix' and sys.platform == 'darwin':
+                os.environ['CONDA_BUILD_SYSROOT'] = \
+                    '/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
+                os.environ['CC'] = 'clang'
+                os.environ['CXX'] = 'clang++'
+                cmake_exec = os.path.expandvars("$HOME/miniconda3/envs/travisci/bin/cmake")
+                shutil.rmtree("/Users/travis/build/numba/llvmlite/bootstrap/lib/cmake/llvm/")
             else:
-                generator = find_win32_generator()
-                try_cmake('..', '.', generator)
+                cmake_exec = 'cmake'
 
-            print("Calling " + cmake_exec)
-            subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
-            shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
+            if not os.path.exists("build"):
+                os.makedirs("build")
+            assert os.path.isdir("build"), "passes/build must be a directory"
+            with cwd("build"):
+                if os.name == "posix":
+                    subprocess.check_call([cmake_exec, '..'])
+                else:
+                    generator = find_win32_generator()
+                    try_cmake('..', '.', generator)
+
+                print("Calling " + cmake_exec)
+                subprocess.check_call([cmake_exec, '--build', '.', '--config', 'Release'])
+                shutil.copy(os.path.join("hello", hello_pass_library), target_dir)
 
 
 def main():
