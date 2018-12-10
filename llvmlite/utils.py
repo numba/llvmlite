@@ -11,7 +11,10 @@ def get_library_name():
     Return the name of the llvmlite shared library file.
     """
     if os.name == 'posix':
-        return 'libllvmlite.so'
+        if sys.platform == 'darwin':
+            return 'libllvmlite.so'
+        else:
+            return 'libllvmlite.so'
     else:
         assert os.name == 'nt'
         return 'llvmlite.dll'
@@ -21,10 +24,7 @@ def get_hello_pass_library():
     Return the name of the hello pass library
     """
     if os.name == 'posix':
-        if sys.platform == 'darwin':
-            return 'libLLVMPYHello.dylib'
-        else:
-            return 'libLLVMPYHello.so'
+        return 'libLLVMPYHello.so'
     else:
         assert os.name == 'nt'
         return 'LLVMPYHello.dll'
