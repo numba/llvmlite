@@ -12,7 +12,7 @@ def get_library_name():
     """
     if os.name == 'posix':
         if sys.platform == 'darwin':
-            return 'libllvmlite.so'
+            return 'libllvmlite.dylib'
         else:
             return 'libllvmlite.so'
     else:
