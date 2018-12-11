@@ -1,7 +1,7 @@
 from __future__ import print_function, absolute_import
 import os
 import sys
-from ctypes import c_bool, c_int, c_char_p, cdll, CDLL, POINTER, RTLD_LOCAL
+from ctypes import c_bool, c_int, c_char_p, cdll, POINTER, RTLD_LOCAL
 from collections import namedtuple
 from . import ffi
 
@@ -22,7 +22,7 @@ _loaded_libraries = []
 
 def load_pass_plugin(path):
     """Load shared library containing a pass"""
-    pass_lib = CDLL(path, RTLD_LOCAL)
+    pass_lib = cdll.LoadLibrary(path)
     pass_lib.LLVMPY_RegisterPass(get_pass_registry())
     _loaded_libraries.append(pass_lib)
 

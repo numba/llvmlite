@@ -46,4 +46,4 @@ API_EXPORT(void) LLVMPY_RegisterPass(LLVMPassRegistryRef PR) {
         registry->registerPass(*passInfo, true);
     }
 }
-}
+} // end extern "C"
