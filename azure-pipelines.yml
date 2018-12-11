@@ -1,0 +1,51 @@
+jobs:
+# Mac and Linux use the same template with different matrixes
+- template: buildscripts/azure/azure-linux-macos.yml
+  parameters:
+    name: macOS
+    vmImage: xcode9-macos10.13
+    matrix:
+      py27:
+        PYTHON: '2.7'
+        CONDA_ENV: travisci
+      py36:
+        PYTHON: '3.6'
+        CONDA_ENV: travisci
+
+- template: buildscripts/azure/azure-linux-macos.yml
+  parameters:
+    name: Linux
+    vmImage: ubuntu-16.04
+    matrix:
+      py27:
+        PYTHON: '2.7'
+        CONDA_ENV: travisci
+      py35:      
+        PYTHON: '3.5'
+        CONDA_ENV: travisci
+      py36:      
+        PYTHON: '3.6'
+        CONDA_ENV: travisci
+      py37:
+        PYTHON: '3.7'
+        CONDA_ENV: travisci
+      pypy:
+        PYTHON: pypy
+        CONDA_ENV: travisci
+      py27_wheel:
+        PYTHON: '2.7'
+        CONDA_ENV: travisci
+        WHEEL: 'yes'
+      py36_wheel:
+        PYTHON: '3.6'
+        CONDA_ENV: travisci
+        WHEEL: 'yes'
+      py37_wheel:
+        PYTHON: '3.7'
+        CONDA_ENV: travisci
+        WHEEL: 'yes'
+
+- template: buildscripts/azure/azure-windows.yml
+  parameters:
+    name: Windows
+    vmImage: vs2015-win2012r2
