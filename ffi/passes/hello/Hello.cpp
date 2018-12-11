@@ -29,7 +29,7 @@ namespace {
 } // end anonymous
 
 extern "C" {
-#if defined(HAVE_DECLSPEC_DLL)
+#if defined(_MSC_VER)
     #define API_EXPORT(RTYPE) __declspec(dllexport) RTYPE
 #else
     #define API_EXPORT(RTYPE) RTYPE
