@@ -1143,11 +1143,11 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
     def test_list_passes(self):
         path = os.path.join(os.path.dirname(__file__),
                             "../binding/", get_hello_pass_library())
-        pm = self.pm()
-        passes = set(pm.list_registered_passes())
+        pr = llvm.get_pass_registry()
+        passes = set(pr.list_registered_passes())
         self.assertNotIn("pyhello", passes)
         llvm.load_pass_plugin(path)
-        passes_after_load = set(pm.list_registered_passes())
+        passes_after_load = set(pr.list_registered_passes())
         new_info = passes_after_load - passes
         self.assertEqual(len(new_info), 1)
         hello_info = list(new_info)[0]

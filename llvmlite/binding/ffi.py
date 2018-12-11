@@ -30,6 +30,7 @@ LLVMTypesIterator = _make_opaque_ref("LLVMTypesIterator")
 LLVMObjectCacheRef = _make_opaque_ref("LLVMObjectCache")
 LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
+LLVMPassRegistryRef = _make_opaque_ref("LLVMPassRegistryRef")
 
 
 class _lib_wrapper(object):

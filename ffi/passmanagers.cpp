@@ -199,9 +199,14 @@ namespace {
     };
 }
 
+API_EXPORT(LLVMPassRegistryRef)
+LLVMPY_GetPassRegistry() {
+    return LLVMGetGlobalPassRegistry();
+}
+
 API_EXPORT(void)
-LLVMPY_ListRegisteredPasses(const char** out) {
-    auto registry = PassRegistry::getPassRegistry();
+LLVMPY_ListRegisteredPasses(LLVMPassRegistryRef PR, const char** out) {
+    auto registry = unwrap(PR);
     auto listener = llvm::make_unique<NameSavingPassRegListener>();
     registry->enumerateWith(listener.get());
     *out = LLVMPY_CreateString(listener->getNames());

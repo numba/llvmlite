@@ -11,9 +11,11 @@ namespace {
         Sample Hello World function pass. Named pyhello to avoid conflict
         with LLVM's built-in example pass
     */
-    struct Hello : public FunctionPass {
+    struct PyHello : public FunctionPass {
         static char ID;
-        Hello() : FunctionPass(ID) { }
+        static const std::string name;
+        static const std::string arg;
+        PyHello() : FunctionPass(ID) { }
         bool runOnFunction(Function& F) override {
             errs() << "Hello: ";
             errs().write_escaped(F.getName()) << "\n";
@@ -21,33 +23,21 @@ namespace {
         }
     };
 
-    /*
-        Safely register a pass, i.e. don't register it if a pass
-        with the same name is already registered.
-    */
-    template<typename T>
-    class SafeRegister {
-        public:
-        SafeRegister(StringRef arg,
-                    StringRef name,
-                    bool CFGOnly = false,
-                    bool is_analysis = false) {
-            auto registry = PassRegistry::getPassRegistry();
-            // check if there is already a pyhello pass
-            auto passInfo = registry->getPassInfo(arg);
-            if (passInfo == nullptr) {
-                pass_info_ = make_unique<PassInfo>(name, arg, &T::ID,
-                    PassInfo::NormalCtor_t(callDefaultCtor<T>), CFGOnly,
-                    is_analysis);
-                registry->registerPass(*pass_info_);
-            }
-        }
-        private:
-        std::unique_ptr<PassInfo> pass_info_;
-    };
-
-    char Hello::ID = 0;
-
-    static SafeRegister<Hello> X("pyhello", "Hello World Pass",
-                                    false, false);
+    char PyHello::ID = 0;
+    const std::string PyHello::name = "Hello World Pass";
+    const std::string PyHello::arg = "pyhello";
 } // end anonymous
+
+extern "C" {
+void LLVMPY_RegisterPass(LLVMPassRegistryRef PR) {
+    auto registry = unwrap(PR);
+    // check if there is already a pyhello pass
+    auto passInfo = registry->getPassInfo(PyHello::arg);
+    if (passInfo == nullptr) {
+        passInfo = new PassInfo(PyHello::name, PyHello::arg, &PyHello::ID,
+            PassInfo::NormalCtor_t(callDefaultCtor<PyHello>), false,
+            false);
+        registry->registerPass(*passInfo, true);
+    }
+}
+}

@@ -68,14 +68,7 @@ create and configure a :class:`PassManagerBuilder`.
    methods or :meth:`PassManagerBuilder.populate` to add
    optimization passes.
 
-   * .. method:: list_registered_passes()
-
-        Returns the list of registered passes as a named tuple (arg, name).
-        ``arg`` is the unique identifier used to add passes with :meth:`add_pass_by_arg`,
-        ``name`` is the human-readable name of the pass.
-        See also :func:`load_pass_plugin`
-
-   * .. function:: add_pass_by_arg(arg)
+   * .. method:: add_pass_by_arg(arg)
 
         Add a pass defined by the supplied ``arg``. See also :meth:`list_registered_passes`.
         Raises ``ValueError`` if no such pass is found.
@@ -191,3 +184,15 @@ create and configure a :class:`PassManagerBuilder`.
 
     Load a shared library defined by ``path`` which contains a custom
     LLVM optimization path. See also `'Writing an LLVM Pass' <http://llvm.org/docs/WritingAnLLVMPass.html>`_.
+
+.. class:: PassRegistry()
+
+    This class represents global pass registry for the optimization passes
+
+    * .. method:: list_registered_passes()
+
+        Returns the list of registered passes as a named tuple (arg, name).
+        ``arg`` is the unique identifier used to add passes with :meth:`PassManager.add_pass_by_arg`,
+        ``name`` is the human-readable name of the pass.
+        See also :func:`load_pass_plugin`.
+
