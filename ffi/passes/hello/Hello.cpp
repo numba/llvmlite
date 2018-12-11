@@ -29,7 +29,13 @@ namespace {
 } // end anonymous
 
 extern "C" {
-void LLVMPY_RegisterPass(LLVMPassRegistryRef PR) {
+#if defined(HAVE_DECLSPEC_DLL)
+    #define API_EXPORT(RTYPE) __declspec(dllexport) RTYPE
+#else
+    #define API_EXPORT(RTYPE) RTYPE
+#endif
+
+API_EXPORT(void) LLVMPY_RegisterPass(LLVMPassRegistryRef PR) {
     auto registry = unwrap(PR);
     // check if there is already a pyhello pass
     auto passInfo = registry->getPassInfo(PyHello::arg);
