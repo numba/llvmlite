@@ -70,7 +70,7 @@ create and configure a :class:`PassManagerBuilder`.
 
    * .. method:: add_pass_by_arg(arg)
 
-        Add a pass defined by the supplied ``arg``. See also :meth:`list_registered_passes`.
+        Add a pass defined by the supplied ``arg``. See also :meth:`PassRegistry.list_registered_passes`.
         Raises ``ValueError`` if no such pass is found.
 
    * .. function:: add_constant_merge_pass()
