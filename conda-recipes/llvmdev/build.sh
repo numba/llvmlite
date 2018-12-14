@@ -71,7 +71,7 @@ cmake -G'Unix Makefiles'     \
 
 ARCH=`uname -m`
 if [ $ARCH == 'armv7l' ]; then # RPi need thread count throttling
-    make -j1 VERBOSE=1
+    make -j2 VERBOSE=1
 else
     make -j${CPU_COUNT} VERBOSE=1
 fi
