@@ -1,0 +1,23 @@
+# Configuration for codeclimate.com
+
+engines:
+    duplication:
+        enabled: true
+        config:
+            languages:
+                python:
+                    mass_threshold: 50
+    fixme:
+        enabled: true
+    pep8:
+        enabled: true
+    radon:
+        enabled: true
+
+ratings:
+    paths:
+        - "llvmlite/**.py"
+
+exclude_paths:
+    - "**/six.py"
+    - "**/_version.py"

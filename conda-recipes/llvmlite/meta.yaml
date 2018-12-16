@@ -6,7 +6,6 @@ package:
 source:
   # Using the local source tree helps test building without pushing changes
   path: ../..
-  #git_url: https://github.com/numba/llvmlite.git
 
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
@@ -15,7 +14,11 @@ requirements:
   build:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 3.7*
+    - llvmdev 3.8*
+    # Those are copied into the llvmlite packages
+    - vs2013_runtime [win]
+    # The DLL build uses cmake on Windows
+    - cmake          [win]
     - enum34         [py27]
   run:
     - python

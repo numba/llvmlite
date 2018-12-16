@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
 from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
-                    c_void_p, c_size_t, cast, string_at)
+                    c_size_t, string_at)
 
 from . import ffi
 from .linker import link_modules
@@ -138,9 +138,13 @@ class ModuleRef(ffi.ObjectRef):
                                      strrep.encode('utf8')))
 
     def link_in(self, other, preserve=False):
-        link_modules(self, other, preserve)
-        if not preserve:
-            other.close()
+        """
+        Link the *other* module into this one.  The *other* module will
+        be destroyed unless *preserve* is true.
+        """
+        if preserve:
+            other = other.clone()
+        link_modules(self, other)
 
     @property
     def global_variables(self):

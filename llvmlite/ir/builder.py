@@ -472,7 +472,7 @@ class IRBuilder(object):
         """
         return self._icmp('u', cmpop, lhs, rhs, name)
 
-    def fcmp_ordered(self, cmpop, lhs, rhs, name=''):
+    def fcmp_ordered(self, cmpop, lhs, rhs, name='', flags=[]):
         """
         Floating-point ordered comparison:
             name = lhs <cmpop> rhs
@@ -483,11 +483,11 @@ class IRBuilder(object):
             op = 'o' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name)
+        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name, flags=flags)
         self._insert(instr)
         return instr
 
-    def fcmp_unordered(self, cmpop, lhs, rhs, name=''):
+    def fcmp_unordered(self, cmpop, lhs, rhs, name='', flags=[]):
         """
         Floating-point unordered comparison:
             name = lhs <cmpop> rhs
@@ -498,7 +498,7 @@ class IRBuilder(object):
             op = 'u' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name)
+        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name, flags=flags)
         self._insert(instr)
         return instr
 
@@ -729,6 +729,29 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
+    def asm(self, ftype, asm, constraint, args, side_effect, name=''):
+        """
+        Inline assembler.
+        """
+        asm = instructions.InlineAsm(ftype, asm, constraint, side_effect)
+        return self.call(asm, args, name)
+
+    def load_reg(self, reg_type, reg_name, name=''):
+        """
+        Load a register value into an LLVM value.
+          Example: v = load_reg(IntType(32), "eax")
+        """
+        ftype = types.FunctionType(reg_type, [])
+        return self.asm(ftype, "", "={%s}" % reg_name, [], False, name)
+
+    def store_reg(self, value, reg_type, reg_name, name=''):
+        """
+        Store an LLVM value inside a register
+          Example: store_reg(Constant(IntType(32), 0xAAAAAAAA), IntType(32), "eax")
+        """
+        ftype = types.FunctionType(types.VoidType(), [reg_type])
+        return self.asm(ftype, "", "{%s}" % reg_name, [value], True, name)
+
     def invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None, tail=False):
         inst = instructions.InvokeInstr(self.block, fn, args, normal_to, unwind_to, name=name,
                                         cconv=cconv)
@@ -807,8 +830,8 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
-    def landingpad(self, typ, personality, name='', cleanup=False):
-        inst = instructions.LandingPadInstr(self.block, typ, personality, name, cleanup)
+    def landingpad(self, typ, name='', cleanup=False):
+        inst = instructions.LandingPadInstr(self.block, typ, name, cleanup)
         self._insert(inst)
         return inst
 

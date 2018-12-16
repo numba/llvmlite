@@ -1,9 +1,8 @@
 from __future__ import print_function, absolute_import
 
-import collections
 import os
 from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
-                    c_void_p, string_at, byref)
+                    c_void_p, string_at)
 
 from . import ffi
 from .common import _decode_string, _encode_string
@@ -145,14 +144,6 @@ class TargetData(ffi.ObjectRef):
             raise RuntimeError("Not a pointer type: %s" % (ty,))
         return size
 
-    def add_pass(self, pm):
-        """
-        Add a DataLayout pass to PassManager *pm*.
-        """
-        ffi.lib.LLVMPY_AddTargetData(self, pm)
-        # Once added to a PassManager, we can never get it back.
-        self._owned = True
-
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
 CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel',
@@ -246,6 +237,13 @@ class TargetMachine(ffi.ObjectRef):
         """
         ffi.lib.LLVMPY_AddAnalysisPasses(self, pm)
 
+    def set_asm_verbosity(self, verbose):
+        """
+        Set whether this target machine will emit assembly with human-readable
+        comments describing control flow, debug information, and so on.
+        """
+        ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity(self, verbose)
+
     def emit_object(self, module):
         """
         Represent the module as a code object, suitable for use with
@@ -285,9 +283,7 @@ class TargetMachine(ffi.ObjectRef):
 
     @property
     def target_data(self):
-        td = TargetData(ffi.lib.LLVMPY_GetTargetMachineData(self))
-        td._owned = True
-        return td
+        return TargetData(ffi.lib.LLVMPY_CreateTargetMachineData(self))
 
     @property
     def triple(self):
@@ -321,9 +317,6 @@ ffi.lib.LLVMPY_CopyStringRepOfTargetData.argtypes = [
 ffi.lib.LLVMPY_DisposeTargetData.argtypes = [
     ffi.LLVMTargetDataRef,
 ]
-
-ffi.lib.LLVMPY_AddTargetData.argtypes = [ffi.LLVMTargetDataRef,
-                                         ffi.LLVMPassManagerRef]
 
 ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
                                          ffi.LLVMTypeRef]
@@ -368,6 +361,9 @@ ffi.lib.LLVMPY_DisposeTargetMachine.argtypes = [ffi.LLVMTargetMachineRef]
 ffi.lib.LLVMPY_GetTargetMachineTriple.argtypes = [ffi.LLVMTargetMachineRef,
                                                   POINTER(c_char_p)]
 
+ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity.argtypes = [ffi.LLVMTargetMachineRef,
+                                                        c_int]
+
 ffi.lib.LLVMPY_AddAnalysisPasses.argtypes = [
     ffi.LLVMTargetMachineRef,
     ffi.LLVMPassManagerRef,
@@ -389,7 +385,7 @@ ffi.lib.LLVMPY_GetBufferSize.restype = c_size_t
 
 ffi.lib.LLVMPY_DisposeMemoryBuffer.argtypes = [ffi.LLVMMemoryBufferRef]
 
-ffi.lib.LLVMPY_GetTargetMachineData.argtypes = [
+ffi.lib.LLVMPY_CreateTargetMachineData.argtypes = [
     ffi.LLVMTargetMachineRef,
 ]
-ffi.lib.LLVMPY_GetTargetMachineData.restype = ffi.LLVMTargetDataRef
+ffi.lib.LLVMPY_CreateTargetMachineData.restype = ffi.LLVMTargetDataRef

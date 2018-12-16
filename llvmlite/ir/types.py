@@ -9,16 +9,6 @@ import struct
 from ._utils import _StrCaching
 
 
-# XXX This doesn't seem to be used
-_type_state = iter(range(50))
-_type_enum = lambda: next(_type_state)
-
-TYPE_UNKNOWN = _type_enum()
-TYPE_POINTER = _type_enum()
-TYPE_STRUCT = _type_enum()
-TYPE_METADATA = _type_enum()
-
-
 def _wrapname(x):
     return '"{0}"'.format(x.replace('\\', '\\5c').replace('"', '\\22'))
 
@@ -29,8 +19,6 @@ class Type(_StrCaching):
     """
     is_pointer = False
     null = 'zeroinitializer'
-
-    kind = TYPE_UNKNOWN
 
     def __repr__(self):
         return "<%s %s>" % (type(self), str(self))
@@ -96,14 +84,19 @@ class Type(_StrCaching):
         return Constant(self, value)
 
 
-class MetaData(Type):
-    kind = TYPE_METADATA
+class MetaDataType(Type):
 
     def _to_string(self):
         return "metadata"
 
     def as_pointer(self):
         raise TypeError
+
+    def __eq__(self, other):
+        return isinstance(other, MetaDataType)
+
+    def __ne__(self, other):
+        return not isinstance(other, MetaDataType)
 
 
 class LabelType(Type):
@@ -120,7 +113,6 @@ class PointerType(Type):
     The type of all pointer values.
     """
     is_pointer = True
-    kind = TYPE_POINTER
     null = 'null'
 
     def __init__(self, pointee, addrspace=0):
@@ -385,8 +377,6 @@ class BaseStructType(Aggregate):
     """
     The base type for heterogenous struct types.
     """
-
-    kind = TYPE_STRUCT
 
     def __len__(self):
         assert self.elements is not None

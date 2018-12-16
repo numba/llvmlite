@@ -10,12 +10,10 @@ import pickle
 import re
 import textwrap
 import unittest
-from array import array
 
 from . import TestCase
 from llvmlite import ir
 from llvmlite import binding as llvm
-from llvmlite import six
 
 
 int1 = ir.IntType(1)
@@ -32,7 +30,9 @@ class TestBase(TestCase):
     """
 
     def assertInText(self, pattern, text):
-        """Replaces whitespace sequence in `pattern` with "\s+".
+        """
+        Assert *pattern* is in *text*, ignoring any whitespace differences
+        (including newlines).
         """
 
         def escape(c):
@@ -43,6 +43,10 @@ class TestBase(TestCase):
         pattern = ''.join(map(escape, pattern))
         regex = re.sub(r'\s+', r'\s*', pattern)
         self.assertRegexpMatches(text, regex)
+
+    def assert_ir_line(self, line, mod):
+        lines = [line.strip() for line in str(mod).splitlines()]
+        self.assertIn(line, lines)
 
     def assert_valid_ir(self, mod):
         llvm.parse_assembly(str(mod))
@@ -77,6 +81,11 @@ class TestBase(TestCase):
     def check_block(self, block, asm):
         self.check_descr(self.descr(block), asm)
 
+    def check_module_body(self, module, asm):
+        expected = self._normalize_asm(asm)
+        actual = module._stringify_body()
+        self.assertEqual(actual.strip(), expected.strip())
+
     def check_metadata(self, module, asm):
         """
         Check module metadata against *asm*.
@@ -108,9 +117,13 @@ class TestFunction(TestBase):
         func.attributes.add("optsize")
         func.attributes.add("alwaysinline")
         func.attributes.alignstack = 16
+        tp_pers = ir.FunctionType(int8, (), var_arg=True)
+        pers = ir.Function(self.module(), tp_pers, '__gxx_personality_v0')
+        func.attributes.personality = pers
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-            "declare %s alwaysinline optsize alignstack(16)" % self.proto)
+            ("declare %s alwaysinline optsize alignstack(16) "
+             "personality i8 (...)* @\"__gxx_personality_v0\"") % self.proto)
 
     def test_function_attributes(self):
         # Now with parameter attributes
@@ -121,6 +134,16 @@ class TestFunction(TestBase):
         asm = self.descr(func).strip()
         self.assertEqual(asm,
             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 %".2", double %".3", i32* nonnull %".4")"""
+            )
+
+    def test_function_metadata(self):
+        # Now with function metadata
+        module = self.module()
+        func = self.function(module)
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+            """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") !dbg !0"""
             )
 
     def test_define(self):
@@ -165,6 +188,210 @@ class TestFunction(TestBase):
 
 class TestIR(TestBase):
 
+    def test_unnamed_metadata(self):
+        # An unnamed metadata node
+        mod = self.module()
+        md = mod.add_metadata([int32(123), int8(42)])
+        self.assert_ir_line("!0 = !{ i32 123, i8 42 }", mod)
+        self.assert_valid_ir(mod)
+
+    def test_unnamed_metadata_2(self):
+        # Several unnamed metadata nodes
+        mod = self.module()
+        # First node has a literal metadata string
+        m0 = mod.add_metadata([int32(123), "kernel"])
+        # Second node refers to the first one
+        m1 = mod.add_metadata([int64(456), m0])
+        # Third node is the same as the second one
+        m2 = mod.add_metadata([int64(456), m0])
+        self.assertIs(m2, m1)
+        # Fourth node refers to the first three
+        m3 = mod.add_metadata([m0, m1, m2])
+        self.assert_ir_line('!0 = !{ i32 123, !"kernel" }', mod)
+        self.assert_ir_line('!1 = !{ i64 456, !0 }', mod)
+        self.assert_ir_line('!2 = !{ !0, !1, !1 }', mod)
+
+    def test_unnamed_metadata_3(self):
+        # Passing nested metadata as a sequence
+        mod = self.module()
+        mod.add_metadata([int32(123), [int32(456)], [int32(789)], [int32(456)]])
+        self.assert_ir_line('!0 = !{ i32 456 }', mod)
+        self.assert_ir_line('!1 = !{ i32 789 }', mod)
+        self.assert_ir_line('!2 = !{ i32 123, !0, !1, !0 }', mod)
+
+    def test_metadata_string(self):
+        # Escaping contents of a metadata string
+        mod = self.module()
+        mod.add_metadata(["\"\\$"])
+        self.assert_ir_line('!0 = !{ !"\\22\\5c$" }', mod)
+
+    def test_named_metadata(self):
+        # Add a named metadata node and add metadata values to it
+        mod = self.module()
+        m0 = mod.add_metadata([int32(123)])
+        m1 = mod.add_metadata([int64(456)])
+        nmd = mod.add_named_metadata("foo")
+        nmd.add(m0)
+        nmd.add(m1)
+        nmd.add(m0)
+        self.assert_ir_line("!foo = !{ !0, !1, !0 }", mod)
+        self.assert_valid_ir(mod)
+        # Check get_named_metadata()
+        self.assertIs(nmd, mod.get_named_metadata("foo"))
+        with self.assertRaises(KeyError):
+            mod.get_named_metadata("bar")
+
+    def test_named_metadata_2(self):
+        # Add and set named metadata through a single add_named_metadata() call
+        mod = self.module()
+        m0 = mod.add_metadata([int32(123)])
+        mod.add_named_metadata("foo", m0)
+        mod.add_named_metadata("foo", [int64(456)])
+        mod.add_named_metadata("foo", ["kernel"])
+        mod.add_named_metadata("bar", [])
+        self.assert_ir_line("!foo = !{ !0, !1, !2 }", mod)
+        self.assert_ir_line("!0 = !{ i32 123 }", mod)
+        self.assert_ir_line("!1 = !{ i64 456 }", mod)
+        self.assert_ir_line('!2 = !{ !"kernel" }', mod)
+        self.assert_ir_line("!bar = !{ !3 }", mod)
+        self.assert_ir_line('!3 = !{  }', mod)
+        self.assert_valid_ir(mod)
+
+    def test_metadata_null(self):
+        # A null metadata (typed) value
+        mod = self.module()
+        md = mod.add_metadata([int32.as_pointer()(None)])
+        self.assert_ir_line("!0 = !{ i32* null }", mod)
+        self.assert_valid_ir(mod)
+        # A null metadata (untyped) value
+        mod = self.module()
+        md = mod.add_metadata([None, int32(123)])
+        self.assert_ir_line("!0 = !{ null, i32 123 }", mod)
+        self.assert_valid_ir(mod)
+
+    def test_debug_info(self):
+        # Add real world-looking debug information to a module
+        # (with various value types)
+        mod = self.module()
+        di_file = mod.add_debug_info("DIFile", {
+            "filename":        "foo",
+            "directory":       "bar",
+        })
+        di_func_type = mod.add_debug_info("DISubroutineType", {
+            # None as `null`
+            "types":           mod.add_metadata([None]),
+            })
+        di_func = mod.add_debug_info("DISubprogram", {
+            "name":            "my_func",
+            "file":            di_file,
+            "line":            11,
+            "type":            di_func_type,
+            "isLocal":         False,
+            }, is_distinct=True)
+        di_compileunit = mod.add_debug_info("DICompileUnit", {
+            "language":        ir.DIToken("DW_LANG_Python"),
+            "file":            di_file,
+            "producer":        "ARTIQ",
+            "runtimeVersion":  0,
+            # Passing unnamed metadata as a sequence
+            "subprograms":     [di_func],
+            "isOptimized":     True,
+        }, is_distinct=True)
+        # Check output
+        strmod = str(mod)
+        self.assert_ir_line('!0 = !DIFile(directory: "bar", filename: "foo")',
+                            strmod)
+        self.assert_ir_line('!1 = !{ null }', strmod)
+        self.assert_ir_line('!2 = !DISubroutineType(types: !1)', strmod)
+        self.assert_ir_line('!3 = distinct !DISubprogram(file: !0, isLocal: false, '
+                            'line: 11, name: "my_func", type: !2)',
+                            strmod)
+        self.assert_ir_line('!4 = !{ !3 }', strmod)
+        self.assert_ir_line('!5 = distinct !DICompileUnit(file: !0, '
+                            'isOptimized: true, language: DW_LANG_Python, '
+                            'producer: "ARTIQ", runtimeVersion: 0, '
+                            'subprograms: !4)',
+                            strmod)
+        self.assert_valid_ir(mod)
+
+    def test_debug_info_2(self):
+        # Identical debug info nodes should be merged
+        mod = self.module()
+        di1 = mod.add_debug_info("DIFile",
+                                 {"filename": "foo",
+                                  "directory": "bar",
+                                 })
+        di2 = mod.add_debug_info("DIFile",
+                                 {"filename": "foo",
+                                  "directory": "bar",
+                                 })
+        di3 = mod.add_debug_info("DIFile",
+                                 {"filename": "bar",
+                                  "directory": "foo",
+                                 })
+        di4 = mod.add_debug_info("DIFile",
+                                 {"filename": "foo",
+                                  "directory": "bar",
+                                 }, is_distinct=True)
+        self.assertIs(di1, di2)
+        self.assertEqual(len({di1, di2, di3, di4}), 3)
+        # Check output
+        strmod = str(mod)
+        self.assert_ir_line('!0 = !DIFile(directory: "bar", filename: "foo")',
+                            strmod)
+        self.assert_ir_line('!1 = !DIFile(directory: "foo", filename: "bar")',
+                            strmod)
+        self.assert_ir_line('!2 = distinct !DIFile(directory: "bar", filename: "foo")',
+                            strmod)
+        self.assert_valid_ir(mod)
+
+    def test_inline_assembly(self):
+        mod = self.module()
+        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+        builder = ir.IRBuilder(foo.append_basic_block(''))
+        asmty = ir.FunctionType(int32, [int32])
+        asm = ir.InlineAsm(asmty, "mov $1, $2", "=r,r", side_effect=True)
+        builder.call(asm, [int32(123)])
+        builder.ret_void()
+        pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r" ( i32 123 )'
+        self.assertInText(pat, str(mod))
+        self.assert_valid_ir(mod)
+
+    def test_builder_asm(self):
+        mod = self.module()
+        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+        builder = ir.IRBuilder(foo.append_basic_block(''))
+        asmty = ir.FunctionType(int32, [int32])
+        builder.asm(asmty, "mov $1, $2", "=r,r", [int32(123)], side_effect=True)
+        builder.ret_void()
+        pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r" ( i32 123 )'
+        self.assertInText(pat, str(mod))
+        self.assert_valid_ir(mod)
+
+    def test_builder_load_reg(self):
+        mod = self.module()
+        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+        builder = ir.IRBuilder(foo.append_basic_block(''))
+        asmty = ir.FunctionType(int32, [int32])
+        builder.load_reg(ir.IntType(64), "rax")
+        builder.ret_void()
+        pat = 'call i64 asm "", "={rax}"'
+        self.assertInText(pat, str(mod))
+        self.assert_valid_ir(mod)
+
+    def test_builder_store_reg(self):
+        mod = self.module()
+        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+        builder = ir.IRBuilder(foo.append_basic_block(''))
+        asmty = ir.FunctionType(ir.VoidType(), [int32])
+        builder.store_reg(int64(123), ir.IntType(64), "rax")
+        builder.ret_void()
+        pat = 'call void asm sideeffect "", "{rax}" ( i64 123 )'
+        self.assertInText(pat, str(mod))
+        self.assert_valid_ir(mod)
+
+class TestGlobalValues(TestBase):
+
     def test_globals_access(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
@@ -178,6 +405,10 @@ class TestIR(TestBase):
                          "<ir.GlobalVariable 'globdouble' of type 'double*'>")
 
     def test_functions_global_values_access(self):
+        """
+        Accessing functions and global values through Module.functions
+        and Module.global_values.
+        """
         mod = self.module()
         fty = ir.FunctionType(ir.VoidType(), [])
         foo = ir.Function(mod, fty, 'foo')
@@ -186,55 +417,36 @@ class TestIR(TestBase):
         self.assertEqual(set(mod.functions), set((foo, bar)))
         self.assertEqual(set(mod.global_values), set((foo, bar, globdouble)))
 
-    def test_metadata(self):
+    def test_global_variables_ir(self):
+        """
+        IR serialization of global variables.
+        """
         mod = self.module()
-        md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        pat = "!0 = !{ i32 123 }"
-        self.assertInText(pat, str(mod))
-        self.assertInText(pat, str(md))
-        self.assert_valid_ir(mod)
-
-    def test_metadata_2(self):
-        mod = self.module()
-        mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        mod.add_metadata([ir.Constant(ir.IntType(32), 321),
-                          ir.MetaDataString(mod, "kernel")])
-        pat1 = "!0 = !{ i32 123 }"
-        pat2 = '!1 = !{ i32 321, !"kernel" }'
-        self.assertInText(pat1, str(mod))
-        self.assertInText(pat2, str(mod))
-
-    def test_named_metadata(self):
-        mod = self.module()
-        md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        nmd = mod.add_named_metadata("foo")
-        nmd.add(md)
-        self.assertInText("!foo = !{ !0 }", str(mod))
-        self.assert_valid_ir(mod)
-
-    def test_named_metadata_2(self):
-        mod = self.module()
-        md = mod.add_metadata([ir.Constant(ir.IntType(32), 123)])
-        nmd1 = mod.add_named_metadata("foo")
-        nmd1.add(md)
-        nmd2 = mod.add_named_metadata("bar")
-        nmd2.add(md)
-        nmd2.add(md)
-        self.assertInText("!foo = !{ !0 }", str(mod))
-        self.assertInText("!bar = !{ !0, !0 }", str(mod))
-        self.assert_valid_ir(mod)
-
-    def test_inline_assembly(self):
-        mod = self.module()
-        foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
-        builder = ir.IRBuilder(foo.append_basic_block(''))
-        asmty = ir.FunctionType(ir.IntType(32), [ir.IntType(32)])
-        asm = ir.InlineAsm(asmty, "mov $1, $2", "=r,r", side_effect=True)
-        builder.call(asm, [ir.Constant(ir.IntType(32), 123)])
-        builder.ret_void()
-        pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r" ( i32 123 )'
-        self.assertInText(pat, str(mod))
-        self.assert_valid_ir(mod)
+        a = ir.GlobalVariable(mod, int8, 'a')
+        b = ir.GlobalVariable(mod, int8, 'b', addrspace=42)
+        # Initialized global variable doesn't default to "external"
+        c = ir.GlobalVariable(mod, int32, 'c')
+        c.initializer = int32(123)
+        d = ir.GlobalVariable(mod, int32, 'd')
+        d.global_constant = True
+        # Non-external linkage implies default "undef" initializer
+        e = ir.GlobalVariable(mod, int32, 'e')
+        e.linkage = "internal"
+        f = ir.GlobalVariable(mod, int32, 'f', addrspace=456)
+        f.unnamed_addr = True
+        g = ir.GlobalVariable(mod, int32, 'g')
+        g.linkage = "internal"
+        g.initializer = int32(123)
+        g.align = 16
+        self.check_module_body(mod, """\
+            @"a" = external global i8
+            @"b" = external addrspace(42) global i8
+            @"c" = global i32 123
+            @"d" = external constant i32
+            @"e" = internal global i32 undef
+            @"f" = external unnamed_addr addrspace(456) global i32
+            @"g" = internal global i32 123, align 16
+            """)
 
 
 class TestBlock(TestBase):
@@ -451,6 +663,7 @@ class TestBuildInstructions(TestBase):
         builder.fcmp_ordered('uno', a, b, 'v')
         builder.fcmp_unordered('ord', a, b, 'w')
         builder.fcmp_unordered('uno', a, b, 'x')
+        builder.fcmp_unordered('olt', a, b, 'y', flags=['nnan', 'ninf', 'nsz', 'arcp', 'fast'])
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
@@ -470,6 +683,7 @@ class TestBuildInstructions(TestBase):
                 %"v" = fcmp uno i32 %".1", %".2"
                 %"w" = fcmp ord i32 %".1", %".2"
                 %"x" = fcmp uno i32 %".1", %".2"
+                %"y" = fcmp nnan ninf nsz arcp fast olt i32 %".1", %".2"
             """)
 
     def test_misc_ops(self):
@@ -509,6 +723,7 @@ class TestBuildInstructions(TestBase):
         c = builder.alloca(int32, name='c')
         d = builder.alloca(int32, size=42, name='d')
         e = builder.alloca(dbl, size=a, name='e')
+        e.align = 8
         self.assertEqual(e.type, ir.PointerType(dbl))
         ee = builder.store(z, e)
         self.assertEqual(ee.type, ir.VoidType())
@@ -535,7 +750,7 @@ class TestBuildInstructions(TestBase):
             my_block:
                 %"c" = alloca i32
                 %"d" = alloca i32, i32 42
-                %"e" = alloca double, i32 %".1"
+                %"e" = alloca double, i32 %".1", align 8
                 store double %".3", double* %"e"
                 store i32 %".2", i32* %"c"
                 %"g" = load i32, i32* %"c"
@@ -718,21 +933,43 @@ class TestBuildInstructions(TestBase):
             """)
 
     def test_returns(self):
+        def check(block, expected_ir):
+            self.assertTrue(block.is_terminated)
+            self.check_block(block, expected_ir)
+
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         builder.ret_void()
-        self.assertTrue(block.is_terminated)
-        self.check_block(block, """\
+        check(block, """\
             my_block:
                 ret void
             """)
+
         block = self.block(name='other_block')
         builder = ir.IRBuilder(block)
-        builder.ret(ir.Constant(int32, 5))
-        self.assertTrue(block.is_terminated)
-        self.check_block(block, """\
+        builder.ret(int32(5))
+        check(block, """\
             other_block:
                 ret i32 5
+            """)
+
+        # With metadata
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        inst = builder.ret_void()
+        inst.set_metadata("dbg", block.module.add_metadata(()))
+        check(block, """\
+            my_block:
+                ret void, !dbg !0
+            """)
+
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        inst = builder.ret(int32(6))
+        inst.set_metadata("dbg", block.module.add_metadata(()))
+        check(block, """\
+            my_block:
+                ret i32 6, !dbg !0
             """)
 
     def test_switch(self):
@@ -775,6 +1012,23 @@ class TestBuildInstructions(TestBase):
                 %"res_f_readonly" = call float (i32, i32) @"f"(i32 %".1", i32 %".2") readonly
             """)
 
+    def test_call_metadata(self):
+        """
+        Function calls with metadata arguments.
+        """
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        dbg_declare_ty = ir.FunctionType(ir.VoidType(), [ir.MetaDataType()] * 3)
+        dbg_declare = ir.Function(builder.module, dbg_declare_ty, 'llvm.dbg.declare')
+        a = builder.alloca(int32, name="a")
+        b = builder.module.add_metadata(())
+        builder.call(dbg_declare, (a, b, b))
+        self.check_block(block, """\
+            my_block:
+                %"a" = alloca i32
+                call void (metadata, metadata, metadata) @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
+            """)
+
     def test_invoke(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -793,9 +1047,7 @@ class TestBuildInstructions(TestBase):
     def test_landingpad(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        tp_pers = ir.FunctionType(int8, (), var_arg=True)
-        pers = ir.Function(builder.function.module, tp_pers, '__gxx_personality_v0')
-        lp = builder.landingpad(ir.LiteralStructType([int32, int8.as_pointer()]), pers, 'lp')
+        lp = builder.landingpad(ir.LiteralStructType([int32, int8.as_pointer()]), 'lp')
         int_typeinfo = ir.GlobalVariable(builder.function.module, int8.as_pointer(), "_ZTIi")
         int_typeinfo.global_constant = True
         lp.add_clause(ir.CatchClause(int_typeinfo))
@@ -804,7 +1056,7 @@ class TestBuildInstructions(TestBase):
         builder.resume(lp)
         self.check_block(block, """\
             my_block:
-                %"lp" = landingpad {i32, i8*} personality i8 (...)* @"__gxx_personality_v0"
+                %"lp" = landingpad {i32, i8*}
                     catch i8** @"_ZTIi"
                     filter [1 x i8**] [i8** @"_ZTIi"]
                 resume {i32, i8*} %"lp"
@@ -1280,13 +1532,21 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), '[3 x i32] [i32 5, i32 6, i32 4]')
         c = ir.Constant(ir.ArrayType(int32, 2), (c32(5), c32(ir.Undefined)))
         self.assertEqual(str(c), '[2 x i32] [i32 5, i32 undef]')
+
+        c = ir.Constant.literal_array((c32(5), c32(6), c32(ir.Undefined)))
+        self.assertEqual(str(c), '[3 x i32] [i32 5, i32 6, i32 undef]')
+        with self.assertRaises(TypeError) as raises:
+            ir.Constant.literal_array((c32(5), ir.Constant(flt, 1.5)))
+        self.assertEqual(str(raises.exception),
+                         "all elements must have the same type")
+
         c = ir.Constant(ir.ArrayType(int32, 2), ir.Undefined)
         self.assertEqual(str(c), '[2 x i32] undef')
         c = ir.Constant(ir.ArrayType(int32, 2), None)
         self.assertEqual(str(c), '[2 x i32] zeroinitializer')
         # Raw array syntax
         c = ir.Constant(ir.ArrayType(int8, 11), bytearray(b"foobar_123\x80"))
-        self.assertEqual(str(c), r'[11 x i8] c"foobar\5f123\80"')
+        self.assertEqual(str(c), r'[11 x i8] c"foobar_123\80"')
         c = ir.Constant(ir.ArrayType(int8, 4), bytearray(b"\x00\x01\x04\xff"))
         self.assertEqual(str(c), r'[4 x i8] c"\00\01\04\ff"')
         # Recursive instantiation of inner constants

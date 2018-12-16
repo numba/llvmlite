@@ -1,7 +1,6 @@
 
 from ctypes import POINTER, c_char_p, c_int
 import enum
-import itertools
 
 from . import ffi
 from .common import _decode_string, _encode_string
@@ -156,6 +155,7 @@ class ValueRef(ffi.ObjectRef):
         module.
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
+
 
 # FFI
 

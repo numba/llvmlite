@@ -14,6 +14,11 @@ Values are what a :term:`module` mostly consists of.
    An undefined value (mapping to LLVM's "undef").
 
 
+.. class:: Value
+
+   The base class for all IR values.
+
+
 .. class:: Constant(typ, constant)
 
    A literal value.  *typ* is the type of the represented value
@@ -36,11 +41,18 @@ Values are what a :term:`module` mostly consists of.
      instance to initialize the array from a string of bytes.  This is
      useful for character constants.
 
+   .. classmethod:: literal_array(elements)
+
+      An alternate constructor for constant arrays.  *elements* is a
+      sequence of values (:class:`Constant` or otherwise).  All *elements*
+      must have the same type.  A constant array containing the *elements*
+      in order is returned
+
    .. classmethod:: literal_struct(elements)
 
       An alternate constructor for constant structs.  *elements* is a
       sequence of values (:class:`Constant` or otherwise).  A constant
-      struct containing the *elems* in order is returned
+      struct containing the *elements* in order is returned
 
    .. method:: bitcast(typ)
 
@@ -58,34 +70,6 @@ Values are what a :term:`module` mostly consists of.
    .. note::
       You cannot define constant functions.  Use a :term:`function declaration`
       instead.
-
-
-.. class:: Value
-
-   The base class for non-literal values.
-
-
-.. class:: MetaDataString(module, value)
-
-   A string literal for use in :term:`metadata`.  *module* is the module
-   the metadata belongs to.  *value* is a Python string.
-
-.. class:: MDValue
-
-   A :term:`metadata` node.  To create an instance, call
-   :meth:`Module.add_metadata`.
-
-.. class:: NamedMetaData
-
-   A named metadata.  To create an instance, call
-   :meth:`Module.add_named_metadata`.  Named metadata has
-   the following method:
-
-   .. method:: add(md)
-
-      Append the given piece of metadata to the collection of operands
-      referred to by the NamedMetaData.  *md* can be either a
-      :class:`MetaDataString` or a :class:`MDValue`.
 
 
 .. class:: Argument
@@ -137,6 +121,45 @@ Values are what a :term:`module` mostly consists of.
    .. attribute:: basic_block
 
       The basic block. Must be a part of :attr:`function`.
+
+
+Metadata
+--------
+
+There are several kinds of :term:`metadata` values.
+
+
+.. class:: MetaDataString(module, value)
+
+   A string literal for use in metadata.  *module* is the module
+   the metadata belongs to.  *value* is a Python string.
+
+.. class:: MDValue
+
+   A metadata node.  To create an instance, call :meth:`Module.add_metadata`.
+
+.. class:: DIValue
+
+   A debug information descriptor, containing key-value pairs.
+   To create an instance, call :meth:`Module.add_debug_info`.
+
+.. class:: DIToken(value)
+
+   A debug information "token", representing a well-known enumeration
+   value.  *value* should be the enumeration name, e.g. ``'DW_LANG_Python'``.
+
+
+.. class:: NamedMetaData
+
+   A named metadata node.  To create an instance, call
+   :meth:`Module.add_named_metadata`.  Named metadata has
+   the following method:
+
+   .. method:: add(md)
+
+      Append the given piece of metadata to the collection of operands
+      referred to by the NamedMetaData.  *md* can be either a
+      :class:`MetaDataString` or a :class:`MDValue`.
 
 
 Global values
@@ -195,6 +218,11 @@ Global values are values accessible using a module-wide name.
       The variable's initialization value (probably a :class:`Constant`
       of type *typ*).  Default is None, meaning the variable is uninitialized.
 
+   .. attribute:: align
+
+      An explicit alignment in bytes.  Default is None, meaning the
+      default alignment for the variable's type is used.
+
 
 .. class:: Function(module, typ, name)
 
@@ -218,6 +246,11 @@ Global values are values accessible using a module-wide name.
 
       Similar to :meth:`append_basic_block`, but inserts it before the basic
       block *before* in the function's list of basic blocks.
+
+   .. method:: set_metadata(name, node)
+
+      Add a function-specific metadata named *name* pointing to the given
+      metadata *node* (a :class:`MDValue`).
 
    .. attribute:: args
 
@@ -328,6 +361,7 @@ use the helper methods on the :class:`IRBuilder` class.
 
       Add a catch or filter clause.  Create catch clauses using
       :class:`CatchClause`, and filter clauses using :class:`FilterClause`.
+
 
 Landing pad clauses
 -------------------

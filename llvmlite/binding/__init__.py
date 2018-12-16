@@ -13,3 +13,5 @@ from .passmanagers import *
 from .targets import *
 from .transforms import *
 from .value import *
+from .analysis import *
+from .object_file import *

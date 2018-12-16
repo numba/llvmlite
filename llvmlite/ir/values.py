@@ -7,20 +7,22 @@ from __future__ import print_function, absolute_import
 
 import string
 
-from ..six import StringIO
-from . import types
-from ._utils import _StrCaching, _StringReferenceCaching
+from .. import six
+from . import types, _utils
+from ._utils import _StrCaching, _StringReferenceCaching, _HasMetadata
 
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
-                frozenset('._-$'))
+                frozenset(map(ord, ' !#$%&\'()*+,-./:;<=>?@[]^_`{|}~')))
 
 
 def _escape_string(text, _map={}):
     """
     Escape the given bytestring for safe use as a LLVM array constant.
     """
+    if isinstance(text, str):
+        text = text.encode('ascii')
     assert isinstance(text, (bytes, bytearray))
 
     if not _map:
@@ -29,6 +31,8 @@ def _escape_string(text, _map={}):
                 _map[ch] = chr(ch)
             else:
                 _map[ch] = '\\%02x' % ch
+            if six.PY2:
+                _map[chr(ch)] = _map[ch]
 
     buf = [_map[ch] for ch in text]
     return ''.join(buf)
@@ -136,6 +140,20 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         return val
 
     @classmethod
+    def literal_array(cls, elems):
+        """
+        Construct a literal array constant made of the given members.
+        """
+        tys = [el.type for el in elems]
+        if len(tys) == 0:
+            raise ValueError("need at least one element")
+        ty = tys[0]
+        for other in tys:
+            if ty != other:
+                raise TypeError("all elements must have the same type")
+        return cls(types.ArrayType(ty, len(elems)), elems)
+
+    @classmethod
     def literal_struct(cls, elems):
         """
         Construct a literal structure constant made of the given members.
@@ -181,15 +199,12 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
     """
     name_prefix = '%'
     deduplicate_name = True
-    creates_nested_scope = False
 
     def __init__(self, parent, type, name):
         assert parent is not None
         assert isinstance(type, types.Type)
         self.parent = parent
         self.type = type
-        pscope = self.parent.scope
-        self.scope = pscope.get_child() if self.creates_nested_scope else pscope
         self._set_name(name)
 
     def _to_string(self):
@@ -206,7 +221,7 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
         return self._name
 
     def _set_name(self, name):
-        name = self.scope.register(name, deduplicate=self.deduplicate_name)
+        name = self.parent.scope.register(name, deduplicate=self.deduplicate_name)
         self._name = name
 
     name = property(_get_name, _set_name)
@@ -240,14 +255,16 @@ class MetaDataString(NamedValue):
     """
 
     def __init__(self, parent, string):
-        super(MetaDataString, self).__init__(parent, types.MetaData(), name="")
+        super(MetaDataString, self).__init__(parent,
+                                             types.MetaDataType(),
+                                             name="")
         self.string = string
 
     def descr(self, buf):
         buf += (self.get_reference(), "\n")
 
     def _get_reference(self):
-        return '!"{0}"'.format(self.string)
+        return '!"{0}"'.format(_escape_string(self.string))
 
     _to_string = _get_reference
 
@@ -264,7 +281,35 @@ class MetaDataString(NamedValue):
         return hash(self.string)
 
 
+class MetaDataArgument(_StrCaching, _StringReferenceCaching, Value):
+    """
+    An argument value to a function taking metadata arguments.
+    This can wrap any other kind of LLVM value.
+
+    Do not instantiate directly, Builder.call() will create these
+    automatically.
+    """
+
+    def __init__(self, value):
+        assert isinstance(value, Value)
+        assert not isinstance(value.type, types.MetaDataType)
+        self.type = types.MetaDataType()
+        self.wrapped_value = value
+
+    def _get_reference(self):
+        # e.g. "i32* %2"
+        return "{0} {1}".format(self.wrapped_value.type,
+                                self.wrapped_value.get_reference())
+
+    _to_string = _get_reference
+
+
 class NamedMetaData(object):
+    """
+    A named metadata node.
+
+    Do not instantiate directly, use Module.add_named_metadata() instead.
+    """
 
     def __init__(self, parent):
         self.parent = parent
@@ -275,23 +320,28 @@ class NamedMetaData(object):
 
 
 class MDValue(NamedValue):
+    """
+    A metadata node's value, consisting of a sequence of elements ("operands").
+
+    Do not instantiate directly, use Module.add_metadata() instead.
+    """
     name_prefix = '!'
 
     def __init__(self, parent, values, name):
-        super(MDValue, self).__init__(parent, types.MetaData(), name=name)
+        super(MDValue, self).__init__(parent,
+                                      types.MetaDataType(),
+                                      name=name)
         self.operands = tuple(values)
         parent.metadata.append(self)
-
-    @property
-    def operand_count(self):
-        return len(self.operands)
 
     def descr(self, buf):
         operands = []
         for op in self.operands:
-            typestr = str(op.type)
-            if isinstance(op.type, types.MetaData):
-                operands.append(op.get_reference())
+            if isinstance(op.type, types.MetaDataType):
+                if isinstance(op, Constant) and op.constant == None:
+                    operands.append("null")
+                else:
+                    operands.append(op.get_reference())
             else:
                 operands.append("{0} {1}".format(op.type, op.get_reference()))
         operands = ', '.join(operands)
@@ -311,6 +361,78 @@ class MDValue(NamedValue):
 
     def __hash__(self):
         return hash(self.operands)
+
+
+class DIToken:
+    """
+    A debug information enumeration value that should appear bare in
+    the emitted metadata.
+
+    Use this to wrap known constants, e.g. the DW_* enumerations.
+    """
+    def __init__(self, value):
+        self.value = value
+
+
+class DIValue(NamedValue):
+    """
+    A debug information descriptor, containing key-value pairs.
+
+    Do not instantiate directly, use Module.add_debug_info() instead.
+    """
+    name_prefix = '!'
+
+    def __init__(self, parent, is_distinct, kind, operands, name):
+        super(DIValue, self).__init__(parent,
+                                      types.MetaDataType(),
+                                      name=name)
+        self.is_distinct = is_distinct
+        self.kind = kind
+        self.operands = tuple(operands)
+        parent.metadata.append(self)
+
+    def descr(self, buf):
+        if self.is_distinct:
+            buf += ("distinct ",)
+        operands = []
+        for key, value in self.operands:
+            if value is None:
+                strvalue = "null"
+            elif value is True:
+                strvalue = "true"
+            elif value is False:
+                strvalue = "false"
+            elif isinstance(value, DIToken):
+                strvalue = value.value
+            elif isinstance(value, str):
+                strvalue = '"{}"'.format(_escape_string(value))
+            elif isinstance(value, int):
+                strvalue = str(value)
+            elif isinstance(value, NamedValue):
+                strvalue = value.get_reference()
+            else:
+                raise TypeError("invalid operand type for debug info: %r"
+                                % (value,))
+            operands.append("{0}: {1}".format(key, strvalue))
+        operands = ', '.join(operands)
+        buf += ("!", self.kind, "(", operands, ")\n")
+
+    def _get_reference(self):
+        return self.name_prefix + str(self.name)
+
+    def __eq__(self, other):
+        if isinstance(other, DIValue):
+            return self.is_distinct == other.is_distinct and \
+                self.kind == other.kind and \
+                self.operands == other.operands
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.is_distinct, self.kind, self.operands))
 
 
 class GlobalValue(NamedValue, _ConstOpMixin):
@@ -335,11 +457,12 @@ class GlobalVariable(GlobalValue):
         assert isinstance(typ, types.Type)
         super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),
                                              name=name)
-        self.gtype = typ
+        self.value_type = typ
         self.initializer = None
         self.unnamed_addr = False
         self.global_constant = False
         self.addrspace = addrspace
+        self.align = None
         self.parent.add_global(self)
 
     def descr(self, buf):
@@ -354,26 +477,30 @@ class GlobalVariable(GlobalValue):
         else:
             linkage = self.linkage
 
-        if self.addrspace != 0:
-            addrspace = 'addrspace({0:d})'.format(self.addrspace)
-        else:
-            addrspace = ''
-
+        if linkage:
+            buf.append(linkage + " ")
+        if self.storage_class:
+            buf.append(self.storage_class + " ")
         if self.unnamed_addr:
-            unnamed_addr = 'unnamed_addr'
-        else:
-            unnamed_addr = ''
+            buf.append("unnamed_addr ")
+        if self.addrspace != 0:
+            buf.append('addrspace({0:d}) '.format(self.addrspace))
 
-        buf.append("{linkage} {storage_class} {unnamed_addr} {addrspace} {kind} {type} "
-                   .format(linkage=linkage,
-                           storage_class=self.storage_class,
-                           unnamed_addr=unnamed_addr,
-                           addrspace=addrspace,
-                           kind=kind,
-                           type=self.gtype))
+        buf.append("{kind} {type}" .format(kind=kind, type=self.value_type))
 
         if self.initializer is not None:
-            buf.append(self.initializer.get_reference())
+            if self.initializer.type != self.value_type:
+                raise TypeError("got initializer of type %s "
+                                "for global value type %s"
+                                % (self.initializer.type, self.value_type))
+            buf.append(" " + self.initializer.get_reference())
+        elif linkage not in ('external', 'extern_weak'):
+            # emit 'undef' for non-external linkage GV
+            buf.append(" " + self.value_type(Undefined).get_reference())
+
+        if self.align is not None:
+            buf.append(", align %d" % (self.align,))
+
         buf.append("\n")
 
 
@@ -386,17 +513,19 @@ class AttributeSet(set):
 
 
 class FunctionAttributes(AttributeSet):
-    _known = frozenset(['alwaysinline', 'builtin', 'cold', 'inlinehint',
-                        'jumptable', 'minsize', 'naked', 'nobuiltin',
-                        'noduplicate', 'noimplicitfloat', 'noinline',
-                        'nonlazybind', 'noredzone', 'noreturn', 'nounwind',
-                        'optnone', 'optsize', 'readnone', 'readonly',
-                        'returns_twice', 'sanitize_address',
-                        'sanitize_memory', 'sanitize_thread', 'ssp',
-                        'sspreg', 'sspstrong', 'uwtable'])
+    _known = frozenset([
+        'argmemonly', 'alwaysinline', 'builtin', 'cold',
+        'inaccessiblememonly', 'inaccessiblemem_or_argmemonly', 'inlinehint',
+        'jumptable', 'minsize', 'naked', 'nobuiltin', 'noduplicate',
+        'noimplicitfloat', 'noinline', 'nonlazybind', 'norecurse',
+        'noredzone', 'noreturn', 'nounwind', 'optnone', 'optsize',
+        'readnone', 'readonly', 'returns_twice', 'sanitize_address',
+        'sanitize_memory', 'sanitize_thread', 'ssp',
+        'sspreg', 'sspstrong', 'uwtable'])
 
     def __init__(self):
         self._alignstack = 0
+        self._personality = None
 
     @property
     def alignstack(self):
@@ -407,23 +536,35 @@ class FunctionAttributes(AttributeSet):
         assert val >= 0
         self._alignstack = val
 
+    @property
+    def personality(self):
+        return self._personality
+
+    @personality.setter
+    def personality(self, val):
+        assert val is None or isinstance(val, GlobalValue)
+        self._personality = val
+
     def __repr__(self):
         attrs = sorted(self)
         if self.alignstack:
             attrs.append('alignstack({0:d})'.format(self.alignstack))
+        if self.personality:
+            attrs.append('personality {persty} {persfn}'.format(
+                            persty=self.personality.type,
+                            persfn=self.personality.get_reference()))
         return ' '.join(attrs)
 
 
-class Function(GlobalValue):
+class Function(GlobalValue, _HasMetadata):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
-    creates_nested_scope = True
-
     def __init__(self, module, ftype, name):
         assert isinstance(ftype, types.Type)
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
         self.ftype = ftype
+        self.scope = _utils.NameScope()
         self.blocks = []
         self.attributes = FunctionAttributes()
         self.args = tuple([Argument(self, t)
@@ -431,6 +572,7 @@ class Function(GlobalValue):
         self.return_value = ReturnValue(self, ftype.return_type)
         self.parent.add_global(self)
         self.calling_convention = ''
+        self.metadata = {}
 
     @property
     def module(self):
@@ -472,7 +614,10 @@ class Function(GlobalValue):
         linkage = self.linkage
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
-        prototype = "{prefix} {name}({args}{vararg}) {attrs}\n".format(**locals())
+        metadata = self._stringify_metadata()
+        prototype = "{prefix} {name}({args}{vararg}) {attrs}{metadata}\n".format(
+            prefix=prefix, name=name, args=args, vararg=vararg,
+            attrs=attrs, metadata=metadata)
         buf.append(prototype)
 
     def descr_body(self, buf):
@@ -555,6 +700,7 @@ class Block(NamedValue):
 
     def __init__(self, parent, name=''):
         super(Block, self).__init__(parent, types.LabelType(), name=name)
+        self.scope = parent.scope
         self.instructions = []
         self.terminator = None
 
@@ -565,6 +711,10 @@ class Block(NamedValue):
     @property
     def function(self):
         return self.parent
+
+    @property
+    def module(self):
+        return self.parent.module
 
     def descr(self, buf):
         buf.append("{0}:\n".format(self.name))

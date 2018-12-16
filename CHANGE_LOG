@@ -1,9 +1,110 @@
-v0.9.0
-------
+v0.15.0
+-------
+
+Enhancements:
+
+* PR #213: Add partial LLVM bindings for ObjectFile.
+* PR #215: Add inline assembly helpers in the builder.
+* PR #216: Allow specifying alignment in alloca instructions.
+* PR #219: Remove unnecessary verify in module linkage.
 
 Fixes:
 
-* Remove the libcurses dependency on Linux.
+* PR #209, Issue #208: Fix overly restrictive test for library filenames.
+
+
+v0.14.0
+-------
+
+Enhancements:
+
+* PR #104: Add binding to get and view function control-flow graph.
+* PR #210: Improve llvmdev recipe.
+* PR #212: Add initializer for the native assembly parser.
+
+
+v0.13.0
+-------
+
+Enhancements:
+
+* PR #176: Switch from LLVM 3.7 to LLVM 3.8.
+* PR #191: Allow setting the alignment of a global variable.
+* PR #198: Add missing function attributes.
+* PR #160: Escape the contents of metadata strings, to allow embedding
+  any characters.
+* PR #162: Add support for creating debug information nodes.
+* PR #200: Improve the usability of metadata emission APIs.
+* PR #200: Allow calling functions with metadata arguments
+  (such as ``@llvm.dbg.declare``).
+
+Fixes:
+
+* PR #190: Suppress optimization remarks printed out in some cases by LLVM.
+* PR #200: Allow attaching metadata to a ``ret`` instruction.
+
+
+v0.12.1
+-------
+
+New release to fix packages on PyPI. Same as v0.12.0.
+
+
+v0.12.0
+-------
+
+Enhancements:
+
+* PR #179: Let llvmlite build on armv7l Linux.
+* PR #161: Allow adding metadata to functions.
+* PR #163: Allow emitting fast-math ``fcmp`` instructions.
+* PR #159: Allow emitting verbose assembly in TargetMachine.
+
+Fixes:
+
+* Issue #177: Make setup.py compatible with ``pip install``.
+
+v0.11.0
+-------
+
+Enhancements:
+
+* PR #175: Check LLVM version at build time
+* PR #169: Default initializer for non-external global variable
+* PR #168: add ir.Constant.literal_array()
+
+
+v0.10.0
+-------
+
+Enhancements:
+
+* PR #146: Improve ``setup.py clean`` to wipe more leftovers.
+* PR #135: Remove some llvmpy compatibility APIs.
+* PR #151: Always copy TargetData when adding to a pass manager.
+* PR #148: Make errors more explicit on loading the binding DLL.
+* PR #144: Allow overriding ``-flto`` in Linux builds.
+* PR #136: Remove Python 2.6 and 3.3 compatibility.
+* Issue #131: Allow easier creation of constants by making type instances
+  callable.
+* Issue #130: The test suite now ensures the runtime DLL dependencies
+  are within a certain expected set.
+* Issue #121: Simplify build process on Unix and remove hardcoded linking
+  with LLVMOProfileJIT.
+* Issue #125: Speed up formatting of raw array constants.
+
+Fixes:
+
+* PR #155: Properly emit IR for metadata null.
+* PR #153: Remove deprecated uses of ``TargetMachine::getDataLayout()``.
+* PR #156: Move personality from LandingPadInstr to FunctionAttributes.
+  It was moved in LLVM 3.7.
+* PR #149: Implement LLVM scoping correctly.
+* PR #141: Ensure no CMakeCache.txt file is included in sdist.
+* PR #132: Correct constant in ``llvmir.py`` example.
+
+v0.9.0
+------
 
 Enhancements:
 
@@ -15,6 +116,10 @@ Enhancements:
   differing types.
 * PR #113: Let Type.get_abi_{size,alignment} not choke on identified types.
 * PR #112: Support non-alphanumeric characters in type names.
+
+Fixes:
+
+* Remove the libcurses dependency on Linux.
 
 v0.8.0
 ------
@@ -73,12 +178,14 @@ v0.4.0
 ------
 
 Enhancements:
+
 * Add Module.get_global()
 * Renamd Module.global_variables to Module.global_values
 * Support loading library parmanently
 * Add Type.get_abi_alignment()
 
 Fixes:
+
 * Expose LLVM version as a tuple
 
 Patched LLVM 3.5.1:
@@ -89,11 +196,13 @@ v0.2.2
 -------
 
 Enhancements:
+
 * Support for addrspacescast
 * Support for tail call, calling convention attribute
 * Support for IdentifiedStructType
 
 Fixes:
+
 * GEP addrspace propagation
 * Various installation process fixes
 

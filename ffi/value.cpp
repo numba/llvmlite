@@ -2,6 +2,9 @@
 #include "llvm-c/Core.h"
 #include "core.h"
 
+// the following is needed for WriteGraph()
+#include "llvm/Analysis/CFGPrinter.h"
+
 extern "C" {
 
 API_EXPORT(void)
@@ -82,5 +85,20 @@ LLVMPY_IsDeclaration(LLVMValueRef GV)
 {
     return LLVMIsDeclaration(GV);
 }
+
+
+API_EXPORT(void)
+LLVMPY_WriteCFG(LLVMValueRef Fval, const char **OutStr, int ShowInst) {
+    using namespace llvm;
+    Function *F  = unwrap<Function>(Fval);
+    std::string buffer;
+    raw_string_ostream stream(buffer);
+    // Note: The (const Function*)F is necessary to trigger the right behavior.
+    //       A non constant Function* will result in the instruction not
+    //       printed regardless of the value in the 3rd argument.
+    WriteGraph(stream, (const Function*)F, !ShowInst);
+    *OutStr = LLVMPY_CreateString(stream.str().c_str());
+}
+
 
 } // end extern "C"

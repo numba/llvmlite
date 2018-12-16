@@ -11,6 +11,16 @@ These functions need only be called once per process invocation.
 
    Initialize the LLVM core.
 
+.. function:: initialize_all_targets()
+
+   Initialize all targets. Necessary before targets can be looked up
+   via the :class:`Target` class.
+
+.. function:: initialize_all_asmprinters()
+
+   Initialize all code generators. Necessary before generating
+   any assembly or machine code via the :meth:`TargetMachine.emit_object`
+   and :meth:`TargetMachine.emit_assembly` methods.
 
 .. function:: initialize_native_target()
 
@@ -22,6 +32,11 @@ These functions need only be called once per process invocation.
 
    Initialize the native assembly printer.
 
+
+.. function:: initialize_native_asmparser()
+
+   Initialize the native assembly parser.  This is necessary for inline assembly
+   to work.
 
 .. function:: shutdown()
 

@@ -1,7 +1,7 @@
 from __future__ import print_function, absolute_import
 
 import ctypes
-from ctypes import *
+from ctypes import CFUNCTYPE, c_int
 from ctypes.util import find_library
 import gc
 import locale
@@ -12,10 +12,15 @@ import subprocess
 import sys
 import unittest
 
-from llvmlite import six
+from llvmlite import six, ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from . import TestCase
+
+
+# arvm7l needs extra ABI symbols to link successfully
+if platform.machine() == 'armv7l':
+    llvm.load_library_permanently('libgcc_s.so.1')
 
 
 def no_de_locale():
@@ -106,6 +111,18 @@ asm_double_locale = r"""
     }}
     """
 
+
+asm_inlineasm = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @foo() {{
+      call void asm sideeffect "nop", ""()
+      ret void
+    }}
+    """
+
+
 class BaseTest(TestCase):
 
     def setUp(self):
@@ -155,7 +172,7 @@ class TestDependencies(BaseTest):
         out, _ = p.communicate()
         self.assertEqual(0, p.returncode)
         # Parse library dependencies
-        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+)?$')
+        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
         deps = set()
         for line in out.decode().splitlines():
             parts = line.split()
@@ -225,7 +242,7 @@ class TestMisc(BaseTest):
             self.assertIsInstance(v, bool)
         self.assertIsInstance(features.flatten(), str)
 
-        re_term = r"[+\-][a-zA-Z0-9\._]+"
+        re_term = r"[+\-][a-zA-Z0-9\._-]+"
         regex = r"^({0}|{0}(,{0})*)?$".format(re_term)
         # quick check for our regex
         self.assertIsNotNone(re.match(regex, ""))
@@ -246,6 +263,8 @@ class TestMisc(BaseTest):
             llvm.initialize()
             llvm.initialize_native_target()
             llvm.initialize_native_asmprinter()
+            llvm.initialize_all_targets()
+            llvm.initialize_all_asmprinters()
             llvm.shutdown()
             """
         subprocess.check_call([sys.executable, "-c", code])
@@ -262,7 +281,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertIn((major, minor), [(3, 6), (3, 7)])
+        self.assertEqual((major, minor), (3, 9))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -634,6 +653,10 @@ class JITWithTMTestMixin(JITTestMixin):
         ee = self.jit(mod, target_machine)
         raw_asm = target_machine.emit_assembly(mod)
         self.assertIn("sum", raw_asm)
+        target_machine.set_asm_verbosity(True)
+        raw_asm_verbose = target_machine.emit_assembly(mod)
+        self.assertIn("sum", raw_asm)
+        self.assertNotEqual(raw_asm, raw_asm_verbose)
 
     def test_emit_object(self):
         """Test TargetMachineRef.emit_object()"""
@@ -786,13 +809,12 @@ class TestTargetData(BaseTest):
         glob = self.glob()
         self.assertEqual(td.get_abi_size(glob.type), 8)
 
-    def test_add_pass(self):
-        td = self.target_data()
-        pm = llvm.create_module_pass_manager()
-        td.add_pass(pm)
-
 
 class TestTargetMachine(BaseTest):
+
+    def test_add_target_data_pass(self):
+        tm = self.target_machine()
+        pm = llvm.create_module_pass_manager()
 
     def test_add_analysis_passes(self):
         tm = self.target_machine()
@@ -933,6 +955,31 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         self.assertNotIn("%.4", opt_asm)
 
 
+class TestPasses(BaseTest, PassManagerTestMixin):
+
+    def pm(self):
+        return llvm.create_module_pass_manager()
+
+    def test_populate(self):
+        pm = self.pm()
+        pm.add_constant_merge_pass()
+        pm.add_dead_arg_elimination_pass()
+        pm.add_function_attrs_pass()
+        pm.add_function_inlining_pass(225)
+        pm.add_global_dce_pass()
+        pm.add_global_optimizer_pass()
+        pm.add_ipsccp_pass()
+        pm.add_dead_code_elimination_pass()
+        pm.add_cfg_simplification_pass()
+        pm.add_gvn_pass()
+        pm.add_instruction_combining_pass()
+        pm.add_licm_pass()
+        pm.add_sccp_pass()
+        pm.add_sroa_pass()
+        pm.add_type_based_alias_analysis_pass()
+        pm.add_basic_alias_analysis_pass()
+
+
 class TestDylib(BaseTest):
 
     def test_bad_library(self):
@@ -949,6 +996,125 @@ class TestDylib(BaseTest):
             libm = find_library("libm")
         llvm.load_library_permanently(libm)
 
+
+class TestAnalysis(BaseTest):
+    def build_ir_module(self):
+        m = ir.Module()
+        ft = ir.FunctionType(ir.IntType(32), [ir.IntType(32), ir.IntType(32)])
+        fn = ir.Function(m, ft, "foo")
+        bd = ir.IRBuilder(fn.append_basic_block())
+        x, y = fn.args
+        z = bd.add(x, y)
+        bd.ret(z)
+        return m
+
+    def test_get_function_cfg_on_ir(self):
+        mod = self.build_ir_module()
+        foo = mod.get_global('foo')
+        dot_showing_inst = llvm.get_function_cfg(foo)
+        dot_without_inst = llvm.get_function_cfg(foo, show_inst=False)
+        inst = "%.5 = add i32 %.1, %.2"
+        self.assertIn(inst, dot_showing_inst)
+        self.assertNotIn(inst, dot_without_inst)
+
+    def test_function_cfg_on_llvm_value(self):
+        defined = self.module().get_function('sum')
+        dot_showing_inst = llvm.get_function_cfg(defined, show_inst=True)
+        dot_without_inst = llvm.get_function_cfg(defined, show_inst=False)
+        # Check "digraph"
+        prefix = 'digraph'
+        self.assertIn(prefix, dot_showing_inst)
+        self.assertIn(prefix, dot_without_inst)
+        # Check function name
+        fname = "CFG for 'sum' function"
+        self.assertIn(fname, dot_showing_inst)
+        self.assertIn(fname, dot_without_inst)
+        # Check instruction
+        inst = "%.3 = add i32 %.1, %.2"
+        self.assertIn(inst, dot_showing_inst)
+        self.assertNotIn(inst, dot_without_inst)
+
+
+class TestGlobalVariables(BaseTest):
+    def check_global_variable_linkage(self, linkage, has_undef=True):
+        # This test default initializer on global variables with different
+        # linkages.  Some linkages requires an initializer be present, while
+        # it is optional for others.  This test uses ``parse_assembly()``
+        # to verify that we are adding an `undef` automatically if user didn't
+        # specific one for certain linkages.  It is a IR syntax error if the
+        # initializer is not present for certain linkages e.g. "external".
+        mod = ir.Module()
+        typ = ir.IntType(32)
+        gv = ir.GlobalVariable(mod, typ, "foo")
+        gv.linkage = linkage
+        asm = str(mod)
+        # check if 'undef' is present
+        if has_undef:
+            self.assertIn('undef', asm)
+        else:
+            self.assertNotIn('undef', asm)
+        # parse assembly to ensure correctness
+        self.module(asm)
+
+    def test_internal_linkage(self):
+        self.check_global_variable_linkage('internal')
+
+    def test_common_linkage(self):
+        self.check_global_variable_linkage('common')
+
+    def test_external_linkage(self):
+        self.check_global_variable_linkage('external', has_undef=False)
+
+    def test_available_externally_linkage(self):
+        self.check_global_variable_linkage('available_externally')
+
+    def test_private_linkage(self):
+        self.check_global_variable_linkage('private')
+
+    def test_linkonce_linkage(self):
+        self.check_global_variable_linkage('linkonce')
+
+    def test_weak_linkage(self):
+        self.check_global_variable_linkage('weak')
+
+    def test_appending_linkage(self):
+        self.check_global_variable_linkage('appending')
+
+    def test_extern_weak_linkage(self):
+        self.check_global_variable_linkage('extern_weak', has_undef=False)
+
+    def test_linkonce_odr_linkage(self):
+        self.check_global_variable_linkage('linkonce_odr')
+
+    def test_weak_odr_linkage(self):
+        self.check_global_variable_linkage('weak_odr')
+
+
+@unittest.skipUnless(platform.machine().startswith('x86'), "only on x86")
+class TestInlineAsm(BaseTest):
+    def test_inlineasm(self):
+        llvm.initialize_native_asmparser()
+        m = self.module(asm=asm_inlineasm)
+        tm = self.target_machine()
+        asm = tm.emit_assembly(m)
+        self.assertIn('nop', asm)
+
+class TestObjectFile(BaseTest):
+    def test_object_file(self):
+        target_machine = self.target_machine()
+        mod = self.module()
+        obj_bin = target_machine.emit_object(mod)
+        obj = llvm.ObjectFileRef.from_data(obj_bin)
+        # Check that we have a text section, and that she has a name and data
+        has_text = False
+        for s in obj.sections():
+            if s.is_text():
+                has_text = True
+                self.assertIsNotNone(s.name())
+                self.assertTrue(s.size() > 0)
+                self.assertTrue(len(s.data()) > 0)
+                break
+        self.assertTrue(has_text)
 
 if __name__ == "__main__":
     unittest.main()

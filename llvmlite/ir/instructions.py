@@ -4,13 +4,13 @@ Implementation of LLVM IR instructions.
 
 from __future__ import print_function, absolute_import
 
-from ..six import StringIO
 from . import types
 from .values import (Block, Function, Value, NamedValue, Constant,
-                     MetaDataString, AttributeSet)
+                     MetaDataArgument, MetaDataString, AttributeSet)
+from ._utils import _HasMetadata
 
 
-class Instruction(NamedValue):
+class Instruction(NamedValue, _HasMetadata):
     def __init__(self, parent, typ, opname, operands, name='', flags=()):
         super(Instruction, self).__init__(parent, typ, name=name)
         assert isinstance(parent, Block)
@@ -20,15 +20,6 @@ class Instruction(NamedValue):
         self.flags = list(flags)
         self.metadata = {}
 
-    def _stringify_metadata(self):
-        if self.metadata:
-            buf = [""]
-            buf += ["!{0} {1}".format(k, v.get_reference())
-                    for k, v in self.metadata.items()]
-            return ', '.join(buf)
-        else:
-            return ''
-
     @property
     def function(self):
         return self.parent.function
@@ -37,16 +28,13 @@ class Instruction(NamedValue):
     def module(self):
         return self.parent.function.module
 
-    def set_metadata(self, name, node):
-        self.metadata[name] = node
-
     def descr(self, buf):
         opname = self.opname
         if self.flags:
             opname = ' '.join([opname] + self.flags)
         operands = ', '.join([op.get_reference() for op in self.operands])
         typ = self.type
-        metadata = self._stringify_metadata()
+        metadata = self._stringify_metadata(leading_comma=True)
         buf.append("{0} {1} {2}{3}\n"
                    .format(opname, typ, operands, metadata))
 
@@ -74,14 +62,23 @@ class CallInstr(Instruction):
                       else cconv)
         self.tail = tail
         self.attributes = CallInstrAttributes()
+
+        # Fix and validate arguments
+        args = list(args)
+        for i in range(len(func.function_type.args)):
+            arg = args[i]
+            expected_type = func.function_type.args[i]
+            if (isinstance(expected_type, types.MetaDataType) and
+                arg.type != expected_type):
+                arg = MetaDataArgument(arg)
+            if arg.type != expected_type:
+                msg = ("Type of #{0} arg mismatch: {1} != {2}"
+                       .format(1 + i, expected_type, arg.type))
+                raise TypeError(msg)
+            args[i] = arg
+
         super(CallInstr, self).__init__(parent, func.function_type.return_type,
                                         "call", [func] + list(args), name=name)
-        # Validate
-        for argno, (arg, exptype) in enumerate(zip(self.args,
-                                               self.callee.function_type.args)):
-            if arg.type != exptype:
-                msg = "Type of #{0} arg mismatch: {1} != {2}"
-                raise TypeError(msg.format(1 + argno, exptype, arg.type))
 
     @property
     def callee(self):
@@ -120,12 +117,11 @@ class CallInstr(Instruction):
             callee_ref,
             args,
             ''.join([" " + attr for attr in self.attributes]),
-            self._stringify_metadata() if add_metadata else "",
+            self._stringify_metadata(leading_comma=True) if add_metadata else "",
             ))
 
     def descr(self, buf):
         self._descr(buf, add_metadata=True)
-
 
 class InvokeInstr(CallInstr):
     def __init__(self, parent, func, args, normal_to, unwind_to, name='', cconv=None):
@@ -141,7 +137,7 @@ class InvokeInstr(CallInstr):
         buf.append("      to label {0} unwind label {1}{metadata}\n".format(
             self.normal_to.get_reference(),
             self.unwind_to.get_reference(),
-            metadata=self._stringify_metadata(),
+            metadata=self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -149,13 +145,12 @@ class Terminator(Instruction):
     def __init__(self, parent, opname, operands):
         super(Terminator, self).__init__(parent, types.VoidType(), opname,
                                          operands)
-        self.metadata = {}
 
     def descr(self, buf):
         opname = self.opname
         operands = ', '.join(["{0} {1}".format(op.type, op.get_reference())
                               for op in self.operands])
-        metadata = self._stringify_metadata()
+        metadata = self._stringify_metadata(leading_comma=True)
         buf.append("{0} {1}{2}".format(opname, operands, metadata))
 
 
@@ -185,12 +180,14 @@ class Ret(Terminator):
 
     def descr(self, buf):
         return_value = self.return_value
+        metadata = self._stringify_metadata(leading_comma=True)
         if return_value is not None:
-            buf.append("{0} {1} {2}\n"
+            buf.append("{0} {1} {2}{3}\n"
                        .format(self.opname, return_value.type,
-                               return_value.get_reference()))
+                               return_value.get_reference(),
+                               metadata))
         else:
-            buf.append("{0}\n".format(self.opname))
+            buf.append("{0}{1}\n".format(self.opname, metadata))
 
 
 class Branch(Terminator):
@@ -221,7 +218,7 @@ class IndirectBranch(PredictableInstr, Terminator):
             self.address.type,
             self.address.get_reference(),
             ', '.join(destinations),
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -251,7 +248,7 @@ class SwitchInstr(PredictableInstr, Terminator):
             self.value.get_reference(),
             self.default.get_reference(),
             ' '.join(cases),
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -282,7 +279,7 @@ class SelectInstr(Instruction):
             self.cond.type, self.cond.get_reference(),
             self.lhs.type, self.lhs.get_reference(),
             self.rhs.type, self.rhs.get_reference(),
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -291,21 +288,25 @@ class CompareInstr(Instruction):
     OPNAME = 'invalid-compare'
     VALID_OP = {}
 
-    def __init__(self, parent, op, lhs, rhs, name=''):
+    def __init__(self, parent, op, lhs, rhs, name='', flags=[]):
         if op not in self.VALID_OP:
             raise ValueError("invalid comparison %r for %s" % (op, self.OPNAME))
+        for flag in flags:
+            if flag not in self.VALID_FLAG:
+                raise ValueError("invalid flag %r for %s" % (flag, self.OPNAME))
+        opname = " ".join([self.OPNAME] + flags)
         super(CompareInstr, self).__init__(parent, types.IntType(1),
-                                           self.OPNAME, [lhs, rhs], name=name)
+                                           opname, [lhs, rhs], name=name)
         self.op = op
 
     def descr(self, buf):
         buf.append("{0} {1} {2} {3}, {4} {5}\n".format(
-            self.OPNAME,
+            self.opname,
             self.op,
             self.operands[0].type,
             self.operands[0].get_reference(),
             self.operands[1].get_reference(),
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -323,6 +324,7 @@ class ICMPInstr(CompareInstr):
         'slt': 'signed less than',
         'sle': 'signed less or equal',
     }
+    VALID_FLAG = set()
 
 
 class FCMPInstr(CompareInstr):
@@ -345,6 +347,7 @@ class FCMPInstr(CompareInstr):
         'uno': 'unordered (either nans)',
         'true': 'no comparison, always returns true',
     }
+    VALID_FLAG = {'nnan', 'ninf', 'nsz', 'arcp', 'fast'}
 
 
 class CastInstr(Instruction):
@@ -357,7 +360,7 @@ class CastInstr(Instruction):
             self.operands[0].type,
             self.operands[0].get_reference(),
             self.type,
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -379,7 +382,7 @@ class LoadInstr(Instruction):
             val.type,
             val.get_reference(),
             align,
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -400,7 +403,7 @@ class StoreInstr(Instruction):
             ptr.type,
             ptr.get_reference(),
             align,
-            self._stringify_metadata(),
+            self._stringify_metadata(leading_comma=True),
             ))
 
 
@@ -409,14 +412,17 @@ class AllocaInstr(Instruction):
         operands = [count] if count else ()
         super(AllocaInstr, self).__init__(parent, typ.as_pointer(), "alloca",
                                           operands, name)
+        self.align = None
 
     def descr(self, buf):
         buf.append("{0} {1}".format(self.opname, self.type.pointee))
         if self.operands:
             op, = self.operands
             buf.append(", {0} {1}".format(op.type, op.get_reference()))
+        if self.align is not None:
+            buf.append(", align {0}".format(self.align))
         if self.metadata:
-            buf.append(self._stringify_metadata())
+            buf.append(self._stringify_metadata(leading_comma=True))
 
 
 class GEPInstr(Instruction):
@@ -448,7 +454,7 @@ class GEPInstr(Instruction):
                    self.pointer.type,
                    self.pointer.get_reference(),
                    ', '.join(indices),
-                   self._stringify_metadata(),
+                   self._stringify_metadata(leading_comma=True),
                    ))
 
 
@@ -464,7 +470,7 @@ class PhiInstr(Instruction):
         buf.append("phi {0} {1} {2}\n".format(
                    self.type,
                    incs,
-                   self._stringify_metadata(),
+                   self._stringify_metadata(leading_comma=True),
                    ))
 
     def add_incoming(self, value, block):
@@ -499,7 +505,7 @@ class ExtractValue(Instruction):
                    self.aggregate.type,
                    self.aggregate.get_reference(),
                    ', '.join(indices),
-                   self._stringify_metadata(),
+                   self._stringify_metadata(leading_comma=True),
                    ))
 
 
@@ -529,7 +535,7 @@ class InsertValue(Instruction):
                    self.aggregate.type, self.aggregate.get_reference(),
                    self.value.type, self.value.get_reference(),
                    ', '.join(indices),
-                   self._stringify_metadata(),
+                   self._stringify_metadata(leading_comma=True),
                    ))
 
 
@@ -581,7 +587,7 @@ class AtomicRMW(Instruction):
                               valty=val.type,
                               val=val.get_reference(),
                               ordering=self.ordering,
-                              metadata=self._stringify_metadata(),
+                              metadata=self._stringify_metadata(leading_comma=True),
                               ))
 
 
@@ -607,7 +613,7 @@ class CmpXchg(Instruction):
                               val=val.get_reference(),
                               ordering=self.ordering,
                               failordering=self.failordering,
-                              metadata=self._stringify_metadata(),
+                              metadata=self._stringify_metadata(leading_comma=True),
                               ))
 
 
@@ -633,9 +639,8 @@ class FilterClause(_LandingPadClause):
         super(FilterClause, self).__init__(value)
 
 class LandingPadInstr(Instruction):
-    def __init__(self, parent, typ, personality, name='', cleanup=False):
+    def __init__(self, parent, typ, name='', cleanup=False):
         super(LandingPadInstr, self).__init__(parent, typ, "landingpad", [], name=name)
-        self.personality = personality
         self.cleanup = cleanup
         self.clauses = []
 
@@ -644,11 +649,8 @@ class LandingPadInstr(Instruction):
         self.clauses.append(clause)
 
     def descr(self, buf):
-        pers = self.personality
-        fmt = "landingpad {type} personality {persty} {persfn}{cleanup}{clauses}\n"
+        fmt = "landingpad {type}{cleanup}{clauses}\n"
         buf.append(fmt.format(type=self.type,
-                              persty=pers.type,
-                              persfn=pers.get_reference(),
                               cleanup=' cleanup' if self.cleanup else '',
                               clauses=''.join(["\n      {0}".format(clause)
                                                for clause in self.clauses]),

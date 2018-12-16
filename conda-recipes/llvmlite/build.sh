@@ -1,12 +1,5 @@
-
-# If available, enable newer toolset on old RH / CentOS machines
-toolset=/opt/rh/devtoolset-2
-
-if [ -d $toolset ]; then
-    . /opt/rh/devtoolset-2/enable
-    export CC=gcc
-    export CXX=g++
-fi
+# Note you may need to enable RH devtoolset-2 if building on an
+# old RH or CentOS system
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     # OSX needs 10.7 or above with libc++ enabled

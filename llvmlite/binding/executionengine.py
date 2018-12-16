@@ -1,12 +1,11 @@
 from __future__ import print_function, absolute_import
 
-from ctypes import (byref, POINTER, c_char_p, c_bool, c_uint, c_void_p,
+from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
                     c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast,
                     py_object, Structure)
 import warnings
-import weakref
 
-from . import ffi, targets
+from . import ffi, targets, object_file
 
 
 # Just check these weren't optimized out of the DLL.
@@ -283,6 +282,7 @@ class _ObjectCacheData(Structure):
         ('buf_ptr', c_void_p),
         ('buf_len', c_size_t),
         ]
+
 
 _ObjectCacheNotifyFunc = CFUNCTYPE(None, py_object,
                                    POINTER(_ObjectCacheData))

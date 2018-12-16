@@ -29,6 +29,10 @@ inline Target *unwrap(LLVMTargetRef T) {
     return reinterpret_cast<Target*>(T);
 }
 
+inline TargetMachine *unwrap(LLVMTargetMachineRef TM) {
+    return reinterpret_cast<TargetMachine *>(TM);
+}
+
 inline LLVMTargetMachineRef wrap(TargetMachine *TM) {
     return reinterpret_cast<LLVMTargetMachineRef>(TM);
 }
@@ -82,13 +86,6 @@ API_EXPORT(LLVMTargetDataRef)
 LLVMPY_CreateTargetData(const char *StringRep)
 {
     return LLVMCreateTargetData(StringRep);
-}
-
-API_EXPORT(void)
-LLVMPY_AddTargetData(LLVMTargetDataRef TD,
-                     LLVMPassManagerRef PM)
-{
-    LLVMAddTargetData(TD, PM);
 }
 
 
@@ -208,7 +205,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
     else
         cm = CodeModel::Default;
 
-    Reloc::Model rm;
+    Optional<Reloc::Model> rm;
     std::string rms(RelocModel);
     if (rms == "static")
         rm = Reloc::Static;
@@ -216,8 +213,6 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
         rm = Reloc::PIC_;
     else if (rms == "dynamicnopic")
         rm = Reloc::DynamicNoPIC;
-    else
-        rm = Reloc::Default;
 
     TargetOptions opt;
 //     opt.JITEmitDebugInfo = EmitJITDebug;
@@ -241,6 +236,11 @@ LLVMPY_GetTargetMachineTriple(LLVMTargetMachineRef TM, const char **Out)
     *Out = LLVMGetTargetMachineTriple(TM);
 }
 
+API_EXPORT(void)
+LLVMPY_SetTargetMachineAsmVerbosity(LLVMTargetMachineRef TM, int verbose)
+{
+    LLVMSetTargetMachineAsmVerbosity(TM, verbose);
+}
 
 API_EXPORT(LLVMMemoryBufferRef)
 LLVMPY_TargetMachineEmitToMemory (
@@ -268,9 +268,9 @@ LLVMPY_TargetMachineEmitToMemory (
 }
 
 API_EXPORT(LLVMTargetDataRef)
-LLVMPY_GetTargetMachineData(LLVMTargetMachineRef TM)
+LLVMPY_CreateTargetMachineData(LLVMTargetMachineRef TM)
 {
-    return LLVMGetTargetMachineData(TM);
+    return llvm::wrap(new llvm::DataLayout(llvm::unwrap(TM)->createDataLayout()));
 }
 
 API_EXPORT(void)

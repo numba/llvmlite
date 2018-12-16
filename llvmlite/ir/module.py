@@ -1,42 +1,119 @@
 from __future__ import print_function, absolute_import
-from . import context, values, types
+
+import collections
+
+from . import context, values, types, _utils
 
 
 class Module(object):
     def __init__(self, name='', context=context.global_context):
         self.context = context
         self.name = name   # name is for debugging/informational
-        self.globals = {}
-        self.metadata = []
-        self._metadatacache = {}
         self.data_layout = ""
-        self.namedmetadata = {}
-        self.scope = context.scope.get_child()
+        self.scope = _utils.NameScope()
         self.triple = 'unknown-unknown-unknown'
-        self._sequence = []
+        self.globals = collections.OrderedDict()
+        # Innamed metadata nodes.
+        self.metadata = []
+        # Named metadata nodes
+        self.namedmetadata = {}
+        # Cache for metadata node deduplication
+        self._metadatacache = {}
+
+    def _fix_metadata_operands(self, operands):
+        fixed_ops = []
+        for op in operands:
+            if op is None:
+                # A literal None creates a null metadata value
+                op = types.MetaDataType()(None)
+            elif isinstance(op, str):
+                # A literal string creates a metadata string value
+                op = values.MetaDataString(self, op)
+            elif isinstance(op, (list, tuple)):
+                # A sequence creates a metadata node reference
+                op = self.add_metadata(op)
+            fixed_ops.append(op)
+        return fixed_ops
+
+    def _fix_di_operands(self, operands):
+        fixed_ops = []
+        for name, op in operands:
+            if isinstance(op, (list, tuple)):
+                # A sequence creates a metadata node reference
+                op = self.add_metadata(op)
+            fixed_ops.append((name, op))
+        return fixed_ops
 
     def add_metadata(self, operands):
         """
         Add an unnamed metadata to the module with the given *operands*
-        (a list of values) or return a previous equivalent metadata.
+        (a sequence of values) or return a previous equivalent metadata.
         A MDValue instance is returned, it can then be associated to
         e.g. an instruction.
         """
-        n = len(self.metadata)
+        if not isinstance(operands, (list, tuple)):
+            raise TypeError("expected a list or tuple of metadata values, "
+                            "got %r" % (operands,))
+        operands = self._fix_metadata_operands(operands)
         key = tuple(operands)
         if key not in self._metadatacache:
+            n = len(self.metadata)
             md = values.MDValue(self, operands, name=str(n))
             self._metadatacache[key] = md
         else:
             md = self._metadatacache[key]
         return md
 
-    def add_named_metadata(self, name):
-        nmd = values.NamedMetaData(self)
-        self.namedmetadata[name] = nmd
+    def add_debug_info(self, kind, operands, is_distinct=False):
+        """
+        Add debug information metadata to the module with the given
+        *operands* (a dict of values with string keys) or return
+        a previous equivalent metadata.  *kind* is a string of the
+        debug information kind (e.g. "DICompileUnit").
+
+        A DIValue instance is returned, it can then be associated to e.g.
+        an instruction.
+        """
+        operands = tuple(sorted(self._fix_di_operands(operands.items())))
+        key = (kind, operands, is_distinct)
+        if key not in self._metadatacache:
+            n = len(self.metadata)
+            di = values.DIValue(self, is_distinct, kind, operands, name=str(n))
+            self._metadatacache[key] = di
+        else:
+            di = self._metadatacache[key]
+        return di
+
+    def add_named_metadata(self, name, element=None):
+        """
+        Add a named metadata node to the module, if it doesn't exist,
+        or return the existing node.
+        If *element* is given, it will append a new element to
+        the named metadata node.  If *element* is a sequence of values
+        (rather than a metadata value), a new unnamed node will first be
+        created.
+
+        Example::
+            module.add_named_metadata("llvm.ident", ["llvmlite/1.0"])
+        """
+        if name in self.namedmetadata:
+            nmd = self.namedmetadata[name]
+        else:
+            nmd = self.namedmetadata[name] = values.NamedMetaData(self)
+        if element is not None:
+            if not isinstance(element, values.Value):
+                element = self.add_metadata(element)
+            if not isinstance(element.type, types.MetaDataType):
+                raise TypeError("wrong type for metadata element: got %r"
+                                % (element,))
+            nmd.add(element)
         return nmd
 
     def get_named_metadata(self, name):
+        """
+        Return the metadata node with the given *name*.  KeyError is raised
+        if no such node exists (contrast with add_named_metadata()).
+        """
         return self.namedmetadata[name]
 
     @property
@@ -66,7 +143,6 @@ class Module(object):
         """
         assert globalvalue.name not in self.globals
         self.globals[globalvalue.name] = globalvalue
-        self._sequence.append(globalvalue.name)
 
     def get_unique_name(self, name=''):
         """
@@ -110,15 +186,27 @@ class Module(object):
     def get_identified_types(self):
         return self.context.identified_types
 
+    def _get_body_lines(self):
+        # Type declarations
+        lines = [it.get_declaration()
+                 for it in self.get_identified_types().values()]
+        # Global values (including function definitions)
+        lines += [str(v) for v in self.globals.values()]
+        return lines
+
     def _get_metadata_lines(self):
         mdbuf = []
         for k, v in self.namedmetadata.items():
             mdbuf.append("!{name} = !{{ {operands} }}".format(
-                name=k, operands=','.join(i.get_reference()
-                                          for i in v.operands)))
+                name=k, operands=', '.join(i.get_reference()
+                                           for i in v.operands)))
         for md in self.metadata:
             mdbuf.append(str(md))
         return mdbuf
+
+    def _stringify_body(self):
+        # For testing
+        return "\n".join(self._get_body_lines())
 
     def _stringify_metadata(self):
         # For testing
@@ -132,11 +220,8 @@ class Module(object):
             'target triple = "%s"' % (self.triple,),
             'target datalayout = "%s"' % (self.data_layout,),
             '']
-        # Type declarations
-        lines += [it.get_declaration()
-                  for it in self.get_identified_types().values()]
         # Body
-        lines += [str(self.globals[k]) for k in self._sequence]
+        lines += self._get_body_lines()
         # Metadata
         lines += self._get_metadata_lines()
 
