@@ -1,3 +1,19 @@
+v0.27.0
+-------
+
+This release updates llvmlite to LLVM 7.  Note that LLVM 7.0.0 contains
+a critical bug that is resolved with a patch included in the `llvmdev conda
+package recipe`_.  The final release of LLVM 7.0.1 may also resolve the issue.
+
+* PR #434: Add another thread for RPi builds. 
+* PR #430: llvm lld integration, merge #428
+* PR #428: Build LLD as part of the llvmdev package
+* PR #413: Set up CI with Azure Pipelines
+* PR #412: LLVM 7 support
+
+.. _llvmdev conda package recipe: https://github.com/numba/llvmlite/tree/69aed71a829e6c552cca24a28c42abdf1efd2363/conda-recipes/llvmdev
+
+
 v0.26.0
 -------
 
