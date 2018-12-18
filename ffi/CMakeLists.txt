@@ -22,6 +22,11 @@ add_definitions(${LLVM_DEFINITIONS})
 # Look for SVML
 set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS})
 
+
+if (NOT WIN32)
+    add_compile_options("-fno-rtti")
+endif()
+
 CHECK_INCLUDE_FILES("llvm/IR/SVML.inc" HAVE_SVML)
 if(HAVE_SVML)
     message(STATUS "SVML found")
@@ -43,3 +48,4 @@ llvm_map_components_to_libnames(llvm_libs all)
 
 # Link against LLVM libraries
 target_link_libraries(llvmlite ${llvm_libs})
+add_subdirectory(passes)

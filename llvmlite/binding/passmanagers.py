@@ -1,7 +1,9 @@
 from __future__ import print_function, absolute_import
-from ctypes import c_bool, c_int
+import os
+import sys
+from ctypes import c_bool, c_int, c_char_p, cdll, POINTER, RTLD_LOCAL
+from collections import namedtuple
 from . import ffi
-
 
 def create_module_pass_manager():
     return ModulePassManager()
@@ -11,11 +13,44 @@ def create_function_pass_manager(module):
     return FunctionPassManager(module)
 
 
+# we maintain a global list of loaded libraries. On pypy,
+# garbage collection dlcloses loaded libraries which makes it
+# virtually impossible to handle pass registration properly
+# setdlopenflags also doesn't work properly on pypy
+_loaded_libraries = []
+
+
+def load_pass_plugin(path):
+    """Load shared library containing a pass"""
+    pass_lib = cdll.LoadLibrary(path)
+    pass_lib.LLVMPY_RegisterPass(get_pass_registry())
+    _loaded_libraries.append(pass_lib)
+
+class PassRegistry(ffi.ObjectRef):
+    """
+        Return the names of the registered passes as a list
+        of tuples (<pass arg>, <pass name>)
+    """
+    def list_registered_passes(self):
+        PassInfo = namedtuple("PassInfo", ["arg", "name"])
+        with ffi.OutputString() as out:
+            ffi.lib.LLVMPY_ListRegisteredPasses(self, out)
+            passes = [PassInfo(*pass_info.split(":", 1))\
+                             for pass_info in str(out).split(',')]
+            return passes
+
+def get_pass_registry():
+    return PassRegistry(ffi.lib.LLVMPY_GetPassRegistry())
+
 class PassManager(ffi.ObjectRef):
     """PassManager
     """
 
+    def __init__(self, ptr):
+        super(PassManager, self).__init__(ptr)
+
     def _dispose(self):
+        # unload shared libraries
         self._capi.LLVMPY_DisposePassManager(self)
 
     def add_constant_merge_pass(self):
@@ -82,6 +117,11 @@ class PassManager(ffi.ObjectRef):
     def add_basic_alias_analysis_pass(self):
         """See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass."""
         ffi.lib.LLVMPY_AddBasicAliasAnalysisPass(self)
+
+    def add_pass_by_arg(self, pass_arg):
+        """Add a pass using its registered name"""
+        if not ffi.lib.LLVMPY_AddPassByArg(self, pass_arg.encode("utf8")):
+            raise ValueError("Could not add pass '{}'".format(pass_arg))
 
 
 class ModulePassManager(PassManager):
@@ -168,3 +208,9 @@ ffi.lib.LLVMPY_AddSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
+
+ffi.lib.LLVMPY_GetPassRegistry.argtypes = []
+ffi.lib.LLVMPY_GetPassRegistry.restype = ffi.LLVMPassRegistryRef
+ffi.lib.LLVMPY_ListRegisteredPasses.argtypes = [ffi.LLVMPassRegistryRef, POINTER(c_char_p)]
+ffi.lib.LLVMPY_AddPassByArg.argtypes = [ffi.LLVMPassManagerRef, c_char_p]
+ffi.lib.LLVMPY_AddPassByArg.restype = c_bool

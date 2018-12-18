@@ -30,6 +30,7 @@ LLVMTypesIterator = _make_opaque_ref("LLVMTypesIterator")
 LLVMObjectCacheRef = _make_opaque_ref("LLVMObjectCache")
 LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
+LLVMPassRegistryRef = _make_opaque_ref("LLVMPassRegistryRef")
 
 
 class _lib_wrapper(object):
@@ -117,12 +118,12 @@ if os.name == 'nt':
 
 _lib_name = get_library_name()
 try:
-    lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name))
+    lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name), mode=ctypes.RTLD_GLOBAL)
 except OSError as e:
     # Allow finding the llvmlite DLL in the current directory, for ease
     # of bundling with frozen applications.
     try:
-        lib = ctypes.CDLL(_lib_name)
+        lib = ctypes.CDLL(_lib_name, mode=ctypes.RTLD_GLOBAL)
     except OSError:
         if PY2:
             raise e

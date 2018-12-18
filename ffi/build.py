@@ -12,13 +12,28 @@ import subprocess
 import shutil
 import sys
 import tempfile
+from contextlib import contextmanager
 
+
+if os.name == 'posix':
+    hello_pass_library = 'libLLVMPYHello.so'
+else:
+    assert os.name == 'nt'
+    hello_pass_library = 'LLVMPYHello.dll'
 
 here_dir = os.path.abspath(os.path.dirname(__file__))
 build_dir = os.path.join(here_dir, 'build')
 target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 
 is_64bit = sys.maxsize >= 2**32
+
+
+@contextmanager
+def cwd(path):
+    old_wd = os.getcwd()
+    os.chdir(path)
+    yield
+    os.chdir(old_wd)
 
 
 def try_cmake(cmake_dir, build_dir, generator):
@@ -60,6 +75,7 @@ def find_win32_generator():
 
     # Drop generators that are too old
     vspat = re.compile('Visual Studio (\d+)')
+
     def drop_old_vs(g):
         m = vspat.match(g)
         if m is None:
@@ -81,7 +97,8 @@ def find_win32_generator():
             return generator
         finally:
             shutil.rmtree(build_dir)
-    raise RuntimeError("No compatible cmake generator installed on this machine")
+    raise RuntimeError(
+        "No compatible cmake generator installed on this machine")
 
 
 def main_win32():
@@ -115,19 +132,26 @@ def main_posix(kind, library_ext):
             "set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n"
-            )
+        )
         raise RuntimeError(msg)
 
     # Get LLVM information for building
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = ' '.join(libs.split())
-
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
     cxxflags = cxxflags.replace('\0', '')
     cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
 
+    if os.name == "posix" and sys.platform != "darwin":
+        # exclude unused symbols from all LLVM libraries except for passes, since
+        # we'll need for dynamically loaded pass libraries
+        excluded = ['-Wl,--exclude-libs,lib{}.a'.format(lname.strip())
+                    for lname in libs.split('-l')
+                    if lname and 'LLVMCore' not in lname
+                    and 'LLVMSupport' not in lname]
+        # cxxflags.append(' '.join(excluded))
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
     svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.inc')
@@ -150,17 +174,54 @@ def main_posix(kind, library_ext):
     shutil.copy('libllvmlite' + library_ext, target_dir)
 
 
+def build_passes():
+    if sys.platform == 'win32':
+        # just copy the result, hello pass will be built by cmake
+        shutil.copy(os.path.join(build_dir, "passes", "hello", "Release", hello_pass_library),
+                    target_dir)
+    else:
+        with cwd(os.path.join(os.path.dirname(__file__), "passes")):
+            if os.name == 'posix' and sys.platform == 'darwin':
+                os.environ['CONDA_BUILD_SYSROOT'] = \
+                    '/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
+                os.environ['CC'] = 'clang'
+                os.environ['CXX'] = 'clang++'
+                cmake_exec = os.path.expandvars(
+                    "$HOME/miniconda3/envs/travisci/bin/cmake")
+                shutil.rmtree(
+                    "/Users/travis/build/numba/llvmlite/bootstrap/lib/cmake/llvm/")
+            else:
+                cmake_exec = 'cmake'
+
+            if not os.path.exists("build"):
+                os.makedirs("build")
+            assert os.path.isdir("build"), "passes/build must be a directory"
+            with cwd("build"):
+                if os.name == "posix":
+                    subprocess.check_call([cmake_exec, '..'])
+                else:
+                    generator = find_win32_generator()
+                    try_cmake('..', '.', generator)
+
+                print("Calling " + cmake_exec)
+                subprocess.check_call(
+                    [cmake_exec, '--build', '.', '--config', 'Release'])
+                shutil.copy(os.path.join(
+                    "hello", hello_pass_library), target_dir)
+
+
 def main():
     if sys.platform == 'win32':
         main_win32()
     elif sys.platform.startswith('linux'):
         main_posix('linux', '.so')
-    elif sys.platform.startswith(('freebsd','openbsd')):
+    elif sys.platform.startswith(('freebsd', 'openbsd')):
         main_posix('freebsd', '.so')
     elif sys.platform == 'darwin':
         main_posix('osx', '.dylib')
     else:
         raise RuntimeError("unsupported platform: %r" % (sys.platform,))
+    build_passes()
 
 
 if __name__ == "__main__":

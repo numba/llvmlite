@@ -28,6 +28,7 @@ set -v
 
 # Install llvmdev (separate channel, for now)
 $CONDA_INSTALL -c numba llvmdev="7.0*"
+$CONDA_INSTALL cmake
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
@@ -50,3 +51,7 @@ fi
 
 # Install dependencies for code coverage (codecov.io)
 if [ "$RUN_COVERAGE" == "yes" ]; then $PIP_INSTALL codecov coveralls; fi
+
+if [[ $(uname) == Darwin ]]; then
+    rm -rf /Users/travis/build/numba/llvmlite/bootstrap/lib/cmake/llvm/
+fi
