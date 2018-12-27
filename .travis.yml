@@ -19,7 +19,7 @@ install:
     - docker pull $DOCKER_IMAGE
 
 script:
-    - ./buildscripts/manylinux1/build_llvmdev_$ARCH.sh
+    - ./buildscripts/manylinux1/docker_run_$ARCH.sh
 
 notifications:
     email: false
