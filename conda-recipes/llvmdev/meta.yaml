@@ -27,8 +27,8 @@ source:
     # Patches for X86 common symbols over-allocation and testing thereof, see
     # https://reviews.llvm.org/D50240 and https://reviews.llvm.org/rL340788
     # for details:
-    - 0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch
-    - 0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch
+    - ../0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch
+    - ../0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch
 
   - url: http://releases.llvm.org/{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz

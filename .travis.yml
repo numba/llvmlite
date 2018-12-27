@@ -1,35 +1,25 @@
-# References https://gist.github.com/dan-blanchard/7045057
-# and https://docs.travis-ci.com/user/trusty-ci-environment/
-
-dist: trusty
+# Reference:
+# - https://github.com/pypa/python-manylinux-demo
 
 matrix:
-    # Note coverage is run in only one configuration.  Longest build first.
-    include:
-        - os: osx
-          env: PYTHON=3.6
-        - env: PYTHON=3.6
-        - env: PYTHON=3.5 RUN_COVERAGE=yes
-        - env: PYTHON=3.4
-        - env: PYTHON=2.7
-        - env: PYTHON=pypy
-        - env: PYTHON=2.7 WHEEL=yes
-        - env: PYTHON=3.6 WHEEL=yes
-
-before_install:
-    - export CONDA_ENV=travisci
-    - buildscripts/incremental/install_miniconda.sh
-    - export PATH=$HOME/miniconda3/bin:$PATH
-    - buildscripts/incremental/setup_conda_environment.sh
+  include:
+    - sudo: required
+      services:
+        - docker
+      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
+           ARCH=x64
+    - sudo: required
+      services:
+        - docker
+      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686
+           ARCH=x32
+      
 
 install:
-    - buildscripts/incremental/build.sh
+    - docker pull $DOCKER_IMAGE
 
 script:
-    - buildscripts/incremental/test.sh
-
-after_success:
-    - buildscripts/incremental/after_success.sh
+    - ./buildscripts/manylinux1/build_llvmdev_$ARCH.sh
 
 notifications:
     email: false
