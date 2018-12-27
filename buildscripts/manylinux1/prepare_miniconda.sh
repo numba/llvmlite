@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -xe
 cd /root
 curl https://repo.continuum.io/miniconda/$1 > mini3.sh
 bash mini3.sh -b -f

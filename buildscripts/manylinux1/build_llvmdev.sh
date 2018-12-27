@@ -1,5 +1,6 @@
 #!/bin/bash
 
-./prepare_miniconda.sh
+cd $(dirname $0)
+./prepare_miniconda.sh $1
 
 conda build /root/llvmlite/conda-recipes/llvmdev_manylinux1 --output-folder=/root/llvmlite/docker_output
