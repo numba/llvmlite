@@ -1,3 +1,6 @@
+# TravisCI is testing manylinux1 wheels only.
+# Azure is used to test the Anaconda compiler toolchina.
+#
 # Reference:
 # - https://github.com/pypa/python-manylinux-demo
 

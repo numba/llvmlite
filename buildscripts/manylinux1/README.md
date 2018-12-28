@@ -3,7 +3,7 @@
 
 ## Build llvmdev packages for manylinux1
 
-Run the script below to start docker to build `llvmdev` base off of the current state of the source tree:
+Run the script below to start docker off building `llvmdev` base from the current state of the source tree:
 
 - 32-bit linux: `./buildscripts/manylinux1/docker_run_x32.sh build_llvmdev.sh`
 - 64-bit linux: `./buildscripts/manylinux1/docker_run_x64.sh build_llvmdev.sh`
@@ -19,7 +19,7 @@ Finally, upload the conda package to the numba channel under the "manylinux1" la
 
 ## Build llvmlite wheel for manylinux1
 
-Run the script below to start docker to build `llvm;ote` base off of the current state of the source tree:
+Run the script below to start docker off building `llvmlite` base from the current state of the source tree:
 
 - 32-bit linux: `./buildscripts/manylinux1/docker_run_x32.sh build_llvmlite.sh <pyver>`
 - 64-bit linux: `./buildscripts/manylinux1/docker_run_x64.sh build_llvmlite.sh <pyver>`

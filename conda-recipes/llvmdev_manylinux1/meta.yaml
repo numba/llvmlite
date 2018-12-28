@@ -50,6 +50,7 @@ build:
 requirements:
   build:
     - cmake
+    - make
     # Needed to unpack the source tarball
     - m2w64-xz         # [py27 and win]
     # Needed to build LLVM
