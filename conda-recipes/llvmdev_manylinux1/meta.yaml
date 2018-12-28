@@ -1,7 +1,8 @@
 {% set shortversion = "7.0" %}
 {% set version = "7.0.0" %}
-{% set sha256 = "8bc1f844e6cbde1b652c19c1edebc1864456fd9c78b8c1bea038e51b363fe222" %}
-{% set build_number = "0" %}
+{% set sha256_llvm = "8bc1f844e6cbde1b652c19c1edebc1864456fd9c78b8c1bea038e51b363fe222" %}
+{% set sha256_lld = "fbcf47c5e543f4cdac6bb9bbbc6327ff24217cd7eafc5571549ad6d237287f9c" %}
+{% set build_number = "1" %}
 
 
 package:
@@ -9,16 +10,31 @@ package:
   version: {{ version }}
 
 source:
-  fn: llvm-{{ version }}.src.tar.xz
-  url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
-  sha256: {{ sha256 }}
-  patches:
+  - url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
+    fn: llvm-{{ version }}.src.tar.xz
+    sha256: {{ sha256_llvm }}
+    patches:
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
+    - ../partial-testing.patch
     # Intel SVML optimizations
+    # The second part of this patch was published as:
+    # https://reviews.llvm.org/D53035
+    # (the first, as mentioned in the patch itself, was:
+    # https://reviews.llvm.org/D47188)
     - ../D47188-svml-VF.patch
     # undefined behavior bug due to Twine usage
     - ../twine_cfg_undefined_behavior.patch
+    # Patches for X86 common symbols over-allocation and testing thereof, see
+    # https://reviews.llvm.org/D50240 and https://reviews.llvm.org/rL340788
+    # for details:
+    - ../0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch
+    - ../0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch
+
+  - url: http://releases.llvm.org/{{ version }}/lld-{{ version }}.src.tar.xz
+    fn: lld-{{ version }}.src.tar.xz
+    sha256: {{ sha256_lld }}
+    folder: tools/lld
 
 build:
   number: {{ build_number }}
@@ -27,15 +43,18 @@ build:
     - CFLAGS
     - CXXFLAGS
     - PY_VCRUNTIME_REDIST
+  ignore_run_exports:
+    # Is static-linked
+    - xar
 
 requirements:
   build:
     - cmake
+    # - make  # Unavailable in old miniconda
     # Needed to unpack the source tarball
     - m2w64-xz         # [py27 and win]
     # Needed to build LLVM
-    - python
-
+    - python >=3
 test:
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
