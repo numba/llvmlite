@@ -116,8 +116,17 @@ if os.name == 'nt':
     os.environ['PATH'] += ';' + _lib_dir
 
 _lib_name = get_library_name()
+
 try:
-    lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name))
+    # Try to use setuptools to extract from archive automatically.
+    from pkg_resources import resource_filename
+except ImportError:
+    _lib_path = os.path.join(_lib_dir, _lib_name)
+else:
+    _lib_path = resource_filename(__name__, _lib_name)
+
+try:
+    lib = ctypes.CDLL(_lib_path)
 except OSError as e:
     # Allow finding the llvmlite DLL in the current directory, for ease
     # of bundling with frozen applications.
