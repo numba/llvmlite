@@ -59,7 +59,7 @@ def find_win32_generator():
         generators.append(os.environ.get("CMAKE_GENERATOR"))
 
     # Drop generators that are too old
-    vspat = re.compile('Visual Studio (\d+)')
+    vspat = re.compile(r'Visual Studio (\d+)')
     def drop_old_vs(g):
         m = vspat.match(g)
         if m is None:
