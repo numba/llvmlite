@@ -512,7 +512,7 @@ class ExtractElement(Instruction):
             raise TypeError("vector needs to be of VectorType.")
         if not isinstance(index.type, types.IntType):
             raise TypeError("index needs to be of IntType.")
-        typ = vector.type.elementtype
+        typ = vector.type.element
         super(ExtractElement, self).__init__(parent, typ, "extractelement",
                                            [vector, index], name=name)
 
@@ -526,9 +526,9 @@ class InsertElement(Instruction):
     def __init__(self, parent, vector, value, index, name=''):
         if not isinstance(vector.type, types.VectorType):
             raise TypeError("vector needs to be of VectorType.")
-        if not value.type == vector.type.elementtype:
+        if not value.type == vector.type.element:
             raise TypeError("value needs to be of type % not %."
-                            % (vector.type.elementtype, value.type))
+                            % (vector.type.element, value.type))
         if not isinstance(index.type, types.IntType):
             raise TypeError("index needs to be of IntType.")
         typ = vector.type
@@ -551,9 +551,9 @@ class ShuffleVector(Instruction):
                                 "Undefined or of the same type as vector1.")
         if (not isinstance(mask, Constant) or
             not isinstance(mask.type, types.VectorType) or
-            mask.type.elementtype != types.IntType(32)):
+            mask.type.element != types.IntType(32)):
             raise TypeError("mask needs to be a constant i32 vector.")
-        typ = types.VectorType(vector1.type.elementtype, mask.type.count)
+        typ = types.VectorType(vector1.type.element, mask.type.count)
         index_range = range(vector1.type.count if vector2 == Undefined else 2 * vector1.type.count)
         if not all(ii.constant in index_range for ii in mask.constant):
             raise IndexError("mask values need to be in {0}".format(index_range))

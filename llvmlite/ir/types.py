@@ -339,26 +339,26 @@ class VectorType(Type):
     The type for vectors of primitive data items (e.g. "<f32 x 4>").
     """
 
-    def __init__(self, elementtype, count):
-        self.elementtype = elementtype
+    def __init__(self, element, count):
+        self.element = element
         self.count = count
 
     @property
     def elements(self):
-        return _Repeat(self.elementtype, self.count)
+        return _Repeat(self.element, self.count)
 
     def __len__(self):
         return self.count
 
     def _to_string(self):
-        return "<%d x %s>" % (self.count, self.elementtype)
+        return "<%d x %s>" % (self.count, self.element)
 
     def __eq__(self, other):
         if isinstance(other, VectorType):
-            return self.elementtype == other.elementtype and self.count == other.count
+            return self.element == other.element and self.count == other.count
 
     def __hash__(self):
-        # TODO: why does this not take self.elementtype/self.count into account?
+        # TODO: why does this not take self.element/self.count into account?
         return hash(VectorType)
 
     def __copy__(self):
@@ -373,11 +373,11 @@ class VectorType(Type):
         from . import Value, Constant
         if not isinstance(values, (list, tuple)):
             if isinstance(values, Constant):
-                if values.type != self.elementtype:
+                if values.type != self.element:
                     raise TypeError("expected % for %"
-                                    % (self.elementtype, values.type))
+                                    % (self.element, values.type))
                 return (values, ) * self.count
-            return (Constant(self.elementtype, values), ) * self.count
+            return (Constant(self.element, values), ) * self.count
         if len(values) != len(self):
             raise ValueError("wrong constant size for %s: got %d elements"
                              % (self, len(values)))
