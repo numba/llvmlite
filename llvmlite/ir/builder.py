@@ -837,19 +837,23 @@ class IRBuilder(object):
     def insert_element(self, vector, value, idx, name=''):
         """
         Returns vector with vector[idx] replaced by value.
-        The result id undefined if the idx is larger or euqal the vector length.
+        The result is undefined if the idx is larger or equal the vector length.
         """
-        instr = instructions.InsertElement(self.block, vector, value, idx, name=name)
+        instr = instructions.InsertElement(self.block, vector, value, idx,
+                                           name=name)
         self._insert(instr)
         return instr
 
     def shuffle_vector(self, vector1, vector2, mask, name=''):
         """
-        Concatenate vectors and extract elements into new vector.
-        Elements in the combined vector are numbered left to right,
-        starting at 0.
+        Constructs a permutation of elements from *vector1* and *vector2*.
+        Returns a new vector in the same length of *mask*.
+
+        * *vector1* and *vector2* must have the same element type.
+        * *mask* must be a constant vector of integer types.
         """
-        instr = instructions.ShuffleVector(self.block, vector1, vector2, mask, name=name)
+        instr = instructions.ShuffleVector(self.block, vector1, vector2, mask,
+                                           name=name)
         self._insert(instr)
         return instr
 

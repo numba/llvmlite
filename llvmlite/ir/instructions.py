@@ -554,9 +554,13 @@ class ShuffleVector(Instruction):
             mask.type.element != types.IntType(32)):
             raise TypeError("mask needs to be a constant i32 vector.")
         typ = types.VectorType(vector1.type.element, mask.type.count)
-        index_range = range(vector1.type.count if vector2 == Undefined else 2 * vector1.type.count)
+        index_range = range(vector1.type.count
+                            if vector2 == Undefined
+                            else 2 * vector1.type.count)
         if not all(ii.constant in index_range for ii in mask.constant):
-            raise IndexError("mask values need to be in {0}".format(index_range))
+            raise IndexError(
+                "mask values need to be in {0}".format(index_range),
+            )
         super(ShuffleVector, self).__init__(parent, typ, "shufflevector",
                                            [vector1, vector2, mask], name=name)
 
