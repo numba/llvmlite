@@ -218,7 +218,7 @@ Integer
 
      Integer subtract *rhs* from *lhs*.
 
-* .. method:: IRBuilder.sadd_with_overflow(lhs, rhs, name='', flags=())
+* .. method:: IRBuilder.ssub_with_overflow(lhs, rhs, name='', flags=())
 
      Integer subtract *rhs* from *lhs*. A
      ``{ result, overflow bit }`` structure is returned.

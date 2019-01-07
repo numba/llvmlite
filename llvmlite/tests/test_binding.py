@@ -334,7 +334,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual((major, minor), (6, 0))
+        self.assertEqual((major, minor), (7, 0))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -925,6 +925,26 @@ class TestTargetData(BaseTest):
         glob = self.glob()
         self.assertEqual(td.get_abi_size(glob.type), 8)
 
+    def test_get_pointee_abi_size(self):
+        td = self.target_data()
+
+        glob = self.glob()
+        self.assertEqual(td.get_pointee_abi_size(glob.type), 4)
+
+        glob = self.glob("glob_struct")
+        self.assertEqual(td.get_pointee_abi_size(glob.type), 24)
+
+    def test_get_struct_element_offset(self):
+        td = self.target_data()
+        glob = self.glob("glob_struct")
+
+        with self.assertRaises(ValueError):
+            td.get_element_offset(glob.type, 0)
+
+        struct_type = glob.type.element_type
+        self.assertEqual(td.get_element_offset(struct_type, 0), 0)
+        self.assertEqual(td.get_element_offset(struct_type, 1), 8)
+
 
 class TestTargetMachine(BaseTest):
 
@@ -1042,9 +1062,29 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         orig_asm = str(mod)
         pm.run(mod)
         opt_asm = str(mod)
-        # Quick check that optimizations were run
-        self.assertIn("%.3", orig_asm)
-        self.assertNotIn("%.3", opt_asm)
+        # Quick check that optimizations were run, should get:
+        # define i32 @sum(i32 %.1, i32 %.2) local_unnamed_addr #0 {
+        # %.X = add i32 %.2, %.1
+        # ret i32 %.X
+        # }
+        # where X in %.X is 3 or 4
+        opt_asm_split = opt_asm.splitlines()
+        for idx, l in enumerate(opt_asm_split):
+            if l.strip().startswith('ret i32'):
+                toks = {'%.3', '%.4'}
+                for t in toks:
+                    if t in l:
+                        break
+                else:
+                    raise RuntimeError("expected tokens not found")
+                add_line = opt_asm_split[idx]
+                othertoken = (toks ^ {t}).pop()
+
+                self.assertIn("%.3", orig_asm)
+                self.assertNotIn(othertoken, opt_asm)
+                break
+        else:
+            raise RuntimeError("expected IR not found")
 
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):

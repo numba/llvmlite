@@ -119,6 +119,15 @@ LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 }
 
 API_EXPORT(long long)
+LLVMPY_OffsetOfElement(LLVMTargetDataRef TD, LLVMTypeRef Ty, int Element)
+{
+    llvm::Type *tp = llvm::unwrap(Ty);
+    if (!tp->isStructTy())
+        return -1;
+    return (long long) LLVMOffsetOfElement(TD, Ty, Element);
+}
+
+API_EXPORT(long long)
 LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 {
     llvm::Type *tp = llvm::unwrap(Ty);
