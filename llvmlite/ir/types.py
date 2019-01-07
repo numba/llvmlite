@@ -196,39 +196,6 @@ class FunctionType(Type):
     def __hash__(self):
         return hash(FunctionType)
 
-class VectorType(Type):
-
-    @classmethod
-    def __new__(cls, count, typ):
-        assert isinstance(count, int) and count >= 0
-        assert isinstance(typ, Type)
-        self = super(VectorType, cls).__new__(cls)
-        self.count = count
-        self.type = typ
-        return self
-
-    def __getnewargs__(self):
-        return self.count, self.type
-
-    def __copy__(self):
-        return self
-
-    def _to_string(self):
-        return '<%u' % self.count + ' x ' + str(self.type) + '>'
-
-    def __eq__(self, other):
-        if isinstance(other, VectorType):
-            return self.count == other.count and self.type == other.type
-        else:
-            return False
-
-    def __hash__(self):
-        return hash(VectorType)
-
-    @property
-    def intrinsic_name(self):
-        return str(self)
-
 
 class IntType(Type):
     """
@@ -393,6 +360,9 @@ class VectorType(Type):
     def __hash__(self):
         # TODO: why does this not take self.elementtype/self.count into account?
         return hash(VectorType)
+
+    def __copy__(self):
+        return self
 
     def format_constant(self, value):
         itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
