@@ -15,41 +15,42 @@ LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, const char **Err)
     using namespace llvm;
     std::string errorstring;
     llvm::raw_string_ostream errstream(errorstring);
-
-    /* Can't use a closure as that's not compatible with passing a
-     * function pointer.  Instead, the required environment is passed
-     * as a `void *` context pointer.
-     */
-    auto diagnose = [] (const DiagnosticInfo &DI, void *c) {
-        auto errstream = reinterpret_cast<llvm::raw_string_ostream *>(c);
-
-        switch (DI.getSeverity()) {
-        case DS_Error:
-        case DS_Warning:
-        case DS_Remark:
-        case DS_Note:
-            // Do something different for each of those?
-            break;
-        }
-        llvm::DiagnosticPrinterRawOStream DP(*errstream);
-        DI.print(DP);
-    };
-
     Module *D = unwrap(Dest);
     LLVMContext &Ctx = D->getContext();
 
-    /* Save the current diagnostic handler and set our own */
-    LLVMContext::DiagnosticHandlerTy OldDiagnosticHandler =
-      Ctx.getDiagnosticHandler();
-    void *OldDiagnosticContext = Ctx.getDiagnosticContext();
-    Ctx.setDiagnosticHandler((LLVMContext::DiagnosticHandlerTy) diagnose,
-                             &errstream, true);
+    // This exists at the change to LLVM 6.x
+    // Link error diagnostics end up with a call to abort()
+    // install this handler to instead extract the reason for failure
+    // and report it.
+    class ReportNotAbortDiagnosticHandler: public DiagnosticHandler {
+    public:
+        ReportNotAbortDiagnosticHandler(llvm::raw_string_ostream &s):
+        raw_stream(s) {}
 
+        bool handleDiagnostics(const DiagnosticInfo &DI) override 
+        {
+            llvm::DiagnosticPrinterRawOStream DP(raw_stream);
+            DI.print(DP);
+            return true;
+        }
+
+    private:
+        llvm::raw_string_ostream& raw_stream;
+    };
+
+    // save current handler as "old"
+    auto OldDiagnosticHandler = Ctx.getDiagnosticHandler();
+
+    // set the handler to a new one
+    Ctx.setDiagnosticHandler(llvm::make_unique<ReportNotAbortDiagnosticHandler>(errstream));
+
+    // link
     bool failed = LLVMLinkModules2(Dest, Src);
 
-    /* Restore the original diagnostic handler */
-    Ctx.setDiagnosticHandler(OldDiagnosticHandler, OldDiagnosticContext, true);
+    // put old handler back
+    Ctx.setDiagnosticHandler(std::move(OldDiagnosticHandler));
 
+    // if linking failed extract the reason for the failure
     if (failed) {
         errstream.flush();
         *Err = LLVMPY_CreateString(errorstring.c_str());

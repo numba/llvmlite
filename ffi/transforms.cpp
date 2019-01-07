@@ -66,20 +66,6 @@ LLVMPY_PassManagerBuilderSetSizeLevel(LLVMPassManagerBuilderRef PMB,
 }
 
 API_EXPORT(int)
-LLVMPY_PassManagerBuilderGetDisableUnitAtATime(LLVMPassManagerBuilderRef PMB)
-{
-    llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);
-    return pmb->DisableUnitAtATime;
-}
-
-API_EXPORT(void)
-LLVMPY_PassManagerBuilderSetDisableUnitAtATime(LLVMPassManagerBuilderRef PMB,
-                                            int Value)
-{
-    LLVMPassManagerBuilderSetDisableUnitAtATime(PMB, Value);
-}
-
-API_EXPORT(int)
 LLVMPY_PassManagerBuilderGetDisableUnrollLoops(LLVMPassManagerBuilderRef PMB)
 {
     llvm::PassManagerBuilder *pmb = llvm::unwrap(PMB);

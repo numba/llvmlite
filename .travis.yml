@@ -1,36 +1,35 @@
-# References https://gist.github.com/dan-blanchard/7045057
-# and https://docs.travis-ci.com/user/trusty-ci-environment/
+# TravisCI is testing manylinux1 wheels only.
+# Azure is used to test the Anaconda compiler toolchina.
+#
+# Reference:
+# - https://github.com/pypa/python-manylinux-demo
 
-dist: trusty
+sudo: required
+services:
+  - docker
 
 matrix:
-    # Note coverage is run in only one configuration.  Longest build first.
-    include:
-        - os: osx
-          env: PYTHON=3.6
-        - env: PYTHON=3.6
-        - env: PYTHON=3.5 RUN_COVERAGE=yes
-        - env: PYTHON=3.4
-        - env: PYTHON=2.7
-        - env: PYTHON=pypy
+  include:
+    - env: PYVER=cp27-cp27mu ARCH=x64
+    - env: PYVER=cp35-cp35m  ARCH=x64
+    - env: PYVER=cp36-cp36m  ARCH=x64
+    - env: PYVER=cp37-cp37m  ARCH=x64
+    - env: PYVER=cp27-cp27mu ARCH=x32
+    - env: PYVER=cp35-cp35m  ARCH=x32
+    - env: PYVER=cp36-cp36m  ARCH=x32
+    - env: PYVER=cp37-cp37m  ARCH=x32
 
-before_install:
-    - export CONDA_ENV=travisci
-    - buildscripts/incremental/install_miniconda.sh
-    - export PATH=$HOME/miniconda3/bin:$PATH
-    - buildscripts/incremental/setup_conda_environment.sh
 
 install:
-    - buildscripts/incremental/build.sh
+    - if [ "$ARCH" == "x64" ]; then DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64; else DOCKER_IMAGE=quay.io/pypa/manylinux1_i686; fi
+    - docker pull $DOCKER_IMAGE
 
 script:
-    - buildscripts/incremental/test.sh
-
-after_success:
-    - buildscripts/incremental/after_success.sh
+    - ./buildscripts/manylinux1/docker_run_$ARCH.sh build_llvmlite.sh $PYVER
 
 notifications:
     email: false
-    flowdock: "cb7bc57e58b3d42f77685f93211c03ab"
     on_success: "change"
     on_failure: "always" # "change"
+    slack:
+        secure: "FKl89SqORRj0CQCeZZ6vLzSyX8644b+c3VMO2lfTMDj5asnSYmq4J8cmytzLuTO4vCDXXNzqbO+8jCsPtnt+2gvXC+NccZOvlPsHXOy9Iu4SAfPKmN2rsxlu27Tn86HN5zgGJsm53aQFG2BXnsc848/HtSzzxdUx8oml6w3SdwI="

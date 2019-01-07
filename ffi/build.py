@@ -6,6 +6,7 @@ Build script for the shared library providing the C ABI bridge to LLVM.
 from __future__ import print_function
 
 from ctypes.util import find_library
+import re
 import os
 import subprocess
 import shutil
@@ -53,9 +54,22 @@ def find_win32_generator():
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
     # LLVM 4.0+ needs VS 2015 minimum.
-    for generator in ['Visual Studio 14 2015']:
-        if is_64bit:
-            generator += ' Win64'
+    generators = []
+    if os.environ.get("CMAKE_GENERATOR"):
+        generators.append(os.environ.get("CMAKE_GENERATOR"))
+
+    # Drop generators that are too old
+    vspat = re.compile('Visual Studio (\d+)')
+    def drop_old_vs(g):
+        m = vspat.match(g)
+        if m is None:
+            return True  # keep those we don't recognize
+        ver = int(m.group(1))
+        return ver >= 14
+    generators = list(filter(drop_old_vs, generators))
+
+    generators.append('Visual Studio 14 2015' + (' Win64' if is_64bit else ''))
+    for generator in generators:
         build_dir = tempfile.mkdtemp()
         print("Trying generator %r" % (generator,))
         try:
@@ -95,9 +109,9 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not out.startswith('5.0.'):
+    if not out.startswith('7.0.'):
         msg = (
-            "Building llvmlite requires LLVM 5.0.x. Be sure to "
+            "Building llvmlite requires LLVM 7.0.x. Be sure to "
             "set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n"
@@ -110,7 +124,19 @@ def main_posix(kind, library_ext):
     os.environ['LLVM_LIBS'] = ' '.join(libs.split())
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
+    # on OSX cxxflags has null bytes at the end of the string, remove them
+    cxxflags = cxxflags.replace('\0', '')
     cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
+
+    # look for SVML
+    include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
+    svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.inc')
+    if os.path.isfile(svml_indicator):
+        cxxflags = cxxflags + ['-DHAVE_SVML']
+        print('SVML detected')
+    else:
+        print('SVML not detected')
+
     os.environ['LLVM_CXXFLAGS'] = ' '.join(cxxflags)
 
     ldflags = run_llvm_config(llvm_config, ["--ldflags"])
@@ -129,7 +155,7 @@ def main():
         main_win32()
     elif sys.platform.startswith('linux'):
         main_posix('linux', '.so')
-    elif sys.platform.startswith('freebsd'):
+    elif sys.platform.startswith(('freebsd','openbsd')):
         main_posix('freebsd', '.so')
     elif sys.platform == 'darwin':
         main_posix('osx', '.dylib')

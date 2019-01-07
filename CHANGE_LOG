@@ -1,7 +1,158 @@
-v0.21.0.dev
------------
+v0.28.0
+-------
 
-Development version for v0.21.0.
+In development.
+
+v0.27.0
+-------
+
+This release updates llvmlite to LLVM 7.  Note that LLVM 7.0.0 contains
+a critical bug that is resolved with a patch included in the `llvmdev conda
+package recipe`_.  The final release of LLVM 7.0.1 may also resolve the issue.
+
+* PR #434: Add another thread for RPi builds.
+* PR #430: llvm lld integration, merge #428
+* PR #428: Build LLD as part of the llvmdev package
+* PR #413: Set up CI with Azure Pipelines
+* PR #412: LLVM 7 support
+
+.. _llvmdev conda package recipe: https://github.com/numba/llvmlite/tree/69aed71a829e6c552cca24a28c42abdf1efd2363/conda-recipes/llvmdev
+
+
+v0.26.0
+-------
+
+The primary new features in this release is support for generation of Intel
+JIT events, which makes profiling of JIT compiled code in Intel VTune
+possible.  This release also contains some minor build improvements for ARMv7,
+and some small fixes.
+
+LLVM 7 support was originally slated for this release, but had to be delayed
+after some issues arose in testing.  LLVM 6 is still required for llvmlite.
+
+* PR #409: Use native cmake on armv7l
+* PR #407: Throttle thread count for llvm build on armv7l.
+* PR #403: Add shutdown detection to ObjectRef __del__ method.
+* PR #400: conda recipe: add make as build dep
+* PR #399: Add get_element_offset to TargetData
+* PR #398: Fix gep method call on Constant objects
+* PR #395: Fix typo in irbuilder documentation
+* PR #394: Enable IntelJIT events for LLVM for VTune support
+
+
+v0.25.0
+-------
+
+This release adds support for the FMA instruction, and has some documentation
+and build improvements.  Starting with this release, we are including
+ARMv8 (AArch64) testig in our CI process.
+
+* PR #391: Fix broken win32 py2.7 build.
+* PR #387: protect against empty features in list
+* PR #384: Read CMAKE_GENERATOR which conda-build sets
+* PR #382: rewrite of install instructions, calling out LLVM build challenges
+* PR #380: Add FMA intrinsic support
+* PR #379: ARM aarch64 test on jetson tx2
+* PR #378: add slack, drop flowdock
+
+
+v0.24.0
+-------
+
+This release adds support for Python 3.7 and fixes some build issues. It also
+contains an updated SVML patch for the llvmdev package that works around some
+vectorization issues. It also adds a selective LLVM 6.0.1 llvmdev build for the
+`ppc64le` architecture.
+
+* PR #374: Fix up broken patch selector
+* PR #373: Add long description from readme
+* PR #371: LLVM 6.0.1 build based on RC and fixes for PPC64LE
+* PR #369: Recipe fixes for Conda Build 3
+* PR #363: Workaround for incorrect vectorization factor computed for SVML
+  functions
+* PR #356: fix build on OpenBSD.
+* PR #351: Python 3.7 compat: Properly escape repl in re.sub
+
+
+v0.23.2
+-------
+
+This is a bug fix release to assist in addressing a critical Numba issue that
+can affect users who download llvmlite packages from sources other than PyPI
+(pip), Anaconda, or Intel Python: https://github.com/numba/numba/issues/3006
+
+Support for SVML is now detected at compile time and baked into a function that
+is exposed by llvmlite. This function can be queried at runtime to find out if
+SVML is supported by the LLVM that llvmlite was compiled against, code
+generation paths can then be adjusted accordingly.
+
+The following PRs are closed in this release:
+
+* PR #361: Add SVML detection and a function to declare support.
+
+
+v0.23.1
+-------
+
+This is a minor patch release that includes no code changes. It is issued to
+fix a couple of problems with the build recipes for llvmdev (on which llvmlite
+relies).
+
+The following PRs are closed in this release:
+
+* PR #353: PR Fix llvmdev build recipe.
+* PR #348: llvmdev: enhancements to conda recipe
+
+
+v0.23.0
+-------
+
+In this release, we upgrade to LLVM 6. Two LLVM patches are added:
+
+  1. A patch to fix LLVM bug (https://bugs.llvm.org/show_bug.cgi?id=37019) that
+     causes undefined behavior during CFG printing.
+  2. A patch to enable Intel SVML auto-vectorization of transcendentals.
+
+The following PRs are closed in this release:
+
+* PR #343: Fix undefined behavior bug due to Twine usage in LLVM
+* PR #340: This moves llvmlite to use LLVM 6.0.0 as its backend.
+* PR #339: Add cttz & ctlz
+* PR #338: Add 3 Bit Manipulation Intrinsics
+* PR #330: Add support for LLVM fence instruction
+* PR #326: Enable Intel SVML-enabled auto-vectorization for all the
+           transcendentals
+
+
+v0.22.0
+----------
+
+In this release, we have changed the locking strategy that protects LLVM from
+race conditions.  Before, the llvmlite user (like Numba) was responsible for
+this locking.  Now, llvmlite imposes a global thread lock on all calls into
+the LLVM API.  This should be significantly less error prone.  Future llvmlite
+releases may manually exempt some functions from locking once they are
+determined to be thread-safe.
+
+The following PRs are closed in this release:
+
+* PR#318: Ensuring threadsafety in concurrent usage of LLVM C-API
+* PR#221: Add all function/return value attributes from LLVM 3.9
+* PR#304: Expose support for static constructors/destructors
+
+
+v0.21.0
+-------
+
+In this release, we upgrade to LLVM 5.  Our build scripts now use
+conda-build 3.  For our prebuilt binaries, GCC 7 toolchain is used
+on unix-like systems and the OSX minimum deployment target is 10.9.
+
+The following PRs are closed in this release:
+
+* PR #315: Updates for conda build 3.
+* PR #307: Fixes for LLVM5.
+* PR #306: Working towards LLVM 5.0 support.
 
 
 v0.20.0

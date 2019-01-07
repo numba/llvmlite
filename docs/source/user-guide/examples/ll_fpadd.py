@@ -49,6 +49,7 @@ def compile_ir(engine, llvm_ir):
     # Now add the module and make sure it is ready for execution
     engine.add_module(mod)
     engine.finalize_object()
+    engine.run_static_constructors()
     return mod
 
 

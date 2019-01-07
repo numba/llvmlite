@@ -39,11 +39,12 @@ def no_de_locale():
 asm_sum = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
+    %struct.glob_type = type {{ i64, [2 x i64]}}
 
     @glob = global i32 0
     @glob_b = global i8 0
     @glob_f = global float 1.5
-    @glob_struct = global {{ i64, [2 x i64]}} {{i64 0, [2 x i64] [i64 0, i64 0]}}
+    @glob_struct = global %struct.glob_type {{i64 0, [2 x i64] [i64 0, i64 0]}}
 
     define i32 @sum(i32 %.1, i32 %.2) {{
       %.3 = add i32 %.1, %.2
@@ -65,6 +66,7 @@ asm_sum2 = r"""
 asm_mul = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
+    @mul_glob = global i32 0
 
     define i32 @mul(i32 %.1, i32 %.2) {{
       %.3 = mul i32 %.1, %.2
@@ -123,6 +125,35 @@ asm_inlineasm = r"""
     }}
     """
 
+asm_global_ctors = r"""
+    ; ModuleID = "<string>"
+    target triple = "{triple}"
+
+    @A = global i32 undef
+
+    define void @ctor_A()
+    {{
+      store i32 10, i32* @A
+      ret void
+    }}
+
+    define void @dtor_A()
+    {{
+      store i32 20, i32* @A
+      ret void
+    }}
+
+    define i32 @foo()
+    {{
+      %.2 = load i32, i32* @A
+      %.3 = add i32 %.2, 2
+      ret i32 %.3
+    }}
+
+    @llvm.global_ctors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @ctor_A, i8* null}}]
+    @llvm.global_dtors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @dtor_A, i8* null}}]
+    """
+
 
 class BaseTest(TestCase):
 
@@ -143,9 +174,9 @@ class BaseTest(TestCase):
         # This will probably put any existing garbage in gc.garbage again
         del self.old_garbage
 
-    def module(self, asm=asm_sum):
+    def module(self, asm=asm_sum, context=None):
         asm = asm.format(triple=llvm.get_default_triple())
-        mod = llvm.parse_assembly(asm)
+        mod = llvm.parse_assembly(asm, context)
         return mod
 
     def glob(self, name='glob', mod=None):
@@ -212,6 +243,11 @@ class TestMisc(BaseTest):
         s = str(cm.exception)
         self.assertIn("parsing error", s)
         self.assertIn("invalid operand type", s)
+
+    def test_global_context(self):
+        gcontext1 = llvm.context.get_global_context()
+        gcontext2 = llvm.context.get_global_context()
+        assert gcontext1 == gcontext2
 
     def test_dylib_symbols(self):
         llvm.add_symbol("__xyzzy", 1234)
@@ -297,7 +333,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual((major, minor), (5, 0))
+        self.assertEqual((major, minor), (7, 0))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -387,6 +423,18 @@ class TestModuleRef(BaseTest):
         del mod
         str(fn.module)
 
+    def test_get_struct_type(self):
+        mod = self.module()
+        st_ty = mod.get_struct_type("struct.glob_type")
+        self.assertEquals(st_ty.name, "struct.glob_type")
+        # also match struct names of form "%struct.glob_type.{some_index}"
+        self.assertIsNotNone(re.match(
+            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }',
+            str(st_ty)))
+
+        with self.assertRaises(NameError):
+            mod.get_struct_type("struct.doesnt_exist")
+
     def test_get_global_variable(self):
         mod = self.module()
         gv = mod.get_global_variable("glob")
@@ -417,11 +465,24 @@ class TestModuleRef(BaseTest):
         self.assertEqual(len(funcs), 1)
         self.assertEqual(funcs[0].name, "sum")
 
+    def test_structs(self):
+        mod = self.module()
+        it = mod.struct_types
+        del mod
+        structs = list(it)
+        self.assertEqual(len(structs), 1)
+        self.assertIsNotNone(re.match(r'struct\.glob_type(\.[\d]+)?',
+                                      structs[0].name))
+        self.assertIsNotNone(re.match(
+            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }',
+            str(structs[0])))
+
     def test_link_in(self):
         dest = self.module()
         src = self.module(asm_mul)
         dest.link_in(src)
-        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
+        self.assertEqual(
+            sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.get_function("mul")
         dest.close()
         with self.assertRaises(ctypes.ArgumentError):
@@ -431,7 +492,8 @@ class TestModuleRef(BaseTest):
         dest = self.module()
         src2 = self.module(asm_mul)
         dest.link_in(src2, preserve=True)
-        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
+        self.assertEqual(
+            sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.close()
         self.assertEqual(sorted(f.name for f in src2.functions), ["mul"])
         src2.get_function("mul")
@@ -462,9 +524,13 @@ class TestModuleRef(BaseTest):
         self.assertIn("Invalid bitcode signature", str(cm.exception))
 
     def test_bitcode_roundtrip(self):
-        bc = self.module().as_bitcode()
-        mod = llvm.parse_bitcode(bc)
+        # create a new context to avoid struct renaming
+        context1 = llvm.create_context()
+        bc = self.module(context=context1).as_bitcode()
+        context2 = llvm.create_context()
+        mod = llvm.parse_bitcode(bc, context2)
         self.assertEqual(mod.as_bitcode(), bc)
+
         mod.get_function("sum")
         mod.get_global_variable("glob")
 
@@ -755,7 +821,6 @@ class TestValueRef(BaseTest):
             fn.add_function_attribute("zext")
         self.assertEqual(str(raises.exception), "no such attribute 'zext'")
 
-
     def test_module(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
@@ -765,7 +830,37 @@ class TestValueRef(BaseTest):
         mod = self.module()
         glob = mod.get_global_variable("glob")
         tp = glob.type
-        self.assertIsInstance(tp, ffi.LLVMTypeRef)
+        self.assertIsInstance(tp, llvm.TypeRef)
+
+    def test_type_name(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        tp = glob.type
+        self.assertEqual(tp.name, "")
+        st = mod.get_global_variable("glob_struct")
+        self.assertIsNotNone(re.match(r"struct\.glob_type(\.[\d]+)?",
+                                      st.type.element_type.name))
+
+    def test_type_printing_variable(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        tp = glob.type
+        self.assertEqual(str(tp), 'i32*')
+
+    def test_type_printing_function(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        self.assertEqual(str(fn.type), "i32 (i32, i32)*")
+
+    def test_type_printing_struct(self):
+        mod = self.module()
+        st = mod.get_global_variable("glob_struct")
+        self.assertTrue(st.type.is_pointer)
+        self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
+                                      str(st.type)))
+        self.assertIsNotNone(re.match(
+            r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
+            str(st.type.element_type)))
 
     def test_close(self):
         glob = self.glob()
@@ -829,6 +924,26 @@ class TestTargetData(BaseTest):
         glob = self.glob()
         self.assertEqual(td.get_abi_size(glob.type), 8)
 
+    def test_get_pointee_abi_size(self):
+        td = self.target_data()
+
+        glob = self.glob()
+        self.assertEqual(td.get_pointee_abi_size(glob.type), 4)
+
+        glob = self.glob("glob_struct")
+        self.assertEqual(td.get_pointee_abi_size(glob.type), 24)
+
+    def test_get_struct_element_offset(self):
+        td = self.target_data()
+        glob = self.glob("glob_struct")
+
+        with self.assertRaises(ValueError):
+            td.get_element_offset(glob.type, 0)
+
+        struct_type = glob.type.element_type
+        self.assertEqual(td.get_element_offset(struct_type, 0), 0)
+        self.assertEqual(td.get_element_offset(struct_type, 1), 8)
+
 
 class TestTargetMachine(BaseTest):
 
@@ -883,13 +998,6 @@ class TestPassManagerBuilder(BaseTest):
             pmb.inlining_threshold
         for i in (25, 80, 350):
             pmb.inlining_threshold = i
-
-    def test_disable_unit_at_a_time(self):
-        pmb = self.pmb()
-        self.assertIsInstance(pmb.disable_unit_at_a_time, bool)
-        for b in (True, False):
-            pmb.disable_unit_at_a_time = b
-            self.assertEqual(pmb.disable_unit_at_a_time, b)
 
     def test_disable_unroll_loops(self):
         pmb = self.pmb()
@@ -953,9 +1061,29 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         orig_asm = str(mod)
         pm.run(mod)
         opt_asm = str(mod)
-        # Quick check that optimizations were run
-        self.assertIn("%.3", orig_asm)
-        self.assertNotIn("%.3", opt_asm)
+        # Quick check that optimizations were run, should get:
+        # define i32 @sum(i32 %.1, i32 %.2) local_unnamed_addr #0 {
+        # %.X = add i32 %.2, %.1
+        # ret i32 %.X
+        # }
+        # where X in %.X is 3 or 4
+        opt_asm_split = opt_asm.splitlines()
+        for idx, l in enumerate(opt_asm_split):
+            if l.strip().startswith('ret i32'):
+                toks = {'%.3', '%.4'}
+                for t in toks:
+                    if t in l:
+                        break
+                else:
+                    raise RuntimeError("expected tokens not found")
+                add_line = opt_asm_split[idx]
+                othertoken = (toks ^ {t}).pop()
+
+                self.assertIn("%.3", orig_asm)
+                self.assertNotIn(othertoken, opt_asm)
+                break
+        else:
+            raise RuntimeError("expected IR not found")
 
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
@@ -1093,6 +1221,32 @@ class TestTypeParsing(BaseTest):
             gv.initializer = ir.Constant(typ, [1])
 
 
+class TestGlobalConstructors(TestMCJit):
+    def test_global_ctors_dtors(self):
+        # test issue #303
+        # (https://github.com/numba/llvmlite/issues/303)
+        mod = self.module(asm_global_ctors)
+        ee = self.jit(mod)
+        ee.finalize_object()
+
+        ee.run_static_constructors()
+
+        # global variable should have been initialized
+        ptr_addr = ee.get_global_value_address("A")
+        ptr_t = ctypes.POINTER(ctypes.c_int32)
+        ptr = ctypes.cast(ptr_addr, ptr_t)
+        self.assertEqual(ptr.contents.value, 10)
+
+        foo_addr = ee.get_function_address("foo")
+        foo = ctypes.CFUNCTYPE(ctypes.c_int32)(foo_addr)
+        self.assertEqual(foo(), 12)
+
+        ee.run_static_destructors()
+
+        # destructor should have run
+        self.assertEqual(ptr.contents.value, 20)
+
+
 class TestGlobalVariables(BaseTest):
     def check_global_variable_linkage(self, linkage, has_undef=True):
         # This test default initializer on global variables with different
@@ -1157,6 +1311,7 @@ class TestInlineAsm(BaseTest):
         asm = tm.emit_assembly(m)
         self.assertIn('nop', asm)
 
+
 class TestObjectFile(BaseTest):
     def test_object_file(self):
         target_machine = self.target_machine()
@@ -1173,6 +1328,7 @@ class TestObjectFile(BaseTest):
                 self.assertTrue(len(s.data()) > 0)
                 break
         self.assertTrue(has_text)
+
 
 if __name__ == "__main__":
     unittest.main()

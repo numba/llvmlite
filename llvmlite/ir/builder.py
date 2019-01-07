@@ -69,6 +69,56 @@ def _uniop(opname, cls=instructions.Instruction):
     return wrap
 
 
+def _uniop_intrinsic(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, operand, name=''):
+            if not isinstance(operand.type, types.IntType):
+                raise TypeError("expected an integer type, got %s" % operand.type)
+            fn = self.module.declare_intrinsic(opname, [operand.type])
+            return self.call(fn, [operand], name)
+
+        return wrapped
+
+    return wrap
+
+
+def _uniop_intrinsic_with_flag(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, operand, flag, name=''):
+            if not isinstance(operand.type, types.IntType):
+                raise TypeError("expected an integer type, got %s" % operand.type)
+            if flag.type != types.IntType(1):
+                raise TypeError("expected an i1 type, got %s" % flag.type)
+            fn = self.module.declare_intrinsic(opname, [operand.type, flag.type])
+            return self.call(fn, [operand, flag], name)
+
+        return wrapped
+
+    return wrap
+
+
+def _triop_intrinsic(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, a, b, c,  name=''):
+            if a.type != b.type or b.type != c.type:
+                raise TypeError(
+                    "expected types to be the same, got %s, %s, %s" % (
+                        a.type,
+                        b.type,
+                        c.type))
+            elif not isinstance(a.type, (types.FloatType, types.DoubleType)):
+                raise TypeError("expected an floating point type, got %s" % a.type)
+            fn = self.module.declare_intrinsic(opname, [a.type, b.type, c.type])
+            return self.call(fn, [a, b, c], name)
+
+        return wrapped
+
+    return wrap
+
+
 def _castop(opname, cls=instructions.CastInstr):
     def wrap(fn):
         @functools.wraps(fn)
@@ -874,3 +924,48 @@ class IRBuilder(object):
         """
         fn = self.module.declare_intrinsic("llvm.assume")
         return self.call(fn, [cond])
+
+    def fence(self, ordering, targetscope=None, name=''):
+        """
+        Add a memory barrier, preventing certain reorderings of load and/or store accesses with
+        respect to other processors and devices.
+        """
+        inst = instructions.Fence(self.block, ordering, targetscope, name=name)
+        self._insert(inst)
+        return inst
+
+    @_uniop_intrinsic("llvm.bswap")
+    def bswap(self, cond):
+        """
+        Used to byte swap integer values with an even number of bytes (positive multiple of 16 bits)
+        """
+
+    @_uniop_intrinsic("llvm.bitreverse")
+    def bitreverse(self, cond):
+        """
+        Reverse the bitpattern of an integer value; for example 0b10110110 becomes 0b01101101.
+        """
+
+    @_uniop_intrinsic("llvm.ctpop")
+    def ctpop(self, cond):
+        """
+        Counts the number of bits set in a value.
+        """
+
+    @_uniop_intrinsic_with_flag("llvm.ctlz")
+    def ctlz(self, cond, flag):
+        """
+        Counts the number of leading zeros in a variable.
+        """
+
+    @_uniop_intrinsic_with_flag("llvm.cttz")
+    def cttz(self, cond, flag):
+        """
+        Counts the number of trailing zeros in a variable.
+        """
+
+    @_triop_intrinsic("llvm.fma")
+    def fma(self, a, b, c):
+        """
+        Perform the fused multiply-add operation.
+        """

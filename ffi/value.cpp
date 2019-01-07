@@ -2,6 +2,8 @@
 #include "llvm-c/Core.h"
 #include "core.h"
 
+#include <iostream>
+
 // the following is needed for WriteGraph()
 #include "llvm/Analysis/CFGPrinter.h"
 
@@ -36,6 +38,42 @@ API_EXPORT(LLVMTypeRef)
 LLVMPY_TypeOf(LLVMValueRef Val)
 {
     return LLVMTypeOf(Val);
+}
+
+API_EXPORT(const char *)
+LLVMPY_PrintType(LLVMTypeRef type)
+{
+    return LLVMPrintTypeToString(type);
+}
+
+API_EXPORT(const char *)
+LLVMPY_GetTypeName(LLVMTypeRef type)
+{
+    // try to convert to a struct type, works for other derived
+    // types too
+    llvm::Type* unwrapped = llvm::unwrap(type);
+    llvm::StructType* ty = llvm::dyn_cast<llvm::StructType>(unwrapped);
+    if (ty && !ty->isLiteral()) {
+        return strdup(ty->getStructName().str().c_str());
+    }
+    return strdup("");
+}
+
+API_EXPORT(bool)
+LLVMPY_TypeIsPointer(LLVMTypeRef type)
+{
+    return llvm::unwrap(type)->isPointerTy();
+}
+
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GetElementType(LLVMTypeRef type)
+{
+    llvm::Type* unwrapped = llvm::unwrap(type);
+    llvm::PointerType* ty = llvm::dyn_cast<llvm::PointerType>(unwrapped);
+    if (ty != nullptr) {
+        return llvm::wrap(ty->getElementType());
+    }
+    return nullptr;
 }
 
 API_EXPORT(void)

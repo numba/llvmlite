@@ -64,7 +64,8 @@ def get_host_cpu_features():
         content = str(out)
         if content:  # protect against empty string
             for feat in content.split(','):
-                outdict[feat[1:]] = flag_map[feat[0]]
+                if feat:  # protect against empty feature
+                    outdict[feat[1:]] = flag_map[feat[0]]
         return outdict
 
 
@@ -132,6 +133,18 @@ class TargetData(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_ABISizeOfType(self, ty)
 
+    def get_element_offset(self, ty, position):
+        """
+        Get byte offset of type's ty element at the given position
+        """
+
+        offset = ffi.lib.LLVMPY_OffsetOfElement(self, ty, position)
+        if offset == -1:
+            raise ValueError("Could not determined offset of {}th "
+                    "element of the type '{}'. Is it a struct type?".format(
+                    position, str(ty)))
+        return offset
+
     def get_pointee_abi_size(self, ty):
         """
         Get ABI size of pointee type of LLVM pointer type *ty*.
@@ -152,8 +165,8 @@ class TargetData(ffi.ObjectRef):
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
-CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel',
-                       'medium', 'large'])
+CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel', 'medium',
+                       'large'])
 
 
 class Target(ffi.ObjectRef):
@@ -206,6 +219,10 @@ class Target(ffi.ObjectRef):
                               jitdebug=False, printmc=False):
         """
         Create a new TargetMachine for this target and the given options.
+
+        Specifying codemodel='default' will result in the use of the "small"
+        code model. Specifying codemodel='jitdefault' will result in the code
+        model being picked based on platform bitness (32="small", 64="large").
         """
         assert 0 <= opt <= 3
         assert reloc in RELOC
@@ -297,6 +314,15 @@ class TargetMachine(ffi.ObjectRef):
             ffi.lib.LLVMPY_GetTargetMachineTriple(self, out)
             return str(out)
 
+def has_svml():
+    """
+    Returns True if SVML was enabled at FFI support compile time.
+    """
+    if ffi.lib.LLVMPY_HasSVMLSupport() == 0:
+        return False
+    else:
+        return True
+
 
 # ============================================================================
 # FFI
@@ -328,6 +354,11 @@ ffi.lib.LLVMPY_DisposeTargetData.argtypes = [
 ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
                                          ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_ABISizeOfType.restype = c_longlong
+
+ffi.lib.LLVMPY_OffsetOfElement.argtypes = [ffi.LLVMTargetDataRef,
+                                           ffi.LLVMTypeRef,
+                                           c_int]
+ffi.lib.LLVMPY_OffsetOfElement.restype = c_longlong
 
 ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef,
                                                 ffi.LLVMTypeRef]
@@ -396,3 +427,6 @@ ffi.lib.LLVMPY_CreateTargetMachineData.argtypes = [
     ffi.LLVMTargetMachineRef,
 ]
 ffi.lib.LLVMPY_CreateTargetMachineData.restype = ffi.LLVMTargetDataRef
+
+ffi.lib.LLVMPY_HasSVMLSupport.argtypes = []
+ffi.lib.LLVMPY_HasSVMLSupport.restype = c_int

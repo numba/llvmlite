@@ -119,6 +119,15 @@ LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 }
 
 API_EXPORT(long long)
+LLVMPY_OffsetOfElement(LLVMTargetDataRef TD, LLVMTypeRef Ty, int Element)
+{
+    llvm::Type *tp = llvm::unwrap(Ty);
+    if (!tp->isStructTy())
+        return -1;
+    return (long long) LLVMOffsetOfElement(TD, Ty, Element);
+}
+
+API_EXPORT(long long)
 LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty)
 {
     llvm::Type *tp = llvm::unwrap(Ty);
@@ -194,9 +203,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
 
     CodeModel::Model cm;
     std::string cms(CodeModel);
-    if (cms == "jitdefault")
-        cm = CodeModel::JITDefault;
-    else if (cms == "small")
+    if (cms == "small")
         cm = CodeModel::Small;
     else if (cms == "kernel")
         cm = CodeModel::Kernel;
@@ -204,8 +211,16 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
         cm = CodeModel::Medium;
     else if (cms == "large")
         cm = CodeModel::Large;
-    else
-        cm = CodeModel::Default;
+    else if (cms == "default") // As per LLVM 5, needed for AOT
+        cm = CodeModel::Small;
+    else { // catches "jitdefault" and not set, as per LLVM 5, needed for MCJIT
+        // fall through, use model based on bitness
+        int bits = sizeof(void *);
+        if (bits == 4)
+            cm = CodeModel::Small;
+        else
+            cm = CodeModel::Large;
+    }
 
     Optional<Reloc::Model> rm;
     std::string rms(RelocModel);
@@ -302,6 +317,17 @@ LLVMPY_DisposeMemoryBuffer(LLVMMemoryBufferRef MB)
 {
     return LLVMDisposeMemoryBuffer(MB);
 }
+
+API_EXPORT(int)
+LLVMPY_HasSVMLSupport(void)
+{
+#ifdef HAVE_SVML
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 
 /*
 
