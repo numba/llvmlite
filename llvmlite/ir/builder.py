@@ -480,7 +480,11 @@ class IRBuilder(object):
         Bitwise integer complement:
             name = ~value
         """
-        return self.xor(value, values.Constant(value.type, -1), name=name)
+        if isinstance(value.type, types.VectorType):
+            rhs = values.Constant(value.type, (-1,) * value.type.count)
+        else:
+            rhs = values.Constant(value.type, -1)
+        return self.xor(value, rhs, name=name)
 
     def neg(self, value, name=''):
         """
@@ -817,6 +821,39 @@ class IRBuilder(object):
         """
         instr = instructions.GEPInstr(self.block, ptr, indices,
                                       inbounds=inbounds, name=name)
+        self._insert(instr)
+        return instr
+
+    # Vector Operations APIs
+
+    def extract_element(self, vector, idx, name=''):
+        """
+        Returns the value at position idx.
+        """
+        instr = instructions.ExtractElement(self.block, vector, idx, name=name)
+        self._insert(instr)
+        return instr
+
+    def insert_element(self, vector, value, idx, name=''):
+        """
+        Returns vector with vector[idx] replaced by value.
+        The result is undefined if the idx is larger or equal the vector length.
+        """
+        instr = instructions.InsertElement(self.block, vector, value, idx,
+                                           name=name)
+        self._insert(instr)
+        return instr
+
+    def shuffle_vector(self, vector1, vector2, mask, name=''):
+        """
+        Constructs a permutation of elements from *vector1* and *vector2*.
+        Returns a new vector in the same length of *mask*.
+
+        * *vector1* and *vector2* must have the same element type.
+        * *mask* must be a constant vector of integer types.
+        """
+        instr = instructions.ShuffleVector(self.block, vector1, vector2, mask,
+                                           name=name)
         self._insert(instr)
         return instr
 

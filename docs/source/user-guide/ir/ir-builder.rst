@@ -419,6 +419,27 @@ Aggregate operations
      can be of the same types as in :meth:`extract_value`.
 
 
+Vector operations
+-----------------
+
+* .. method:: IRBuilder.extract_element(vector, idx, name='')
+
+     Returns the *value* at position *idx*.
+
+* .. method:: IRBuilder.insert_element(vector, value, idx, name='')
+
+     Returns vector with ``vector[idx]`` replaced by ``value``.
+     The result is undefined if the idx is larger or equal the vector length.
+
+* .. method:: IRBuilder.shuffle_vector(vector1, vector2, mask, name='')
+
+     Constructs a permutation of elements from *vector1* and *vector2*.
+     Returns a new vector in the same length of *mask*.
+
+     * *vector1* and *vector2* must have the same element type.
+     * *mask* must be a constant vector of integer types.
+
+
 Memory
 -------
 
