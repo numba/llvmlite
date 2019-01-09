@@ -461,6 +461,18 @@ Memory
      be a Python integer specifying the guaranteed pointer
      alignment.
 
+* .. method:: IRBuilder.load_atomic(ptr, ordering, align, name='')
+
+     Load value from pointer *ptr* as an atomic operation with the given
+     *ordering*. *align* must be a Python integer specifying the guaranteed
+     pointer alignment.
+
+* .. method:: IRBuilder.store_atomic(value, ptr, ordering, align)
+
+     Store *value* to pointer *ptr* as an atomic operation with the given
+     *ordering*. *align* must be a Python integer specifying the guaranteed
+     pointer alignment.
+
 * .. method:: IRBuilder.gep(ptr, indices, inbounds=False, name='')
 
      The :ref:`getelementptr` instruction. Given a pointer *ptr*
