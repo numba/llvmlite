@@ -446,7 +446,7 @@ Memory
      *ordering*. *align* must be a Python integer specifying the guaranteed
      pointer alignment.
 
-* .. method:: IRBuilder.store(value, ptr, ordering, align)
+* .. method:: IRBuilder.store_atomic(value, ptr, ordering, align)
 
      Store *value* to pointer *ptr* as an atomic operation with the given
      *ordering*. *align* must be a Python integer specifying the guaranteed
