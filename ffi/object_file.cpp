@@ -25,7 +25,7 @@ extern "C" {
 API_EXPORT(LLVMObjectFileRef)
 LLVMPY_CreateObjectFile(const char* buf, const size_t n)
 {
-  return LLVMCreateObjectFile(LLVMCreateMemoryBufferWithMemoryRange(buf, n, "", false));
+  return LLVMCreateObjectFile(LLVMCreateMemoryBufferWithMemoryRangeCopy(buf, n, ""));
 }
 
 API_EXPORT(void)
