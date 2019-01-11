@@ -56,6 +56,15 @@ class TestBase(TestCase):
     def assert_valid_ir(self, mod):
         llvm.parse_assembly(str(mod))
 
+    def assert_pickle_correctly(self, irobject):
+        """Assert that the IR object pickles and unpickles correctly.
+        The IR string is equal and that their type is equal
+        """
+        newobject = pickle.loads(pickle.dumps(irobject, protocol=-1))
+        self.assertIs(irobject.__class__, newobject.__class__)
+        self.assertEqual(str(irobject), str(newobject))
+        return newobject
+
     def module(self):
         return ir.Module()
 
@@ -129,6 +138,8 @@ class TestFunction(TestBase):
         self.assertEqual(asm,
             ("declare %s alwaysinline optsize alignstack(16) "
              "personality i8 (...)* @\"__gxx_personality_v0\"") % self.proto)
+        # Check pickling
+        self.assert_pickle_correctly(func)
 
     def test_function_attributes(self):
         # Now with parameter attributes
@@ -143,6 +154,8 @@ class TestFunction(TestBase):
         self.assertEqual(asm,
             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", i32* nonnull align 4 %".4")"""
             )
+        # Check pickling
+        self.assert_pickle_correctly(func)
 
     def test_function_metadata(self):
         # Now with function metadata
@@ -153,6 +166,8 @@ class TestFunction(TestBase):
         self.assertEqual(asm,
             """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") !dbg !0"""
             )
+        # Check pickling
+        self.assert_pickle_correctly(func)
 
     def test_define(self):
         # A simple definition
@@ -195,9 +210,7 @@ class TestFunction(TestBase):
 
     def test_pickling(self):
         fn = self.function()
-        data = pickle.dumps(fn, protocol=-1)
-        new_fn = pickle.loads(data)
-        self.assertEqual(str(fn), str(new_fn))
+        self.assert_pickle_correctly(fn)
 
 
 class TestIR(TestBase):
@@ -474,9 +487,7 @@ class TestGlobalValues(TestBase):
 
     def test_pickle(self):
         mod = self.module()
-        data = pickle.dumps(mod)
-        new_mod = pickle.loads(data)
-        self.assertEqual(str(mod), str(new_mod))
+        self.assert_pickle_correctly(mod)
 
 
 class TestBlock(TestBase):
@@ -1683,10 +1694,7 @@ class TestTypes(TestBase):
     def test_pickling(self):
         types = self.assorted_types()
         for ty in types:
-            data = pickle.dumps(ty, protocol=-1)
-            newty = pickle.loads(data)
-            self.assertIs(newty.__class__, ty.__class__)
-            self.assertEqual(str(newty), str(ty))
+            newty = self.assert_pickle_correctly(ty)
             if self.has_logical_equality(ty):
                 self.assertEqual(newty, ty)
 
@@ -1942,9 +1950,7 @@ class TestConstant(TestBase):
     def test_undefined_literal_struct_pickling(self):
         i8 = ir.IntType(8)
         st = ir.Constant(ir.LiteralStructType([i8, i8]), ir.Undefined)
-        data = pickle.dumps(st)
-        new_st = pickle.loads(data)
-        self.assertEqual(str(st), str(new_st))
+        self.assert_pickle_correctly(st)
 
     def test_type_instantiaton(self):
         """
@@ -2060,7 +2066,7 @@ class TestSingleton(TestBase):
         self.assertIs(ir.Undefined, ir.values._Undefined())
         self.assertIs(ir.Undefined, copy.copy(ir.Undefined))
         self.assertIs(ir.Undefined, copy.deepcopy(ir.Undefined))
-        self.assertIs(ir.Undefined, pickle.loads(pickle.dumps(ir.Undefined)))
+        self.assert_pickle_correctly(ir.Undefined)
 
 
 if __name__ == '__main__':
