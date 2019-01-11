@@ -2055,5 +2055,13 @@ class TestTransforms(TestBase):
         self.assertEqual(call.callee, bar)
 
 
+class TestSingleton(TestBase):
+    def test_undefined(self):
+        self.assertIs(ir.Undefined, ir.values._Undefined())
+        self.assertIs(ir.Undefined, copy.copy(ir.Undefined))
+        self.assertIs(ir.Undefined, copy.deepcopy(ir.Undefined))
+        self.assertIs(ir.Undefined, pickle.loads(pickle.dumps(ir.Undefined)))
+
+
 if __name__ == '__main__':
     unittest.main()

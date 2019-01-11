@@ -103,6 +103,12 @@ class _Undefined(object):
     """
     'undef': a value for undefined values.
     """
+    def __new__(cls):
+        try:
+            return Undefined
+        except NameError:
+            return object.__new__(_Undefined)
+
 
 Undefined = _Undefined()
 
@@ -126,7 +132,7 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         if self.constant is None:
             val = self.type.null
 
-        elif isinstance(self.constant, _Undefined):
+        elif self.constant is Undefined:
             val = "undef"
 
         elif isinstance(self.constant, bytearray):
@@ -522,7 +528,6 @@ class AttributeSet(set):
             args = [args]
         for name in args:
             self.add(name)
-
 
     def add(self, name):
         if name not in self._known:
