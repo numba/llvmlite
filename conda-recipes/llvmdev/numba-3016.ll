@@ -1,6 +1,12 @@
-; ModuleID = 'svml-3016.c'
-; C code: int a[1<<10],b[1<<10]; void foo() { int i=0; for(i=0; i<1<<10; i++) { b[i]=sin(a[i]); }}
+; Regression test for llvmdev-feedstock#52 and numba#3016
+
+; Generated from C code: int a[1<<10],b[1<<10]; void foo() { int i=0; for(i=0; i<1<<10; i++) { b[i]=sin(a[i]); }}
 ; compiled: -fvectorize -fveclib=SVML -O -S -mavx -mllvm -disable-llvm-optzns -emit-llvm
+
+; RUN: opt -vector-library=SVML -mcpu=haswell -O3 -S < %s | FileCheck %s
+; CHECK: __svml_sin4_ha
+; CHECK-NOT: __svml_sin4(
+; CHECK-NOT: __svml_sin8
 
 source_filename = "svml-3016.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
@@ -29,7 +35,7 @@ define dso_local void @foo() #0 {
   %9 = getelementptr inbounds [1024 x i32], [1024 x i32]* @a, i64 0, i64 %8
   %10 = load i32, i32* %9, align 4, !tbaa !2
   %11 = sitofp i32 %10 to double
-  %12 = call double @sin(double %11) #3
+  %12 = call double @"llvm.sin.f64"(double %11) #3
   %13 = fptosi double %12 to i32
   %14 = load i32, i32* %1, align 4, !tbaa !2
   %15 = sext i32 %14 to i64
@@ -53,7 +59,7 @@ define dso_local void @foo() #0 {
 declare void @llvm.lifetime.start.p0i8(i64, i8* nocapture) #1
 
 ; Function Attrs: nounwind
-declare dso_local double @sin(double) #2
+declare dso_local double @"llvm.sin.f64"(double) #2
 
 ; Function Attrs: argmemonly nounwind
 declare void @llvm.lifetime.end.p0i8(i64, i8* nocapture) #1

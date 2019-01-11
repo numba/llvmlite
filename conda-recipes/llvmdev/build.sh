@@ -29,11 +29,11 @@ _cmake_config+=(-DCLANG_ENABLE_LIBXML=OFF)
 _cmake_config+=(-DLIBOMP_INSTALL_ALIASES=OFF)
 _cmake_config+=(-DLLVM_ENABLE_RTTI=OFF)
 _cmake_config+=(-DLLVM_TARGETS_TO_BUILD=host)
+_cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
 # TODO :: It would be nice if we had a cross-ecosystem 'BUILD_TIME_LIMITED' env var we could use to
 #         disable these unnecessary but useful things.
 if [[ ${CONDA_FORGE} == yes ]]; then
   _cmake_config+=(-DLLVM_INCLUDE_TESTS=OFF)
-  _cmake_config+=(-DLLVM_INCLUDE_UTILS=OFF)
   _cmake_config+=(-DLLVM_INCLUDE_DOCS=OFF)
   _cmake_config+=(-DLLVM_INCLUDE_EXAMPLES=OFF)
 fi
@@ -71,8 +71,17 @@ cmake -G'Unix Makefiles'     \
 
 ARCH=`uname -m`
 if [ $ARCH == 'armv7l' ]; then # RPi need thread count throttling
-    make -j1 VERBOSE=1
+    make -j2 VERBOSE=1
 else
     make -j${CPU_COUNT} VERBOSE=1
 fi
-make install
+
+# From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
+make install || exit $?
+
+# SVML tests on x86_64 arch only
+if [[ $ARCH == 'x86_64' ]]; then
+    bin/opt -S -vector-library=SVML -mcpu=haswell -O3 $RECIPE_DIR/numba-3016.ll | bin/FileCheck $RECIPE_DIR/numba-3016.ll || exit $?
+fi
+cd ../test
+../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86

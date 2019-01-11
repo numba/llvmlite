@@ -59,7 +59,7 @@ def find_win32_generator():
         generators.append(os.environ.get("CMAKE_GENERATOR"))
 
     # Drop generators that are too old
-    vspat = re.compile('Visual Studio (\d+)')
+    vspat = re.compile(r'Visual Studio (\d+)')
     def drop_old_vs(g):
         m = vspat.match(g)
         if m is None:
@@ -109,9 +109,9 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not out.startswith('6.0.'):
+    if not out.startswith('7.0.'):
         msg = (
-            "Building llvmlite requires LLVM 6.0.x. Be sure to "
+            "Building llvmlite requires LLVM 7.0.x. Be sure to "
             "set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n"
@@ -130,7 +130,7 @@ def main_posix(kind, library_ext):
 
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
-    svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.gen')
+    svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.inc')
     if os.path.isfile(svml_indicator):
         cxxflags = cxxflags + ['-DHAVE_SVML']
         print('SVML detected')

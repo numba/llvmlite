@@ -780,6 +780,11 @@ class TestBuildInstructions(TestBase):
         self.assertEqual(h.type, ir.VoidType())
         i = builder.load(c, 'i', align=1)
         self.assertEqual(i.type, int32)
+        # Atomics
+        j = builder.store_atomic(b, c, ordering="seq_cst", align=4)
+        self.assertEqual(j.type, ir.VoidType())
+        k = builder.load_atomic(c, ordering="seq_cst", align=4, name='k')
+        self.assertEqual(k.type, int32)
         # Not pointer types
         with self.assertRaises(TypeError):
             builder.store(b, a)
@@ -800,6 +805,8 @@ class TestBuildInstructions(TestBase):
                 %"g" = load i32, i32* %"c"
                 store i32 %".2", i32* %"c", align 1
                 %"i" = load i32, i32* %"c", align 1
+                store atomic i32 %".2", i32* %"c" seq_cst, align 4
+                %"k" = load atomic i32, i32* %"c" seq_cst, align 4
             """)
 
     def test_gep(self):
@@ -1176,6 +1183,64 @@ class TestBuildInstructions(TestBase):
                 %"c" = icmp sgt i32 %".1", %".2"
                 call void @"llvm.assume"(i1 %"c")
             """)
+
+    def test_vector_ops(self):
+        block = self.block(name='insert_block')
+        builder = ir.IRBuilder(block)
+        a, b = builder.function.args[:2]
+        a.name = 'a'
+        b.name = 'b'
+
+        vecty = ir.VectorType(a.type, 2)
+        vec = ir.Constant(vecty, ir.Undefined)
+        idxty = ir.IntType(32)
+        vec = builder.insert_element(vec, a, idxty(0), name='vec1')
+        vec = builder.insert_element(vec, b, idxty(1), name='vec2')
+
+        self.check_block(block, """\
+            insert_block:
+                %"vec1" = insertelement <2 x i32> <i32 undef, i32 undef>, i32 %"a", i32 0
+                %"vec2" = insertelement <2 x i32> %"vec1", i32 %"b", i32 1
+            """)
+
+        block = builder.append_basic_block("shuffle_block")
+        builder.branch(block)
+        builder.position_at_end(block)
+
+        mask = ir.Constant(vecty, [1, 0])
+        shuff = builder.shuffle_vector(vec, vec, mask, name='shuf')
+
+        self.check_block(block, """\
+            shuffle_block:
+                %"shuf" = shufflevector <2 x i32> %"vec2", <2 x i32> %"vec2", <2 x i32> <i32 1, i32 0>
+            """)
+
+        block = builder.append_basic_block("add_block")
+        builder.branch(block)
+        builder.position_at_end(block)
+
+        vadd = builder.add(vec, vec, name='sum')
+
+        self.check_block(block, """\
+            add_block:
+                %"sum" = add <2 x i32> %"vec2", %"vec2"
+            """)
+
+        block = builder.append_basic_block("extract_block")
+        builder.branch(block)
+        builder.position_at_end(block)
+
+        c = builder.extract_element(vec, idxty(0), name='ex1')
+        d = builder.extract_element(vec, idxty(1), name='ex2')
+
+        self.check_block(block, """\
+            extract_block:
+              %"ex1" = extractelement <2 x i32> %"vec2", i32 0
+              %"ex2" = extractelement <2 x i32> %"vec2", i32 1
+            """)
+
+        builder.ret(builder.add(c, d))
+        self.assert_valid_ir(builder.module)
 
     def test_bitreverse(self):
         block = self.block(name='my_block')
@@ -1765,6 +1830,11 @@ class TestTypes(TestBase):
         td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
         self.assertEqual(mytype.get_abi_size(td, context=context), 4)
 
+    def test_vector(self):
+        context = ir.Context()
+        vecty = ir.VectorType(ir.IntType(32), 8)
+        self.assertEqual(str(vecty), "<8 x i32>")
+
 
 c32 = lambda i: ir.Constant(int32, i)
 
@@ -1830,6 +1900,14 @@ class TestConstant(TestBase):
         # Invalid number of args
         with self.assertRaises(ValueError):
             ir.Constant(ir.ArrayType(int32, 3), (5, 6))
+
+    def test_vector(self):
+        vecty = ir.VectorType(ir.IntType(32), 8)
+        vals = [1, 2, 4, 3, 8, 6, 9, 7]
+        vec = ir.Constant(vecty, vals)
+        vec_repr = "<8 x i32> <{}>".format(
+            ', '.join(map('i32 {}'.format, vals)))
+        self.assertEqual(str(vec), vec_repr)
 
     def test_structs(self):
         st1 = ir.LiteralStructType((flt, int1))

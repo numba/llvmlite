@@ -93,11 +93,11 @@ class ExecutionEngine(ffi.ObjectRef):
         and "usable" for execution.
         """
         ffi.lib.LLVMPY_FinalizeObject(self)
-    
+
     def run_static_constructors(self):
         """Run static constructors which initialize module-level static objects."""
         ffi.lib.LLVMPY_RunStaticConstructors(self)
-    
+
     def run_static_destructors(self):
         """Run static destructors which perform module-level cleanup of static resources."""
         ffi.lib.LLVMPY_RunStaticDestructors(self)
@@ -142,6 +142,17 @@ class ExecutionEngine(ffi.ObjectRef):
             if cast(module._ptr, c_void_p).value == ptr:
                 return module
         return None
+
+    def add_object_file(self, obj_file):
+        """
+        Add object file to the jit. object_file can be instance of
+        :class:ObjectFile or a string representing file system path
+        """
+        if isinstance(obj_file, str):
+            obj_file = object_file.ObjectFileRef.from_path(obj_file)
+
+        ffi.lib.LLVMPY_MCJITAddObjectFile(self, obj_file)
+
 
     def set_object_cache(self, notify_func=None, getbuffer_func=None):
         """
@@ -269,6 +280,10 @@ ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [
 ]
 ffi.lib.LLVMPY_GetGlobalValueAddress.restype = c_uint64
 
+ffi.lib.LLVMPY_MCJITAddObjectFile.argtypes = [
+    ffi.LLVMExecutionEngineRef,
+    ffi.LLVMObjectFileRef
+]
 
 class _ObjectCacheData(Structure):
     _fields_ = [
