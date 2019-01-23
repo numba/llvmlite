@@ -134,6 +134,22 @@ def _castop(opname, cls=instructions.CastInstr):
     return wrap
 
 
+def _label_suffix(label, suffix):
+    """Returns (label + suffix) or a truncated version if it's too long.
+    Parameters
+    ----------
+    label : str
+        Label name
+    suffix : str
+        Label suffix
+    """
+    if len(label) > 50:
+        nhead = 25
+        return ''.join([label[:nhead], '..', suffix])
+    else:
+        return label + suffix
+
+
 class IRBuilder(object):
     def __init__(self, block=None):
         self._block = block
@@ -245,8 +261,8 @@ class IRBuilder(object):
         for LLVM's optimizers to account for that.
         """
         bb = self.basic_block
-        bbif = self.append_basic_block(name=bb.name + '.if')
-        bbend = self.append_basic_block(name=bb.name + '.endif')
+        bbif = self.append_basic_block(name=_label_suffix(bb.name, '.if'))
+        bbend = self.append_basic_block(name=_label_suffix(bb.name, '.endif'))
         br = self.cbranch(pred, bbif, bbend)
         if likely is not None:
             br.set_weights([99, 1] if likely else [1, 99])
@@ -273,9 +289,9 @@ class IRBuilder(object):
                     # emit instructions for when the predicate is false
         """
         bb = self.basic_block
-        bbif = self.append_basic_block(name=bb.name + '.if')
-        bbelse = self.append_basic_block(name=bb.name + '.else')
-        bbend = self.append_basic_block(name=bb.name + '.endif')
+        bbif = self.append_basic_block(name=_label_suffix(bb.name, '.if'))
+        bbelse = self.append_basic_block(name=_label_suffix(bb.name, '.else'))
+        bbend = self.append_basic_block(name=_label_suffix(bb.name, '.endif'))
         br = self.cbranch(pred, bbif, bbelse)
         if likely is not None:
             br.set_weights([99, 1] if likely else [1, 99])

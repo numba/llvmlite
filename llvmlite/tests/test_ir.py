@@ -1541,6 +1541,34 @@ class TestBuilderMisc(TestBase):
                 br label %"one.endif"
             """)
 
+
+    def test_if_then_long_label(self):
+        full_label = 'Long'*20
+        block = self.block(name=full_label)
+        builder = ir.IRBuilder(block)
+        z = ir.Constant(int1, 0)
+        a = builder.add(z, z, 'a')
+        with builder.if_then(a) as bbend:
+            b = builder.add(z, z, 'b')
+            with builder.if_then(b) as bbend:
+                c = builder.add(z, z, 'c')
+        builder.ret_void()
+        self.check_func_body(builder.function, """\
+            {full_label}:
+                %"a" = add i1 0, 0
+                br i1 %"a", label %"{label}.if", label %"{label}.endif"
+            {label}.if:
+                %"b" = add i1 0, 0
+                br i1 %"b", label %"{label}.if.if", label %"{label}.if.endif"
+            {label}.endif:
+                ret void
+            {label}.if.if:
+                %"c" = add i1 0, 0
+                br label %"{label}.if.endif"
+            {label}.if.endif:
+                br label %"{label}.endif"
+            """.format(full_label=full_label, label=full_label[:25] + '..'))
+
     def test_if_then_likely(self):
         def check(likely):
             block = self.block(name='one')
