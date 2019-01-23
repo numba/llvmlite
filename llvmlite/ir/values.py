@@ -103,6 +103,12 @@ class _Undefined(object):
     """
     'undef': a value for undefined values.
     """
+    def __new__(cls):
+        try:
+            return Undefined
+        except NameError:
+            return object.__new__(_Undefined)
+
 
 Undefined = _Undefined()
 
@@ -544,9 +550,10 @@ class FunctionAttributes(AttributeSet):
         'sanitize_memory', 'sanitize_thread', 'ssp',
         'sspreg', 'sspstrong', 'uwtable'])
 
-    def __init__(self):
+    def __init__(self, args=()):
         self._alignstack = 0
         self._personality = None
+        super(FunctionAttributes, self).__init__(args)
 
     @property
     def alignstack(self):
@@ -670,10 +677,11 @@ class ArgumentAttributes(AttributeSet):
                         'nocapture', 'nonnull', 'returned', 'signext',
                         'sret', 'zeroext'])
 
-    def __init__(self):
+    def __init__(self, args=()):
         self._align = 0
         self._dereferenceable = 0
         self._dereferenceable_or_null = 0
+        super(ArgumentAttributes, self).__init__(args)
 
     @property
     def align(self):
