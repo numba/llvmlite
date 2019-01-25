@@ -1,8 +1,8 @@
 {% set shortversion = "7.0" %}
-{% set version = "7.0.0" %}
-{% set sha256_llvm = "8bc1f844e6cbde1b652c19c1edebc1864456fd9c78b8c1bea038e51b363fe222" %}
-{% set sha256_lld = "fbcf47c5e543f4cdac6bb9bbbc6327ff24217cd7eafc5571549ad6d237287f9c" %}
-{% set build_number = "1" %}
+{% set version = "7.0.1" %}
+{% set sha256_llvm = "a38dfc4db47102ec79dcc2aa61e93722c5f6f06f0a961073bd84b78fb949419b" %}
+{% set sha256_lld = "8869aab2dd2d8e00d69943352d3166d159d7eae2615f66a684f4a0999fc74031" %}
+{% set build_number = "0" %}
 
 package:
   name: llvmdev
@@ -24,11 +24,6 @@ source:
     - ../D47188-svml-VF.patch
     # undefined behavior bug due to Twine usage
     - ../twine_cfg_undefined_behavior.patch
-    # Patches for X86 common symbols over-allocation and testing thereof, see
-    # https://reviews.llvm.org/D50240 and https://reviews.llvm.org/rL340788
-    # for details:
-    - ../0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch
-    - ../0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch
 
   - url: http://releases.llvm.org/{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
