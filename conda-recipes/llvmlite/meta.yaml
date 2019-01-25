@@ -1,4 +1,4 @@
-{% set VERSION_SUFFIX = "" %} # debug version suffix, appended to the version
+{% set VERSION_SUFFIX = "_perf_tool" %} # debug version suffix, appended to the version
 
 package:
   name: llvmlite
@@ -27,11 +27,11 @@ requirements:
   host:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 7.0*
+    - llvmdev 7.0.0_perf_tool*
     - vs2015_runtime # [win]
     - enum34         # [py27]
     # llvmdev is built with libz compression support
-    - zlib           # [unix and not (armv6l or armv7l or aarch64)] 
+    - zlib           # [unix and not (armv6l or armv7l or aarch64)]
   run:
     - python
     - enum34         # [py27]

@@ -53,6 +53,7 @@ if [[ $(uname) == Darwin ]]; then
   _cmake_config+=(-DDARWIN_osx_ARCHS=x86_64)
 elif [[ $(uname) == Linux ]]; then
   _cmake_config+=(-DLLVM_USE_INTEL_JITEVENTS=ON)
+  _cmake_config+=(-DLLVM_USE_PERF=ON)
 #  _cmake_config+=(-DLLVM_BINUTILS_INCDIR=${PREFIX}/lib/gcc/${cpu_arch}-${vendor}-linux-gnu/${compiler_ver}/plugin/include)
 fi
 

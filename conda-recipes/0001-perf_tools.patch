@@ -1,0 +1,82 @@
+From 438c17d4ccea4acbde0440fb09afd9619c28f4bf Mon Sep 17 00:00:00 2001
+From: Stuart Archibald <redacted>
+Date: Fri, 25 Jan 2019 15:21:06 +0000
+Subject: [PATCH] This patch is based on https://reviews.llvm.org/D47343
+
+It is almost certainly invalid and not the right way to do this (not as a
+result of D47343 but as a result of it being shoehorned in), however, it has
+the desired effect to permit exploration of linux perf with Numba JIT.
+---
+
+
+---
+ lib/ExecutionEngine/GDBRegistrationListener.cpp |  4 ++--
+ lib/ExecutionEngine/MCJIT/MCJIT.cpp             | 16 ++++++++++++++--
+ lib/ExecutionEngine/MCJIT/MCJIT.h               |  2 ++
+ 3 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/lib/ExecutionEngine/GDBRegistrationListener.cpp b/lib/ExecutionEngine/GDBRegistrationListener.cpp
+index fd4f0746..041e6261 100644
+--- a/lib/ExecutionEngine/GDBRegistrationListener.cpp
++++ b/lib/ExecutionEngine/GDBRegistrationListener.cpp
+@@ -164,8 +164,8 @@ void GDBJITRegistrationListener::NotifyObjectEmitted(
+ 
+   assert(Key && "Attempt to register a null object with a debugger.");
+   llvm::MutexGuard locked(*JITDebugLock);
+-  assert(ObjectBufferMap.find(Key) == ObjectBufferMap.end() &&
+-         "Second attempt to perform debug registration.");
++//  assert(ObjectBufferMap.find(Key) == ObjectBufferMap.end() &&
++//         "Second attempt to perform debug registration.");
+   jit_code_entry* JITCodeEntry = new jit_code_entry();
+ 
+   if (!JITCodeEntry) {
+diff --git a/lib/ExecutionEngine/MCJIT/MCJIT.cpp b/lib/ExecutionEngine/MCJIT/MCJIT.cpp
+index 2c663c2e..b2439eef 100644
+--- a/lib/ExecutionEngine/MCJIT/MCJIT.cpp
++++ b/lib/ExecutionEngine/MCJIT/MCJIT.cpp
+@@ -226,8 +226,10 @@ void MCJIT::generateCodeForModule(Module *M) {
+   if (Dyld.hasError())
+     report_fatal_error(Dyld.getErrorString());
+ 
+-  NotifyObjectEmitted(*LoadedObject.get(), *L);
+-
++  // Can't call notifiers yet, as relocations have not yet been
++  // performed, and memory hasn't been marked executable.
++  PendingLoadedObjects.push_back(LoadedObject->get());
++  PendingLoadedObjectInfos.push_back(std::move(L));
+   Buffers.push_back(std::move(ObjectToLoad));
+   LoadedObjects.push_back(std::move(*LoadedObject));
+ 
+@@ -247,6 +249,16 @@ void MCJIT::finalizeLoadedModules() {
+ 
+   // Set page permissions.
+   MemMgr->finalizeMemory();
++
++  // Notify listeners about loaded objects, now that memory is marked
++  // executable and relocations have been performed.
++  for (size_t i = 0; i < PendingLoadedObjects.size(); i++) {
++    auto &Obj = PendingLoadedObjects[i];
++    auto &Info = PendingLoadedObjectInfos[i];
++    NotifyObjectEmitted(*Obj, *Info);
++  }
++  PendingLoadedObjects.clear();
++  PendingLoadedObjectInfos.clear();
+ }
+ 
+ // FIXME: Rename this.
+diff --git a/lib/ExecutionEngine/MCJIT/MCJIT.h b/lib/ExecutionEngine/MCJIT/MCJIT.h
+index 943b1494..c1f3016e 100644
+--- a/lib/ExecutionEngine/MCJIT/MCJIT.h
++++ b/lib/ExecutionEngine/MCJIT/MCJIT.h
+@@ -190,6 +190,8 @@ class MCJIT : public ExecutionEngine {
+   SmallVector<std::unique_ptr<MemoryBuffer>, 2> Buffers;
+ 
+   SmallVector<std::unique_ptr<object::ObjectFile>, 2> LoadedObjects;
++  SmallVector<object::ObjectFile*, 2> PendingLoadedObjects;
++  SmallVector<std::unique_ptr<RuntimeDyld::LoadedObjectInfo>, 2> PendingLoadedObjectInfos;
+ 
+   // An optional ObjectCache to be notified of compiled objects and used to
+   // perform lookup of pre-compiled code to avoid re-compilation.
+-- 
+2.17.1
+

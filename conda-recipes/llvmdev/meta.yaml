@@ -1,12 +1,13 @@
 {% set shortversion = "7.0" %}
 {% set version = "7.0.0" %}
+{% set version_suffix = "_perf_tool" %}
 {% set sha256_llvm = "8bc1f844e6cbde1b652c19c1edebc1864456fd9c78b8c1bea038e51b363fe222" %}
 {% set sha256_lld = "fbcf47c5e543f4cdac6bb9bbbc6327ff24217cd7eafc5571549ad6d237287f9c" %}
-{% set build_number = "1" %}
+{% set build_number = "0" %}
 
 package:
   name: llvmdev
-  version: {{ version }}
+  version: {{ "%s%s" % (version, version_suffix) }}
 
 source:
   - url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
@@ -29,6 +30,9 @@ source:
     # for details:
     - ../0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch
     - ../0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch
+    # Patch based on: https://reviews.llvm.org/D47343
+    # to allow linux perf to work with MCJIT
+    - ../0001-perf_tools.patch # [linux]
 
   - url: http://releases.llvm.org/{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
