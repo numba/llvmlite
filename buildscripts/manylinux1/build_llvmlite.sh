@@ -21,7 +21,7 @@ source activate $envname
 # Install llvmdev
 conda install -y -c numba/label/manylinux1 llvmdev
 if [[ "$PYVER"="cp27-cp27mu" ]]; then
-    conda install -y backports.tempfile
+    conda install -y -c conda-forge backports.tempfile
 fi
 
 # Prepend builtin Python Path
