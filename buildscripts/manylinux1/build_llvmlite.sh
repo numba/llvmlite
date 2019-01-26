@@ -20,14 +20,15 @@ conda create -y -n $envname
 source activate $envname
 # Install llvmdev
 conda install -y -c numba/label/manylinux1 llvmdev
-if [[ "$PYVER"="cp27-cp27mu" ]]; then
-    conda install -y -c conda-forge backports.tempfile
-fi
 
 # Prepend builtin Python Path
 export PATH=/opt/python/$pyver/bin:$PATH
 
 echo "Using python: $(which python)"
+
+if [[ "$PYVER"="cp27-cp27mu" ]]; then
+    pip install backports.tempfile
+fi
 
 # Clean up
 git clean -xdf llvmlite build
