@@ -20,7 +20,7 @@ conda create -y -n $envname
 source activate $envname
 # Install llvmdev
 conda install -y -c numba/label/manylinux1 llvmdev
-if [ "$PYTHON" == "2.7" ]; then
+if [[ "$PYVER"="cp27-cp27mu" ]]; then
     pip install backports.tempfile
 fi
 
