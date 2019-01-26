@@ -20,6 +20,9 @@ conda create -y -n $envname
 source activate $envname
 # Install llvmdev
 conda install -y -c numba/label/manylinux1 llvmdev
+if [ "$PYTHON" == "2.7" ]; then
+    pip install backports.tempfile
+fi
 
 # Prepend builtin Python Path
 export PATH=/opt/python/$pyver/bin:$PATH
