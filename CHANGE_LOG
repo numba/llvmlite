@@ -3,6 +3,14 @@ v0.28.0
 
 In development.
 
+
+v0.27.1
+-------
+
+Bugfix release for invalid wheel hash for OSX packages.
+No change to source code.
+
+
 v0.27.0
 -------
 
