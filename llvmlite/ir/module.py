@@ -179,7 +179,7 @@ class Module(object):
         elif len(tys) == 2:
             if intrinsic == 'llvm.memset':
                 tys = [tys[0], types.IntType(8), tys[1],
-                       types.IntType(32), types.IntType(1)]
+                    types.IntType(1)]
                 fnty = types.FunctionType(types.VoidType(), tys)
             elif intrinsic in {'llvm.cttz', 'llvm.ctlz'}:
                 tys = [tys[0], types.IntType(1)]
