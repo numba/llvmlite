@@ -188,7 +188,7 @@ class Module(object):
                 _error()
         elif len(tys) == 3:
             if intrinsic in ('llvm.memcpy', 'llvm.memmove'):
-                tys = tys + [types.IntType(32), types.IntType(1)]
+                tys = tys + [types.IntType(1)]
                 fnty = types.FunctionType(types.VoidType(), tys)
             elif intrinsic == 'llvm.fma':
                 tys = [tys[0]] * 3
