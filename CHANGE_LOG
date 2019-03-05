@@ -1,7 +1,21 @@
 v0.28.0
 -------
 
-In development.
+This release adds a number of community contributed features, including
+support for vector types, as well as atomic loads and stores.
+
+* PR #322: Adding Vector Type
+* PR #389: Add symbols from static object files
+* PR #417: Add support for atomic loads/stores
+* PR #422: Normalize replace_* behaviour and add docs
+* PR #426: Fix pickling of IR functions and add tests
+* PR #444: Setup manylinux1 buildscripts and CI
+* PR #446: Document need for -p1 argument to patch command
+* PR #448: Fix "SyntaxWarning: invalid escape sequence \d"
+* PR #449: Consolidate the two vector type PRs
+* PR #452: Some adjustments to pr426
+* PR #454: Truncate long label names when adding label suffix.
+* PR #458: Add changelog info about v0.27.1
 
 
 v0.27.1
