@@ -240,24 +240,6 @@ class _FunctionsIterator(_Iterator):
         return ffi.lib.LLVMPY_FunctionsIterNext(self)
 
 
-class _BlocksIterator(_Iterator):
-
-    def _dispose(self):
-        self._capi.LLVMPY_DisposeBlocksIter(self)
-
-    def _next(self):
-        return ffi.lib.LLVMPY_BlocksIterNext(self)
-
-
-class _InstructionsIterator(_Iterator):
-
-    def _dispose(self):
-        self._capi.LLVMPY_DisposeInstructionsIter(self)
-
-    def _next(self):
-        return ffi.lib.LLVMPY_InstructionsIterNext(self)
-
-
 class _TypesIterator(_Iterator):
 
     def _dispose(self):
@@ -328,20 +310,10 @@ ffi.lib.LLVMPY_GlobalsIterNext.restype = ffi.LLVMValueRef
 ffi.lib.LLVMPY_ModuleFunctionsIter.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_ModuleFunctionsIter.restype = ffi.LLVMFunctionsIterator
 
-ffi.lib.LLVMPY_FunctionBlocksIter.argtypes = [ffi.LLVMValueRef]
-ffi.lib.LLVMPY_FunctionBlocksIter.restype = ffi.LLVMBlocksIterator
-
-ffi.lib.LLVMPY_BlockInstructionsIter.argtypes = [ffi.LLVMValueRef]
-ffi.lib.LLVMPY_BlockInstructionsIter.restype = ffi.LLVMInstructionsIterator
-
 ffi.lib.LLVMPY_ModuleTypesIter.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_ModuleTypesIter.restype = ffi.LLVMTypesIterator
 
 ffi.lib.LLVMPY_DisposeFunctionsIter.argtypes = [ffi.LLVMFunctionsIterator]
-
-ffi.lib.LLVMPY_DisposeBlocksIter.argtypes = [ffi.LLVMBlocksIterator]
-
-ffi.lib.LLVMPY_DisposeInstructionsIter.argtypes = [ffi.LLVMInstructionsIterator]
 
 ffi.lib.LLVMPY_DisposeTypesIter.argtypes = [ffi.LLVMTypesIterator]
 

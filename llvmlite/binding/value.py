@@ -3,7 +3,7 @@ import enum
 
 from . import ffi
 from .common import _decode_string, _encode_string
-from . import module
+
 
 class Linkage(enum.IntEnum):
     # The LLVMLinkage enum from llvm-c/Core.h
@@ -78,8 +78,10 @@ class ValueRef(ffi.ObjectRef):
     """A weak reference to a LLVM value.
     """
 
-    def __init__(self, ptr, module):
+    def __init__(self, ptr, module, function=None, block=None):
         self._module = module
+        self._function = function
+        self._block = block
         ffi.ObjectRef.__init__(self, ptr)
 
     def __str__(self):
@@ -93,6 +95,32 @@ class ValueRef(ffi.ObjectRef):
         The module this value was obtained from.
         """
         return self._module
+
+    @property
+    def function(self):
+        """
+        The function this value was obtained from.
+        """
+        return self._function
+
+    @property
+    def block(self):
+        """
+        The block this value was obtained from.
+        """
+        return self._block
+
+    @property
+    def is_function(self):
+        return self._function is None and self._module is not None
+
+    @property
+    def is_block(self):
+        return self._block is None and self._function is not None
+
+    @property
+    def is_instruction(self):
+        return self._block is not None
 
     @property
     def name(self):
@@ -165,13 +193,60 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def blocks(self):
+        """
+        Return an iterator over this function's blocks.
+        The iterator will yield a ValueRef for each block.
+        """
         it = ffi.lib.LLVMPY_FunctionBlocksIter(self)
-        return module._BlocksIterator(it, module=self._module)
+        return _BlocksIterator(it, self._module, self)
 
     @property
     def instructions(self):
+        """
+        Return an iterator over this block's instructions.
+        The iterator will yield a ValueRef for each instruction.
+        """
         it = ffi.lib.LLVMPY_BlockInstructionsIter(self)
-        return module._InstructionsIterator(it, module=self._module)
+        return _InstructionsIterator(it, self._module, self._function, self)
+
+
+class _ValueIterator(ffi.ObjectRef):
+
+    def __init__(self, ptr, *parents):
+        ffi.ObjectRef.__init__(self, ptr)
+        # Keep Module alive
+        self._parents = parents
+
+    def __next__(self):
+        vp = self._next()
+        if vp:
+            return ValueRef(vp, *self._parents)
+        else:
+            raise StopIteration
+
+    next = __next__
+
+    def __iter__(self):
+        return self
+
+
+class _BlocksIterator(_ValueIterator):
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeBlocksIter(self)
+
+    def _next(self):
+        return ffi.lib.LLVMPY_BlocksIterNext(self)
+
+
+class _InstructionsIterator(_ValueIterator):
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeInstructionsIter(self)
+
+    def _next(self):
+        return ffi.lib.LLVMPY_InstructionsIterNext(self)
+
 
 # FFI
 
@@ -226,3 +301,20 @@ ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_uint]
 
 ffi.lib.LLVMPY_IsDeclaration.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_IsDeclaration.restype = c_int
+
+
+ffi.lib.LLVMPY_FunctionBlocksIter.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_FunctionBlocksIter.restype = ffi.LLVMBlocksIterator
+
+ffi.lib.LLVMPY_BlockInstructionsIter.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_BlockInstructionsIter.restype = ffi.LLVMInstructionsIterator
+
+ffi.lib.LLVMPY_DisposeBlocksIter.argtypes = [ffi.LLVMBlocksIterator]
+
+ffi.lib.LLVMPY_DisposeInstructionsIter.argtypes = [ffi.LLVMInstructionsIterator]
+
+ffi.lib.LLVMPY_BlocksIterNext.argtypes = [ffi.LLVMBlocksIterator]
+ffi.lib.LLVMPY_BlocksIterNext.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_InstructionsIterNext.argtypes = [ffi.LLVMInstructionsIterator]
+ffi.lib.LLVMPY_InstructionsIterNext.restype = ffi.LLVMValueRef
