@@ -3,7 +3,7 @@ import enum
 
 from . import ffi
 from .common import _decode_string, _encode_string
-
+from . import module
 
 class Linkage(enum.IntEnum):
     # The LLVMLinkage enum from llvm-c/Core.h
@@ -163,6 +163,15 @@ class ValueRef(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
+    @property
+    def blocks(self):
+        it = ffi.lib.LLVMPY_FunctionBlocksIter(self)
+        return module._BlocksIterator(it, module=self._module)
+
+    @property
+    def instructions(self):
+        it = ffi.lib.LLVMPY_BlockInstructionsIter(self)
+        return module._InstructionsIterator(it, module=self._module)
 
 # FFI
 

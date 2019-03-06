@@ -3,6 +3,7 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/Analysis.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/Function.h"
 #include "llvm/IR/TypeFinder.h"
 #include "core.h"
 
@@ -35,6 +36,34 @@ struct FunctionsIterator {
 
 struct OpaqueFunctionsIterator;
 typedef OpaqueFunctionsIterator* LLVMFunctionsIteratorRef;
+
+/* An iterator around a function's blocks, including the stop condition */
+struct BlocksIterator {
+    typedef llvm::Function::const_iterator const_iterator;
+    const_iterator cur;
+    const_iterator end;
+
+    BlocksIterator(const_iterator cur, const_iterator end)
+        :cur(cur), end(end)
+    { }
+};
+
+struct OpaqueBlocksIterator;
+typedef OpaqueBlocksIterator* LLVMBlocksIteratorRef;
+
+/* An iterator around a basic block's instructions, including the stop condition */
+struct InstructionsIterator {
+    typedef llvm::BasicBlock::const_iterator const_iterator;
+    const_iterator cur;
+    const_iterator end;
+
+    InstructionsIterator(const_iterator cur, const_iterator end)
+        :cur(cur), end(end)
+    { }
+};
+
+struct OpaqueInstructionsIterator;
+typedef OpaqueInstructionsIterator* LLVMInstructionsIteratorRef;
 
 /* module types iterator */
 class TypesIterator {
@@ -81,6 +110,26 @@ wrap(FunctionsIterator* GI){
 static FunctionsIterator*
 unwrap(LLVMFunctionsIteratorRef GI){
     return reinterpret_cast<FunctionsIterator *>(GI);
+}
+
+static LLVMBlocksIteratorRef
+wrap(BlocksIterator* GI){
+    return reinterpret_cast<LLVMBlocksIteratorRef>(GI);
+}
+
+static BlocksIterator*
+unwrap(LLVMBlocksIteratorRef GI){
+    return reinterpret_cast<BlocksIterator *>(GI);
+}
+
+static LLVMInstructionsIteratorRef
+wrap(InstructionsIterator* GI){
+    return reinterpret_cast<LLVMInstructionsIteratorRef>(GI);
+}
+
+static InstructionsIterator*
+unwrap(LLVMInstructionsIteratorRef GI){
+    return reinterpret_cast<InstructionsIterator *>(GI);
 }
 
 static LLVMTypesIteratorRef
@@ -215,6 +264,24 @@ LLVMPY_ModuleFunctionsIter(LLVMModuleRef M)
                                       mod->end()));
 }
 
+API_EXPORT(LLVMBlocksIteratorRef)
+LLVMPY_FunctionBlocksIter(LLVMValueRef F)
+{
+    using namespace llvm;
+    Function* func = unwrap<Function>(F);
+    return wrap(new BlocksIterator(func->begin(),
+                                    func->end()));
+}
+
+API_EXPORT(LLVMInstructionsIteratorRef)
+LLVMPY_BlockInstructionsIter(LLVMValueRef B)
+{
+    using namespace llvm;
+    BasicBlock* block = unwrap<BasicBlock>(B);
+    return wrap(new InstructionsIterator(block->begin(),
+                                         block->end()));
+}
+
 API_EXPORT(LLVMTypesIteratorRef)
 LLVMPY_ModuleTypesIter(LLVMModuleRef M)
 {
@@ -251,6 +318,30 @@ LLVMPY_FunctionsIterNext(LLVMFunctionsIteratorRef GI)
     }
 }
 
+API_EXPORT(LLVMValueRef)
+LLVMPY_BlocksIterNext(LLVMBlocksIteratorRef GI)
+{
+    using namespace llvm;
+    BlocksIterator* iter = unwrap(GI);
+    if (iter->cur != iter->end) {
+      return wrap(static_cast<const Value*>(&*iter->cur++));
+    } else {
+        return NULL;
+    }
+}
+
+API_EXPORT(LLVMValueRef)
+LLVMPY_InstructionsIterNext(LLVMInstructionsIteratorRef GI)
+{
+    using namespace llvm;
+    InstructionsIterator* iter = unwrap(GI);
+    if (iter->cur != iter->end) {
+      return wrap(&*iter->cur++);
+    } else {
+        return NULL;
+    }
+}
+
 API_EXPORT(LLVMTypeRef)
 LLVMPY_TypesIterNext(LLVMTypesIteratorRef TyI)
 {
@@ -270,12 +361,22 @@ LLVMPY_DisposeFunctionsIter(LLVMFunctionsIteratorRef GI)
 }
 
 API_EXPORT(void)
+LLVMPY_DisposeBlocksIter(LLVMBlocksIteratorRef GI)
+{
+    delete llvm::unwrap(GI);
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeInstructionsIter(LLVMInstructionsIteratorRef GI)
+{
+    delete llvm::unwrap(GI);
+}
+
+API_EXPORT(void)
 LLVMPY_DisposeTypesIter(LLVMTypesIteratorRef TyI)
 {
     delete llvm::unwrap(TyI);
 }
-
-
 
 API_EXPORT(LLVMModuleRef)
 LLVMPY_CloneModule(LLVMModuleRef M)
