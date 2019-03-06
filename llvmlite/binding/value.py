@@ -78,10 +78,11 @@ class ValueRef(ffi.ObjectRef):
     """A weak reference to a LLVM value.
     """
 
-    def __init__(self, ptr, module, function=None, block=None):
+    def __init__(self, ptr, module, function=None, block=None, instruction=None):
         self._module = module
         self._function = function
         self._block = block
+        self._instruction = instruction
         ffi.ObjectRef.__init__(self, ptr)
 
     def __str__(self):
@@ -120,7 +121,11 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def is_instruction(self):
-        return self._block is not None
+        return self._instruction is None and self._block is not None
+
+    @property
+    def is_operand(self):
+        return self._instruction is not None
 
     @property
     def name(self):
@@ -209,6 +214,18 @@ class ValueRef(ffi.ObjectRef):
         it = ffi.lib.LLVMPY_BlockInstructionsIter(self)
         return _InstructionsIterator(it, self._module, self._function, self)
 
+    @property
+    def operands(self):
+        """
+        Return an iterator over this instruction's operands.
+        The iterator will yield a ValueRef for each operand.
+        """
+        it = ffi.lib.LLVMPY_InstructionOpsIter(self)
+        return _OpsIterator(it, self._module, self._function, self._instruction, self)
+
+    @property
+    def opcode(self):
+        return _decode_string(ffi.lib.LLVMPY_GetOpcodeName(self))
 
 class _ValueIterator(ffi.ObjectRef):
 
@@ -247,6 +264,13 @@ class _InstructionsIterator(_ValueIterator):
     def _next(self):
         return ffi.lib.LLVMPY_InstructionsIterNext(self)
 
+class _OpsIterator(_ValueIterator):
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeOpsIter(self)
+
+    def _next(self):
+        return ffi.lib.LLVMPY_OpsIterNext(self)
 
 # FFI
 
@@ -309,12 +333,23 @@ ffi.lib.LLVMPY_FunctionBlocksIter.restype = ffi.LLVMBlocksIterator
 ffi.lib.LLVMPY_BlockInstructionsIter.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_BlockInstructionsIter.restype = ffi.LLVMInstructionsIterator
 
+ffi.lib.LLVMPY_InstructionOpsIter.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_InstructionOpsIter.restype = ffi.LLVMOpsIterator
+
 ffi.lib.LLVMPY_DisposeBlocksIter.argtypes = [ffi.LLVMBlocksIterator]
 
 ffi.lib.LLVMPY_DisposeInstructionsIter.argtypes = [ffi.LLVMInstructionsIterator]
+
+ffi.lib.LLVMPY_DisposeOpsIter.argtypes = [ffi.LLVMOpsIterator]
 
 ffi.lib.LLVMPY_BlocksIterNext.argtypes = [ffi.LLVMBlocksIterator]
 ffi.lib.LLVMPY_BlocksIterNext.restype = ffi.LLVMValueRef
 
 ffi.lib.LLVMPY_InstructionsIterNext.argtypes = [ffi.LLVMInstructionsIterator]
 ffi.lib.LLVMPY_InstructionsIterNext.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_OpsIterNext.argtypes = [ffi.LLVMOpsIterator]
+ffi.lib.LLVMPY_OpsIterNext.restype = ffi.LLVMValueRef
+
+ffi.lib.LLVMPY_GetOpcodeName.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetOpcodeName.restype = c_char_p

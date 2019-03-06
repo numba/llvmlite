@@ -147,5 +147,18 @@ LLVMPY_WriteCFG(LLVMValueRef Fval, const char **OutStr, int ShowInst) {
     *OutStr = LLVMPY_CreateString(stream.str().c_str());
 }
 
+API_EXPORT(const char *)
+LLVMPY_GetOpcodeName(LLVMValueRef Val)
+{
+    // try to convert to a struct type, works for other derived
+    // types too
+    llvm::Value* unwrapped = llvm::unwrap(Val);
+    llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(unwrapped);
+    if (inst) {
+        return strdup(inst->getOpcodeName());
+    }
+    return strdup("");
+}
+
 
 } // end extern "C"

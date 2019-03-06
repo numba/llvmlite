@@ -17,8 +17,10 @@ for f in m.functions:
         assert b.block is None
         assert b.is_block and not (b.is_function or b.is_instruction)
         for i in b.instructions:
-            print(f'Instruction: {i.name}/`{i.type}`: `{i}`')
+            print(f'Instruction: {i.name}/`{i.opcode}`/`{i.type}`: `{i}`')
             assert i.module is m
             assert i.function is f
             assert i.block is b
             assert i.is_instruction and not (i.is_function or i.is_block)
+            for o in i.operands:
+                print(f'Operand: {o.name}/{o.type}')

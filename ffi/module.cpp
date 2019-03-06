@@ -65,6 +65,20 @@ struct InstructionsIterator {
 struct OpaqueInstructionsIterator;
 typedef OpaqueInstructionsIterator* LLVMInstructionsIteratorRef;
 
+/* An iterator around a instruction's operands, including the stop condition */
+struct OpsIterator {
+    typedef llvm::Instruction::const_op_iterator const_iterator;
+    const_iterator cur;
+    const_iterator end;
+
+    OpsIterator(const_iterator cur, const_iterator end)
+        :cur(cur), end(end)
+    { }
+};
+
+struct OpaqueOpsIterator;
+typedef OpaqueOpsIterator* LLVMOpsIteratorRef;
+
 /* module types iterator */
 class TypesIterator {
 private:
@@ -130,6 +144,16 @@ wrap(InstructionsIterator* GI){
 static InstructionsIterator*
 unwrap(LLVMInstructionsIteratorRef GI){
     return reinterpret_cast<InstructionsIterator *>(GI);
+}
+
+static LLVMOpsIteratorRef
+wrap(OpsIterator* GI){
+    return reinterpret_cast<LLVMOpsIteratorRef>(GI);
+}
+
+static OpsIterator*
+unwrap(LLVMOpsIteratorRef GI){
+    return reinterpret_cast<OpsIterator *>(GI);
 }
 
 static LLVMTypesIteratorRef
@@ -270,7 +294,7 @@ LLVMPY_FunctionBlocksIter(LLVMValueRef F)
     using namespace llvm;
     Function* func = unwrap<Function>(F);
     return wrap(new BlocksIterator(func->begin(),
-                                    func->end()));
+                                   func->end()));
 }
 
 API_EXPORT(LLVMInstructionsIteratorRef)
@@ -280,6 +304,15 @@ LLVMPY_BlockInstructionsIter(LLVMValueRef B)
     BasicBlock* block = unwrap<BasicBlock>(B);
     return wrap(new InstructionsIterator(block->begin(),
                                          block->end()));
+}
+
+API_EXPORT(LLVMOpsIteratorRef)
+LLVMPY_InstructionOpsIter(LLVMValueRef I)
+{
+    using namespace llvm;
+    Instruction* inst = unwrap<Instruction>(I);
+    return wrap(new OpsIterator(inst->op_begin(),
+                                inst->op_end()));
 }
 
 API_EXPORT(LLVMTypesIteratorRef)
@@ -342,6 +375,18 @@ LLVMPY_InstructionsIterNext(LLVMInstructionsIteratorRef GI)
     }
 }
 
+API_EXPORT(LLVMValueRef)
+LLVMPY_OpsIterNext(LLVMOpsIteratorRef GI)
+{
+    using namespace llvm;
+    OpsIterator* iter = unwrap(GI);
+    if (iter->cur != iter->end) {
+      return wrap((&*iter->cur++)->get());
+    } else {
+        return NULL;
+    }
+}
+
 API_EXPORT(LLVMTypeRef)
 LLVMPY_TypesIterNext(LLVMTypesIteratorRef TyI)
 {
@@ -368,6 +413,12 @@ LLVMPY_DisposeBlocksIter(LLVMBlocksIteratorRef GI)
 
 API_EXPORT(void)
 LLVMPY_DisposeInstructionsIter(LLVMInstructionsIteratorRef GI)
+{
+    delete llvm::unwrap(GI);
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeOpsIter(LLVMOpsIteratorRef GI)
 {
     delete llvm::unwrap(GI);
 }
