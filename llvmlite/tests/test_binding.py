@@ -427,7 +427,7 @@ class TestModuleRef(BaseTest):
     def test_get_struct_type(self):
         mod = self.module()
         st_ty = mod.get_struct_type("struct.glob_type")
-        self.assertEquals(st_ty.name, "struct.glob_type")
+        self.assertEqual(st_ty.name, "struct.glob_type")
         # also match struct names of form "%struct.glob_type.{some_index}"
         self.assertIsNotNone(re.match(
             r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }',
@@ -890,6 +890,7 @@ class TestValueRef(BaseTest):
         self.assertEqual(func.name, 'sum')
 
     def test_function_arguments(self):
+        mod = self.module()
         func = mod.get_function('sum')
         self.assertTrue(func.is_function)
         args = list(func.arguments)
