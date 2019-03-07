@@ -85,7 +85,7 @@ class ModuleRef(ffi.ObjectRef):
         p = ffi.lib.LLVMPY_GetNamedFunction(self, _encode_string(name))
         if not p:
             raise NameError(name)
-        return ValueRef(p, module=self)
+        return ValueRef(p, 'function', dict(module=self))
 
     def get_global_variable(self, name):
         """
@@ -95,7 +95,7 @@ class ModuleRef(ffi.ObjectRef):
         p = ffi.lib.LLVMPY_GetNamedGlobalVariable(self, _encode_string(name))
         if not p:
             raise NameError(name)
-        return ValueRef(p, module=self)
+        return ValueRef(p, 'global', dict(module=self))
 
     def get_struct_type(self, name):
         """
