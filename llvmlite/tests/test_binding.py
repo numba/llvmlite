@@ -874,6 +874,64 @@ class TestValueRef(BaseTest):
         self.assertFalse(defined.is_declaration)
         self.assertTrue(declared.is_declaration)
 
+    def test_module_global_variables(self):
+        mod = self.module(asm_sum)
+        gvars = list(mod.global_variables)
+        self.assertEqual(len(gvars), 4)
+        for v in gvars:
+            self.assertTrue(v.is_global)
+
+    def test_module_functions(self):
+        mod = self.module()
+        funcs = list(mod.functions)
+        self.assertEqual(len(funcs), 1)
+        func = funcs[0]
+        self.assertTrue(func.is_function)
+        self.assertEqual(func.name, 'sum')
+
+    def test_function_arguments(self):
+        func = mod.get_function('sum')
+        self.assertTrue(func.is_function)
+        args = list(func.arguments)
+        self.assertEqual(len(args), 2)
+        self.assertTrue(args[0].is_argument)
+        self.assertTrue(args[1].is_argument)
+        self.assertEqual(args[0].name, '.1')
+        self.assertEqual(str(args[0].type), 'i32')
+        self.assertEqual(args[1].name, '.2')
+        self.assertEqual(str(args[1].type), 'i32')
+
+    def test_function_blocks(self):
+        func = self.module().get_function('sum')
+        blocks = list(func.blocks)
+        self.assertEqual(len(blocks), 1)
+        block = blocks[0]
+        self.assertTrue(block.is_block)
+
+    def test_block_instructions(self):
+        func = self.module().get_function('sum')
+        insts = list(list(func.blocks)[0].instructions)
+        self.assertEqual(len(insts), 3)
+        self.assertTrue(insts[0].is_instruction)
+        self.assertTrue(insts[1].is_instruction)
+        self.assertTrue(insts[2].is_instruction)
+        self.assertEqual(insts[0].opcode, 'add')
+        self.assertEqual(insts[1].opcode, 'add')
+        self.assertEqual(insts[2].opcode, 'ret')
+
+    def test_instruction_operands(self):
+        func = self.module().get_function('sum')
+        add = list(list(func.blocks)[0].instructions)[0]
+        self.assertEqual(add.opcode, 'add')
+        operands = list(add.operands)
+        self.assertEqual(len(operands), 2)
+        self.assertTrue(operands[0].is_operand)
+        self.assertTrue(operands[1].is_operand)
+        self.assertEqual(operands[0].name, '.1')
+        self.assertEqual(str(operands[0].type), 'i32')
+        self.assertEqual(operands[1].name, '.2')
+        self.assertEqual(str(operands[1].type), 'i32')
+
 
 class TestTarget(BaseTest):
 

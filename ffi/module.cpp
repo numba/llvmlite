@@ -3,7 +3,6 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/Analysis.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IR/Function.h"
 #include "llvm/IR/TypeFinder.h"
 #include "core.h"
 
@@ -275,6 +274,8 @@ LLVMPY_DisposeTypesIter(LLVMTypesIteratorRef TyI)
 {
     delete llvm::unwrap(TyI);
 }
+
+
 
 API_EXPORT(LLVMModuleRef)
 LLVMPY_CloneModule(LLVMModuleRef M)

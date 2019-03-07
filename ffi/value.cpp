@@ -361,7 +361,7 @@ LLVMPY_WriteCFG(LLVMValueRef Fval, const char **OutStr, int ShowInst) {
 API_EXPORT(const char *)
 LLVMPY_GetOpcodeName(LLVMValueRef Val)
 {
-    // try to convert to a struct type, works for other derived
+    // try to convert to an instruction value, works for other derived
     // types too
     llvm::Value* unwrapped = llvm::unwrap(Val);
     llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(unwrapped);
