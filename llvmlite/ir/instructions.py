@@ -57,7 +57,7 @@ class CallInstrAttributes(AttributeSet):
 
 
 class FastMathFlags(AttributeSet):
-    _known = frozenset(['fast', 'nnan', 'ninf', 'nsz', 'arcp'])
+    _known = frozenset(['fast', 'nnan', 'ninf', 'nsz', 'arcp', 'contract', 'afn', 'reassoc'])
 
 
 class CallInstr(Instruction):
@@ -369,7 +369,7 @@ class FCMPInstr(CompareInstr):
         'uno': 'unordered (either nans)',
         'true': 'no comparison, always returns true',
     }
-    VALID_FLAG = {'nnan', 'ninf', 'nsz', 'arcp', 'fast'}
+    VALID_FLAG = {'nnan', 'ninf', 'nsz', 'arcp', 'contract', 'afn', 'reassoc', 'fast'}
 
 
 class CastInstr(Instruction):
