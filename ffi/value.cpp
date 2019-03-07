@@ -7,6 +7,20 @@
 // the following is needed for WriteGraph()
 #include "llvm/Analysis/CFGPrinter.h"
 
+/* An iterator around a function attributes, including the stop condition */
+struct AttributesIterator {
+    typedef llvm::AttributeList::iterator const_iterator;
+    const_iterator cur;
+    const_iterator end;
+
+    AttributesIterator(const_iterator cur, const_iterator end)
+        :cur(cur), end(end)
+    { }
+};
+
+struct OpaqueAttributesIterator;
+typedef OpaqueAttributesIterator* LLVMAttributesIteratorRef;
+
 /* An iterator around a function's blocks, including the stop condition */
 struct BlocksIterator {
     typedef llvm::Function::const_iterator const_iterator;
@@ -66,6 +80,16 @@ typedef OpaqueOperandsIterator* LLVMOperandsIteratorRef;
 
 namespace llvm {
 
+static LLVMAttributesIteratorRef
+wrap(AttributesIterator* GI){
+    return reinterpret_cast<LLVMAttributesIteratorRef>(GI);
+}
+
+static AttributesIterator*
+unwrap(LLVMAttributesIteratorRef GI){
+    return reinterpret_cast<AttributesIterator *>(GI);
+}
+
 static LLVMBlocksIteratorRef
 wrap(BlocksIterator* GI){
     return reinterpret_cast<LLVMBlocksIteratorRef>(GI);
@@ -111,6 +135,16 @@ unwrap(LLVMOperandsIteratorRef GI){
 
 extern "C" {
 
+API_EXPORT(LLVMAttributesIteratorRef)
+LLVMPY_FunctionAttributesIter(LLVMValueRef F)
+{
+    using namespace llvm;
+    Function* func = unwrap<Function>(F);
+    AttributeList attrs = func->getAttributes();
+    return wrap(new AttributesIterator(attrs.begin(),
+                                       attrs.end()));
+}
+
 API_EXPORT(LLVMBlocksIteratorRef)
 LLVMPY_FunctionBlocksIter(LLVMValueRef F)
 {
@@ -147,6 +181,18 @@ LLVMPY_InstructionOperandsIter(LLVMValueRef I)
                                 inst->op_end()));
 }
 
+API_EXPORT(const char *)
+LLVMPY_AttributesIterNext(LLVMAttributesIteratorRef GI)
+{
+    using namespace llvm;
+    AttributesIterator* iter = unwrap(GI);
+    if (iter->cur != iter->end) {
+        return strdup((&*iter->cur++)->getAsString().c_str());
+    } else {
+        return NULL;
+    }
+}
+
 API_EXPORT(LLVMValueRef)
 LLVMPY_BlocksIterNext(LLVMBlocksIteratorRef GI)
 {
@@ -165,7 +211,6 @@ LLVMPY_ArgumentsIterNext(LLVMArgumentsIteratorRef GI)
     using namespace llvm;
     ArgumentsIterator* iter = unwrap(GI);
     if (iter->cur != iter->end) {
-      //return wrap(static_cast<const Value*>(&*iter->cur++));
       return wrap(&*iter->cur++);
     } else {
         return NULL;
@@ -194,6 +239,12 @@ LLVMPY_OperandsIterNext(LLVMOperandsIteratorRef GI)
     } else {
         return NULL;
     }
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeAttributesIter(LLVMAttributesIteratorRef GI)
+{
+    delete llvm::unwrap(GI);
 }
 
 API_EXPORT(void)

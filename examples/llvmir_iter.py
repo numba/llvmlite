@@ -10,6 +10,7 @@ for f in m.functions:
     assert f.function is None
     assert f.block is None
     assert f.is_function and not (f.is_block or f.is_instruction)
+    print(list(f.attributes))
     for a in f.arguments:
         print(f'Argument: {a.name}/`{a.type}`')
     for b in f.blocks:

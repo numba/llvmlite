@@ -211,6 +211,16 @@ class ValueRef(ffi.ObjectRef):
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
     @property
+    def attributes(self):
+        """
+        Return an iterator over this function's attributes.
+        The iterator will yield a string for each attribute.
+        """
+        assert self.is_function
+        it = ffi.lib.LLVMPY_FunctionAttributesIter(self)
+        return _AttributesIterator(it)
+
+    @property
     def blocks(self):
         """
         Return an iterator over this function's blocks.
@@ -286,6 +296,27 @@ class _ValueIterator(ffi.ObjectRef):
 
     def __iter__(self):
         return self
+
+
+class _AttributesIterator(ffi.ObjectRef):
+
+    def __next__(self):
+        vp = self._next()
+        if vp:
+            return vp
+        else:
+            raise StopIteration
+
+    next = __next__
+
+    def __iter__(self):
+        return self
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeAttributesIter(self)
+
+    def _next(self):
+        return ffi.lib.LLVMPY_AttributesIterNext(self)
 
 
 class _BlocksIterator(_ValueIterator):
@@ -386,6 +417,8 @@ ffi.lib.LLVMPY_AddFunctionAttr.argtypes = [ffi.LLVMValueRef, c_uint]
 ffi.lib.LLVMPY_IsDeclaration.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_IsDeclaration.restype = c_int
 
+ffi.lib.LLVMPY_FunctionAttributesIter.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_FunctionAttributesIter.restype = ffi.LLVMAttributesIterator
 
 ffi.lib.LLVMPY_FunctionBlocksIter.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_FunctionBlocksIter.restype = ffi.LLVMBlocksIterator
@@ -399,11 +432,16 @@ ffi.lib.LLVMPY_BlockInstructionsIter.restype = ffi.LLVMInstructionsIterator
 ffi.lib.LLVMPY_InstructionOperandsIter.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_InstructionOperandsIter.restype = ffi.LLVMOperandsIterator
 
+ffi.lib.LLVMPY_DisposeAttributesIter.argtypes = [ffi.LLVMAttributesIterator]
+
 ffi.lib.LLVMPY_DisposeBlocksIter.argtypes = [ffi.LLVMBlocksIterator]
 
 ffi.lib.LLVMPY_DisposeInstructionsIter.argtypes = [ffi.LLVMInstructionsIterator]
 
 ffi.lib.LLVMPY_DisposeOperandsIter.argtypes = [ffi.LLVMOperandsIterator]
+
+ffi.lib.LLVMPY_AttributesIterNext.argtypes = [ffi.LLVMAttributesIterator]
+ffi.lib.LLVMPY_AttributesIterNext.restype = c_char_p
 
 ffi.lib.LLVMPY_BlocksIterNext.argtypes = [ffi.LLVMBlocksIterator]
 ffi.lib.LLVMPY_BlocksIterNext.restype = ffi.LLVMValueRef
