@@ -91,30 +91,34 @@ class ValueRef(ffi.ObjectRef):
     @property
     def module(self):
         """
-        The module this value was obtained from.
+        The module this function or global variable value was obtained from.
         """
         return self._parents.get('module')
 
     @property
     def function(self):
         """
-        The function this value was obtained from.
+        The function this argument or basic block value was obtained from.
         """
         return self._parents.get('function')
 
     @property
     def block(self):
         """
-        The block this value was obtained from.
+        The block this instruction value was obtained from.
         """
         return self._parents.get('block')
 
     @property
-    def argument(self):
+    def instruction(self):
         """
-        The argument this value was obtained from.
+        The instruction this operand value was obtained from.
         """
-        return self._parents.get('argument')
+        return self._parents.get('instruction')
+
+    @property
+    def is_global(self):
+        return self._kind == 'global'
 
     @property
     def is_function(self):
@@ -182,6 +186,7 @@ class ValueRef(ffi.ObjectRef):
         attr : str
             attribute name
         """
+        assert self.is_function
         attrname = str(attr)
         attrval = ffi.lib.LLVMPY_GetEnumAttributeKindForName(
             _encode_string(attrname), len(attrname))
