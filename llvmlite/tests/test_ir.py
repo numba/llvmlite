@@ -47,7 +47,7 @@ class TestBase(TestCase):
 
         pattern = ''.join(map(escape, pattern))
         regex = re.sub(r'\s+', r'\\s*', pattern)
-        self.assertRegexpMatches(text, regex)
+        self.assertRegex(text, regex)
 
     def assert_ir_line(self, line, mod):
         lines = [line.strip() for line in str(mod).splitlines()]
