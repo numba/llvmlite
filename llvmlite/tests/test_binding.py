@@ -155,6 +155,11 @@ asm_global_ctors = r"""
     @llvm.global_dtors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @dtor_A, i8* null}}]
     """
 
+asm_attributes = r"""
+declare void @a_readonly_func(i8 *) readonly
+
+declare i8* @a_arg0_return_func(i8* returned, i32*)
+"""
 
 class BaseTest(TestCase):
 
@@ -932,6 +937,19 @@ class TestValueRef(BaseTest):
         self.assertEqual(str(operands[0].type), 'i32')
         self.assertEqual(operands[1].name, '.2')
         self.assertEqual(str(operands[1].type), 'i32')
+
+    def test_function_attributes(self):
+        mod = self.module(asm_attributes)
+        funcs = list(mod.functions)
+        for func in mod.functions:
+            attrs = list(func.attributes)
+            if func.name == 'a_readonly_func':
+                self.assertEqual(attrs, [b'readonly'])
+            elif func.name == 'a_arg0_return_func':
+                self.assertEqual(attrs, [])
+                args = list(func.arguments)
+                self.assertEqual(list(args[0].attributes), [b'returned'])
+                self.assertEqual(list(args[1].attributes), [])
 
 
 class TestTarget(BaseTest):

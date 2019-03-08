@@ -134,6 +134,13 @@ The ValueRef class
 
         The instruction's opcode, as a string.
 
+   * .. attribute:: attributes
+
+        An iterator over the attributes in this value.
+        Each attribute is a :class:`bytes` instance.
+        Values that have attributes are: function, argument (and
+        others for which attributes support has not been implemented)
+
    * .. attribute:: is_global
 
         The value is a global variable.
