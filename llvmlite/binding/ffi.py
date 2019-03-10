@@ -115,18 +115,38 @@ if os.name == 'nt':
     # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).
     os.environ['PATH'] += ';' + _lib_dir
 
+
 _lib_name = get_library_name()
+
+
+# Possible CDLL loading paths
+_lib_paths = [
+    os.path.join(_lib_dir, _lib_name),  # Absolute
+    _lib_name,  # In PATH
+    os.path.join('.', _lib_name),  # Current directory
+]
+
+# If pkg_resources is available, try to use it to load the shared object.
+# This allows direct import from egg files.
 try:
-    lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name))
-except OSError as e:
-    # Allow finding the llvmlite DLL in the current directory, for ease
-    # of bundling with frozen applications.
+    from pkg_resources import resource_filename
+except ImportError:
+    pass
+else:
+    _lib_paths.append(resource_filename(__name__, _lib_name))
+
+
+# Try to load from all of the different paths
+for _lib_path in _lib_paths:
     try:
-        lib = ctypes.CDLL(_lib_name)
+        lib = ctypes.CDLL(_lib_path)
     except OSError:
-        if PY2:
-            raise e
-        raise
+        continue
+    else:
+        break
+else:
+    raise OSError("Could not load shared object file: {}".format(_lib_name))
+
 
 lib = _lib_wrapper(lib)
 
