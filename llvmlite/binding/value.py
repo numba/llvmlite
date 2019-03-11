@@ -186,7 +186,8 @@ class ValueRef(ffi.ObjectRef):
         attr : str
             attribute name
         """
-        assert self.is_function
+        if not self.is_function:
+            raise ValueError('expected function value, got %s' % (self._kind,))
         attrname = str(attr)
         attrval = ffi.lib.LLVMPY_GetEnumAttributeKindForName(
             _encode_string(attrname), len(attrname))
@@ -208,12 +209,15 @@ class ValueRef(ffi.ObjectRef):
         Whether this value (presumably global) is defined in the current
         module.
         """
+        if not (self.is_global or self.is_function):
+            raise ValueError('expected global or function value, got %s'
+                             % (self._kind,))
         return ffi.lib.LLVMPY_IsDeclaration(self)
 
     @property
     def attributes(self):
         """
-        Return an iterator over this function's attributes.
+        Return an iterator over this value's attributes.
         The iterator will yield a string for each attribute.
         """
         itr = iter(())
@@ -241,7 +245,8 @@ class ValueRef(ffi.ObjectRef):
         Return an iterator over this function's blocks.
         The iterator will yield a ValueRef for each block.
         """
-        assert self.is_function
+        if not self.is_function:
+            raise ValueError('expected function value, got %s' % (self._kind,))
         it = ffi.lib.LLVMPY_FunctionBlocksIter(self)
         parents = self._parents.copy()
         parents.update(function=self)
@@ -253,7 +258,8 @@ class ValueRef(ffi.ObjectRef):
         Return an iterator over this function's arguments.
         The iterator will yield a ValueRef for each argument.
         """
-        assert self.is_function
+        if not self.is_function:
+            raise ValueError('expected function value, got %s' % (self._kind,))
         it = ffi.lib.LLVMPY_FunctionArgumentsIter(self)
         parents = self._parents.copy()
         parents.update(function=self)
@@ -265,7 +271,8 @@ class ValueRef(ffi.ObjectRef):
         Return an iterator over this block's instructions.
         The iterator will yield a ValueRef for each instruction.
         """
-        assert self.is_block
+        if not self.is_block:
+            raise ValueError('expected block value, got %s' % (self._kind,))
         it = ffi.lib.LLVMPY_BlockInstructionsIter(self)
         parents = self._parents.copy()
         parents.update(block=self)
@@ -277,7 +284,9 @@ class ValueRef(ffi.ObjectRef):
         Return an iterator over this instruction's operands.
         The iterator will yield a ValueRef for each operand.
         """
-        assert self.is_instruction
+        if not self.is_instruction:
+            raise ValueError('expected instruction value, got %s'
+                             % (self._kind,))
         it = ffi.lib.LLVMPY_InstructionOperandsIter(self)
         parents = self._parents.copy()
         parents.update(instruction=self)
@@ -285,22 +294,26 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def opcode(self):
-        assert self.is_instruction
+        if not self.is_instruction:
+            raise ValueError('expected instruction value, got %s'
+                             % (self._kind,))
         return _decode_string(ffi.lib.LLVMPY_GetOpcodeName(self))
 
 
 class _ValueIterator(ffi.ObjectRef):
 
-    kind = None
+    kind = None  # derived classes must specify the Value kind value
+                 # as class attribute
 
     def __init__(self, ptr, parents):
         ffi.ObjectRef.__init__(self, ptr)
         # Keep parent objects (module, function, etc) alive
         self._parents = parents
-        assert self.kind is not None
+        if self.kind is None:
+            raise NotImplementedError('%s must specify kind attribute'
+                                      % (type(self).__name__,))
 
     def __next__(self):
-
         vp = self._next()
         if vp:
             return ValueRef(vp, self.kind, self._parents)

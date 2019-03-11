@@ -894,6 +894,13 @@ class TestValueRef(BaseTest):
         self.assertTrue(func.is_function)
         self.assertEqual(func.name, 'sum')
 
+        with self.assertRaises(ValueError) as cm:
+            func.instructions
+        with self.assertRaises(ValueError) as cm:
+            func.operands
+        with self.assertRaises(ValueError) as cm:
+            func.opcode
+
     def test_function_arguments(self):
         mod = self.module()
         func = mod.get_function('sum')
@@ -906,6 +913,11 @@ class TestValueRef(BaseTest):
         self.assertEqual(str(args[0].type), 'i32')
         self.assertEqual(args[1].name, '.2')
         self.assertEqual(str(args[1].type), 'i32')
+
+        with self.assertRaises(ValueError) as cm:
+            args[0].blocks
+        with self.assertRaises(ValueError) as cm:
+            args[0].arguments
 
     def test_function_blocks(self):
         func = self.module().get_function('sum')
