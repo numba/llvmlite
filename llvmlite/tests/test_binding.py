@@ -155,6 +155,11 @@ asm_global_ctors = r"""
     @llvm.global_dtors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @dtor_A, i8* null}}]
     """
 
+asm_attributes = r"""
+declare void @a_readonly_func(i8 *) readonly
+
+declare i8* @a_arg0_return_func(i8* returned, i32*)
+"""
 
 class BaseTest(TestCase):
 
@@ -427,7 +432,7 @@ class TestModuleRef(BaseTest):
     def test_get_struct_type(self):
         mod = self.module()
         st_ty = mod.get_struct_type("struct.glob_type")
-        self.assertEquals(st_ty.name, "struct.glob_type")
+        self.assertEqual(st_ty.name, "struct.glob_type")
         # also match struct names of form "%struct.glob_type.{some_index}"
         self.assertIsNotNone(re.match(
             r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }',
@@ -873,6 +878,90 @@ class TestValueRef(BaseTest):
         declared = self.module(asm_sum_declare).get_function('sum')
         self.assertFalse(defined.is_declaration)
         self.assertTrue(declared.is_declaration)
+
+    def test_module_global_variables(self):
+        mod = self.module(asm_sum)
+        gvars = list(mod.global_variables)
+        self.assertEqual(len(gvars), 4)
+        for v in gvars:
+            self.assertTrue(v.is_global)
+
+    def test_module_functions(self):
+        mod = self.module()
+        funcs = list(mod.functions)
+        self.assertEqual(len(funcs), 1)
+        func = funcs[0]
+        self.assertTrue(func.is_function)
+        self.assertEqual(func.name, 'sum')
+
+        with self.assertRaises(ValueError) as cm:
+            func.instructions
+        with self.assertRaises(ValueError) as cm:
+            func.operands
+        with self.assertRaises(ValueError) as cm:
+            func.opcode
+
+    def test_function_arguments(self):
+        mod = self.module()
+        func = mod.get_function('sum')
+        self.assertTrue(func.is_function)
+        args = list(func.arguments)
+        self.assertEqual(len(args), 2)
+        self.assertTrue(args[0].is_argument)
+        self.assertTrue(args[1].is_argument)
+        self.assertEqual(args[0].name, '.1')
+        self.assertEqual(str(args[0].type), 'i32')
+        self.assertEqual(args[1].name, '.2')
+        self.assertEqual(str(args[1].type), 'i32')
+
+        with self.assertRaises(ValueError) as cm:
+            args[0].blocks
+        with self.assertRaises(ValueError) as cm:
+            args[0].arguments
+
+    def test_function_blocks(self):
+        func = self.module().get_function('sum')
+        blocks = list(func.blocks)
+        self.assertEqual(len(blocks), 1)
+        block = blocks[0]
+        self.assertTrue(block.is_block)
+
+    def test_block_instructions(self):
+        func = self.module().get_function('sum')
+        insts = list(list(func.blocks)[0].instructions)
+        self.assertEqual(len(insts), 3)
+        self.assertTrue(insts[0].is_instruction)
+        self.assertTrue(insts[1].is_instruction)
+        self.assertTrue(insts[2].is_instruction)
+        self.assertEqual(insts[0].opcode, 'add')
+        self.assertEqual(insts[1].opcode, 'add')
+        self.assertEqual(insts[2].opcode, 'ret')
+
+    def test_instruction_operands(self):
+        func = self.module().get_function('sum')
+        add = list(list(func.blocks)[0].instructions)[0]
+        self.assertEqual(add.opcode, 'add')
+        operands = list(add.operands)
+        self.assertEqual(len(operands), 2)
+        self.assertTrue(operands[0].is_operand)
+        self.assertTrue(operands[1].is_operand)
+        self.assertEqual(operands[0].name, '.1')
+        self.assertEqual(str(operands[0].type), 'i32')
+        self.assertEqual(operands[1].name, '.2')
+        self.assertEqual(str(operands[1].type), 'i32')
+
+    def test_function_attributes(self):
+        mod = self.module(asm_attributes)
+        funcs = list(mod.functions)
+        for func in mod.functions:
+            attrs = list(func.attributes)
+            if func.name == 'a_readonly_func':
+                self.assertEqual(attrs, [b'readonly'])
+            elif func.name == 'a_arg0_return_func':
+                self.assertEqual(attrs, [])
+                args = list(func.arguments)
+                self.assertEqual(list(args[0].attributes), [b'returned'])
+                self.assertEqual(list(args[1].attributes), [])
 
 
 class TestTarget(BaseTest):

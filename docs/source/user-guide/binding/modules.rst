@@ -116,7 +116,7 @@ The ModuleRef class
         module. Each global variable is a :class:`ValueRef`
         instance.
 
-    * .. attribute:: struct_types
+   * .. attribute:: struct_types
 
         An iterator over the struct types defined in this module.
         Each type is a :class:`TypeRef` instance.
