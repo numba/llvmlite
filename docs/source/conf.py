@@ -16,11 +16,16 @@
 import sys
 import os
 import shlex
+from datetime import datetime
+
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+sys.path.append(os.path.abspath(os.path.join('..', '..')))
+
 
 # -- General configuration ------------------------------------------------
 
@@ -53,11 +58,14 @@ project = 'llvmlite'
 copyright = '2015, Continuum Analytics'
 author = 'Continuum Analytics'
 
+if on_rtd:
+    # RTD replaces the last update date.  So we need to hack it in here.
+    copyright += '. Last updated on {}'.format(datetime.utcnow().strftime('%b %d, %Y'))
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import llvmlite
 # The short X.Y version.
 version = llvmlite.__version__.split('-', 1)[0]
