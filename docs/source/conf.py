@@ -57,6 +57,7 @@ author = 'Continuum Analytics'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import llvmlite
 # The short X.Y version.
 version = llvmlite.__version__.split('-', 1)[0]
