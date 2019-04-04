@@ -1,4 +1,4 @@
-with open("cfg.testme.dot") as fin:
+with open(".testme.dot") as fin:
     got = fin.read()
 
 assert '[label="W:1"]' in got

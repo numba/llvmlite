@@ -339,7 +339,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual((major, minor), (7, 0))
+        self.assertEqual((major, minor), (8, 0))
         self.assertIn(patch, range(10))
 
     def test_check_jit_execution(self):
@@ -970,7 +970,7 @@ class TestTarget(BaseTest):
         f = llvm.Target.from_triple
         with self.assertRaises(RuntimeError) as cm:
             f("foobar")
-        self.assertIn("No available targets are compatible with this triple",
+        self.assertIn("No available targets are compatible with triple",
                       str(cm.exception))
         triple = llvm.get_default_triple()
         target = f(triple)
