@@ -22,6 +22,8 @@ source:
     # (the first, as mentioned in the patch itself, was:
     # https://reviews.llvm.org/D47188)
     - ../D47188-svml-VF.patch
+    # Reverts a patch limiting non-GlobalValue name length
+    - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
 
   - url: http://llvm.org/releases/{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
