@@ -11,15 +11,23 @@ if "%ARCH%"=="32" (
 )
 set CMAKE_GENERATOR_TOOLSET=v140_xp
 
+REM llvm 8 needs the 64bit linker
+set PreferredToolArchitecture=x64
+
 REM Reduce build times and package size by removing unused stuff
+REM BENCHMARKS (new for llvm8) don't build under Visual Studio 14 2015
 set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_INCLUDE_TESTS=OFF ^
     -DLLVM_INCLUDE_UTILS=ON -DLLVM_INCLUDE_DOCS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF ^
     -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_USE_INTEL_JITEVENTS=ON ^
-    -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=ON
+    -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=ON -DLLVM_INCLUDE_BENCHMARKS=OFF
 
+REM the platform toolset host arch is set to x64 so as to use the 64bit linker,
+REM the 32bit linker heap is too small for llvm8 so it tries and falls over to
+REM the 64bit linker anyway
 cmake -G "%CMAKE_GENERATOR%" -T "%CMAKE_GENERATOR_TOOLSET%" ^
     -DCMAKE_BUILD_TYPE="%BUILD_CONFIG%" -DCMAKE_PREFIX_PATH=%LIBRARY_PREFIX% ^
-    -DCMAKE_INSTALL_PREFIX:PATH=%LIBRARY_PREFIX% %CMAKE_CUSTOM% %SRC_DIR% 
+    -DCMAKE_INSTALL_PREFIX:PATH=%LIBRARY_PREFIX% %CMAKE_CUSTOM% %SRC_DIR% ^
+    -DCMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE=x64
 if errorlevel 1 exit 1
 
 REM Build step
