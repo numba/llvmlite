@@ -35,9 +35,9 @@ source:
     # (the first, as mentioned in the patch itself, was:
     # https://reviews.llvm.org/D47188)
     # the patch in HEAD only applies on llvm 8
-    - ../D47188-svml-VF.patch # [shortversion == 8.0]
+    {{ '- ../D47188-svml-VF.patch' if shortversion == '8.0' else '' }}
     # undefined behavior bug due to Twine usage, this is fixed in llvm 8
-    - ../twine_cfg_undefined_behavior.patch # [shortversion == 7.1]
+    {{ '- ../twine_cfg_undefined_behavior.patch' if shortversion == '7.1' else '' }}
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
   - url: http://llvm.org/releases/{{ version }}/lld-{{ version }}.src.tar.xz
@@ -98,9 +98,9 @@ test:
     - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
 
     - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
-    # Test for Twine bug, only do this for llvm 8 as the output name changed
-    - $PREFIX/bin/opt -dot-cfg cfg_test.ll -o cfg.testme.tmp # [not (win or shortversion == 7.1)]
-    - python test_cfg_dot.py                                 # [not (win or shortversion == 7.1)]
+    # Test for Twine bug
+    - $PREFIX/bin/opt -dot-cfg cfg_test.ll -o cfg.testme.tmp # [not win]
+    - python test_cfg_dot.py                                 # [not win]
 
     # LLD tests
     - ld.lld --version                                       # [unix]
