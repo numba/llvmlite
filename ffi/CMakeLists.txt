@@ -41,5 +41,10 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
 # llvm_map_components_to_libnames(llvm_libs support core irreader)
 llvm_map_components_to_libnames(llvm_libs all)
 
+# Since LLVM 8 "OptRemarks" is built as a shared library only and also appears
+# under the llvm_libs for the "all" components map. This breaks static linking
+# so the "OptRemarks" library is removed from this list.
+list(REMOVE_ITEM llvm_libs "OptRemarks")
+
 # Link against LLVM libraries
 target_link_libraries(llvmlite ${llvm_libs})

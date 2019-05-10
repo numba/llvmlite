@@ -27,7 +27,7 @@ source activate $CONDA_ENV
 set -v
 
 # Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c numba llvmdev="7.0*"
+$CONDA_INSTALL -c numba llvmdev="8.0*"
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
@@ -38,6 +38,7 @@ fi
 # Install enum34 for Python < 3.4 and PyPy, and install dependencies for
 # building the docs. Sphinx 1.5.4 has a bug.
 if [ "$PYTHON" == "pypy" ]; then
+  $CONDA_INSTALL zlib # pypy has no conda-level zlib linkage
   python -m ensurepip
   $PIP_INSTALL enum34
   $PIP_INSTALL sphinx==1.5.1 sphinx_rtd_theme pygments

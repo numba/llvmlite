@@ -1,8 +1,21 @@
-{% set shortversion = "7.0" %}
-{% set version = "7.0.0" %}
-{% set sha256_llvm = "8bc1f844e6cbde1b652c19c1edebc1864456fd9c78b8c1bea038e51b363fe222" %}
-{% set sha256_lld = "fbcf47c5e543f4cdac6bb9bbbc6327ff24217cd7eafc5571549ad6d237287f9c" %}
-{% set build_number = "1" %}
+{% if ppc64le %}
+
+# ppc64le has numerous problems in LLVM 8, so use 7.1
+{% set shortversion = "7.1" %}
+{% set version = "7.1.0" %}
+{% set sha256_llvm = "1bcc9b285074ded87b88faaedddb88e6b5d6c331dfcfb57d7f3393dd622b3764" %}
+{% set sha256_lld = "a10f274a0a09408eaf9c088dec6fb2254f7d641221437763c94546cbfe595867" %}
+{% set build_number = "0" %}
+
+{% else %}
+
+{% set shortversion = "8.0" %}
+{% set version = "8.0.0" %}
+{% set sha256_llvm = "8872be1b12c61450cacc82b3d153eab02be2546ef34fa3580ed14137bb26224c" %}
+{% set sha256_lld = "9caec8ec922e32ffa130f0fb08e4c5a242d7e68ce757631e425e9eba2e1a6e37" %}
+{% set build_number = "0" %}
+
+{% endif %}
 
 package:
   name: llvmdev
@@ -21,16 +34,13 @@ source:
     # https://reviews.llvm.org/D53035
     # (the first, as mentioned in the patch itself, was:
     # https://reviews.llvm.org/D47188)
-    - ../D47188-svml-VF.patch
-    # undefined behavior bug due to Twine usage
-    - ../twine_cfg_undefined_behavior.patch
-    # Patches for X86 common symbols over-allocation and testing thereof, see
-    # https://reviews.llvm.org/D50240 and https://reviews.llvm.org/rL340788
-    # for details:
-    - ../0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch
-    - ../0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch
-
-  - url: http://releases.llvm.org/{{ version }}/lld-{{ version }}.src.tar.xz
+    # the patch in HEAD only applies on llvm 8
+    {{ '- ../D47188-svml-VF.patch' if shortversion == '8.0' else '' }}
+    # undefined behavior bug due to Twine usage, this is fixed in llvm 8
+    {{ '- ../twine_cfg_undefined_behavior.patch' if shortversion == '7.1' else '' }}
+    # Reverts a patch limiting non-GlobalValue name length
+    - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
+  - url: http://llvm.org/releases/{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
     sha256: {{ sha256_lld }}
     folder: tools/lld
@@ -88,8 +98,8 @@ test:
     - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
 
     - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
-    # Test for ../twine_cfg_undefined_behavior.patch
-    - $PREFIX/bin/opt -dot-cfg cfg_test.ll                   # [not win]
+    # Test for Twine bug
+    - $PREFIX/bin/opt -dot-cfg cfg_test.ll -o cfg.testme.tmp # [not win]
     - python test_cfg_dot.py                                 # [not win]
 
     # LLD tests
