@@ -151,12 +151,12 @@ class OutputString(object):
 
     @classmethod
     def from_return(cls, ptr):
-        """Constructing from a pointer returned from C-API.
+        """Constructing from a pointer returned from the C-API.
         The pointer must be allocated with LLVMPY_CreateString.
 
         Note
         ----
-        Because ctypes auto convert *restype* of *c_char_p* into a python
+        Because ctypes auto-converts *restype* of *c_char_p* into a python
         string, we must use *c_void_p* to obtain the raw pointer.
         """
         return cls(init=ctypes.cast(ptr, ctypes.c_char_p))
