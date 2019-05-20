@@ -1,7 +1,16 @@
 v0.29.0
 -------
 
-In development.
+This release upgrades to LLVM 8.0 for all supported platforms except PPC64LE.
+Due to numerous problems with LLVM 8.0 running on PPC64LE,
+we have decided to use LLVM 7.1, which is more stable on PPC64LE.
+
+* PR #484: Revert "LLVM 7 changed memset intrinsic signature, adjust it"
+* PR #483: Depend on enum34 using PEP 508 environment markers
+* PR #478: Upgrade to llvm8
+* PR #469: Support loading from current directory and egg files
+* PR #467: Add missing fastmath flags from LLVM 7
+* PR #460: LLVM 7 changed memset intrinsic signature, adjust it
 
 
 v0.28.0
