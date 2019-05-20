@@ -158,11 +158,8 @@ packages = ['llvmlite',
             'llvmlite.tests',
             ]
 
-install_requires = []
-setup_requires = []
-if sys.version_info < (3, 4):
-    install_requires.append('enum34')
-    setup_requires.append('enum34')
+install_requires = ['enum34; python_version < "3.4"']
+setup_requires = ['enum34; python_version < "3.4"']
 
 
 with open('README.rst') as f:
