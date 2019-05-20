@@ -1,5 +1,5 @@
-v0.29.0
--------
+v0.29.0 (RC1: May 20, 2019)
+---------------------------
 
 This release upgrades to LLVM 8.0 for all supported platforms except PPC64LE.
 Due to numerous problems with LLVM 8.0 running on PPC64LE,
@@ -13,8 +13,8 @@ we have decided to use LLVM 7.1, which is more stable on PPC64LE.
 * PR #460: LLVM 7 changed memset intrinsic signature, adjust it
 
 
-v0.28.0
--------
+v0.28.0 (Mar 12, 2019)
+----------------------
 
 This release adds a number of community contributed features, including
 support for vector types, as well as atomic loads and stores.
@@ -33,15 +33,15 @@ support for vector types, as well as atomic loads and stores.
 * PR #458: Add changelog info about v0.27.1
 
 
-v0.27.1
--------
+v0.27.1 (Feb 1, 2019)
+---------------------
 
 Bugfix release for invalid wheel hash for OSX packages.
 No change to source code.
 
 
-v0.27.0
--------
+v0.27.0 (Dec 28, 2018)
+----------------------
 
 This release updates llvmlite to LLVM 7.  Note that LLVM 7.0.0 contains
 a critical bug that is resolved with a patch included in the `llvmdev conda
@@ -56,8 +56,8 @@ package recipe`_.  The final release of LLVM 7.0.1 may also resolve the issue.
 .. _llvmdev conda package recipe: https://github.com/numba/llvmlite/tree/69aed71a829e6c552cca24a28c42abdf1efd2363/conda-recipes/llvmdev
 
 
-v0.26.0
--------
+v0.26.0 (Nov 27, 2018)
+----------------------
 
 The primary new features in this release is support for generation of Intel
 JIT events, which makes profiling of JIT compiled code in Intel VTune
@@ -77,8 +77,8 @@ after some issues arose in testing.  LLVM 6 is still required for llvmlite.
 * PR #394: Enable IntelJIT events for LLVM for VTune support
 
 
-v0.25.0
--------
+v0.25.0 (Sep 18, 2018)
+----------------------
 
 This release adds support for the FMA instruction, and has some documentation
 and build improvements.  Starting with this release, we are including
@@ -93,8 +93,8 @@ ARMv8 (AArch64) testig in our CI process.
 * PR #378: add slack, drop flowdock
 
 
-v0.24.0
--------
+v0.24.0 (Jul 6, 2018)
+---------------------
 
 This release adds support for Python 3.7 and fixes some build issues. It also
 contains an updated SVML patch for the llvmdev package that works around some
@@ -111,8 +111,8 @@ vectorization issues. It also adds a selective LLVM 6.0.1 llvmdev build for the
 * PR #351: Python 3.7 compat: Properly escape repl in re.sub
 
 
-v0.23.2
--------
+v0.23.2 (Jun 1, 2018)
+---------------------
 
 This is a bug fix release to assist in addressing a critical Numba issue that
 can affect users who download llvmlite packages from sources other than PyPI
@@ -128,8 +128,8 @@ The following PRs are closed in this release:
 * PR #361: Add SVML detection and a function to declare support.
 
 
-v0.23.1
--------
+v0.23.1 (May 17, 2018)
+----------------------
 
 This is a minor patch release that includes no code changes. It is issued to
 fix a couple of problems with the build recipes for llvmdev (on which llvmlite
@@ -141,8 +141,8 @@ The following PRs are closed in this release:
 * PR #348: llvmdev: enhancements to conda recipe
 
 
-v0.23.0
--------
+v0.23.0 (Apr 24, 2018)
+----------------------
 
 In this release, we upgrade to LLVM 6. Two LLVM patches are added:
 
@@ -161,8 +161,8 @@ The following PRs are closed in this release:
            transcendentals
 
 
-v0.22.0
-----------
+v0.22.0 (Feb 15, 2018)
+----------------------
 
 In this release, we have changed the locking strategy that protects LLVM from
 race conditions.  Before, the llvmlite user (like Numba) was responsible for
@@ -178,8 +178,8 @@ The following PRs are closed in this release:
 * PR#304: Expose support for static constructors/destructors
 
 
-v0.21.0
--------
+v0.21.0 (Dec 6, 2017)
+---------------------
 
 In this release, we upgrade to LLVM 5.  Our build scripts now use
 conda-build 3.  For our prebuilt binaries, GCC 7 toolchain is used
@@ -192,16 +192,16 @@ The following PRs are closed in this release:
 * PR #306: Working towards LLVM 5.0 support.
 
 
-v0.20.0
--------
+v0.20.0 (Sep 6, 2017)
+---------------------
 
 Beginning with this minor release, we support wheels for Linux, OSX and Windows.
 Pull requests related to enabling wheels are #294, #295, #296 and #297.
 There are also fixes to the documentation (#283 and #289).
 
 
-v0.19.0
--------
+v0.19.0 (Jul 6, 2017)
+---------------------
 
 This is a minor release with the following fixes.
 
@@ -219,23 +219,23 @@ The following are CI build related changes:
 * PR #276: Remove jenkins build scripts
 
 
-v0.18.0
--------
+v0.18.0 (May 4, 2017)
+---------------------
 
 This is a minor release that fixes several issues (#263, #262, #258, #237) with
 the wheel build.  In addition, we have minor fixes for running on PPC64LE
 platforms (#261).  And, we added CI testing against PyPy (#253).
 
 
-v0.17.1
--------
+v0.17.1 (Apr 12, 2017)
+----------------------
 
 This is a bugfix release that addresses issue #258 that our LLVM
 binding shared library is missing from the wheel builds.
 
 
-v0.17.0
--------
+v0.17.0 (Apr 9, 2017)
+---------------------
 
 In this release, we are upgrading to LLVM 4.0.  We are also starting to
 provide wheel packages for 64-bit Linux platforms (manylinux).
@@ -251,8 +251,8 @@ Enhancements:
 * PR #222: Enable wheel builds
 
 
-v0.16.0
--------
+v0.16.0 (Feb 16, 2017)
+----------------------
 
 API changes:
 
@@ -272,8 +272,8 @@ Fixes:
 * PR #226: Fix get_host_cpu_features() so that it fails properly
 
 
-v0.15.0
--------
+v0.15.0 (Dec 20, 2016)
+----------------------
 
 Enhancements:
 
@@ -287,8 +287,8 @@ Fixes:
 * PR #209, Issue #208: Fix overly restrictive test for library filenames.
 
 
-v0.14.0
--------
+v0.14.0 (Oct 17, 2016)
+----------------------
 
 Enhancements:
 
@@ -297,8 +297,8 @@ Enhancements:
 * PR #212: Add initializer for the native assembly parser.
 
 
-v0.13.0
--------
+v0.13.0 (Aug 24, 2016)
+----------------------
 
 Enhancements:
 
@@ -318,14 +318,14 @@ Fixes:
 * PR #200: Allow attaching metadata to a ``ret`` instruction.
 
 
-v0.12.1
--------
+v0.12.1 (Jul 12, 2016)
+----------------------
 
 New release to fix packages on PyPI. Same as v0.12.0.
 
 
-v0.12.0
--------
+v0.12.0 (Jul 6, 2016)
+---------------------
 
 Enhancements:
 
@@ -338,8 +338,8 @@ Fixes:
 
 * Issue #177: Make setup.py compatible with ``pip install``.
 
-v0.11.0
--------
+v0.11.0 (May 19, 2016)
+----------------------
 
 Enhancements:
 
@@ -348,8 +348,8 @@ Enhancements:
 * PR #168: add ir.Constant.literal_array()
 
 
-v0.10.0
--------
+v0.10.0 (Mar 31, 2016)
+----------------------
 
 Enhancements:
 
@@ -377,8 +377,8 @@ Fixes:
 * PR #141: Ensure no CMakeCache.txt file is included in sdist.
 * PR #132: Correct constant in ``llvmir.py`` example.
 
-v0.9.0
-------
+v0.9.0 (Feb 29, 2016)
+---------------------
 
 Enhancements:
 
@@ -395,16 +395,16 @@ Fixes:
 
 * Remove the libcurses dependency on Linux.
 
-v0.8.0
-------
+v0.8.0 (Oct 23, 2015)
+---------------------
 
 * Update LLVM to 3.6.2
 * Add an *align* parameter to IRBuilder.load() and IRBuilder.store().
 * Allow setting visibility, DLL storageclass of ValueRef
 * Support profiling with OProfile
 
-v0.7.0
-------
+v0.7.0 (Aug 31, 2015)
+---------------------
 
 * PR #88: Provide hooks into the MCJIT object cache
 * PR #87: Add indirect branches and exception handling APIs to ir.Builder.
@@ -413,8 +413,8 @@ v0.7.0
 * Deprecate .get_pointer_to_global() and add .get_function_address() and
   .get_global_value_address() in ExecutionEngine.
 
-v0.6.0
-------
+v0.6.0 (Jun 30, 2015)
+---------------------
 
 Enhancements:
 
@@ -425,16 +425,16 @@ Enhancements:
 * Support attributes on the return type of a function.
 
 
-v0.5.1
-------
+v0.5.1 (Jun 8, 2015)
+--------------------
 
 Fixes:
 
 * Fix implicit termination of basic block in nested if_then()
 
 
-v0.5.0
-------
+v0.5.0 (May 27, 2015)
+---------------------
 
 New documentation hosted at http://llvmlite.pydata.org
 
@@ -448,8 +448,8 @@ Fixes:
 * Fix string encoding problem when round-triping parse_assembly()
 
 
-v0.4.0
-------
+v0.4.0 (Mar 30, 2015)
+---------------------
 
 Enhancements:
 
@@ -466,8 +466,8 @@ Patched LLVM 3.5.1:
 Updated to 3.5.1 with the same ELF relocation patched for v0.2.2.
 
 
-v0.2.2
--------
+v0.2.2 (Jan 29, 2015)
+---------------------
 
 Enhancements:
 
@@ -488,15 +488,15 @@ kernels, like in CentOS.  The patched source code is available at:
 https://github.com/numba/llvm-mirror/releases/tag/3.5p1
 
 
-v0.2.0
--------
+v0.2.0 (Dec 16, 2014)
+---------------------
 
 This is the first official release. It contains a few feature additions
 and bug fixes. It meets all requirements to replace llvmpy in numba and
 numbapro.
 
-v0.1.0
--------
+v0.1.0 (Nov 13, 2014)
+---------------------
 
 This is the first release. This is released for beta testing llvmlite
 and numba before the official release.
