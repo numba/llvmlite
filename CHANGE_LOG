@@ -4,6 +4,8 @@ v0.29.0 (RC1: May 20, 2019)
 This release upgrades to LLVM 8.0 for all supported platforms except PPC64LE.
 Due to numerous problems with LLVM 8.0 running on PPC64LE,
 we have decided to use LLVM 7.1, which is more stable on PPC64LE.
+In addition, non-host LLVM targets, AMDGPU, NVPTX, and WebAssembly, are enabled
+and they are available in our `llvmlite` builds.
 
 * PR #484: Revert "LLVM 7 changed memset intrinsic signature, adjust it"
 * PR #483: Depend on enum34 using PEP 508 environment markers
