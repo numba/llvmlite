@@ -1,5 +1,5 @@
-v0.29.0 (RC1: May 20, 2019)
----------------------------
+v0.29.0 (May 29, 2019)
+----------------------
 
 This release upgrades to LLVM 8.0 for all supported platforms except PPC64LE.
 Due to numerous problems with LLVM 8.0 running on PPC64LE,
