@@ -71,24 +71,24 @@ A :ref:`module` consists mostly of values.
         otherwise. Returns a constant struct containing the
         *elements* in order.
 
-      * .. method:: bitcast(typ)
+   .. method:: bitcast(typ)
 
-           Convert this pointer constant to a constant of the
-           given pointer type.
+      Convert this pointer constant to a constant of the
+      given pointer type.
 
-      * .. method:: gep(indices)
+   .. method:: gep(indices)
 
-           Compute the address of the inner element given by the
-           sequence of *indices*. The constant must have a pointer
-           type.
+      Compute the address of the inner element given by the
+      sequence of *indices*. The constant must have a pointer
+      type.
 
-      * .. method:: inttoptr(typ)
+   .. method:: inttoptr(typ)
 
-           Convert this integer constant to a constant of the
-           given pointer type.
+      Convert this integer constant to a constant of the
+      given pointer type.
 
-      NOTE: You cannot define constant functions. Use a
-      :ref:`function declaration` instead.
+   NOTE: You cannot define constant functions. Use a
+   :ref:`function declaration` instead.
 
 .. class:: Argument
 
