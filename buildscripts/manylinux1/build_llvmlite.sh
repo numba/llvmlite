@@ -33,7 +33,8 @@ python setup.py clean
 # Build wheel
 distdir=$outputdir/dist_$(uname -m)_$pyver
 rm -rf $distdir
-python setup.py bdist_wheel -d $distdir
+# -fPIC is needed since llvm8 when building wheels
+CXX='g++ -fPIC' python setup.py bdist_wheel -d $distdir
 
 # Audit wheel
 cd $distdir
