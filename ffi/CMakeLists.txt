@@ -45,6 +45,8 @@ llvm_map_components_to_libnames(llvm_libs all)
 # under the llvm_libs for the "all" components map. This breaks static linking
 # so the "OptRemarks" library is removed from this list.
 list(REMOVE_ITEM llvm_libs "OptRemarks")
+# Same issue with LTO
+list(REMOVE_ITEM llvm_libs "LTO")
 
 # Link against LLVM libraries
 target_link_libraries(llvmlite ${llvm_libs})
