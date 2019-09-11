@@ -261,7 +261,11 @@ def _as_half(value):
     """
     Truncate to half-precision float.
     """
-    return struct.unpack('e', struct.pack('e', value))[0]
+    try:
+        return struct.unpack('e', struct.pack('e', value))[0]
+    except struct.error:
+        # 'e' only added in Python 3.6+
+        return _as_float(value)
 
 
 def _format_float_as_hex(value, packfmt, unpackfmt, numdigits):
