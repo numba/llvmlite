@@ -174,6 +174,10 @@ class Module(object):
                 fnty = types.FunctionType(tys[0], [tys[0], types.IntType(32)])
             elif intrinsic == 'llvm.pow':
                 fnty = types.FunctionType(tys[0], tys*2)
+            elif intrinsic == 'llvm.convert.from.fp16':
+                fnty = types.FunctionType(tys[0], [types.IntType(16)])
+            elif intrinsic == 'llvm.convert.to.fp16':
+                fnty = types.FunctionType(types.IntType(16), tys)
             else:
                 fnty = types.FunctionType(tys[0], tys)
         elif len(tys) == 2:

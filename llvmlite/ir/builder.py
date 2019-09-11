@@ -69,12 +69,26 @@ def _uniop(opname, cls=instructions.Instruction):
     return wrap
 
 
-def _uniop_intrinsic(opname):
+def _uniop_intrinsic_int(opname):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, operand, name=''):
             if not isinstance(operand.type, types.IntType):
                 raise TypeError("expected an integer type, got %s" % operand.type)
+            fn = self.module.declare_intrinsic(opname, [operand.type])
+            return self.call(fn, [operand], name)
+
+        return wrapped
+
+    return wrap
+
+
+def _uniop_intrinsic_float(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, operand, name=''):
+            if not isinstance(operand.type, (types.FloatType, types.DoubleType)):
+                raise TypeError("expected a float type, got %s" % operand.type)
             fn = self.module.declare_intrinsic(opname, [operand.type])
             return self.call(fn, [operand], name)
 
@@ -981,19 +995,19 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
-    @_uniop_intrinsic("llvm.bswap")
+    @_uniop_intrinsic_int("llvm.bswap")
     def bswap(self, cond):
         """
         Used to byte swap integer values with an even number of bytes (positive multiple of 16 bits)
         """
 
-    @_uniop_intrinsic("llvm.bitreverse")
+    @_uniop_intrinsic_int("llvm.bitreverse")
     def bitreverse(self, cond):
         """
         Reverse the bitpattern of an integer value; for example 0b10110110 becomes 0b01101101.
         """
 
-    @_uniop_intrinsic("llvm.ctpop")
+    @_uniop_intrinsic_int("llvm.ctpop")
     def ctpop(self, cond):
         """
         Counts the number of bits set in a value.
@@ -1015,4 +1029,25 @@ class IRBuilder(object):
     def fma(self, a, b, c):
         """
         Perform the fused multiply-add operation.
+        """
+
+    def convert_from_fp16(self, a, to=None, name=''):
+        """
+        Convert from an i16 to the given FP type
+        """
+        if not to:
+            raise TypeError("expected a float return type")
+        if not isinstance(to, (types.FloatType, types.DoubleType)):
+            raise TypeError("expected a float type, got %s" % to.type)
+        if a.type != types.IntType(16):
+            raise TypeError("expected an i16 type, got %s" % a.type)
+
+        opname = 'llvm.convert.from.fp16'
+        fn = self.module.declare_intrinsic(opname, [to])
+        return self.call(fn, [a], name)
+
+    @_uniop_intrinsic_float("llvm.convert.to.fp16")
+    def convert_to_fp16(self, a):
+        """
+        Convert the given FP number to an i16
         """
