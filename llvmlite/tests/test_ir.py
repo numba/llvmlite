@@ -22,6 +22,7 @@ int8 = ir.IntType(8)
 int16 = ir.IntType(16)
 int32 = ir.IntType(32)
 int64 = ir.IntType(64)
+hlf = ir.HalfType()
 flt = ir.FloatType()
 dbl = ir.DoubleType()
 
@@ -1141,10 +1142,13 @@ class TestBuildInstructions(TestBase):
         a, b = builder.function.args[:2]
         tp_f = ir.FunctionType(flt, (int32, int32))
         tp_g = ir.FunctionType(dbl, (int32,), var_arg=True)
+        tp_h = ir.FunctionType(hlf, (int32, int32))
         f = ir.Function(builder.function.module, tp_f, 'f')
         g = ir.Function(builder.function.module, tp_g, 'g')
+        h = ir.Function(builder.function.module, tp_h, 'h')
         builder.call(f, (a, b), 'res_f')
         builder.call(g, (b, a), 'res_g')
+        builder.call(h, (a, b), 'res_h')
         builder.call(f, (a, b), 'res_f_fast', cconv='fastcc')
         res_f_readonly = builder.call(f, (a, b), 'res_f_readonly')
         res_f_readonly.attributes.add('readonly')
@@ -1154,6 +1158,7 @@ class TestBuildInstructions(TestBase):
             my_block:
                 %"res_f" = call float @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...) @"g"(i32 %".2", i32 %".1")
+                %"res_h" = call f16 (i32, ...) @"h"(i32 %".1", i32 %".2")
                 %"res_f_fast" = call fastcc float @"f"(i32 %".1", i32 %".2")
                 %"res_f_readonly" = call float @"f"(i32 %".1", i32 %".2") readonly
                 %"res_fast" = call fast float @"f"(i32 %".1", i32 %".2")

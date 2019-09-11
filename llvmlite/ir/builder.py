@@ -109,7 +109,9 @@ def _triop_intrinsic(opname):
                         a.type,
                         b.type,
                         c.type))
-            elif not isinstance(a.type, (types.FloatType, types.DoubleType)):
+            elif not isinstance(
+                    a.type,
+                    (types.HalfType, types.FloatType, types.DoubleType)):
                 raise TypeError("expected an floating point type, got %s" % a.type)
             fn = self.module.declare_intrinsic(opname, [a.type, b.type, c.type])
             return self.call(fn, [a, b, c], name)

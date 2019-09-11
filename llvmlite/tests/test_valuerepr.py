@@ -5,7 +5,7 @@ import unittest
 
 from llvmlite.ir import (
     Constant, FloatType, DoubleType, LiteralStructType, IntType,
-    ArrayType)
+    ArrayType, HalfType)
 from . import TestCase
 
 
@@ -30,6 +30,14 @@ class TestValueRepr(TestCase):
         check_repr(math.pi, "float 0x400921fb60000000")
         check_repr(float('inf'), "float 0x7ff0000000000000")
         check_repr(float('-inf'), "float 0xfff0000000000000")
+
+    def test_half_repr(self):
+        def check_repr(val, expected):
+            c = Constant(HalfType(), val)
+            self.assertEqual(str(c), expected)
+        check_repr(math.pi, "f16 0x4009200000000000")
+        check_repr(float('inf'), "f16 0x7ff0000000000000")
+        check_repr(float('-inf'), "f16 0xfff0000000000000")
 
     def test_struct_repr(self):
         tp = LiteralStructType([int8, int16])

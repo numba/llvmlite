@@ -257,6 +257,13 @@ def _as_float(value):
     return struct.unpack('f', struct.pack('f', value))[0]
 
 
+def _as_half(value):
+    """
+    Truncate to half-precision float.
+    """
+    return struct.unpack('e', struct.pack('e', value))[0]
+
+
 def _format_float_as_hex(value, packfmt, unpackfmt, numdigits):
     raw = struct.pack(packfmt, float(value))
     intrep = struct.unpack(unpackfmt, raw)[0]
@@ -288,6 +295,20 @@ class _BaseFloatType(Type):
         cls._instance_cache = super(_BaseFloatType, cls).__new__(cls)
 
 
+class HalfType(_BaseFloatType):
+    """
+    The type for single-precision floats.
+    """
+    null = '0.0'
+    intrinsic_name = 'f16'
+
+    def __str__(self):
+        return self.intrinsic_name
+
+    def format_constant(self, value):
+        return _format_double(_as_half(value))
+
+
 class FloatType(_BaseFloatType):
     """
     The type for single-precision floats.
@@ -316,7 +337,7 @@ class DoubleType(_BaseFloatType):
         return _format_double(value)
 
 
-for _cls in (FloatType, DoubleType):
+for _cls in (HalfType, FloatType, DoubleType):
     _cls._create_instance()
 
 
