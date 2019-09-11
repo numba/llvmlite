@@ -1158,7 +1158,7 @@ class TestBuildInstructions(TestBase):
             my_block:
                 %"res_f" = call float @"f"(i32 %".1", i32 %".2")
                 %"res_g" = call double (i32, ...) @"g"(i32 %".2", i32 %".1")
-                %"res_h" = call f16 @"h"(i32 %".1", i32 %".2")
+                %"res_h" = call half @"h"(i32 %".1", i32 %".2")
                 %"res_f_fast" = call fastcc float @"f"(i32 %".1", i32 %".2")
                 %"res_f_readonly" = call float @"f"(i32 %".1", i32 %".2") readonly
                 %"res_fast" = call fast float @"f"(i32 %".1", i32 %".2")

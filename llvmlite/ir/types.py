@@ -307,7 +307,7 @@ class HalfType(_BaseFloatType):
     intrinsic_name = 'f16'
 
     def __str__(self):
-        return self.intrinsic_name
+        return 'half'
 
     def format_constant(self, value):
         return _format_double(_as_half(value))

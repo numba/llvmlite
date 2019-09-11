@@ -40,9 +40,9 @@ class TestValueRepr(TestCase):
         def check_repr(val, expected):
             c = Constant(HalfType(), val)
             self.assertEqual(str(c), expected)
-        check_repr(math.pi, "f16 0x4009200000000000")
-        check_repr(float('inf'), "f16 0x7ff0000000000000")
-        check_repr(float('-inf'), "f16 0xfff0000000000000")
+        check_repr(math.pi, "half 0x4009200000000000")
+        check_repr(float('inf'), "half 0x7ff0000000000000")
+        check_repr(float('-inf'), "half 0xfff0000000000000")
 
     def test_struct_repr(self):
         tp = LiteralStructType([int8, int16])
