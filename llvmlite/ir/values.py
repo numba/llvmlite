@@ -16,6 +16,8 @@ _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
                 frozenset(map(ord, ' !#$%&\'()*+,-./:;<=>?@[]^_`{|}~')))
 
+_IDENTIFIER_CHARS = frozenset(string.ascii_letters + string.digits + '$._-')
+
 
 def _escape_string(text, _map={}):
     """
@@ -790,7 +792,7 @@ class Block(NamedValue):
         return self.parent.module
 
     def descr(self, buf):
-        buf.append("{0}:\n".format(self.name))
+        buf.append("{0}:\n".format(self._format_name()))
         buf += ["  {0}\n".format(instr) for instr in self.instructions]
 
     def replace(self, old, new):
@@ -804,6 +806,16 @@ class Block(NamedValue):
         for bb in self.parent.basic_blocks:
             for instr in bb.instructions:
                 instr.replace_usage(old, new)
+    
+    def _format_name(self):
+        # Per the LLVM Language Ref on identifiers, names matching the following 
+        # regex do not need to be quoted: [%@][-a-zA-Z$._][-a-zA-Z$._0-9]*
+        # Otherwise, the identifier must be quoted and escaped.
+        name = self.name
+        if name[:1].isdigit() or not frozenset(name).issubset(_IDENTIFIER_CHARS):
+            name = name.replace('\\', '\\5c').replace('"', '\\22')
+            name = '"{0}"'.format(name)
+        return name
 
 
 
