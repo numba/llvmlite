@@ -17,7 +17,7 @@ _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
                 frozenset(map(ord, ' !#$%&\'()*+,-./:;<=>?@[]^_`{|}~')))
 
-_SIMPLE_IDENTIFIER_RE = re.compile(r"[-a-zA-Z$._][-a-zA-Z$._0-9]*")
+_SIMPLE_IDENTIFIER_RE = re.compile(r"[-a-zA-Z$._][-a-zA-Z$._0-9]*$")
 
 
 def _escape_string(text, _map={}):
@@ -813,7 +813,7 @@ class Block(NamedValue):
         # regex do not need to be quoted: [%@][-a-zA-Z$._][-a-zA-Z$._0-9]*
         # Otherwise, the identifier must be quoted and escaped.
         name = self.name
-        if not _SIMPLE_IDENTIFIER_RE.fullmatch(name):
+        if not _SIMPLE_IDENTIFIER_RE.match(name):
             name = name.replace('\\', '\\5c').replace('"', '\\22')
             name = '"{0}"'.format(name)
         return name
