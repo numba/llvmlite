@@ -6,6 +6,7 @@ Instructions are in the instructions module.
 from __future__ import print_function, absolute_import
 
 import string
+import re
 
 from .. import six
 from . import types, _utils
@@ -16,7 +17,7 @@ _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
                 frozenset(map(ord, ' !#$%&\'()*+,-./:;<=>?@[]^_`{|}~')))
 
-_IDENTIFIER_CHARS = frozenset(string.ascii_letters + string.digits + '$._-')
+_SIMPLE_IDENTIFIER_RE = re.compile(r"[-a-zA-Z$._][-a-zA-Z$._0-9]*")
 
 
 def _escape_string(text, _map={}):
@@ -812,7 +813,7 @@ class Block(NamedValue):
         # regex do not need to be quoted: [%@][-a-zA-Z$._][-a-zA-Z$._0-9]*
         # Otherwise, the identifier must be quoted and escaped.
         name = self.name
-        if name[:1].isdigit() or not frozenset(name).issubset(_IDENTIFIER_CHARS):
+        if not _SIMPLE_IDENTIFIER_RE.fullmatch(name):
             name = name.replace('\\', '\\5c').replace('"', '\\22')
             name = '"{0}"'.format(name)
         return name
