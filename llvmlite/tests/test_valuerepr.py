@@ -14,7 +14,7 @@ int8 = IntType(8)
 int16 = IntType(16)
 
 
-PY36 = sys.version_info[:2] >= (3, 6)
+PY36_OR_LATER = sys.version_info[:2] >= (3, 6)
 
 
 class TestValueRepr(TestCase):
@@ -35,7 +35,7 @@ class TestValueRepr(TestCase):
         check_repr(float('inf'), "float 0x7ff0000000000000")
         check_repr(float('-inf'), "float 0xfff0000000000000")
 
-    @unittest.skipUnless(PY36, 'py36+ only')
+    @unittest.skipUnless(PY36_OR_LATER, 'py36+ only')
     def test_half_repr(self):
         def check_repr(val, expected):
             c = Constant(HalfType(), val)
