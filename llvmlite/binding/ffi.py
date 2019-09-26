@@ -169,8 +169,20 @@ class OutputString(object):
     """
     _as_parameter_ = _DeadPointer()
 
-    def __init__(self, owned=True):
-        self._ptr = ctypes.c_char_p(None)
+    @classmethod
+    def from_return(cls, ptr):
+        """Constructing from a pointer returned from the C-API.
+        The pointer must be allocated with LLVMPY_CreateString.
+
+        Note
+        ----
+        Because ctypes auto-converts *restype* of *c_char_p* into a python
+        string, we must use *c_void_p* to obtain the raw pointer.
+        """
+        return cls(init=ctypes.cast(ptr, ctypes.c_char_p))
+
+    def __init__(self, owned=True, init=None):
+        self._ptr = init if init is not None else ctypes.c_char_p(None)
         self._as_parameter_ = ctypes.byref(self._ptr)
         self._owned = owned
 
@@ -205,6 +217,27 @@ class OutputString(object):
         return bool(self._ptr)
 
     __nonzero__ = __bool__
+
+    @property
+    def bytes(self):
+        """Get the raw bytes of content of the char pointer.
+        """
+        return self._ptr.value
+
+
+def ret_string(ptr):
+    """To wrap string return-value from C-API.
+    """
+    if ptr is not None:
+        return str(OutputString.from_return(ptr))
+
+def ret_bytes(ptr):
+    """To wrap bytes return-value from C-API.
+    """
+    if ptr is not None:
+        return OutputString.from_return(ptr).bytes
+
+
 
 
 class ObjectRef(object):

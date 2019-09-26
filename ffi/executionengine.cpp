@@ -76,7 +76,7 @@ static
 LLVMExecutionEngineRef
 create_execution_engine(LLVMModuleRef M,
                         LLVMTargetMachineRef TM,
-                        char **OutError
+                        const char **OutError
                         )
 {
     LLVMExecutionEngineRef ee = nullptr;
@@ -91,7 +91,7 @@ create_execution_engine(LLVMModuleRef M,
 
 
     if (!engine)
-        *OutError = strdup(err.c_str());
+        *OutError = LLVMPY_CreateString(err.c_str());
     else
         ee = llvm::wrap(engine);
     return ee;
@@ -100,7 +100,7 @@ create_execution_engine(LLVMModuleRef M,
 API_EXPORT(LLVMExecutionEngineRef)
 LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
                            LLVMTargetMachineRef TM,
-                           char **OutError)
+                           const char **OutError)
 {
     return create_execution_engine(M, TM, OutError);
 }
