@@ -1038,7 +1038,7 @@ class IRBuilder(object):
         if not to:
             raise TypeError("expected a float return type")
         if not isinstance(to, (types.FloatType, types.DoubleType)):
-            raise TypeError("expected a float type, got %s" % to.type)
+            raise TypeError("expected a float type, got %s" % to)
         if a.type != types.IntType(16):
             raise TypeError("expected an i16 type, got %s" % a.type)
 

@@ -1425,6 +1425,17 @@ class TestBuildInstructions(TestBase):
             "expected an i16 type, got float",
             str(raises.exception))
 
+    def test_convert_from_fp16_f32_wrongtype2(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5.5)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.convert_from_fp16(a, name='b', to=int16)
+        self.assertIn(
+            "expected a float type, got i16",
+            str(raises.exception))
+
     def test_cttz(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
