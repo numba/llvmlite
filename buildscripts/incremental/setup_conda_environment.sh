@@ -36,14 +36,15 @@ $CONDA_INSTALL gcc_linux-64 gxx_linux-64
 fi
 
 # Install enum34 for Python < 3.4 and PyPy, and install dependencies for
-# building the docs. Sphinx 1.5.4 has a bug.
+# building the docs.
 if [ "$PYTHON" == "pypy" ]; then
   $CONDA_INSTALL zlib # pypy has no conda-level zlib linkage
   python -m ensurepip
   $PIP_INSTALL enum34
+  # Sphinx 1.5.4 has a bug.
   $PIP_INSTALL sphinx==1.5.1 sphinx_rtd_theme pygments
 else
-  $CONDA_INSTALL sphinx=1.5.1 sphinx_rtd_theme pygments
+  $CONDA_INSTALL sphinx sphinx_rtd_theme pygments
   if [ "x$PYTHON" != "x" -a "$PYTHON" \< "3.4" -a "$WHEEL" != "yes" ]; then
     $CONDA_INSTALL enum34
   fi

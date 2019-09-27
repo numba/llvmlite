@@ -253,7 +253,7 @@ LLVMPY_AttributeListIterNext(LLVMAttributeListIteratorRef GI)
     using namespace llvm;
     AttributeListIterator* iter = unwrap(GI);
     if (iter->cur != iter->end) {
-        return strdup((&*iter->cur++)->getAsString().c_str());
+        return LLVMPY_CreateString((&*iter->cur++)->getAsString().c_str());
     } else {
       return NULL;
     }
@@ -265,7 +265,7 @@ LLVMPY_AttributeSetIterNext(LLVMAttributeSetIteratorRef GI)
     using namespace llvm;
     AttributeSetIterator* iter = unwrap(GI);
     if (iter->cur != iter->end) {
-        return strdup((&*iter->cur++)->getAsString().c_str());
+        return LLVMPY_CreateString((&*iter->cur++)->getAsString().c_str());
     } else {
       return NULL;
     }
@@ -389,7 +389,10 @@ LLVMPY_TypeOf(LLVMValueRef Val)
 API_EXPORT(const char *)
 LLVMPY_PrintType(LLVMTypeRef type)
 {
-    return LLVMPrintTypeToString(type);
+    char *str = LLVMPrintTypeToString(type);
+    const char *out = LLVMPY_CreateString(str);
+    LLVMDisposeMessage(str);
+    return out;
 }
 
 API_EXPORT(const char *)
@@ -400,9 +403,9 @@ LLVMPY_GetTypeName(LLVMTypeRef type)
     llvm::Type* unwrapped = llvm::unwrap(type);
     llvm::StructType* ty = llvm::dyn_cast<llvm::StructType>(unwrapped);
     if (ty && !ty->isLiteral()) {
-        return strdup(ty->getStructName().str().c_str());
+        return LLVMPY_CreateString(ty->getStructName().str().c_str());
     }
-    return strdup("");
+    return LLVMPY_CreateString("");
 }
 
 API_EXPORT(bool)
@@ -501,9 +504,9 @@ LLVMPY_GetOpcodeName(LLVMValueRef Val)
     llvm::Value* unwrapped = llvm::unwrap(Val);
     llvm::Instruction* inst = llvm::dyn_cast<llvm::Instruction>(unwrapped);
     if (inst) {
-        return strdup(inst->getOpcodeName());
+        return LLVMPY_CreateString(inst->getOpcodeName());
     }
-    return strdup("");
+    return LLVMPY_CreateString("");
 }
 
 
