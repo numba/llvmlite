@@ -42,8 +42,10 @@ build = cmdclass.get('build', build)
 build_ext = cmdclass.get('build_ext', build_ext)
 
 
-def build_library_files(dry_run):
+def build_library_files(dry_run, pic=False):
     cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
+    if pic:
+        os.environ['CXXFLAGS'] = os.environ.get('CXXFLAGS', '') + ' -fPIC'
     spawn(cmd, dry_run=dry_run)
 
 
@@ -124,7 +126,9 @@ if bdist_wheel:
         def run(self):
             # Ensure the binding file exist when running wheel build
             from llvmlite.utils import get_library_files
-            build_library_files(self.dry_run)
+            # Turn on -fPIC for wheel building on Linux
+            pic = sys.platform.startswith('linux')
+            build_library_files(self.dry_run, pic=True)
             self.distribution.package_data.update({
                 "llvmlite.binding": get_library_files(),
             })
