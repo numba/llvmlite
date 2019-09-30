@@ -66,6 +66,10 @@ class Type(object):
         return ir.FloatType()
 
     @staticmethod
+    def half():
+        return ir.HalfType()
+
+    @staticmethod
     def double():
         return ir.DoubleType()
 
