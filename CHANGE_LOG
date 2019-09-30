@@ -1,5 +1,22 @@
-v0.29.0 (RC1: May 20, 2019)
----------------------------
+v0.30.0 (RC1: Sept 30, 2019)
+----------------------------
+
+This release adds support for half-precision float and scheduled the
+deprecation of 5 arguments memset/memcpy.
+
+* PR #513: Remove restriction on sphinx version from Anaconda distro
+* PR #512: fix for block labels which contain "interesting" characters
+* PR #511: Deprecate the use of memset/memcpy with alias
+* PR #510: Add fp16 Intrinsics
+* PR #509: Add Half-Precision Type
+* PR #502: Add -fPIC flag for manylinux1 wheel building
+* PR #491: Fix incorrect hierarchy in the documentation for ir.Constant.
+* PR #474: Update docs
+* PR #470: Fix leak on string returning APIs.
+
+
+v0.29.0 (May 29, 2019)
+----------------------
 
 This release upgrades to LLVM 8.0 for all supported platforms except PPC64LE.
 Due to numerous problems with LLVM 8.0 running on PPC64LE,
