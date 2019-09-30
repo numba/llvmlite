@@ -1372,6 +1372,75 @@ class TestBuildInstructions(TestBase):
                 ret i16 %"c"
             """)
 
+    def test_convert_to_fp16_f32(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5.0)
+        b = builder.convert_to_fp16(a, name='b')
+        builder.ret(b)
+        self.check_block(block, """\
+            my_block:
+                %"b" = call i16 @"llvm.convert.to.fp16.f32"(float 0x4014000000000000)
+                ret i16 %"b"
+            """)
+
+    def test_convert_to_fp16_f32_wrongtype(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int16, 5)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.convert_to_fp16(a, name='b')
+        self.assertIn(
+            "expected a float type, got i16",
+            str(raises.exception))
+
+    def test_convert_from_fp16_f32(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(int16, 5)
+        b = builder.convert_from_fp16(a, name='b', to=flt)
+        builder.ret(b)
+        self.check_block(block, """\
+            my_block:
+                %"b" = call float @"llvm.convert.from.fp16.f32"(i16 5)
+                ret float %"b"
+            """)
+
+    def test_convert_from_fp16_f32_notype(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5.5)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.convert_from_fp16(a, name='b')
+        self.assertIn(
+            "expected a float return type",
+            str(raises.exception))
+
+
+    def test_convert_from_fp16_f32_wrongtype(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5.5)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.convert_from_fp16(a, name='b', to=flt)
+        self.assertIn(
+            "expected an i16 type, got float",
+            str(raises.exception))
+
+    def test_convert_from_fp16_f32_wrongtype2(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        a = ir.Constant(flt, 5.5)
+
+        with self.assertRaises(TypeError) as raises:
+            builder.convert_from_fp16(a, name='b', to=int16)
+        self.assertIn(
+            "expected a float type, got i16",
+            str(raises.exception))
+
     def test_cttz(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
