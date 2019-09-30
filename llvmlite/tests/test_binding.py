@@ -155,6 +155,19 @@ asm_global_ctors = r"""
     @llvm.global_dtors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @dtor_A, i8* null}}]
     """
 
+
+asm_nonalphanum_blocklabel = """; ModuleID = ""
+target triple = "unknown-unknown-unknown"
+target datalayout = ""
+
+define i32 @"foo"() 
+{
+"<>!*''#":
+  ret i32 12345
+}
+"""
+
+
 asm_attributes = r"""
 declare void @a_readonly_func(i8 *) readonly
 
@@ -249,6 +262,16 @@ class TestMisc(BaseTest):
         s = str(cm.exception)
         self.assertIn("parsing error", s)
         self.assertIn("invalid operand type", s)
+
+    def test_nonalphanum_block_name(self):
+        mod = ir.Module()
+        ft  = ir.FunctionType(ir.IntType(32), [])
+        fn  = ir.Function(mod, ft, "foo")
+        bd  = ir.IRBuilder(fn.append_basic_block(name="<>!*''#"))
+        bd.ret(ir.Constant(ir.IntType(32), 12345))
+        asm = str(mod)
+        binding_mod = llvm.parse_assembly(asm)
+        self.assertEqual(asm, asm_nonalphanum_blocklabel)
 
     def test_global_context(self):
         gcontext1 = llvm.context.get_global_context()

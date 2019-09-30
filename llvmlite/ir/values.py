@@ -6,6 +6,7 @@ Instructions are in the instructions module.
 from __future__ import print_function, absolute_import
 
 import string
+import re
 
 from .. import six
 from . import types, _utils
@@ -15,6 +16,8 @@ from ._utils import _StrCaching, _StringReferenceCaching, _HasMetadata
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
                 frozenset(map(ord, ' !#$%&\'()*+,-./:;<=>?@[]^_`{|}~')))
+
+_SIMPLE_IDENTIFIER_RE = re.compile(r"[-a-zA-Z$._][-a-zA-Z$._0-9]*$")
 
 
 def _escape_string(text, _map={}):
@@ -790,7 +793,7 @@ class Block(NamedValue):
         return self.parent.module
 
     def descr(self, buf):
-        buf.append("{0}:\n".format(self.name))
+        buf.append("{0}:\n".format(self._format_name()))
         buf += ["  {0}\n".format(instr) for instr in self.instructions]
 
     def replace(self, old, new):
@@ -804,6 +807,16 @@ class Block(NamedValue):
         for bb in self.parent.basic_blocks:
             for instr in bb.instructions:
                 instr.replace_usage(old, new)
+    
+    def _format_name(self):
+        # Per the LLVM Language Ref on identifiers, names matching the following 
+        # regex do not need to be quoted: [%@][-a-zA-Z$._][-a-zA-Z$._0-9]*
+        # Otherwise, the identifier must be quoted and escaped.
+        name = self.name
+        if not _SIMPLE_IDENTIFIER_RE.match(name):
+            name = name.replace('\\', '\\5c').replace('"', '\\22')
+            name = '"{0}"'.format(name)
+        return name
 
 
 
