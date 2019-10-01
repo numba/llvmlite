@@ -4,6 +4,7 @@ v0.30.0 (RC1: Sept 30, 2019)
 This release adds support for half-precision float and schedules the
 deprecation of memset/memcpy accepting 5 arguments (cf. LLVM change).
 
+* PR #518: Fix use of -fPIC flag in wheels
 * PR #513: Remove restriction on sphinx version from Anaconda distro
 * PR #512: fix for block labels which contain "interesting" characters
 * PR #511: Deprecate the use of memset/memcpy with alias
