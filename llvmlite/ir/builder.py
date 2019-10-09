@@ -216,6 +216,13 @@ class IRBuilder(object):
         """
         return self.function.append_basic_block(name)
 
+    def remove(self, instr):
+        """Remove the given instruction."""
+        self._block.instructions.remove(instr)
+        if self._block.terminator == instr:
+            self._block.terminator = None
+        self._anchor = min(self._anchor, len(self._block.instructions))
+
     @contextlib.contextmanager
     def goto_block(self, block):
         """
