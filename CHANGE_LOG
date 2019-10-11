@@ -1,5 +1,11 @@
-v0.30.0 (RC1: Sept 30, 2019)
-----------------------------
+v0.31.0
+-------
+
+In development.
+
+
+v0.30.0 (Oct 9, 2019)
+---------------------
 
 This release adds support for half-precision float and schedules the
 deprecation of memset/memcpy accepting 5 arguments (cf. LLVM change).
