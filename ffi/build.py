@@ -12,6 +12,7 @@ import subprocess
 import shutil
 import sys
 import tempfile
+from distutils.version import LooseVersion
 
 
 here_dir = os.path.abspath(os.path.dirname(__file__))
@@ -109,8 +110,7 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not (out.startswith('8.0.') or out.startswith('7.0.')
-            or out.startswith('7.1.')):
+    if LooseVersion(out) < '7.0':
         msg = (
             "Building llvmlite requires LLVM 7.0+ Be sure to "
             "set LLVM_CONFIG to the right executable path.\n"
