@@ -112,11 +112,11 @@ def main_posix(kind, library_ext):
     if not (out.startswith('8.0.') or out.startswith('7.0.')
             or out.startswith('7.1.')):
         msg = (
-            "Building llvmlite requires LLVM 7.0+ Be sure to "
-            "set LLVM_CONFIG to the right executable path.\n"
+            "Building llvmlite requires LLVM 7.0, 7.1, or 8.0, got %r. Be "
+            "sure to set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n"
-            )
+             % (out.strip(),))
         raise RuntimeError(msg)
 
     # Get LLVM information for building
