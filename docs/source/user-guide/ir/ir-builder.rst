@@ -205,6 +205,11 @@ Integer
 
      Arithmetic, signed, right-shift *lhs* by *rhs* bits.
 
+* .. method:: IRBuilder.cttz(value, flag)
+
+     Counts trailing zero bits in *value*. Boolean *flag* indicates whether the
+     result is defined for ``0``.
+
 * .. method:: IRBuilder.add(lhs, rhs, name='', flags=())
 
      Integer add *lhs* and *rhs*.
