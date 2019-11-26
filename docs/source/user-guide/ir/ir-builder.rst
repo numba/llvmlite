@@ -210,6 +210,11 @@ Integer
      Counts trailing zero bits in *value*. Boolean *flag* indicates whether the
      result is defined for ``0``.
 
+* .. method:: IRBuilder.ctlz(value, flag)
+
+     Counts leading zero bits in *value*. Boolean *flag* indicates whether the
+     result is defined for ``0``.
+
 * .. method:: IRBuilder.add(lhs, rhs, name='', flags=())
 
      Integer add *lhs* and *rhs*.
