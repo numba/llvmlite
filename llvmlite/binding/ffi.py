@@ -125,25 +125,12 @@ if os.name == 'nt':
 _lib_name = get_library_name()
 
 
-# Possible CDLL loading paths
-_lib_paths = [
+# Try to load from all possible CDLL loading paths paths
+for _lib_path in (
     os.path.join(_lib_dir, _lib_name),  # Absolute
     _lib_name,  # In PATH
     os.path.join('.', _lib_name),  # Current directory
-]
-
-# If pkg_resources is available, try to use it to load the shared object.
-# This allows direct import from egg files.
-try:
-    from pkg_resources import resource_filename
-except ImportError:
-    pass
-else:
-    _lib_paths.append(resource_filename(__name__, _lib_name))
-
-
-# Try to load from all of the different paths
-for _lib_path in _lib_paths:
+):
     try:
         lib = ctypes.CDLL(_lib_path)
     except OSError:
@@ -151,7 +138,16 @@ for _lib_path in _lib_paths:
     else:
         break
 else:
-    raise OSError("Could not load shared object file: {}".format(_lib_name))
+    # If pkg_resources is available, try to use it to load the shared object.
+    # This allows direct import from egg files.
+    # Delay import of pkg_resources because it is excruciatingly slow.
+    # See https://github.com/pypa/setuptools/issues/510
+    try:
+        from pkg_resources import resource_filename
+        lib = ctypes.CDLL(resource_filename(__name__, _lib_name))
+    except (ImportError, OSError):
+        raise OSError(
+            "Could not load shared object file: {}".format(_lib_name))
 
 
 lib = _lib_wrapper(lib)
