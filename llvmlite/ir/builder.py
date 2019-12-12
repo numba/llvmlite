@@ -1018,13 +1018,15 @@ class IRBuilder(object):
     @_uniop_intrinsic_with_flag("llvm.ctlz")
     def ctlz(self, cond, flag):
         """
-        Counts the number of leading zeros in a variable.
+        Counts leading zero bits in *value*. Boolean *flag* indicates whether
+        the result is defined for ``0``.
         """
 
     @_uniop_intrinsic_with_flag("llvm.cttz")
     def cttz(self, cond, flag):
         """
-        Counts the number of trailing zeros in a variable.
+        Counts trailing zero bits in *value*. Boolean *flag* indicates whether
+        the result is defined for ``0``.
         """
 
     @_triop_intrinsic("llvm.fma")
