@@ -27,7 +27,7 @@ match.
 Example(s) of the impact
 ------------------------
 
-At present the following works::
+As of 0.30 the following worked::
 
     from llvmlite import ir
 
@@ -62,7 +62,7 @@ At present the following works::
     print(str(mod))
 
 
-In future only the following will work::
+From 0.31 onwards only the following works::
 
     from llvmlite import ir
 
@@ -99,11 +99,11 @@ In future only the following will work::
 
 Schedule
 --------
-This feature will be removed with respect to this schedule:
+The feature change was implemented as follows:
 
-* v0.30 will be the last release to support an alignment specified as the third
+* v0.30 was the last release to support an alignment specified as the third
   argument (5 argument style).
-* v0.31 will support the 4 argument style call only.
+* v0.31 onwards supports the 4 argument style call only.
 
 
 Recommendations
