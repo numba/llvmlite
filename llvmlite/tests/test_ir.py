@@ -200,9 +200,9 @@ class TestFunction(TestBase):
         self.check_descr(self.descr(powi).strip(), """\
             declare double @"llvm.powi.f64"(double %".1", i32 %".2")""")
         self.check_descr(self.descr(memset).strip(), """\
-            declare void @"llvm.memset.p0i8.i32"(i8* %".1", i8 %".2", i32 %".3", i32 %".4", i1 %".5")""")
+            declare void @"llvm.memset.p0i8.i32"(i8* %".1", i8 %".2", i32 %".3", i1 %".4")""")
         self.check_descr(self.descr(memcpy).strip(), """\
-            declare void @"llvm.memcpy.p0i8.p0i8.i32"(i8* %".1", i8* %".2", i32 %".3", i32 %".4", i1 %".5")""")
+            declare void @"llvm.memcpy.p0i8.p0i8.i32"(i8* %".1", i8* %".2", i32 %".3", i1 %".4")""")
         self.check_descr(self.descr(assume).strip(), """\
             declare void @"llvm.assume"(i1 %".1")""")
 

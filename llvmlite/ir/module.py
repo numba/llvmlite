@@ -183,7 +183,7 @@ class Module(object):
         elif len(tys) == 2:
             if intrinsic == 'llvm.memset':
                 tys = [tys[0], types.IntType(8), tys[1],
-                       types.IntType(32), types.IntType(1)]
+                    types.IntType(1)]
                 fnty = types.FunctionType(types.VoidType(), tys)
             elif intrinsic in {'llvm.cttz', 'llvm.ctlz'}:
                 tys = [tys[0], types.IntType(1)]
@@ -192,7 +192,7 @@ class Module(object):
                 _error()
         elif len(tys) == 3:
             if intrinsic in ('llvm.memcpy', 'llvm.memmove'):
-                tys = tys + [types.IntType(32), types.IntType(1)]
+                tys = tys + [types.IntType(1)]
                 fnty = types.FunctionType(types.VoidType(), tys)
             elif intrinsic == 'llvm.fma':
                 tys = [tys[0]] * 3
