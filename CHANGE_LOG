@@ -1,7 +1,23 @@
-v0.31.0
--------
+v0.31.0 (Dec 20, 2019)
+----------------------
 
-In development.
+This release switches memset/memcpy to use the 4 argument style as per LLVM 7+
+and updates some documentation.
+
+Commits:
+
+* PR #485: Revert "Revert "LLVM 7 changed memset intrinsic signature, adjust
+  it""
+* PR #520: Begin development of 0.31.0
+* PR #528: Add cttz and ctlz to irbuilder docs.
+* PR #533: Update deprecation docs with full deprecation of 5 arg memset/memcpy
+* PR #535: Update docs to not report LLVM 3.8 as latest!
+
+Authors:
+
+* Isaac Virshup
+* Siu Kwan Lam (core dev)
+* Stuart Archibald (core dev)
 
 
 v0.30.0 (Oct 9, 2019)
