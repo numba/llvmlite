@@ -4,8 +4,8 @@ v0.32.0dev
 In development
 
 
-v0.31.0 (Dec 20, 2019)
-----------------------
+v0.31.0 (Jan 2, 2020)
+---------------------
 
 This release switches memset/memcpy to use the 4 argument style as per LLVM 7+
 and updates some documentation.
