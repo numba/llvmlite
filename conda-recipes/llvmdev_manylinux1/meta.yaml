@@ -1,5 +1,5 @@
-{% set shortversion = "8.0" %}
-{% set version = "8.0.0" %}
+{% set shortversion = "9.0" %}
+{% set version = "9.0.0" %}
 {% set sha256_llvm = "8872be1b12c61450cacc82b3d153eab02be2546ef34fa3580ed14137bb26224c" %}
 {% set sha256_lld = "9caec8ec922e32ffa130f0fb08e4c5a242d7e68ce757631e425e9eba2e1a6e37" %}
 {% set build_number = "0" %}

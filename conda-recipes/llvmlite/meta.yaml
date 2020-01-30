@@ -28,12 +28,12 @@ requirements:
     - python
     # On channel https://anaconda.org/numba/
     # ppc64le needs LLVM 7 series, LLVM 8 has issues
-    - llvmdev 8.0*   # [not ppc64le]
+    - llvmdev 9.0*   # [not ppc64le]
     - llvmdev 7.1*   # [ppc64le]
     - vs2015_runtime # [win]
     - enum34         # [py27]
     # llvmdev is built with libz compression support
-    - zlib           # [unix and not (armv6l or armv7l or aarch64)] 
+    - zlib           # [unix and not (armv6l or armv7l or aarch64)]
   run:
     - python
     - enum34         # [py27]
