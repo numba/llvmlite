@@ -38,6 +38,7 @@ source:
     # https://reviews.llvm.org/D47188)
     # the patch in HEAD only applies on llvm 8
     # {{ '- ../D47188-svml-VF.patch' if shortversion == '9.0' else '' }}
+    - ../D47188-svml-VF-llvm9.patch
     # undefined behavior bug due to Twine usage, this is fixed in llvm 8
     {{ '- ../twine_cfg_undefined_behavior.patch' if shortversion == '7.1' else '' }}
     # Reverts a patch limiting non-GlobalValue name length
