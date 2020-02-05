@@ -657,7 +657,7 @@ Inline assembler
 
         fty = FunctionType(IntType(64), [IntType(64),IntType(64)])
         add = builder.asm(fty, "mov $2, $0\nadd $1, $0", "=r,r,r",
-                          (arg_0, arg_1), name="asm_add")
+                          (arg_0, arg_1), True, name="asm_add")
 
 
 * .. method:: IRBuilder.load_reg(reg_type, reg_name, name='')
