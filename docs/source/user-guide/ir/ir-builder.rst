@@ -556,7 +556,7 @@ The following methods are all :ref:`terminators <terminator>`:
      To add non-default targets, use the
      :meth:`~SwitchInstr.add_case` method on the return value.
 
-* .. method:: IRBuilder.indirectbr(address)
+* .. method:: IRBuilder.branch_indirect(address)
 
      Jump to the basic block with the address *address*, a value
      of type `IntType(8).as_pointer()`.
