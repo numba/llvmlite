@@ -5,10 +5,12 @@ set BUILD_CONFIG=Release
 
 REM Configure step
 if "%ARCH%"=="32" (
-    set CMAKE_GENERATOR=Visual Studio 15 2017
+    set CMAKE_GENERATOR=Visual Studio 16 2019
 ) else (
-    set CMAKE_GENERATOR=Visual Studio 15 2017 Win64
+    set CMAKE_GENERATOR=Visual Studio 16 2019 Win64
 )
+
+set CMAKE_GENERATOR_TOOLSET=v141
 
 REM llvm 8 needs the 64bit linker
 set PreferredToolArchitecture=x64
