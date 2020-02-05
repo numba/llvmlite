@@ -4,12 +4,13 @@ cd build
 set BUILD_CONFIG=Release
 
 REM Configure step
+REM Using VS2019 generator but using the VS2017 toolset (v141)
+REM reference https://gitlab.kitware.com/cmake/cmake/issues/19157
 if "%ARCH%"=="32" (
     set CMAKE_GENERATOR=Visual Studio 16 2019
 ) else (
     set CMAKE_GENERATOR=Visual Studio 16 2019 Win64
 )
-
 set CMAKE_GENERATOR_TOOLSET=v141
 
 REM llvm 8 needs the 64bit linker
