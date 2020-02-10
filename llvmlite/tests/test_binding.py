@@ -151,7 +151,7 @@ asm_global_ctors = r"""
 
     @llvm.global_ctors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @ctor_A, i8* null}}]
     @llvm.global_dtors = appending global [1 x {{i32, void ()*, i8*}}] [{{i32, void ()*, i8*}} {{i32 0, void ()* @dtor_A, i8* null}}]
-    """
+    """  # noqa E501
 
 
 asm_nonalphanum_blocklabel = """; ModuleID = ""
@@ -163,7 +163,7 @@ define i32 @"foo"()
 "<>!*''#":
   ret i32 12345
 }
-"""
+"""  # noqa W291 # trailing space needed for match later
 
 
 asm_attributes = r"""
@@ -171,6 +171,7 @@ declare void @a_readonly_func(i8 *) readonly
 
 declare i8* @a_arg0_return_func(i8* returned, i32*)
 """
+
 
 class BaseTest(TestCase):
 
@@ -265,12 +266,11 @@ class TestMisc(BaseTest):
 
     def test_nonalphanum_block_name(self):
         mod = ir.Module()
-        ft  = ir.FunctionType(ir.IntType(32), [])
-        fn  = ir.Function(mod, ft, "foo")
-        bd  = ir.IRBuilder(fn.append_basic_block(name="<>!*''#"))
+        ft = ir.FunctionType(ir.IntType(32), [])
+        fn = ir.Function(mod, ft, "foo")
+        bd = ir.IRBuilder(fn.append_basic_block(name="<>!*''#"))
         bd.ret(ir.Constant(ir.IntType(32), 12345))
         asm = str(mod)
-        binding_mod = llvm.parse_assembly(asm)
         self.assertEqual(asm, asm_nonalphanum_blocklabel)
 
     def test_global_context(self):
@@ -541,8 +541,8 @@ class TestModuleRef(BaseTest):
     def test_as_bitcode(self):
         mod = self.module()
         bc = mod.as_bitcode()
-        # Refer to http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00064
-        # and http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00092
+        # Refer to http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00064  # noqa E501
+        # and http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00092  # noqa E501
         bitcode_wrapper_magic = b'\xde\xc0\x17\x0b'
         bitcode_magic = b'BC'
         self.assertTrue(bc.startswith(bitcode_magic) or
@@ -763,7 +763,7 @@ class JITWithTMTestMixin(JITTestMixin):
         """Test TargetMachineRef.emit_assembly()"""
         target_machine = self.target_machine()
         mod = self.module()
-        ee = self.jit(mod, target_machine)
+        ee = self.jit(mod, target_machine)  # noqa F841 # Keeps pointers alive
         raw_asm = target_machine.emit_assembly(mod)
         self.assertIn("sum", raw_asm)
         target_machine.set_asm_verbosity(True)
@@ -775,7 +775,7 @@ class JITWithTMTestMixin(JITTestMixin):
         """Test TargetMachineRef.emit_object()"""
         target_machine = self.target_machine()
         mod = self.module()
-        ee = self.jit(mod, target_machine)
+        ee = self.jit(mod, target_machine)  # noqa F841 # Keeps pointers alive
         code_object = target_machine.emit_object(mod)
         self.assertIsInstance(code_object, bytes)
         if sys.platform.startswith('linux'):
@@ -919,11 +919,11 @@ class TestValueRef(BaseTest):
         self.assertTrue(func.is_function)
         self.assertEqual(func.name, 'sum')
 
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValueError):
             func.instructions
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValueError):
             func.operands
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValueError):
             func.opcode
 
     def test_function_arguments(self):
@@ -939,9 +939,9 @@ class TestValueRef(BaseTest):
         self.assertEqual(args[1].name, '.2')
         self.assertEqual(str(args[1].type), 'i32')
 
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValueError):
             args[0].blocks
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(ValueError):
             args[0].arguments
 
     def test_function_blocks(self):
@@ -977,7 +977,6 @@ class TestValueRef(BaseTest):
 
     def test_function_attributes(self):
         mod = self.module(asm_attributes)
-        funcs = list(mod.functions)
         for func in mod.functions:
             attrs = list(func.attributes)
             if func.name == 'a_readonly_func':
@@ -1191,7 +1190,6 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
                         break
                 else:
                     raise RuntimeError("expected tokens not found")
-                add_line = opt_asm_split[idx]
                 othertoken = (toks ^ {t}).pop()
 
                 self.assertIn("%.3", orig_asm)
@@ -1469,7 +1467,7 @@ class TestObjectFile(BaseTest):
         obj = llvm.ObjectFileRef.from_data(obj_bin)
 
         jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
-            target_machine)
+                                         target_machine)
 
         jit.add_object_file(obj)
 
@@ -1493,7 +1491,7 @@ class TestObjectFile(BaseTest):
                 f.close()
 
             jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
-                target_machine)
+                                             target_machine)
 
             jit.add_object_file(temp_path)
         finally:
