@@ -8,9 +8,9 @@ REM Using VS2019 generator but using the VS2017 toolset (v141)
 REM reference https://gitlab.kitware.com/cmake/cmake/issues/19157
 set CMAKE_GENERATOR=Visual Studio 16 2019
 if "%ARCH%"=="32" (
-    set CMAKE_GENERATOR_ARCH=""
+    set CMAKE_GENERATOR_ARCH=Win32
 ) else (
-    set CMAKE_GENERATOR_ARCH=Win64
+    set CMAKE_GENERATOR_ARCH=x64
 )
 set CMAKE_GENERATOR_TOOLSET=v141
 
