@@ -6,10 +6,11 @@ set BUILD_CONFIG=Release
 REM Configure step
 REM Using VS2019 generator but using the VS2017 toolset (v141)
 REM reference https://gitlab.kitware.com/cmake/cmake/issues/19157
+set CMAKE_GENERATOR=Visual Studio 16 2019
 if "%ARCH%"=="32" (
-    set CMAKE_GENERATOR=Visual Studio 16 2019
+    set CMAKE_GENERATOR_ARCH=""
 ) else (
-    set CMAKE_GENERATOR=Visual Studio 16 2019 Win64
+    set CMAKE_GENERATOR_ARCH=Win64
 )
 set CMAKE_GENERATOR_TOOLSET=v141
 
@@ -28,7 +29,7 @@ set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD="host;AMDGPU;NVPTX" ^
 REM the platform toolset host arch is set to x64 so as to use the 64bit linker,
 REM the 32bit linker heap is too small for llvm8 so it tries and falls over to
 REM the 64bit linker anyway
-cmake -G "%CMAKE_GENERATOR%" -T "%CMAKE_GENERATOR_TOOLSET%" ^
+cmake -G "%CMAKE_GENERATOR%" -A "%CMAKE_GENERATOR_ARCH%" -T "%CMAKE_GENERATOR_TOOLSET%" ^
     -DCMAKE_BUILD_TYPE="%BUILD_CONFIG%" -DCMAKE_PREFIX_PATH=%LIBRARY_PREFIX% ^
     -DCMAKE_INSTALL_PREFIX:PATH=%LIBRARY_PREFIX% %CMAKE_CUSTOM% %SRC_DIR% ^
     -DCMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE=x64
