@@ -30,9 +30,10 @@ jobs:
         PYTHON: '3.8'
         CONDA_ENV: travisci
         RUN_FLAKE8: yes
-      pypy:
-        PYTHON: pypy
-        CONDA_ENV: travisci
+# temporarily disabled
+#       pypy:
+#         PYTHON: pypy
+#         CONDA_ENV: travisci
       py36_wheel:
         PYTHON: '3.6'
         CONDA_ENV: travisci
