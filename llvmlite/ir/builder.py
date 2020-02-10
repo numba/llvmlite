@@ -106,7 +106,8 @@ def _uniop_intrinsic_with_flag(opname):
                 raise TypeError(
                     "expected an integer type, got %s" %
                     operand.type)
-            if flag.type != types.IntType(1):
+            if not(isinstance(flag.type, types.IntType) and
+                   flag.type.width == 1):
                 raise TypeError("expected an i1 type, got %s" % flag.type)
             fn = self.module.declare_intrinsic(
                 opname, [operand.type, flag.type])
@@ -1058,7 +1059,7 @@ class IRBuilder(object):
             raise TypeError("expected a float return type")
         if not isinstance(to, (types.FloatType, types.DoubleType)):
             raise TypeError("expected a float type, got %s" % to)
-        if a.type != types.IntType(16):
+        if not (isinstance(a.type, types.IntType) and a.type.width == 16):
             raise TypeError("expected an i16 type, got %s" % a.type)
 
         opname = 'llvm.convert.from.fp16'

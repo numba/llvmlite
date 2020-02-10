@@ -117,7 +117,7 @@ _lib_dir = os.path.dirname(__file__)
 
 if os.name == 'nt':
     # Append DLL directory to PATH, to allow loading of bundled CRT libraries
-    # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).
+    # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).  # noqa E501
     os.environ['PATH'] += ';' + _lib_dir
 
 

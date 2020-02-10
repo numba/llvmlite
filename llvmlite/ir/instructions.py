@@ -596,7 +596,8 @@ class ShuffleVector(Instruction):
                                 "Undefined or of the same type as vector1.")
         if (not isinstance(mask, Constant) or
             not isinstance(mask.type, types.VectorType) or
-                mask.type.element != types.IntType(32)):
+            not (isinstance(mask.type.element, types.IntType) and
+                 mask.type.element.width == 32)):
             raise TypeError("mask needs to be a constant i32 vector.")
         typ = types.VectorType(vector1.type.element, mask.type.count)
         index_range = range(vector1.type.count

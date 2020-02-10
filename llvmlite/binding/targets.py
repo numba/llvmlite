@@ -143,8 +143,8 @@ class TargetData(ffi.ObjectRef):
         offset = ffi.lib.LLVMPY_OffsetOfElement(self, ty, position)
         if offset == -1:
             raise ValueError("Could not determined offset of {}th "
-                             "element of the type '{}'. Is it a struct type?".format(
-                                 position, str(ty)))
+                             "element of the type '{}'. Is it a struct"
+                             "type?".format(position, str(ty)))
         return offset
 
     def get_pointee_abi_size(self, ty):
@@ -402,8 +402,8 @@ ffi.lib.LLVMPY_DisposeTargetMachine.argtypes = [ffi.LLVMTargetMachineRef]
 ffi.lib.LLVMPY_GetTargetMachineTriple.argtypes = [ffi.LLVMTargetMachineRef,
                                                   POINTER(c_char_p)]
 
-ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity.argtypes = [ffi.LLVMTargetMachineRef,
-                                                        c_int]
+ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity.argtypes = [
+    ffi.LLVMTargetMachineRef, c_int]
 
 ffi.lib.LLVMPY_AddAnalysisPasses.argtypes = [
     ffi.LLVMTargetMachineRef,

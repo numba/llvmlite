@@ -13,7 +13,8 @@ class LLVMException(Exception):
 _icmp_ct = itertools.count()
 
 
-def _icmp_get(): return next(_icmp_ct)
+def _icmp_get():
+    return next(_icmp_ct)
 
 
 ICMP_EQ = _icmp_get()

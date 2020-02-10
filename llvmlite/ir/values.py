@@ -218,7 +218,7 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
 
     def _to_string(self):
         buf = []
-        if self.type != types.VoidType():
+        if not isinstance(self.type, types.VoidType):
             buf.append("{0} = ".format(self.get_reference()))
         self.descr(buf)
         return "".join(buf).rstrip()

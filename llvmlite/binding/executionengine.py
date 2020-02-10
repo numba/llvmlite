@@ -1,7 +1,6 @@
 from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
                     c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast,
                     py_object, Structure)
-import warnings
 
 from llvmlite.binding import ffi, targets, object_file
 
@@ -93,11 +92,16 @@ class ExecutionEngine(ffi.ObjectRef):
         ffi.lib.LLVMPY_FinalizeObject(self)
 
     def run_static_constructors(self):
-        """Run static constructors which initialize module-level static objects."""
+        """
+        Run static constructors which initialize module-level static objects.
+        """
         ffi.lib.LLVMPY_RunStaticConstructors(self)
 
     def run_static_destructors(self):
-        """Run static destructors which perform module-level cleanup of static resources."""
+        """
+        Run static destructors which perform module-level cleanup of static
+        resources.
+        """
         ffi.lib.LLVMPY_RunStaticDestructors(self)
 
     def remove_module(self, module):

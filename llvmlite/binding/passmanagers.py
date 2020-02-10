@@ -18,31 +18,31 @@ class PassManager(ffi.ObjectRef):
         self._capi.LLVMPY_DisposePassManager(self)
 
     def add_constant_merge_pass(self):
-        """See http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants."""
+        """See http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants."""  # noqa E501
         ffi.lib.LLVMPY_AddConstantMergePass(self)
 
     def add_dead_arg_elimination_pass(self):
-        """See http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination."""
+        """See http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination."""  # noqa E501
         ffi.lib.LLVMPY_AddDeadArgEliminationPass(self)
 
     def add_function_attrs_pass(self):
-        """See http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes."""
+        """See http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes."""  # noqa E501
         ffi.lib.LLVMPY_AddFunctionAttrsPass(self)
 
     def add_function_inlining_pass(self, threshold):
-        """See http://llvm.org/docs/Passes.html#inline-function-integration-inlining."""
+        """See http://llvm.org/docs/Passes.html#inline-function-integration-inlining."""  # noqa E501
         ffi.lib.LLVMPY_AddFunctionInliningPass(self, threshold)
 
     def add_global_dce_pass(self):
-        """See http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination."""
+        """See http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination."""  # noqa E501
         ffi.lib.LLVMPY_AddGlobalDCEPass(self)
 
     def add_global_optimizer_pass(self):
-        """See http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer."""
+        """See http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer."""  # noqa E501
         ffi.lib.LLVMPY_AddGlobalOptimizerPass(self)
 
     def add_ipsccp_pass(self):
-        """See http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation."""
+        """See http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation."""  # noqa E501
         ffi.lib.LLVMPY_AddIPSCCPPass(self)
 
     def add_dead_code_elimination_pass(self):
@@ -62,17 +62,17 @@ class PassManager(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddInstructionCombiningPass(self)
 
     def add_licm_pass(self):
-        """See http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion."""
+        """See http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion."""  # noqa E501
         ffi.lib.LLVMPY_AddLICMPass(self)
 
     def add_sccp_pass(self):
-        """See http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation."""
+        """See http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation."""  # noqa E501
         ffi.lib.LLVMPY_AddSCCPPass(self)
 
     def add_sroa_pass(self):
         """See http://llvm.org/docs/Passes.html#scalarrepl-scalar-replacement-of-aggregates-dt.
         Note that this pass corresponds to the ``opt -sroa`` command-line option,
-        despite the link above."""
+        despite the link above."""  # noqa E501
         ffi.lib.LLVMPY_AddSROAPass(self)
 
     def add_type_based_alias_analysis_pass(self):

@@ -1,5 +1,4 @@
 import atexit
-import sys
 
 
 def _encode_string(s):

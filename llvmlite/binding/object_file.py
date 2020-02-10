@@ -1,5 +1,5 @@
 from llvmlite.binding import ffi
-from ctypes import c_bool, c_char_p, c_size_t, c_ulonglong, string_at, c_uint64
+from ctypes import c_bool, c_char_p, c_size_t, string_at, c_uint64
 
 
 class SectionIteratorRef(ffi.ObjectRef):
