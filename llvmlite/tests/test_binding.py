@@ -1,5 +1,3 @@
-from __future__ import print_function, absolute_import
-
 import ctypes
 from ctypes import CFUNCTYPE, c_int
 from ctypes.util import find_library
@@ -14,10 +12,10 @@ import unittest
 from contextlib import contextmanager
 from tempfile import mkstemp
 
-from llvmlite import six, ir
+from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
-from . import TestCase
+from llvmlite.tests import TestCase
 
 
 # arvm7l needs extra ABI symbols to link successfully
@@ -213,8 +211,10 @@ class TestDependencies(BaseTest):
     Test DLL dependencies are within a certain expected set.
     """
 
-    @unittest.skipUnless(sys.platform.startswith('linux'), "Linux-specific test")
-    @unittest.skipUnless(os.environ.get('LLVMLITE_DIST_TEST'), "Distribution-specific test")
+    @unittest.skipUnless(sys.platform.startswith('linux'),
+                         "Linux-specific test")
+    @unittest.skipUnless(os.environ.get('LLVMLITE_DIST_TEST'),
+                         "Distribution-specific test")
     def test_linux(self):
         lib_path = ffi.lib._name
         env = os.environ.copy()
@@ -777,7 +777,7 @@ class JITWithTMTestMixin(JITTestMixin):
         mod = self.module()
         ee = self.jit(mod, target_machine)
         code_object = target_machine.emit_object(mod)
-        self.assertIsInstance(code_object, six.binary_type)
+        self.assertIsInstance(code_object, bytes)
         if sys.platform.startswith('linux'):
             # Sanity check
             self.assertIn(b"ELF", code_object[:10])
@@ -1095,14 +1095,14 @@ class TestPassManagerBuilder(BaseTest):
 
     def test_opt_level(self):
         pmb = self.pmb()
-        self.assertIsInstance(pmb.opt_level, six.integer_types)
+        self.assertIsInstance(pmb.opt_level, int)
         for i in range(4):
             pmb.opt_level = i
             self.assertEqual(pmb.opt_level, i)
 
     def test_size_level(self):
         pmb = self.pmb()
-        self.assertIsInstance(pmb.size_level, six.integer_types)
+        self.assertIsInstance(pmb.size_level, int)
         for i in range(4):
             pmb.size_level = i
             self.assertEqual(pmb.size_level, i)

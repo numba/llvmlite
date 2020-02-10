@@ -1,6 +1,5 @@
-from __future__ import print_function, absolute_import
 from ctypes import c_bool, c_int
-from . import ffi
+from llvmlite.binding import ffi
 
 
 def create_module_pass_manager():
@@ -154,7 +153,8 @@ ffi.lib.LLVMPY_RunFunctionPassManager.restype = c_bool
 ffi.lib.LLVMPY_AddConstantMergePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadArgEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddFunctionAttrsPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddFunctionInliningPass.argtypes = [ffi.LLVMPassManagerRef, c_int]
+ffi.lib.LLVMPY_AddFunctionInliningPass.argtypes = [
+    ffi.LLVMPassManagerRef, c_int]
 ffi.lib.LLVMPY_AddGlobalDCEPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddGlobalOptimizerPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddIPSCCPPass.argtypes = [ffi.LLVMPassManagerRef]

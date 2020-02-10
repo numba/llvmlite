@@ -1,8 +1,6 @@
-from __future__ import print_function, absolute_import
-
 import collections
 
-from . import context, values, types, _utils
+from llvmlite.ir import context, values, types, _utils
 
 
 class Module(object):
@@ -173,7 +171,7 @@ class Module(object):
             if intrinsic == 'llvm.powi':
                 fnty = types.FunctionType(tys[0], [tys[0], types.IntType(32)])
             elif intrinsic == 'llvm.pow':
-                fnty = types.FunctionType(tys[0], tys*2)
+                fnty = types.FunctionType(tys[0], tys * 2)
             elif intrinsic == 'llvm.convert.from.fp16':
                 fnty = types.FunctionType(tys[0], [types.IntType(16)])
             elif intrinsic == 'llvm.convert.to.fp16':
@@ -183,7 +181,7 @@ class Module(object):
         elif len(tys) == 2:
             if intrinsic == 'llvm.memset':
                 tys = [tys[0], types.IntType(8), tys[1],
-                    types.IntType(1)]
+                       types.IntType(1)]
                 fnty = types.FunctionType(types.VoidType(), tys)
             elif intrinsic in {'llvm.cttz', 'llvm.ctlz'}:
                 tys = [tys[0], types.IntType(1)]

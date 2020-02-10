@@ -2,9 +2,7 @@
 Tests for legacy llvmpy-compatibility APIs.
 """
 
-from __future__ import print_function, absolute_import
-
-from . import TestCase
+from llvmlite.tests import TestCase
 
 
 class TestMisc(TestCase):

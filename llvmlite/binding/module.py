@@ -1,12 +1,11 @@
-from __future__ import print_function, absolute_import
 from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
                     c_size_t, string_at)
 
-from . import ffi
-from .linker import link_modules
-from .common import _decode_string, _encode_string
-from .value import ValueRef, TypeRef
-from .context import get_global_context
+from llvmlite.binding import ffi
+from llvmlite.binding.linker import link_modules
+from llvmlite.binding.common import _decode_string, _encode_string
+from llvmlite.binding.value import ValueRef, TypeRef
+from llvmlite.binding.context import get_global_context
 
 
 def parse_assembly(llvmir, context=None):

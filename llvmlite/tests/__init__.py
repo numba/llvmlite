@@ -1,24 +1,21 @@
-
 import sys
 
 import unittest
 from unittest import TestCase
 
+import faulthandler
+
+
 try:
-    import faulthandler
-except ImportError:
-    pass
-else:
-    try:
-        # May fail in IPython Notebook with UnsupportedOperation
-        faulthandler.enable()
-    except BaseException as e:
-        msg = "Failed to enable faulthandler due to:\n{err}"
-        warnings.warn(msg.format(err=e))
+    # May fail in IPython Notebook with UnsupportedOperation
+    faulthandler.enable()
+except BaseException as e:
+    msg = "Failed to enable faulthandler due to:\n{err}"
+    warnings.warn(msg.format(err=e))
 
 
 # Try to inject Numba's unittest customizations.
-from . import customize
+from llvmlite.tests import customize
 
 
 def discover_tests(startdir):
@@ -58,4 +55,3 @@ def run_tests(suite=None, xmloutput=None, verbosity=1):
 def main():
     res = run_tests()
     sys.exit(0 if res.wasSuccessful() else 1)
-

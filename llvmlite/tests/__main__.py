@@ -1,3 +1,3 @@
-from . import main
+from llvmlite.tests import main
 
 main()
