@@ -125,11 +125,13 @@ def _refleak_cleanup():
     try:
         func1 = sys.getallocatedblocks
     except AttributeError:
-        def func1(): return 42
+        def func1():
+            return 42
     try:
         func2 = sys.gettotalrefcount
     except AttributeError:
-        def func2(): return 42
+        def func2():
+            return 42
 
     # Flush standard output, so that buffered data is sent to the OS and
     # associated Python objects are reclaimed.
@@ -171,6 +173,7 @@ class RefleakTestResult(runner.TextTestResult):
         for i in range(-200, 200):
             _int_pool[i]
 
+        alloc_before = rc_before = 0
         for i in range(repcount):
             # Use a pristine, silent result object to avoid recursion
             res = result.TestResult()
