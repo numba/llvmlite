@@ -141,8 +141,8 @@ You'll still need to point to your ``llvm-config`` if it's not in the ``PATH``:
 ``LLVM_CONFIG=/path/to/llvm-config pip3 install llvmlite``
 
 This should work on any platform that runs Python and llvm.
-And has been observed to work on ``arm``, ``ppc64le``,
-and also ``pypy3`` on ``arm``
+It has been observed to work on ``arm``, ``ppc64le``,
+and also ``pypy3`` on ``arm``.
 
 x86 users will need to pass an extra flag (see
 `issue \#522 <https://github.com/numba/llvmlite/issues/522>`_):
