@@ -59,7 +59,7 @@ def get_host_cpu_features():
     with ffi.OutputString() as out:
         outdict = FeatureMap()
         if not ffi.lib.LLVMPY_GetHostCPUFeatures(out):
-            raise RuntimeError("failed to get host cpu features.")
+            return outdict
         flag_map = {'+': True, '-': False}
         content = str(out)
         if content:  # protect against empty string

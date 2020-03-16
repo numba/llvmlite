@@ -303,23 +303,13 @@ class TestMisc(BaseTest):
         self.assertEqual(default_parts[0], triple_parts[0])
 
     def test_get_host_cpu_features(self):
-        try:
-            features = llvm.get_host_cpu_features()
-        except RuntimeError:
-            # Allow non-x86 arch to pass even if an RuntimeError is raised
-            triple = llvm.get_process_triple()
-            # For now, we know for sure that x86 is supported.
-            # We can restrict the test if we know this works on other arch.
-            is_x86 = triple.startswith('x86')
-            self.assertFalse(is_x86,
-                             msg="get_host_cpu_features() should not raise")
-            return
+        features = llvm.get_host_cpu_features()
         # Check the content of `features`
         self.assertIsInstance(features, dict)
         self.assertIsInstance(features, llvm.FeatureMap)
         for k, v in features.items():
             self.assertIsInstance(k, str)
-            self.assertTrue(k)  # feature string cannot be empty
+            self.assertTrue(k)  # single feature string cannot be empty
             self.assertIsInstance(v, bool)
         self.assertIsInstance(features.flatten(), str)
 
@@ -330,7 +320,10 @@ class TestMisc(BaseTest):
         self.assertIsNotNone(re.match(regex, "+aa"))
         self.assertIsNotNone(re.match(regex, "+a,-bb"))
         # check CpuFeature.flatten()
-        self.assertIsNotNone(re.match(regex, features.flatten()))
+        if len(features) == 0:
+            self.assertEqual(features.flatten(), "")
+        else:
+            self.assertIsNotNone(re.match(regex, features.flatten()))
 
     def test_get_host_cpu_name(self):
         cpu = llvm.get_host_cpu_name()
