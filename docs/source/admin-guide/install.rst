@@ -83,8 +83,7 @@ The manual instructions below describe the main steps, but refer to the recipe f
     #. ``D47188-svml-VF.patch``: Add support for vectorized math functions via Intel SVML
     #. ``partial-testing.patch``: Enables additional parts of the LLVM test suite
     #. ``twine_cfg_undefined_behavior.patch``: Fix obscure memory corruption bug in LLVM that hasn't been fixed in master yet
-    #. ``0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch``: Fixes a bug relating to common symbol section size computation
-    #. ``0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch``: Test for the above patch
+    #. ``0001-Revert-Limit-size-of-non-GlobalValue-name.patch``: revert the limit put on the length of a non-GlobalValue name
 
 #. For Linux/macOS:
     #. ``export PREFIX=desired_install_location CPU_COUNT=N`` (``N`` is number of parallel compile tasks)
