@@ -130,6 +130,32 @@ Installing
 
      python setup.py install
 
+Installing from sdist
+---------------------
+
+If you don't want to do any modifications to llvmlite itself,
+it's also possible to use ``pip`` to compile and install llvmlite
+from the latest released sdist package.
+You'll still need to point to your ``llvm-config`` if it's not in the ``PATH``:
+
+``LLVM_CONFIG=/path/to/llvm-config pip3 install llvmlite``
+
+This should work on any platform that runs Python and llvm.
+It has been observed to work on ``arm``, ``ppc64le``,
+and also ``pypy3`` on ``arm``.
+
+x86 users will need to pass an extra flag (see
+`issue \#522 <https://github.com/numba/llvmlite/issues/522>`_):
+
+``LLVM_CONFIG=/path/to/llvm-config CXXFLAGS=-fPIC pip3 install llvmlite``
+
+This is known to work with ``pypy3`` on ``Linux x64``.
+
+It's also possible to force ``pip`` to rebuild ``llvmlite`` locally with
+a custom version of ``llvm`` :
+
+``LLVM_CONFIG=/path/to/custom/llvm-config CXXFLAGS=-fPIC pip3 install --no-binary :all: llvmlite``
+
 
 .. _why-static:
 
