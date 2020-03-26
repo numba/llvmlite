@@ -2,11 +2,9 @@
 Classes that are LLVM types
 """
 
-from __future__ import print_function, absolute_import
-
 import struct
 
-from ._utils import _StrCaching
+from llvmlite.ir._utils import _StrCaching
 
 
 def _wrapname(x):
@@ -36,8 +34,8 @@ class Type(_StrCaching):
         """
         Convert this type object to an LLVM type.
         """
-        from . import Module, GlobalVariable
-        from ..binding import parse_assembly
+        from llvmlite.ir import Module, GlobalVariable
+        from llvmlite.binding import parse_assembly
 
         if context is None:
             m = Module()
@@ -80,7 +78,7 @@ class Type(_StrCaching):
         """
         Create a LLVM constant of this type with the given Python value.
         """
-        from . import Constant
+        from llvmlite.ir import Constant
         return Constant(self, value)
 
 
@@ -359,6 +357,7 @@ class _Repeat(object):
         else:
             raise IndexError(item)
 
+
 class VectorType(Type):
     """
     The type for vectors of primitive data items (e.g. "<f32 x 4>").
@@ -408,7 +407,6 @@ class VectorType(Type):
                              % (self, len(values)))
         return [Constant(ty, val) if not isinstance(val, Value) else val
                 for ty, val in zip(self.elements, values)]
-
 
 
 class Aggregate(Type):

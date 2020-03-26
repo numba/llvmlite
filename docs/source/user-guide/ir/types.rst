@@ -88,11 +88,6 @@ Atomic types
 
    The type of half-precision, floating-point, real numbers.
 
-   NOTE: On Python 3.5 and earlier, constants won't be rounded
-   to valid fp16 numbers, and so may generate invalid IR. In this
-   case, use rounding code like ``float(np.float16(1.12312321e-2))``
-   before calling :class:`IRBuilder` methods.
-
 
 .. class:: FloatType()
 

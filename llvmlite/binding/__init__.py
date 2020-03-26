@@ -1,8 +1,6 @@
 """
-Things that relies on LLVM library
+Things that rely on the LLVM library
 """
-from __future__ import print_function, absolute_import
-
 from .dylib import *
 from .executionengine import *
 from .initfini import *

@@ -1,5 +1,3 @@
-from __future__ import print_function, absolute_import
-
 import math
 import sys
 import unittest
@@ -7,7 +5,7 @@ import unittest
 from llvmlite.ir import (
     Constant, FloatType, DoubleType, LiteralStructType, IntType,
     ArrayType, HalfType)
-from . import TestCase
+from llvmlite.tests import TestCase
 
 
 int8 = IntType(8)

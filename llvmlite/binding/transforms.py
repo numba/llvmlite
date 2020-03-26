@@ -1,7 +1,6 @@
-from __future__ import print_function, absolute_import
 from ctypes import c_uint, c_bool
-from . import ffi
-from . import passmanagers
+from llvmlite.binding import ffi
+from llvmlite.binding import passmanagers
 
 
 def create_pass_manager_builder():
@@ -48,7 +47,8 @@ class PassManagerBuilder(ffi.ObjectRef):
 
     @inlining_threshold.setter
     def inlining_threshold(self, threshold):
-        ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(self, threshold)
+        ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(
+            self, threshold)
 
     @property
     def disable_unroll_loops(self):
@@ -149,4 +149,3 @@ for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
               ):
     _func.argtypes = [ffi.LLVMPassManagerBuilderRef]
     _func.restype = c_bool
-

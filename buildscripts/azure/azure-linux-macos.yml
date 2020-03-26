@@ -31,7 +31,8 @@ jobs:
     - script: |
         export PATH=$HOME/miniconda3/bin:$PATH
         conda install -y flake8
-        flake8 numba
+        echo "Running flake8 check"
+        flake8 llvmlite
       displayName: 'Flake8'
       condition: eq(variables['RUN_FLAKE8'], 'yes')
 

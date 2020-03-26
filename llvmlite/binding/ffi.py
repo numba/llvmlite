@@ -2,9 +2,8 @@ import ctypes
 import os
 import threading
 
-from .common import _decode_string, _is_shutting_down
-from ..utils import get_library_name
-from ..six import PY2
+from llvmlite.binding.common import _decode_string, _is_shutting_down
+from llvmlite.utils import get_library_name
 
 
 def _make_opaque_ref(name):
@@ -118,7 +117,7 @@ _lib_dir = os.path.dirname(__file__)
 
 if os.name == 'nt':
     # Append DLL directory to PATH, to allow loading of bundled CRT libraries
-    # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).
+    # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).  # noqa E501
     os.environ['PATH'] += ';' + _lib_dir
 
 
@@ -231,13 +230,12 @@ def ret_string(ptr):
     if ptr is not None:
         return str(OutputString.from_return(ptr))
 
+
 def ret_bytes(ptr):
     """To wrap bytes return-value from C-API.
     """
     if ptr is not None:
         return OutputString.from_return(ptr).bytes
-
-
 
 
 class ObjectRef(object):
@@ -311,7 +309,7 @@ class ObjectRef(object):
         if not hasattr(other, "_ptr"):
             return False
         return ctypes.addressof(self._ptr[0]) == \
-                ctypes.addressof(other._ptr[0])
+            ctypes.addressof(other._ptr[0])
 
     __nonzero__ = __bool__
 

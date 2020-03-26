@@ -85,4 +85,3 @@ def build_pass_managers(**kws):
             pmb.populate(fpm)
 
         return namedtuple("pms", ['pm', 'fpm'])(pm=pm, fpm=fpm)
-
