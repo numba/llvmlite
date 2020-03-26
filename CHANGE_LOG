@@ -1,7 +1,34 @@
-v0.32.0dev
+v0.32.0rc1
 ----------
 
-In development
+The main changes in this release is the removal of specific code for Python 2
+and Python <3.6.
+
+Pull requests:
+
+* PR #560: ENH: Better error message
+* PR #558: update install docs
+* PR #556: binding: Allow empty features list
+* PR #555: travis: Cleanup
+* PR #554: azure-pipelines: Bump VM images.
+* PR #552: Add paragraph on installing from sdist and on non-traditional
+  platforms.
+* PR #551: Remove python 2, python < 3.6, fix up, add flake8
+* PR #549: Miscalled method and missing parameter in the documentation
+* PR #547: Permit building on Visual Studio 2017
+* PR #543: Update error message in LLVM version check.
+* PR #540: update to final release date for 0.31.0
+
+Authors:
+
+* ARF1
+* Eric Larson
+* Jan Vesely
+* Shan Sikdar
+* Siu Kwan Lam  (core dev)
+* Stan Seibert (core dev)
+* Stuart Archibald (core dev)
+* Vladislav Hrčka
 
 
 v0.31.0 (Jan 2, 2020)
