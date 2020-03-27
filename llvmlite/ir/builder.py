@@ -723,7 +723,7 @@ class IRBuilder(object):
         self._insert(al)
         return al
 
-    def load(self, ptr, name='', align=None, atomic=False, ordering=None):
+    def load(self, ptr, name='', align=None, atomic_ordering=None):
         """
         Load value from pointer, with optional guaranteed alignment:
             name = *ptr
@@ -731,16 +731,15 @@ class IRBuilder(object):
         if not isinstance(ptr.type, types.PointerType):
             msg = "cannot load from value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
-        if atomic:
-            ld = instructions.LoadAtomicInstr(self.block, ptr, ordering, align, name)
+        if atomic_ordering is not None:
+            ld = instructions.LoadAtomicInstr(self.block, ptr, atomic_ordering, align, name)
         else:
             ld = instructions.LoadInstr(self.block, ptr, name)
             ld.align = align
-
         self._insert(ld)
         return ld
 
-    def store(self, value, ptr, align=None, atomic=False, ordering=None):
+    def store(self, value, ptr, align=None, atomic_ordering=None):
         """
         Store value to pointer, with optional guaranteed alignment:
             *ptr = name
@@ -751,13 +750,39 @@ class IRBuilder(object):
         if ptr.type.pointee != value.type:
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
-        if atomic:
-            st = instructions.StoreAtomicInstr(self.block, value, ptr, ordering, align)
+        if atomic_ordering is not None:
+            st = instructions.StoreAtomicInstr(self.block, value, ptr, atomic_ordering, align)
         else:
             st = instructions.StoreInstr(self.block, value, ptr)
             st.align = align
         self._insert(st)
         return st
+
+    def load_atomic(self, ptr, ordering, align, name=''):
+        """
+        Load value from pointer, with optional guaranteed alignment:
+            name = *ptr
+
+        Deprecated. Please use the `atomic_ordering` keyword of load().
+        """
+        return self.load(
+            ptr=ptr,
+            name=name,
+            align=align,
+            atomic_ordering=ordering)
+
+    def store_atomic(self, value, ptr, ordering, align):
+        """
+        Store value to pointer, with optional guaranteed alignment:
+            *ptr = name
+
+        Deprecated. Please use the `atomic_ordering` keyword of store().
+        """
+        return self.store(
+            value=value,
+            ptr=ptr,
+            align=align,
+            atomic_ordering=ordering)
 
     #
     # Terminators APIs
