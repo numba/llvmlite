@@ -111,9 +111,9 @@ def main_posix(kind, library_ext):
     out = out.decode('latin1')
     print(out)
     v = tuple((int(d) for d in out.split(".")[:2]))
-    if not (7, 0) <= v <= (8, 0):
+    if not (10, 0) <= v <= (11, 0):
         msg = (
-            "Building llvmlite requires LLVM 7.0.x, 7.1.x or 8.0.x, got {!r}. "
+            "Building llvmlite requires LLVM >= 10.0.x, got {!r}. "
             "Be sure to set LLVM_CONFIG to the right executable path.\n"
             "Read the documentation at http://llvmlite.pydata.org/ for more "
             "information about building llvmlite.\n".format(out.strip()))

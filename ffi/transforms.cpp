@@ -6,17 +6,6 @@
 
 extern "C" {
 
-namespace llvm {
-    inline PassManagerBuilder *unwrap(LLVMPassManagerBuilderRef P) {
-        return reinterpret_cast<PassManagerBuilder*>(P);
-    }
-
-    inline LLVMPassManagerBuilderRef wrap(PassManagerBuilder *P) {
-        return reinterpret_cast<LLVMPassManagerBuilderRef>(P);
-    }
-}
-
-
 API_EXPORT(LLVMPassManagerBuilderRef)
 LLVMPY_PassManagerBuilderCreate()
 {
