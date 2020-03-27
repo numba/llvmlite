@@ -734,8 +734,7 @@ class IRBuilder(object):
         if atomic_ordering is not None:
             ld = instructions.LoadAtomicInstr(self.block, ptr, atomic_ordering, align, name)
         else:
-            ld = instructions.LoadInstr(self.block, ptr, name)
-            ld.align = align
+            ld = instructions.LoadInstr(self.block, ptr, name, align)
         self._insert(ld)
         return ld
 
@@ -753,8 +752,7 @@ class IRBuilder(object):
         if atomic_ordering is not None:
             st = instructions.StoreAtomicInstr(self.block, value, ptr, atomic_ordering, align)
         else:
-            st = instructions.StoreInstr(self.block, value, ptr)
-            st.align = align
+            st = instructions.StoreInstr(self.block, value, ptr, align)
         self._insert(st)
         return st
 

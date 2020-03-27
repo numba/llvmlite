@@ -390,10 +390,10 @@ class CastInstr(Instruction):
 
 class LoadInstr(Instruction):
 
-    def __init__(self, parent, ptr, name=''):
+    def __init__(self, parent, ptr, name='', align=None):
         super(LoadInstr, self).__init__(parent, ptr.type.pointee, "load",
                                         [ptr], name=name)
-        self.align = None
+        self.align = align
 
     def descr(self, buf):
         [val] = self.operands
@@ -411,9 +411,10 @@ class LoadInstr(Instruction):
 
 
 class StoreInstr(Instruction):
-    def __init__(self, parent, val, ptr):
+    def __init__(self, parent, val, ptr, align=None):
         super(StoreInstr, self).__init__(parent, types.VoidType(), "store",
                                          [val, ptr])
+        self.align = align
 
     def descr(self, buf):
         val, ptr = self.operands
