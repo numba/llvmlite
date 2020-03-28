@@ -389,86 +389,91 @@ class CastInstr(Instruction):
 
 
 class LoadInstr(Instruction):
-
-    def __init__(self, parent, ptr, name='', align=None):
+    def __init__(self, parent, ptr, name='', align=None, atomic_ordering=None):
+        if atomic_ordering is not None and align is None:
+            msg = "atomic load requires the align paramter to be specified"
+            raise ValueError(msg)
         super(LoadInstr, self).__init__(parent, ptr.type.pointee, "load",
                                         [ptr], name=name)
         self.align = align
+        self.atomic_ordering = atomic_ordering
 
     def descr(self, buf):
         [val] = self.operands
-        if self.align is not None:
-            align = ', align %d' % (self.align)
+        if self.atomic_ordering is None:
+            if self.align is not None:
+                align = ', align %d' % (self.align)
+            else:
+                align = ''
+            buf.append("load {0}, {1} {2}{3}{4}\n".format(
+                val.type.pointee,
+                val.type,
+                val.get_reference(),
+                align,
+                self._stringify_metadata(leading_comma=True),
+            ))
         else:
-            align = ''
-        buf.append("load {0}, {1} {2}{3}{4}\n".format(
-            val.type.pointee,
-            val.type,
-            val.get_reference(),
-            align,
-            self._stringify_metadata(leading_comma=True),
-        ))
+            buf.append("load atomic {0}, {1} {2} {3}, align {4}{5}\n".format(
+                val.type.pointee,
+                val.type,
+                val.get_reference(),
+                self.atomic_ordering,
+                self.align,
+                self._stringify_metadata(leading_comma=True),
+            ))
 
 
 class StoreInstr(Instruction):
-    def __init__(self, parent, val, ptr, align=None):
+    def __init__(self, parent, val, ptr, align=None, atomic_ordering=None):
+        if atomic_ordering is not None and align is None:
+            msg = "atomic store requires the align paramter to be specified"
+            raise ValueError(msg)
         super(StoreInstr, self).__init__(parent, types.VoidType(), "store",
                                          [val, ptr])
         self.align = align
+        self.atomic_ordering = atomic_ordering
 
     def descr(self, buf):
         val, ptr = self.operands
-        if self.align is not None:
-            align = ', align %d' % (self.align)
+        if self.atomic_ordering is None:
+            if self.align is not None:
+                align = ', align %d' % (self.align)
+            else:
+                align = ''
+            buf.append("store {0} {1}, {2} {3}{4}{5}\n".format(
+                val.type,
+                val.get_reference(),
+                ptr.type,
+                ptr.get_reference(),
+                align,
+                self._stringify_metadata(leading_comma=True),
+            ))
         else:
-            align = ''
-        buf.append("store {0} {1}, {2} {3}{4}{5}\n".format(
-            val.type,
-            val.get_reference(),
-            ptr.type,
-            ptr.get_reference(),
-            align,
-            self._stringify_metadata(leading_comma=True),
-        ))
+            buf.append("store atomic {0} {1}, {2} {3} {4}, align {5}{6}\n".format(
+                val.type,
+                val.get_reference(),
+                ptr.type,
+                ptr.get_reference(),
+                self.atomic_ordering,
+                self.align,
+                self._stringify_metadata(leading_comma=True),
+            ))
+            
 
+class LoadAtomicInstr(LoadInstr):
+    # QUESTION: Can this be removed without prior deprecation?
 
-class LoadAtomicInstr(Instruction):
     def __init__(self, parent, ptr, ordering, align, name=''):
-        super(LoadAtomicInstr, self).__init__(parent, ptr.type.pointee,
-                                              "load atomic", [ptr], name=name)
-        self.ordering = ordering
-        self.align = align
-
-    def descr(self, buf):
-        [val] = self.operands
-        buf.append("load atomic {0}, {1} {2} {3}, align {4}{5}\n".format(
-            val.type.pointee,
-            val.type,
-            val.get_reference(),
-            self.ordering,
-            self.align,
-            self._stringify_metadata(leading_comma=True),
-        ))
+        super(LoadAtomicInstr, self).__init__(
+            parent, ptr, align=align, atomic_ordering=ordering, name=name)
 
 
-class StoreAtomicInstr(Instruction):
+class StoreAtomicInstr(StoreInstr):
+    # QUESTION: Can this be removed without prior deprecation?
+
     def __init__(self, parent, val, ptr, ordering, align):
-        super(StoreAtomicInstr, self).__init__(parent, types.VoidType(),
-                                               "store atomic", [val, ptr])
-        self.ordering = ordering
-        self.align = align
-
-    def descr(self, buf):
-        val, ptr = self.operands
-        buf.append("store atomic {0} {1}, {2} {3} {4}, align {5}{6}\n".format(
-            val.type,
-            val.get_reference(),
-            ptr.type,
-            ptr.get_reference(),
-            self.ordering,
-            self.align,
-            self._stringify_metadata(leading_comma=True),
-        ))
+        super(StoreAtomicInstr, self).__init__(
+            parent, val, ptr, align=align, atomic_ordering=ordering)
 
 
 class AllocaInstr(Instruction):
