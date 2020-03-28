@@ -83,8 +83,7 @@ The manual instructions below describe the main steps, but refer to the recipe f
     #. ``D47188-svml-VF.patch``: Add support for vectorized math functions via Intel SVML
     #. ``partial-testing.patch``: Enables additional parts of the LLVM test suite
     #. ``twine_cfg_undefined_behavior.patch``: Fix obscure memory corruption bug in LLVM that hasn't been fixed in master yet
-    #. ``0001-RuntimeDyld-Fix-a-bug-in-RuntimeDyld-loadObjectImpl-.patch``: Fixes a bug relating to common symbol section size computation
-    #. ``0001-RuntimeDyld-Add-test-case-that-was-accidentally-left.patch``: Test for the above patch
+    #. ``0001-Revert-Limit-size-of-non-GlobalValue-name.patch``: revert the limit put on the length of a non-GlobalValue name
 
 #. For Linux/macOS:
     #. ``export PREFIX=desired_install_location CPU_COUNT=N`` (``N`` is number of parallel compile tasks)
@@ -130,6 +129,32 @@ Installing
 
      python setup.py install
 
+Installing from sdist
+---------------------
+
+If you don't want to do any modifications to llvmlite itself,
+it's also possible to use ``pip`` to compile and install llvmlite
+from the latest released sdist package.
+You'll still need to point to your ``llvm-config`` if it's not in the ``PATH``:
+
+``LLVM_CONFIG=/path/to/llvm-config pip3 install llvmlite``
+
+This should work on any platform that runs Python and llvm.
+It has been observed to work on ``arm``, ``ppc64le``,
+and also ``pypy3`` on ``arm``.
+
+x86 users will need to pass an extra flag (see
+`issue \#522 <https://github.com/numba/llvmlite/issues/522>`_):
+
+``LLVM_CONFIG=/path/to/llvm-config CXXFLAGS=-fPIC pip3 install llvmlite``
+
+This is known to work with ``pypy3`` on ``Linux x64``.
+
+It's also possible to force ``pip`` to rebuild ``llvmlite`` locally with
+a custom version of ``llvm`` :
+
+``LLVM_CONFIG=/path/to/custom/llvm-config CXXFLAGS=-fPIC pip3 install --no-binary :all: llvmlite``
+
 
 .. _why-static:
 
@@ -165,12 +190,6 @@ static linkage to LLVM, but there are several important reasons for this:
    LLVM to work.  These other LLVMs can be wrapped in a similar fashion as
    llvmlite, and will stay isolated.
 
-#. *We need to support Windows + Python 2.7* - Python 2.7 extensions on
-   Windows needs to be built with Visual Studio 2008 for ABI compatibility
-   reasons.  This presents a serious issue as VS2008 can no longer build LLVM.
-   The best workaround we have found (until the sunset of Python 2.7) is to
-   build LLVM and the llvmlite C wrapper with VS2015 and call it through
-   ctypes.  This is not ideal, but experience has shown it seems to work.
 
 Static linkage of LLVM was definitely not our goal early in Numba development,
 but seems to have become the only workable solution given our constraints.

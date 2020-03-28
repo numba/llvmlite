@@ -4,21 +4,20 @@
 # Reference:
 # - https://github.com/pypa/python-manylinux-demo
 
-sudo: required
+language: shell
+os: linux
+dist: xenial
 services:
   - docker
 
-matrix:
+jobs:
   include:
-    - env: PYVER=cp27-cp27mu ARCH=x64
-    - env: PYVER=cp35-cp35m  ARCH=x64
     - env: PYVER=cp36-cp36m  ARCH=x64
     - env: PYVER=cp37-cp37m  ARCH=x64
-    - env: PYVER=cp27-cp27mu ARCH=x32
-    - env: PYVER=cp35-cp35m  ARCH=x32
+    - env: PYVER=cp38-cp38   ARCH=x64
     - env: PYVER=cp36-cp36m  ARCH=x32
     - env: PYVER=cp37-cp37m  ARCH=x32
-
+    - env: PYVER=cp38-cp38   ARCH=x32
 
 install:
     - if [ "$ARCH" == "x64" ]; then DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64; else DOCKER_IMAGE=quay.io/pypa/manylinux1_i686; fi

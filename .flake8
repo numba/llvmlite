@@ -1,0 +1,23 @@
+[flake8]
+ignore =
+    E20,   # Extra space in brackets
+    E231,E241,  # Multiple spaces around ","
+    E26,   # Comments
+    E731,  # Assigning lambda expression
+    E741,  # Ambiguous variable names
+    W503,  # line break before binary operator
+    W504,  # line break after binary operator
+max-line-length = 80
+
+exclude =
+    __pycache__
+    .git
+    *.pyc
+    *~
+    *.o
+    *.so
+    *.cpp
+    *.c
+    *.h
+    __init__.py
+    _version.py

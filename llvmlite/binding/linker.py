@@ -1,6 +1,5 @@
-from __future__ import print_function, absolute_import
 from ctypes import c_int, c_char_p, POINTER
-from . import ffi
+from llvmlite.binding import ffi
 
 
 def link_modules(dst, src):
