@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import warnings
 
 from llvmlite.ir import instructions, types, values
 
@@ -731,10 +732,7 @@ class IRBuilder(object):
         if not isinstance(ptr.type, types.PointerType):
             msg = "cannot load from value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
-        if atomic_ordering is not None:
-            ld = instructions.LoadAtomicInstr(self.block, ptr, atomic_ordering, align, name)
-        else:
-            ld = instructions.LoadInstr(self.block, ptr, name, align)
+        ld = instructions.LoadInstr(self.block, ptr, name, align, atomic_ordering)
         self._insert(ld)
         return ld
 
@@ -749,10 +747,7 @@ class IRBuilder(object):
         if ptr.type.pointee != value.type:
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
-        if atomic_ordering is not None:
-            st = instructions.StoreAtomicInstr(self.block, value, ptr, atomic_ordering, align)
-        else:
-            st = instructions.StoreInstr(self.block, value, ptr, align)
+        st = instructions.StoreInstr(self.block, value, ptr, align, atomic_ordering)
         self._insert(st)
         return st
 
@@ -763,6 +758,10 @@ class IRBuilder(object):
 
         Deprecated. Please use the `atomic_ordering` keyword of load().
         """
+        msg = ("load_atomic() is being deprecated. Please use the "
+               "atomic_ordering parameter of load() instead.")
+        warnings.warn(msg, DeprecationWarning)
+
         return self.load(
             ptr=ptr,
             name=name,
@@ -776,6 +775,10 @@ class IRBuilder(object):
 
         Deprecated. Please use the `atomic_ordering` keyword of store().
         """
+        msg = ("store_atomic() is being deprecated. Please use the "
+               "atomic_ordering parameter of store() instead.")
+        warnings.warn(msg, DeprecationWarning)
+
         return self.store(
             value=value,
             ptr=ptr,

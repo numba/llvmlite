@@ -1,6 +1,7 @@
 """
 Implementation of LLVM IR instructions.
 """
+import warnings
 
 from llvmlite.ir import types
 from llvmlite.ir.values import (Block, Function, Value, NamedValue, Constant,
@@ -458,20 +459,24 @@ class StoreInstr(Instruction):
                 self.align,
                 self._stringify_metadata(leading_comma=True),
             ))
-            
+
 
 class LoadAtomicInstr(LoadInstr):
-    # QUESTION: Can this be removed without prior deprecation?
-
     def __init__(self, parent, ptr, ordering, align, name=''):
+        msg = ("LoadAtomicInstr() is being deprecated. Please use the "
+               "atomic_ordering parameter of LoadInstr() instead.")
+        warnings.warn(msg, DeprecationWarning)
+
         super(LoadAtomicInstr, self).__init__(
             parent, ptr, align=align, atomic_ordering=ordering, name=name)
 
 
 class StoreAtomicInstr(StoreInstr):
-    # QUESTION: Can this be removed without prior deprecation?
-
     def __init__(self, parent, val, ptr, ordering, align):
+        msg = ("StoreAtomicInstr() is being deprecated. Please use the "
+               "atomic_ordering parameter of StoreInstr() instead.")
+        warnings.warn(msg, DeprecationWarning)
+
         super(StoreAtomicInstr, self).__init__(
             parent, val, ptr, align=align, atomic_ordering=ordering)
 
