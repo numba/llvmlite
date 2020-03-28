@@ -724,7 +724,8 @@ class IRBuilder(object):
         self._insert(al)
         return al
 
-    def load(self, ptr, name='', align=None, atomic_ordering=None):
+    def load(self, ptr, name='', align=None, atomic_ordering=None,
+             volatile=False):
         """
         Load value from pointer, with optional guaranteed alignment:
             name = *ptr
@@ -732,11 +733,13 @@ class IRBuilder(object):
         if not isinstance(ptr.type, types.PointerType):
             msg = "cannot load from value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
-        ld = instructions.LoadInstr(self.block, ptr, name, align, atomic_ordering)
+        ld = instructions.LoadInstr(self.block, ptr, name, align,
+                                    atomic_ordering, volatile)
         self._insert(ld)
         return ld
 
-    def store(self, value, ptr, align=None, atomic_ordering=None):
+    def store(self, value, ptr, align=None, atomic_ordering=None,
+              volatile=False):
         """
         Store value to pointer, with optional guaranteed alignment:
             *ptr = name
@@ -747,7 +750,8 @@ class IRBuilder(object):
         if ptr.type.pointee != value.type:
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
-        st = instructions.StoreInstr(self.block, value, ptr, align, atomic_ordering)
+        st = instructions.StoreInstr(self.block, value, ptr, align,
+                                     atomic_ordering, volatile)
         self._insert(st)
         return st
 

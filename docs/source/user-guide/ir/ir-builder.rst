@@ -459,25 +459,43 @@ Memory
      *typ*. If *size* is not given, a stack slot for 1 value is
      allocated.
 
-* .. method:: IRBuilder.load(ptr, name='', align=None)
+* .. method:: IRBuilder.load(ptr, name='', align=None, atomic_ordering=None, volatile=False)
 
      Load value from pointer *ptr*. If *align* is passed, it should
      be a Python integer specifying the guaranteed pointer
      alignment.
+     
+     If *volatile* is truthy, the load is marked as volatile.
 
-* .. method:: IRBuilder.store(value, ptr, align=None)
+     If *atomic_ordering* and *align* are specified, the load is marked as 
+     atomic.
+
+* .. method:: IRBuilder.store(value, ptr, align=None, atomic_ordering=None, volatile=False)
 
      Store *value* to pointer *ptr*. If *align* is passed, it should
      be a Python integer specifying the guaranteed pointer
      alignment.
+     
+     If *volatile* is truthy, the load is marked as volatile.
+
+     If *atomic_ordering* and *align* are specified, the load is marked as 
+     atomic.
 
 * .. method:: IRBuilder.load_atomic(ptr, ordering, align, name='')
+
+     .. deprecated:: 0.33.0
+
+        Use :func:`IRBuilder.load` with parameter `atomic_ordering` instead.
 
      Load value from pointer *ptr* as an atomic operation with the given
      *ordering*. *align* must be a Python integer specifying the guaranteed
      pointer alignment.
 
 * .. method:: IRBuilder.store_atomic(value, ptr, ordering, align)
+
+     .. deprecated:: 0.33.0
+
+        Use :func:`IRBuilder.store` with parameter `atomic_ordering` instead.
 
      Store *value* to pointer *ptr* as an atomic operation with the given
      *ordering*. *align* must be a Python integer specifying the guaranteed

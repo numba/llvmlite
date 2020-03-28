@@ -390,7 +390,8 @@ class CastInstr(Instruction):
 
 
 class LoadInstr(Instruction):
-    def __init__(self, parent, ptr, name='', align=None, atomic_ordering=None):
+    def __init__(self, parent, ptr, name='', align=None, atomic_ordering=None,
+                 volatile=False):
         if atomic_ordering is not None and align is None:
             msg = "atomic load requires the align paramter to be specified"
             raise ValueError(msg)
@@ -398,34 +399,30 @@ class LoadInstr(Instruction):
                                         [ptr], name=name)
         self.align = align
         self.atomic_ordering = atomic_ordering
+        self.volatile = volatile
 
     def descr(self, buf):
         [val] = self.operands
-        if self.atomic_ordering is None:
-            if self.align is not None:
-                align = ', align %d' % (self.align)
-            else:
-                align = ''
-            buf.append("load {0}, {1} {2}{3}{4}\n".format(
-                val.type.pointee,
-                val.type,
-                val.get_reference(),
-                align,
-                self._stringify_metadata(leading_comma=True),
-            ))
-        else:
-            buf.append("load atomic {0}, {1} {2} {3}, align {4}{5}\n".format(
-                val.type.pointee,
-                val.type,
-                val.get_reference(),
-                self.atomic_ordering,
-                self.align,
-                self._stringify_metadata(leading_comma=True),
-            ))
+
+        flags = []
+        if self.atomic_ordering is not None:
+            flags.append('atomic')
+        if self.volatile:
+            flags.append('volatile')
+
+        opname = ' '.join(['load'] + flags)
+        ordering = ('' if self.atomic_ordering is None
+                    else f' {self.atomic_ordering}')
+        align = '' if self.align is None else f', align {self.align}'
+        metadata = self._stringify_metadata(leading_comma=True)
+
+        buf.append(f"{opname} {val.type.pointee}, {val.type} "
+                   f"{val.get_reference()}{ordering}{align}{metadata}\n")
 
 
 class StoreInstr(Instruction):
-    def __init__(self, parent, val, ptr, align=None, atomic_ordering=None):
+    def __init__(self, parent, val, ptr, align=None, atomic_ordering=None,
+                 volatile=False):
         if atomic_ordering is not None and align is None:
             msg = "atomic store requires the align paramter to be specified"
             raise ValueError(msg)
@@ -433,32 +430,25 @@ class StoreInstr(Instruction):
                                          [val, ptr])
         self.align = align
         self.atomic_ordering = atomic_ordering
+        self.volatile = volatile
 
     def descr(self, buf):
         val, ptr = self.operands
-        if self.atomic_ordering is None:
-            if self.align is not None:
-                align = ', align %d' % (self.align)
-            else:
-                align = ''
-            buf.append("store {0} {1}, {2} {3}{4}{5}\n".format(
-                val.type,
-                val.get_reference(),
-                ptr.type,
-                ptr.get_reference(),
-                align,
-                self._stringify_metadata(leading_comma=True),
-            ))
-        else:
-            buf.append("store atomic {0} {1}, {2} {3} {4}, align {5}{6}\n".format(
-                val.type,
-                val.get_reference(),
-                ptr.type,
-                ptr.get_reference(),
-                self.atomic_ordering,
-                self.align,
-                self._stringify_metadata(leading_comma=True),
-            ))
+
+        flags = []
+        if self.atomic_ordering is not None:
+            flags.append('atomic')
+        if self.volatile:
+            flags.append('volatile')
+
+        opname = ' '.join(['store'] + flags)
+        ordering = ('' if self.atomic_ordering is None
+                    else f' {self.atomic_ordering}')
+        align = '' if self.align is None else f', align {self.align}'
+        metadata = self._stringify_metadata(leading_comma=True)
+
+        buf.append(f"{opname} {val.type} {val.get_reference()}, {ptr.type} "
+                   f"{ptr.get_reference()}{ordering}{align}{metadata}\n")
 
 
 class LoadAtomicInstr(LoadInstr):
