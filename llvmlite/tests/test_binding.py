@@ -841,9 +841,21 @@ class TestValueRef(BaseTest):
         mod = self.module()
         fn = mod.get_function("sum")
         fn.add_function_attribute("nocapture")
+        fn.add_function_attribute("no-nans-fp-math")
+        fn.add_function_attribute("no-nans-fp-math", True)
+        fn.add_function_attribute("no-nans-fp-math", False)
+        fn.add_function_attribute("no-nans-fp-math", "true")
         with self.assertRaises(ValueError) as raises:
-            fn.add_function_attribute("zext")
-        self.assertEqual(str(raises.exception), "no such attribute 'zext'")
+            fn.add_function_attribute("nocapture", 0)
+        self.assertEqual(
+            str(raises.exception),
+            "attribute 'nocapture' only takes 'None' as value")
+        with self.assertRaises(ValueError) as raises:
+            fn.add_function_attribute("no-nans-fp-math", 1)
+        self.assertEqual(
+            str(raises.exception),
+            "attribute 'no-nans-fp-math' takes only string or boolean "
+            "values, got '<class 'int'>'")
 
     def test_module(self):
         mod = self.module()
