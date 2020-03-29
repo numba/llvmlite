@@ -459,7 +459,7 @@ Memory
      *typ*. If *size* is not given, a stack slot for 1 value is
      allocated.
 
-* .. method:: IRBuilder.load(ptr, name='', align=None, atomic_ordering=None, volatile=False)
+* .. method:: IRBuilder.load(ptr, name='', align=None, volatile=False, atomic_ordering=None, sync_scope=None)
 
      Load value from pointer *ptr*. If *align* is passed, it should
      be a Python integer specifying the guaranteed pointer
@@ -468,9 +468,9 @@ Memory
      If *volatile* is truthy, the load is marked as volatile.
 
      If *atomic_ordering* and *align* are specified, the load is marked as 
-     atomic.
+     atomic. For atomic load a *sync_scope* may optionally be specified.
 
-* .. method:: IRBuilder.store(value, ptr, align=None, atomic_ordering=None, volatile=False)
+* .. method:: IRBuilder.store(value, ptr, align=None, volatile=False, atomic_ordering=None, sync_scope=None)
 
      Store *value* to pointer *ptr*. If *align* is passed, it should
      be a Python integer specifying the guaranteed pointer
@@ -479,7 +479,7 @@ Memory
      If *volatile* is truthy, the load is marked as volatile.
 
      If *atomic_ordering* and *align* are specified, the load is marked as 
-     atomic.
+     atomic. For atomic store a *sync_scope* may optionally be specified.
 
 * .. method:: IRBuilder.load_atomic(ptr, ordering, align, name='')
 

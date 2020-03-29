@@ -390,15 +390,20 @@ class CastInstr(Instruction):
 
 
 class LoadInstr(Instruction):
-    def __init__(self, parent, ptr, name='', align=None, atomic_ordering=None,
-                 volatile=False):
+    def __init__(self, parent, ptr, name='', align=None, volatile=False,
+                 atomic_ordering=None, sync_scope=None):
         if atomic_ordering is not None and align is None:
-            msg = "atomic load requires the align paramter to be specified"
+            msg = "atomic load requires the align parameter to be specified"
+            raise ValueError(msg)
+        if sync_scope is not None and atomic_ordering is None:
+            msg = ("sync_scope may only be specified in combination with "
+                   "atomic_ordering")
             raise ValueError(msg)
         super(LoadInstr, self).__init__(parent, ptr.type.pointee, "load",
                                         [ptr], name=name)
         self.align = align
         self.atomic_ordering = atomic_ordering
+        self.sync_scope = sync_scope
         self.volatile = volatile
 
     def descr(self, buf):
@@ -409,27 +414,37 @@ class LoadInstr(Instruction):
             flags.append('atomic')
         if self.volatile:
             flags.append('volatile')
+        flags = ' '.join([''] + flags)
 
-        opname = ' '.join(['load'] + flags)
-        ordering = ('' if self.atomic_ordering is None
-                    else f' {self.atomic_ordering}')
+        atomic = []
+        if self.atomic_ordering is not None:
+            atomic.append(self.atomic_ordering)
+            if self.sync_scope is not None:
+                atomic.append(f'syncscope("self.sync_scope")')
+        atomic_params = " ".join([''] + atomic)
+
         align = '' if self.align is None else f', align {self.align}'
         metadata = self._stringify_metadata(leading_comma=True)
 
-        buf.append(f"{opname} {val.type.pointee}, {val.type} "
-                   f"{val.get_reference()}{ordering}{align}{metadata}\n")
+        buf.append(f"load{flags} {val.type.pointee}, {val.type} "
+                   f"{val.get_reference()}{atomic_params}{align}{metadata}\n")
 
 
 class StoreInstr(Instruction):
-    def __init__(self, parent, val, ptr, align=None, atomic_ordering=None,
-                 volatile=False):
+    def __init__(self, parent, val, ptr, align=None, volatile=False,
+                 atomic_ordering=None, sync_scope=None):
         if atomic_ordering is not None and align is None:
-            msg = "atomic store requires the align paramter to be specified"
+            msg = "atomic store requires the align parameter to be specified"
+            raise ValueError(msg)
+        if sync_scope is not None and atomic_ordering is None:
+            msg = ("sync_scope may only be specified in combination with "
+                   "atomic_ordering")
             raise ValueError(msg)
         super(StoreInstr, self).__init__(parent, types.VoidType(), "store",
                                          [val, ptr])
         self.align = align
         self.atomic_ordering = atomic_ordering
+        self.sync_scope = sync_scope
         self.volatile = volatile
 
     def descr(self, buf):
@@ -440,15 +455,20 @@ class StoreInstr(Instruction):
             flags.append('atomic')
         if self.volatile:
             flags.append('volatile')
+        flags = ' '.join([''] + flags)
 
-        opname = ' '.join(['store'] + flags)
-        ordering = ('' if self.atomic_ordering is None
-                    else f' {self.atomic_ordering}')
+        atomic = []
+        if self.atomic_ordering is not None:
+            atomic.append(self.atomic_ordering)
+            if self.sync_scope is not None:
+                atomic.append(f'syncscope("self.sync_scope")')
+        atomic_params = " ".join([''] + atomic)
+
         align = '' if self.align is None else f', align {self.align}'
         metadata = self._stringify_metadata(leading_comma=True)
 
-        buf.append(f"{opname} {val.type} {val.get_reference()}, {ptr.type} "
-                   f"{ptr.get_reference()}{ordering}{align}{metadata}\n")
+        buf.append(f"store{flags} {val.type} {val.get_reference()}, {ptr.type}"
+                   f" {ptr.get_reference()}{atomic_params}{align}{metadata}\n")
 
 
 class LoadAtomicInstr(LoadInstr):

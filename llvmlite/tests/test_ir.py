@@ -832,6 +832,24 @@ my_block:
             builder.store(b, e)
         self.assertEqual(str(cm.exception),
                          "cannot store i32 to double*: mismatching types")
+        # atomic store without align
+        with self.assertRaises(ValueError) as cm:
+            builder.store(b, c, atomic_ordering="seq_cst")
+        self.assertIn('requires the align parameter', str(cm.exception))
+        # atomic load without align
+        with self.assertRaises(ValueError) as cm:
+            builder.load(c, atomic_ordering="seq_cst", name='m')
+        self.assertIn('requires the align parameter', str(cm.exception))
+        # store with sync_scope with missing atomic_ordering
+        with self.assertRaises(ValueError) as cm:
+            builder.store(b, c, sync_scope="test_scope")
+        self.assertIn('may only be specified in combination with '
+                      'atomic_ordering', str(cm.exception))
+        # load with sync_scope with missing atomic_ordering
+        with self.assertRaises(ValueError) as cm:
+            builder.load(c, sync_scope="test_scope")
+        self.assertIn('may only be specified in combination with '
+                      'atomic_ordering', str(cm.exception))
         self.check_block(block, """\
             my_block:
                 %"c" = alloca i32
