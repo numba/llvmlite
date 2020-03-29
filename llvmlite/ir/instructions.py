@@ -418,9 +418,9 @@ class LoadInstr(Instruction):
 
         atomic = []
         if self.atomic_ordering is not None:
-            atomic.append(self.atomic_ordering)
             if self.sync_scope is not None:
-                atomic.append(f'syncscope("self.sync_scope")')
+                atomic.append(f'syncscope("{self.sync_scope}")')
+            atomic.append(self.atomic_ordering)
         atomic_params = " ".join([''] + atomic)
 
         align = '' if self.align is None else f', align {self.align}'
@@ -459,9 +459,9 @@ class StoreInstr(Instruction):
 
         atomic = []
         if self.atomic_ordering is not None:
-            atomic.append(self.atomic_ordering)
             if self.sync_scope is not None:
-                atomic.append(f'syncscope("self.sync_scope")')
+                atomic.append(f'syncscope("{self.sync_scope}")')
+            atomic.append(self.atomic_ordering)
         atomic_params = " ".join([''] + atomic)
 
         align = '' if self.align is None else f', align {self.align}'

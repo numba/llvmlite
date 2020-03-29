@@ -822,6 +822,13 @@ my_block:
         p = builder.load(c, atomic_ordering="seq_cst",
                          align=4, name='p', volatile=True)
         self.assertEqual(p.type, int32)
+        # Atomics Volatile with syncscope
+        q = builder.store(b, c, atomic_ordering="seq_cst",
+                          align=4, volatile=True, sync_scope='test_scope')
+        self.assertEqual(q.type, ir.VoidType())
+        r = builder.load(c, atomic_ordering="seq_cst", align=4, name='r',
+                         volatile=True, sync_scope='test_scope')
+        self.assertEqual(r.type, int32)
         # Not pointer types
         with self.assertRaises(TypeError):
             builder.store(b, a)
@@ -850,7 +857,9 @@ my_block:
             builder.load(c, sync_scope="test_scope")
         self.assertIn('may only be specified in combination with '
                       'atomic_ordering', str(cm.exception))
-        self.check_block(block, """\
+        self.check_block(
+            block,
+            """\
             my_block:
                 %"c" = alloca i32
                 %"d" = alloca i32, i32 42
@@ -866,6 +875,10 @@ my_block:
                 %"m" = load atomic i32, i32* %"c" seq_cst, align 4
                 store atomic volatile i32 %".2", i32* %"c" seq_cst, align 4
                 %"p" = load atomic volatile i32, i32* %"c" seq_cst, align 4
+                store atomic volatile i32 %".2", i32* %"c" """
+            """syncscope("test_scope") seq_cst, align 4""" """
+                %"r" = load atomic volatile i32, i32* %"c" """
+            """syncscope("test_scope") seq_cst, align 4""" """
             """)
 
     def test_gep(self):
