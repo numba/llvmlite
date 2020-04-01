@@ -16,7 +16,7 @@ if "%ARCH%"=="32" (
 )
 set "CMAKE_GENERATOR[0]=Visual Studio 14 2015%ARCH_POSTFIX%"
 set "CMAKE_GENERATOR[1]=Visual Studio 15 2017%ARCH_POSTFIX%"
-set "CMAKE_GENERATOR[2]=Visual Studio 16 2019%ARCH_POSTFIX%"
+set "CMAKE_GENERATOR[2]=Visual Studio 16 2019"
 set MAX_INDEX_CMAKE_GENERATOR=2
 
 REM the platform toolset host arch is set to x64 so as to use the 64bit linker,
