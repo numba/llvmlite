@@ -99,10 +99,15 @@ class LlvmliteInstall(install):
 class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
     def run(self):
-        clean.run(self)
+        super(LlvmliteClean, self).run()
         path = os.path.join(here_dir, 'llvmlite.egg-info')
         if os.path.isdir(path):
             remove_tree(path, dry_run=self.dry_run)
+        # remove ffi/build
+        path = os.path.join(here_dir, 'ffi/build')
+        if os.path.isdir(path):
+            remove_tree(path, dry_run=self.dry_run)
+        # remove all __pycache__
         if not self.dry_run:
             self._rm_walk()
 
