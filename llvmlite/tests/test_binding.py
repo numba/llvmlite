@@ -541,11 +541,29 @@ class TestModuleRef(BaseTest):
         self.assertTrue(bc.startswith(bitcode_magic) or
                         bc.startswith(bitcode_wrapper_magic))
 
-    def test_parse_bitcode_error(self):
-        with self.assertRaises(RuntimeError) as cm:
+    def test_parse_bitcode_error_empty(self):
+        major, minor, patch = llvm.llvm_version_info
+        with self.assertRaises((RuntimeError, AssertionError)) as cm:
             llvm.parse_bitcode(b"")
         self.assertIn("LLVM bitcode parsing error", str(cm.exception))
-        self.assertIn("Invalid bitcode signature", str(cm.exception))
+
+        if (major, minor) < (9, 0):
+            self.assertIn("Invalid bitcode signature", str(cm.exception))
+        else:
+            self.assertIn("file too small to contain bitcode header",
+                          str(cm.exception))
+
+    def test_parse_bitcode_error_null(self):
+        major, minor, patch = llvm.llvm_version_info
+        with self.assertRaises((RuntimeError, AssertionError)) as cm:
+            llvm.parse_bitcode(b"\00" * 1000)
+        self.assertIn("LLVM bitcode parsing error", str(cm.exception))
+
+        if (major, minor) < (9, 0):
+            self.assertIn("Invalid bitcode signature", str(cm.exception))
+        else:
+            self.assertIn("file doesn't start with bitcode header",
+                          str(cm.exception))
 
     def test_bitcode_roundtrip(self):
         # create a new context to avoid struct renaming
