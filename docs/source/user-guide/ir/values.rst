@@ -213,7 +213,7 @@ Global values are values accessible using a module-wide name.
           ``dllexport``.
 
 
-.. class:: GlobalVariable(module, typ, name, addrspace=0)
+.. class:: GlobalVariable(module, typ, name, addrspace=0, section=None)
 
    A global variable.
 
@@ -232,6 +232,8 @@ Global values are values accessible using a module-wide name.
 
    * *addrspace* is an optional address space to store the
      variable in.
+
+   * *section* is the variable's linker section.
 
    Global variables have the following writable attributes:
 
@@ -260,7 +262,7 @@ Global values are values accessible using a module-wide name.
         meaning that the default alignment for the variable's
         type is used.
 
-.. class:: Function(module, typ, name)
+.. class:: Function(module, typ, name, section=None)
 
    A global function.
 
@@ -268,6 +270,7 @@ Global values are values accessible using a module-wide name.
    * *typ* is the function's type---a :class:`FunctionType`
      instance.
    * *name* is the function's name---a Python string.
+   * *section* is the function's linker section.
 
    If a global function has any basic blocks, it is a
    :ref:`function definition`. Otherwise, it is a
