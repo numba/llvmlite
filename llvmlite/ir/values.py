@@ -453,9 +453,10 @@ class GlobalValue(NamedValue, _ConstOpMixin):
     name_prefix = '@'
     deduplicate_name = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, section=None, **kwargs):
         super(GlobalValue, self).__init__(*args, **kwargs)
         self.linkage = ''
+        self.section = section if section is not None else ''
         self.storage_class = ''
 
 
@@ -464,10 +465,10 @@ class GlobalVariable(GlobalValue):
     A global variable.
     """
 
-    def __init__(self, module, typ, name, addrspace=0):
+    def __init__(self, module, typ, name, addrspace=0, section=None):
         assert isinstance(typ, types.Type)
         super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),
-                                             name=name)
+                                             name=name, section=section)
         self.value_type = typ
         self.initializer = None
         self.unnamed_addr = False
@@ -477,42 +478,35 @@ class GlobalVariable(GlobalValue):
         self.parent.add_global(self)
 
     def descr(self, buf):
-        if self.global_constant:
-            kind = 'constant'
-        else:
-            kind = 'global'
-
         if not self.linkage:
             # Default to external linkage
             linkage = 'external' if self.initializer is None else ''
         else:
-            linkage = self.linkage
-
-        if linkage:
-            buf.append(linkage + " ")
-        if self.storage_class:
-            buf.append(self.storage_class + " ")
-        if self.unnamed_addr:
-            buf.append("unnamed_addr ")
-        if self.addrspace != 0:
-            buf.append('addrspace({0:d}) '.format(self.addrspace))
-
-        buf.append("{kind} {type}" .format(kind=kind, type=self.value_type))
+            linkage = f'{self.linkage}'
 
         if self.initializer is not None:
             if self.initializer.type != self.value_type:
                 raise TypeError("got initializer of type %s "
                                 "for global value type %s"
                                 % (self.initializer.type, self.value_type))
-            buf.append(" " + self.initializer.get_reference())
+            initializer = f' {self.initializer.get_reference()}'
         elif linkage not in ('external', 'extern_weak'):
             # emit 'undef' for non-external linkage GV
-            buf.append(" " + self.value_type(Undefined).get_reference())
+            initializer = f' {self.value_type(Undefined).get_reference()}'
+        else:
+            initializer = ''
 
-        if self.align is not None:
-            buf.append(", align %d" % (self.align,))
+        linkage = f'{linkage} ' if linkage else ''
+        storage_class = f'{self.storage_class} ' if self.storage_class else ''
+        unnamed_addr = "unnamed_addr " if self.unnamed_addr else ''
+        addr_space = f'addrspace({self.addrspace:d}) ' if self.addrspace else ''
+        kind = 'constant' if self.global_constant else 'global'
+        section = f', section "{self.section}"' if self.section else ''
+        align = f', align {self.align}' if self.align else ''
 
-        buf.append("\n")
+        prototype = (f'{linkage}{storage_class}{unnamed_addr}{addr_space}'
+                     f'{kind} {self.value_type}{initializer}{section}{align}')
+        buf.append(prototype)
 
 
 class AttributeSet(set):
@@ -590,9 +584,10 @@ class Function(GlobalValue, _HasMetadata):
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
 
-    def __init__(self, module, ftype, name):
+    def __init__(self, module, ftype, name, section=None):
         assert isinstance(ftype, types.Type)
-        super(Function, self).__init__(module, ftype.as_pointer(), name=name)
+        super(Function, self).__init__(module, ftype.as_pointer(), name=name,
+                                       section=section)
         self.ftype = ftype
         self.scope = _utils.NameScope()
         self.blocks = []
@@ -633,22 +628,23 @@ class Function(GlobalValue, _HasMetadata):
         Describe the prototype ("head") of the function.
         """
         state = "define" if self.blocks else "declare"
+        linkage = self.linkage
         ret = self.return_value
-        args = ", ".join(str(a) for a in self.args)
-        name = self.get_reference()
-        attrs = self.attributes
+        cconv = self.calling_convention
         if any(self.args):
             vararg = ', ...' if self.ftype.var_arg else ''
         else:
             vararg = '...' if self.ftype.var_arg else ''
-        linkage = self.linkage
-        cconv = self.calling_convention
+
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
+        name = self.get_reference()
+        args = ", ".join(str(a) for a in self.args)
+        attrs = f' {self.attributes}'
+        section = f'section "{self.section}"' if self.section else ''
         metadata = self._stringify_metadata()
-        pt_str = "{prefix} {name}({args}{vararg}) {attrs}{metadata}\n"
-        prototype = pt_str.format(prefix=prefix, name=name, args=args,
-                                  vararg=vararg, attrs=attrs,
-                                  metadata=metadata)
+
+        prototype = (f"{prefix} {name}({args}{vararg}){attrs}{section}"
+                     f"{metadata}\n")
         buf.append(prototype)
 
     def descr_body(self, buf):

@@ -63,11 +63,11 @@ class TestBase(TestCase):
     def module(self):
         return ir.Module()
 
-    def function(self, module=None, name='my_func'):
+    def function(self, module=None, name='my_func', section=None):
         module = module or self.module()
         fnty = ir.FunctionType(int32, (int32, int32, dbl,
                                        ir.PointerType(int32)))
-        return ir.Function(self.module(), fnty, name)
+        return ir.Function(self.module(), fnty, name, section=section)
 
     def block(self, func=None, name=''):
         func = func or self.function()
@@ -120,6 +120,12 @@ class TestFunction(TestBase):
         func = self.function()
         asm = self.descr(func).strip()
         self.assertEqual(asm.strip(), "declare %s" % self.proto)
+        # A declaration with section parameter
+        func = self.function(section='testsection')
+        asm = self.descr(func).strip()
+        self.assertEqual(
+            asm.strip(),
+            f'declare {self.proto} section "testsection"')
 
     def test_declare_attributes(self):
         # Now with function attributes
@@ -463,6 +469,9 @@ class TestGlobalValues(TestBase):
         g.linkage = "internal"
         g.initializer = int32(123)
         g.align = 16
+        h = ir.GlobalVariable(mod, int8, 'h', section='testsection1')  # noqa F841
+        i = ir.GlobalVariable(mod, int8, 'i', addrspace=42,  # noqa F841
+                              section='testsection2')
         self.check_module_body(mod, """\
             @"a" = external global i8
             @"b" = external addrspace(42) global i8
@@ -471,6 +480,8 @@ class TestGlobalValues(TestBase):
             @"e" = internal global i32 undef
             @"f" = external unnamed_addr addrspace(456) global i32
             @"g" = internal global i32 123, align 16
+            @"h" = external global i8, section "testsection1"
+            @"i" = external addrspace(42) global i8, section "testsection2"
             """)
 
     def test_pickle(self):
