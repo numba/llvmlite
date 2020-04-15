@@ -1,5 +1,5 @@
-v0.32.0 (Apr 9, 2020)
----------------------
+v0.32.0 (Apr 16, 2020)
+----------------------
 
 The main changes in this release are the removal of specific code for Python 2
 and Python <3.6, and making the code base PEP8 compliant.
