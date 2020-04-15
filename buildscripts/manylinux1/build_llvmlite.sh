@@ -23,6 +23,7 @@ conda install -y -c numba/label/manylinux1 llvmdev
 
 # Prepend builtin Python Path
 export PATH=/opt/python/$pyver/bin:$PATH
+pip install wheel==0.30
 
 echo "Using python: $(which python)"
 
