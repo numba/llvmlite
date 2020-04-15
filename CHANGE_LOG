@@ -6,6 +6,7 @@ and Python <3.6, and making the code base PEP8 compliant.
 
 Pull requests:
 
+* PR #577: llvmlite wheel building fixes
 * PR #560: ENH: Better error message
 * PR #558: update install docs
 * PR #556: binding: Allow empty features list
