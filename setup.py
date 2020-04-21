@@ -162,9 +162,6 @@ packages = ['llvmlite',
             'llvmlite.tests',
             ]
 
-install_requires = ['enum34; python_version < "3.4"']
-setup_requires = ['enum34; python_version < "3.4"']
-
 
 with open('README.rst') as f:
     long_description = f.read()
@@ -191,8 +188,6 @@ setup(name='llvmlite',
       url="http://llvmlite.pydata.org",
       download_url="https://github.com/numba/llvmlite",
       packages=packages,
-      install_requires=install_requires,
-      setup_requires=setup_requires,
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,
