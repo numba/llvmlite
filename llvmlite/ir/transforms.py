@@ -1,4 +1,4 @@
-from . import CallInstr
+from llvmlite.ir import CallInstr
 
 
 class Visitor(object):

@@ -60,7 +60,7 @@ layer.
 Compatibility
 =============
 
-llvmlite works with Python 2.7 and Python 3.4 or greater.
+llvmlite works with Python 3.6 and greater.
 
 As of version 0.29.0, llvmlite requires LLVM 7.0.x or later
 

@@ -1,8 +1,8 @@
 from ctypes import POINTER, c_char_p, c_int, c_size_t, c_uint, c_bool, c_void_p
 import enum
 
-from . import ffi
-from .common import _decode_string, _encode_string
+from llvmlite.binding import ffi
+from llvmlite.binding.common import _decode_string, _encode_string
 
 
 class Linkage(enum.IntEnum):
@@ -303,7 +303,7 @@ class ValueRef(ffi.ObjectRef):
 class _ValueIterator(ffi.ObjectRef):
 
     kind = None  # derived classes must specify the Value kind value
-                 # as class attribute
+    # as class attribute
 
     def __init__(self, ptr, parents):
         ffi.ObjectRef.__init__(self, ptr)
@@ -485,7 +485,8 @@ ffi.lib.LLVMPY_BlockInstructionsIter.restype = ffi.LLVMInstructionsIterator
 ffi.lib.LLVMPY_InstructionOperandsIter.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_InstructionOperandsIter.restype = ffi.LLVMOperandsIterator
 
-ffi.lib.LLVMPY_DisposeAttributeListIter.argtypes = [ffi.LLVMAttributeListIterator]
+ffi.lib.LLVMPY_DisposeAttributeListIter.argtypes = [
+    ffi.LLVMAttributeListIterator]
 
 ffi.lib.LLVMPY_DisposeAttributeSetIter.argtypes = [ffi.LLVMAttributeSetIterator]
 

@@ -3,14 +3,12 @@ Classes that are LLVM values: Value, Constant...
 Instructions are in the instructions module.
 """
 
-from __future__ import print_function, absolute_import
-
 import string
 import re
 
-from .. import six
-from . import types, _utils
-from ._utils import _StrCaching, _StringReferenceCaching, _HasMetadata
+from llvmlite.ir import types, _utils
+from llvmlite.ir._utils import (_StrCaching, _StringReferenceCaching,
+                                _HasMetadata)
 
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
@@ -34,8 +32,6 @@ def _escape_string(text, _map={}):
                 _map[ch] = chr(ch)
             else:
                 _map[ch] = '\\%02x' % ch
-            if six.PY2:
-                _map[chr(ch)] = _map[ch]
 
     buf = [_map[ch] for ch in text]
     return ''.join(buf)
@@ -61,8 +57,8 @@ class _ConstOpMixin(object):
         Cast this integer constant to the given pointer type.
         """
         if not isinstance(self.type, types.IntType):
-            raise TypeError("can only call inttoptr() on integer constants, not '%s'"
-                            % (self.type,))
+            msg = "can only call inttoptr() on integer constants, not '%s'"
+            raise TypeError(msg % (self.type,))
         if not isinstance(typ, types.PointerType):
             raise TypeError("can only inttoptr() to pointer type, not '%s'"
                             % (typ,))
@@ -222,7 +218,7 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
 
     def _to_string(self):
         buf = []
-        if self.type != types.VoidType():
+        if not isinstance(self.type, types.VoidType):
             buf.append("{0} = ".format(self.get_reference()))
         self.descr(buf)
         return "".join(buf).rstrip()
@@ -234,7 +230,8 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
         return self._name
 
     def _set_name(self, name):
-        name = self.parent.scope.register(name, deduplicate=self.deduplicate_name)
+        name = self.parent.scope.register(name,
+                                          deduplicate=self.deduplicate_name)
         self._name = name
 
     name = property(_get_name, _set_name)
@@ -351,7 +348,7 @@ class MDValue(NamedValue):
         operands = []
         for op in self.operands:
             if isinstance(op.type, types.MetaDataType):
-                if isinstance(op, Constant) and op.constant == None:
+                if isinstance(op, Constant) and op.constant is None:
                     operands.append("null")
                 else:
                     operands.append(op.get_reference())
@@ -383,6 +380,7 @@ class DIToken:
 
     Use this to wrap known constants, e.g. the DW_* enumerations.
     """
+
     def __init__(self, value):
         self.value = value
 
@@ -419,7 +417,7 @@ class DIValue(NamedValue):
                 strvalue = value.value
             elif isinstance(value, str):
                 strvalue = '"{}"'.format(_escape_string(value))
-            elif isinstance(value, six.integer_types):
+            elif isinstance(value, int):
                 strvalue = str(value)
             elif isinstance(value, NamedValue):
                 strvalue = value.get_reference()
@@ -582,8 +580,8 @@ class FunctionAttributes(AttributeSet):
             attrs.append('alignstack({0:d})'.format(self.alignstack))
         if self.personality:
             attrs.append('personality {persty} {persfn}'.format(
-                            persty=self.personality.type,
-                            persfn=self.personality.get_reference()))
+                persty=self.personality.type,
+                persfn=self.personality.get_reference()))
         return ' '.join(attrs)
 
 
@@ -591,6 +589,7 @@ class Function(GlobalValue, _HasMetadata):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
+
     def __init__(self, module, ftype, name):
         assert isinstance(ftype, types.Type)
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
@@ -646,9 +645,10 @@ class Function(GlobalValue, _HasMetadata):
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
         metadata = self._stringify_metadata()
-        prototype = "{prefix} {name}({args}{vararg}) {attrs}{metadata}\n".format(
-            prefix=prefix, name=name, args=args, vararg=vararg,
-            attrs=attrs, metadata=metadata)
+        pt_str = "{prefix} {name}({args}{vararg}) {attrs}{metadata}\n"
+        prototype = pt_str.format(prefix=prefix, name=name, args=args,
+                                  vararg=vararg, attrs=attrs,
+                                  metadata=metadata)
         buf.append(prototype)
 
     def descr_body(self, buf):
@@ -692,7 +692,7 @@ class ArgumentAttributes(AttributeSet):
 
     @align.setter
     def align(self, val):
-        assert isinstance(val, six.integer_types) and val >= 0
+        assert isinstance(val, int) and val >= 0
         self._align = val
 
     @property
@@ -701,7 +701,7 @@ class ArgumentAttributes(AttributeSet):
 
     @dereferenceable.setter
     def dereferenceable(self, val):
-        assert isinstance(val, six.integer_types) and val >= 0
+        assert isinstance(val, int) and val >= 0
         self._dereferenceable = val
 
     @property
@@ -710,7 +710,7 @@ class ArgumentAttributes(AttributeSet):
 
     @dereferenceable_or_null.setter
     def dereferenceable_or_null(self, val):
-        assert isinstance(val, six.integer_types) and val >= 0
+        assert isinstance(val, int) and val >= 0
         self._dereferenceable_or_null = val
 
     def _to_list(self):
@@ -720,7 +720,8 @@ class ArgumentAttributes(AttributeSet):
         if self.dereferenceable:
             attrs.append('dereferenceable({0:d})'.format(self.dereferenceable))
         if self.dereferenceable_or_null:
-            attrs.append('dereferenceable_or_null({0:d})'.format(self.dereferenceable_or_null))
+            dref = 'dereferenceable_or_null({0:d})'
+            attrs.append(dref.format(self.dereferenceable_or_null))
         return attrs
 
 
@@ -732,7 +733,8 @@ class _BaseArgument(NamedValue):
         self.attributes = ArgumentAttributes()
 
     def __repr__(self):
-        return "<ir.%s %r of type %s>" % (self.__class__.__name__, self.name, self.type)
+        return "<ir.%s %r of type %s>" % (self.__class__.__name__, self.name,
+                                          self.type)
 
     def add_attribute(self, attr):
         self.attributes.add(attr)
@@ -807,9 +809,9 @@ class Block(NamedValue):
         for bb in self.parent.basic_blocks:
             for instr in bb.instructions:
                 instr.replace_usage(old, new)
-    
+
     def _format_name(self):
-        # Per the LLVM Language Ref on identifiers, names matching the following 
+        # Per the LLVM Language Ref on identifiers, names matching the following
         # regex do not need to be quoted: [%@][-a-zA-Z$._][-a-zA-Z$._0-9]*
         # Otherwise, the identifier must be quoted and escaped.
         name = self.name
@@ -817,7 +819,6 @@ class Block(NamedValue):
             name = name.replace('\\', '\\5c').replace('"', '\\22')
             name = '"{0}"'.format(name)
         return name
-
 
 
 class BlockAddress(Value):
@@ -837,5 +838,5 @@ class BlockAddress(Value):
 
     def get_reference(self):
         return "blockaddress({0}, {1})".format(
-                    self.function.get_reference(),
-                    self.basic_block.get_reference())
+            self.function.get_reference(),
+            self.basic_block.get_reference())

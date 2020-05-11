@@ -1,5 +1,3 @@
-from __future__ import print_function, absolute_import
-
 from collections import defaultdict
 
 
@@ -65,7 +63,8 @@ class _HasMetadata(object):
 
     def set_metadata(self, name, node):
         """
-        Attach unnamed metadata *node* to the metadata slot *name* of this value.
+        Attach unnamed metadata *node* to the metadata slot *name* of this
+        value.
         """
         self.metadata[name] = node
 

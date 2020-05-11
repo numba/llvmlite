@@ -84,10 +84,8 @@ Coding conventions
 Platform support
 ----------------
 
-Llvmlite will be kept compatible with Python 2.7, 3.4 and later
-under at least Windows, macOS and Linux. It needs to be
-compatible only with the currently supported LLVM version---the
-3.8 series.
+Llvmlite will be kept compatible with Python 3.6 and later
+under at least Windows, macOS and Linux.
 
 We do not expect contributors to test their code on all platforms.
 Pull requests are automatically built and tested using

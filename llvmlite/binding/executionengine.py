@@ -1,11 +1,8 @@
-from __future__ import print_function, absolute_import
-
 from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
                     c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast,
                     py_object, Structure)
-import warnings
 
-from . import ffi, targets, object_file
+from llvmlite.binding import ffi, targets, object_file
 
 
 # Just check these weren't optimized out of the DLL.
@@ -19,7 +16,7 @@ def create_mcjit_compiler(module, target_machine):
     """
     with ffi.OutputString() as outerr:
         engine = ffi.lib.LLVMPY_CreateMCJITCompiler(
-                module, target_machine, outerr)
+            module, target_machine, outerr)
         if not engine:
             raise RuntimeError(str(outerr))
 
@@ -95,11 +92,16 @@ class ExecutionEngine(ffi.ObjectRef):
         ffi.lib.LLVMPY_FinalizeObject(self)
 
     def run_static_constructors(self):
-        """Run static constructors which initialize module-level static objects."""
+        """
+        Run static constructors which initialize module-level static objects.
+        """
         ffi.lib.LLVMPY_RunStaticConstructors(self)
 
     def run_static_destructors(self):
-        """Run static destructors which perform module-level cleanup of static resources."""
+        """
+        Run static destructors which perform module-level cleanup of static
+        resources.
+        """
         ffi.lib.LLVMPY_RunStaticDestructors(self)
 
     def remove_module(self, module):
@@ -152,7 +154,6 @@ class ExecutionEngine(ffi.ObjectRef):
             obj_file = object_file.ObjectFileRef.from_path(obj_file)
 
         ffi.lib.LLVMPY_MCJITAddObjectFile(self, obj_file)
-
 
     def set_object_cache(self, notify_func=None, getbuffer_func=None):
         """
@@ -285,12 +286,13 @@ ffi.lib.LLVMPY_MCJITAddObjectFile.argtypes = [
     ffi.LLVMObjectFileRef
 ]
 
+
 class _ObjectCacheData(Structure):
     _fields_ = [
         ('module_ptr', ffi.LLVMModuleRef),
         ('buf_ptr', c_void_p),
         ('buf_len', c_size_t),
-        ]
+    ]
 
 
 _ObjectCacheNotifyFunc = CFUNCTYPE(None, py_object,
@@ -299,9 +301,12 @@ _ObjectCacheGetBufferFunc = CFUNCTYPE(None, py_object,
                                       POINTER(_ObjectCacheData))
 
 # XXX The ctypes function wrappers are created at the top-level, otherwise
-# there are issues when creating CFUNCTYPEs in child processes on CentOS 5 32 bits.
-_notify_c_hook = _ObjectCacheNotifyFunc(ExecutionEngine._raw_object_cache_notify)
-_getbuffer_c_hook = _ObjectCacheGetBufferFunc(ExecutionEngine._raw_object_cache_getbuffer)
+# there are issues when creating CFUNCTYPEs in child processes on CentOS 5
+# 32 bits.
+_notify_c_hook = _ObjectCacheNotifyFunc(
+    ExecutionEngine._raw_object_cache_notify)
+_getbuffer_c_hook = _ObjectCacheGetBufferFunc(
+    ExecutionEngine._raw_object_cache_getbuffer)
 
 ffi.lib.LLVMPY_CreateObjectCache.argtypes = [_ObjectCacheNotifyFunc,
                                              _ObjectCacheGetBufferFunc,

@@ -69,6 +69,7 @@ def find_win32_generator():
     generators = list(filter(drop_old_vs, generators))
 
     generators.append('Visual Studio 14 2015' + (' Win64' if is_64bit else ''))
+    generators.append('Visual Studio 15 2017' + (' Win64' if is_64bit else ''))
     for generator in generators:
         build_dir = tempfile.mkdtemp()
         print("Trying generator %r" % (generator,))
@@ -109,7 +110,32 @@ def main_posix(kind, library_ext):
 
     out = out.decode('latin1')
     print(out)
-    if not (out.startswith('9.0.') or out.startswith('7.0.')
+
+    # See if the user is overriding the version check, this is unsupported
+    try:
+        _ver_check_skip = os.environ.get("LLVMLITE_SKIP_LLVM_VERSION_CHECK", 0)
+        skipcheck = int(_ver_check_skip)
+    except ValueError as e:
+        msg = ('If set, the environment variable '
+               'LLVMLITE_SKIP_LLVM_VERSION_CHECK should be an integer, got '
+               '"{}".')
+        raise ValueError(msg.format(_ver_check_skip)) from e
+
+    if skipcheck:
+        # user wants to use an unsupported version, warn about doing this...
+        msg = ("The LLVM version check for supported versions has been "
+               "overridden.\nThis is unsupported behaviour, llvmlite may not "
+               "work as intended.\nRequested LLVM version: {}".format(
+                   out.strip()))
+        warn = ' * '.join(("WARNING",) * 8)
+        blk = '=' * 80
+        warning = '{}\n{}\n{}'.format(blk, warn, blk)
+        print(warning)
+        print(msg)
+        print(warning + '\n')
+    else:
+
+        if not (out.startswith('9.0.') or out.startswith('7.0.')
             or out.startswith('7.1.')):
         msg = (
             "Building llvmlite requires LLVM 7.0.x, 7.1.x or 8.0.x Be sure to "
@@ -118,6 +144,17 @@ def main_posix(kind, library_ext):
             "information about building llvmlite.\n"
             )
         raise RuntimeError(msg)
+
+        if not (out.startswith('9.0.') or
+                or out.startswith('8.0.')
+                or out.startswith('7.0.')
+                or out.startswith('7.1.')):
+            msg = ("Building llvmlite requires LLVM 7.0.x, 7.1.x, 8.0.x or 9.0.x, got "
+                   "{!r}. Be sure to set LLVM_CONFIG to the right executable "
+                   "path.\nRead the documentation at "
+                   "http://llvmlite.pydata.org/ for more information about "
+                   "building llvmlite.\n".format(out.strip()))
+            raise RuntimeError(msg)
 
     # Get LLVM information for building
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())

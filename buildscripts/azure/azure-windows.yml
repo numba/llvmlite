@@ -9,11 +9,8 @@ jobs:
   strategy:
     maxParallel: 11
     matrix:
-      py27:
-        PYTHON: '2.7'
-        CONDA_ENV: travisci
-      py37:
-        PYTHON: '3.7'
+      py38:
+        PYTHON: '3.8'
         CONDA_ENV: travisci
 
   steps:
@@ -24,14 +21,6 @@ jobs:
         Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
       displayName: 'Install miniconda'
 
-    # Need to install VC 9.0 only for Python 2.7
-    - powershell: |
-        $wc = New-Object net.webclient
-        $wc.Downloadfile("https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi", "VCForPython27.msi")
-        Start-Process "VCForPython27.msi" /qn -Wait
-      displayName: 'Install VC 9.0'
-      condition: eq(variables['PYTHON'], '2.7')
-
     - script: |
         call C:\Miniconda3\Scripts\activate.bat
         call conda list
@@ -39,7 +28,6 @@ jobs:
         call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
         call activate %CONDA_ENV%
         call conda install -y -q -c numba llvmdev="9.0*"
-        if %PYTHON% LSS 3.4 (call conda install -y -q enum34)
       displayName: 'Before Install'
 
     - script: |

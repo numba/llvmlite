@@ -28,12 +28,9 @@ The conda packages will be stored into `<llvmlite_source_root>/docker_output/dis
 
 Available Python installations (`<pyver>`) are:
 
-- cp27-cp27m
-- cp27-cp27mu
-- cp34-cp34m
-- cp35-cp35m
 - cp36-cp36m
 - cp37-cp37m
+- cp38-cp38
 
 
 Reference: https://github.com/pypa/manylinux

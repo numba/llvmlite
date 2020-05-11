@@ -1,6 +1,4 @@
-from __future__ import print_function, absolute_import
-
-from . import ffi
+from llvmlite.binding import ffi
 
 
 def create_context():
@@ -17,6 +15,7 @@ class ContextRef(ffi.ObjectRef):
 
     def _dispose(self):
         ffi.lib.LLVMPY_ContextDispose(self)
+
 
 class GlobalContextRef(ContextRef):
     def _dispose(self):
