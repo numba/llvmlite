@@ -356,7 +356,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = [(8, 0), (7, 0), (7, 1)]
+        valid = [(9, 0), (8, 0), (7, 0), (7, 1)]
         self.assertIn((major, minor), valid)
         self.assertIn(patch, range(10))
 
@@ -545,7 +545,13 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(RuntimeError) as cm:
             llvm.parse_bitcode(b"")
         self.assertIn("LLVM bitcode parsing error", str(cm.exception))
-        self.assertIn("Invalid bitcode signature", str(cm.exception))
+        # for llvm < 9
+        if llvm.llvm_version_info[0] < 9:
+            self.assertIn("Invalid bitcode signature", str(cm.exception))
+        else:
+            self.assertIn(
+                "file too small to contain bitcode header", str(cm.exception),
+            )
 
     def test_bitcode_roundtrip(self):
         # create a new context to avoid struct renaming
