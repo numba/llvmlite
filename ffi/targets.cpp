@@ -181,8 +181,8 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
                            int         OptLevel,
                            const char *RelocModel,
                            const char *CodeModel,
-                           int         EmitJITDebug,
-                           int         PrintMC)
+                           int         PrintMC,
+                           int         JIT)
 {
     using namespace llvm;
     CodeGenOpt::Level cgol;
@@ -232,11 +232,12 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
         rm = Reloc::DynamicNoPIC;
 
     TargetOptions opt;
-//     opt.JITEmitDebugInfo = EmitJITDebug;
     opt.PrintMachineCode = PrintMC;
 
+    bool jit = JIT;
+
     return wrap(unwrap(T)->createTargetMachine(Triple, CPU, Features, opt,
-                                               rm, cm, cgol));
+                                               rm, cm, cgol, jit));
 }
 
 

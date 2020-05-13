@@ -202,9 +202,9 @@ class BaseTest(TestCase):
             mod = self.module()
         return mod.get_global_variable(name)
 
-    def target_machine(self):
+    def target_machine(self, *, jit):
         target = llvm.Target.from_default_triple()
-        return target.create_target_machine()
+        return target.create_target_machine(jit=jit)
 
 
 class TestDependencies(BaseTest):
@@ -760,7 +760,7 @@ class JITWithTMTestMixin(JITTestMixin):
 
     def test_emit_assembly(self):
         """Test TargetMachineRef.emit_assembly()"""
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=True)
         mod = self.module()
         ee = self.jit(mod, target_machine)  # noqa F841 # Keeps pointers alive
         raw_asm = target_machine.emit_assembly(mod)
@@ -772,7 +772,7 @@ class JITWithTMTestMixin(JITTestMixin):
 
     def test_emit_object(self):
         """Test TargetMachineRef.emit_object()"""
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=True)
         mod = self.module()
         ee = self.jit(mod, target_machine)  # noqa F841 # Keeps pointers alive
         code_object = target_machine.emit_object(mod)
@@ -789,7 +789,7 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
 
     def jit(self, mod, target_machine=None):
         if target_machine is None:
-            target_machine = self.target_machine()
+            target_machine = self.target_machine(jit=True)
         return llvm.create_mcjit_compiler(mod, target_machine)
 
 
@@ -1061,12 +1061,12 @@ class TestTargetData(BaseTest):
 class TestTargetMachine(BaseTest):
 
     def test_add_analysis_passes(self):
-        tm = self.target_machine()
+        tm = self.target_machine(jit=False)
         pm = llvm.create_module_pass_manager()
         tm.add_analysis_passes(pm)
 
     def test_target_data_from_tm(self):
-        tm = self.target_machine()
+        tm = self.target_machine(jit=False)
         td = tm.target_data
         mod = self.module()
         gv_i32 = mod.get_global_variable("glob")
@@ -1419,7 +1419,7 @@ class TestInlineAsm(BaseTest):
     def test_inlineasm(self):
         llvm.initialize_native_asmparser()
         m = self.module(asm=asm_inlineasm)
-        tm = self.target_machine()
+        tm = self.target_machine(jit=False)
         asm = tm.emit_assembly(m)
         self.assertIn('nop', asm)
 
@@ -1440,7 +1440,7 @@ class TestObjectFile(BaseTest):
     """
 
     def test_object_file(self):
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=False)
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
         obj = llvm.ObjectFileRef.from_data(obj_bin)
@@ -1460,7 +1460,7 @@ class TestObjectFile(BaseTest):
         self.assertTrue(has_text)
 
     def test_add_object_file(self):
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=False)
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
         obj = llvm.ObjectFileRef.from_data(obj_bin)
@@ -1476,7 +1476,7 @@ class TestObjectFile(BaseTest):
         self.assertEqual(sum_twice(2, 3), 10)
 
     def test_add_object_file_from_filesystem(self):
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=False)
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
         temp_desc, temp_path = mkstemp()
