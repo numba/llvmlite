@@ -184,6 +184,8 @@ def main():
         main_posix('freebsd', '.so')
     elif sys.platform == 'darwin':
         main_posix('osx', '.dylib')
+    elif sys.platform == 'cygwin':
+        main_posix('cygwin', '.dll')
     else:
         raise RuntimeError("unsupported platform: %r" % (sys.platform,))
 

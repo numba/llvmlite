@@ -1,4 +1,5 @@
 import os
+import sys
 from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
                     c_void_p, string_at)
 
@@ -235,6 +236,11 @@ class Target(ffi.ObjectRef):
         # Note we still want to produce regular COFF files in AOT mode.
         if os.name == 'nt' and codemodel == 'jitdefault':
             triple += '-elf'
+        # MCJIT under Cygwin for some reason generates code with SYSV ABI when
+        # given "x86_64-unknown-cygwin" triple, but correctly recognizes
+        # trailing "-windows"
+        elif sys.platform == 'cygwin':
+            triple = triple.replace('-cygwin', '-windows')
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
                                                 _encode_string(triple),
                                                 _encode_string(cpu),
