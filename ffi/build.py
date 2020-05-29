@@ -68,7 +68,6 @@ def find_win32_generator():
         return ver >= 14
     generators = list(filter(drop_old_vs, generators))
 
-    #generators.append('Visual Studio 14 2015' + (' Win64' if is_64bit else ''))
     generators.append('Visual Studio 15 2017' + (' Win64' if is_64bit else ''))
     for generator in generators:
         build_dir = tempfile.mkdtemp()

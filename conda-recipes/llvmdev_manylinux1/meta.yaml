@@ -3,7 +3,6 @@
 {% set sha256_llvm = "00a1ee1f389f81e9979f3a640a01c431b3021de0d42278f6508391a2f0b81c9a" %}
 {% set sha256_lld = "86262bad3e2fd784ba8c5e2158d7aa36f12b85f2515e95bc81d65d75bb9b0c82" %}
 {% set build_number = "0" %}
-{% set url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz" %}
 
 package:
   name: llvmdev

@@ -18,5 +18,3 @@ conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
 call activate %CONDA_ENV%
 @rem Install llvmdev
 %CONDA_INSTALL% -c numba llvmdev="9.0*"
-@rem Install enum34 for Python < 3.4
-if %PYTHON% LSS 3.4 (%CONDA_INSTALL% enum34)
