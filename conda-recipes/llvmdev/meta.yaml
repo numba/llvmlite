@@ -21,7 +21,9 @@ source:
     # https://reviews.llvm.org/D53035
     # (the first, as mentioned in the patch itself, was:
     # https://reviews.llvm.org/D47188)
-    - ../D47188-svml-VF-llvm9.patch
+    # Latest version of the patch from
+    # https://github.com/conda-forge/llvmdev-feedstock/blob/9.x/recipe/patches/intel-D47188-svml-VF.patch
+    - ../intel-D47188-svml-VF.patch
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
 

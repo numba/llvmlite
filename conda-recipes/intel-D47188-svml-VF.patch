@@ -1,19 +1,42 @@
-From 7e3541a2bf38546a37b933223ae4ceca89f341f4 Mon Sep 17 00:00:00 2001
-From: Siu Kwan Lam <michael.lam.sk@gmail.com>
-Date: Thu, 30 Jan 2020 16:57:23 -0600
-Subject: [PATCH] D47188 patched clean
+From 75403290dc1b285d9f1cc12f7875ad958f2f81fb Mon Sep 17 00:00:00 2001
+From: Ivan Butygin <ivan.butygin@intel.com>
+Date: Tue, 27 Aug 2019 13:28:23 +0300
+Subject: [PATCH] Fixes vectorizer and extends SVML support
 
+This patch is created on top of LLVM 9.0.0 merging several fixes:
+
+1. https://reviews.llvm.org/D47188 patch fixes the problem with improper calls
+to SVML library as it has non-standard calling conventions. So accordingly it
+has SVML calling conventions definitions and code to set CC to the vectorized
+calls. As SVML provides several implementations for the math functions we also
+took into consideration fast attribute and select more fast implementation in
+such case. This work is based on original Matt Masten's work.
+Author: Denis Nagorny
+
+2. https://reviews.llvm.org/D53035 patch implements support to legalize SVML
+calls by breaking down the illegal vector call instruction into multiple legal
+vector call instructions during code generation. Currently the vectorizer does
+not check legality of the generated SVML (or any VECLIB) call instructions, and
+this can lead to potential problems even during vector type legalization. This
+patch addresses this issue by adding a legality check during code generation and
+replaces the illegal SVML call with corresponding legalized instructions.
+(RFC: http://lists.llvm.org/pipermail/llvm-dev/2018-June/124357.html)
+Author: Karthik Senthil
+
+3. Functional merge of the patches above, which fixes calling convention
 ---
  include/llvm/Analysis/TargetLibraryInfo.h          |  17 +-
  include/llvm/IR/CMakeLists.txt                     |   4 +
  include/llvm/IR/CallingConv.h                      |   3 +
  include/llvm/IR/SVML.td                            |  62 +++
  lib/Analysis/CMakeLists.txt                        |   1 +
+ lib/Analysis/TargetLibraryInfo.cpp                 |  25 +-
  lib/AsmParser/LLLexer.cpp                          |   1 +
  lib/AsmParser/LLParser.cpp                         |   2 +
  lib/AsmParser/LLToken.h                            |   1 +
  lib/IR/AsmWriter.cpp                               |   1 +
  lib/IR/Verifier.cpp                                |   1 +
+ lib/Target/X86/X86CallingConv.td                   |  67 ++-
  lib/Target/X86/X86ISelLowering.cpp                 |   3 +-
  lib/Target/X86/X86RegisterInfo.cpp                 |  34 ++
  lib/Target/X86/X86Subtarget.h                      |   1 +
@@ -25,15 +48,15 @@ Subject: [PATCH] D47188 patched clean
  .../LoopVectorize/X86/svml-legal-codegen.ll        |  61 +++
  utils/TableGen/CMakeLists.txt                      |   1 +
  utils/TableGen/SVMLEmitter.cpp                     | 110 +++++
- utils/TableGen/TableGen.cpp                        |   7 +-
+ utils/TableGen/TableGen.cpp                        |   8 +-
  utils/TableGen/TableGenBackends.h                  |   1 +
  utils/vim/syntax/llvm.vim                          |   1 +
- 24 files changed, 1160 insertions(+), 34 deletions(-)
- create mode 100644 include/llvm/IR/SVML.td
- mode change 100755 => 100644 test/Transforms/LoopVectorize/X86/scatter_crash.ll
- create mode 100644 test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
- create mode 100644 test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
- create mode 100644 utils/TableGen/SVMLEmitter.cpp
+ 26 files changed, 1246 insertions(+), 41 deletions(-)
+ create mode 100644 llvm/include/llvm/IR/SVML.td
+ mode change 100755 => 100644 llvm/test/Transforms/LoopVectorize/X86/scatter_crash.ll
+ create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
+ create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
+ create mode 100644 llvm/utils/TableGen/SVMLEmitter.cpp
 
 diff --git a/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
 index 4b5200f..1c7837d 100644
@@ -188,6 +211,65 @@ index dd5d625..d891bce 100644
    intrinsics_gen
 +  svml_gen
    )
+diff --git a/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
+index ef139d3..af8bbe3 100644
+--- a/lib/Analysis/TargetLibraryInfo.cpp
++++ b/lib/Analysis/TargetLibraryInfo.cpp
+@@ -61,6 +61,11 @@ static bool hasBcmp(const Triple &TT) {
+   return TT.isOSFreeBSD() || TT.isOSSolaris() || TT.isOSDarwin();
+ }
+ 
++std::string svmlMangle(StringRef FnName, const bool IsFast) {
++  std::string FullName = FnName;
++  return IsFast ? FullName : FullName + "_ha";
++}
++
+ /// Initialize the set of available library functions based on the specified
+ /// target triple. This should be carefully written so that a missing target
+ /// triple gets a sane set of defaults.
+@@ -1549,8 +1554,9 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
+   }
+   case SVML: {
+     const VecDesc VecFuncs[] = {
+-    #define TLI_DEFINE_SVML_VECFUNCS
+-    #include "llvm/Analysis/VecFuncs.def"
++    #define GET_SVML_VARIANTS
++    #include "llvm/IR/SVML.inc"
++    #undef GET_SVML_VARIANTS
+     };
+     addVectorizableFunctions(VecFuncs);
+     break;
+@@ -1570,19 +1576,26 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
+   return I != VectorDescs.end() && StringRef(I->ScalarFnName) == funcName;
+ }
+ 
+-StringRef TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
+-                                                       unsigned VF) const {
++std::string TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
++                                                         unsigned VF,
++                                                         bool &FromSVML,
++                                                         bool IsFast) const {
++  FromSVML = ClVectorLibrary == SVML;
+   F = sanitizeFunctionName(F);
+   if (F.empty())
+     return F;
+   std::vector<VecDesc>::const_iterator I =
+       llvm::lower_bound(VectorDescs, F, compareWithScalarFnName);
+   while (I != VectorDescs.end() && StringRef(I->ScalarFnName) == F) {
+-    if (I->VectorizationFactor == VF)
++    if (I->VectorizationFactor == VF) {
++      if (FromSVML) {
++        return svmlMangle(I->VectorFnName, IsFast);
++      }
+       return I->VectorFnName;
++    }
+     ++I;
+   }
+-  return StringRef();
++  return std::string();
+ }
+ 
+ StringRef TargetLibraryInfoImpl::getScalarizedFunction(StringRef F,
 diff --git a/lib/AsmParser/LLLexer.cpp b/lib/AsmParser/LLLexer.cpp
 index 72d2357..17761a4 100644
 --- a/lib/AsmParser/LLLexer.cpp
@@ -256,8 +338,111 @@ index 9346c8b..03ba1c0 100644
    case CallingConv::PTX_Kernel:
    case CallingConv::PTX_Device:
      Assert(!F.isVarArg(), "Calling convention does not support varargs or "
+diff --git a/lib/Target/X86/X86CallingConv.td b/lib/Target/X86/X86CallingConv.td
+index 1c3034a..22cfd3c 100644
+--- a/lib/Target/X86/X86CallingConv.td
++++ b/lib/Target/X86/X86CallingConv.td
+@@ -476,6 +476,21 @@ def RetCC_X86_64 : CallingConv<[
+   CCDelegateTo<RetCC_X86_64_C>
+ ]>;
+ 
++// Intel_SVML return-value convention.
++def RetCC_Intel_SVML : CallingConv<[
++  // Vector types are returned in XMM0,XMM1
++  CCIfType<[v4f32, v2f64],
++            CCAssignToReg<[XMM0,XMM1]>>,
++
++  // 256-bit FP vectors
++  CCIfType<[v8f32, v4f64],
++            CCAssignToReg<[YMM0,YMM1]>>,
++
++  // 512-bit FP vectors
++  CCIfType<[v16f32, v8f64],
++            CCAssignToReg<[ZMM0,ZMM1]>>
++]>;
++
+ // This is the return-value convention used for the entire X86 backend.
+ let Entry = 1 in
+ def RetCC_X86 : CallingConv<[
+@@ -483,6 +498,8 @@ def RetCC_X86 : CallingConv<[
+   // Check if this is the Intel OpenCL built-ins calling convention
+   CCIfCC<"CallingConv::Intel_OCL_BI", CCDelegateTo<RetCC_Intel_OCL_BI>>,
+ 
++  CCIfCC<"CallingConv::Intel_SVML", CCDelegateTo<RetCC_Intel_SVML>>,
++
+   CCIfSubtarget<"is64Bit()", CCDelegateTo<RetCC_X86_64>>,
+   CCDelegateTo<RetCC_X86_32>
+ ]>;
+@@ -986,6 +1003,30 @@ def CC_Intel_OCL_BI : CallingConv<[
+   CCDelegateTo<CC_X86_32_C>
+ ]>;
+ 
++// X86-64 Intel Short Vector Math Library calling convention.
++def CC_Intel_SVML : CallingConv<[
++
++  // The SSE vector arguments are passed in XMM registers.
++  CCIfType<[v4f32, v2f64],
++           CCAssignToReg<[XMM0, XMM1, XMM2]>>,
++
++  // The 256-bit vector arguments are passed in YMM registers.
++  CCIfType<[v8f32, v4f64],
++           CCAssignToReg<[YMM0, YMM1, YMM2]>>,
++
++  // The 512-bit vector arguments are passed in ZMM registers.
++  CCIfType<[v16f32, v8f64],
++           CCAssignToReg<[ZMM0, ZMM1, ZMM2]>>
++]>;
++
++def CC_X86_32_Intr : CallingConv<[
++  CCAssignToStack<4, 4>
++]>;
++
++def CC_X86_64_Intr : CallingConv<[
++  CCAssignToStack<8, 8>
++]>;
++
+ //===----------------------------------------------------------------------===//
+ // X86 Root Argument Calling Conventions
+ //===----------------------------------------------------------------------===//
+@@ -1035,6 +1076,7 @@ def CC_X86_64 : CallingConv<[
+ let Entry = 1 in
+ def CC_X86 : CallingConv<[
+   CCIfCC<"CallingConv::Intel_OCL_BI", CCDelegateTo<CC_Intel_OCL_BI>>,
++  CCIfCC<"CallingConv::Intel_SVML", CCDelegateTo<CC_Intel_SVML>>,
+   CCIfSubtarget<"is64Bit()", CCDelegateTo<CC_X86_64>>,
+   CCDelegateTo<CC_X86_32>
+ ]>;
+@@ -1143,4 +1185,27 @@ def CSR_SysV64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP, RSP,
+                                                (sequence "R%u", 12, 15))>;
+ def CSR_SysV64_RegCall       : CalleeSavedRegs<(add CSR_SysV64_RegCall_NoSSE,               
+                                                (sequence "XMM%u", 8, 15))>;
+-                                               
++
++// SVML calling convention
++def CSR_32_Intel_SVML        : CalleeSavedRegs<(add CSR_32_RegCall_NoSSE)>;
++def CSR_32_Intel_SVML_AVX512 : CalleeSavedRegs<(add CSR_32_Intel_SVML,
++                                                K4, K5, K6, K7)>;
++
++def CSR_64_Intel_SVML_NoSSE : CalleeSavedRegs<(add RBX, RSI, RDI, RBP, RSP, R12, R13, R14, R15)>;
++
++def CSR_64_Intel_SVML       : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
++                                               (sequence "XMM%u", 8, 15))>;
++def CSR_Win64_Intel_SVML    : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
++                                               (sequence "XMM%u", 6, 15))>;
++
++def CSR_64_Intel_SVML_AVX        : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
++                                                    (sequence "YMM%u", 8, 15))>;
++def CSR_Win64_Intel_SVML_AVX     : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
++                                                    (sequence "YMM%u", 6, 15))>;
++
++def CSR_64_Intel_SVML_AVX512     : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
++                                                    (sequence "ZMM%u", 16, 31),
++                                                    K4, K5, K6, K7)>;
++def CSR_Win64_Intel_SVML_AVX512  : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
++                                                    (sequence "ZMM%u", 6, 21),
++                                                    K4, K5, K6, K7)>;
 diff --git a/lib/Target/X86/X86ISelLowering.cpp b/lib/Target/X86/X86ISelLowering.cpp
-index 920cdd7..3da8e5e 100644
+index ff1e4ed..8c6db20 100644
 --- a/lib/Target/X86/X86ISelLowering.cpp
 +++ b/lib/Target/X86/X86ISelLowering.cpp
 @@ -3407,7 +3407,8 @@ SDValue X86TargetLowering::LowerFormalArguments(
@@ -271,7 +456,7 @@ index 920cdd7..3da8e5e 100644
      else if (Subtarget.hasAVX())
        VecVT = MVT::v8f32;
 diff --git a/lib/Target/X86/X86RegisterInfo.cpp b/lib/Target/X86/X86RegisterInfo.cpp
-index c8966df..9762ac7 100644
+index 2e2f1f9..6428364 100644
 --- a/lib/Target/X86/X86RegisterInfo.cpp
 +++ b/lib/Target/X86/X86RegisterInfo.cpp
 @@ -326,6 +326,23 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
@@ -1634,10 +1819,18 @@ index 0000000..8800ca8
 +
 +} // End llvm namespace
 diff --git a/utils/TableGen/TableGen.cpp b/utils/TableGen/TableGen.cpp
-index c485ed2..37e378a 100644
+index c485ed2..54828aa 100644
 --- a/utils/TableGen/TableGen.cpp
 +++ b/utils/TableGen/TableGen.cpp
-@@ -125,7 +125,9 @@ namespace {
+@@ -53,6 +53,7 @@ enum ActionType {
+   GenX86FoldTables,
+   GenRegisterBank,
+   GenExegesis,
++  GenSVMLVariants,
+ };
+ 
+ namespace llvm {
+@@ -125,7 +126,9 @@ namespace {
                      clEnumValN(GenRegisterBank, "gen-register-bank",
                                 "Generate registers bank descriptions"),
                      clEnumValN(GenExegesis, "gen-exegesis",
@@ -1648,7 +1841,7 @@ index c485ed2..37e378a 100644
  
    cl::OptionCategory PrintEnumsCat("Options for -print-enums");
    cl::opt<std::string>
-@@ -247,6 +249,9 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
+@@ -247,6 +250,9 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
    case GenExegesis:
      EmitExegesis(Records, OS);
      break;
@@ -1683,325 +1876,5 @@ index 1a060ab..06da8b4 100644
        \ linkonce
        \ linkonce_odr
 -- 
-2.16.2
-
-From 7545b108939270bf1b8cfdd066c55b4dcf996b9e Mon Sep 17 00:00:00 2001
-From: Siu Kwan Lam <michael.lam.sk@gmail.com>
-Date: Thu, 30 Jan 2020 17:34:01 -0600
-Subject: [PATCH] D47188 patched manually
-
----
- lib/Analysis/TargetLibraryInfo.cpp |  29 ++++++++---
- lib/Target/X86/X86CallingConv.td   | 102 +++++++++++++++++++++++++++++--------
- utils/TableGen/TableGen.cpp        |   1 +
- 3 files changed, 102 insertions(+), 30 deletions(-)
-
-diff --git a/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
-index ef139d3..a91c3f2 100644
---- a/lib/Analysis/TargetLibraryInfo.cpp
-+++ b/lib/Analysis/TargetLibraryInfo.cpp
-@@ -51,6 +51,11 @@ static bool hasSinCosPiStret(const Triple &T) {
-   return true;
- }
- 
-+std::string svmlMangle(StringRef FnName, const bool IsFast) {
-+  std::string FullName = FnName;
-+  return IsFast ? FullName : FullName + "_ha";
-+}
-+
- static bool hasBcmp(const Triple &TT) {
-   // Posix removed support from bcmp() in 2001, but the glibc and several
-   // implementations of the libc still have it.
-@@ -1491,9 +1496,9 @@ bool TargetLibraryInfoImpl::getLibFunc(const Function &FDecl,
-                                        LibFunc &F) const {
-   // Intrinsics don't overlap w/libcalls; if our module has a large number of
-   // intrinsics, this ends up being an interesting compile time win since we
--  // avoid string normalization and comparison. 
-+  // avoid string normalization and comparison.
-   if (FDecl.isIntrinsic()) return false;
--  
-+
-   const DataLayout *DL =
-       FDecl.getParent() ? &FDecl.getParent()->getDataLayout() : nullptr;
-   return getLibFunc(FDecl.getName(), F) &&
-@@ -1549,8 +1554,9 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
-   }
-   case SVML: {
-     const VecDesc VecFuncs[] = {
--    #define TLI_DEFINE_SVML_VECFUNCS
--    #include "llvm/Analysis/VecFuncs.def"
-+    #define GET_SVML_VARIANTS
-+    #include "llvm/IR/SVML.inc"
-+    #undef GET_SVML_VARIANTS
-     };
-     addVectorizableFunctions(VecFuncs);
-     break;
-@@ -1570,19 +1576,26 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
-   return I != VectorDescs.end() && StringRef(I->ScalarFnName) == funcName;
- }
- 
--StringRef TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
--                                                       unsigned VF) const {
-+std::string TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
-+                                                         unsigned VF,
-+                                                         bool &FromSVML,
-+                                                         bool IsFast) const {
-+  FromSVML = ClVectorLibrary == SVML;
-   F = sanitizeFunctionName(F);
-   if (F.empty())
-     return F;
-   std::vector<VecDesc>::const_iterator I =
-       llvm::lower_bound(VectorDescs, F, compareWithScalarFnName);
-   while (I != VectorDescs.end() && StringRef(I->ScalarFnName) == F) {
--    if (I->VectorizationFactor == VF)
-+    if (I->VectorizationFactor == VF) {
-+      if (FromSVML) {
-+        return svmlMangle(I->VectorFnName, IsFast);
-+      }
-       return I->VectorFnName;
-+    }
-     ++I;
-   }
--  return StringRef();
-+  return std::string();
- }
- 
- StringRef TargetLibraryInfoImpl::getScalarizedFunction(StringRef F,
-diff --git a/lib/Target/X86/X86CallingConv.td b/lib/Target/X86/X86CallingConv.td
-index 1c3034a..d8279b9 100644
---- a/lib/Target/X86/X86CallingConv.td
-+++ b/lib/Target/X86/X86CallingConv.td
-@@ -92,14 +92,14 @@ def CC_#NAME : CallingConv<[
- 
-     // __mmask64 (v64i1) --> GPR64 (for x64) or 2 x GPR32 (for IA32)
-     CCIfType<[v64i1], CCPromoteToType<i64>>,
--    CCIfSubtarget<"is64Bit()", CCIfType<[i64], 
-+    CCIfSubtarget<"is64Bit()", CCIfType<[i64],
-       CCAssignToReg<RC.GPR_64>>>,
--    CCIfSubtarget<"is32Bit()", CCIfType<[i64], 
-+    CCIfSubtarget<"is32Bit()", CCIfType<[i64],
-       CCCustom<"CC_X86_32_RegCall_Assign2Regs">>>,
- 
-     // float, double, float128 --> XMM
-     // In the case of SSE disabled --> save to stack
--    CCIfType<[f32, f64, f128], 
-+    CCIfType<[f32, f64, f128],
-       CCIfSubtarget<"hasSSE1()", CCAssignToReg<RC.XMM>>>,
- 
-     // long double --> FP
-@@ -107,23 +107,23 @@ def CC_#NAME : CallingConv<[
- 
-     // __m128, __m128i, __m128d --> XMM
-     // In the case of SSE disabled --> save to stack
--    CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64], 
-+    CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
-       CCIfSubtarget<"hasSSE1()", CCAssignToReg<RC.XMM>>>,
- 
-     // __m256, __m256i, __m256d --> YMM
-     // In the case of SSE disabled --> save to stack
--    CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64], 
-+    CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64],
-       CCIfSubtarget<"hasAVX()", CCAssignToReg<RC.YMM>>>,
- 
-     // __m512, __m512i, __m512d --> ZMM
-     // In the case of SSE disabled --> save to stack
--    CCIfType<[v64i8, v32i16, v16i32, v8i64, v16f32, v8f64], 
-+    CCIfType<[v64i8, v32i16, v16i32, v8i64, v16f32, v8f64],
-       CCIfSubtarget<"hasAVX512()",CCAssignToReg<RC.ZMM>>>,
- 
-     // If no register was found -> assign to stack
- 
-     // In 64 bit, assign 64/32 bit values to 8 byte stack
--    CCIfSubtarget<"is64Bit()", CCIfType<[i32, i64, f32, f64], 
-+    CCIfSubtarget<"is64Bit()", CCIfType<[i32, i64, f32, f64],
-       CCAssignToStack<8, 8>>>,
- 
-     // In 32 bit, assign 64/32 bit values to 8/4 byte stack
-@@ -134,16 +134,16 @@ def CC_#NAME : CallingConv<[
-     CCIfSubtarget<"is64Bit()", CCIfType<[x86mmx], CCAssignToStack<8, 8>>>,
-     CCIfType<[x86mmx], CCAssignToStack<8, 4>>,
- 
--    // float 128 get stack slots whose size and alignment depends 
-+    // float 128 get stack slots whose size and alignment depends
-     // on the subtarget.
-     CCIfType<[f80, f128], CCAssignToStack<0, 0>>,
- 
-     // Vectors get 16-byte stack slots that are 16-byte aligned.
--    CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64], 
-+    CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
-       CCAssignToStack<16, 16>>,
- 
-     // 256-bit vectors get 32-byte stack slots that are 32-byte aligned.
--    CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64], 
-+    CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64],
-       CCAssignToStack<32, 32>>,
- 
-     // 512-bit vectors get 64-byte stack slots that are 64-byte aligned.
-@@ -171,28 +171,28 @@ def RetCC_#NAME : CallingConv<[
- 
-     // __mmask64 (v64i1) --> GPR64 (for x64) or 2 x GPR32 (for IA32)
-     CCIfType<[v64i1], CCPromoteToType<i64>>,
--    CCIfSubtarget<"is64Bit()", CCIfType<[i64], 
-+    CCIfSubtarget<"is64Bit()", CCIfType<[i64],
-       CCAssignToReg<RC.GPR_64>>>,
--    CCIfSubtarget<"is32Bit()", CCIfType<[i64], 
-+    CCIfSubtarget<"is32Bit()", CCIfType<[i64],
-       CCCustom<"CC_X86_32_RegCall_Assign2Regs">>>,
- 
-     // long double --> FP
-     CCIfType<[f80], CCAssignToReg<RC.FP_RET>>,
- 
-     // float, double, float128 --> XMM
--    CCIfType<[f32, f64, f128], 
-+    CCIfType<[f32, f64, f128],
-       CCIfSubtarget<"hasSSE1()", CCAssignToReg<RC.XMM>>>,
- 
-     // __m128, __m128i, __m128d --> XMM
--    CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64], 
-+    CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
-       CCIfSubtarget<"hasSSE1()", CCAssignToReg<RC.XMM>>>,
- 
-     // __m256, __m256i, __m256d --> YMM
--    CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64], 
-+    CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64],
-       CCIfSubtarget<"hasAVX()", CCAssignToReg<RC.YMM>>>,
- 
-     // __m512, __m512i, __m512d --> ZMM
--    CCIfType<[v64i8, v32i16, v16i32, v8i64, v16f32, v8f64], 
-+    CCIfType<[v64i8, v32i16, v16i32, v8i64, v16f32, v8f64],
-       CCIfSubtarget<"hasAVX512()", CCAssignToReg<RC.ZMM>>>
- ]>;
- }
-@@ -350,10 +350,25 @@ def RetCC_X86_Win64_C : CallingConv<[
-   CCDelegateTo<RetCC_X86_64_C>
- ]>;
- 
-+// Intel_SVML return-value convention.
-+def RetCC_Intel_SVML : CallingConv<[
-+  // Vector types are returned in XMM0,XMM1
-+  CCIfType<[v4f32, v2f64],
-+            CCAssignToReg<[XMM0,XMM1]>>,
-+
-+  // 256-bit FP vectors
-+  CCIfType<[v8f32, v4f64],
-+            CCAssignToReg<[YMM0,YMM1]>>,
-+
-+  // 512-bit FP vectors
-+  CCIfType<[v16f32, v8f64],
-+            CCAssignToReg<[ZMM0,ZMM1]>>
-+]>;
-+
- // X86-64 vectorcall return-value convention.
- def RetCC_X86_64_Vectorcall : CallingConv<[
-   // Vectorcall calling convention always returns FP values in XMMs.
--  CCIfType<[f32, f64, f128], 
-+  CCIfType<[f32, f64, f128],
-     CCAssignToReg<[XMM0, XMM1, XMM2, XMM3]>>,
- 
-   // Otherwise, everything is the same as Windows X86-64 C CC.
-@@ -468,7 +483,7 @@ def RetCC_X86_64 : CallingConv<[
-           CCIfSubtarget<"isTargetWin64()",
-                         CCDelegateTo<RetCC_X86_Win64_RegCall>>>,
-   CCIfCC<"CallingConv::X86_RegCall", CCDelegateTo<RetCC_X86_SysV64_RegCall>>,
--          
-+
-   // Mingw64 and native Win64 use Win64 CC
-   CCIfSubtarget<"isTargetWin64()", CCDelegateTo<RetCC_X86_Win64_C>>,
- 
-@@ -483,6 +498,8 @@ def RetCC_X86 : CallingConv<[
-   // Check if this is the Intel OpenCL built-ins calling convention
-   CCIfCC<"CallingConv::Intel_OCL_BI", CCDelegateTo<RetCC_Intel_OCL_BI>>,
- 
-+  CCIfCC<"CallingConv::Intel_SVML", CCDelegateTo<RetCC_Intel_SVML>>,
-+
-   CCIfSubtarget<"is64Bit()", CCDelegateTo<RetCC_X86_64>>,
-   CCDelegateTo<RetCC_X86_32>
- ]>;
-@@ -986,6 +1003,23 @@ def CC_Intel_OCL_BI : CallingConv<[
-   CCDelegateTo<CC_X86_32_C>
- ]>;
- 
-+// X86-64 Intel Short Vector Math Library calling convention.
-+def CC_Intel_SVML : CallingConv<[
-+
-+  // The SSE vector arguments are passed in XMM registers.
-+  CCIfType<[v4f32, v2f64],
-+           CCAssignToReg<[XMM0, XMM1, XMM2]>>,
-+
-+  // The 256-bit vector arguments are passed in YMM registers.
-+  CCIfType<[v8f32, v4f64],
-+           CCAssignToReg<[YMM0, YMM1, YMM2]>>,
-+
-+  // The 512-bit vector arguments are passed in ZMM registers.
-+  CCIfType<[v16f32, v8f64],
-+           CCAssignToReg<[ZMM0, ZMM1, ZMM2]>>
-+]>;
-+
-+
- //===----------------------------------------------------------------------===//
- // X86 Root Argument Calling Conventions
- //===----------------------------------------------------------------------===//
-@@ -1035,6 +1069,7 @@ def CC_X86_64 : CallingConv<[
- let Entry = 1 in
- def CC_X86 : CallingConv<[
-   CCIfCC<"CallingConv::Intel_OCL_BI", CCDelegateTo<CC_Intel_OCL_BI>>,
-+  CCIfCC<"CallingConv::Intel_SVML", CCDelegateTo<CC_Intel_SVML>>,
-   CCIfSubtarget<"is64Bit()", CCDelegateTo<CC_X86_64>>,
-   CCDelegateTo<CC_X86_32>
- ]>;
-@@ -1134,13 +1169,36 @@ def CSR_64_HHVM : CalleeSavedRegs<(add R12)>;
- // Register calling convention preserves few GPR and XMM8-15
- def CSR_32_RegCall_NoSSE : CalleeSavedRegs<(add ESI, EDI, EBX, EBP, ESP)>;
- def CSR_32_RegCall       : CalleeSavedRegs<(add CSR_32_RegCall_NoSSE,
--                                           (sequence "XMM%u", 4, 7))>;                                            
-+                                           (sequence "XMM%u", 4, 7))>;
- def CSR_Win64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP, RSP,
-                                               (sequence "R%u", 10, 15))>;
--def CSR_Win64_RegCall       : CalleeSavedRegs<(add CSR_Win64_RegCall_NoSSE,                                  
-+def CSR_Win64_RegCall       : CalleeSavedRegs<(add CSR_Win64_RegCall_NoSSE,
-                                               (sequence "XMM%u", 8, 15))>;
- def CSR_SysV64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP, RSP,
-                                                (sequence "R%u", 12, 15))>;
--def CSR_SysV64_RegCall       : CalleeSavedRegs<(add CSR_SysV64_RegCall_NoSSE,               
-+def CSR_SysV64_RegCall       : CalleeSavedRegs<(add CSR_SysV64_RegCall_NoSSE,
-+                                               (sequence "XMM%u", 8, 15))>;
-+
-+// SVML calling convention
-+def CSR_32_Intel_SVML        : CalleeSavedRegs<(add CSR_32_RegCall_NoSSE)>;
-+def CSR_32_Intel_SVML_AVX512 : CalleeSavedRegs<(add CSR_32_Intel_SVML,
-+                                                K4, K5, K6, K7)>;
-+
-+def CSR_64_Intel_SVML_NoSSE : CalleeSavedRegs<(add RBX, RSI, RDI, RBP, RSP, R12, R13, R14, R15)>;
-+
-+def CSR_64_Intel_SVML       : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
-                                                (sequence "XMM%u", 8, 15))>;
--                                               
-+def CSR_Win64_Intel_SVML    : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
-+                                               (sequence "XMM%u", 6, 15))>;
-+
-+def CSR_64_Intel_SVML_AVX        : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
-+                                                    (sequence "YMM%u", 8, 15))>;
-+def CSR_Win64_Intel_SVML_AVX     : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
-+                                                    (sequence "YMM%u", 6, 15))>;
-+
-+def CSR_64_Intel_SVML_AVX512     : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
-+                                                    (sequence "ZMM%u", 16, 31),
-+                                                    K4, K5, K6, K7)>;
-+def CSR_Win64_Intel_SVML_AVX512  : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
-+                                                    (sequence "ZMM%u", 6, 21),
-+                                                    K4, K5, K6, K7)>;
-diff --git a/utils/TableGen/TableGen.cpp b/utils/TableGen/TableGen.cpp
-index 37e378a..54828aa 100644
---- a/utils/TableGen/TableGen.cpp
-+++ b/utils/TableGen/TableGen.cpp
-@@ -53,6 +53,7 @@ enum ActionType {
-   GenX86FoldTables,
-   GenRegisterBank,
-   GenExegesis,
-+  GenSVMLVariants,
- };
- 
- namespace llvm {
--- 
-2.16.2
+2.7.4
 
