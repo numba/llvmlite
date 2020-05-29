@@ -4,9 +4,6 @@ cd build
 set BUILD_CONFIG=Release
 
 REM Configure step
-REM Using VS2019 generator but using the VS2017 toolset (v141)
-REM reference https://gitlab.kitware.com/cmake/cmake/issues/19157
-REM set CMAKE_GENERATOR=Visual Studio 16 2019
 set CMAKE_GENERATOR=Visual Studio 15 2017
 if "%ARCH%"=="32" (
     set CMAKE_GENERATOR_ARCH=Win32

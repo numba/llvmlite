@@ -1,23 +1,9 @@
-{% if ppc64le %}
-
-# ppc64le has numerous problems in LLVM 8, so use 7.1
 {% set shortversion = "9.0" %}
 {% set version = "9.0.1" %}
 {% set sha256_llvm = "00a1ee1f389f81e9979f3a640a01c431b3021de0d42278f6508391a2f0b81c9a" %}
 {% set sha256_lld = "86262bad3e2fd784ba8c5e2158d7aa36f12b85f2515e95bc81d65d75bb9b0c82" %}
 {% set build_number = "0" %}
 {% set url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz" %}
-
-{% else %}
-
-{% set shortversion = "9.0" %}
-{% set version = "9.0.1" %}
-{% set sha256_llvm = "00a1ee1f389f81e9979f3a640a01c431b3021de0d42278f6508391a2f0b81c9a" %}
-{% set sha256_lld = "86262bad3e2fd784ba8c5e2158d7aa36f12b85f2515e95bc81d65d75bb9b0c82" %}
-{% set build_number = "0" %}
-{% set url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz" %}
-
-{% endif %}
 
 package:
   name: llvmdev
@@ -36,14 +22,10 @@ source:
     # https://reviews.llvm.org/D53035
     # (the first, as mentioned in the patch itself, was:
     # https://reviews.llvm.org/D47188)
-    # the patch in HEAD only applies on llvm 8
-    # {{ '- ../D47188-svml-VF.patch' if shortversion == '9.0' else '' }}
     - ../D47188-svml-VF-llvm9.patch
-    # undefined behavior bug due to Twine usage, this is fixed in llvm 8
-    {{ '- ../twine_cfg_undefined_behavior.patch' if shortversion == '7.1' else '' }}
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
-  # - url: http://llvm.org/releases/{{ version }}/lld-{{ version }}.src.tar.xz
+
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
     sha256: {{ sha256_lld }}
