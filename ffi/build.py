@@ -68,7 +68,6 @@ def find_win32_generator():
         return ver >= 14
     generators = list(filter(drop_old_vs, generators))
 
-    generators.append('Visual Studio 14 2015' + (' Win64' if is_64bit else ''))
     generators.append('Visual Studio 15 2017' + (' Win64' if is_64bit else ''))
     for generator in generators:
         build_dir = tempfile.mkdtemp()
@@ -134,9 +133,9 @@ def main_posix(kind, library_ext):
         print(msg)
         print(warning + '\n')
     else:
-        if not (out.startswith('8.0.') or out.startswith('7.0.')
-                or out.startswith('7.1.')):
-            msg = ("Building llvmlite requires LLVM 7.0.x, 7.1.x or 8.0.x, got "
+
+        if not out.startswith('9.0.'):
+            msg = ("Building llvmlite requires LLVM 9.0.x, got "
                    "{!r}. Be sure to set LLVM_CONFIG to the right executable "
                    "path.\nRead the documentation at "
                    "http://llvmlite.pydata.org/ for more information about "

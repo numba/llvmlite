@@ -1,7 +1,7 @@
-{% set shortversion = "8.0" %}
-{% set version = "8.0.0" %}
-{% set sha256_llvm = "8872be1b12c61450cacc82b3d153eab02be2546ef34fa3580ed14137bb26224c" %}
-{% set sha256_lld = "9caec8ec922e32ffa130f0fb08e4c5a242d7e68ce757631e425e9eba2e1a6e37" %}
+{% set shortversion = "9.0" %}
+{% set version = "9.0.1" %}
+{% set sha256_llvm = "00a1ee1f389f81e9979f3a640a01c431b3021de0d42278f6508391a2f0b81c9a" %}
+{% set sha256_lld = "86262bad3e2fd784ba8c5e2158d7aa36f12b85f2515e95bc81d65d75bb9b0c82" %}
 {% set build_number = "0" %}
 
 package:
@@ -9,7 +9,7 @@ package:
   version: {{ version }}
 
 source:
-  - url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz
     fn: llvm-{{ version }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
@@ -21,11 +21,13 @@ source:
     # https://reviews.llvm.org/D53035
     # (the first, as mentioned in the patch itself, was:
     # https://reviews.llvm.org/D47188)
-    - ../D47188-svml-VF.patch
+    # Latest version of the patch from
+    # https://github.com/conda-forge/llvmdev-feedstock/blob/9.x/recipe/patches/intel-D47188-svml-VF.patch
+    - ../intel-D47188-svml-VF.patch
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
 
-  - url: http://releases.llvm.org/{{ version }}/lld-{{ version }}.src.tar.xz
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
     sha256: {{ sha256_lld }}
     folder: tools/lld

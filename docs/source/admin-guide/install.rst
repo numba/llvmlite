@@ -74,8 +74,7 @@ The LLVM build process is fully scripted by conda-build_, and the `llvmdev recip
 The manual instructions below describe the main steps, but refer to the recipe
 for details:
 
-#. Download the `LLVM 7.0.0 source code <http://releases.llvm.org/7.0.0/llvm-7.0.0.src.tar.xz>`_.
-   or `LLVM 8.0.0 source code <http://releases.llvm.org/8.0.0/llvm-8.0.0.src.tar.xz>`_
+#. Download the `LLVM 9.0.1 source code <https://github.com/llvm/llvm-project/releases/download/llvmorg-9.0.1/llvm-9.0.1.src.tar.xz>`_.
 
 #. Download or git checkout the `llvmlite source code <https://github.com/numba/llvmlite>`_.
 
@@ -84,12 +83,10 @@ for details:
    Linux ``patch -p1 -i {patch-file}`` command:
 
     #. ``llvm-lto-static.patch``: Fix issue with LTO shared library on Windows
-    #. ``D47188-svml-VF.patch``: Add support for vectorized math functions via
-       Intel SVML (LLVM 8 only)
     #. ``partial-testing.patch``: Enables additional parts of the LLVM test
        suite
-    #. ``twine_cfg_undefined_behavior.patch``: Fix obscure memory corruption bug
-       in LLVM that hasn't been fixed in master yet (LLVM 7 only)
+    #. ``intel-D47188-svml-VF.patch``: Add support for vectorized math
+       functions via Intel SVML.
     #. ``0001-Revert-Limit-size-of-non-GlobalValue-name.patch``: revert the
        limit put on the length of a non-GlobalValue name
 

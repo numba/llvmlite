@@ -571,8 +571,9 @@ class InsertElement(Instruction):
         if not isinstance(vector.type, types.VectorType):
             raise TypeError("vector needs to be of VectorType.")
         if not value.type == vector.type.element:
-            raise TypeError("value needs to be of type % not %."
-                            % (vector.type.element, value.type))
+            raise TypeError(
+                "value needs to be of type {} not {}.".format(
+                    vector.type.element, value.type))
         if not isinstance(index.type, types.IntType):
             raise TypeError("index needs to be of IntType.")
         typ = vector.type

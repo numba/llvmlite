@@ -218,13 +218,18 @@ class Target(ffi.ObjectRef):
 
     def create_target_machine(self, cpu='', features='',
                               opt=2, reloc='default', codemodel='jitdefault',
-                              jitdebug=False, printmc=False):
+                              printmc=False, jit=False):
         """
         Create a new TargetMachine for this target and the given options.
 
         Specifying codemodel='default' will result in the use of the "small"
         code model. Specifying codemodel='jitdefault' will result in the code
         model being picked based on platform bitness (32="small", 64="large").
+
+        The `printmc` option corresponds to llvm's `-print-machineinstrs`.
+
+        The `jit` option should be set when the target-machine is to be used
+        in a JIT engine.
         """
         assert 0 <= opt <= 3
         assert reloc in RELOC
@@ -242,8 +247,8 @@ class Target(ffi.ObjectRef):
                                                 opt,
                                                 _encode_string(reloc),
                                                 _encode_string(codemodel),
-                                                int(jitdebug),
                                                 int(printmc),
+                                                int(jit),
                                                 )
         if tm:
             return TargetMachine(tm)
@@ -394,6 +399,10 @@ ffi.lib.LLVMPY_CreateTargetMachine.argtypes = [
     c_char_p,
     # CodeModel
     c_char_p,
+    # PrintMC
+    c_int,
+    # JIT
+    c_int,
 ]
 ffi.lib.LLVMPY_CreateTargetMachine.restype = ffi.LLVMTargetMachineRef
 

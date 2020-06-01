@@ -398,8 +398,8 @@ class VectorType(Type):
         if not isinstance(values, (list, tuple)):
             if isinstance(values, Constant):
                 if values.type != self.element:
-                    raise TypeError("expected % for %"
-                                    % (self.element, values.type))
+                    raise TypeError("expected {} for {}".format(
+                        self.element, values.type))
                 return (values, ) * self.count
             return (Constant(self.element, values), ) * self.count
         if len(values) != len(self):
