@@ -26,6 +26,9 @@ source:
     - ../intel-D47188-svml-VF.patch
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
+    # Reverts a patch that auto-upgrades NVVM atomic intrinsics to atomicrmw instructions that NVVM doesn't recognise
+    - ../0001-Revert-NVPTX-Use-atomicrmw-fadd-instead-of-intrinsic.patch
+    - ../0002-Revert-NVPTX-Remove-now-unused-atomic.load.add.f32-i.patch
 
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
