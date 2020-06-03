@@ -9,13 +9,10 @@ Pull requests:
 * PR #592: Fix meta.yaml
 * PR #591: buildscripts: Unpin wheel
 * PR #590: add python_requires to setup.py
-* PR #586: Update changelog for 0.32.1 on master
-* PR #585: Update changelog for 0.32.1 on release branch
-* PR #580: Trove classifiers may be out of date.
 * PR #582: Adds override for LLVM version check, re-formats docs.
 * PR #581: Add FAQ entry on LLVM version support.
+* PR #580: Trove classifiers may be out of date.
 * PR #577: llvmlite wheel building fixes
-* PR #576: Update the release date
 * PR #575: Update the release date
 * PR #548: Upgrade to LLVM9
 * PR #521: Allow instructions to be removed from blocks
