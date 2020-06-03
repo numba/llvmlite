@@ -1,7 +1,30 @@
-v0.33.0dev
-----------
+v0.33.0 (June 10, 2020)
+-----------------------
 
-In development
+This release upgrades to LLVM 9 and drops support for older LLVM versions.
+
+Pull requests:
+
+* PR #593: Fix CUDA with LLVM9
+* PR #592: Fix meta.yaml
+* PR #591: buildscripts: Unpin wheel
+* PR #590: add python_requires to setup.py
+* PR #582: Adds override for LLVM version check, re-formats docs.
+* PR #581: Add FAQ entry on LLVM version support.
+* PR #580: Trove classifiers may be out of date.
+* PR #577: llvmlite wheel building fixes
+* PR #575: Update the release date
+* PR #548: Upgrade to LLVM9
+* PR #521: Allow instructions to be removed from blocks
+
+Authors:
+
+* Graham Markall
+* Jan Vesely
+* Siu Kwan Lam  (core dev)
+* Stuart Archibald  (core dev)
+* Tim Babb
+* Valentin Haenel  (core dev)
 
 
 v0.32.1 (May 7, 2020)
