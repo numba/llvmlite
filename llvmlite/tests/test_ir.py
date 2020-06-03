@@ -1770,6 +1770,29 @@ class TestBuilderMisc(TestBase):
             three:
             """)
 
+    def test_instruction_removal(self):
+        func = self.function()
+        builder = ir.IRBuilder()
+        blk = func.append_basic_block(name='entry')
+        builder.position_at_end(blk)
+        k = ir.Constant(int32, 1234)
+        a = builder.add(k, k, 'a')
+        retvoid = builder.ret_void()
+        self.assertTrue(blk.is_terminated)
+        builder.remove(retvoid)
+        self.assertFalse(blk.is_terminated)
+        b = builder.mul(a, a, 'b')
+        c = builder.add(b, b, 'c')
+        builder.remove(c)
+        builder.ret_void()
+        self.assertTrue(blk.is_terminated)
+        self.check_block(blk, """\
+            entry:
+                %"a" = add i32 1234, 1234
+                %"b" = mul i32 %"a", %"a"
+                ret void
+        """)
+
     def test_metadata(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
