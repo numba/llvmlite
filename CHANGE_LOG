@@ -1,5 +1,5 @@
-v0.33.0rc1
-----------
+v0.33.0 (June 10, 2020)
+-----------------------
 
 This release upgrades to LLVM 9 and drops support for older LLVM versions.
 
