@@ -42,7 +42,11 @@ LLVMPY_LinkModules(LLVMModuleRef Dest, LLVMModuleRef Src, const char **Err)
     auto OldDiagnosticHandler = Ctx.getDiagnosticHandler();
 
     // set the handler to a new one
+#if LLVM_VERSION_MAJOR >= 10
+    Ctx.setDiagnosticHandler(std::make_unique<ReportNotAbortDiagnosticHandler>(errstream));
+#else
     Ctx.setDiagnosticHandler(llvm::make_unique<ReportNotAbortDiagnosticHandler>(errstream));
+#endif
 
     // link
     bool failed = LLVMLinkModules2(Dest, Src);
