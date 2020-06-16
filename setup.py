@@ -20,7 +20,6 @@ from distutils.dir_util import remove_tree
 from distutils.spawn import spawn
 import os
 import sys
-import shutil
 
 if os.environ.get('READTHEDOCS', None) == 'True':
     sys.exit("setup.py disabled on readthedocs: called with %s"
