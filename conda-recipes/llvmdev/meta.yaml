@@ -24,6 +24,7 @@ source:
     # Latest version of the patch from
     # https://github.com/conda-forge/llvmdev-feedstock/blob/9.x/recipe/patches/intel-D47188-svml-VF.patch
     - ../intel-D47188-svml-VF.patch
+    - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
     # Reverts a patch that auto-upgrades NVVM atomic intrinsics to atomicrmw instructions that NVVM doesn't recognise
