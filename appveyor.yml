@@ -1,4 +1,4 @@
-# VS2017 needed for LLVM 9
+# VS2017 needed for LLVM 9 and beyond
 image: Visual Studio 2017
 
 # Environment based on https://github.com/rmcgibbo/python-appveyor-conda-example
