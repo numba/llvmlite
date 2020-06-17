@@ -1,7 +1,7 @@
-{% set shortversion = "9.0" %}
-{% set version = "9.0.1" %}
-{% set sha256_llvm = "00a1ee1f389f81e9979f3a640a01c431b3021de0d42278f6508391a2f0b81c9a" %}
-{% set sha256_lld = "86262bad3e2fd784ba8c5e2158d7aa36f12b85f2515e95bc81d65d75bb9b0c82" %}
+{% set shortversion = "10.0" %}
+{% set version = "10.0.0" %}
+{% set sha256_llvm = "df83a44b3a9a71029049ec101fb0077ecbbdf5fe41e395215025779099a98fdf" %}
+{% set sha256_lld = "b9a0d7c576eeef05bc06d6e954938a01c5396cee1d1e985891e0b1cf16e3d708" %}
 {% set build_number = "0" %}
 
 package:
@@ -24,6 +24,7 @@ source:
     # Latest version of the patch from
     # https://github.com/conda-forge/llvmdev-feedstock/blob/9.x/recipe/patches/intel-D47188-svml-VF.patch
     - ../intel-D47188-svml-VF.patch
+    - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
     # Reverts a patch that auto-upgrades NVVM atomic intrinsics to atomicrmw instructions that NVVM doesn't recognise
