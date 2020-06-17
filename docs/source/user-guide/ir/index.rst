@@ -18,7 +18,7 @@ construct a pure Python representation of the IR.
 
 To use this module, you should be familiar with the concepts
 in the `LLVM Language Reference
-<https://releases.llvm.org/9.0.0/docs/LangRef.html>`_.
+<https://releases.llvm.org/10.0.0/docs/LangRef.html>`_.
 
 .. toctree::
    :maxdepth: 1
