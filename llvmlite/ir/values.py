@@ -590,15 +590,19 @@ class Function(GlobalValue, _HasMetadata):
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
 
-    def __init__(self, module, ftype, name):
+    def __init__(self, module, ftype, name, arg_names=None):
         assert isinstance(ftype, types.Type)
+        assert arg_names is None or len(arg_names) == len(ftype.args)
         super(Function, self).__init__(module, ftype.as_pointer(), name=name)
         self.ftype = ftype
         self.scope = _utils.NameScope()
         self.blocks = []
         self.attributes = FunctionAttributes()
-        self.args = tuple([Argument(self, t)
-                           for t in ftype.args])
+        if arg_names is None:
+            self.args = tuple([Argument(self, t) for t in ftype.args])
+        else:
+            self.args = tuple([Argument(self, t, n)
+                               for t, n in zip(ftype.args, arg_names)])
         self.return_value = ReturnValue(self, ftype.return_type)
         self.parent.add_global(self)
         self.calling_convention = ''

@@ -260,7 +260,7 @@ Global values are values accessible using a module-wide name.
         meaning that the default alignment for the variable's
         type is used.
 
-.. class:: Function(module, typ, name)
+.. class:: Function(module, typ, name, arg_names=None)
 
    A global function.
 
@@ -268,6 +268,8 @@ Global values are values accessible using a module-wide name.
    * *typ* is the function's type---a :class:`FunctionType`
      instance.
    * *name* is the function's name---a Python string.
+   * *arg_names* is an optional sequence of Python strings
+     with the names for the function's arguments.
 
    If a global function has any basic blocks, it is a
    :ref:`function definition`. Otherwise, it is a
