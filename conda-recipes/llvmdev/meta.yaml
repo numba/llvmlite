@@ -16,13 +16,10 @@ source:
     # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
     - ../llvm-lto-static.patch   # [win]
     - ../partial-testing.patch
-    # Intel SVML optimizations
-    # The second part of this patch was published as:
-    # https://reviews.llvm.org/D53035
-    # (the first, as mentioned in the patch itself, was:
-    # https://reviews.llvm.org/D47188)
-    # Latest version of the patch from
-    # https://github.com/conda-forge/llvmdev-feedstock/blob/9.x/recipe/patches/intel-D47188-svml-VF.patch
+    # Intel SVML optimizations (two patches)
+    # Latest versions from:
+    # * https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/intel-D47188-svml-VF.patch
+    # * https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     - ../intel-D47188-svml-VF.patch
     - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     # Reverts a patch limiting non-GlobalValue name length
