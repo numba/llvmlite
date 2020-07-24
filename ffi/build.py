@@ -152,6 +152,11 @@ def main_posix(kind, library_ext):
     cxxflags = cxxflags.replace('\0', '')
     cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
 
+    # Add environment CXXFLAGS
+    env_cxxflags = os.environ.get('CXXFLAGS')
+    if env_cxxflags:
+        cxxflags += env_cxxflags.split()
+
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
     svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.inc')
