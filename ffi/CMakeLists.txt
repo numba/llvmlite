@@ -38,9 +38,9 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use.
-# TODO: the following line is broken with LLVM 10.0.0 due to a potential bug in
-# the LLVM cmake setup.
-# BROKEN llvm_map_components_to_libnames(llvm_libs all)
+# The following line is broken with LLVM 10.0.0 due to a potential bug in
+# the LLVM cmake setup, so we use the workaround instead.
+# BROKEN: llvm_map_components_to_libnames(llvm_libs all)
 set(llvm_libs ${LLVM_AVAILABLE_LIBS})
 
 # Since LLVM 8 "OptRemarks" is built as a shared library only and also appears
