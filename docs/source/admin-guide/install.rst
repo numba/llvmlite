@@ -88,7 +88,7 @@ for details:
     #. ``intel-D47188-svml-VF.patch``: Add support for vectorized math
        functions via Intel SVML.
     #. ``expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch``: Fix for a
-        test failure caused by the previous patch
+        test failure caused by the previous patch.
     #. ``0001-Revert-Limit-size-of-non-GlobalValue-name.patch``: revert the
        limit put on the length of a non-GlobalValue name
 
