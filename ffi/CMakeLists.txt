@@ -40,6 +40,7 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
 # that we wish to use.
 # The following line is broken with LLVM 10.0.0 due to a potential bug in
 # the LLVM cmake setup, so we use the workaround instead.
+# Bug reported upstream at: https://bugs.llvm.org/show_bug.cgi?id=47003
 # BROKEN: llvm_map_components_to_libnames(llvm_libs all)
 set(llvm_libs ${LLVM_AVAILABLE_LIBS})
 
