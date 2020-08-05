@@ -20,7 +20,6 @@ from distutils.dir_util import remove_tree
 from distutils.spawn import spawn
 import os
 import sys
-import shutil
 
 if os.environ.get('READTHEDOCS', None) == 'True':
     sys.exit("setup.py disabled on readthedocs: called with %s"
@@ -171,16 +170,16 @@ setup(name='llvmlite',
       description="lightweight wrapper around basic LLVM functionality",
       version=versioneer.get_version(),
       classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Topic :: Software Development :: Code Generators",
-        "Topic :: Software Development :: Compilers",
+          "Development Status :: 4 - Beta",
+          "Intended Audience :: Developers",
+          "Operating System :: OS Independent",
+          "Programming Language :: Python",
+          "Programming Language :: Python :: 3",
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7",
+          "Programming Language :: Python :: 3.8",
+          "Topic :: Software Development :: Code Generators",
+          "Topic :: Software Development :: Compilers",
       ],
       # Include the separately-compiled shared library
       author="Continuum Analytics, Inc.",
