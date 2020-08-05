@@ -1,8 +1,24 @@
-v0.34.0
--------
+v0.34.0 (August 05, 2020)
+-------------------------
 
-In development
+This release upgrades to LLVM 10 (10.0.1) for all platforms except `aarch64`
+which will remain at LLVM 9 (9.0.1).
 
+Pull requests:
+
+* PR #596: Use std::make_unique on LLVM 10 (Cherry-Pick via #599)
+* PR #606: Revert "Fix CUDA with LLVM9" (Cherry-Pick via #599)
+* PR #599: LLVM 10
+* PR #598: Fix flake in setup.py
+* PR #602: add missing targets to wheels
+
+Authors:
+
+* Graham Markall
+* Michał Górny
+* Siu Kwan Lam  (core dev)
+* Stuart Archibald  (core dev)
+* Valentin Haenel  (core dev)
 
 v0.33.0 (June 10, 2020)
 -----------------------
