@@ -17,4 +17,4 @@ conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
 
 call activate %CONDA_ENV%
 @rem Install llvmdev
-%CONDA_INSTALL% -c numba llvmdev="9.0*"
+%CONDA_INSTALL% -c numba llvmdev="10.0*"
