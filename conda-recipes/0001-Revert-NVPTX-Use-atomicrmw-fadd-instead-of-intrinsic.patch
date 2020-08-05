@@ -1,0 +1,162 @@
+diff --git a/llvm/lib/IR/AutoUpgrade.cpp b/llvm/lib/IR/AutoUpgrade.cpp
+index a2d82035282..e8ecee858d7 100644
+--- a/llvm/lib/IR/AutoUpgrade.cpp
++++ b/llvm/lib/IR/AutoUpgrade.cpp
+@@ -764,8 +764,6 @@ static bool UpgradeIntrinsicFunction1(Function *F, Function *&NewFn) {
+                         .Cases("clz.ll", "popc.ll", "h2f", true)
+                         .Cases("max.i", "max.ll", "max.ui", "max.ull", true)
+                         .Cases("min.i", "min.ll", "min.ui", "min.ull", true)
+-                        .StartsWith("atomic.load.add.f32.p", true)
+-                        .StartsWith("atomic.load.add.f64.p", true)
+                         .Default(false);
+       if (Expand) {
+         NewFn = nullptr;
+@@ -3428,12 +3426,6 @@ void llvm::UpgradeIntrinsicCall(CallInst *CI, Function *NewFn) {
+       Value *Cmp = Builder.CreateICmpSGE(
+           Arg, llvm::Constant::getNullValue(Arg->getType()), "abs.cond");
+       Rep = Builder.CreateSelect(Cmp, Arg, Neg, "abs");
+-    } else if (IsNVVM && (Name.startswith("atomic.load.add.f32.p") ||
+-                          Name.startswith("atomic.load.add.f64.p"))) {
+-      Value *Ptr = CI->getArgOperand(0);
+-      Value *Val = CI->getArgOperand(1);
+-      Rep = Builder.CreateAtomicRMW(AtomicRMWInst::FAdd, Ptr, Val,
+-                                    AtomicOrdering::SequentiallyConsistent);
+     } else if (IsNVVM && (Name == "max.i" || Name == "max.ll" ||
+                           Name == "max.ui" || Name == "max.ull")) {
+       Value *Arg0 = CI->getArgOperand(0);
+diff --git a/llvm/lib/Target/NVPTX/NVPTXISelLowering.cpp b/llvm/lib/Target/NVPTX/NVPTXISelLowering.cpp
+index ae1aa98da0e..07b35c12474 100644
+--- a/llvm/lib/Target/NVPTX/NVPTXISelLowering.cpp
++++ b/llvm/lib/Target/NVPTX/NVPTXISelLowering.cpp
+@@ -3749,6 +3749,8 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
+     return true;
+   }
+ 
++  case Intrinsic::nvvm_atomic_load_add_f32:
++  case Intrinsic::nvvm_atomic_load_add_f64:
+   case Intrinsic::nvvm_atomic_load_inc_32:
+   case Intrinsic::nvvm_atomic_load_dec_32:
+ 
+diff --git a/llvm/lib/Target/NVPTX/NVPTXIntrinsics.td b/llvm/lib/Target/NVPTX/NVPTXIntrinsics.td
+index 1752d3e0575..8d69f7a5153 100644
+--- a/llvm/lib/Target/NVPTX/NVPTXIntrinsics.td
++++ b/llvm/lib/Target/NVPTX/NVPTXIntrinsics.td
+@@ -1134,12 +1134,18 @@ def atomic_load_add_64_s: ATOMIC_SHARED_CHK<(ops node:$a, node:$b),
+   (atomic_load_add_64 node:$a, node:$b)>;
+ def atomic_load_add_64_gen: ATOMIC_GENERIC_CHK<(ops node:$a, node:$b),
+   (atomic_load_add_64 node:$a, node:$b)>;
+-def atomic_load_add_g: ATOMIC_GLOBAL_CHK<(ops node:$a, node:$b),
+-  (atomic_load_fadd node:$a, node:$b)>;
+-def atomic_load_add_s: ATOMIC_SHARED_CHK<(ops node:$a, node:$b),
+-  (atomic_load_fadd node:$a, node:$b)>;
+-def atomic_load_add_gen: ATOMIC_GENERIC_CHK<(ops node:$a, node:$b),
+-  (atomic_load_fadd node:$a, node:$b)>;
++def atomic_load_add_f32_g: ATOMIC_GLOBAL_CHK<(ops node:$a, node:$b),
++  (int_nvvm_atomic_load_add_f32 node:$a, node:$b)>;
++def atomic_load_add_f32_s: ATOMIC_SHARED_CHK<(ops node:$a, node:$b),
++  (int_nvvm_atomic_load_add_f32 node:$a, node:$b)>;
++def atomic_load_add_f32_gen: ATOMIC_GENERIC_CHK<(ops node:$a, node:$b),
++  (int_nvvm_atomic_load_add_f32 node:$a, node:$b)>;
++def atomic_load_add_f64_g: ATOMIC_GLOBAL_CHK<(ops node:$a, node:$b),
++  (int_nvvm_atomic_load_add_f64 node:$a, node:$b)>;
++def atomic_load_add_f64_s: ATOMIC_SHARED_CHK<(ops node:$a, node:$b),
++  (int_nvvm_atomic_load_add_f64 node:$a, node:$b)>;
++def atomic_load_add_f64_gen: ATOMIC_GENERIC_CHK<(ops node:$a, node:$b),
++  (int_nvvm_atomic_load_add_f64 node:$a, node:$b)>;
+ 
+ defm INT_PTX_ATOM_ADD_G_32 : F_ATOMIC_2<Int32Regs, ".global", ".u32", ".add",
+   atomic_load_add_32_g, i32imm, imm>;
+@@ -1160,18 +1166,18 @@ defm INT_PTX_ATOM_ADD_GEN_64_USE_G : F_ATOMIC_2<Int64Regs, ".global", ".u64",
+   ".add", atomic_load_add_64_gen, i64imm, imm>;
+ 
+ defm INT_PTX_ATOM_ADD_G_F32 : F_ATOMIC_2<Float32Regs, ".global", ".f32", ".add",
+-  atomic_load_add_g, f32imm, fpimm>;
++  atomic_load_add_f32_g, f32imm, fpimm>;
+ defm INT_PTX_ATOM_ADD_S_F32 : F_ATOMIC_2<Float32Regs, ".shared", ".f32", ".add",
+-  atomic_load_add_s, f32imm, fpimm>;
++  atomic_load_add_f32_s, f32imm, fpimm>;
+ defm INT_PTX_ATOM_ADD_GEN_F32 : F_ATOMIC_2<Float32Regs, "", ".f32", ".add",
+-  atomic_load_add_gen, f32imm, fpimm>;
++  atomic_load_add_f32_gen, f32imm, fpimm>;
+ 
+ defm INT_PTX_ATOM_ADD_G_F64 : F_ATOMIC_2<Float64Regs, ".global", ".f64", ".add",
+-  atomic_load_add_g, f64imm, fpimm, [hasAtomAddF64]>;
++  atomic_load_add_f64_g, f64imm, fpimm, [hasAtomAddF64]>;
+ defm INT_PTX_ATOM_ADD_S_F64 : F_ATOMIC_2<Float64Regs, ".shared", ".f64", ".add",
+-  atomic_load_add_s, f64imm, fpimm, [hasAtomAddF64]>;
++  atomic_load_add_f64_s, f64imm, fpimm, [hasAtomAddF64]>;
+ defm INT_PTX_ATOM_ADD_GEN_F64 : F_ATOMIC_2<Float64Regs, "", ".f64", ".add",
+-  atomic_load_add_gen, f64imm, fpimm, [hasAtomAddF64]>;
++  atomic_load_add_f64_gen, f64imm, fpimm, [hasAtomAddF64]>;
+ 
+ // atom_sub
+ 
+diff --git a/llvm/lib/Target/NVPTX/NVPTXTargetTransformInfo.cpp b/llvm/lib/Target/NVPTX/NVPTXTargetTransformInfo.cpp
+index be0416f90fc..6bee8fdbf5b 100644
+--- a/llvm/lib/Target/NVPTX/NVPTXTargetTransformInfo.cpp
++++ b/llvm/lib/Target/NVPTX/NVPTXTargetTransformInfo.cpp
+@@ -38,6 +38,7 @@ static bool readsLaneId(const IntrinsicInst *II) {
+ static bool isNVVMAtomic(const IntrinsicInst *II) {
+   switch (II->getIntrinsicID()) {
+     default: return false;
++    case Intrinsic::nvvm_atomic_load_add_f32:
+     case Intrinsic::nvvm_atomic_load_inc_32:
+     case Intrinsic::nvvm_atomic_load_dec_32:
+ 
+diff --git a/llvm/test/CodeGen/NVPTX/atomics-sm60.ll b/llvm/test/CodeGen/NVPTX/atomics-sm60.ll
+index 18a2b424fc2..0b5bafb780c 100644
+--- a/llvm/test/CodeGen/NVPTX/atomics-sm60.ll
++++ b/llvm/test/CodeGen/NVPTX/atomics-sm60.ll
+@@ -12,17 +12,6 @@ define void @test(double* %dp0, double addrspace(1)* %dp1, double addrspace(3)*
+   ret void
+ }
+ 
+-; CHECK-LABEL .func test2(
+-define void @test2(double* %dp0, double addrspace(1)* %dp1, double addrspace(3)* %dp3, double %d) {
+-; CHECK: atom.add.f64
+-  %r1 = atomicrmw fadd double* %dp0, double %d seq_cst
+-; CHECK: atom.global.add.f64
+-  %r2 = atomicrmw fadd double addrspace(1)* %dp1, double %d seq_cst
+-; CHECK: atom.shared.add.f64
+-  %ret = atomicrmw fadd double addrspace(3)* %dp3, double %d seq_cst
+-  ret void
+-}
+-
+ declare double @llvm.nvvm.atomic.load.add.f64.p0f64(double* nocapture, double) #1
+ declare double @llvm.nvvm.atomic.load.add.f64.p1f64(double addrspace(1)* nocapture, double) #1
+ declare double @llvm.nvvm.atomic.load.add.f64.p3f64(double addrspace(3)* nocapture, double) #1
+diff --git a/llvm/test/CodeGen/NVPTX/atomics.ll b/llvm/test/CodeGen/NVPTX/atomics.ll
+index fd284adcb52..daadb6e9c1a 100644
+--- a/llvm/test/CodeGen/NVPTX/atomics.ll
++++ b/llvm/test/CodeGen/NVPTX/atomics.ll
+@@ -167,27 +167,6 @@ define float @atomic_add_f32_addrspace3(float addrspace(3)* %addr, float %val) {
+   ret float %ret
+ }
+ 
+-; CHECK-LABEL: atomicrmw_add_f32_generic
+-define float @atomicrmw_add_f32_generic(float* %addr, float %val) {
+-; CHECK: atom.add.f32
+-  %ret = atomicrmw fadd float* %addr, float %val seq_cst
+-  ret float %ret
+-}
+-
+-; CHECK-LABEL: atomicrmw_add_f32_addrspace1
+-define float @atomicrmw_add_f32_addrspace1(float addrspace(1)* %addr, float %val) {
+-; CHECK: atom.global.add.f32
+-  %ret = atomicrmw fadd float addrspace(1)* %addr, float %val seq_cst
+-  ret float %ret
+-}
+-
+-; CHECK-LABEL: atomicrmw_add_f32_addrspace3
+-define float @atomicrmw_add_f32_addrspace3(float addrspace(3)* %addr, float %val) {
+-; CHECK: atom.shared.add.f32
+-  %ret = atomicrmw fadd float addrspace(3)* %addr, float %val seq_cst
+-  ret float %ret
+-}
+-
+ ; CHECK-LABEL: atomic_cmpxchg_i32
+ define i32 @atomic_cmpxchg_i32(i32* %addr, i32 %cmp, i32 %new) {
+ ; CHECK: atom.cas.b32
+-- 
+2.17.1
+
