@@ -27,7 +27,7 @@ source activate $CONDA_ENV
 set -v
 
 # Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c numba llvmdev="9.0*"
+$CONDA_INSTALL -c numba llvmdev="10.0*"
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
