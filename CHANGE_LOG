@@ -1,4 +1,4 @@
-v0.34.0 (August 05, 2020)
+v0.34.0 (August 12, 2020)
 -------------------------
 
 This release upgrades to LLVM 10 (10.0.1) for all platforms except `aarch64`
