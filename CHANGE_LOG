@@ -3,7 +3,7 @@ v0.35.0dev
 
 In development
 
-v0.34.0 (August 05, 2020)
+v0.34.0 (August 12, 2020)
 -------------------------
 
 This release upgrades to LLVM 10 (10.0.1) for all platforms except `aarch64`
@@ -16,6 +16,8 @@ Pull requests:
 * PR #599: LLVM 10
 * PR #598: Fix flake in setup.py
 * PR #602: add missing targets to wheels
+* PR #614: Fix wheel building
+* PR #616: fix release date in changelog
 
 Authors:
 
