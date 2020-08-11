@@ -46,7 +46,6 @@ source:
     - ../intel-D47188-svml-VF.patch
     - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     {% endif %}
-    - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
 
@@ -57,7 +56,7 @@ source:
 
 build:
   number: {{ build_number }}
-  string: "manylinux1h{{ PKG_HASH }}"
+  string: "manylinux2010h{{ PKG_HASH }}"
   script_env:
     - CFLAGS
     - CXXFLAGS
