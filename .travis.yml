@@ -1,4 +1,4 @@
-# TravisCI is testing manylinux1 wheels only.
+# TravisCI is testing manylinux2010 wheels only.
 # Azure is used to test the Anaconda compiler toolchina.
 #
 # Reference:
@@ -20,11 +20,11 @@ jobs:
     - env: PYVER=cp38-cp38   ARCH=x32
 
 install:
-    - if [ "$ARCH" == "x64" ]; then DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64; else DOCKER_IMAGE=quay.io/pypa/manylinux1_i686; fi
+    - if [ "$ARCH" == "x64" ]; then DOCKER_IMAGE=quay.io/pypa/manylinux2010_x86_64; else DOCKER_IMAGE=quay.io/pypa/manylinux2010_i686; fi
     - docker pull $DOCKER_IMAGE
 
 script:
-    - ./buildscripts/manylinux1/docker_run_$ARCH.sh build_llvmlite.sh $PYVER
+    - ./buildscripts/manylinux2010/docker_run_$ARCH.sh build_llvmlite.sh $PYVER
 
 notifications:
     email: false
