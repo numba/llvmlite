@@ -11,6 +11,8 @@ Pull requests:
 * PR #599: LLVM 10
 * PR #598: Fix flake in setup.py
 * PR #602: add missing targets to wheels
+* PR #614: Fix wheel building
+* PR #616: fix release date in changelog
 
 Authors:
 
