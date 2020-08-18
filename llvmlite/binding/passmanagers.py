@@ -2,6 +2,14 @@ from ctypes import c_bool, c_int
 from llvmlite.binding import ffi
 
 
+def enable_time_passes():
+    ffi.lib.LLVMPY_EnableTimePasses()
+
+
+def report_and_reset_timings():
+    ffi.lib.LLVMPY_ReportAndResetTimings()
+
+
 def create_module_pass_manager():
     return ModulePassManager()
 
