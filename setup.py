@@ -41,7 +41,7 @@ build = cmdclass.get('build', build)
 build_ext = cmdclass.get('build_ext', build_ext)
 
 
-def build_library_files(dry_run, pic=False):
+def build_library_files(dry_run, pic):
     cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
     if pic:
         os.environ['CXXFLAGS'] = os.environ.get('CXXFLAGS', '') + ' -fPIC'
@@ -65,11 +65,21 @@ class LlvmliteBuild(build):
         return ['build_ext'] + commands
 
 
+PIC_OPTION = ('pic', None, 'Build library files with -fPIC')
+
+
 class LlvmliteBuildExt(build_ext):
+
+    user_options = build_ext.user_options + [ PIC_OPTION ]
+    boolean_options = build_ext.boolean_options + [ 'pic' ]
+
+    def initialize_options(self):
+        super().initialize_options()
+        self.pic = 0
 
     def run(self):
         build_ext.run(self)
-        build_library_files(self.dry_run)
+        build_library_files(self.dry_run, self.pic)
         # HACK: this makes sure the library file (which is large) is only
         # included in binary builds, not source builds.
         from llvmlite.utils import get_library_files
@@ -94,6 +104,7 @@ class LlvmliteInstall(install):
         # is a non-pure build
         self.install_libbase = self.install_platlib
         self.install_lib = self.install_platlib
+
 
 class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
@@ -127,7 +138,7 @@ if bdist_wheel:
             from llvmlite.utils import get_library_files
             # Turn on -fPIC for wheel building on Linux
             pic = sys.platform.startswith('linux')
-            build_library_files(self.dry_run, pic=pic)
+            build_library_files(self.dry_run, pic)
             self.distribution.package_data.update({
                 "llvmlite.binding": get_library_files(),
             })
