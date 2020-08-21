@@ -113,15 +113,6 @@ Compiling llvmlite
 
      python setup.py build
 
-   If your system does not build Position-Independent Code (PIC) by default, you
-   may need to explicitly build the C wrapper as PIC. You can do this by
-   running::
-
-     python setup.py build_ext --inplace --pic
-     python setup.py build
-
-   in place of the above step.
-
 #. If your LLVM is installed in a nonstandard location, set the
    ``LLVM_CONFIG`` environment variable to the location of the
    corresponding ``llvm-config`` or ``llvm-config.exe``
