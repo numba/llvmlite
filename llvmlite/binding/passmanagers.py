@@ -82,6 +82,11 @@ class PassManager(ffi.ObjectRef):
         """See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass."""
         ffi.lib.LLVMPY_AddBasicAliasAnalysisPass(self)
 
+    # Non-standard LLVM passes
+
+    def add_refprune_pass(self):
+        ffi.lib.LLVMPY_AddRefPrunePass(self)
+
 
 class ModulePassManager(PassManager):
 
