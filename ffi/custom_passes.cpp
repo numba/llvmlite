@@ -78,7 +78,7 @@ struct RefPrunePass : public FunctionPass {
     mutated |= eraseNullFirstArgFromList(decref_list);
 
     // Check pairs that are dominating and postdominating each other
-    for (CallInst* incref: incref_list) {
+    for (CallInst*& incref: incref_list) {
         if (incref == NULL) continue;
 
         for (CallInst*& decref: decref_list) {
@@ -95,8 +95,10 @@ struct RefPrunePass : public FunctionPass {
                 errs() << "\n";
                 incref->eraseFromParent();
                 decref->eraseFromParent();
+                incref = NULL;
                 decref = NULL;
                 mutated |= true;
+                break;
             }
         }
     }
@@ -106,36 +108,35 @@ struct RefPrunePass : public FunctionPass {
     for (CallInst*& incref : incref_list) {
         if (incref == NULL) continue;
 
-        SetVector<CallInst*> candidates;
-
         Instruction* term = incref->getParent()->getTerminator();
+        if (term->getNumSuccessors() > 0) {
+            errs() << "======= AT\n" ;
+            SetVector<CallInst*> candidates;
+            incref->dump();
+            bool balanced = true;
+            for (unsigned int i = 0; i < term->getNumSuccessors(); ++i) {
+                DomTreeNode* domchild = domtree.getNode(term->getSuccessor(i));
 
-        bool balanced = true;
-        errs() << "======= AT\n" ;
-        incref->dump();
-        for (unsigned int i = 0; i < term->getNumSuccessors(); ++i) {
-            DomTreeNode* domchild = domtree.getNode(term->getSuccessor(i));
-
-            errs() << "==== check " << domchild->getBlock()->getName() << "\n";
-            if (!findDecrefDominatedByNode(domtree, postdomtree, domchild, incref,
-                                           candidates)) {
-                balanced = false;
+                errs() << "==== check " << domchild->getBlock()->getName() << "\n";
+                if (!findDecrefDominatedByNode(domtree, postdomtree, domchild, incref,
+                                            candidates)) {
+                    balanced = false;
+                }
+            }
+            if (balanced) {
+                errs() << "======balanced" << "\n";
+                for (CallInst* inst : candidates)  {
+                    inst->dump();
+                }
+                errs() << "======" << "\n";
+                incref->eraseFromParent();
+                for (CallInst* inst : candidates)  {
+                    inst->eraseFromParent();
+                }
+                incref = NULL;
+                mutated |= true;
             }
         }
-        if (balanced) {
-            errs() << "======balanced" << "\n";
-            for (CallInst* inst : candidates)  {
-                inst->dump();
-            }
-            errs() << "======" << "\n";
-            incref->eraseFromParent();
-            for (CallInst* inst : candidates)  {
-                inst->eraseFromParent();
-            }
-            incref = NULL;
-            mutated |= true;
-        }
-
     }
     return mutated;
   }
@@ -158,7 +159,7 @@ struct RefPrunePass : public FunctionPass {
                                DomTreeNode* dom_root,
                                CallInst* incref,
                                SetVector<CallInst*> &candidates,
-                               unsigned int depth = 0) {
+                               unsigned int depth=0) {
 
     bool found = false;
     BasicBlock* bb_root = dom_root->getBlock();
@@ -179,8 +180,12 @@ struct RefPrunePass : public FunctionPass {
 
     if (found) return true;
 
+    if (depth > 10) {
+        return false;
+    }
+
     for (DomTreeNode* dom_child : dom_root->getChildren()) {
-        if (!findDecrefDominatedByNode(domtree, postdomtree, dom_child, incref, candidates)) {
+        if (!findDecrefDominatedByNode(domtree, postdomtree, dom_child, incref, candidates, depth + 1)) {
             return false;
         }
     }
