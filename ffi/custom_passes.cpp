@@ -30,119 +30,242 @@
 #include <vector>
 #include <map>
 
+// #define DEBUG_PRINT 1
+#define DEBUG_PRINT 0
+
 using namespace llvm;
 
 namespace llvm {
+    void initializeRefNormalizePassPass(PassRegistry &Registry);
     void initializeRefPrunePassPass(PassRegistry &Registry);
 }
 
+bool IsIncRef(CallInst *call_inst) {
+    Value *callee = call_inst->getCalledOperand();
+    return callee->getName() == "NRT_incref";
+}
+
+bool IsDecRef(CallInst *call_inst) {
+    Value *callee = call_inst->getCalledOperand();
+    return callee->getName() == "NRT_decref";
+}
+
+
+CallInst* GetRefOpCall(Instruction *ii) {
+    if (ii->getOpcode() == Instruction::Call) {
+        CallInst *call_inst = dyn_cast<CallInst>(ii);
+        if ( IsIncRef(call_inst) || IsDecRef(call_inst) ) {
+            return call_inst;
+        }
+    }
+    return NULL;
+}
+
+/**
+ * Move decref after increfs
+ */
+struct RefNormalizePass : public FunctionPass {
+    static char ID;
+    RefNormalizePass() : FunctionPass(ID) {
+        initializeRefNormalizePassPass(*PassRegistry::getPassRegistry());
+    }
+
+    bool runOnFunction(Function &F) override {
+        bool mutated = false;
+        for (BasicBlock &bb : F) {
+            // Find last incref
+            CallInst *last_incref = NULL;
+            size_t pos = 0, last_incref_pos = -1;
+            for (Instruction &ii : bb) {
+                CallInst *refop = GetRefOpCall(&ii);
+                if ( refop != NULL && IsIncRef(refop) ) {
+                    // Remember the last incref position
+                    last_incref = refop;
+                    last_incref_pos = pos;
+                }
+                pos += 1;
+            }
+
+            // Didn't find any incref; skip
+            if (last_incref == NULL) continue;
+
+            // Find decref that are before the last incref
+            pos = 0;
+            for (Instruction &ii : bb) {
+                CallInst *refop = GetRefOpCall(&ii);
+                if (pos < last_incref_pos){
+                    if ( refop != NULL && IsDecRef(refop) ) {
+                        refop->removeFromParent();
+                        refop->insertAfter(last_incref);
+                        mutated |= true;
+                    }
+                } else break;
+                pos += 1;
+            }
+        }
+        return mutated;
+    }
+};
+
 struct RefPrunePass : public FunctionPass {
-  static char ID;
-  RefPrunePass() : FunctionPass(ID) {
-      initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
-  }
+    static char ID;
+    RefPrunePass() : FunctionPass(ID) {
+        initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
+    }
 
-  bool runOnFunction(Function &F) override {
-    errs() << "NRT_RefPrunePass\n";
-    errs().write_escaped(F.getName()) << '\n';
+    bool runOnFunction(Function &F) override {
 
-    auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-    auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
+        auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+        auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
 
-    // domtree.viewGraph();   // view domtree
-    // postdomtree.viewGraph();
+        // domtree.viewGraph();   // view domtree
+        // postdomtree.viewGraph();
 
-    bool mutated = false;
+        bool mutated = false;
 
-    // Find all incref & decref
-    SmallVector<CallInst*, 20> incref_list, decref_list;
-    for (BasicBlock &bb : F) {
-        for (Instruction &ii : bb) {
-            if (ii.getOpcode() == Instruction::Call) {
-                CallInst *call_inst = dyn_cast<CallInst>(&ii);
-                // TODO: handle call_inst being NULL
-                Value *callee = call_inst->getCalledOperand();
-                if ( callee->getName() == "NRT_incref" ) {
-                    incref_list.push_back(call_inst);
-                } else if ( callee->getName() == "NRT_decref" ) {
-                    decref_list.push_back(call_inst);
+        // Find all incref & decref
+        SmallVector<CallInst*, 20> incref_list, decref_list;
+        for (BasicBlock &bb : F) {
+            for (Instruction &ii : bb) {
+                if (ii.getOpcode() == Instruction::Call) {
+                    CallInst *call_inst = dyn_cast<CallInst>(&ii);
+                    // TODO: handle call_inst being NULL
+                    Value *callee = call_inst->getCalledOperand();
+                    if ( callee->getName() == "NRT_incref" ) {
+                        incref_list.push_back(call_inst);
+                    } else if ( callee->getName() == "NRT_decref" ) {
+                        decref_list.push_back(call_inst);
+                    }
                 }
             }
         }
-    }
 
-    errs() << "Counts " << incref_list.size() << " " << decref_list.size() << "\n";
+        // Drop refops on NULL pointers
+        mutated |= eraseNullFirstArgFromList(incref_list);
+        mutated |= eraseNullFirstArgFromList(decref_list);
 
-    // Drop refops on NULL pointers
-    mutated |= eraseNullFirstArgFromList(incref_list);
-    mutated |= eraseNullFirstArgFromList(decref_list);
+        // Check pairs that are dominating and postdominating each other
+        for (CallInst*& incref: incref_list) {
+            if (incref == NULL) continue;
 
-    // Check pairs that are dominating and postdominating each other
-    for (CallInst*& incref: incref_list) {
-        if (incref == NULL) continue;
+            for (CallInst*& decref: decref_list) {
+                if (decref == NULL) continue;
 
-        for (CallInst*& decref: decref_list) {
-            if (decref == NULL) continue;
+                if (incref->getArgOperand(0) != decref->getArgOperand(0) )
+                    continue;
 
-            if (incref->getArgOperand(0) != decref->getArgOperand(0) )
-                continue;
-
-            if ( domtree.dominates(incref, decref)
-                    && postdomtree.dominates(decref, incref) ){
-                errs() << "Prune these due to DOM + PDOM\n";
-                incref->dump();
-                decref->dump();
-                errs() << "\n";
-                incref->eraseFromParent();
-                decref->eraseFromParent();
-                incref = NULL;
-                decref = NULL;
-                mutated |= true;
-                break;
+                if ( domtree.dominates(incref, decref)
+                        && postdomtree.dominates(decref, incref) ){
+                    if (DEBUG_PRINT) {
+                        errs() << "Prune these due to DOM + PDOM\n";
+                        incref->dump();
+                        decref->dump();
+                        errs() << "\n";
+                    }
+                    incref->eraseFromParent();
+                    decref->eraseFromParent();
+                    incref = NULL;
+                    decref = NULL;
+                    mutated |= true;
+                    break;
+                }
             }
         }
-    }
 
-    // Deal with fanout
-    // a single incref with multiple decrefs in outgoing edges
-    for (CallInst*& incref : incref_list) {
-        if (incref == NULL) continue;
+        // Deal with fanout
+        // a single incref with multiple decrefs in outgoing edges
+        for (CallInst*& incref : incref_list) {
+            if (incref == NULL) continue;
 
-        Instruction* term = incref->getParent()->getTerminator();
-        if (term->getNumSuccessors() > 0) {
-            errs() << "======= AT\n" ;
-            SetVector<CallInst*> candidates;
-            incref->dump();
-            bool balanced = true;
-            for (unsigned int i = 0; i < term->getNumSuccessors(); ++i) {
-                DomTreeNode* domchild = domtree.getNode(term->getSuccessor(i));
-
-                errs() << "==== check " << domchild->getBlock()->getName() << "\n";
-                if (!findDecrefDominatedByNode(domtree, postdomtree, domchild, incref,
-                                            candidates)) {
-                    balanced = false;
+            BasicBlock *bb = incref->getParent();
+            std::vector<BasicBlock*> stack;
+            std::set<BasicBlock*> decref_blocks = graphWalkhandleFanout(incref, bb, stack);
+            if (decref_blocks.size()) {
+                if (DEBUG_PRINT) {
+                    errs() << "FANOUT prune " << decref_blocks.size() << '\n';
+                    incref->dump();
                 }
-            }
-            if (balanced) {
-                errs() << "======balanced" << "\n";
-                for (CallInst* inst : candidates)  {
-                    inst->dump();
+                for (BasicBlock* each : decref_blocks) {
+                    // Remove first related decref
+                    for (Instruction &ii : *each) {
+                        CallInst *decref;
+                        if ( (decref = isRelatedDecref(incref, &ii)) ) {
+                            if (DEBUG_PRINT) {
+                                decref->dump();
+                            }
+                            decref->eraseFromParent();
+                            break;
+                        }
+                    }
                 }
-                errs() << "======" << "\n";
                 incref->eraseFromParent();
-                for (CallInst* inst : candidates)  {
-                    inst->eraseFromParent();
-                }
                 incref = NULL;
                 mutated |= true;
             }
         }
+        return mutated;
     }
-    return mutated;
-  }
 
-  template <class T>
-  bool eraseNullFirstArgFromList(T& refops) {
+    std::set<BasicBlock*> graphWalkhandleFanout(
+            CallInst* incref,
+            BasicBlock *cur_node,
+            std::vector<BasicBlock*> stack,
+            int depth=10) {
+    std::set<BasicBlock*> decref_blocks;
+    depth -= 1;
+    if( depth <= 0 ) return decref_blocks;
+
+    bool missing = false;
+    stack.push_back(cur_node);
+
+    // for each edge
+    Instruction* term = cur_node->getTerminator();
+    for (unsigned int i = 0; i < term->getNumSuccessors(); ++i) {
+        BasicBlock * child = term->getSuccessor(i);
+        if (basicBlockInList(child, stack)) {
+            // already visited
+            continue;
+        } else if (hasDecrefInNode(incref, child)) {
+            decref_blocks.insert(child);
+        } else {
+            std::set<BasicBlock*> inner = graphWalkhandleFanout(incref, child, stack, depth);
+            if (inner.size() > 0) {
+                // decref_blocks |= inner
+                for (BasicBlock* each : inner) {
+                    decref_blocks.insert(each);
+                }
+            } else {
+                missing |= true;
+            }
+        }
+    }
+    stack.pop_back();
+    if (missing) {
+        decref_blocks.clear();
+        return decref_blocks;
+    }
+    return decref_blocks;
+    }
+
+
+    bool basicBlockInList(const BasicBlock* bb, const std::vector<BasicBlock*> &list){
+        for (BasicBlock *each : list) {
+            if (bb == each) return true;
+        }
+        return false;
+    }
+
+    bool hasDecrefInNode(CallInst* incref, BasicBlock* bb){
+        for (Instruction &ii : *bb) {
+            if (isRelatedDecref(incref, &ii) != NULL) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    template <class T>
+    bool eraseNullFirstArgFromList(T& refops) {
     bool mutated = false;
     for (CallInst*& refop: refops) {
         if (!isNonNullFirstArg(refop)) {
@@ -152,81 +275,60 @@ struct RefPrunePass : public FunctionPass {
         }
     }
     return mutated;
-  }
+    }
 
-  bool findDecrefDominatedByNode(DominatorTree &domtree,
-                               PostDominatorTree &postdomtree,
-                               DomTreeNode* dom_root,
-                               CallInst* incref,
-                               SetVector<CallInst*> &candidates,
-                               unsigned int depth=0) {
-
-    bool found = false;
-    BasicBlock* bb_root = dom_root->getBlock();
-
-    errs() << "   -- findDecrefDominatedByNode: " << bb_root->getName() << "\n";
-
-    for (CallInst *decref : findRelatedDecrefs(dom_root->getBlock(), incref) ){
-        if ( domtree.dominates(incref, decref) ){
-            errs() << "   found\n";
-            decref->dump();
-
-            candidates.insert(decref);
-            found = true;
-            // stop on first result
-            break;
+    /**
+     * Find related decrefs to incref inside a basicblock in order
+     */
+    std::vector<CallInst*> findRelatedDecrefs(BasicBlock* bb, CallInst* incref) {
+        std::vector<CallInst*> res;
+        for (Instruction &ii : *bb) {
+        CallInst *call_inst;
+        if ((call_inst = isRelatedDecref(incref, &ii))){
+            res.push_back(call_inst);
+        } else {
+            continue;
         }
-    }
-
-    if (found) return true;
-
-    if (depth > 10) {
-        return false;
-    }
-
-    for (DomTreeNode* dom_child : dom_root->getChildren()) {
-        if (!findDecrefDominatedByNode(domtree, postdomtree, dom_child, incref, candidates, depth + 1)) {
-            return false;
         }
+        return res;
     }
-    return true;
-  }
 
-  /**
-   * Find related decrefs to incref inside a basicblock in order
-   */
-  std::vector<CallInst*> findRelatedDecrefs(BasicBlock* bb, CallInst* incref) {
-      std::vector<CallInst*> res;
-      for (Instruction &ii : *bb) {
-        if (ii.getOpcode() == Instruction::Call) {
-            CallInst *call_inst = dyn_cast<CallInst>(&ii);
+    CallInst* isRelatedDecref(CallInst *incref, Instruction *ii) {
+        // TODO: DRY
+        if (ii->getOpcode() == Instruction::Call) {
+            CallInst *call_inst = dyn_cast<CallInst>(ii);
             Value *callee = call_inst->getCalledOperand();
             if ( callee->getName() != "NRT_decref" ) {
-                continue;
+                return NULL;
             }
             if (incref->getArgOperand(0) != call_inst->getArgOperand(0)) {
-                continue;
+                return NULL;
             }
-            res.push_back(call_inst);
+            return call_inst;
         }
-      }
-      return res;
-  }
+        return NULL;
+    }
 
-   void getAnalysisUsage(AnalysisUsage &Info) const override {
-       Info.addRequired<DominatorTreeWrapperPass>();
-       Info.addRequired<PostDominatorTreeWrapperPass>();
-   }
+    void getAnalysisUsage(AnalysisUsage &Info) const override {
+        Info.addRequired<DominatorTreeWrapperPass>();
+        Info.addRequired<PostDominatorTreeWrapperPass>();
+    }
 
-   bool isNonNullFirstArg(CallInst *call_inst){
-       auto val = call_inst->getArgOperand(0);
-       auto ptr = dyn_cast<ConstantPointerNull>(val);
-       return ptr == NULL;
-   }
+    bool isNonNullFirstArg(CallInst *call_inst){
+        auto val = call_inst->getArgOperand(0);
+        auto ptr = dyn_cast<ConstantPointerNull>(val);
+        return ptr == NULL;
+    }
 }; // end of struct RefPrunePass
 
 
+char RefNormalizePass::ID = 0;
 char RefPrunePass::ID = 0;
+
+INITIALIZE_PASS_BEGIN(RefNormalizePass, "nrtrefnormalizepass",
+                      "Normalize NRT refops", false, false)
+INITIALIZE_PASS_END(RefNormalizePass, "nrtrefnormalizepass",
+                    "Normalize NRT refops", false, false)
 
 INITIALIZE_PASS_BEGIN(RefPrunePass, "nrtrefprunepass",
                       "Prune NRT refops", false, false)
@@ -236,8 +338,6 @@ INITIALIZE_PASS_DEPENDENCY(PostDominatorTreeWrapperPass)
 
 INITIALIZE_PASS_END(RefPrunePass, "refprunepass",
                     "Prune NRT refops", false, false)
-
-
 extern "C" {
 
 API_EXPORT(void)
@@ -247,6 +347,7 @@ LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM)
     // unwrap(PM)->add(createUnifyFunctionExitNodesPass());
     // unwrap(PM)->add(createPromoteMemoryToRegisterPass());
     // unwrap(PM)->add(createInstSimplifyLegacyPass());
+    unwrap(PM)->add(new RefNormalizePass());
     unwrap(PM)->add(new RefPrunePass());
 }
 
