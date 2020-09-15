@@ -124,25 +124,35 @@ struct RefPrunePass : public FunctionPass {
         bool mutated = false;
 
         // Find all incref & decref
-        SmallVector<CallInst*, 20> incref_list, decref_list;
+        SmallVector<CallInst*, 20> incref_list, decref_list, null_list;
         for (BasicBlock &bb : F) {
             for (Instruction &ii : bb) {
-                if (ii.getOpcode() == Instruction::Call) {
-                    CallInst *call_inst = dyn_cast<CallInst>(&ii);
-                    // TODO: handle call_inst being NULL
-                    Value *callee = call_inst->getCalledOperand();
-                    if ( callee->getName() == "NRT_incref" ) {
-                        incref_list.push_back(call_inst);
-                    } else if ( callee->getName() == "NRT_decref" ) {
-                        decref_list.push_back(call_inst);
+                CallInst* ci;
+                if ( (ci = GetRefOpCall(&ii)) ) {
+                    if ( IsIncRef(ci) ) {
+                        if (isNonNullFirstArg(ci)) {
+                            decref_list.push_back(ci);
+                        } else {
+                            // Drop refops on NULL pointers
+                            null_list.push_back(ci);
+                        }
+                    }
+                    else if ( IsDecRef(ci) ) {
+                        if (isNonNullFirstArg(ci)) {
+                            decref_list.push_back(ci);
+                        } else {
+                            // Drop refops on NULL pointers
+                            null_list.push_back(ci);
+                        }
                     }
                 }
             }
         }
 
-        // Drop refops on NULL pointers
-        mutated |= eraseNullFirstArgFromList(incref_list);
-        mutated |= eraseNullFirstArgFromList(decref_list);
+        // Remove refops on NULL
+        for (CallInst* ci: null_list) {
+            ci->eraseFromParent();
+        }
 
         // Check pairs that are dominating and postdominating each other
         for (CallInst*& incref: incref_list) {
@@ -266,15 +276,15 @@ struct RefPrunePass : public FunctionPass {
 
     template <class T>
     bool eraseNullFirstArgFromList(T& refops) {
-    bool mutated = false;
-    for (CallInst*& refop: refops) {
-        if (!isNonNullFirstArg(refop)) {
-            refop->eraseFromParent();
-            mutated |= true;
-            refop = NULL;
+        bool mutated = false;
+        for (CallInst*& refop: refops) {
+            if (!isNonNullFirstArg(refop)) {
+                refop->eraseFromParent();
+                mutated |= true;
+                refop = NULL;
+            }
         }
-    }
-    return mutated;
+        return mutated;
     }
 
     /**
