@@ -96,7 +96,8 @@ struct RefNormalizePass : public FunctionPass {
                 if (pos < last_incref_pos){
                     if ( refop != NULL && IsDecRef(refop) ) {
                         refop->removeFromParent();
-                        refop->insertAfter(last_incref);
+                        // refop->insertAfter(last_incref);
+                        refop->insertBefore(bb.getTerminator());
                         mutated |= true;
                     }
                 } else break;
@@ -115,6 +116,10 @@ struct RefPrunePass : public FunctionPass {
 
     bool runOnFunction(Function &F) override {
 
+        // if (F.getName().startswith("_ZN7cpython5")){
+        //     return false;
+        // }
+
         auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
         auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
 
@@ -124,37 +129,34 @@ struct RefPrunePass : public FunctionPass {
         bool mutated = false;
 
         // Find all incref & decref
-        SmallVector<CallInst*, 20> incref_list, decref_list, null_list;
+        std::vector<CallInst*> incref_list, decref_list, null_list;
         for (BasicBlock &bb : F) {
             for (Instruction &ii : bb) {
                 CallInst* ci;
                 if ( (ci = GetRefOpCall(&ii)) ) {
-                    if ( IsIncRef(ci) ) {
-                        if (isNonNullFirstArg(ci)) {
-                            decref_list.push_back(ci);
-                        } else {
-                            // Drop refops on NULL pointers
-                            null_list.push_back(ci);
-                        }
+                    if (!isNonNullFirstArg(ci)) {
+                        // Drop refops on NULL pointers
+                        null_list.push_back(ci);
+                    } else if ( IsIncRef(ci) ) {
+                        incref_list.push_back(ci);
                     }
                     else if ( IsDecRef(ci) ) {
-                        if (isNonNullFirstArg(ci)) {
-                            decref_list.push_back(ci);
-                        } else {
-                            // Drop refops on NULL pointers
-                            null_list.push_back(ci);
-                        }
+                        decref_list.push_back(ci);
                     }
                 }
             }
         }
 
+
         // Remove refops on NULL
         for (CallInst* ci: null_list) {
             ci->eraseFromParent();
+            mutated |= true;
         }
+        null_list.clear();
 
         // Check pairs that are dominating and postdominating each other
+        bool diamond = false;
         for (CallInst*& incref: incref_list) {
             if (incref == NULL) continue;
 
@@ -172,8 +174,28 @@ struct RefPrunePass : public FunctionPass {
                         decref->dump();
                         errs() << "\n";
                     }
-                    incref->eraseFromParent();
-                    decref->eraseFromParent();
+                    if ( incref->getParent() != decref->getParent() ) {
+                        if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent())){
+                            continue;
+                        } else {
+
+                            if (DEBUG_PRINT) {
+                                errs() << F.getName() << "-------------\n";
+                                errs() << incref->getParent()->getName() << "\n";
+                                incref->dump();
+                                errs() << decref->getParent()->getName() << "\n";
+                                decref->dump();
+                            // diamond = true;
+                            }
+
+                            incref->eraseFromParent();
+                            decref->eraseFromParent();
+                        }
+                    }
+                    else {
+                        incref->eraseFromParent();
+                        decref->eraseFromParent();
+                    }
                     incref = NULL;
                     decref = NULL;
                     mutated |= true;
@@ -181,6 +203,9 @@ struct RefPrunePass : public FunctionPass {
                 }
             }
         }
+        // if (diamond) F.viewCFG();
+
+        return mutated;
 
         // Deal with fanout
         // a single incref with multiple decrefs in outgoing edges
@@ -328,6 +353,36 @@ struct RefPrunePass : public FunctionPass {
         auto val = call_inst->getArgOperand(0);
         auto ptr = dyn_cast<ConstantPointerNull>(val);
         return ptr == NULL;
+    }
+
+    /**
+     * Pre-condition: head_node dominates tail_node
+     */
+    bool hasDecrefBetweenGraph(BasicBlock *head_node, BasicBlock *tail_node) {
+        if (DEBUG_PRINT) {
+            errs() << "Check..." << head_node->getName() << "\n";
+        }
+        Instruction *term = head_node->getTerminator();
+        for (unsigned i=0; i < term->getNumSuccessors(); ++i) {
+            BasicBlock *child = term->getSuccessor(i);
+            if (child == tail_node)
+                return false;
+            for (Instruction &ii: *child) {
+                CallInst* refop = GetRefOpCall(&ii);
+                if (refop != NULL && IsDecRef(refop)) {
+                    if (DEBUG_PRINT) {
+                        errs() << "  No\n";
+                        refop->dump();
+                    }
+                    return true;
+                }
+            }
+            // XXX: Recurse
+            if(hasDecrefBetweenGraph(child, tail_node)){
+                return true;
+            }
+        }
+        return false;
     }
 }; // end of struct RefPrunePass
 
