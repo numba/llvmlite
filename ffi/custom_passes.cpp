@@ -113,20 +113,60 @@ struct RefPrunePass : public FunctionPass {
         // if (F.getName().startswith("_ZN7cpython5")){
         //     return false;
         // }
-
-        auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-        auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
-
         // domtree.viewGraph();   // view domtree
         // postdomtree.viewGraph();
 
         bool mutated = false;
 
+        mutated |= runPerBasicBlockPrune(F);
+        // mutated |= runDiamondPrune(F);
+
+
+        return mutated;
+    }
+
+    //     // Deal with fanout
+    //     // a single incref with multiple decrefs in outgoing edges
+    //     for (CallInst*& incref : incref_list) {
+    //         if (incref == NULL) continue;
+
+    //         BasicBlock *bb = incref->getParent();
+    //         std::vector<BasicBlock*> stack;
+    //         std::set<BasicBlock*> decref_blocks = graphWalkhandleFanout(incref, bb, stack);
+    //         if (decref_blocks.size()) {
+    //             if (DEBUG_PRINT) {
+    //                 errs() << "FANOUT prune " << decref_blocks.size() << '\n';
+    //                 incref->dump();
+    //             }
+    //             for (BasicBlock* each : decref_blocks) {
+    //                 // Remove first related decref
+    //                 for (Instruction &ii : *each) {
+    //                     CallInst *decref;
+    //                     if ( (decref = isRelatedDecref(incref, &ii)) ) {
+    //                         if (DEBUG_PRINT) {
+    //                             decref->dump();
+    //                         }
+    //                         decref->eraseFromParent();
+    //                         break;
+    //                     }
+    //                 }
+    //             }
+    //             incref->eraseFromParent();
+    //             incref = NULL;
+    //             mutated |= true;
+    //         }
+    //     }
+    //     return mutated;
+    // }
+
+    bool runPerBasicBlockPrune(Function &F) {
         // -------------------------------------------------------------------
         // Pass 1. Per BasicBlock pruning.
         // Assumes all increfs are before all decrefs.
         // Cleans up all refcount operations on NULL pointers.
         // Cleans up all incref/decref pairs.
+        bool mutated = false;
+
         for (BasicBlock &bb : F) {
             SmallVector<CallInst*, 10> incref_list, decref_list, null_list;
             for (Instruction &ii : bb) {
@@ -155,7 +195,7 @@ struct RefPrunePass : public FunctionPass {
                     CallInst* decref = decref_list[i];
                     if (decref && isRelatedDecref(incref, decref)) {
                         if (DEBUG_PRINT) {
-                            errs() << "Prune these due to DOM + PDOM:\n";
+                            errs() << "Prune: matching pair in BB:\n";
                             incref->dump();
                             decref->dump();
                             incref->getParent()->dump();
@@ -169,21 +209,22 @@ struct RefPrunePass : public FunctionPass {
                     }
                 }
             }
-
         }
-
-
         return mutated;
-        // Find all incref & decref
-        std::vector<CallInst*> incref_list, decref_list, null_list;
+    }
+
+    bool runDiamondPrune(Function &F) {
+        // Check pairs that are dominating and postdominating each other
+        bool mutated = false;
+        auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+        auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
+
+        std::vector<CallInst*> incref_list, decref_list;
         for (BasicBlock &bb : F) {
             for (Instruction &ii : bb) {
                 CallInst* ci;
                 if ( (ci = GetRefOpCall(&ii)) ) {
-                    if (!isNonNullFirstArg(ci)) {
-                        // Drop refops on NULL pointers
-                        null_list.push_back(ci);
-                    } else if ( IsIncRef(ci) ) {
+                    if ( IsIncRef(ci) ) {
                         incref_list.push_back(ci);
                     }
                     else if ( IsDecRef(ci) ) {
@@ -193,25 +234,20 @@ struct RefPrunePass : public FunctionPass {
             }
         }
 
-
-        // Remove refops on NULL
-        for (CallInst* ci: null_list) {
-            ci->eraseFromParent();
-            mutated |= true;
-        }
-        null_list.clear();
-
-        // Check pairs that are dominating and postdominating each other
-        bool diamond = false;
+        // bool diamond = false;
         for (CallInst*& incref: incref_list) {
             if (incref == NULL) continue;
 
             for (CallInst*& decref: decref_list) {
                 if (decref == NULL) continue;
 
-                if (incref->getArgOperand(0) != decref->getArgOperand(0) )
-                    continue;
+                // Not the same BB
+                if (incref->getParent() == decref->getParent() ) continue;
 
+                // Is related refop pair
+                if (!isRelatedDecref(incref, decref)) continue;
+
+                // incref DOM decref && decref POSTDOM incref
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref, incref) ){
                     // if (DEBUG_PRINT) {
@@ -222,7 +258,7 @@ struct RefPrunePass : public FunctionPass {
                     //     incref->dump();
                     //     errs() << "\n";
                     // }
-                    if (0 && incref->getParent() != decref->getParent() ) {
+                    if (incref->getParent() != decref->getParent() ) {
                         SmallVector<BasicBlock*, 20> stack;
                         if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent(), stack)) {
                             continue;
@@ -234,26 +270,13 @@ struct RefPrunePass : public FunctionPass {
                                 incref->dump();
                                 errs() << decref->getParent()->getName() << "\n";
                                 decref->dump();
-                            // diamond = true;
                             }
 
-                            // incref->eraseFromParent();
-                            // decref->eraseFromParent();
-                            // incref = NULL;
-                            // decref = NULL;
+                            incref->eraseFromParent();
+                            decref->eraseFromParent();
+                            incref = NULL;
+                            decref = NULL;
                         }
-                    }
-                    else {
-                        errs() << "Prune these due to DOM + PDOM: " << incref << " " << decref << "\n";
-                        incref->dump();
-                        decref->dump();
-
-                        incref->getParent()->dump();
-                        incref->eraseFromParent();
-                        decref->eraseFromParent();
-
-                        incref = NULL;
-                        decref = NULL;
                     }
                     mutated |= true;
                     break;
@@ -261,39 +284,6 @@ struct RefPrunePass : public FunctionPass {
             }
         }
         // if (diamond) F.viewCFG();
-        return mutated;
-
-        // Deal with fanout
-        // a single incref with multiple decrefs in outgoing edges
-        for (CallInst*& incref : incref_list) {
-            if (incref == NULL) continue;
-
-            BasicBlock *bb = incref->getParent();
-            std::vector<BasicBlock*> stack;
-            std::set<BasicBlock*> decref_blocks = graphWalkhandleFanout(incref, bb, stack);
-            if (decref_blocks.size()) {
-                if (DEBUG_PRINT) {
-                    errs() << "FANOUT prune " << decref_blocks.size() << '\n';
-                    incref->dump();
-                }
-                for (BasicBlock* each : decref_blocks) {
-                    // Remove first related decref
-                    for (Instruction &ii : *each) {
-                        CallInst *decref;
-                        if ( (decref = isRelatedDecref(incref, &ii)) ) {
-                            if (DEBUG_PRINT) {
-                                decref->dump();
-                            }
-                            decref->eraseFromParent();
-                            break;
-                        }
-                    }
-                }
-                incref->eraseFromParent();
-                incref = NULL;
-                mutated |= true;
-            }
-        }
         return mutated;
     }
 
