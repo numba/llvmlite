@@ -119,7 +119,7 @@ struct RefPrunePass : public FunctionPass {
         bool mutated = false;
 
         mutated |= runPerBasicBlockPrune(F);
-        // mutated |= runDiamondPrune(F);
+        mutated |= runDiamondPrune(F);
 
 
         return mutated;
@@ -234,7 +234,7 @@ struct RefPrunePass : public FunctionPass {
             }
         }
 
-        // bool diamond = false;
+        bool diamond = false;
         for (CallInst*& incref: incref_list) {
             if (incref == NULL) continue;
 
@@ -250,14 +250,6 @@ struct RefPrunePass : public FunctionPass {
                 // incref DOM decref && decref POSTDOM incref
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref, incref) ){
-                    // if (DEBUG_PRINT) {
-                    //     errs() << "Prune these due to DOM + PDOM\n";
-                    //     incref->dump();
-                    //     decref->dump();
-
-                    //     incref->dump();
-                    //     errs() << "\n";
-                    // }
                     if (incref->getParent() != decref->getParent() ) {
                         SmallVector<BasicBlock*, 20> stack;
                         if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent(), stack)) {
@@ -276,6 +268,8 @@ struct RefPrunePass : public FunctionPass {
                             decref->eraseFromParent();
                             incref = NULL;
                             decref = NULL;
+
+                            diamond = true;
                         }
                     }
                     mutated |= true;
@@ -412,22 +406,25 @@ struct RefPrunePass : public FunctionPass {
         if (DEBUG_PRINT) {
             errs() << "Check..." << head_node->getName() << "\n";
         }
+
+        for (Instruction &ii: *head_node) {
+            CallInst* refop = GetRefOpCall(&ii);
+            if (refop != NULL && IsDecRef(refop)) {
+                if (DEBUG_PRINT) {
+                    errs() << "  No\n";
+                    refop->dump();
+                }
+                return true;
+            }
+        }
+
+
         stack.push_back(head_node);
         Instruction *term = head_node->getTerminator();
         for (unsigned i=0; i < term->getNumSuccessors(); ++i) {
             BasicBlock *child = term->getSuccessor(i);
             if (child == tail_node)
                 return false;
-            for (Instruction &ii: *child) {
-                CallInst* refop = GetRefOpCall(&ii);
-                if (refop != NULL && IsDecRef(refop)) {
-                    if (DEBUG_PRINT) {
-                        errs() << "  No\n";
-                        refop->dump();
-                    }
-                    return true;
-                }
-            }
             // XXX: Recurse
             if(hasDecrefBetweenGraph(child, tail_node, stack)){
                 return true;
