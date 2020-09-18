@@ -120,44 +120,10 @@ struct RefPrunePass : public FunctionPass {
 
         mutated |= runPerBasicBlockPrune(F);
         mutated |= runDiamondPrune(F);
-
+        mutated |= runFanoutPrune(F);
 
         return mutated;
     }
-
-    //     // Deal with fanout
-    //     // a single incref with multiple decrefs in outgoing edges
-    //     for (CallInst*& incref : incref_list) {
-    //         if (incref == NULL) continue;
-
-    //         BasicBlock *bb = incref->getParent();
-    //         std::vector<BasicBlock*> stack;
-    //         std::set<BasicBlock*> decref_blocks = graphWalkhandleFanout(incref, bb, stack);
-    //         if (decref_blocks.size()) {
-    //             if (DEBUG_PRINT) {
-    //                 errs() << "FANOUT prune " << decref_blocks.size() << '\n';
-    //                 incref->dump();
-    //             }
-    //             for (BasicBlock* each : decref_blocks) {
-    //                 // Remove first related decref
-    //                 for (Instruction &ii : *each) {
-    //                     CallInst *decref;
-    //                     if ( (decref = isRelatedDecref(incref, &ii)) ) {
-    //                         if (DEBUG_PRINT) {
-    //                             decref->dump();
-    //                         }
-    //                         decref->eraseFromParent();
-    //                         break;
-    //                     }
-    //                 }
-    //             }
-    //             incref->eraseFromParent();
-    //             incref = NULL;
-    //             mutated |= true;
-    //         }
-    //     }
-    //     return mutated;
-    // }
 
     bool runPerBasicBlockPrune(Function &F) {
         // -------------------------------------------------------------------
@@ -281,45 +247,126 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
-    std::set<BasicBlock*> graphWalkhandleFanout(
-            CallInst* incref,
-            BasicBlock *cur_node,
-            std::vector<BasicBlock*> stack,
-            int depth=10) {
-    std::set<BasicBlock*> decref_blocks;
-    depth -= 1;
-    if( depth <= 0 ) return decref_blocks;
+    bool runFanoutPrune(Function &F) {
+        bool mutated = false;
+        auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
+        // Deal with fanout
+        // a single incref with multiple decrefs in outgoing edges
 
-    bool missing = false;
-    stack.push_back(cur_node);
-
-    // for each edge
-    Instruction* term = cur_node->getTerminator();
-    for (unsigned int i = 0; i < term->getNumSuccessors(); ++i) {
-        BasicBlock * child = term->getSuccessor(i);
-        if (basicBlockInList(child, stack)) {
-            // already visited
-            continue;
-        } else if (hasDecrefInNode(incref, child)) {
-            decref_blocks.insert(child);
-        } else {
-            std::set<BasicBlock*> inner = graphWalkhandleFanout(incref, child, stack, depth);
-            if (inner.size() > 0) {
-                // decref_blocks |= inner
-                for (BasicBlock* each : inner) {
-                    decref_blocks.insert(each);
+        std::vector<CallInst*> incref_list;
+        for (BasicBlock &bb : F) {
+            for (Instruction &ii : bb) {
+                CallInst* ci;
+                if ( (ci = GetRefOpCall(&ii)) ) {
+                    if ( IsIncRef(ci) ) {
+                        incref_list.push_back(ci);
+                    }
                 }
-            } else {
-                missing |= true;
             }
         }
+
+        // bool view_cfg = false;
+
+        for (CallInst* incref : incref_list) {
+            BasicBlock *bb = incref->getParent();
+            std::vector<BasicBlock*> stack;
+            std::set<BasicBlock*> decref_blocks = graphWalkhandleFanout(incref, bb, stack);
+            if (decref_blocks.size()) {
+                if (DEBUG_PRINT) {
+                    errs() << "FANOUT prune " << decref_blocks.size() << '\n';
+                    errs() << incref->getParent()->getName() << "\n";
+                    incref->dump();
+                }
+
+                // Check if any block dominates other blocks
+                if (checkCrossDominate(decref_blocks, postdomtree)) {
+                    if (DEBUG_PRINT) {
+                        errs() << "FANOUT prune cancelled due to cross dominating\n";
+                    }
+                    continue;
+                }
+                // Remove first related decref in each block
+                for (BasicBlock* each : decref_blocks) {
+                    for (Instruction &ii : *each) {
+                        CallInst *decref;
+                        if ( (decref = isRelatedDecref(incref, &ii)) ) {
+                            if (DEBUG_PRINT) {
+                                errs() << decref->getParent()->getName() << "\n";
+                                decref->dump();
+                            }
+                            decref->eraseFromParent();
+                            // view_cfg = true;
+                            break;
+                        }
+                    }
+                }
+                incref->eraseFromParent();
+                mutated |= true;
+            }
+        }
+        // if (view_cfg) {
+        //     F.viewCFG();
+        // }
+        return mutated;
     }
-    stack.pop_back();
-    if (missing) {
-        decref_blocks.clear();
+
+    bool checkCrossDominate(const std::set<BasicBlock*> blocks, PostDominatorTree& domtree){
+        for (BasicBlock* M : blocks) {
+            for (BasicBlock* N : blocks) {
+                if (M != N) {
+                    if (domtree.dominates(M, N)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    std::set<BasicBlock*> graphWalkhandleFanout(CallInst* incref,
+                                                BasicBlock *cur_node,
+                                                std::vector<BasicBlock*> &stack,
+                                                int depth=10)
+    {
+        std::set<BasicBlock*> decref_blocks;
+        depth -= 1;
+        if( depth <= 0 ) return decref_blocks;
+
+        if (hasAnyDecrefInNode(cur_node)) {
+            decref_blocks.clear();
+            return decref_blocks;
+        }
+
+        bool missing = false;
+        stack.push_back(cur_node);
+
+        // for each edge
+        Instruction* term = cur_node->getTerminator();
+        for (unsigned int i = 0; i < term->getNumSuccessors(); ++i) {
+            BasicBlock * child = term->getSuccessor(i);
+            if (basicBlockInList(child, stack)) {
+                // already visited
+                continue;
+            } else if (hasDecrefInNode(incref, child)) {
+                decref_blocks.insert(child);
+            } else {
+                std::set<BasicBlock*> inner = graphWalkhandleFanout(incref, child, stack, depth);
+                if (inner.size() > 0) {
+                    // Following loop is: decref_blocks |= inner
+                    for (BasicBlock* each : inner) {
+                        decref_blocks.insert(each);
+                    }
+                } else {
+                    missing |= true;
+                }
+            }
+        }
+        stack.pop_back();
+        if (missing) {
+            decref_blocks.clear();
+            return decref_blocks;
+        }
         return decref_blocks;
-    }
-    return decref_blocks;
     }
 
     template<class T>
@@ -395,6 +442,17 @@ struct RefPrunePass : public FunctionPass {
         return ptr == NULL;
     }
 
+    bool hasAnyDecrefInNode(BasicBlock *bb) {
+
+        for (Instruction &ii: *bb) {
+            CallInst* refop = GetRefOpCall(&ii);
+            if (refop != NULL && IsDecRef(refop)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Pre-condition: head_node dominates tail_node
      */
@@ -407,17 +465,7 @@ struct RefPrunePass : public FunctionPass {
             errs() << "Check..." << head_node->getName() << "\n";
         }
 
-        for (Instruction &ii: *head_node) {
-            CallInst* refop = GetRefOpCall(&ii);
-            if (refop != NULL && IsDecRef(refop)) {
-                if (DEBUG_PRINT) {
-                    errs() << "  No\n";
-                    refop->dump();
-                }
-                return true;
-            }
-        }
-
+        if (hasAnyDecrefInNode(head_node)) return true;
 
         stack.push_back(head_node);
         Instruction *term = head_node->getTerminator();
