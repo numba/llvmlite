@@ -177,7 +177,8 @@ struct RefPrunePass : public FunctionPass {
                         errs() << "\n";
                     }
                     if ( incref->getParent() != decref->getParent() ) {
-                        if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent())){
+                        SmallVector<BasicBlock*, 20> stack;
+                        if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent(), stack)) {
                             continue;
                         } else {
 
@@ -206,7 +207,6 @@ struct RefPrunePass : public FunctionPass {
             }
         }
         // if (diamond) F.viewCFG();
-
         return mutated;
 
         // Deal with fanout
@@ -284,8 +284,8 @@ struct RefPrunePass : public FunctionPass {
     return decref_blocks;
     }
 
-
-    bool basicBlockInList(const BasicBlock* bb, const std::vector<BasicBlock*> &list){
+    template<class T>
+    bool basicBlockInList(const BasicBlock* bb, const T &list){
         for (BasicBlock *each : list) {
             if (bb == each) return true;
         }
@@ -360,10 +360,15 @@ struct RefPrunePass : public FunctionPass {
     /**
      * Pre-condition: head_node dominates tail_node
      */
-    bool hasDecrefBetweenGraph(BasicBlock *head_node, BasicBlock *tail_node) {
+    bool hasDecrefBetweenGraph(BasicBlock *head_node, BasicBlock *tail_node,
+                               SmallVector<BasicBlock*, 20> &stack) {
+        if (basicBlockInList(head_node, stack)) {
+            return false;
+        }
         if (DEBUG_PRINT) {
             errs() << "Check..." << head_node->getName() << "\n";
         }
+        stack.push_back(head_node);
         Instruction *term = head_node->getTerminator();
         for (unsigned i=0; i < term->getNumSuccessors(); ++i) {
             BasicBlock *child = term->getSuccessor(i);
@@ -380,7 +385,7 @@ struct RefPrunePass : public FunctionPass {
                 }
             }
             // XXX: Recurse
-            if(hasDecrefBetweenGraph(child, tail_node)){
+            if(hasDecrefBetweenGraph(child, tail_node, stack)){
                 return true;
             }
         }
