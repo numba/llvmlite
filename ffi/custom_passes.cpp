@@ -74,36 +74,28 @@ struct RefNormalizePass : public FunctionPass {
         bool mutated = false;
         for (BasicBlock &bb : F) {
             // Find last incref
-            CallInst *last_incref = NULL;
-            int pos = 0, last_incref_pos = -1;
+            bool has_incref = false;
             for (Instruction &ii : bb) {
                 CallInst *refop = GetRefOpCall(&ii);
                 if ( refop != NULL && IsIncRef(refop) ) {
-                    // Remember the last incref position
-                    last_incref = refop;
-                    last_incref_pos = pos;
+                    has_incref = true;
+                    break;
                 }
-                pos += 1;
             }
 
-            if (last_incref != NULL) {
-                // Find decref that are before the last incref
-                int pos = 0;
+            if (has_incref) {
+                // Moves decrefs to the back just before the terminator.
                 SmallVector<CallInst*, 10> to_be_moved;
-            for (Instruction &ii : bb) {
-                if (pos < last_incref_pos){
-                        CallInst *refop = GetRefOpCall(&ii);
+                for (Instruction &ii : bb) {
+                    CallInst *refop = GetRefOpCall(&ii);
                     if ( refop != NULL && IsDecRef(refop) ) {
-                            to_be_moved.push_back(refop);
+                        to_be_moved.push_back(refop);
                     }
-                    }
-                pos += 1;
-            }
+                }
                 for (CallInst* decref : to_be_moved) {
                     decref->moveBefore(bb.getTerminator());
                     mutated |= true;
-        }
-                bb.dump();
+                }
             }
         }
         return mutated;
