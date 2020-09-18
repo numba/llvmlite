@@ -109,7 +109,7 @@ struct RefPrunePass : public FunctionPass {
     }
 
     bool runOnFunction(Function &F) override {
-
+        // errs() << "F.getName() " << F.getName() << '\n';
         // if (F.getName().startswith("_ZN7cpython5")){
         //     return false;
         // }
@@ -122,6 +122,58 @@ struct RefPrunePass : public FunctionPass {
 
         bool mutated = false;
 
+        // -------------------------------------------------------------------
+        // Pass 1. Per BasicBlock pruning.
+        // Assumes all increfs are before all decrefs.
+        // Cleans up all refcount operations on NULL pointers.
+        // Cleans up all incref/decref pairs.
+        for (BasicBlock &bb : F) {
+            SmallVector<CallInst*, 10> incref_list, decref_list, null_list;
+            for (Instruction &ii : bb) {
+                CallInst* ci;
+                if ( (ci = GetRefOpCall(&ii)) ) {
+                    if (!isNonNullFirstArg(ci)) {
+                        // Drop refops on NULL pointers
+                        null_list.push_back(ci);
+                    } else if ( IsIncRef(ci) ) {
+                        incref_list.push_back(ci);
+                    }
+                    else if ( IsDecRef(ci) ) {
+                        decref_list.push_back(ci);
+                    }
+                }
+            }
+            // Remove refops on NULL
+            for (CallInst* ci: null_list) {
+                ci->eraseFromParent();
+                mutated |= true;
+            }
+            // Find matching pairs of incref decref
+            while (incref_list.size() > 0) {
+                CallInst* incref = incref_list.pop_back_val();
+                for (size_t i=0; i < decref_list.size(); ++i){
+                    CallInst* decref = decref_list[i];
+                    if (decref && isRelatedDecref(incref, decref)) {
+                        if (DEBUG_PRINT) {
+                            errs() << "Prune these due to DOM + PDOM:\n";
+                            incref->dump();
+                            decref->dump();
+                            incref->getParent()->dump();
+                        }
+                        incref->eraseFromParent();
+                        decref->eraseFromParent();
+
+                        decref_list[i] = NULL;
+                        mutated |= true;
+                        break;
+                    }
+                }
+            }
+
+        }
+
+
+        return mutated;
         // Find all incref & decref
         std::vector<CallInst*> incref_list, decref_list, null_list;
         for (BasicBlock &bb : F) {
@@ -162,13 +214,15 @@ struct RefPrunePass : public FunctionPass {
 
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref, incref) ){
-                    if (DEBUG_PRINT) {
-                        errs() << "Prune these due to DOM + PDOM\n";
-                        incref->dump();
-                        decref->dump();
-                        errs() << "\n";
-                    }
-                    if ( incref->getParent() != decref->getParent() ) {
+                    // if (DEBUG_PRINT) {
+                    //     errs() << "Prune these due to DOM + PDOM\n";
+                    //     incref->dump();
+                    //     decref->dump();
+
+                    //     incref->dump();
+                    //     errs() << "\n";
+                    // }
+                    if (0 && incref->getParent() != decref->getParent() ) {
                         SmallVector<BasicBlock*, 20> stack;
                         if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent(), stack)) {
                             continue;
@@ -183,16 +237,24 @@ struct RefPrunePass : public FunctionPass {
                             // diamond = true;
                             }
 
-                            incref->eraseFromParent();
-                            decref->eraseFromParent();
+                            // incref->eraseFromParent();
+                            // decref->eraseFromParent();
+                            // incref = NULL;
+                            // decref = NULL;
                         }
                     }
                     else {
+                        errs() << "Prune these due to DOM + PDOM: " << incref << " " << decref << "\n";
+                        incref->dump();
+                        decref->dump();
+
+                        incref->getParent()->dump();
                         incref->eraseFromParent();
                         decref->eraseFromParent();
+
+                        incref = NULL;
+                        decref = NULL;
                     }
-                    incref = NULL;
-                    decref = NULL;
                     mutated |= true;
                     break;
                 }
