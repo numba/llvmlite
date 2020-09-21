@@ -1,4 +1,4 @@
-{% set VERSION_SUFFIX = "" %} # debug version suffix, appended to the version
+{% set VERSION_SUFFIX = "_refprune" %} # debug version suffix, appended to the version
 
 package:
   name: llvmlite
