@@ -104,6 +104,10 @@ struct RefNormalizePass : public FunctionPass {
 
 struct RefPrunePass : public FunctionPass {
     static char ID;
+    static size_t stats_per_bb;
+    static size_t stats_diamond;
+    static size_t stats_fanout;
+
     RefPrunePass() : FunctionPass(ID) {
         initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
     }
@@ -153,6 +157,7 @@ struct RefPrunePass : public FunctionPass {
             for (CallInst* ci: null_list) {
                 ci->eraseFromParent();
                 mutated |= true;
+                stats_per_bb += 1;
             }
             // Find matching pairs of incref decref
             while (incref_list.size() > 0) {
@@ -171,6 +176,7 @@ struct RefPrunePass : public FunctionPass {
 
                         decref_list[i] = NULL;
                         mutated |= true;
+                        stats_per_bb += 2;
                         break;
                     }
                 }
@@ -236,6 +242,7 @@ struct RefPrunePass : public FunctionPass {
                             decref = NULL;
 
                             diamond = true;
+                            stats_diamond += 2;
                         }
                     }
                     mutated |= true;
@@ -295,6 +302,7 @@ struct RefPrunePass : public FunctionPass {
                                 decref->dump();
                             }
                             decref->eraseFromParent();
+                            stats_fanout += 1;
                             // view_cfg = true;
                             break;
                         }
@@ -302,6 +310,7 @@ struct RefPrunePass : public FunctionPass {
                 }
                 incref->eraseFromParent();
                 mutated |= true;
+                stats_fanout += 1;
             }
         }
         // if (view_cfg) {
@@ -486,6 +495,10 @@ struct RefPrunePass : public FunctionPass {
 char RefNormalizePass::ID = 0;
 char RefPrunePass::ID = 0;
 
+size_t RefPrunePass::stats_per_bb = 0;
+size_t RefPrunePass::stats_diamond = 0;
+size_t RefPrunePass::stats_fanout = 0;
+
 INITIALIZE_PASS_BEGIN(RefNormalizePass, "nrtrefnormalizepass",
                       "Normalize NRT refops", false, false)
 INITIALIZE_PASS_END(RefNormalizePass, "nrtrefnormalizepass",
@@ -510,6 +523,16 @@ LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM)
     // unwrap(PM)->add(createInstSimplifyLegacyPass());
     unwrap(PM)->add(new RefNormalizePass());
     unwrap(PM)->add(new RefPrunePass());
+}
+
+API_EXPORT(void)
+LLVMPY_DumpRefPruneStats()
+{
+    errs() << "refprune stats "
+           << "per-BB " << RefPrunePass::stats_per_bb << " "
+           << "diamond " << RefPrunePass::stats_diamond << " "
+           << "fanout " << RefPrunePass::stats_fanout << " "
+           << "\n";
 }
 
 

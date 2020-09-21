@@ -10,6 +10,10 @@ def create_function_pass_manager(module):
     return FunctionPassManager(module)
 
 
+def dump_refprune_stats():
+    ffi.lib.LLVMPY_DumpRefPruneStats()
+
+
 class PassManager(ffi.ObjectRef):
     """PassManager
     """
