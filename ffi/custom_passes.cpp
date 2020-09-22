@@ -256,6 +256,7 @@ struct RefPrunePass : public FunctionPass {
 
     bool runFanoutPrune(Function &F) {
         bool mutated = false;
+        auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
         auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
         // Deal with fanout
         // a single incref with multiple decrefs in outgoing edges
@@ -276,15 +277,13 @@ struct RefPrunePass : public FunctionPass {
 
         for (CallInst* incref : incref_list) {
             BasicBlock *bb = incref->getParent();
-            std::vector<BasicBlock*> stack;
-            std::set<BasicBlock*> decref_blocks = graphWalkhandleFanout(incref, bb, stack);
+            std::set<BasicBlock*> decref_blocks = graphWalkhandleFanout(incref, bb, domtree);
             if (decref_blocks.size()) {
                 if (DEBUG_PRINT) {
                     errs() << "FANOUT prune " << decref_blocks.size() << '\n';
                     errs() << incref->getParent()->getName() << "\n";
                     incref->dump();
                 }
-
                 // Check if any block dominates other blocks
                 if (checkCrossDominate(decref_blocks, postdomtree)) {
                     if (DEBUG_PRINT) {
@@ -334,32 +333,24 @@ struct RefPrunePass : public FunctionPass {
 
     std::set<BasicBlock*> graphWalkhandleFanout(CallInst* incref,
                                                 BasicBlock *cur_node,
-                                                std::vector<BasicBlock*> &stack,
+                                                const DominatorTree &domtree,
                                                 int depth=10)
     {
         std::set<BasicBlock*> decref_blocks;
         depth -= 1;
         if( depth <= 0 ) return decref_blocks;
 
-        if (hasAnyDecrefInNode(cur_node)) {
-            decref_blocks.clear();
-            return decref_blocks;
-        }
-
         bool missing = false;
-        stack.push_back(cur_node);
 
-        // for each edge
-        Instruction* term = cur_node->getTerminator();
-        for (unsigned int i = 0; i < term->getNumSuccessors(); ++i) {
-            BasicBlock * child = term->getSuccessor(i);
-            if (basicBlockInList(child, stack)) {
-                // already visited
-                continue;
-            } else if (hasDecrefInNode(incref, child)) {
+        // for each domtree children
+        auto domnode = domtree.getNode(cur_node);
+        for (auto domchild : domnode->getChildren()){
+            BasicBlock *child = domchild->getBlock();
+
+            if (hasDecrefInNode(incref, child)) {
                 decref_blocks.insert(child);
             } else {
-                std::set<BasicBlock*> inner = graphWalkhandleFanout(incref, child, stack, depth);
+                std::set<BasicBlock*> inner = graphWalkhandleFanout(incref, child, domtree, depth);
                 if (inner.size() > 0) {
                     // Following loop is: decref_blocks |= inner
                     for (BasicBlock* each : inner) {
@@ -367,10 +358,10 @@ struct RefPrunePass : public FunctionPass {
                     }
                 } else {
                     missing |= true;
+                    break;
                 }
             }
         }
-        stack.pop_back();
         if (missing) {
             decref_blocks.clear();
             return decref_blocks;
