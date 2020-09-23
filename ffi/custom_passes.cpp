@@ -349,6 +349,8 @@ struct RefPrunePass : public FunctionPass {
 
             if (hasDecrefInNode(incref, child)) {
                 decref_blocks.insert(child);
+            } else if (isRaising(child)) {
+                decref_blocks.insert(child);
             } else {
                 std::set<BasicBlock*> inner = graphWalkhandleFanout(incref, child, domtree, depth);
                 if (inner.size() > 0) {
@@ -367,6 +369,22 @@ struct RefPrunePass : public FunctionPass {
             return decref_blocks;
         }
         return decref_blocks;
+    }
+
+    bool isRaising(const BasicBlock* bb) {
+        auto term = bb->getTerminator();
+        if (term->getOpcode() != Instruction::Ret)
+            return false;
+        auto md = term->getMetadata("ret_is_raise");
+        if (!md)
+            return false;
+        if (md->getNumOperands() != 1)
+            return false;
+        auto &operand = md->getOperand(0);
+        auto data = dyn_cast<ConstantAsMetadata>(operand.get());
+        if (!data)
+            return false;
+        return data->getValue()->isOneValue();
     }
 
     template<class T>
