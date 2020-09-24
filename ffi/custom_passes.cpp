@@ -107,6 +107,7 @@ struct RefPrunePass : public FunctionPass {
     static size_t stats_per_bb;
     static size_t stats_diamond;
     static size_t stats_fanout;
+    static size_t stats_fanout_raise;
 
     RefPrunePass() : FunctionPass(ID) {
         initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
@@ -254,7 +255,7 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
-    bool runFanoutPrune(Function &F) {
+    bool runFanoutPrune(Function &F, bool prune_raise_exit) {
         bool mutated = false;
         auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
         auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
@@ -274,11 +275,19 @@ struct RefPrunePass : public FunctionPass {
         }
 
         // bool view_cfg = false;
+        int mask = 0;
+        if (prune_raise_exit) {
+            mask |= 2;
+        }
+        else {
+            mask |= 1;
+        }
 
         for (CallInst* incref : incref_list) {
             BasicBlock *bb = incref->getParent();
-            std::set<BasicBlock*> decref_blocks = graphWalkhandleFanout(incref, bb, domtree);
-            if (decref_blocks.size()) {
+            std::set<BasicBlock*> decref_blocks;
+            int status = graphWalkHandleFanout(incref, bb, domtree, decref_blocks);
+            if ( status <= mask && status > 0) {
                 if (DEBUG_PRINT) {
                     errs() << "FANOUT prune " << decref_blocks.size() << '\n';
                     errs() << incref->getParent()->getName() << "\n";
@@ -309,9 +318,16 @@ struct RefPrunePass : public FunctionPass {
                 }
                 incref->eraseFromParent();
                 mutated |= true;
-                stats_fanout += 1;
+
+                if ((status & 2) == 2) stats_fanout_raise += 1;
+                else                   stats_fanout += 1;
             }
         }
+
+        // if (!mutated) {
+        //     if (F.getName() == "_ZN8__main__7foo$241E5ArrayIxLi2E1C7mutable7alignedE")
+        //         domtree.viewGraph();
+        // }
         // if (view_cfg) {
         //     F.viewCFG();
         // }
@@ -331,44 +347,36 @@ struct RefPrunePass : public FunctionPass {
         return false;
     }
 
-    std::set<BasicBlock*> graphWalkhandleFanout(CallInst* incref,
-                                                BasicBlock *cur_node,
-                                                const DominatorTree &domtree,
-                                                int depth=10)
+    int graphWalkHandleFanout(CallInst* incref,
+                               BasicBlock *cur_node,
+                               DominatorTree &domtree,
+                               std::set<BasicBlock*> &decref_blocks,
+                               int depth=10)
     {
-        std::set<BasicBlock*> decref_blocks;
         depth -= 1;
-        if( depth <= 0 ) return decref_blocks;
-
-        bool missing = false;
+        if( depth <= 0 ) return false;
 
         // for each domtree children
         auto domnode = domtree.getNode(cur_node);
+
+        int status = 0, inner_status;
+
         for (auto domchild : domnode->getChildren()){
             BasicBlock *child = domchild->getBlock();
-
             if (hasDecrefInNode(incref, child)) {
                 decref_blocks.insert(child);
+                status |= 1;
             } else if (isRaising(child)) {
                 decref_blocks.insert(child);
+                status |= 2;
+            } else if ( (inner_status=graphWalkHandleFanout(incref, child, domtree, decref_blocks, depth)) ) {
+                status |= inner_status;
             } else {
-                std::set<BasicBlock*> inner = graphWalkhandleFanout(incref, child, domtree, depth);
-                if (inner.size() > 0) {
-                    // Following loop is: decref_blocks |= inner
-                    for (BasicBlock* each : inner) {
-                        decref_blocks.insert(each);
-                    }
-                } else {
-                    missing |= true;
-                    break;
-                }
+                return false;
             }
         }
-        if (missing) {
-            decref_blocks.clear();
-            return decref_blocks;
-        }
-        return decref_blocks;
+
+        return status;
     }
 
     bool isRaising(const BasicBlock* bb) {
@@ -507,6 +515,7 @@ char RefPrunePass::ID = 0;
 size_t RefPrunePass::stats_per_bb = 0;
 size_t RefPrunePass::stats_diamond = 0;
 size_t RefPrunePass::stats_fanout = 0;
+size_t RefPrunePass::stats_fanout_raise = 0;
 
 INITIALIZE_PASS_BEGIN(RefNormalizePass, "nrtrefnormalizepass",
                       "Normalize NRT refops", false, false)
@@ -541,6 +550,7 @@ LLVMPY_DumpRefPruneStats()
            << "per-BB " << RefPrunePass::stats_per_bb << " "
            << "diamond " << RefPrunePass::stats_diamond << " "
            << "fanout " << RefPrunePass::stats_fanout << " "
+           << "fanout+raise " << RefPrunePass::stats_fanout_raise << " "
            << "\n";
 }
 
