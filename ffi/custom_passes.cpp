@@ -123,9 +123,15 @@ struct RefPrunePass : public FunctionPass {
 
         bool mutated = false;
 
-        mutated |= runPerBasicBlockPrune(F);
-        mutated |= runDiamondPrune(F);
-        mutated |= runFanoutPrune(F);
+        bool local_mutated;
+        do {
+            local_mutated = false;
+            local_mutated |= runPerBasicBlockPrune(F);
+            local_mutated |= runDiamondPrune(F);
+            local_mutated |= runFanoutPrune(F, /*prune_raise*/false);
+            local_mutated |= runFanoutPrune(F, /*prune_raise*/true);
+            mutated |= local_mutated;
+        } while(false && local_mutated);
 
         return mutated;
     }
@@ -259,6 +265,7 @@ struct RefPrunePass : public FunctionPass {
         bool mutated = false;
         auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
         auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
+
         // Deal with fanout
         // a single incref with multiple decrefs in outgoing edges
 
@@ -276,18 +283,24 @@ struct RefPrunePass : public FunctionPass {
 
         // bool view_cfg = false;
         int mask = 0;
+        mask |= 1;
         if (prune_raise_exit) {
             mask |= 2;
-        }
-        else {
-            mask |= 1;
         }
 
         for (CallInst* incref : incref_list) {
             BasicBlock *bb = incref->getParent();
-            std::set<BasicBlock*> decref_blocks;
-            int status = graphWalkHandleFanout(incref, bb, domtree, decref_blocks);
-            if ( status <= mask && status > 0) {
+            std::set<BasicBlock*> decref_blocks, ban_list;
+            // if (hasAnyDecrefInNode(bb)) continue;
+            int status = graphWalkHandleFanout(incref, bb, domtree, prune_raise_exit, decref_blocks, ban_list);
+
+            for (BasicBlock* banned : ban_list) {
+                if ( decref_blocks.find(banned) != decref_blocks.end() ){
+                    status = 0;
+                    break;
+                }
+            }
+            if ( status == mask && status > 0) {
                 if (DEBUG_PRINT) {
                     errs() << "FANOUT prune " << decref_blocks.size() << '\n';
                     errs() << incref->getParent()->getName() << "\n";
@@ -300,6 +313,25 @@ struct RefPrunePass : public FunctionPass {
                     }
                     continue;
                 }
+
+                // if (prune_raise_exit) {
+                //     errs() << "FANOUT prune " << decref_blocks.size() << '\n';
+                //     errs() << incref->getParent()->getName() << "\n";
+                //     incref->dump();
+                //     for (BasicBlock* each : decref_blocks) {
+                //         errs() << "    " << each->getName() << "\n";
+                //     }
+
+
+                //     std::cout<< "wait ";
+                //     int do_print;
+                //     std::cin >> do_print;
+                //     if (do_print){
+                //         F.viewCFG();
+                //         domtree.viewGraph();
+                //         }
+                // }
+
                 // Remove first related decref in each block
                 for (BasicBlock* each : decref_blocks) {
                     for (Instruction &ii : *each) {
@@ -310,7 +342,6 @@ struct RefPrunePass : public FunctionPass {
                                 decref->dump();
                             }
                             decref->eraseFromParent();
-                            stats_fanout += 1;
                             // view_cfg = true;
                             break;
                         }
@@ -321,6 +352,8 @@ struct RefPrunePass : public FunctionPass {
 
                 if ((status & 2) == 2) stats_fanout_raise += 1;
                 else                   stats_fanout += 1;
+
+
             }
         }
 
@@ -334,11 +367,11 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
-    bool checkCrossDominate(const std::set<BasicBlock*> blocks, PostDominatorTree& domtree){
+    bool checkCrossDominate(const std::set<BasicBlock*> blocks, PostDominatorTree& pdomtree){
         for (BasicBlock* M : blocks) {
             for (BasicBlock* N : blocks) {
                 if (M != N) {
-                    if (domtree.dominates(M, N)) {
+                    if (pdomtree.dominates(M, N)) {
                         return true;
                     }
                 }
@@ -350,7 +383,9 @@ struct RefPrunePass : public FunctionPass {
     int graphWalkHandleFanout(CallInst* incref,
                                BasicBlock *cur_node,
                                DominatorTree &domtree,
+                               bool prune_raise_exit,
                                std::set<BasicBlock*> &decref_blocks,
+                               std::set<BasicBlock*> &ban_list,
                                int depth=10)
     {
         depth -= 1;
@@ -363,20 +398,40 @@ struct RefPrunePass : public FunctionPass {
 
         for (auto domchild : domnode->getChildren()){
             BasicBlock *child = domchild->getBlock();
-            if (hasDecrefInNode(incref, child)) {
+            if (hasDecrefInNode(incref, child) && notInLoop(child, domtree)) {
                 decref_blocks.insert(child);
+
+                SmallVector<BasicBlock*, 5> descs;
+                domtree.getDescendants(child, descs);
+                for (auto desc : descs) {
+                    if (desc != child)
+                        ban_list.insert(desc);
+                }
+
                 status |= 1;
-            } else if (isRaising(child)) {
+            } else if (prune_raise_exit && isRaising(child)) {
                 decref_blocks.insert(child);
                 status |= 2;
-            } else if ( (inner_status=graphWalkHandleFanout(incref, child, domtree, decref_blocks, depth)) ) {
+            } else if ( (inner_status=graphWalkHandleFanout(incref, child, domtree, prune_raise_exit, decref_blocks, ban_list, depth)) ) {
+                // if (hasAnyDecrefInNode(child)) return 0;
                 status |= inner_status;
             } else {
-                return false;
+                return 0;
             }
         }
 
         return status;
+    }
+
+    bool notInLoop(const BasicBlock* bb, DominatorTree& domtree) {
+        auto term = bb->getTerminator();
+        for (unsigned i=0; i<term->getNumSuccessors(); ++i){
+            auto succ = term->getSuccessor(i);
+            if (domtree.dominates(succ, bb)) {
+                return false;  // is backedge
+            }
+        }
+        return true;
     }
 
     bool isRaising(const BasicBlock* bb) {
