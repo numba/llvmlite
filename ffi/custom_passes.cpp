@@ -131,7 +131,7 @@ struct RefPrunePass : public FunctionPass {
             local_mutated |= runFanoutPrune(F, /*prune_raise*/false);
             local_mutated |= runFanoutPrune(F, /*prune_raise*/true);
             mutated |= local_mutated;
-        } while(false && local_mutated);
+        } while(local_mutated);
 
         return mutated;
     }
