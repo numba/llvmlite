@@ -1,3 +1,4 @@
+
 """
 Classes that are LLVM types
 """
@@ -242,6 +243,11 @@ class IntType(Type):
             return str(val).lower()
         else:
             return str(val)
+
+    def wrap_constant_value(self, value):
+        if value is None:
+            return 0
+        return value
 
     @property
     def intrinsic_name(self):
@@ -513,7 +519,6 @@ class BaseStructType(Aggregate):
     def gep(self, i):
         """
         Resolve the type of the i-th element (for getelementptr lookups).
-
         *i* needs to be a LLVM constant, so that the type can be determined
         at compile-time.
         """
@@ -563,7 +568,6 @@ class IdentifiedStructType(BaseStructType):
     A type which is a named alias for another struct type, akin to a typedef.
     While literal struct types can be structurally equal (see
     LiteralStructType), identified struct types are compared by name.
-
     Do not use this directly.
     """
     null = 'zeroinitializer'
