@@ -73,7 +73,7 @@ struct RefNormalizePass : public FunctionPass {
     bool runOnFunction(Function &F) override {
         bool mutated = false;
         for (BasicBlock &bb : F) {
-            // Find last incref
+            // Find a incref in the basicblock
             bool has_incref = false;
             for (Instruction &ii : bb) {
                 CallInst *refop = GetRefOpCall(&ii);
@@ -213,7 +213,6 @@ struct RefPrunePass : public FunctionPass {
             }
         }
 
-        bool diamond = false;
         for (CallInst*& incref: incref_list) {
             if (incref == NULL) continue;
 
@@ -229,35 +228,32 @@ struct RefPrunePass : public FunctionPass {
                 // incref DOM decref && decref POSTDOM incref
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref, incref) ){
-                    if (incref->getParent() != decref->getParent() ) {
-                        SmallVector<BasicBlock*, 20> stack;
-                        if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent(), stack)) {
-                            continue;
-                        } else {
 
-                            if (DEBUG_PRINT) {
-                                errs() << F.getName() << "-------------\n";
-                                errs() << incref->getParent()->getName() << "\n";
-                                incref->dump();
-                                errs() << decref->getParent()->getName() << "\n";
-                                decref->dump();
-                            }
+                    SmallVector<BasicBlock*, 20> stack;
+                    if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent(), stack)) {
+                        continue;
+                    } else {
 
-                            incref->eraseFromParent();
-                            decref->eraseFromParent();
-                            incref = NULL;
-                            decref = NULL;
-
-                            diamond = true;
-                            stats_diamond += 2;
+                        if (DEBUG_PRINT) {
+                            errs() << F.getName() << "-------------\n";
+                            errs() << incref->getParent()->getName() << "\n";
+                            incref->dump();
+                            errs() << decref->getParent()->getName() << "\n";
+                            decref->dump();
                         }
+
+                        incref->eraseFromParent();
+                        decref->eraseFromParent();
+                        incref = NULL;
+                        decref = NULL;
+
+                        stats_diamond += 2;
                     }
                     mutated |= true;
                     break;
                 }
             }
         }
-        // if (diamond) F.viewCFG();
         return mutated;
     }
 
@@ -389,7 +385,7 @@ struct RefPrunePass : public FunctionPass {
                                int depth=10)
     {
         depth -= 1;
-        if( depth <= 0 ) return false;
+        if( depth <= 0 ) return 0;
 
         // for each domtree children
         auto domnode = domtree.getNode(cur_node);
@@ -553,7 +549,7 @@ struct RefPrunePass : public FunctionPass {
         for (unsigned i=0; i < term->getNumSuccessors(); ++i) {
             BasicBlock *child = term->getSuccessor(i);
             if (child == tail_node)
-                return false;
+                continue;
             // XXX: Recurse
             if(hasDecrefBetweenGraph(child, tail_node, stack)){
                 return true;
