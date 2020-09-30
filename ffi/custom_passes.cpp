@@ -163,7 +163,7 @@ struct RefPrunePass : public FunctionPass {
             // Remove refops on NULL
             for (CallInst* ci: null_list) {
                 ci->eraseFromParent();
-                mutated |= true;
+                mutated = true;
                 stats_per_bb += 1;
             }
             // Find matching pairs of incref decref
@@ -182,7 +182,7 @@ struct RefPrunePass : public FunctionPass {
                         decref->eraseFromParent();
 
                         decref_list[i] = NULL;
-                        mutated |= true;
+                        mutated = true;
                         stats_per_bb += 2;
                         break;
                     }
