@@ -128,8 +128,8 @@ struct RefPrunePass : public FunctionPass {
             local_mutated = false;
             local_mutated |= runPerBasicBlockPrune(F);
             local_mutated |= runDiamondPrune(F);
-            local_mutated |= runFanoutPrune(F, /*prune_raise*/false);
-            local_mutated |= runFanoutPrune(F, /*prune_raise*/true);
+            local_mutated |= runFanoutPrune(F);
+            // local_mutated |= runFanoutPrune(F, /*prune_raise*/true);
             mutated |= local_mutated;
         } while(local_mutated);
 
@@ -257,7 +257,180 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
-    bool runFanoutPrune(Function &F, bool prune_raise_exit) {
+    bool runFanoutPrune(Function &F) {
+        bool mutated = false;
+
+        // Find Incref
+        std::vector<CallInst*> incref_list;
+        for (BasicBlock &bb : F) {
+            for (Instruction &ii : bb) {
+                CallInst* ci;
+                if ( (ci = GetRefOpCall(&ii)) ) {
+                    if ( IsIncRef(ci) ) {
+                        incref_list.push_back(ci);
+                    }
+                }
+            }
+        }
+
+        for (CallInst* incref : incref_list) {
+            if (hasAnyDecrefInNode(incref->getParent())){
+                // be v with potential alias
+                continue;  // skip
+            }
+
+            SetVector<BasicBlock*> decref_blocks;
+            if ( findFanout(incref, &decref_blocks) ) {
+                // Remove first related decref in each block
+                if (0||DEBUG_PRINT) {
+                    errs() << "incref " << incref->getParent()->getName() << "\n" ;
+                    errs() << "  decref_blocks.size()" << decref_blocks.size() << "\n" ;
+                    incref->dump();
+                }
+                for (BasicBlock* each : decref_blocks) {
+                    for (Instruction &ii : *each) {
+                        CallInst *decref;
+                        if ( (decref = isRelatedDecref(incref, &ii)) ) {
+                            if (0||DEBUG_PRINT) {
+                                errs() << decref->getParent()->getName() << "\n";
+                                decref->dump();
+                            }
+                            decref->eraseFromParent();
+                            stats_fanout += 1;
+                            break;
+                        }
+                    }
+                }
+                incref->eraseFromParent();
+                stats_fanout += 1;
+                mutated = true;
+                // F.viewCFG();
+            }
+        }
+        return mutated;
+    }
+
+    bool findFanout(CallInst *incref, SetVector<BasicBlock*> *decref_blocks) {
+        BasicBlock *head_node = incref->getParent();
+
+        if ( findFanoutDecrefCandidates(incref, head_node, decref_blocks) ) {
+            if (0||DEBUG_PRINT) {
+                errs() << "forward pass candids.size() = " << decref_blocks->size() << "\n";
+            }
+            if ( verifyFanoutNonOverlapping(incref, head_node, decref_blocks) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * forward pass
+     */
+    bool findFanoutDecrefCandidates(CallInst *incref,
+                                    BasicBlock *cur_node,
+                                    SetVector<BasicBlock*> *decref_blocks) {
+        SmallVector<BasicBlock*, 15> path_stack;
+        bool found = false;
+        auto term = cur_node->getTerminator();
+        path_stack.push_back(cur_node);
+        for ( unsigned i=0; i<term->getNumSuccessors(); ++i) {
+            BasicBlock *child = term->getSuccessor(i);
+            if ( !walkChildForDecref(incref, child, path_stack, decref_blocks) ) {
+                found = false;
+                break;
+            } else {
+                found = true;
+            }
+        }
+        return found;
+    }
+
+    bool walkChildForDecref(
+        CallInst *incref,
+        BasicBlock *cur_node,
+        SmallVectorImpl<BasicBlock*> &path_stack,
+        SetVector<BasicBlock*> *decref_blocks
+    ) {
+        if ( path_stack.size() >= 15 ) return false;
+
+        if ( basicBlockInList(cur_node, path_stack) ) {
+            if ( cur_node == path_stack[0] ) {
+                // reject interior node backedge to start of subgraph
+                return false;
+            }
+            // skip
+            return true;
+        }
+        if ( hasDecrefInNode(incref, cur_node) ) {
+            decref_blocks->insert(cur_node);
+            return true;
+        }
+
+        path_stack.push_back(cur_node);
+        bool found = false;
+        auto term = cur_node->getTerminator();
+        for ( unsigned i=0; i<term->getNumSuccessors(); ++i) {
+            BasicBlock *child = term->getSuccessor(i);
+            if ( !walkChildForDecref(incref, child, path_stack, decref_blocks) ) {
+                found = false;
+                break;
+            } else {
+                found = true;
+            }
+        }
+        path_stack.pop_back();
+        return found;
+    }
+
+    bool verifyFanoutNonOverlapping(
+        CallInst *incref,
+        BasicBlock *head_node,
+        const SetVector<BasicBlock*> *decref_blocks
+    ) {
+        // reverse walk for each decref_blocks
+        // they should end at the head_node
+        SmallVector<BasicBlock*, 10> todo;
+        for (BasicBlock *bb: *decref_blocks) {
+            todo.push_back(bb);
+        }
+
+        while (todo.size() > 0) {
+            SetVector<BasicBlock*> visited;
+            SmallVector<BasicBlock*, 10> workstack;
+            workstack.push_back(todo.pop_back_val());
+
+            while (workstack.size() > 0) {
+                BasicBlock *cur_node = workstack.pop_back_val();
+                if ( basicBlockInList(cur_node, visited) ) {
+                    continue;  // skip
+                }
+
+                if ( cur_node == &head_node->getParent()->getEntryBlock() ) {
+                    // entry node
+                    return false;
+                }
+
+                visited.insert(cur_node);
+
+                // check all predecessors
+                auto it = pred_begin(cur_node), end = pred_end(cur_node);
+                for (; it != end; ++it ) {
+                    auto pred = *it;
+                    if ( basicBlockInList(pred, *decref_blocks) ) {
+                        // reject because there's a predecessor in decref_blocks
+                        return false;
+                    }
+                    if ( pred != head_node ) {
+                        workstack.push_back(pred);
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    bool runFanoutPruneOld(Function &F, bool prune_raise_exit) {
         bool mutated = false;
         auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
         auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
