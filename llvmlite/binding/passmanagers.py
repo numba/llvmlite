@@ -1,5 +1,53 @@
-from ctypes import c_bool, c_int
+from ctypes import c_bool, c_int, c_size_t, Structure, byref
 from llvmlite.binding import ffi
+from collections import namedtuple
+
+_prunestats = namedtuple('PruneStats',
+                         ('basicblock diamond fanout fanout_raise'))
+
+class PruneStats(_prunestats):
+    """ Holds statistics from reference count pruning.
+    """
+
+    def __add__(self, other):
+        if not isinstance(other, PruneStats):
+            msg = 'PruneStats can only be added to another PruneStats, got {}.'
+            raise TypeError(msg.format(type(other)))
+        return PruneStats(self.basicblock + other.basicblock,
+                          self.diamond + other.diamond,
+                          self.fanout + other.fanout,
+                          self.fanout_raise + other.fanout_raise)
+
+    def __sub__(self, other):
+        if not isinstance(other, PruneStats):
+            msg = ('PruneStats can only be subtracted from another PruneStats, '
+                   'got {}.')
+            raise TypeError(msg.format(type(other)))
+        return PruneStats(self.basicblock - other.basicblock,
+                          self.diamond - other.diamond,
+                          self.fanout - other.fanout,
+                          self.fanout_raise - other.fanout_raise)
+
+class _c_PruneStats(Structure):
+    _fields_ = [
+        ('basicblock', c_size_t),
+        ('diamond', c_size_t),
+        ('fanout', c_size_t),
+        ('fanout_raise', c_size_t)]
+
+
+def dump_refprune_stats(printout=False):
+    """ Returns a namedtuple containing the current values for the refop pruning
+    statistics. If kwarg `printout` is True the stats are printed to stderr,
+    default is False.
+    """
+
+    stats = _c_PruneStats(0, 0, 0, 0)
+    do_print = c_bool(printout)
+
+    ffi.lib.LLVMPY_DumpRefPruneStats(byref(stats), do_print)
+    return PruneStats(stats.basicblock, stats.diamond, stats.fanout,
+                      stats.fanout_raise)
 
 
 def create_module_pass_manager():
@@ -8,10 +56,6 @@ def create_module_pass_manager():
 
 def create_function_pass_manager(module):
     return FunctionPassManager(module)
-
-
-def dump_refprune_stats():
-    ffi.lib.LLVMPY_DumpRefPruneStats()
 
 
 class PassManager(ffi.ObjectRef):

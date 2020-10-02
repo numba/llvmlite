@@ -860,15 +860,37 @@ LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM)
     unwrap(PM)->add(new RefPrunePass());
 }
 
+
+typedef struct PruneStats {
+    size_t basicblock;
+    size_t diamond;
+    size_t fanout;
+    size_t fanout_raise;
+} PRUNESTATS;
+
+
 API_EXPORT(void)
-LLVMPY_DumpRefPruneStats()
+LLVMPY_DumpRefPruneStats(PRUNESTATS *buf, bool do_print)
 {
-    errs() << "refprune stats "
-           << "per-BB " << RefPrunePass::stats_per_bb << " "
-           << "diamond " << RefPrunePass::stats_diamond << " "
-           << "fanout " << RefPrunePass::stats_fanout << " "
-           << "fanout+raise " << RefPrunePass::stats_fanout_raise << " "
-           << "\n";
+    /* PRUNESTATS is updated with the statistics about what has been pruned from
+     * the RefPrunePass static state vars. This isn't threadsafe but neither is
+     * the LLVM pass infrastructure so it's all done under a python thread lock.
+     *
+     * do_print if set will print the stats to stderr.
+     */
+    if (do_print) {
+        errs() << "refprune stats "
+            << "per-BB " << RefPrunePass::stats_per_bb << " "
+            << "diamond " << RefPrunePass::stats_diamond << " "
+            << "fanout " << RefPrunePass::stats_fanout << " "
+            << "fanout+raise " << RefPrunePass::stats_fanout_raise << " "
+            << "\n";
+    };
+
+    buf->basicblock = RefPrunePass::stats_per_bb;
+    buf->diamond = RefPrunePass::stats_diamond;
+    buf->fanout = RefPrunePass::stats_fanout;
+    buf->fanout_raise = RefPrunePass::stats_fanout_raise;
 }
 
 
