@@ -8,7 +8,7 @@
 #include "llvm/IR/Instructions.h"
 
 #include "llvm/ADT/SmallString.h"
-#include "llvm/ADT/SetVector.h"
+#include "llvm/ADT/SmallSet.h"
 
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Analysis/Passes.h"
@@ -27,6 +27,7 @@
 #include "llvm/InitializePasses.h"
 #include "llvm/LinkAllPasses.h"
 
+#include <iostream>
 #include <vector>
 #include <map>
 
@@ -60,6 +61,23 @@ CallInst* GetRefOpCall(Instruction *ii) {
     }
     return NULL;
 }
+
+/**
+ * RAII push-pop of element into stack.
+ */
+template <class Tstack>
+struct raiiStack {
+    Tstack &stack;
+
+    typedef typename Tstack::value_type value_type;
+
+    raiiStack(Tstack &stack, value_type& elem) :stack(stack) {
+        stack.push_back(elem);
+    }
+    ~raiiStack() {
+        stack.pop_back();
+    }
+};
 
 /**
  * Move decref after increfs
@@ -109,6 +127,9 @@ struct RefPrunePass : public FunctionPass {
     static size_t stats_fanout;
     static size_t stats_fanout_raise;
 
+    static const size_t FANOUT_RECURSE_DEPTH= 15;
+    typedef SmallSet<BasicBlock*, FANOUT_RECURSE_DEPTH> SmallBBSet;
+
     RefPrunePass() : FunctionPass(ID) {
         initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
     }
@@ -128,8 +149,8 @@ struct RefPrunePass : public FunctionPass {
             local_mutated = false;
             local_mutated |= runPerBasicBlockPrune(F);
             local_mutated |= runDiamondPrune(F);
-            local_mutated |= runFanoutPrune(F);
-            // local_mutated |= runFanoutPrune(F, /*prune_raise*/true);
+            local_mutated |= runFanoutPrune(F, /*prune_raise*/false);
+            local_mutated |= runFanoutPrune(F, /*prune_raise*/true);
             mutated |= local_mutated;
         } while(local_mutated);
 
@@ -257,7 +278,7 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
-    bool runFanoutPrune(Function &F) {
+    bool runFanoutPrune(Function &F, bool prune_raise_exit) {
         bool mutated = false;
 
         // Find Incref
@@ -279,13 +300,16 @@ struct RefPrunePass : public FunctionPass {
                 continue;  // skip
             }
 
-            SetVector<BasicBlock*> decref_blocks;
-            if ( findFanout(incref, &decref_blocks) ) {
+            SmallBBSet decref_blocks;
+            if ( findFanout(incref, &decref_blocks, prune_raise_exit) ) {
                 // Remove first related decref in each block
                 if (0||DEBUG_PRINT) {
+                    F.viewCFG();
+                    errs() << "------------\n";
                     errs() << "incref " << incref->getParent()->getName() << "\n" ;
                     errs() << "  decref_blocks.size()" << decref_blocks.size() << "\n" ;
                     incref->dump();
+
                 }
                 for (BasicBlock* each : decref_blocks) {
                     for (Instruction &ii : *each) {
@@ -296,28 +320,64 @@ struct RefPrunePass : public FunctionPass {
                                 decref->dump();
                             }
                             decref->eraseFromParent();
-                            stats_fanout += 1;
+
+                            if (prune_raise_exit)   stats_fanout_raise += 1;
+                            else                    stats_fanout += 1;
                             break;
                         }
                     }
                 }
                 incref->eraseFromParent();
-                stats_fanout += 1;
+
+                if (prune_raise_exit)   stats_fanout_raise += 1;
+                else                    stats_fanout += 1;
                 mutated = true;
-                // F.viewCFG();
+
+                // int wait;
+                // std::cin >> wait;
             }
         }
         return mutated;
     }
 
-    bool findFanout(CallInst *incref, SetVector<BasicBlock*> *decref_blocks) {
+    bool findFanout(CallInst *incref, SmallBBSet *decref_blocks, bool prune_raise_exit) {
         BasicBlock *head_node = incref->getParent();
+        SmallBBSet raising_blocks, *p_raising_blocks = NULL;
+        if( prune_raise_exit ) p_raising_blocks = &raising_blocks;
 
-        if ( findFanoutDecrefCandidates(incref, head_node, decref_blocks) ) {
+        if ( findFanoutDecrefCandidates(incref, head_node, decref_blocks, p_raising_blocks) ) {
             if (0||DEBUG_PRINT) {
                 errs() << "forward pass candids.size() = " << decref_blocks->size() << "\n";
+                errs() << "    " << head_node->getName() << "\n";
+                incref->dump();
             }
-            if ( verifyFanoutNonOverlapping(incref, head_node, decref_blocks) ) {
+            if (decref_blocks->size() == 0) {
+                // no decref blocks
+                if (0||DEBUG_PRINT) {
+                    errs() << "missing decref blocks = " << raising_blocks.size() << "\n";
+                }
+                return false;
+            }
+            if ( prune_raise_exit ) {
+                if ( raising_blocks.size() == 0) {
+                    // no raising blocks
+                    if (0||DEBUG_PRINT) {
+                        errs() << "missing raising blocks = " << raising_blocks.size() << "\n";
+                        for (auto bb : *decref_blocks){
+                            errs() << "   " << bb->getName() << "\n";
+                        }
+                    }
+                    return false;
+                }
+
+                // combine decref_blocks into raising blocks for checking the exit node condition
+                for ( BasicBlock* bb : *decref_blocks ) {
+                    raising_blocks.insert(bb);
+                }
+                if ( verifyFanoutBackward(incref, head_node, p_raising_blocks) )
+                    return true;
+
+            } else if ( verifyFanoutBackward(incref, head_node, decref_blocks) ) {
                 return true;
             }
         }
@@ -325,23 +385,35 @@ struct RefPrunePass : public FunctionPass {
     }
 
     /**
-     * forward pass
+     * Forward pass.
+     *
+     * Walk the successors of the incref node recursively until a decref
+     * or an exit node is found.
+     * If an exit node is found and raising_blocks is non-NULL,
+     * check if it is raising and store the raising block into raising_blocks.
+     *
+     * Return condition:
+     *   depends on raising_blocks:
+     *      == NULL -> return true iff all paths have led to a decref.
+     *      != NULL -> return true iff all paths have led to
+     *                 a decref or a raising exit.
      */
     bool findFanoutDecrefCandidates(CallInst *incref,
                                     BasicBlock *cur_node,
-                                    SetVector<BasicBlock*> *decref_blocks) {
-        SmallVector<BasicBlock*, 15> path_stack;
+                                    SmallBBSet *decref_blocks,
+                                    SmallBBSet *raising_blocks) {
+        SmallVector<BasicBlock*, FANOUT_RECURSE_DEPTH> path_stack;
         bool found = false;
         auto term = cur_node->getTerminator();
-        path_stack.push_back(cur_node);
+
+        raiiStack<SmallVectorImpl<BasicBlock*>> raii_path_stack(path_stack, cur_node);
+
         for ( unsigned i=0; i<term->getNumSuccessors(); ++i) {
             BasicBlock *child = term->getSuccessor(i);
-            if ( !walkChildForDecref(incref, child, path_stack, decref_blocks) ) {
-                found = false;
-                break;
-            } else {
-                found = true;
-            }
+            found = walkChildForDecref(
+                incref, child, path_stack, decref_blocks, raising_blocks
+            );
+            if (!found) return false;
         }
         return found;
     }
@@ -350,78 +422,99 @@ struct RefPrunePass : public FunctionPass {
         CallInst *incref,
         BasicBlock *cur_node,
         SmallVectorImpl<BasicBlock*> &path_stack,
-        SetVector<BasicBlock*> *decref_blocks
+        SmallBBSet *decref_blocks,
+        SmallBBSet *raising_blocks
     ) {
-        if ( path_stack.size() >= 15 ) return false;
+        if ( path_stack.size() >= FANOUT_RECURSE_DEPTH ) return false;
 
+        // check for backedge
         if ( basicBlockInList(cur_node, path_stack) ) {
             if ( cur_node == path_stack[0] ) {
-                // reject interior node backedge to start of subgraph
+                // Reject interior node backedge to start of subgraph.
+                // This means that the incref can be executed multiple times
+                // before reaching the decref.
                 return false;
             }
-            // skip
-            return true;
-        }
-        if ( hasDecrefInNode(incref, cur_node) ) {
-            decref_blocks->insert(cur_node);
+            // is a legal backedge; skip
             return true;
         }
 
-        path_stack.push_back(cur_node);
+        // Does this block has a related decref?
+        if ( hasDecrefInNode(incref, cur_node) ) {
+            decref_blocks->insert(cur_node);
+            return true;  // done for this path
+        }
+
+        // checking for raise blocks
+        if (raising_blocks && isRaising(cur_node)) {
+            raising_blocks->insert(cur_node);
+            return true;  // done for this path
+        }
+
+        // recurse into predecessors of the current block.
+        raiiStack<SmallVectorImpl<BasicBlock*> > raii_push_pop(path_stack, cur_node);
         bool found = false;
         auto term = cur_node->getTerminator();
         for ( unsigned i=0; i<term->getNumSuccessors(); ++i) {
             BasicBlock *child = term->getSuccessor(i);
-            if ( !walkChildForDecref(incref, child, path_stack, decref_blocks) ) {
-                found = false;
-                break;
-            } else {
-                found = true;
-            }
+            found = walkChildForDecref(
+                incref, child, path_stack, decref_blocks, raising_blocks
+            );
+            if (!found) return false;
         }
-        path_stack.pop_back();
+        // If this is a leaf node, returns false.
         return found;
     }
 
-    bool verifyFanoutNonOverlapping(
+    /**
+     * Backward pass.
+     * Check the tail-node condition for the fanout subgraph.
+     * The reverse walks from all exit-nodes must end with the head-node.
+     */
+    bool verifyFanoutBackward(
         CallInst *incref,
         BasicBlock *head_node,
-        const SetVector<BasicBlock*> *decref_blocks
+        const SmallBBSet *tail_nodes
     ) {
-        // reverse walk for each decref_blocks
-        // they should end at the head_node
         SmallVector<BasicBlock*, 10> todo;
-        for (BasicBlock *bb: *decref_blocks) {
+        for (BasicBlock *bb: *tail_nodes) {
             todo.push_back(bb);
         }
 
+        SmallBBSet visited;
         while (todo.size() > 0) {
-            SetVector<BasicBlock*> visited;
-            SmallVector<BasicBlock*, 10> workstack;
+            SmallVector<BasicBlock*, FANOUT_RECURSE_DEPTH> workstack;
             workstack.push_back(todo.pop_back_val());
 
             while (workstack.size() > 0) {
                 BasicBlock *cur_node = workstack.pop_back_val();
-                if ( basicBlockInList(cur_node, visited) ) {
+                if ( visited.count(cur_node) ) {
+                    // Already visited
                     continue;  // skip
                 }
 
                 if ( cur_node == &head_node->getParent()->getEntryBlock() ) {
-                    // entry node
+                    // Arrived at the entry node of the function.
+                    // This means the reverse walk from a tail-node can
+                    // bypass the head-node (incref node) of this fanout
+                    // subgraph.
                     return false;
                 }
 
+                // remember that we have visited this node already
                 visited.insert(cur_node);
 
-                // check all predecessors
+                // Walk into all predecessors
                 auto it = pred_begin(cur_node), end = pred_end(cur_node);
                 for (; it != end; ++it ) {
                     auto pred = *it;
-                    if ( basicBlockInList(pred, *decref_blocks) ) {
-                        // reject because there's a predecessor in decref_blocks
+                    if ( tail_nodes->count(pred) ) {
+                        // reject because a predecessor is a decref_block
                         return false;
                     }
                     if ( pred != head_node ) {
+                        // If the predecessor is the head-node,
+                        // this path is ok; otherwise, continue to walk up.
                         workstack.push_back(pred);
                     }
                 }
