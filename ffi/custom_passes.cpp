@@ -445,6 +445,11 @@ struct RefPrunePass : public FunctionPass {
             return true;  // done for this path
         }
 
+        if ( hasAnyDecrefInNode(cur_node) ) {
+            // Because we don't know about aliasing
+            return false;
+        }
+
         // checking for raise blocks
         if (raising_blocks && isRaising(cur_node)) {
             raising_blocks->insert(cur_node);
