@@ -227,6 +227,9 @@ class FanoutAlgorithm:
                 for pred in self.get_predecessors(cur_node):
                     if pred in decref_blocks:
                         # reject because there's a predecessor in decref_blocks
+                        self.print(
+                            "!! reject because predecessor in decref_blocks"
+                        )
                         return False
                     if pred != head_node:
 

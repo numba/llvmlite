@@ -274,6 +274,12 @@ struct RefPrunePass : public FunctionPass {
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref, incref) ){
 
+                    // check that the decref cannot be executed multiple times
+                    SmallBBSet tail_nodes;
+                    tail_nodes.insert(decref->getParent());
+                    if ( !verifyFanoutBackward(incref, incref->getParent(), &tail_nodes) )
+                        continue;
+
                     // scan the CFG between the incref and decref BBs, if there's a decref
                     // present then skip, this is conservative.
                     if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent())) {
@@ -490,7 +496,8 @@ struct RefPrunePass : public FunctionPass {
     /**
      * Backward pass.
      * Check the tail-node condition for the fanout subgraph.
-     * The reverse walks from all exit-nodes must end with the head-node.
+     * The reverse walks from all exit-nodes must end with the head-node
+     * and that the tail-nodes cannot be executed multiple times.
      */
     bool verifyFanoutBackward(
         CallInst *incref,
