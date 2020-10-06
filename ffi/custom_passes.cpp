@@ -216,7 +216,7 @@ struct RefPrunePass : public FunctionPass {
                 for (size_t i=0; i < decref_list.size(); ++i){
                     CallInst* decref = decref_list[i];
                     // is this instruction a decref thats non-NULL and
-                    // the recref related to the incref?
+                    // the decref related to the incref?
                     if (decref && isRelatedDecref(incref, decref)) {
                         if (DEBUG_PRINT) {
                             errs() << "Prune: matching pair in BB:\n";
