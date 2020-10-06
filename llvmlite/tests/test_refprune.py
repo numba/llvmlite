@@ -19,6 +19,9 @@ def _iterate_cases(generate_test):
 
 
 class TestRefPrunePrototype(TestCase):
+    """
+    Test that the prototype is working.
+    """
     def generate_test(self, case_gen):
         nodes, edges, expected = case_gen()
         got = proto.FanoutAlgorithm(nodes, edges).run()
@@ -33,6 +36,13 @@ ptr_ty = ir.IntType(8).as_pointer()
 
 
 class TestRefPrunePass(TestCase):
+    """
+    Test that the C++ implementation matches the expected behavior as for
+    the prototype.
+
+    This generates a LLVM module for each test case, runs the pruner and check
+    that the expected results are achieved.
+    """
 
     def make_incref(self, m):
         fnty = ir.FunctionType(ir.VoidType(), [ptr_ty])
@@ -137,7 +147,6 @@ class TestRefPrunePass(TestCase):
     def generate_test(self, case_gen):
         nodes, edges, expected = case_gen()
         irmod = self.generate_ir(nodes, edges)
-        print(irmod)
         outmod = self.apply_refprune(irmod)
         self.check(outmod, expected, nodes)
 
