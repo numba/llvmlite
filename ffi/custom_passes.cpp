@@ -7,29 +7,19 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 
-#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallSet.h"
 
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Analysis/Passes.h"
-#include "llvm/Analysis/RegionPass.h"
-#include "llvm/Analysis/RegionInfo.h"
-#include "llvm/Analysis/RegionPrinter.h"
 #include "llvm/Analysis/PostDominators.h"
-#include "llvm/Analysis/DomPrinter.h"
-#include "llvm/Transforms/Utils/UnifyFunctionExitNodes.h"
-
-#include "llvm/Transforms/Scalar.h"
 
 #include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #include "llvm/InitializePasses.h"
 #include "llvm/LinkAllPasses.h"
 
 #include <iostream>
 #include <vector>
-#include <map>
 
 // #define DEBUG_PRINT 1
 #define DEBUG_PRINT 0
