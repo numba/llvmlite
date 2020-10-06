@@ -249,22 +249,10 @@ struct RefPrunePass : public FunctionPass {
         // gets the post-dominator tree
         auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
 
-        // Scan for inrefs and decrefs within the function blocks
-        // TODO: DRY? seems to be a common thing.
+        // Scan for increfs and decrefs within the function blocks
         std::vector<CallInst*> incref_list, decref_list;
-        for (BasicBlock &bb : F) {
-            for (Instruction &ii : bb) {
-                CallInst* ci;
-                if ( (ci = GetRefOpCall(&ii)) ) {
-                    if ( IsIncRef(ci) ) {
-                        incref_list.push_back(ci);
-                    }
-                    else if ( IsDecRef(ci) ) {
-                        decref_list.push_back(ci);
-                    }
-                }
-            }
-        }
+        listRefOps(F, IsIncRef, incref_list);
+        listRefOps(F, IsDecRef, decref_list);
 
         // Walk the incref list
         for (CallInst*& incref: incref_list) {
@@ -323,16 +311,7 @@ struct RefPrunePass : public FunctionPass {
 
         // Find Incref
         std::vector<CallInst*> incref_list;
-        for (BasicBlock &bb : F) {
-            for (Instruction &ii : bb) {
-                CallInst* ci;
-                if ( (ci = GetRefOpCall(&ii)) ) {
-                    if ( IsIncRef(ci) ) {
-                        incref_list.push_back(ci);
-                    }
-                }
-            }
-        }
+        listRefOps(F, IsIncRef, incref_list);
 
         for (CallInst* incref : incref_list) {
             if (hasAnyDecrefInNode(incref->getParent())){
@@ -599,17 +578,15 @@ struct RefPrunePass : public FunctionPass {
     }
 
     CallInst* isRelatedDecref(CallInst *incref, Instruction *ii) {
-        // TODO: DRY
-        if (ii->getOpcode() == Instruction::Call) {
-            CallInst *call_inst = dyn_cast<CallInst>(ii);
-            Value *callee = call_inst->getCalledOperand();
-            if ( callee->getName() != "NRT_decref" ) {
+        CallInst *suspect;
+        if ( (suspect = GetRefOpCall(ii))  ){
+            if ( !IsDecRef(suspect) ) {
                 return NULL;
             }
-            if (incref->getArgOperand(0) != call_inst->getArgOperand(0)) {
+            if (incref->getArgOperand(0) != suspect->getArgOperand(0)) {
                 return NULL;
             }
-            return call_inst;
+            return suspect;
         }
         return NULL;
     }
@@ -678,6 +655,22 @@ struct RefPrunePass : public FunctionPass {
             }
         } while(stack.size() > 0);
         return false;
+    }
+
+    typedef bool(*test_refops_function)(CallInst*);
+
+    template<class T>
+    void listRefOps(Function &F, test_refops_function fn, T &list) {
+        for (BasicBlock &bb : F) {
+            for (Instruction &ii : bb) {
+                CallInst* ci;
+                if ( (ci = GetRefOpCall(&ii)) ) {
+                    if ( fn(ci) ) {
+                        list.push_back(ci);
+                    }
+                }
+            }
+        }
     }
 }; // end of struct RefPrunePass
 
