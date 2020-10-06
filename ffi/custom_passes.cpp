@@ -139,8 +139,21 @@ struct RefPrunePass : public FunctionPass {
     static const size_t FANOUT_RECURSE_DEPTH= 15;
     typedef SmallSet<BasicBlock*, FANOUT_RECURSE_DEPTH> SmallBBSet;
 
-    RefPrunePass() : FunctionPass(ID) {
+    enum Subpasses {
+        None            = 0,
+        PerBasicBlock   = 1,
+        Diamond         = 1 << 1,
+        Fanout          = 1 << 2,
+        FanoutRaise     = 1 << 3,
+        All             = PerBasicBlock | Diamond | Fanout | FanoutRaise
+    } flags;
+
+    RefPrunePass(Subpasses flags=Subpasses::All) : FunctionPass(ID), flags(flags) {
         initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
+    }
+
+    bool isSubpassEnabledFor(Subpasses expected) {
+        return (flags & expected) == expected;
     }
 
     bool runOnFunction(Function &F) override {
@@ -156,10 +169,14 @@ struct RefPrunePass : public FunctionPass {
         bool local_mutated;
         do {
             local_mutated = false;
-            local_mutated |= runPerBasicBlockPrune(F);
-            local_mutated |= runDiamondPrune(F);
-            local_mutated |= runFanoutPrune(F, /*prune_raise*/false);
-            local_mutated |= runFanoutPrune(F, /*prune_raise*/true);
+            if (isSubpassEnabledFor(Subpasses::PerBasicBlock))
+                local_mutated |= runPerBasicBlockPrune(F);
+            if (isSubpassEnabledFor(Subpasses::Diamond))
+                local_mutated |= runDiamondPrune(F);
+            if (isSubpassEnabledFor(Subpasses::Fanout))
+                local_mutated |= runFanoutPrune(F, /*prune_raise*/false);
+            if (isSubpassEnabledFor(Subpasses::FanoutRaise))
+                local_mutated |= runFanoutPrune(F, /*prune_raise*/true);
             mutated |= local_mutated;
         } while(local_mutated);
 
@@ -911,14 +928,14 @@ INITIALIZE_PASS_END(RefPrunePass, "refprunepass",
 extern "C" {
 
 API_EXPORT(void)
-LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM)
+LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM, int subpasses)
 {
     // unwrap(PM)->add(createStructurizeCFGPass());
     // unwrap(PM)->add(createUnifyFunctionExitNodesPass());
     // unwrap(PM)->add(createPromoteMemoryToRegisterPass());
     // unwrap(PM)->add(createInstSimplifyLegacyPass());
     unwrap(PM)->add(new RefNormalizePass());
-    unwrap(PM)->add(new RefPrunePass());
+    unwrap(PM)->add(new RefPrunePass((RefPrunePass::Subpasses)subpasses));
 }
 
 

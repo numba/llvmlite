@@ -1,6 +1,7 @@
 from ctypes import c_bool, c_int, c_size_t, Structure, byref
-from llvmlite.binding import ffi
 from collections import namedtuple
+from enum import IntFlag
+from llvmlite.binding import ffi
 
 _prunestats = namedtuple('PruneStats',
                          ('basicblock diamond fanout fanout_raise'))
@@ -56,6 +57,14 @@ def create_module_pass_manager():
 
 def create_function_pass_manager(module):
     return FunctionPassManager(module)
+
+
+class RefPruneSubpasses(IntFlag):
+    PER_BB = 1
+    DIAMOND = 1 << 1
+    FANOUT = 1 << 2
+    FANOUT_RAISE = 1 << 3
+    ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 
 class PassManager(ffi.ObjectRef):
@@ -132,8 +141,16 @@ class PassManager(ffi.ObjectRef):
 
     # Non-standard LLVM passes
 
-    def add_refprune_pass(self):
-        ffi.lib.LLVMPY_AddRefPrunePass(self)
+    def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL):
+        """Add Numba specific Reference count pruning pass.
+
+        Parameters
+        ----------
+        subpasses_flags : RefPruneSubpasses
+            A bitmask to control the subpasses to be enabled.
+        """
+        iflags = RefPruneSubpasses(subpasses_flags)
+        ffi.lib.LLVMPY_AddRefPrunePass(self, iflags)
 
 
 class ModulePassManager(PassManager):
@@ -221,3 +238,5 @@ ffi.lib.LLVMPY_AddSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
+
+ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int]
