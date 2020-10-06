@@ -157,13 +157,6 @@ struct RefPrunePass : public FunctionPass {
     }
 
     bool runOnFunction(Function &F) override {
-        // errs() << "F.getName() " << F.getName() << '\n';
-        // if (F.getName().startswith("_ZN7cpython5")){
-        //     return false;
-        // }
-        // domtree.viewGraph();   // view domtree
-        // postdomtree.viewGraph();
-
         bool mutated = false;
 
         bool local_mutated;
@@ -353,14 +346,14 @@ struct RefPrunePass : public FunctionPass {
 
         for (CallInst* incref : incref_list) {
             if (hasAnyDecrefInNode(incref->getParent())){
-                // be v with potential alias
+                // becarefull of potential alias
                 continue;  // skip
             }
 
             SmallBBSet decref_blocks;
             if ( findFanout(incref, &decref_blocks, prune_raise_exit) ) {
                 // Remove first related decref in each block
-                if (0||DEBUG_PRINT) {
+                if (DEBUG_PRINT) {
                     F.viewCFG();
                     errs() << "------------\n";
                     errs() << "incref " << incref->getParent()->getName() << "\n" ;
@@ -372,7 +365,7 @@ struct RefPrunePass : public FunctionPass {
                     for (Instruction &ii : *each) {
                         CallInst *decref;
                         if ( (decref = isRelatedDecref(incref, &ii)) ) {
-                            if (0||DEBUG_PRINT) {
+                            if (DEBUG_PRINT) {
                                 errs() << decref->getParent()->getName() << "\n";
                                 decref->dump();
                             }
@@ -389,9 +382,6 @@ struct RefPrunePass : public FunctionPass {
                 if (prune_raise_exit)   stats_fanout_raise += 1;
                 else                    stats_fanout += 1;
                 mutated = true;
-
-                // int wait;
-                // std::cin >> wait;
             }
         }
         return mutated;
@@ -403,14 +393,14 @@ struct RefPrunePass : public FunctionPass {
         if( prune_raise_exit ) p_raising_blocks = &raising_blocks;
 
         if ( findFanoutDecrefCandidates(incref, head_node, decref_blocks, p_raising_blocks) ) {
-            if (0||DEBUG_PRINT) {
+            if (DEBUG_PRINT) {
                 errs() << "forward pass candids.size() = " << decref_blocks->size() << "\n";
                 errs() << "    " << head_node->getName() << "\n";
                 incref->dump();
             }
             if (decref_blocks->size() == 0) {
                 // no decref blocks
-                if (0||DEBUG_PRINT) {
+                if (DEBUG_PRINT) {
                     errs() << "missing decref blocks = " << raising_blocks.size() << "\n";
                 }
                 return false;
@@ -418,7 +408,7 @@ struct RefPrunePass : public FunctionPass {
             if ( prune_raise_exit ) {
                 if ( raising_blocks.size() == 0) {
                     // no raising blocks
-                    if (0||DEBUG_PRINT) {
+                    if (DEBUG_PRINT) {
                         errs() << "missing raising blocks = " << raising_blocks.size() << "\n";
                         for (auto bb : *decref_blocks){
                             errs() << "   " << bb->getName() << "\n";
@@ -585,179 +575,6 @@ struct RefPrunePass : public FunctionPass {
         return true;
     }
 
-    bool runFanoutPruneOld(Function &F, bool prune_raise_exit) {
-        bool mutated = false;
-        auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-        auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
-
-        // Deal with fanout
-        // a single incref with multiple decrefs in outgoing edges
-
-        std::vector<CallInst*> incref_list;
-        for (BasicBlock &bb : F) {
-            for (Instruction &ii : bb) {
-                CallInst* ci;
-                if ( (ci = GetRefOpCall(&ii)) ) {
-                    if ( IsIncRef(ci) ) {
-                        incref_list.push_back(ci);
-                    }
-                }
-            }
-        }
-
-        // bool view_cfg = false;
-        int mask = 0;
-        mask |= 1;
-        if (prune_raise_exit) {
-            mask |= 2;
-        }
-
-        for (CallInst* incref : incref_list) {
-            BasicBlock *bb = incref->getParent();
-            std::set<BasicBlock*> decref_blocks, ban_list;
-            // if (hasAnyDecrefInNode(bb)) continue;
-            int status = graphWalkHandleFanout(incref, bb, domtree, prune_raise_exit, decref_blocks, ban_list);
-
-            for (BasicBlock* banned : ban_list) {
-                if ( decref_blocks.find(banned) != decref_blocks.end() ){
-                    status = 0;
-                    break;
-                }
-            }
-            if ( status == mask && status > 0) {
-                if (DEBUG_PRINT) {
-                    errs() << "FANOUT prune " << decref_blocks.size() << '\n';
-                    errs() << incref->getParent()->getName() << "\n";
-                    incref->dump();
-                }
-                // Check if any block dominates other blocks
-                if (checkCrossDominate(decref_blocks, postdomtree)) {
-                    if (DEBUG_PRINT) {
-                        errs() << "FANOUT prune cancelled due to cross dominating\n";
-                    }
-                    continue;
-                }
-
-                // if (prune_raise_exit) {
-                //     errs() << "FANOUT prune " << decref_blocks.size() << '\n';
-                //     errs() << incref->getParent()->getName() << "\n";
-                //     incref->dump();
-                //     for (BasicBlock* each : decref_blocks) {
-                //         errs() << "    " << each->getName() << "\n";
-                //     }
-
-
-                //     std::cout<< "wait ";
-                //     int do_print;
-                //     std::cin >> do_print;
-                //     if (do_print){
-                //         F.viewCFG();
-                //         domtree.viewGraph();
-                //         }
-                // }
-
-                // Remove first related decref in each block
-                for (BasicBlock* each : decref_blocks) {
-                    for (Instruction &ii : *each) {
-                        CallInst *decref;
-                        if ( (decref = isRelatedDecref(incref, &ii)) ) {
-                            if (DEBUG_PRINT) {
-                                errs() << decref->getParent()->getName() << "\n";
-                                decref->dump();
-                            }
-                            decref->eraseFromParent();
-                            // view_cfg = true;
-                            break;
-                        }
-                    }
-                }
-                incref->eraseFromParent();
-                mutated |= true;
-
-                if ((status & 2) == 2) stats_fanout_raise += 1;
-                else                   stats_fanout += 1;
-
-
-            }
-        }
-
-        // if (!mutated) {
-        //     if (F.getName() == "_ZN8__main__7foo$241E5ArrayIxLi2E1C7mutable7alignedE")
-        //         domtree.viewGraph();
-        // }
-        // if (view_cfg) {
-        //     F.viewCFG();
-        // }
-        return mutated;
-    }
-
-    bool checkCrossDominate(const std::set<BasicBlock*> blocks, PostDominatorTree& pdomtree){
-        for (BasicBlock* M : blocks) {
-            for (BasicBlock* N : blocks) {
-                if (M != N) {
-                    if (pdomtree.dominates(M, N)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    int graphWalkHandleFanout(CallInst* incref,
-                               BasicBlock *cur_node,
-                               DominatorTree &domtree,
-                               bool prune_raise_exit,
-                               std::set<BasicBlock*> &decref_blocks,
-                               std::set<BasicBlock*> &ban_list,
-                               int depth=10)
-    {
-        depth -= 1;
-        if( depth <= 0 ) return 0;
-
-        // for each domtree children
-        auto domnode = domtree.getNode(cur_node);
-
-        int status = 0, inner_status;
-
-        for (auto domchild : domnode->getChildren()){
-            BasicBlock *child = domchild->getBlock();
-            if (hasDecrefInNode(incref, child) && notInLoop(child, domtree)) {
-                decref_blocks.insert(child);
-
-                SmallVector<BasicBlock*, 5> descs;
-                domtree.getDescendants(child, descs);
-                for (auto desc : descs) {
-                    if (desc != child)
-                        ban_list.insert(desc);
-                }
-
-                status |= 1;
-            } else if (prune_raise_exit && isRaising(child)) {
-                decref_blocks.insert(child);
-                status |= 2;
-            } else if ( (inner_status=graphWalkHandleFanout(incref, child, domtree, prune_raise_exit, decref_blocks, ban_list, depth)) ) {
-                // if (hasAnyDecrefInNode(child)) return 0;
-                status |= inner_status;
-            } else {
-                return 0;
-            }
-        }
-
-        return status;
-    }
-
-    bool notInLoop(const BasicBlock* bb, DominatorTree& domtree) {
-        auto term = bb->getTerminator();
-        for (unsigned i=0; i<term->getNumSuccessors(); ++i){
-            auto succ = term->getSuccessor(i);
-            if (domtree.dominates(succ, bb)) {
-                return false;  // is backedge
-            }
-        }
-        return true;
-    }
-
     bool isRaising(const BasicBlock* bb) {
         auto term = bb->getTerminator();
         if (term->getOpcode() != Instruction::Ret)
@@ -789,35 +606,6 @@ struct RefPrunePass : public FunctionPass {
             }
         }
         return false;
-    }
-
-    template <class T>
-    bool eraseNullFirstArgFromList(T& refops) {
-        bool mutated = false;
-        for (CallInst*& refop: refops) {
-            if (!isNonNullFirstArg(refop)) {
-                refop->eraseFromParent();
-                mutated |= true;
-                refop = NULL;
-            }
-        }
-        return mutated;
-    }
-
-    /**
-     * Find related decrefs to incref inside a basicblock in order
-     */
-    std::vector<CallInst*> findRelatedDecrefs(BasicBlock* bb, CallInst* incref) {
-        std::vector<CallInst*> res;
-        for (Instruction &ii : *bb) {
-        CallInst *call_inst;
-        if ((call_inst = isRelatedDecref(incref, &ii))){
-            res.push_back(call_inst);
-        } else {
-            continue;
-        }
-        }
-        return res;
     }
 
     CallInst* isRelatedDecref(CallInst *incref, Instruction *ii) {
@@ -912,14 +700,11 @@ size_t RefPrunePass::stats_diamond = 0;
 size_t RefPrunePass::stats_fanout = 0;
 size_t RefPrunePass::stats_fanout_raise = 0;
 
-INITIALIZE_PASS_BEGIN(RefNormalizePass, "nrtrefnormalizepass",
-                      "Normalize NRT refops", false, false)
-INITIALIZE_PASS_END(RefNormalizePass, "nrtrefnormalizepass",
-                    "Normalize NRT refops", false, false)
+INITIALIZE_PASS(RefNormalizePass, "nrtrefnormalizepass",
+                "Normalize NRT refops", false, false)
 
 INITIALIZE_PASS_BEGIN(RefPrunePass, "nrtrefprunepass",
                       "Prune NRT refops", false, false)
-// INITIALIZE_PASS_DEPENDENCY(RegionInfoPass)
 INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(PostDominatorTreeWrapperPass)
 
@@ -930,10 +715,6 @@ extern "C" {
 API_EXPORT(void)
 LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM, int subpasses)
 {
-    // unwrap(PM)->add(createStructurizeCFGPass());
-    // unwrap(PM)->add(createUnifyFunctionExitNodesPass());
-    // unwrap(PM)->add(createPromoteMemoryToRegisterPass());
-    // unwrap(PM)->add(createInstSimplifyLegacyPass());
     unwrap(PM)->add(new RefNormalizePass());
     unwrap(PM)->add(new RefPrunePass((RefPrunePass::Subpasses)subpasses));
 }
