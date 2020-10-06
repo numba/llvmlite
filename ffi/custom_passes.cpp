@@ -104,13 +104,22 @@ struct RefNormalizePass : public FunctionPass {
             if (has_incref) {
                 // Moves decrefs to the back just before the terminator.
                 SmallVector<CallInst*, 10> to_be_moved;
+                // walk the instructions in the block
                 for (Instruction &ii : bb) {
+                    // query the instruction, if its a refop store to refop
+                    // if not store NULL to refop
                     CallInst *refop = GetRefOpCall(&ii);
+                    // if the refop is not NULL and it is also a decref then
+                    // shove it into the to_be_moved vector
                     if ( refop != NULL && IsDecRef(refop) ) {
                         to_be_moved.push_back(refop);
                     }
                 }
+                // Walk the to_be_moved vector of instructions, these are all
+                // decrefs by construction.
                 for (CallInst* decref : to_be_moved) {
+                    // move the decref to a location prior to the block
+                    // terminator and set mutated.
                     decref->moveBefore(bb.getTerminator());
                     mutated |= true;
                 }
@@ -165,9 +174,16 @@ struct RefPrunePass : public FunctionPass {
         // Cleans up all incref/decref pairs.
         bool mutated = false;
 
+        // walk the basic blocks in Function F.
         for (BasicBlock &bb : F) {
+            // allocate some buffers
             SmallVector<CallInst*, 10> incref_list, decref_list, null_list;
+
+            // This is a scanning phase looking to classify instructions into
+            // inrefs, decrefs and operations on already NULL pointers.
+            // walk the instructions in the current basic block
             for (Instruction &ii : bb) {
+                // If the instruction is a refop
                 CallInst* ci;
                 if ( (ci = GetRefOpCall(&ii)) ) {
                     if (!isNonNullFirstArg(ci)) {
@@ -181,17 +197,26 @@ struct RefPrunePass : public FunctionPass {
                     }
                 }
             }
-            // Remove refops on NULL
+
+            // First: Remove refops on NULL
             for (CallInst* ci: null_list) {
                 ci->eraseFromParent();
                 mutated = true;
+
+                // Do we care about differentiating between prunes of NULL
+                // and prunes of pairs?
                 stats_per_bb += 1;
             }
-            // Find matching pairs of incref decref
+
+            // Second: Find matching pairs of incref decref
             while (incref_list.size() > 0) {
+                // get an incref
                 CallInst* incref = incref_list.pop_back_val();
+                // walk decrefs
                 for (size_t i=0; i < decref_list.size(); ++i){
                     CallInst* decref = decref_list[i];
+                    // is this instruction a decref thats non-NULL and
+                    // the recref related to the incref?
                     if (decref && isRelatedDecref(incref, decref)) {
                         if (DEBUG_PRINT) {
                             errs() << "Prune: matching pair in BB:\n";
@@ -199,10 +224,13 @@ struct RefPrunePass : public FunctionPass {
                             decref->dump();
                             incref->getParent()->dump();
                         }
+                        // strip incref and decref from blck
                         incref->eraseFromParent();
                         decref->eraseFromParent();
 
+                        // set stripped decref to null
                         decref_list[i] = NULL;
+                        // set mutated bit and update prune stats
                         mutated = true;
                         stats_per_bb += 2;
                         break;
@@ -216,9 +244,13 @@ struct RefPrunePass : public FunctionPass {
     bool runDiamondPrune(Function &F) {
         // Check pairs that are dominating and postdominating each other
         bool mutated = false;
+        // gets the dominator tree
         auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+        // gets the post-dominator tree
         auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
 
+        // Scan for inrefs and decrefs within the function blocks
+        // TODO: DRY? seems to be a common thing.
         std::vector<CallInst*> incref_list, decref_list;
         for (BasicBlock &bb : F) {
             for (Instruction &ii : bb) {
@@ -234,16 +266,20 @@ struct RefPrunePass : public FunctionPass {
             }
         }
 
+        // Walk the incref list
         for (CallInst*& incref: incref_list) {
+            // NULL is the token for already erased, skip on it
             if (incref == NULL) continue;
 
+            // Walk the decref_list
             for (CallInst*& decref: decref_list) {
+                // NULL is the token for already erased, skip on it
                 if (decref == NULL) continue;
 
-                // Not the same BB
+                // Diamond prune is for refops not in the same BB
                 if (incref->getParent() == decref->getParent() ) continue;
 
-                // Is related refop pair
+                // If the refops are unrelated, skip
                 if (!isRelatedDecref(incref, decref)) continue;
 
                 // incref DOM decref && decref POSTDOM incref
@@ -251,6 +287,8 @@ struct RefPrunePass : public FunctionPass {
                         && postdomtree.dominates(decref, incref) ){
 
                     SmallVector<BasicBlock*, 20> stack;
+                    // scan the CFG between the incref and decref BBs, if there's a decref
+                    // present then skip, this is conservative.
                     if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent(), stack)) {
                         continue;
                     } else {
@@ -263,6 +301,8 @@ struct RefPrunePass : public FunctionPass {
                             decref->dump();
                         }
 
+                        // erase instruction from block and set NULL marker for
+                        // bookkeeping purposes
                         incref->eraseFromParent();
                         decref->eraseFromParent();
                         incref = NULL;
@@ -270,7 +310,8 @@ struct RefPrunePass : public FunctionPass {
 
                         stats_diamond += 2;
                     }
-                    mutated |= true;
+                    // mark mutated
+                    mutated = true;
                     break;
                 }
             }
@@ -806,6 +847,11 @@ struct RefPrunePass : public FunctionPass {
      */
     bool hasDecrefBetweenGraph(BasicBlock *head_node, BasicBlock *tail_node,
                                SmallVector<BasicBlock*, 20> &stack) {
+        // NOTE: The stack keeps track of the visited blocks which are in the
+        // successors of the head node and do not have decrefs in the body.
+
+        // First, Is the head node BB in the BB stack, if so return false, its
+        // already been checked.
         if (basicBlockInList(head_node, stack)) {
             return false;
         }
@@ -813,14 +859,22 @@ struct RefPrunePass : public FunctionPass {
             errs() << "Check..." << head_node->getName() << "\n";
         }
 
+        // scan the head node BB for decrefs, if any are present return true
         if (hasAnyDecrefInNode(head_node)) return true;
 
+        // the head node wasn't in the stack and it has no decrefs in it so
+        // add to the stack
         stack.push_back(head_node);
+        // get the terminator of the head node
         Instruction *term = head_node->getTerminator();
+        // walk the successor blocks
         for (unsigned i=0; i < term->getNumSuccessors(); ++i) {
             BasicBlock *child = term->getSuccessor(i);
+            // if the successor is the tail node, skip
             if (child == tail_node)
                 continue;
+            // else check the subgraph between the current successor and the
+            // tail
             // XXX: Recurse
             if(hasDecrefBetweenGraph(child, tail_node, stack)){
                 return true;
