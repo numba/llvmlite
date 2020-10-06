@@ -286,10 +286,9 @@ struct RefPrunePass : public FunctionPass {
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref, incref) ){
 
-                    SmallVector<BasicBlock*, 20> stack;
                     // scan the CFG between the incref and decref BBs, if there's a decref
                     // present then skip, this is conservative.
-                    if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent(), stack)) {
+                    if (hasDecrefBetweenGraph(incref->getParent(), decref->getParent())) {
                         continue;
                     } else {
 
@@ -845,41 +844,44 @@ struct RefPrunePass : public FunctionPass {
     /**
      * Pre-condition: head_node dominates tail_node
      */
-    bool hasDecrefBetweenGraph(BasicBlock *head_node, BasicBlock *tail_node,
-                               SmallVector<BasicBlock*, 20> &stack) {
-        // NOTE: The stack keeps track of the visited blocks which are in the
-        // successors of the head node and do not have decrefs in the body.
+    bool hasDecrefBetweenGraph(BasicBlock *head_node, BasicBlock *tail_node) {
+        // This function implements a depth-first search.
 
-        // First, Is the head node BB in the BB stack, if so return false, its
-        // already been checked.
-        if (basicBlockInList(head_node, stack)) {
-            return false;
-        }
-        if (DEBUG_PRINT) {
-            errs() << "Check..." << head_node->getName() << "\n";
-        }
-
-        // scan the head node BB for decrefs, if any are present return true
-        if (hasAnyDecrefInNode(head_node)) return true;
-
-        // the head node wasn't in the stack and it has no decrefs in it so
-        // add to the stack
+        // visited keeps track of the visited blocks
+        SmallBBSet visited;
+        // stack keeps track of blocks to be checked.
+        SmallVector<BasicBlock*, 20> stack;
+        // start with the head_node;
         stack.push_back(head_node);
-        // get the terminator of the head node
-        Instruction *term = head_node->getTerminator();
-        // walk the successor blocks
-        for (unsigned i=0; i < term->getNumSuccessors(); ++i) {
-            BasicBlock *child = term->getSuccessor(i);
-            // if the successor is the tail node, skip
-            if (child == tail_node)
-                continue;
-            // else check the subgraph between the current successor and the
-            // tail
-            // XXX: Recurse
-            if(hasDecrefBetweenGraph(child, tail_node, stack)){
-                return true;
+        do {
+            BasicBlock *cur_node = stack.pop_back_val();
+            // First, Is the current BB already visited, if so return false,
+            // its already been checked.
+            if (visited.count(cur_node)) {
+                continue; // skip
             }
-        }
+            // remember that it is visited
+            visited.insert(cur_node);
+            if (DEBUG_PRINT) {
+                errs() << "Check..." << cur_node->getName() << "\n";
+            }
+
+            // scan the current BB for decrefs, if any are present return true
+            if (hasAnyDecrefInNode(cur_node)) return true;
+
+            // get the terminator of the cur node
+            Instruction *term = cur_node->getTerminator();
+            // walk the successor blocks
+            for (unsigned i=0; i < term->getNumSuccessors(); ++i) {
+                BasicBlock *child = term->getSuccessor(i);
+                // if the successor is the tail node, skip
+                if (child == tail_node)
+                    continue;
+                // else check the subgraph between the current successor and the
+                // tail
+                stack.push_back(child);
+            }
+        } while(stack.size() > 0);
         return false;
     }
 }; // end of struct RefPrunePass
