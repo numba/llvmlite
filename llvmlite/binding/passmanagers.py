@@ -6,6 +6,7 @@ from llvmlite.binding import ffi
 _prunestats = namedtuple('PruneStats',
                          ('basicblock diamond fanout fanout_raise'))
 
+
 class PruneStats(_prunestats):
     """ Holds statistics from reference count pruning.
     """
@@ -28,6 +29,7 @@ class PruneStats(_prunestats):
                           self.diamond - other.diamond,
                           self.fanout - other.fanout,
                           self.fanout_raise - other.fanout_raise)
+
 
 class _c_PruneStats(Structure):
     _fields_ = [
