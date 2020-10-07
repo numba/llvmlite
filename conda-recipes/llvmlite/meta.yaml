@@ -1,4 +1,4 @@
-{% set VERSION_SUFFIX = "" %} # debug version suffix, appended to the version
+{% set VERSION_SUFFIX = "llvm_with_new_svml_patch" %} # debug version suffix, appended to the version
 
 package:
   name: llvmlite
@@ -29,7 +29,7 @@ requirements:
     - python
     # On channel https://anaconda.org/numba/
     # LLVM 10.0.0 and 10.0.1 had issues on aarch64
-    - llvmdev 10.0.* # [not aarch64]
+    - llvmdev 10.0.0-1 # [not aarch64]
     - llvmdev 9.0.* # [aarch64]
     - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
