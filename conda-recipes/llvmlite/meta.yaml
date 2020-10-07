@@ -29,7 +29,7 @@ requirements:
     - python
     # On channel https://anaconda.org/numba/
     # LLVM 10.0.0 and 10.0.1 had issues on aarch64
-    - llvmdev 10.0.0-1 # [not aarch64]
+    - llvmdev 10.0.1 hf484d3e_1 # [not aarch64]
     - llvmdev 9.0.* # [aarch64]
     - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
