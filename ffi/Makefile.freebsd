@@ -1,7 +1,12 @@
 
 CXX = clang++ -std=c++11 -stdlib=libc++
-CXXFLAGS = $(LLVM_CXXFLAGS)
-LDFLAGS = $(LLVM_LDFLAGS)
+
+# -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
+CXX_FLTO_FLAGS ?= -flto
+LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
+
+CXXFLAGS := $(CPPFLAGS) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CXX_FLTO_FLAGS)
+LDFLAGS := $(LDFLAGS) $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
 LIBS = $(LLVM_LIBS)
 INCLUDE = core.h
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
