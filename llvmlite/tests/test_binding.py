@@ -173,6 +173,25 @@ declare i8* @a_arg0_return_func(i8* returned, i32*)
 """
 
 
+# This produces the following output from objdump:
+#
+# $ objdump -D 632.elf
+#
+# 632.elf:     file format elf64-x86-64
+#
+#
+# Disassembly of section .text:
+#
+# 0000000000000000 <__arybo>:
+#    0:	48 c1 e2 20          	shl    $0x20,%rdx
+#    4:	48 09 c2             	or     %rax,%rdx
+#    7:	48 89 d0             	mov    %rdx,%rax
+#    a:	48 c1 c0 3d          	rol    $0x3d,%rax
+#    e:	48 31 d0             	xor    %rdx,%rax
+#   11:	48 b9 01 20 00 04 80 	movabs $0x7010008004002001,%rcx
+#   18:	00 10 70
+#   1b:	48 0f af c8          	imul   %rax,%rcx
+
 issue_632_elf = \
     "7f454c4602010100000000000000000001003e00010000000000000000000000000000" \
     "0000000000e0000000000000000000000040000000000040000500010048c1e2204809" \
