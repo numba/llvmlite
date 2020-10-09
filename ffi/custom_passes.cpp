@@ -31,17 +31,44 @@ namespace llvm {
     void initializeRefPrunePassPass(PassRegistry &Registry);
 }
 
+/**
+ * Checks if a call instruction is an incref
+ *
+ * Parameters:
+ *  - call_inst, a call instruction
+ *
+ * Returns:
+ *  - true if call_inst is an incref, false otherwise
+ */
 bool IsIncRef(CallInst *call_inst) {
     Value *callee = call_inst->getCalledOperand();
     return callee->getName() == "NRT_incref";
 }
 
+/**
+ * Checks if a call instruction is an decref
+ *
+ * Parameters:
+ *  - call_inst, a call instruction
+ *
+ * Returns:
+ *  - true if call_inst is an decref, false otherwise
+ */
 bool IsDecRef(CallInst *call_inst) {
     Value *callee = call_inst->getCalledOperand();
     return callee->getName() == "NRT_decref";
 }
 
 
+/**
+ * Checks if an instruction is a "refop" (either an incref or a decref).
+ *
+ * Parameters:
+ *  - ii, the instruction to check
+ *
+ * Returns:
+ *  - the instruction ii, if it is a "refop", NULL otherwise
+ */
 CallInst* GetRefOpCall(Instruction *ii) {
     if (ii->getOpcode() == Instruction::Call) {
         CallInst *call_inst = dyn_cast<CallInst>(ii);
@@ -53,7 +80,10 @@ CallInst* GetRefOpCall(Instruction *ii) {
 }
 
 /**
- * RAII push-pop of element into stack.
+ * RAII push-pop of elements onto a stack.
+ *
+ * Template parameter <Tstack>:
+ *  - the type of the stack
  */
 template <class Tstack>
 struct raiiStack {
@@ -61,16 +91,23 @@ struct raiiStack {
 
     typedef typename Tstack::value_type value_type;
 
+    /**
+     * ctor pushes `elem` onto `stack`
+     */
     raiiStack(Tstack &stack, value_type& elem) :stack(stack) {
         stack.push_back(elem);
     }
+    /**
+     * dtor pops back of `stack`
+     */
     ~raiiStack() {
         stack.pop_back();
     }
 };
 
 /**
- * Move decref after increfs
+ * A FunctionPass to reorder incref/decref instructions such that decrefs occur
+ * logically after increfs. This is a pre-requisite pass to the pruner passes.
  */
 struct RefNormalizePass : public FunctionPass {
     static char ID;
@@ -80,19 +117,26 @@ struct RefNormalizePass : public FunctionPass {
 
     bool runOnFunction(Function &F) override {
         bool mutated = false;
+        // For each basic block in F
         for (BasicBlock &bb : F) {
-            // Find a incref in the basicblock
+            //This find a incref in the basic block
+
             bool has_incref = false;
+            // check the instructions in the basic block
             for (Instruction &ii : bb) {
+                // see if it is a refop
                 CallInst *refop = GetRefOpCall(&ii);
+                // if it is a refop and it is an incref, set flag and break
                 if ( refop != NULL && IsIncRef(refop) ) {
                     has_incref = true;
                     break;
                 }
             }
 
+            // block has an incref
             if (has_incref) {
-                // Moves decrefs to the back just before the terminator.
+                // This moves decrefs to the back just before the terminator.
+
                 SmallVector<CallInst*, 10> to_be_moved;
                 // walk the instructions in the block
                 for (Instruction &ii : bb) {
@@ -126,15 +170,19 @@ struct RefPrunePass : public FunctionPass {
     static size_t stats_fanout;
     static size_t stats_fanout_raise;
 
+    // Fixed size for how deep to recurse in the fanout case prior to giving up.
     static const size_t FANOUT_RECURSE_DEPTH= 15;
     typedef SmallSet<BasicBlock*, FANOUT_RECURSE_DEPTH> SmallBBSet;
 
+    /**
+     * Enum for setting which subpasses to run, there is no interdependence.
+     */
     enum Subpasses {
-        None            = 0,
-        PerBasicBlock   = 1,
-        Diamond         = 1 << 1,
-        Fanout          = 1 << 2,
-        FanoutRaise     = 1 << 3,
+        None            = 0b0000,
+        PerBasicBlock   = 0b0001,
+        Diamond         = 0b0010,
+        Fanout          = 0b0100,
+        FanoutRaise     = 0b1000,
         All             = PerBasicBlock | Diamond | Fanout | FanoutRaise
     } flags;
 
@@ -147,8 +195,11 @@ struct RefPrunePass : public FunctionPass {
     }
 
     bool runOnFunction(Function &F) override {
+        // state for LLVM function pass mutated IR
         bool mutated = false;
 
+        // local state for capturing mutation by any selected pass, any mutation
+        // at all propagates into mutated for return.
         bool local_mutated;
         do {
             local_mutated = false;
@@ -166,12 +217,38 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
+    /**
+     * Per BasicBlock pruning pass.
+     *
+     * Assumes all increfs are before all decrefs.
+     * Cleans up all refcount operations on NULL pointers.
+     * Cleans up all redundant incref/decref pairs.
+     *
+     * This pass works on a block at a time and does not change the CFG.
+     * Incref/Decref removal is restricted to the basic block.
+     *
+     * General idea is to be able to prune within a block as follows:
+     *
+     * ┌─────────────┐
+     * │ Block entry │
+     * | Instruction │
+     * | Incref(A)   │ ──> No match, cannot remove.
+     * | Incref(B)   │ ──┐
+     * | Instruction │   │ Matching pair, can be removed.
+     * | Instruction │   │
+     * | Decref(B)   │ <─┘
+     * | Instruction │
+     * | Decref(NULL)│ ──> Decref on NULL, can be removed.
+     * | Terminator  │
+     * └─────────────┘
+     * Parameters:
+     *  - F a Function
+     *
+     * Returns:
+     *  - true if pruning took place, false otherwise
+     *
+     */
     bool runPerBasicBlockPrune(Function &F) {
-        // -------------------------------------------------------------------
-        // Pass 1. Per BasicBlock pruning.
-        // Assumes all increfs are before all decrefs.
-        // Cleans up all refcount operations on NULL pointers.
-        // Cleans up all incref/decref pairs.
         bool mutated = false;
 
         // walk the basic blocks in Function F.
@@ -241,15 +318,58 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
+    /**
+     * "Diamond" pruning pass.
+     *
+     * Looks to prune across basic blocks in cases where incref/decref pairs
+     * appear in a "diamond" shape CFG structure. For example:
+     *
+     *           ┌────────────┐
+     *           │ incref (A) │
+     *           └────────────┘
+     *             /        \
+     *            /          \
+     *           /            \
+     *          .              .
+     *          .              .
+     *   ┌────────────┐ ┌────────────┐
+     *   │ MORE CFG   │ │ MORE CFG   │
+     *   └────────────┘ └────────────┘
+     *          .              .
+     *          .              .
+     *           \            /
+     *            \          /
+     *             \        /
+     *              \      /
+     *           ┌────────────┐
+     *           │ decref (A) │
+     *           └────────────┘
+     *
+     * Condition for prune is that, in an incref/decref pair:
+     * - the incref dominates the decref.
+     * - the decref postdominates the incref.
+     * - in the blocks in the CFG between the basic blocks containing the
+     *   incref/decref pair there's no other decref present (this is
+     *   conservative and is to handle aliasing of references).
+     * - that the decref is not in a cycle dominated by the incref (i.e. decref
+     *   in a loop).
+     *
+     * Parameters:
+     *  - F a Function
+     *
+     * Returns:
+     *  - true if pruning took place, false otherwise
+     *
+     */
     bool runDiamondPrune(Function &F) {
-        // Check pairs that are dominating and postdominating each other
         bool mutated = false;
         // gets the dominator tree
         auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
         // gets the post-dominator tree
         auto &postdomtree = getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
 
-        // Scan for increfs and decrefs within the function blocks
+        // Find all increfs and decrefs in the Function and store them in
+        // incref_list and decref_list respectively.
         std::vector<CallInst*> incref_list, decref_list;
         listRefOps(F, IsIncRef, incref_list);
         listRefOps(F, IsDecRef, decref_list);
@@ -312,22 +432,92 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
+    /**
+     * "Fan-out" pruning passes.
+     *
+     * Prunes "fan-out"s, this is where control flow from a block containing an
+     * incref "fans out" into blocks that contain corresponding decrefs.
+     *
+     * There are two supported fan-out shape CFG structures.
+     *
+     * Supported case 1, simple "fan-out" with no raise, prune occurs when the
+     * incref dominates the predecessor blocks containing associated decrefs.
+     *
+     *           ┌────────────┐
+     *           │ incref (A) │
+     *           └────────────┘
+     *             /        \
+     *            /          \
+     *           /            \
+     *          .              .
+     *          .              .
+     *   ┌────────────┐ ┌────────────┐
+     *   │ MORE CFG   │ │ MORE CFG   │
+     *   └────────────┘ └────────────┘
+     *          .              .
+     *          .              .
+     *   ┌────────────┐ ┌────────────┐
+     *   │ decref (A) │ │ decref (A) │
+     *   └────────────┘ └────────────┘
+     *          .              .
+     *          .              .
+     *          .              .
+     *
+     *
+     * Supported case 2, simple "fan-out" with raise, prune occurs when the
+     * incref dominates the predecessor blocks containing associated decrefs
+     * with the exception of the raise block (this is to "forgive" the
+     * occasional missing decref in a raise block).
+     *
+     *           ┌────────────┐
+     *           │ incref (A) │
+     *           └────────────┘
+     *             /        \
+     *            /          \
+     *           /            \
+     *          .              .
+     *          .              .
+     *   ┌────────────┐ ┌────────────┐
+     *   │ MORE CFG   │ │ MORE CFG   │
+     *   └────────────┘ └────────────┘
+     *          .              .
+     *          .              .
+     *   ┌────────────┐ ┌────────────┐
+     *   │ decref (A) │ │ raise      │
+     *   └────────────┘ └────────────┘
+     *          .
+     *          .
+     *   ┌────────────┐
+     *   │ MORE CFG   │
+     *   └────────────┘
+     *
+     * Parameters:
+     *  - F a Function
+     *  - prune_raise_exit, if false case 1 is considered, if true case 2 is
+     *    considered.
+     *
+     * Returns:
+     *  - true if pruning took place, false otherwise
+     */
     bool runFanoutPrune(Function &F, bool prune_raise_exit) {
         bool mutated = false;
 
-        // Find Incref
+        // Find all Increfs and store them in incref_list
         std::vector<CallInst*> incref_list;
         listRefOps(F, IsIncRef, incref_list);
 
+        // walk the incref_list
         for (CallInst* incref : incref_list) {
+            // Is there *any* decref in the parent node of the incref?
+            // If so skip this incref (considering that aliases may exist).
             if (hasAnyDecrefInNode(incref->getParent())){
-                // becarefull of potential alias
+                // be careful of potential alias
                 continue;  // skip
             }
 
             SmallBBSet decref_blocks;
+            // Check for the chosen "fan out" condition
             if ( findFanout(incref, &decref_blocks, prune_raise_exit) ) {
-                // Remove first related decref in each block
                 if (DEBUG_PRINT) {
                     F.viewCFG();
                     errs() << "------------\n";
@@ -336,24 +526,35 @@ struct RefPrunePass : public FunctionPass {
                     incref->dump();
 
                 }
+                // Remove first related decref in each block
+                // for each block
                 for (BasicBlock* each : decref_blocks) {
+                    // for each instruction
                     for (Instruction &ii : *each) {
                         CallInst *decref;
+                        // walrus:
+                        // is the current instruction the decref associated with
+                        // the incref under consideration, if so assign to
+                        // decref and continue.
                         if ( (decref = isRelatedDecref(incref, &ii)) ) {
                             if (DEBUG_PRINT) {
                                 errs() << decref->getParent()->getName() << "\n";
                                 decref->dump();
                             }
+                            // Remove this decref from its block
                             decref->eraseFromParent();
 
+                            // update counters based on decref removal
                             if (prune_raise_exit)   stats_fanout_raise += 1;
                             else                    stats_fanout += 1;
                             break;
                         }
                     }
                 }
+                // remove the incref from its block
                 incref->eraseFromParent();
 
+                // update counters based on incref removal
                 if (prune_raise_exit)   stats_fanout_raise += 1;
                 else                    stats_fanout += 1;
                 mutated = true;
@@ -362,9 +563,33 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
+    /**
+     * This searches for the "fan-out" condition and returns true if it is
+     * found.
+     *
+     * Parameters:
+     * - incref: the incref from which fan-out should be checked.
+     * - decref_blocks: pointer to a set of basic blocks, this is mutated by
+     *   this function, on return it contains the basic blocks containing
+     *   decrefs related to the incref
+     * - prune_raise_exit: this is a bool to signal whether to just look for
+     *   the fan-out case or also look for the fan-out with raise condition,
+     *   if true the fan-out with raise condition is considered else it is
+     *   not.
+     *
+     * Returns:
+     *  - true if the fan-out condition specified by `prune_raise_exit` was
+     *    found, false otherwise.
+     */
     bool findFanout(CallInst *incref, SmallBBSet *decref_blocks, bool prune_raise_exit) {
+
+        // get the basic block of the incref instruction
         BasicBlock *head_node = incref->getParent();
+
+        // work space, a set of basic blocks to hold the block which contain
+        // raises, only used in the case of prune_raise_exit
         SmallBBSet raising_blocks, *p_raising_blocks = NULL;
+        // Set up pointer to raising_blocks
         if( prune_raise_exit ) p_raising_blocks = &raising_blocks;
 
         if ( findFanoutDecrefCandidates(incref, head_node, decref_blocks, p_raising_blocks) ) {
@@ -411,35 +636,76 @@ struct RefPrunePass : public FunctionPass {
      *
      * Walk the successors of the incref node recursively until a decref
      * or an exit node is found.
-     * If an exit node is found and raising_blocks is non-NULL,
-     * check if it is raising and store the raising block into raising_blocks.
+     *
+     * In the case of a decref node, the node is added to decref_blocks only if
+     * it contains a decref associated with the incref and there is no interior
+     * back-edge to a predecessor in the current sub-graph.
+     *
+     * In the case of an exit, it must be a raise for it to be added to
+     * raising_blocks.
+     *
+     * Parameters:
+     *  - incref: The incref under consideration.
+     *  - cur_node: The basic block in which incref is found.
+     *  - decref_blocks: pointer to a set of basic blocks, it is mutated by this
+     *    function and on successful return contains the basic blocks which have
+     *    a decref related to the supplied incref in them.
+     *  - raising_blocks: point to a set of basic blocks OR NULL. If not-NULL
+     *    it is mutated by this function and on successful return contains the
+     *    basic blocks which have a raise in them that is reachable from the
+     *    incref.
      *
      * Return condition:
-     *   depends on raising_blocks:
-     *      == NULL -> return true iff all paths have led to a decref.
-     *      != NULL -> return true iff all paths have led to
-     *                 a decref or a raising exit.
+     *   depends on the value of raising_blocks:
+     *      == NULL -> return true iff all paths from the incref have led to a
+     *                 decref.
+     *      != NULL -> return true iff all paths from the incref have led to
+     *                 either a decref or a raising exit.
      */
     bool findFanoutDecrefCandidates(CallInst *incref,
                                     BasicBlock *cur_node,
                                     SmallBBSet *decref_blocks,
                                     SmallBBSet *raising_blocks) {
+        // stack of basic blocks for the walked path(s)
         SmallVector<BasicBlock*, FANOUT_RECURSE_DEPTH> path_stack;
         bool found = false;
+        // Get the terminator of the basic block containing the incref, the
+        // search starts from here.
         auto term = cur_node->getTerminator();
 
+        // RAII push cur_node onto the work stack
         raiiStack<SmallVectorImpl<BasicBlock*>> raii_path_stack(path_stack, cur_node);
 
-        for ( unsigned i=0; i<term->getNumSuccessors(); ++i) {
+        // Walk the successors of the terminator.
+        for ( unsigned i=0; i < term->getNumSuccessors(); ++i) {
+            // Get the successor
             BasicBlock *child = term->getSuccessor(i);
+            // Walk the successor looking for decrefs
             found = walkChildForDecref(
                 incref, child, path_stack, decref_blocks, raising_blocks
             );
+            // if not found, return false?! can this just return found?
             if (!found) return false;
         }
         return found;
     }
 
+    /**
+     * "Walk" a child node looking for blocks containing decrefs or raises that
+     *  meet the conditions described in findFanoutDecrefCandidates.
+     *
+     * Parameters:
+     * - incref: The incref under consideration
+     * - cur_node: The current basic block being assessed
+     * - path_stack: A stack of basic blocks representing unsearched paths
+     * - decref_blocks: a set that stores references to accepted blocks that
+     *   contain decrefs associated with the incref.
+     * - raising_blocks: a set that stores references to accepted blocks that
+     *   contain raises.
+     *
+     * Returns:
+     *  - true if the conditions above hold, false otherwise.
+     */
     bool walkChildForDecref(
         CallInst *incref,
         BasicBlock *cur_node,
@@ -447,43 +713,58 @@ struct RefPrunePass : public FunctionPass {
         SmallBBSet *decref_blocks,
         SmallBBSet *raising_blocks
     ) {
+        // If the current path stack exceeds the recursion depth, stop, return
+        // false.
         if ( path_stack.size() >= FANOUT_RECURSE_DEPTH ) return false;
 
-        // check for backedge
+        // Check for the back-edge condition...
+        // If the current block is in the path stack
         if ( basicBlockInList(cur_node, path_stack) ) {
+            // If the current node is TOS
             if ( cur_node == path_stack[0] ) {
-                // Reject interior node backedge to start of subgraph.
+                // Reject interior node back-edge to start of sub-graph.
                 // This means that the incref can be executed multiple times
                 // before reaching the decref.
                 return false;
             }
-            // is a legal backedge; skip
+            // it is a legal backedge; skip
             return true;
         }
 
-        // Does this block has a related decref?
+        // Does the current block have a related decref?
         if ( hasDecrefInNode(incref, cur_node) ) {
+            // Add to the list of decref_blocks
             decref_blocks->insert(cur_node);
             return true;  // done for this path
         }
 
+        // Are there any decrefs in the current node?
         if ( hasAnyDecrefInNode(cur_node) ) {
             // Because we don't know about aliasing
             return false;
         }
 
-        // checking for raise blocks
+        // If raising_blocks is non-NULL, see if the current node is a block
+        // which raises, if so add to the raising_blocks list, this path is now
+        // finished.
         if (raising_blocks && isRaising(cur_node)) {
             raising_blocks->insert(cur_node);
             return true;  // done for this path
         }
 
-        // recurse into predecessors of the current block.
+        // Continue searching by recursing into predecessors of the current
+        // block.
+
+        // First RAII push cur_node as TOS
         raiiStack<SmallVectorImpl<BasicBlock*> > raii_push_pop(path_stack, cur_node);
         bool found = false;
+        // get cur_node terminator
         auto term = cur_node->getTerminator();
+        // walk successors of the current node
         for ( unsigned i=0; i<term->getNumSuccessors(); ++i) {
+            // get a successor
             BasicBlock *child = term->getSuccessor(i);
+            // recurse
             found = walkChildForDecref(
                 incref, child, path_stack, decref_blocks, raising_blocks
             );
@@ -495,27 +776,46 @@ struct RefPrunePass : public FunctionPass {
 
     /**
      * Backward pass.
-     * Check the tail-node condition for the fanout subgraph.
+     * Check the tail-node condition for the fanout subgraph:
      * The reverse walks from all exit-nodes must end with the head-node
-     * and that the tail-nodes cannot be executed multiple times.
+     * and the tail-nodes cannot be executed multiple times.
+     *
+     * Parameters:
+     * - incref: the incref instruction
+     * - head_node: the basic block containing the arg incref
+     * - tail_nodes: a set containing the basic block(s) in which decrefs
+     *   corresponding to the arg incref instruction exist.
+     *
+     * Returns:
+     * - true if it could be verified that there's no loop structure
+     *   surrounding the use of the decrefs, false else.
+     *
      */
     bool verifyFanoutBackward(
         CallInst *incref,
         BasicBlock *head_node,
         const SmallBBSet *tail_nodes
     ) {
+        // push the tail nodes into a work list
         SmallVector<BasicBlock*, 10> todo;
         for (BasicBlock *bb: *tail_nodes) {
             todo.push_back(bb);
         }
 
+        // visited is for bookkeeping to hold reference to those nodes which
+        // have already been visited.
         SmallBBSet visited;
+        // while there is work...
         while (todo.size() > 0) {
             SmallVector<BasicBlock*, FANOUT_RECURSE_DEPTH> workstack;
+            // pop an element from the work list into the work stack
             workstack.push_back(todo.pop_back_val());
 
+            // while there's work on the local workstack
             while (workstack.size() > 0) {
+                // Get a basic block
                 BasicBlock *cur_node = workstack.pop_back_val();
+                // if the block has been seen before then skip
                 if ( visited.count(cur_node) ) {
                     // Already visited
                     continue;  // skip
@@ -533,11 +833,14 @@ struct RefPrunePass : public FunctionPass {
                 visited.insert(cur_node);
 
                 // Walk into all predecessors
+                // pred_begin and pred_end are defined under Functions in:
+                // http://llvm.org/doxygen/IR_2CFG_8h.html
                 auto it = pred_begin(cur_node), end = pred_end(cur_node);
                 for (; it != end; ++it ) {
                     auto pred = *it;
                     if ( tail_nodes->count(pred) ) {
-                        // reject because a predecessor is a decref_block
+                        // reject because a predecessor is a block containing
+                        // a decref matching the incref
                         return false;
                     }
                     if ( pred != head_node ) {
@@ -548,25 +851,63 @@ struct RefPrunePass : public FunctionPass {
                 }
             }
         }
+        // analysis didn't exit, all conditions must be ok, return true
         return true;
     }
 
+
+    /**
+     * Check if a basic block is a block which raises, this relies on a
+     * metadata "ret_is_raise" being present the terminator and the
+     * terminator opcode being Instruction::Ret.
+     *
+     * Parameters:
+     *  - bb a basic block
+     *
+     * Returns:
+     *  - true if basic block bb contains a raise with the appropriate metadata,
+     *    false otherwise
+     */
     bool isRaising(const BasicBlock* bb) {
+
+        // Get the terminator
         auto term = bb->getTerminator();
+        // Get the opcode of the terminator, if it's not a Ret then return false
         if (term->getOpcode() != Instruction::Ret)
             return false;
+        // Get the metadata on the terminator node
         auto md = term->getMetadata("ret_is_raise");
+        // If there's no metadata return false (normal or unmarked Ret)
         if (!md)
             return false;
+        // If the number of operands on the metadata is not 1 then return false
         if (md->getNumOperands() != 1)
             return false;
+        // Fetch the ref to the metadata operand at location 0
         auto &operand = md->getOperand(0);
+        // and then cast the const as Metadata (Numba sets this as literal 1)
         auto data = dyn_cast<ConstantAsMetadata>(operand.get());
+        // If dyn_cast failed type check then return false
         if (!data)
             return false;
+        // get the value of the casted metadata and then return bool on whether
+        // it is the number one.
         return data->getValue()->isOneValue();
     }
 
+    /**
+     * Does "Is a basic block in a given list"
+     *
+     * Template parameter <T>:
+     *  - the type of list
+     *
+     * Parameters:
+     *  - bb  a basic block
+     *  - list a list-like container in which to search
+     *
+     * Returns:
+     *  - true if bb is in list, false else.
+     */
     template<class T>
     bool basicBlockInList(const BasicBlock* bb, const T &list){
         for (BasicBlock *each : list) {
@@ -575,6 +916,17 @@ struct RefPrunePass : public FunctionPass {
         return false;
     }
 
+    /**
+     * Check to see if a basic block contains a decref related to a given incref
+     *
+     * Parameters:
+     *  - incref an incref
+     *  - bb  a basic block
+     *
+     * Returns:
+     *  - true if basic block bb contains a decref related to incref, false
+     *    otherwise.
+     */
     bool hasDecrefInNode(CallInst* incref, BasicBlock* bb){
         for (Instruction &ii : *bb) {
             if (isRelatedDecref(incref, &ii) != NULL) {
@@ -584,6 +936,17 @@ struct RefPrunePass : public FunctionPass {
         return false;
     }
 
+    /**
+     * Checks if an instruction is a decref that is related to the given incref.
+     *
+     * Parameters:
+     *  - incref an incref
+     *  - bb  a basic block
+     *
+     * Returns:
+     *  - returns input ii as a CallInst* if it is a decref related to incref,
+     *    NULL otherwise.
+     */
     CallInst* isRelatedDecref(CallInst *incref, Instruction *ii) {
         CallInst *suspect;
         if ( (suspect = GetRefOpCall(ii))  ){
@@ -598,19 +961,41 @@ struct RefPrunePass : public FunctionPass {
         return NULL;
     }
 
+    /**
+     * getAnalysisUsage() LLVM plumbing for the pass
+     */
     void getAnalysisUsage(AnalysisUsage &Info) const override {
         Info.addRequired<DominatorTreeWrapperPass>();
         Info.addRequired<PostDominatorTreeWrapperPass>();
     }
 
+    /**
+     * Checks if the first argument to the supplied call_inst is NULL and
+     * returns true if so, false otherwise.
+     *
+     * Parameters:
+     *  - call_inst, a call instruction to check.
+     *
+     * Returns:
+     *  - true is the first argument to call_inst is not NULL, false otherwise
+     */
     bool isNonNullFirstArg(CallInst *call_inst){
         auto val = call_inst->getArgOperand(0);
         auto ptr = dyn_cast<ConstantPointerNull>(val);
         return ptr == NULL;
     }
 
+    /**
+     * Scans a basic block for decrefs and returns true if one is found,
+     *  false otherwise
+     *
+     * Parameters:
+     *  - bb, a basic block
+     *
+     * Returns:
+     *  - true if there is a decref in the basic block, false otherwise.
+     */
     bool hasAnyDecrefInNode(BasicBlock *bb) {
-
         for (Instruction &ii: *bb) {
             CallInst* refop = GetRefOpCall(&ii);
             if (refop != NULL && IsDecRef(refop)) {
@@ -621,7 +1006,17 @@ struct RefPrunePass : public FunctionPass {
     }
 
     /**
-     * Pre-condition: head_node dominates tail_node
+     * Determines if there is a decref between two nodes in a graph.
+     *
+     * NOTE: Required condition: head_node dominates tail_node
+     *
+     * Parameters:
+     *  - head_node, a basic block which is the head of the graph
+     *  - tail_node, a basic block which is the tail of the graph
+     *
+     * Returns:
+     *  - true if there is a decref, false else
+     *
      */
     bool hasDecrefBetweenGraph(BasicBlock *head_node, BasicBlock *tail_node) {
         // This function implements a depth-first search.
@@ -634,7 +1029,7 @@ struct RefPrunePass : public FunctionPass {
         stack.push_back(head_node);
         do {
             BasicBlock *cur_node = stack.pop_back_val();
-            // First, Is the current BB already visited, if so return false,
+            // First, is the current BB already visited, if so return false,
             // its already been checked.
             if (visited.count(cur_node)) {
                 continue; // skip
@@ -648,7 +1043,7 @@ struct RefPrunePass : public FunctionPass {
             // scan the current BB for decrefs, if any are present return true
             if (hasAnyDecrefInNode(cur_node)) return true;
 
-            // get the terminator of the cur node
+            // get the terminator of the current node
             Instruction *term = cur_node->getTerminator();
             // walk the successor blocks
             for (unsigned i=0; i < term->getNumSuccessors(); ++i) {
@@ -666,13 +1061,34 @@ struct RefPrunePass : public FunctionPass {
 
     typedef bool(*test_refops_function)(CallInst*);
 
+    /**
+     * Walks the basic blocks of a function F, scans each instruction, if the
+     * instruction is a refop and calling `test_refops_function` on it evaluates
+     * to true then add it to list.
+     *
+     * Templates Parameter <T>
+     *  - the type of list
+     *
+     * Parameters:
+     * - F a LLVM function
+     * - test_refops_function a function that takes an Instruction instance and
+     *   returns true if the instance is a refop, false otherwise
+     * - list, a list-like container to hold reference to instruction instances
+     *   which are identified by test_refops_function.
+     */
     template<class T>
     void listRefOps(Function &F, test_refops_function fn, T &list) {
+        // For each basic block in the function
         for (BasicBlock &bb : F) {
+            // For each instruction the basic block
             for (Instruction &ii : bb) {
                 CallInst* ci;
+                // if the instruction is a refop
                 if ( (ci = GetRefOpCall(&ii)) ) {
+                    // and the test_refops_function returns true when called
+                    // on the instruction
                     if ( fn(ci) ) {
+                        // add to the list
                         list.push_back(ci);
                     }
                 }
@@ -710,6 +1126,10 @@ LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM, int subpasses)
 }
 
 
+/**
+ * Struct for holding statistics about the amount of pruning performed by
+ * each type of pruning algorithm.
+ */
 typedef struct PruneStats {
     size_t basicblock;
     size_t diamond;
