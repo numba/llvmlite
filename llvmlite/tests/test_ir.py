@@ -2065,7 +2065,7 @@ class TestConstant(TestBase):
         self.assertEqual(str(vec), vec_repr)
 
     def test_nullable_int(self):
-        constant = ir.Constant(ir.IntType(32), None)
+        constant = ir.Constant(ir.IntType(32), None).constant
         assert constant == 0
 
     def test_structs(self):
