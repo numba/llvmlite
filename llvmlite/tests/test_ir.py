@@ -2064,7 +2064,7 @@ class TestConstant(TestBase):
             ', '.join(map('i32 {}'.format, vals)))
         self.assertEqual(str(vec), vec_repr)
 
-    def test_nullable_int(self):
+    def test_non_nullable_int(self):
         constant = ir.Constant(ir.IntType(32), None).constant
         assert constant == 0
 
