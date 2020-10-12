@@ -77,10 +77,11 @@ class TestRefPrunePass(TestCase):
         bbmap = {}
         for bb in edges:
             bbmap[bb] = fn.append_basic_block(bb)
-        # populate the edges
+        # populate the BB
         builder = ir.IRBuilder()
         for bb, jump_targets in edges.items():
             builder.position_at_end(bbmap[bb])
+            # Insert increfs and decrefs
             for action in nodes[bb]:
                 if action == 'incref':
                     builder.call(incref_fn, [ptr])
@@ -89,6 +90,8 @@ class TestRefPrunePass(TestCase):
                 else:
                     raise AssertionError('unreachable')
 
+            # Insert the terminator.
+            # Switch base on the number of jump targets.
             n_targets = len(jump_targets)
             if n_targets == 0:
                 builder.ret_void()
