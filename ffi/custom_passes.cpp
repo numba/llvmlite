@@ -684,8 +684,8 @@ struct RefPrunePass : public FunctionPass {
             found = walkChildForDecref(
                 incref, child, path_stack, decref_blocks, raising_blocks
             );
-            // if not found, return false?! can this just return found?
-            if (!found) return false;
+            // if not found, return false
+            if (!found) return found;  // found must be false
         }
         return found;
     }
