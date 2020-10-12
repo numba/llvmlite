@@ -40,7 +40,7 @@ class TestRefPrunePass(TestCase):
     Test that the C++ implementation matches the expected behavior as for
     the prototype.
 
-    This generates a LLVM module for each test case, runs the pruner and check
+    This generates a LLVM module for each test case, runs the pruner and checks
     that the expected results are achieved.
     """
 
