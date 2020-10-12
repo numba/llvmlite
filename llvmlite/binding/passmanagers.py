@@ -62,12 +62,10 @@ def create_function_pass_manager(module):
 
 
 class RefPruneSubpasses(IntFlag):
-class RefPruneSubpasses(IntFlag):
-    PER_BB       = 0b0001
-    DIAMOND      = 0b0010
-    FANOUT       = 0b0100
+    PER_BB       = 0b0001    # noqa: E221
+    DIAMOND      = 0b0010    # noqa: E221
+    FANOUT       = 0b0100    # noqa: E221
     FANOUT_RAISE = 0b1000
-    ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
     ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 
