@@ -8,7 +8,6 @@ try:
 except ImportError:
     pass
 from collections import defaultdict
-from copy import deepcopy
 # from pprint import pprint
 
 # The entry block. It's always the same.
@@ -46,7 +45,7 @@ def case1():
     nodes["H"] = ["decref"]
     nodes["F"] = ["decref", "decref"]
     expected = {"D": {"H", "F"}}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case2():
@@ -60,7 +59,7 @@ def case2():
     nodes["B"] = ["decref"]
     nodes["C"] = ["decref"]
     expected = {"A": None}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case3():
@@ -68,7 +67,7 @@ def case3():
     # adds an invalid edge
     edges["H"].append("F")
     expected = {"D": None}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case4():
@@ -76,7 +75,7 @@ def case4():
     # adds an invalid edge
     edges["H"].append("E")
     expected = {"D": None}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case5():
@@ -84,7 +83,7 @@ def case5():
     # adds backedge to go before incref
     edges["B"].append("I")
     expected = {"D": None}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case6():
@@ -92,7 +91,7 @@ def case6():
     # adds backedge to go before incref
     edges["I"].append("B")
     expected = {"D": None}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case7():
@@ -100,7 +99,7 @@ def case7():
     # adds forward jump outside
     edges["I"].append("M")
     expected = {"D": None}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case8():
@@ -113,7 +112,7 @@ def case8():
     nodes["A"] = ["incref"]
     nodes["C"] = ["decref"]
     expected = {"A": {"C"}}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case9():
@@ -121,7 +120,7 @@ def case9():
     # adds back edge
     edges["C"].append("B")
     expected = {"A": None}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case10():
@@ -129,7 +128,7 @@ def case10():
     # adds back edge to A
     edges["C"].append("A")
     expected = {"A": {"C"}}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case11():
@@ -137,7 +136,7 @@ def case11():
     edges["C"].append("D")
     edges["D"] = []
     expected = {"A": {"C"}}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case12():
@@ -145,7 +144,7 @@ def case12():
     edges["C"].append("D")
     edges["D"] = ["A"]
     expected = {"A": {"C"}}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def case13():
@@ -153,7 +152,7 @@ def case13():
     edges["C"].append("D")
     edges["D"] = ["B"]
     expected = {"A": None}
-    return deepcopy(nodes), deepcopy(edges), deepcopy(expected)
+    return nodes, edges, expected
 
 
 def make_predecessor_map(edges):
