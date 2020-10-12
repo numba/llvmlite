@@ -62,10 +62,12 @@ def create_function_pass_manager(module):
 
 
 class RefPruneSubpasses(IntFlag):
-    PER_BB = 1
-    DIAMOND = 1 << 1
-    FANOUT = 1 << 2
-    FANOUT_RAISE = 1 << 3
+class RefPruneSubpasses(IntFlag):
+    PER_BB       = 0b0001
+    DIAMOND      = 0b0010
+    FANOUT       = 0b0100
+    FANOUT_RAISE = 0b1000
+    ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
     ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 

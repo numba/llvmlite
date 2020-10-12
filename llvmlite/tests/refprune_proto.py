@@ -1,6 +1,6 @@
 """
-Contains tests and prototype implementation for the fanout algorithm in
-refprune pass.
+Contains tests and a prototype implementation for the fanout algorithm in
+the LLVM refprune pass.
 """
 
 try:
@@ -8,7 +8,6 @@ try:
 except ImportError:
     pass
 from collections import defaultdict
-# from pprint import pprint
 
 # The entry block. It's always the same.
 ENTRY = "A"
@@ -319,7 +318,7 @@ def check_all():
         if k.startswith("case"):
             print(f"{fn}".center(80, "-"))
             nodes, edges, expected = fn()
-            algo = FanoutAlgorithm(nodes, edges, verbose=True)
+            algo = FanoutAlgorithm(nodes, edges)
             got = algo.run()
             assert expected == got
     print("ALL PASSED")
