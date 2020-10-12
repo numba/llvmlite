@@ -206,6 +206,8 @@ define void @main(i8* %ptr) {
     def test_per_bb_2(self):
         mod, stats = self.check(self.per_bb_ir_2)
         self.assertEqual(stats.basicblock, 4)
+        # not pruned
+        self.assertIn("call void @NRT_incref(i8* %ptr)", str(mod))
 
     per_bb_ir_3 = r"""
 define void @main(i8* %ptr, i8* %other) {
