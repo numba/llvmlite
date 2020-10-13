@@ -1,5 +1,56 @@
-from ctypes import c_bool, c_int
+from ctypes import c_bool, c_int, c_size_t, Structure, byref
+from collections import namedtuple
+from enum import IntFlag
 from llvmlite.binding import ffi
+
+_prunestats = namedtuple('PruneStats',
+                         ('basicblock diamond fanout fanout_raise'))
+
+
+class PruneStats(_prunestats):
+    """ Holds statistics from reference count pruning.
+    """
+
+    def __add__(self, other):
+        if not isinstance(other, PruneStats):
+            msg = 'PruneStats can only be added to another PruneStats, got {}.'
+            raise TypeError(msg.format(type(other)))
+        return PruneStats(self.basicblock + other.basicblock,
+                          self.diamond + other.diamond,
+                          self.fanout + other.fanout,
+                          self.fanout_raise + other.fanout_raise)
+
+    def __sub__(self, other):
+        if not isinstance(other, PruneStats):
+            msg = ('PruneStats can only be subtracted from another PruneStats, '
+                   'got {}.')
+            raise TypeError(msg.format(type(other)))
+        return PruneStats(self.basicblock - other.basicblock,
+                          self.diamond - other.diamond,
+                          self.fanout - other.fanout,
+                          self.fanout_raise - other.fanout_raise)
+
+
+class _c_PruneStats(Structure):
+    _fields_ = [
+        ('basicblock', c_size_t),
+        ('diamond', c_size_t),
+        ('fanout', c_size_t),
+        ('fanout_raise', c_size_t)]
+
+
+def dump_refprune_stats(printout=False):
+    """ Returns a namedtuple containing the current values for the refop pruning
+    statistics. If kwarg `printout` is True the stats are printed to stderr,
+    default is False.
+    """
+
+    stats = _c_PruneStats(0, 0, 0, 0)
+    do_print = c_bool(printout)
+
+    ffi.lib.LLVMPY_DumpRefPruneStats(byref(stats), do_print)
+    return PruneStats(stats.basicblock, stats.diamond, stats.fanout,
+                      stats.fanout_raise)
 
 
 def create_module_pass_manager():
@@ -8,6 +59,14 @@ def create_module_pass_manager():
 
 def create_function_pass_manager(module):
     return FunctionPassManager(module)
+
+
+class RefPruneSubpasses(IntFlag):
+    PER_BB       = 0b0001    # noqa: E221
+    DIAMOND      = 0b0010    # noqa: E221
+    FANOUT       = 0b0100    # noqa: E221
+    FANOUT_RAISE = 0b1000
+    ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 
 class PassManager(ffi.ObjectRef):
@@ -81,6 +140,19 @@ class PassManager(ffi.ObjectRef):
     def add_basic_alias_analysis_pass(self):
         """See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass."""
         ffi.lib.LLVMPY_AddBasicAliasAnalysisPass(self)
+
+    # Non-standard LLVM passes
+
+    def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL):
+        """Add Numba specific Reference count pruning pass.
+
+        Parameters
+        ----------
+        subpasses_flags : RefPruneSubpasses
+            A bitmask to control the subpasses to be enabled.
+        """
+        iflags = RefPruneSubpasses(subpasses_flags)
+        ffi.lib.LLVMPY_AddRefPrunePass(self, iflags)
 
 
 class ModulePassManager(PassManager):
@@ -168,3 +240,5 @@ ffi.lib.LLVMPY_AddSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
+
+ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int]
