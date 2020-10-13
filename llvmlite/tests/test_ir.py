@@ -2066,7 +2066,7 @@ class TestConstant(TestBase):
 
     def test_non_nullable_int(self):
         constant = ir.Constant(ir.IntType(32), None).constant
-        assert constant == 0
+        self.assertEqual(constant, 0)
 
     def test_structs(self):
         st1 = ir.LiteralStructType((flt, int1))
