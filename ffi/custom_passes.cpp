@@ -391,8 +391,17 @@ struct RefPrunePass : public FunctionPass {
                 if (!isRelatedDecref(incref, decref)) continue;
 
                 // incref DOM decref && decref POSTDOM incref
+#if LLVM_VERSION_MAJOR == 9
+                // LLVM 9 postdomtree.dominates takes basic blocks
+                if ( domtree.dominates(incref, decref)
+                        && postdomtree.dominates(decref->getParent(), incref->getParent()) ){
+#elif LLVM_VERSION_MAJOR == 10
+                // LLVM 10 postdomtree.dominates can handle instructions
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref, incref) ){
+#else
+#error Invalid LLVM version/LLVM_VERSION_MAJOR not defined
+#endif
 
                     // check that the decref cannot be executed multiple times
                     SmallBBSet tail_nodes;
