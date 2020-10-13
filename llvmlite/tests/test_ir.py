@@ -2064,6 +2064,10 @@ class TestConstant(TestBase):
             ', '.join(map('i32 {}'.format, vals)))
         self.assertEqual(str(vec), vec_repr)
 
+    def test_non_nullable_int(self):
+        constant = ir.Constant(ir.IntType(32), None).constant
+        self.assertEqual(constant, 0)
+
     def test_structs(self):
         st1 = ir.LiteralStructType((flt, int1))
         st2 = ir.LiteralStructType((int32, st1))

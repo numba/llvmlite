@@ -243,6 +243,11 @@ class IntType(Type):
         else:
             return str(val)
 
+    def wrap_constant_value(self, val):
+        if val is None:
+            return 0
+        return val
+
     @property
     def intrinsic_name(self):
         return str(self)
