@@ -1,7 +1,34 @@
-v0.35.0dev
------------
+v0.35.0rc1 (Oct 14, 2020)
+-------------------------
 
-In development
+The main feature in this release is a Numba specific LLVM pass for pruning
+reference-count operations. We plan to generalize this custom LLVM pass
+once it is proven stable so that it can be configured for other uses.
+In addition, this release contains an updated SVML patch that fixes an issue
+for AVX512, and a patch that fixes build issues on Linux and BSD.
+
+Pull requests:
+
+* PR #617: Fix wheel building.
+* PR #618: Fix changelog on master
+* PR #626: Update SVML patch
+* PR #627: Always build with -fPIC on Linux and BSD
+* PR #633: Fix Issue #632 - obj file section contents truncated
+* PR #634: Implement reference count pruner LLVM pass
+* PR #635: Fixes #629: Default to 0 if None is passed as a value for Int32
+* PR #637: Fix appveyor
+* PR #640: Backport llvm refop pass for LLVM 9.
+* PR #641: fix llvmdev build number
+* PR #642: pin to correct version of llvmdev
+
+Authors:
+
+* Graham Markall
+* Ivan Butygin
+* NavyaZaveri
+* Siu Kwan Lam (core dev)
+* Stuart Archibald (core dev)
+* Valentin Haenel (core dev)
 
 v0.34.0 (August 12, 2020)
 -------------------------
