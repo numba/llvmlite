@@ -1,16 +1,14 @@
-v0.35.0rc1
-----------
+v0.35.0rc1 (Oct 14, 2020)
+-------------------------
 
 The main feature in this release is a Numba specific LLVM pass for pruning
 reference-count operations. We plan to generalize this custom LLVM pass
 once it is proven stable so that it can be configured for other uses.
 In addition, this release contains an updated SVML patch that fixes an issue
-for AVX512.
+for AVX512, and a patch that fixes build issues on Linux and BSD.
 
 Pull requests:
 
-* PR #614: Fix wheel building.
-* PR #616: fix release date in changelog
 * PR #617: Fix wheel building.
 * PR #618: Fix changelog on master
 * PR #626: Update SVML patch
