@@ -685,13 +685,16 @@ struct RefPrunePass : public FunctionPass {
         // RAII push cur_node onto the work stack
         raiiStack<SmallVectorImpl<BasicBlock*>> raii_path_stack(path_stack, cur_node);
 
+        SmallBBSet visited_blocks;
+        visited_blocks.insert(cur_node);
+
         // Walk the successors of the terminator.
         for ( unsigned i=0; i < term->getNumSuccessors(); ++i) {
             // Get the successor
             BasicBlock *child = term->getSuccessor(i);
             // Walk the successor looking for decrefs
             found = walkChildForDecref(
-                incref, child, path_stack, decref_blocks, raising_blocks
+                incref, child, path_stack, visited_blocks, decref_blocks, raising_blocks
             );
             // if not found, return false
             if (!found) return found;  // found must be false
@@ -719,12 +722,17 @@ struct RefPrunePass : public FunctionPass {
         CallInst *incref,
         BasicBlock *cur_node,
         SmallVectorImpl<BasicBlock*> &path_stack,
+        SmallBBSet &visited_blocks,
         SmallBBSet *decref_blocks,
         SmallBBSet *raising_blocks
     ) {
         // If the current path stack exceeds the recursion depth, stop, return
         // false.
         if ( path_stack.size() >= FANOUT_RECURSE_DEPTH ) return false;
+
+        // Reject path if it revisits path from other nodes
+        if (visited_blocks.count(cur_node)) return false;
+        visited_blocks.insert(cur_node);
 
         // Check for the back-edge condition...
         // If the current block is in the path stack
@@ -761,7 +769,7 @@ struct RefPrunePass : public FunctionPass {
             return true;  // done for this path
         }
 
-        // Continue searching by recursing into predecessors of the current
+        // Continue searching by recursing into successors of the current
         // block.
 
         // First RAII push cur_node as TOS
@@ -775,7 +783,7 @@ struct RefPrunePass : public FunctionPass {
             BasicBlock *child = term->getSuccessor(i);
             // recurse
             found = walkChildForDecref(
-                incref, child, path_stack, decref_blocks, raising_blocks
+                incref, child, path_stack, visited_blocks, decref_blocks, raising_blocks
             );
             if (!found) return false;
         }
