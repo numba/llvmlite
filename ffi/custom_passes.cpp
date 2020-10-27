@@ -174,6 +174,9 @@ struct RefPrunePass : public FunctionPass {
     static const size_t FANOUT_RECURSE_DEPTH= 15;
     typedef SmallSet<BasicBlock*, FANOUT_RECURSE_DEPTH> SmallBBSet;
 
+    // Limit the number of nodes that the fanout pruners will look at.
+    size_t subgraph_limit;
+
     /**
      * Enum for setting which subpasses to run, there is no interdependence.
      */
@@ -186,7 +189,9 @@ struct RefPrunePass : public FunctionPass {
         All             = PerBasicBlock | Diamond | Fanout | FanoutRaise
     } flags;
 
-    RefPrunePass(Subpasses flags=Subpasses::All) : FunctionPass(ID), flags(flags) {
+    RefPrunePass(Subpasses flags=Subpasses::All,
+                 size_t subgraph_limit=-1)
+            : FunctionPass(ID), flags(flags), subgraph_limit(subgraph_limit) {
         initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
     }
 
@@ -738,8 +743,8 @@ struct RefPrunePass : public FunctionPass {
         // false.
         if ( path_stack.size() >= FANOUT_RECURSE_DEPTH ) return false;
 
-        // Reject subgraph that is bigger than 1000 nodes
-        if (++subgraph_size > 1000) {
+        // Reject subgraph that is bigger than the subgraph_limit
+        if (++subgraph_size > subgraph_limit) {
             // mark head-node as always fail because that subgraph is too big.
             bad_blocks.insert(incref->getParent());
             return false;
@@ -1153,10 +1158,11 @@ INITIALIZE_PASS_END(RefPrunePass, "refprunepass",
 extern "C" {
 
 API_EXPORT(void)
-LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM, int subpasses)
+LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM, int subpasses, size_t subgraph_limit)
 {
     unwrap(PM)->add(new RefNormalizePass());
-    unwrap(PM)->add(new RefPrunePass((RefPrunePass::Subpasses)subpasses));
+    unwrap(PM)->add(new RefPrunePass((RefPrunePass::Subpasses)subpasses,
+                                     subgraph_limit));
 }
 
 

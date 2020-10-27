@@ -143,16 +143,21 @@ class PassManager(ffi.ObjectRef):
 
     # Non-standard LLVM passes
 
-    def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL):
+    def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL,
+                          subgraph_limit=1000):
         """Add Numba specific Reference count pruning pass.
 
         Parameters
         ----------
         subpasses_flags : RefPruneSubpasses
             A bitmask to control the subpasses to be enabled.
+        subgraph_limit : int
+            Limit the fanout pruners to subgraph of no bigger than this number
+            of basic-blocks to avoid spending too much time in very large
+            graph. Default to 1000. Subject to change in future versions.
         """
         iflags = RefPruneSubpasses(subpasses_flags)
-        ffi.lib.LLVMPY_AddRefPrunePass(self, iflags)
+        ffi.lib.LLVMPY_AddRefPrunePass(self, iflags, subgraph_limit)
 
 
 class ModulePassManager(PassManager):
@@ -241,4 +246,5 @@ ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 
-ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int]
+ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
+                                           c_size_t]
