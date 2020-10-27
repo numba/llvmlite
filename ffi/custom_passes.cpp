@@ -590,6 +590,8 @@ struct RefPrunePass : public FunctionPass {
      *
      * Parameters:
      * - incref: the incref from which fan-out should be checked.
+     * - bad_blocks: a set of blocks that are known to not satisfy the
+     *   the fanout condition. Mutated by this function.
      * - decref_blocks: pointer to a set of basic blocks, this is mutated by
      *   this function, on return it contains the basic blocks containing
      *   decrefs related to the incref
@@ -668,6 +670,8 @@ struct RefPrunePass : public FunctionPass {
      * Parameters:
      *  - incref: The incref under consideration.
      *  - cur_node: The basic block in which incref is found.
+     *  - bad_blocks: a set of blocks that are known to not satisfy the
+     *    the fanout condition. Mutated by this function.
      *  - decref_blocks: pointer to a set of basic blocks, it is mutated by this
      *    function and on successful return contains the basic blocks which have
      *    a decref related to the supplied incref in them.
@@ -698,6 +702,7 @@ struct RefPrunePass : public FunctionPass {
         // RAII push cur_node onto the work stack
         raiiStack<SmallVectorImpl<BasicBlock*>> raii_path_stack(path_stack, cur_node);
 
+        // This is a pass-by-ref accumulator.
         unsigned subgraph_size = 0;
 
         // Walk the successors of the terminator.
@@ -722,6 +727,9 @@ struct RefPrunePass : public FunctionPass {
      * - incref: The incref under consideration
      * - cur_node: The current basic block being assessed
      * - path_stack: A stack of basic blocks representing unsearched paths
+     * - bad_blocks: a set of blocks that are known to not satisfy the
+     *   the fanout condition. Mutated by this function.
+     * - subgraph_size: accumulator to count the subgraph size (node count).
      * - decref_blocks: a set that stores references to accepted blocks that
      *   contain decrefs associated with the incref.
      * - raising_blocks: a set that stores references to accepted blocks that
@@ -745,7 +753,8 @@ struct RefPrunePass : public FunctionPass {
 
         // Reject subgraph that is bigger than the subgraph_limit
         if (++subgraph_size > subgraph_limit) {
-            // mark head-node as always fail because that subgraph is too big.
+            // mark head-node as always fail because that subgraph is too big
+            // to analyze.
             bad_blocks.insert(incref->getParent());
             return false;
         }
