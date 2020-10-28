@@ -152,9 +152,10 @@ class PassManager(ffi.ObjectRef):
         subpasses_flags : RefPruneSubpasses
             A bitmask to control the subpasses to be enabled.
         subgraph_limit : int
-            Limit the fanout pruners to working on a subgraph no bigger than this number
-            of basic-blocks to avoid spending too much time in very large
-            graphs. Default is 1000. Subject to change in future versions.
+            Limit the fanout pruners to working on a subgraph no bigger than
+            this number of basic-blocks to avoid spending too much time in very
+            large graphs. Default is 1000. Subject to change in future
+            versions.
         """
         iflags = RefPruneSubpasses(subpasses_flags)
         ffi.lib.LLVMPY_AddRefPrunePass(self, iflags, subgraph_limit)
