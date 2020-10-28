@@ -174,6 +174,9 @@ struct RefPrunePass : public FunctionPass {
     static const size_t FANOUT_RECURSE_DEPTH= 15;
     typedef SmallSet<BasicBlock*, FANOUT_RECURSE_DEPTH> SmallBBSet;
 
+    // The maximum number of nodes that the fanout pruners will look at.
+    size_t subgraph_limit;
+
     /**
      * Enum for setting which subpasses to run, there is no interdependence.
      */
@@ -186,7 +189,9 @@ struct RefPrunePass : public FunctionPass {
         All             = PerBasicBlock | Diamond | Fanout | FanoutRaise
     } flags;
 
-    RefPrunePass(Subpasses flags=Subpasses::All) : FunctionPass(ID), flags(flags) {
+    RefPrunePass(Subpasses flags=Subpasses::All,
+                 size_t subgraph_limit=-1)
+            : FunctionPass(ID), flags(flags), subgraph_limit(subgraph_limit) {
         initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
     }
 
@@ -515,8 +520,15 @@ struct RefPrunePass : public FunctionPass {
         std::vector<CallInst*> incref_list;
         listRefOps(F, IsIncRef, incref_list);
 
+        // Remember incref-blocks that will always fail.
+        SmallBBSet bad_blocks;
         // walk the incref_list
         for (CallInst* incref : incref_list) {
+            // Skip blocks that will always fail.
+            if (bad_blocks.count(incref->getParent())) {
+                continue;   // skip
+            }
+
             // Is there *any* decref in the parent node of the incref?
             // If so skip this incref (considering that aliases may exist).
             if (hasAnyDecrefInNode(incref->getParent())){
@@ -526,7 +538,7 @@ struct RefPrunePass : public FunctionPass {
 
             SmallBBSet decref_blocks;
             // Check for the chosen "fan out" condition
-            if ( findFanout(incref, &decref_blocks, prune_raise_exit) ) {
+            if ( findFanout(incref, bad_blocks, &decref_blocks, prune_raise_exit) ) {
                 if (DEBUG_PRINT) {
                     F.viewCFG();
                     errs() << "------------\n";
@@ -578,6 +590,8 @@ struct RefPrunePass : public FunctionPass {
      *
      * Parameters:
      * - incref: the incref from which fan-out should be checked.
+     * - bad_blocks: a set of blocks that are known to not satisfy the
+     *   the fanout condition. Mutated by this function.
      * - decref_blocks: pointer to a set of basic blocks, this is mutated by
      *   this function, on return it contains the basic blocks containing
      *   decrefs related to the incref
@@ -590,7 +604,7 @@ struct RefPrunePass : public FunctionPass {
      *  - true if the fan-out condition specified by `prune_raise_exit` was
      *    found, false otherwise.
      */
-    bool findFanout(CallInst *incref, SmallBBSet *decref_blocks, bool prune_raise_exit) {
+    bool findFanout(CallInst *incref, SmallBBSet &bad_blocks, SmallBBSet *decref_blocks, bool prune_raise_exit) {
 
         // get the basic block of the incref instruction
         BasicBlock *head_node = incref->getParent();
@@ -601,7 +615,7 @@ struct RefPrunePass : public FunctionPass {
         // Set up pointer to raising_blocks
         if( prune_raise_exit ) p_raising_blocks = &raising_blocks;
 
-        if ( findFanoutDecrefCandidates(incref, head_node, decref_blocks, p_raising_blocks) ) {
+        if ( findFanoutDecrefCandidates(incref, head_node, bad_blocks, decref_blocks, p_raising_blocks) ) {
             if (DEBUG_PRINT) {
                 errs() << "forward pass candids.size() = " << decref_blocks->size() << "\n";
                 errs() << "    " << head_node->getName() << "\n";
@@ -656,6 +670,8 @@ struct RefPrunePass : public FunctionPass {
      * Parameters:
      *  - incref: The incref under consideration.
      *  - cur_node: The basic block in which incref is found.
+     *  - bad_blocks: a set of blocks that are known to not satisfy the
+     *    the fanout condition. Mutated by this function.
      *  - decref_blocks: pointer to a set of basic blocks, it is mutated by this
      *    function and on successful return contains the basic blocks which have
      *    a decref related to the supplied incref in them.
@@ -673,6 +689,7 @@ struct RefPrunePass : public FunctionPass {
      */
     bool findFanoutDecrefCandidates(CallInst *incref,
                                     BasicBlock *cur_node,
+                                    SmallBBSet &bad_blocks,
                                     SmallBBSet *decref_blocks,
                                     SmallBBSet *raising_blocks) {
         // stack of basic blocks for the walked path(s)
@@ -685,13 +702,16 @@ struct RefPrunePass : public FunctionPass {
         // RAII push cur_node onto the work stack
         raiiStack<SmallVectorImpl<BasicBlock*>> raii_path_stack(path_stack, cur_node);
 
+        // This is a pass-by-ref accumulator.
+        unsigned subgraph_size = 0;
+
         // Walk the successors of the terminator.
         for ( unsigned i=0; i < term->getNumSuccessors(); ++i) {
             // Get the successor
             BasicBlock *child = term->getSuccessor(i);
             // Walk the successor looking for decrefs
             found = walkChildForDecref(
-                incref, child, path_stack, decref_blocks, raising_blocks
+                incref, child, path_stack, subgraph_size, bad_blocks, decref_blocks, raising_blocks
             );
             // if not found, return false
             if (!found) return found;  // found must be false
@@ -707,6 +727,9 @@ struct RefPrunePass : public FunctionPass {
      * - incref: The incref under consideration
      * - cur_node: The current basic block being assessed
      * - path_stack: A stack of basic blocks representing unsearched paths
+     * - bad_blocks: a set of blocks that are known to not satisfy the
+     *   the fanout condition. Mutated by this function.
+     * - subgraph_size: accumulator to count the subgraph size (node count).
      * - decref_blocks: a set that stores references to accepted blocks that
      *   contain decrefs associated with the incref.
      * - raising_blocks: a set that stores references to accepted blocks that
@@ -719,12 +742,22 @@ struct RefPrunePass : public FunctionPass {
         CallInst *incref,
         BasicBlock *cur_node,
         SmallVectorImpl<BasicBlock*> &path_stack,
+        unsigned &subgraph_size,
+        SmallBBSet &bad_blocks,
         SmallBBSet *decref_blocks,
         SmallBBSet *raising_blocks
     ) {
         // If the current path stack exceeds the recursion depth, stop, return
         // false.
         if ( path_stack.size() >= FANOUT_RECURSE_DEPTH ) return false;
+
+        // Reject subgraph that is bigger than the subgraph_limit
+        if (++subgraph_size > subgraph_limit) {
+            // mark head-node as always fail because that subgraph is too big
+            // to analyze.
+            bad_blocks.insert(incref->getParent());
+            return false;
+        }
 
         // Check for the back-edge condition...
         // If the current block is in the path stack
@@ -734,6 +767,9 @@ struct RefPrunePass : public FunctionPass {
                 // Reject interior node back-edge to start of sub-graph.
                 // This means that the incref can be executed multiple times
                 // before reaching the decref.
+
+                // mark head-node as always fail.
+                bad_blocks.insert(incref->getParent());
                 return false;
             }
             // it is a legal backedge; skip
@@ -750,6 +786,9 @@ struct RefPrunePass : public FunctionPass {
         // Are there any decrefs in the current node?
         if ( hasAnyDecrefInNode(cur_node) ) {
             // Because we don't know about aliasing
+
+            // mark head-node as always fail.
+            bad_blocks.insert(incref->getParent());
             return false;
         }
 
@@ -761,7 +800,7 @@ struct RefPrunePass : public FunctionPass {
             return true;  // done for this path
         }
 
-        // Continue searching by recursing into predecessors of the current
+        // Continue searching by recursing into successors of the current
         // block.
 
         // First RAII push cur_node as TOS
@@ -775,7 +814,7 @@ struct RefPrunePass : public FunctionPass {
             BasicBlock *child = term->getSuccessor(i);
             // recurse
             found = walkChildForDecref(
-                incref, child, path_stack, decref_blocks, raising_blocks
+                incref, child, path_stack, subgraph_size, bad_blocks, decref_blocks, raising_blocks
             );
             if (!found) return false;
         }
@@ -1128,10 +1167,11 @@ INITIALIZE_PASS_END(RefPrunePass, "refprunepass",
 extern "C" {
 
 API_EXPORT(void)
-LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM, int subpasses)
+LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM, int subpasses, size_t subgraph_limit)
 {
     unwrap(PM)->add(new RefNormalizePass());
-    unwrap(PM)->add(new RefPrunePass((RefPrunePass::Subpasses)subpasses));
+    unwrap(PM)->add(new RefPrunePass((RefPrunePass::Subpasses)subpasses,
+                                     subgraph_limit));
 }
 
 

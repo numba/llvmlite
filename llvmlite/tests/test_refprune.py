@@ -166,11 +166,14 @@ declare void @NRT_incref(i8* %ptr)
 declare void @NRT_decref(i8* %ptr)
 """
 
-    def check(self, irmod):
+    def check(self, irmod, subgraph_limit=None):
         mod = llvm.parse_assembly(f"{self.prologue}\n{irmod}")
         pm = llvm.ModulePassManager()
-        pm.add_refprune_pass(self.refprune_bitmask)
-
+        if subgraph_limit is None:
+            pm.add_refprune_pass(self.refprune_bitmask)
+        else:
+            pm.add_refprune_pass(self.refprune_bitmask,
+                                 subgraph_limit=subgraph_limit)
         before = llvm.dump_refprune_stats()
         pm.run(mod)
         after = llvm.dump_refprune_stats()
@@ -406,6 +409,12 @@ bb_C:
     def test_fanout_3(self):
         mod, stats = self.check(self.fanout_3)
         self.assertEqual(stats.fanout, 6)
+
+    def test_fanout_3_limited(self):
+        # With subgraph limit at 1, it is essentially turning off the fanout
+        # pruner.
+        mod, stats = self.check(self.fanout_3, subgraph_limit=1)
+        self.assertEqual(stats.fanout, 0)
 
 
 class TestFanoutRaise(BaseTestByIR):
