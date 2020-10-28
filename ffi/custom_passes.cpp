@@ -174,7 +174,7 @@ struct RefPrunePass : public FunctionPass {
     static const size_t FANOUT_RECURSE_DEPTH= 15;
     typedef SmallSet<BasicBlock*, FANOUT_RECURSE_DEPTH> SmallBBSet;
 
-    // Limit the number of nodes that the fanout pruners will look at.
+    // The maximum number of nodes that the fanout pruners will look at.
     size_t subgraph_limit;
 
     /**
