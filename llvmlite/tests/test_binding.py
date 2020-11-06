@@ -1290,6 +1290,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_sroa_pass()
         pm.add_type_based_alias_analysis_pass()
         pm.add_basic_alias_analysis_pass()
+        pm.add_loop_rotate_pass()
 
 
 class TestDylib(BaseTest):
