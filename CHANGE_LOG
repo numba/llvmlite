@@ -21,6 +21,7 @@ Pull requests:
 * PR #641: fix llvmdev build number
 * PR #642: pin to correct version of llvmdev
 * PR #644: Fix refprune fanout_raise case getting stuck on large graphs
+* PR #647: Add support for general attrs on call and loop-rotate pass
 
 Authors:
 
