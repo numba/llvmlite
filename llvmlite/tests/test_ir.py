@@ -1141,6 +1141,10 @@ my_block:
         res_f_readonly.attributes.add('readonly')
         builder.call(f, (a, b), 'res_fast', fastmath='fast')
         builder.call(f, (a, b), 'res_nnan_ninf', fastmath=('nnan', 'ninf'))
+        builder.call(f, (a, b), 'res_noinline', attrs='noinline')
+        builder.call(f, (a, b), 'res_alwaysinline', attrs='alwaysinline')
+        builder.call(f, (a, b), 'res_noinline_ro', attrs=('noinline',
+                                                          'readonly'))
         self.check_block(block, """\
         my_block:
             %"res_f" = call float @"f"(i32 %".1", i32 %".2")
@@ -1150,7 +1154,10 @@ my_block:
             %"res_f_readonly" = call float @"f"(i32 %".1", i32 %".2") readonly
             %"res_fast" = call fast float @"f"(i32 %".1", i32 %".2")
             %"res_nnan_ninf" = call ninf nnan float @"f"(i32 %".1", i32 %".2")
-        """)
+            %"res_noinline" = call float @"f"(i32 %".1", i32 %".2") noinline
+            %"res_alwaysinline" = call float @"f"(i32 %".1", i32 %".2") alwaysinline
+            %"res_noinline_ro" = call float @"f"(i32 %".1", i32 %".2") noinline readonly
+        """) # noqa E501
 
     def test_call_metadata(self):
         """
