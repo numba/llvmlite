@@ -173,6 +173,48 @@ declare i8* @a_arg0_return_func(i8* returned, i32*)
 """
 
 
+# This produces the following output from objdump:
+#
+# $ objdump -D 632.elf
+#
+# 632.elf:     file format elf64-x86-64
+#
+#
+# Disassembly of section .text:
+#
+# 0000000000000000 <__arybo>:
+#    0:	48 c1 e2 20          	shl    $0x20,%rdx
+#    4:	48 09 c2             	or     %rax,%rdx
+#    7:	48 89 d0             	mov    %rdx,%rax
+#    a:	48 c1 c0 3d          	rol    $0x3d,%rax
+#    e:	48 31 d0             	xor    %rdx,%rax
+#   11:	48 b9 01 20 00 04 80 	movabs $0x7010008004002001,%rcx
+#   18:	00 10 70
+#   1b:	48 0f af c8          	imul   %rax,%rcx
+
+issue_632_elf = \
+    "7f454c4602010100000000000000000001003e00010000000000000000000000000000" \
+    "0000000000e0000000000000000000000040000000000040000500010048c1e2204809" \
+    "c24889d048c1c03d4831d048b90120000480001070480fafc800000000000000000000" \
+    "0000000000000000000000000000002f0000000400f1ff000000000000000000000000" \
+    "00000000070000001200020000000000000000001f00000000000000002e7465787400" \
+    "5f5f617279626f002e6e6f74652e474e552d737461636b002e737472746162002e7379" \
+    "6d746162003c737472696e673e00000000000000000000000000000000000000000000" \
+    "0000000000000000000000000000000000000000000000000000000000000000000000" \
+    "00000000000000001f0000000300000000000000000000000000000000000000a80000" \
+    "0000000000380000000000000000000000000000000100000000000000000000000000" \
+    "000001000000010000000600000000000000000000000000000040000000000000001f" \
+    "000000000000000000000000000000100000000000000000000000000000000f000000" \
+    "01000000000000000000000000000000000000005f0000000000000000000000000000" \
+    "0000000000000000000100000000000000000000000000000027000000020000000000" \
+    "0000000000000000000000000000600000000000000048000000000000000100000002" \
+    "00000008000000000000001800000000000000"
+
+
+issue_632_text = \
+    "48c1e2204809c24889d048c1c03d4831d048b90120000480001070480fafc8"
+
+
 class BaseTest(TestCase):
 
     def setUp(self):
@@ -1248,6 +1290,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_sroa_pass()
         pm.add_type_based_alias_analysis_pass()
         pm.add_basic_alias_analysis_pass()
+        pm.add_loop_rotate_pass()
 
 
 class TestDylib(BaseTest):
@@ -1500,6 +1543,16 @@ class TestObjectFile(BaseTest):
             jit.get_function_address("sum_twice"))
 
         self.assertEqual(sum_twice(2, 3), 10)
+
+    def test_get_section_content(self):
+        # See Issue #632 - section contents were getting truncated at null
+        # bytes.
+        elf = bytes.fromhex(issue_632_elf)
+        obj = llvm.ObjectFileRef.from_data(elf)
+        for s in obj.sections():
+            if s.is_text():
+                self.assertEqual(len(s.data()), 31)
+                self.assertEqual(s.data().hex(), issue_632_text)
 
 
 if __name__ == "__main__":

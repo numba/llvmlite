@@ -52,7 +52,8 @@ class Instruction(NamedValue, _HasMetadata):
 
 
 class CallInstrAttributes(AttributeSet):
-    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone'])
+    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone',
+                        'noinline', 'alwaysinline'])
 
 
 class FastMathFlags(AttributeSet):
@@ -62,13 +63,13 @@ class FastMathFlags(AttributeSet):
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name='', cconv=None, tail=False,
-                 fastmath=()):
+                 fastmath=(), attrs=()):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
         self.tail = tail
         self.fastmath = FastMathFlags(fastmath)
-        self.attributes = CallInstrAttributes()
+        self.attributes = CallInstrAttributes(attrs)
 
         # Fix and validate arguments
         args = list(args)

@@ -174,4 +174,10 @@ LLVMPY_AddBasicAliasAnalysisPass(LLVMPassManagerRef PM)
     LLVMAddBasicAliasAnalysisPass(PM);
 }
 
+API_EXPORT(void)
+LLVMPY_LLVMAddLoopRotatePass(LLVMPassManagerRef PM)
+{
+    LLVMAddLoopRotatePass(PM);
+}
+
 } // end extern "C"

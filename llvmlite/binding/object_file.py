@@ -1,5 +1,6 @@
 from llvmlite.binding import ffi
-from ctypes import c_bool, c_char_p, c_size_t, string_at, c_uint64
+from ctypes import (c_bool, c_char_p, c_char, c_size_t, string_at, c_uint64,
+                    POINTER)
 
 
 class SectionIteratorRef(ffi.ObjectRef):
@@ -75,7 +76,7 @@ ffi.lib.LLVMPY_GetSectionAddress.argtypes = [ffi.LLVMSectionIteratorRef]
 ffi.lib.LLVMPY_GetSectionAddress.restype = c_uint64
 
 ffi.lib.LLVMPY_GetSectionContents.argtypes = [ffi.LLVMSectionIteratorRef]
-ffi.lib.LLVMPY_GetSectionContents.restype = c_char_p
+ffi.lib.LLVMPY_GetSectionContents.restype = POINTER(c_char)
 
 ffi.lib.LLVMPY_IsSectionText.argtypes = [ffi.LLVMSectionIteratorRef]
 ffi.lib.LLVMPY_IsSectionText.restype = c_bool
