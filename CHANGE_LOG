@@ -1,5 +1,5 @@
-v0.35.0rc1 (Oct 14, 2020)
--------------------------
+v0.35.0 (November 30, 2020)
+---------------------------
 
 The main feature in this release is a Numba specific LLVM pass for pruning
 reference-count operations. We plan to generalize this custom LLVM pass
