@@ -544,6 +544,7 @@ class PhiInstr(Instruction):
     def add_incoming(self, value, block):
         assert isinstance(block, Block)
         self.incomings.append((value, block))
+        self._clear_string_cache()
 
     def replace_usage(self, old, new):
         self.incomings = [((new if val is old else val), blk)
