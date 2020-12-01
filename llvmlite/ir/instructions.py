@@ -104,6 +104,7 @@ class CallInstr(Instruction):
         if newfunc.function_type != self.callee.function_type:
             raise TypeError("New function has incompatible type")
         self.callee = newfunc
+        self._clear_string_cache()
 
     @property
     def called_function(self):
@@ -182,6 +183,7 @@ class PredictableInstr(Instruction):
             operands.append(Constant(types.IntType(32), w))
         md = self.module.add_metadata(operands)
         self.set_metadata("prof", md)
+        self._clear_string_cache()
 
 
 class Ret(Terminator):
@@ -228,6 +230,7 @@ class IndirectBranch(PredictableInstr, Terminator):
     def add_destination(self, block):
         assert isinstance(block, Block)
         self.destinations.append(block)
+        self._clear_string_cache()
 
     def descr(self, buf):
         destinations = ["label {0}".format(blk.get_reference())
@@ -256,6 +259,7 @@ class SwitchInstr(PredictableInstr, Terminator):
         if not isinstance(val, Value):
             val = Constant(self.value.type, val)
         self.cases.append((val, block))
+        self._clear_string_cache()
 
     def descr(self, buf):
         cases = ["{0} {1}, label {2}".format(val.type, val.get_reference(),
@@ -549,6 +553,7 @@ class PhiInstr(Instruction):
     def replace_usage(self, old, new):
         self.incomings = [((new if val is old else val), blk)
                           for (val, blk) in self.incomings]
+        self._clear_string_cache()
 
 
 class ExtractElement(Instruction):
@@ -794,6 +799,7 @@ class LandingPadInstr(Instruction):
     def add_clause(self, clause):
         assert isinstance(clause, _LandingPadClause)
         self.clauses.append(clause)
+        self._clear_string_cache()
 
     def descr(self, buf):
         fmt = "landingpad {type}{cleanup}{clauses}\n"
