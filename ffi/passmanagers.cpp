@@ -24,8 +24,8 @@ using namespace llvm;
 extern "C" {
 
 API_EXPORT(void)
-LLVMPY_EnableTimePasses(){
-  TimePassesIsEnabled = true;
+LLVMPY_SetTimePasses(int enable){
+  TimePassesIsEnabled = (bool)enable;
 }
 
 API_EXPORT(void)
