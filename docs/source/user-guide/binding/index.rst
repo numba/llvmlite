@@ -30,4 +30,6 @@ implement Numba_'s JIT compiler.
    object-file
    optimization-passes
    analysis-utilities
+   pass_timings
    examples
+

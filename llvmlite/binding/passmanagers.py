@@ -70,6 +70,11 @@ def report_and_reset_timings():
 
     Pass timers are enabled by ``set_time_passes()``. If the timers are not
     enabled, this function will return an empty string.
+
+    Returns
+    -------
+    res : str
+        LLVM generated timing report.
     """
     with ffi.OutputString() as buf:
         ffi.lib.LLVMPY_ReportAndResetTimings(buf)
