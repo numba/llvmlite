@@ -29,8 +29,12 @@ LLVMPY_EnableTimePasses(){
 }
 
 API_EXPORT(void)
-LLVMPY_ReportAndResetTimings() {
-  reportAndResetTimings();
+LLVMPY_ReportAndResetTimings(const char **outmsg) {
+    std::string osbuf;
+    raw_string_ostream os(osbuf);
+    reportAndResetTimings(&os);
+    os.flush();
+    *outmsg = LLVMPY_CreateString(os.str().c_str());
 }
 
 

@@ -58,7 +58,9 @@ def enable_time_passes():
 
 
 def report_and_reset_timings():
-    ffi.lib.LLVMPY_ReportAndResetTimings()
+    with ffi.OutputString() as buf:
+        ffi.lib.LLVMPY_ReportAndResetTimings(buf)
+        return str(buf)
 
 
 def create_module_pass_manager():
