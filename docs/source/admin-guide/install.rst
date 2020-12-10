@@ -88,17 +88,19 @@ for details:
     #. ``intel-D47188-svml-VF.patch``: Add support for vectorized math
        functions via Intel SVML.
     #. ``expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch``: Fix for a
-        test failure caused by the previous patch.
+       test failure caused by the previous patch.
     #. ``0001-Revert-Limit-size-of-non-GlobalValue-name.patch``: revert the
        limit put on the length of a non-GlobalValue name
 
 #. For Linux/macOS:
-    #. ``export PREFIX=desired_install_location CPU_COUNT=N`` (``N`` is number
-       of parallel compile tasks)
+
+    #. ``export PREFIX=desired_install_location CPU_COUNT=N``
+       ( ``N`` is number of parallel compile tasks)
     #. Run the `build.sh <https://github.com/numba/llvmlite/blob/master/conda-recipes/llvmdev/build.sh>`_
        script in the llvmdev conda recipe from the LLVM source directory
 
 #. For Windows:
+
     #. ``set PREFIX=desired_install_location``
     #. Run the `bld.bat <https://github.com/numba/llvmlite/blob/master/conda-recipes/llvmdev/bld.bat>`_
        script in the llvmdev conda recipe from the LLVM source directory.
