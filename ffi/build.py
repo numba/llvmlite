@@ -30,7 +30,7 @@ def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
         args += ['-T', toolkit]
     try:
         os.chdir(build_dir)
-        subprocess.check_call(['cmake', '-G'] + args + [cmake_dir])
+        subprocess.check_call(['cmake'] + args + [cmake_dir])
     finally:
         os.chdir(old_dir)
 
@@ -77,7 +77,7 @@ def find_windows_generator():
         build_dir = tempfile.mkdtemp()
         print("Trying generator %r" % (generator,))
         try:
-            try_cmake(cmake_dir, build_dir, generator)
+            try_cmake(cmake_dir, build_dir, *generator)
         except subprocess.CalledProcessError:
             continue
         else:
