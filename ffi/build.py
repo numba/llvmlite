@@ -21,11 +21,16 @@ target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 is_64bit = sys.maxsize >= 2**32
 
 
-def try_cmake(cmake_dir, build_dir, generator):
+def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     old_dir = os.getcwd()
+    args = ['-G', generator]
+    if arch is not None:
+        args += ['-A', arch]
+    if toolkit is not None:
+        args += ['-T', toolkit]
     try:
         os.chdir(build_dir)
-        subprocess.check_call(['cmake', '-G', generator, cmake_dir])
+        subprocess.check_call(['cmake', '-G'] + args + [cmake_dir])
     finally:
         os.chdir(old_dir)
 
@@ -45,7 +50,7 @@ def run_llvm_config(llvm_config, args):
     return out
 
 
-def find_win32_generator():
+def find_windows_generator():
     """
     Find a suitable cmake "generator" under Windows.
     """
@@ -53,22 +58,21 @@ def find_win32_generator():
     # compatible with, the one which was used to compile LLVM... cmake
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
-    # LLVM 4.0+ needs VS 2015 minimum.
+    # LLVM 9.0 and later needs VS 2017 minimum.
     generators = []
     if os.environ.get("CMAKE_GENERATOR"):
-        generators.append(os.environ.get("CMAKE_GENERATOR"))
+        arch = os.environ.get("CMAKE_GENERATOR_ARCH", None)
+        toolkit = os.environ.get("CMAKE_GENERATOR_TOOLKIT", None)
+        generators.append(
+            (os.environ.get("CMAKE_GENERATOR"), arch, toolkit)
+        )
 
-    # Drop generators that are too old
-    vspat = re.compile(r'Visual Studio (\d+)')
-    def drop_old_vs(g):
-        m = vspat.match(g)
-        if m is None:
-            return True  # keep those we don't recognize
-        ver = int(m.group(1))
-        return ver >= 14
-    generators = list(filter(drop_old_vs, generators))
-
-    generators.append('Visual Studio 15 2017' + (' Win64' if is_64bit else ''))
+    generators.extend([
+        # use VS2017 toolkit on VS2019 to match how llvmdev is built
+        ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v141'),
+        # This is the generator configuration for VS2017
+        ('Visual Studio 15 2017' + (' Win64' if is_64bit else ''), None, None)
+    ])
     for generator in generators:
         build_dir = tempfile.mkdtemp()
         print("Trying generator %r" % (generator,))
@@ -84,8 +88,8 @@ def find_win32_generator():
     raise RuntimeError("No compatible cmake generator installed on this machine")
 
 
-def main_win32():
-    generator = find_win32_generator()
+def main_windows():
+    generator = find_windows_generator()
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
@@ -176,7 +180,7 @@ def main_posix(kind, library_ext):
 
 def main():
     if sys.platform == 'win32':
-        main_win32()
+        main_windows()
     elif sys.platform.startswith('linux'):
         main_posix('linux', '.so')
     elif sys.platform.startswith(('freebsd','openbsd')):
