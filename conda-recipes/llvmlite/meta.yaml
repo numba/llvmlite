@@ -22,7 +22,7 @@ requirements:
     - {{ compiler('c') }}    # [not (osx or armv6l or armv7l)]
     - {{ compiler('cxx') }}  # [not (osx or armv6l or armv7l)]
     # The DLL build uses cmake on Windows
-    - cmake          # [win]
+    #- cmake          # [win]
     - make           # [unix and not (armv6l or armv7l or aarch64)]
   host:
     - python
