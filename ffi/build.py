@@ -23,14 +23,16 @@ is_64bit = sys.maxsize >= 2**32
 
 def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     old_dir = os.getcwd()
-    args = ['-G', generator]
+    args = ['cmake', '-G', generator]
     if arch is not None:
         args += ['-A', arch]
     if toolkit is not None:
         args += ['-T', toolkit]
+    args.append(cmake_dir)
     try:
         os.chdir(build_dir)
-        subprocess.check_call(['cmake'] + args + [cmake_dir])
+        print('Running:', ' '.join(args))
+        subprocess.check_call(args)
     finally:
         os.chdir(old_dir)
 
