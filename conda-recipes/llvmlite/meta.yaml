@@ -32,7 +32,7 @@ requirements:
     - llvmdev 10.0.1 1 # [win]
     # Build using LLVM (llvmdev) 9.0.* on aarch64
     - llvmdev 9.0.* # [aarch64]
-    - vs2015_runtime # [win]
+    # - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
     - zlib           # [unix and not (armv6l or armv7l or aarch64)]
   run:
