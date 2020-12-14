@@ -62,11 +62,12 @@ def find_windows_generator():
     cmake_dir = os.path.join(here_dir, 'dummy')
     # LLVM 9.0 and later needs VS 2017 minimum.
     generators = []
-    if os.environ.get("CMAKE_GENERATOR"):
-        arch = os.environ.get("CMAKE_GENERATOR_ARCH", None)
-        toolkit = os.environ.get("CMAKE_GENERATOR_TOOLKIT", None)
+    env_generator = os.environ.get("CMAKE_GENERATOR", None)
+    if env_generator is not None:
+        env_arch = os.environ.get("CMAKE_GENERATOR_ARCH", None)
+        env_toolkit = os.environ.get("CMAKE_GENERATOR_TOOLKIT", None)
         generators.append(
-            (os.environ.get("CMAKE_GENERATOR"), arch, toolkit)
+            (env_generator, env_arch, env_toolkit)
         )
 
     generators.extend([
