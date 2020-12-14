@@ -62,7 +62,7 @@ def set_time_passes(enable):
         Set to True to enable the pass timers.
         Set to False to disable the pass timers.
     """
-    ffi.lib.LLVMPY_SetTimePasses(c_int(enable))
+    ffi.lib.LLVMPY_SetTimePasses(c_bool(enable))
 
 
 def report_and_reset_timings():
