@@ -239,6 +239,15 @@ class IRBuilder(object):
         """
         return self.function.append_basic_block(name)
 
+    def remove(self, instr):
+        """Remove the given instruction."""
+        idx = self._block.instructions.index(instr)
+        del self._block.instructions[idx]
+        if self._block.terminator == instr:
+            self._block.terminator = None
+        if self._anchor > idx:
+            self._anchor -= 1
+
     @contextlib.contextmanager
     def goto_block(self, block):
         """
@@ -842,13 +851,15 @@ class IRBuilder(object):
 
     # Call APIs
 
-    def call(self, fn, args, name='', cconv=None, tail=False, fastmath=()):
+    def call(self, fn, args, name='', cconv=None, tail=False, fastmath=(),
+             attrs=()):
         """
         Call function *fn* with *args*:
             name = fn(args...)
         """
         inst = instructions.CallInstr(self.block, fn, args, name=name,
-                                      cconv=cconv, tail=tail, fastmath=fastmath)
+                                      cconv=cconv, tail=tail, fastmath=fastmath,
+                                      attrs=attrs)
         self._insert(inst)
         return inst
 

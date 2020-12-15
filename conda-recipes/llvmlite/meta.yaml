@@ -19,17 +19,20 @@ requirements:
     # We cannot do this on macOS as the llvm-config from the
     # toolchain conflicts with the same from llvmdev, the
     # build.sh deals with it!
-    - {{ compiler('c') }}    # [not (osx or armv6l or armv7l or aarch64)]
-    - {{ compiler('cxx') }}  # [not (osx or armv6l or armv7l or aarch64)]
+    - {{ compiler('c') }}    # [not (osx or armv6l or armv7l or win)]
+    - {{ compiler('cxx') }}  # [not (osx or armv6l or armv7l or win)]
+    - vs2017_{{ target_platform  }}    # [win]
     # The DLL build uses cmake on Windows
     - cmake          # [win]
     - make           # [unix and not (armv6l or armv7l or aarch64)]
   host:
     - python
     # On channel https://anaconda.org/numba/
-    # ppc64le needs LLVM 7 series, LLVM 8 has issues
-    - llvmdev 8.0*   # [not ppc64le]
-    - llvmdev 7.1*   # [ppc64le]
+    # Build using LLVM (llvmdev) 10.0.1-1 on most platforms
+    - llvmdev 10.0.1 *1 # [not aarch64 and not win]
+    - llvmdev 10.0.1 1 # [win]
+    # Build using LLVM (llvmdev) 9.0.* on aarch64
+    - llvmdev 9.0.* # [aarch64]
     - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
     - zlib           # [unix and not (armv6l or armv7l or aarch64)]

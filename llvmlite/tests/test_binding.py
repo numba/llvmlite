@@ -173,6 +173,48 @@ declare i8* @a_arg0_return_func(i8* returned, i32*)
 """
 
 
+# This produces the following output from objdump:
+#
+# $ objdump -D 632.elf
+#
+# 632.elf:     file format elf64-x86-64
+#
+#
+# Disassembly of section .text:
+#
+# 0000000000000000 <__arybo>:
+#    0:	48 c1 e2 20          	shl    $0x20,%rdx
+#    4:	48 09 c2             	or     %rax,%rdx
+#    7:	48 89 d0             	mov    %rdx,%rax
+#    a:	48 c1 c0 3d          	rol    $0x3d,%rax
+#    e:	48 31 d0             	xor    %rdx,%rax
+#   11:	48 b9 01 20 00 04 80 	movabs $0x7010008004002001,%rcx
+#   18:	00 10 70
+#   1b:	48 0f af c8          	imul   %rax,%rcx
+
+issue_632_elf = \
+    "7f454c4602010100000000000000000001003e00010000000000000000000000000000" \
+    "0000000000e0000000000000000000000040000000000040000500010048c1e2204809" \
+    "c24889d048c1c03d4831d048b90120000480001070480fafc800000000000000000000" \
+    "0000000000000000000000000000002f0000000400f1ff000000000000000000000000" \
+    "00000000070000001200020000000000000000001f00000000000000002e7465787400" \
+    "5f5f617279626f002e6e6f74652e474e552d737461636b002e737472746162002e7379" \
+    "6d746162003c737472696e673e00000000000000000000000000000000000000000000" \
+    "0000000000000000000000000000000000000000000000000000000000000000000000" \
+    "00000000000000001f0000000300000000000000000000000000000000000000a80000" \
+    "0000000000380000000000000000000000000000000100000000000000000000000000" \
+    "000001000000010000000600000000000000000000000000000040000000000000001f" \
+    "000000000000000000000000000000100000000000000000000000000000000f000000" \
+    "01000000000000000000000000000000000000005f0000000000000000000000000000" \
+    "0000000000000000000100000000000000000000000000000027000000020000000000" \
+    "0000000000000000000000000000600000000000000048000000000000000100000002" \
+    "00000008000000000000001800000000000000"
+
+
+issue_632_text = \
+    "48c1e2204809c24889d048c1c03d4831d048b90120000480001070480fafc8"
+
+
 class BaseTest(TestCase):
 
     def setUp(self):
@@ -202,9 +244,9 @@ class BaseTest(TestCase):
             mod = self.module()
         return mod.get_global_variable(name)
 
-    def target_machine(self):
+    def target_machine(self, *, jit):
         target = llvm.Target.from_default_triple()
-        return target.create_target_machine()
+        return target.create_target_machine(jit=jit)
 
 
 class TestDependencies(BaseTest):
@@ -356,7 +398,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = [(8, 0), (7, 0), (7, 1)]
+        valid = [(10, 0), (9, 0)]
         self.assertIn((major, minor), valid)
         self.assertIn(patch, range(10))
 
@@ -545,7 +587,13 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(RuntimeError) as cm:
             llvm.parse_bitcode(b"")
         self.assertIn("LLVM bitcode parsing error", str(cm.exception))
-        self.assertIn("Invalid bitcode signature", str(cm.exception))
+        # for llvm < 9
+        if llvm.llvm_version_info[0] < 9:
+            self.assertIn("Invalid bitcode signature", str(cm.exception))
+        else:
+            self.assertIn(
+                "file too small to contain bitcode header", str(cm.exception),
+            )
 
     def test_bitcode_roundtrip(self):
         # create a new context to avoid struct renaming
@@ -754,7 +802,7 @@ class JITWithTMTestMixin(JITTestMixin):
 
     def test_emit_assembly(self):
         """Test TargetMachineRef.emit_assembly()"""
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=True)
         mod = self.module()
         ee = self.jit(mod, target_machine)  # noqa F841 # Keeps pointers alive
         raw_asm = target_machine.emit_assembly(mod)
@@ -766,7 +814,7 @@ class JITWithTMTestMixin(JITTestMixin):
 
     def test_emit_object(self):
         """Test TargetMachineRef.emit_object()"""
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=True)
         mod = self.module()
         ee = self.jit(mod, target_machine)  # noqa F841 # Keeps pointers alive
         code_object = target_machine.emit_object(mod)
@@ -783,7 +831,7 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
 
     def jit(self, mod, target_machine=None):
         if target_machine is None:
-            target_machine = self.target_machine()
+            target_machine = self.target_machine(jit=True)
         return llvm.create_mcjit_compiler(mod, target_machine)
 
 
@@ -1055,12 +1103,12 @@ class TestTargetData(BaseTest):
 class TestTargetMachine(BaseTest):
 
     def test_add_analysis_passes(self):
-        tm = self.target_machine()
+        tm = self.target_machine(jit=False)
         pm = llvm.create_module_pass_manager()
         tm.add_analysis_passes(pm)
 
     def test_target_data_from_tm(self):
-        tm = self.target_machine()
+        tm = self.target_machine(jit=False)
         td = tm.target_data
         mod = self.module()
         gv_i32 = mod.get_global_variable("glob")
@@ -1242,6 +1290,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_sroa_pass()
         pm.add_type_based_alias_analysis_pass()
         pm.add_basic_alias_analysis_pass()
+        pm.add_loop_rotate_pass()
 
 
 class TestDylib(BaseTest):
@@ -1413,7 +1462,7 @@ class TestInlineAsm(BaseTest):
     def test_inlineasm(self):
         llvm.initialize_native_asmparser()
         m = self.module(asm=asm_inlineasm)
-        tm = self.target_machine()
+        tm = self.target_machine(jit=False)
         asm = tm.emit_assembly(m)
         self.assertIn('nop', asm)
 
@@ -1434,7 +1483,7 @@ class TestObjectFile(BaseTest):
     """
 
     def test_object_file(self):
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=False)
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
         obj = llvm.ObjectFileRef.from_data(obj_bin)
@@ -1454,7 +1503,7 @@ class TestObjectFile(BaseTest):
         self.assertTrue(has_text)
 
     def test_add_object_file(self):
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=False)
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
         obj = llvm.ObjectFileRef.from_data(obj_bin)
@@ -1470,7 +1519,7 @@ class TestObjectFile(BaseTest):
         self.assertEqual(sum_twice(2, 3), 10)
 
     def test_add_object_file_from_filesystem(self):
-        target_machine = self.target_machine()
+        target_machine = self.target_machine(jit=False)
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
         temp_desc, temp_path = mkstemp()
@@ -1494,6 +1543,16 @@ class TestObjectFile(BaseTest):
             jit.get_function_address("sum_twice"))
 
         self.assertEqual(sum_twice(2, 3), 10)
+
+    def test_get_section_content(self):
+        # See Issue #632 - section contents were getting truncated at null
+        # bytes.
+        elf = bytes.fromhex(issue_632_elf)
+        obj = llvm.ObjectFileRef.from_data(elf)
+        for s in obj.sections():
+            if s.is_text():
+                self.assertEqual(len(s.data()), 31)
+                self.assertEqual(s.data().hex(), issue_632_text)
 
 
 if __name__ == "__main__":

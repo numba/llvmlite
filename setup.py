@@ -20,7 +20,6 @@ from distutils.dir_util import remove_tree
 from distutils.spawn import spawn
 import os
 import sys
-import shutil
 
 if os.environ.get('READTHEDOCS', None) == 'True':
     sys.exit("setup.py disabled on readthedocs: called with %s"
@@ -42,9 +41,11 @@ build = cmdclass.get('build', build)
 build_ext = cmdclass.get('build_ext', build_ext)
 
 
-def build_library_files(dry_run, pic=False):
+def build_library_files(dry_run):
     cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
-    if pic:
+    # Turn on -fPIC for building on Linux, BSD, and OS X
+    plt = sys.platform
+    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt:
         os.environ['CXXFLAGS'] = os.environ.get('CXXFLAGS', '') + ' -fPIC'
     spawn(cmd, dry_run=dry_run)
 
@@ -96,6 +97,7 @@ class LlvmliteInstall(install):
         self.install_libbase = self.install_platlib
         self.install_lib = self.install_platlib
 
+
 class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
     def run(self):
@@ -126,9 +128,7 @@ if bdist_wheel:
         def run(self):
             # Ensure the binding file exist when running wheel build
             from llvmlite.utils import get_library_files
-            # Turn on -fPIC for wheel building on Linux
-            pic = sys.platform.startswith('linux')
-            build_library_files(self.dry_run, pic=pic)
+            build_library_files(self.dry_run)
             self.distribution.package_data.update({
                 "llvmlite.binding": get_library_files(),
             })
@@ -162,9 +162,6 @@ packages = ['llvmlite',
             'llvmlite.tests',
             ]
 
-install_requires = ['enum34; python_version < "3.4"']
-setup_requires = ['enum34; python_version < "3.4"']
-
 
 with open('README.rst') as f:
     long_description = f.read()
@@ -174,15 +171,16 @@ setup(name='llvmlite',
       description="lightweight wrapper around basic LLVM functionality",
       version=versioneer.get_version(),
       classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Topic :: Software Development :: Code Generators",
-        "Topic :: Software Development :: Compilers",
+          "Development Status :: 4 - Beta",
+          "Intended Audience :: Developers",
+          "Operating System :: OS Independent",
+          "Programming Language :: Python",
+          "Programming Language :: Python :: 3",
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7",
+          "Programming Language :: Python :: 3.8",
+          "Topic :: Software Development :: Code Generators",
+          "Topic :: Software Development :: Compilers",
       ],
       # Include the separately-compiled shared library
       author="Continuum Analytics, Inc.",
@@ -190,9 +188,8 @@ setup(name='llvmlite',
       url="http://llvmlite.pydata.org",
       download_url="https://github.com/numba/llvmlite",
       packages=packages,
-      install_requires=install_requires,
-      setup_requires=setup_requires,
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,
+      python_requires=">=3.6",
       )

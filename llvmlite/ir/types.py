@@ -243,6 +243,11 @@ class IntType(Type):
         else:
             return str(val)
 
+    def wrap_constant_value(self, val):
+        if val is None:
+            return 0
+        return val
+
     @property
     def intrinsic_name(self):
         return str(self)
@@ -398,8 +403,8 @@ class VectorType(Type):
         if not isinstance(values, (list, tuple)):
             if isinstance(values, Constant):
                 if values.type != self.element:
-                    raise TypeError("expected % for %"
-                                    % (self.element, values.type))
+                    raise TypeError("expected {} for {}".format(
+                        self.element, values.type))
                 return (values, ) * self.count
             return (Constant(self.element, values), ) * self.count
         if len(values) != len(self):

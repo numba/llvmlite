@@ -4,7 +4,7 @@ parameters:
 
 jobs:
 - job: ${{ parameters.name }}
-  pool: 
+  pool:
     vmImage: ${{ parameters.vmImage }}
   strategy:
     maxParallel: 11
@@ -27,7 +27,7 @@ jobs:
         call conda remove --all -q -y -n %CONDA_ENV%
         call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
         call activate %CONDA_ENV%
-        call conda install -y -q -c numba llvmdev="8.0*"
+        call conda install -y -q -c numba llvmdev="10.0*"
       displayName: 'Before Install'
 
     - script: |

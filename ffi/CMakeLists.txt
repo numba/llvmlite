@@ -34,12 +34,16 @@ endif()
 # Define our shared library
 add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
             module.cpp value.cpp executionengine.cpp transforms.cpp
-            passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp)
+            passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
+            custom_passes.cpp)
 
 # Find the libraries that correspond to the LLVM components
-# that we wish to use
-# llvm_map_components_to_libnames(llvm_libs support core irreader)
-llvm_map_components_to_libnames(llvm_libs all)
+# that we wish to use.
+# The following line is broken with LLVM 10.0.0 due to a potential bug in
+# the LLVM cmake setup, so we use the workaround instead.
+# Bug reported upstream at: https://bugs.llvm.org/show_bug.cgi?id=47003
+# BROKEN: llvm_map_components_to_libnames(llvm_libs all)
+set(llvm_libs ${LLVM_AVAILABLE_LIBS})
 
 # Since LLVM 8 "OptRemarks" is built as a shared library only and also appears
 # under the llvm_libs for the "all" components map. This breaks static linking

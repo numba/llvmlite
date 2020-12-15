@@ -1,16 +1,116 @@
-v0.33.0dev
-----------
+v0.35.0 (November 30, 2020)
+---------------------------
 
-In development
+The main feature in this release is a Numba specific LLVM pass for pruning
+reference-count operations. We plan to generalize this custom LLVM pass
+once it is proven stable so that it can be configured for other uses.
+In addition, this release contains an updated SVML patch that fixes an issue
+for AVX512, and a patch that fixes build issues on Linux and BSD.
 
-v0.32.0 (Apr 9, 2020)
+Pull requests:
+
+* PR #617: Fix wheel building.
+* PR #618: Fix changelog on master
+* PR #626: Update SVML patch
+* PR #627: Always build with -fPIC on Linux and BSD
+* PR #633: Fix Issue #632 - obj file section contents truncated
+* PR #634: Implement reference count pruner LLVM pass
+* PR #635: Fixes #629: Default to 0 if None is passed as a value for Int32
+* PR #637: Fix appveyor
+* PR #640: Backport llvm refop pass for LLVM 9.
+* PR #641: fix llvmdev build number
+* PR #642: pin to correct version of llvmdev
+* PR #644: Fix refprune fanout_raise case getting stuck on large graphs
+* PR #647: Add support for general attrs on call and loop-rotate pass
+
+Authors:
+
+* Graham Markall
+* Ivan Butygin
+* NavyaZaveri
+* Siu Kwan Lam (core dev)
+* Stuart Archibald (core dev)
+* Valentin Haenel (core dev)
+
+v0.34.0 (August 12, 2020)
+-------------------------
+
+This release upgrades to LLVM 10 (10.0.1) for all platforms except `aarch64`
+which will remain at LLVM 9 (9.0.1).
+
+Pull requests:
+
+* PR #596: Use std::make_unique on LLVM 10 (Cherry-Pick via #599)
+* PR #606: Revert "Fix CUDA with LLVM9" (Cherry-Pick via #599)
+* PR #599: LLVM 10
+* PR #598: Fix flake in setup.py
+* PR #602: add missing targets to wheels
+* PR #614: Fix wheel building
+* PR #616: fix release date in changelog
+
+Authors:
+
+* Graham Markall
+* Michał Górny
+* Siu Kwan Lam  (core dev)
+* Stuart Archibald  (core dev)
+* Valentin Haenel  (core dev)
+
+v0.33.0 (June 10, 2020)
+-----------------------
+
+This release upgrades to LLVM 9 and drops support for older LLVM versions.
+
+Pull requests:
+
+* PR #593: Fix CUDA with LLVM9
+* PR #592: Fix meta.yaml
+* PR #591: buildscripts: Unpin wheel
+* PR #590: add python_requires to setup.py
+* PR #582: Adds override for LLVM version check, re-formats docs.
+* PR #581: Add FAQ entry on LLVM version support.
+* PR #580: Trove classifiers may be out of date.
+* PR #577: llvmlite wheel building fixes
+* PR #575: Update the release date
+* PR #548: Upgrade to LLVM9
+* PR #521: Allow instructions to be removed from blocks
+
+Authors:
+
+* Graham Markall
+* Jan Vesely
+* Siu Kwan Lam  (core dev)
+* Stuart Archibald  (core dev)
+* Tim Babb
+* Valentin Haenel  (core dev)
+
+
+v0.32.1 (May 7, 2020)
 ---------------------
+
+This is a small patch release that addresses some packaging issues:
+
+Pull requests:
+
+* PR 580: Trove classifiers may be out of date.
+* PR 581: Add FAQ entry on LLVM version support.
+* PR 582: Adds override for LLVM version check, re-formats docs.
+
+Authors:
+
+* Stuart Archibald (core dev)
+* Valentin Haenel (core dev)
+
+
+v0.32.0 (Apr 16, 2020)
+----------------------
 
 The main changes in this release are the removal of specific code for Python 2
 and Python <3.6, and making the code base PEP8 compliant.
 
 Pull requests:
 
+* PR #577: llvmlite wheel building fixes
 * PR #560: ENH: Better error message
 * PR #558: update install docs
 * PR #556: binding: Allow empty features list
