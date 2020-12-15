@@ -38,8 +38,7 @@ set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD="%LLVM_TARGETS_TO_BUILD%" ^
 REM try all compatible visual studio toolsets to find one that is installed
 setlocal enabledelayedexpansion
 for /l %%n in (0,1,%MAX_INDEX_CMAKE_GENERATOR%) do (
-    cmake -G "!CMAKE_GENERATOR[%%n]!" -Thost=%PreferredToolArchitecture%^
-        -T "%CMAKE_GENERATOR_TOOLSET%" ^
+    cmake -G "!CMAKE_GENERATOR[%%n]!" -T "%CMAKE_GENERATOR_TOOLSET%" ^
         -DCMAKE_BUILD_TYPE="%BUILD_CONFIG%" -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" ^
         -DCMAKE_INSTALL_PREFIX:PATH="%LIBRARY_PREFIX%" %CMAKE_CUSTOM% "%SRC_DIR%"
     if not errorlevel 1 goto configuration_successful
