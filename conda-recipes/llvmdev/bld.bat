@@ -29,15 +29,12 @@ cmake -G "%CMAKE_GENERATOR%" -T "%CMAKE_GENERATOR_TOOLSET%" ^
 
 REM === Build step ===
 cmake --build . --config "%BUILD_CONFIG%"
-if errorlevel 1 exit 1
 
 REM === Install step ===
 cmake --build . --config "%BUILD_CONFIG%" --target install
-if errorlevel 1 exit 1
 
 REM From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
 "%BUILD_CONFIG%\bin\opt" -S -vector-library=SVML -mcpu=haswell -O3 "%RECIPE_DIR%\numba-3016.ll" | "%BUILD_CONFIG%\bin\FileCheck" "%RECIPE_DIR%\numba-3016.ll"
-if errorlevel 1 exit 1
 
 REM This is technically how to run the suite, but it will only run in an
 REM enhanced unix-like shell which has functions like `grep` available.
