@@ -9,9 +9,10 @@ jobs:
   strategy:
     maxParallel: 11
     matrix:
-      py38:
-        PYTHON: '3.8'
+      py39:
+        PYTHON: '3.9'
         CONDA_ENV: travisci
+
 
   steps:
 

@@ -14,6 +14,9 @@ jobs:
       py38:
         PYTHON: '3.8'
         CONDA_ENV: travisci
+      py39:
+        PYTHON: '3.9'
+        CONDA_ENV: travisci
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
@@ -30,6 +33,10 @@ jobs:
         PYTHON: '3.8'
         CONDA_ENV: travisci
         RUN_FLAKE8: yes
+      py39:
+        PYTHON: '3.9'
+        CONDA_ENV: travisci
+        RUN_FLAKE8: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
@@ -44,6 +51,10 @@ jobs:
         WHEEL: 'yes'
       py38_wheel:
         PYTHON: '3.8'
+        CONDA_ENV: travisci
+        WHEEL: 'yes'
+      py39_wheel:
+        PYTHON: '3.9'
         CONDA_ENV: travisci
         WHEEL: 'yes'
 
