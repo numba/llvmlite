@@ -1555,5 +1555,30 @@ class TestObjectFile(BaseTest):
                 self.assertEqual(s.data().hex(), issue_632_text)
 
 
+class TestTimePasses(BaseTest):
+    def test_reporting(self):
+        mp = llvm.create_module_pass_manager()
+
+        pmb = llvm.create_pass_manager_builder()
+        pmb.opt_level = 3
+        pmb.populate(mp)
+
+        try:
+            llvm.set_time_passes(True)
+            mp.run(self.module())
+            mp.run(self.module())
+            mp.run(self.module())
+        finally:
+            report = llvm.report_and_reset_timings()
+            llvm.set_time_passes(False)
+
+        self.assertIsInstance(report, str)
+        self.assertEqual(report.count("Pass execution timing report"), 1)
+
+    def test_empty_report(self):
+        # Returns empty str if no data is collected
+        self.assertFalse(llvm.report_and_reset_timings())
+
+
 if __name__ == "__main__":
     unittest.main()

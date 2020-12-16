@@ -53,6 +53,34 @@ def dump_refprune_stats(printout=False):
                       stats.fanout_raise)
 
 
+def set_time_passes(enable):
+    """Enable or disable the pass timers.
+
+    Parameters
+    ----------
+    enable : bool
+        Set to True to enable the pass timers.
+        Set to False to disable the pass timers.
+    """
+    ffi.lib.LLVMPY_SetTimePasses(c_bool(enable))
+
+
+def report_and_reset_timings():
+    """Returns the pass timings report and resets the LLVM internal timers.
+
+    Pass timers are enabled by ``set_time_passes()``. If the timers are not
+    enabled, this function will return an empty string.
+
+    Returns
+    -------
+    res : str
+        LLVM generated timing report.
+    """
+    with ffi.OutputString() as buf:
+        ffi.lib.LLVMPY_ReportAndResetTimings(buf)
+        return str(buf)
+
+
 def create_module_pass_manager():
     return ModulePassManager()
 

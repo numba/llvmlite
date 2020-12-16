@@ -13,6 +13,8 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/IPO.h"
 
+#include <llvm/IR/PassTimingInfo.h>
+
 using namespace llvm;
 
 /*
@@ -20,6 +22,21 @@ using namespace llvm;
  */
 
 extern "C" {
+
+API_EXPORT(void)
+LLVMPY_SetTimePasses(bool enable){
+  TimePassesIsEnabled = enable;
+}
+
+API_EXPORT(void)
+LLVMPY_ReportAndResetTimings(const char **outmsg) {
+    std::string osbuf;
+    raw_string_ostream os(osbuf);
+    reportAndResetTimings(&os);
+    os.flush();
+    *outmsg = LLVMPY_CreateString(os.str().c_str());
+}
+
 
 API_EXPORT(LLVMPassManagerRef)
 LLVMPY_CreatePassManager()
