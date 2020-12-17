@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import warnings
 
 from llvmlite.ir import instructions, types, values
 
@@ -732,7 +733,8 @@ class IRBuilder(object):
         self._insert(al)
         return al
 
-    def load(self, ptr, name='', align=None):
+    def load(self, ptr, name='', align=None, volatile=False,
+             atomic_ordering=None, sync_scope=None):
         """
         Load value from pointer, with optional guaranteed alignment:
             name = *ptr
@@ -740,12 +742,13 @@ class IRBuilder(object):
         if not isinstance(ptr.type, types.PointerType):
             msg = "cannot load from value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
-        ld = instructions.LoadInstr(self.block, ptr, name)
-        ld.align = align
+        ld = instructions.LoadInstr(self.block, ptr, name, align,
+                                    volatile, atomic_ordering, sync_scope)
         self._insert(ld)
         return ld
 
-    def store(self, value, ptr, align=None):
+    def store(self, value, ptr, align=None, volatile=False,
+              atomic_ordering=None, sync_scope=None):
         """
         Store value to pointer, with optional guaranteed alignment:
             *ptr = name
@@ -756,8 +759,8 @@ class IRBuilder(object):
         if ptr.type.pointee != value.type:
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
-        st = instructions.StoreInstr(self.block, value, ptr)
-        st.align = align
+        st = instructions.StoreInstr(self.block, value, ptr, align,
+                                     volatile, atomic_ordering, sync_scope)
         self._insert(st)
         return st
 
@@ -765,30 +768,35 @@ class IRBuilder(object):
         """
         Load value from pointer, with optional guaranteed alignment:
             name = *ptr
+
+        Deprecated. Please use the `atomic_ordering` keyword of load().
         """
-        if not isinstance(ptr.type, types.PointerType):
-            msg = "cannot load from value of type %s (%r): not a pointer"
-            raise TypeError(msg % (ptr.type, str(ptr)))
-        ld = instructions.LoadAtomicInstr(
-            self.block, ptr, ordering, align, name)
-        self._insert(ld)
-        return ld
+        msg = ("load_atomic() is being deprecated. Please use the "
+               "atomic_ordering parameter of load() instead.")
+        warnings.warn(msg, DeprecationWarning)
+
+        return self.load(
+            ptr=ptr,
+            name=name,
+            align=align,
+            atomic_ordering=ordering)
 
     def store_atomic(self, value, ptr, ordering, align):
         """
         Store value to pointer, with optional guaranteed alignment:
             *ptr = name
+
+        Deprecated. Please use the `atomic_ordering` keyword of store().
         """
-        if not isinstance(ptr.type, types.PointerType):
-            msg = "cannot store to value of type %s (%r): not a pointer"
-            raise TypeError(msg % (ptr.type, str(ptr)))
-        if ptr.type.pointee != value.type:
-            raise TypeError("cannot store %s to %s: mismatching types"
-                            % (value.type, ptr.type))
-        st = instructions.StoreAtomicInstr(
-            self.block, value, ptr, ordering, align)
-        self._insert(st)
-        return st
+        msg = ("store_atomic() is being deprecated. Please use the "
+               "atomic_ordering parameter of store() instead.")
+        warnings.warn(msg, DeprecationWarning)
+
+        return self.store(
+            value=value,
+            ptr=ptr,
+            align=align,
+            atomic_ordering=ordering)
 
     #
     # Terminators APIs

@@ -1,6 +1,7 @@
 """
 Implementation of LLVM IR instructions.
 """
+import warnings
 
 from llvmlite.ir import types
 from llvmlite.ir.values import (Block, Function, Value, NamedValue, Constant,
@@ -390,85 +391,105 @@ class CastInstr(Instruction):
 
 
 class LoadInstr(Instruction):
-
-    def __init__(self, parent, ptr, name=''):
+    def __init__(self, parent, ptr, name='', align=None, volatile=False,
+                 atomic_ordering=None, sync_scope=None):
+        if atomic_ordering is not None and align is None:
+            msg = "atomic load requires the align parameter to be specified"
+            raise ValueError(msg)
+        if sync_scope is not None and atomic_ordering is None:
+            msg = ("sync_scope may only be specified in combination with "
+                   "atomic_ordering")
+            raise ValueError(msg)
         super(LoadInstr, self).__init__(parent, ptr.type.pointee, "load",
                                         [ptr], name=name)
-        self.align = None
+        self.align = align
+        self.atomic_ordering = atomic_ordering
+        self.sync_scope = sync_scope
+        self.volatile = volatile
 
     def descr(self, buf):
         [val] = self.operands
-        if self.align is not None:
-            align = ', align %d' % (self.align)
-        else:
-            align = ''
-        buf.append("load {0}, {1} {2}{3}{4}\n".format(
-            val.type.pointee,
-            val.type,
-            val.get_reference(),
-            align,
-            self._stringify_metadata(leading_comma=True),
-        ))
+
+        flags = []
+        if self.atomic_ordering is not None:
+            flags.append('atomic')
+        if self.volatile:
+            flags.append('volatile')
+        flags = ' '.join([''] + flags)
+
+        atomic = []
+        if self.atomic_ordering is not None:
+            if self.sync_scope is not None:
+                atomic.append(f'syncscope("{self.sync_scope}")')
+            atomic.append(self.atomic_ordering)
+        atomic_params = " ".join([''] + atomic)
+
+        align = '' if self.align is None else f', align {self.align}'
+        metadata = self._stringify_metadata(leading_comma=True)
+
+        buf.append(f"load{flags} {val.type.pointee}, {val.type} "
+                   f"{val.get_reference()}{atomic_params}{align}{metadata}\n")
 
 
 class StoreInstr(Instruction):
-    def __init__(self, parent, val, ptr):
+    def __init__(self, parent, val, ptr, align=None, volatile=False,
+                 atomic_ordering=None, sync_scope=None):
+        if atomic_ordering is not None and align is None:
+            msg = "atomic store requires the align parameter to be specified"
+            raise ValueError(msg)
+        if sync_scope is not None and atomic_ordering is None:
+            msg = ("sync_scope may only be specified in combination with "
+                   "atomic_ordering")
+            raise ValueError(msg)
         super(StoreInstr, self).__init__(parent, types.VoidType(), "store",
                                          [val, ptr])
+        self.align = align
+        self.atomic_ordering = atomic_ordering
+        self.sync_scope = sync_scope
+        self.volatile = volatile
 
     def descr(self, buf):
         val, ptr = self.operands
-        if self.align is not None:
-            align = ', align %d' % (self.align)
-        else:
-            align = ''
-        buf.append("store {0} {1}, {2} {3}{4}{5}\n".format(
-            val.type,
-            val.get_reference(),
-            ptr.type,
-            ptr.get_reference(),
-            align,
-            self._stringify_metadata(leading_comma=True),
-        ))
+
+        flags = []
+        if self.atomic_ordering is not None:
+            flags.append('atomic')
+        if self.volatile:
+            flags.append('volatile')
+        flags = ' '.join([''] + flags)
+
+        atomic = []
+        if self.atomic_ordering is not None:
+            if self.sync_scope is not None:
+                atomic.append(f'syncscope("{self.sync_scope}")')
+            atomic.append(self.atomic_ordering)
+        atomic_params = " ".join([''] + atomic)
+
+        align = '' if self.align is None else f', align {self.align}'
+        metadata = self._stringify_metadata(leading_comma=True)
+
+        buf.append(f"store{flags} {val.type} {val.get_reference()}, {ptr.type}"
+                   f" {ptr.get_reference()}{atomic_params}{align}{metadata}\n")
 
 
-class LoadAtomicInstr(Instruction):
+class LoadAtomicInstr(LoadInstr):
     def __init__(self, parent, ptr, ordering, align, name=''):
-        super(LoadAtomicInstr, self).__init__(parent, ptr.type.pointee,
-                                              "load atomic", [ptr], name=name)
-        self.ordering = ordering
-        self.align = align
+        msg = ("LoadAtomicInstr() is being deprecated. Please use the "
+               "atomic_ordering parameter of LoadInstr() instead.")
+        warnings.warn(msg, DeprecationWarning)
 
-    def descr(self, buf):
-        [val] = self.operands
-        buf.append("load atomic {0}, {1} {2} {3}, align {4}{5}\n".format(
-            val.type.pointee,
-            val.type,
-            val.get_reference(),
-            self.ordering,
-            self.align,
-            self._stringify_metadata(leading_comma=True),
-        ))
+        super(LoadAtomicInstr, self).__init__(
+            parent, ptr, align=align, atomic_ordering=ordering, name=name)
 
 
-class StoreAtomicInstr(Instruction):
+class StoreAtomicInstr(StoreInstr):
     def __init__(self, parent, val, ptr, ordering, align):
-        super(StoreAtomicInstr, self).__init__(parent, types.VoidType(),
-                                               "store atomic", [val, ptr])
-        self.ordering = ordering
-        self.align = align
+        msg = ("StoreAtomicInstr() is being deprecated. Please use the "
+               "atomic_ordering parameter of StoreInstr() instead.")
+        warnings.warn(msg, DeprecationWarning)
 
-    def descr(self, buf):
-        val, ptr = self.operands
-        buf.append("store atomic {0} {1}, {2} {3} {4}, align {5}{6}\n".format(
-            val.type,
-            val.get_reference(),
-            ptr.type,
-            ptr.get_reference(),
-            self.ordering,
-            self.align,
-            self._stringify_metadata(leading_comma=True),
-        ))
+        super(StoreAtomicInstr, self).__init__(
+            parent, val, ptr, align=align, atomic_ordering=ordering)
 
 
 class AllocaInstr(Instruction):
