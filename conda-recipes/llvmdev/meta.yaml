@@ -1,5 +1,5 @@
 # debug version suffix, appended to the version
-{% set VERSION_SUFFIX = "_WINDOWS10_DEBUG" %}
+{% set VERSION_SUFFIX = "" %}
 
 # LLVM 10.0.0 and 10.0.1 had issues with aarch64
 {% if aarch64 %}
