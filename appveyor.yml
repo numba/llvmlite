@@ -10,7 +10,7 @@ environment:
 
   matrix:
     # Since appveyor is quite slow, we only use a single configuration
-    - PYTHON: "3.8"
+    - PYTHON: "3.6"
       ARCH: "64"
       CONDA_ENV: testenv
 

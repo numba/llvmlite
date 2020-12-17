@@ -469,11 +469,25 @@ LLVMPY_GetEnumAttributeKindForName(const char *name, size_t len)
 }
 
 API_EXPORT(void)
-LLVMPY_AddFunctionAttr(LLVMValueRef Fn, unsigned AttrKind)
+LLVMPY_AddFunctionEnumAttr(LLVMValueRef Fn, unsigned AttrKindID, uint64_t AttrVal)
 {
     LLVMContextRef ctx = LLVMGetModuleContext(LLVMGetGlobalParent(Fn));
-    LLVMAttributeRef attr_ref = LLVMCreateEnumAttribute(ctx, AttrKind, 0);
+    LLVMAttributeRef attr_ref = LLVMCreateEnumAttribute(ctx, AttrKindID, AttrVal);
     LLVMAddAttributeAtIndex(Fn, LLVMAttributeReturnIndex, attr_ref);
+}
+
+API_EXPORT(void)
+LLVMPY_AddFunctionStringAttr(LLVMValueRef Fn, const char * AttrName, unsigned AttrNameLen, const char * AttrVal, unsigned AttrValLen)
+{
+    LLVMContextRef ctx = LLVMGetModuleContext(LLVMGetGlobalParent(Fn));
+    LLVMAttributeRef attr_ref = LLVMCreateStringAttribute(ctx, AttrName, AttrNameLen, AttrVal, AttrValLen);
+    LLVMAddAttributeAtIndex(Fn, LLVMAttributeReturnIndex, attr_ref);
+}
+
+API_EXPORT(void)
+LLVMPY_AddFunctionAttr(LLVMValueRef Fn, unsigned AttrKind)
+{
+    LLVMPY_AddFunctionEnumAttr(Fn, AttrKind, 0);
 }
 
 API_EXPORT(int)
