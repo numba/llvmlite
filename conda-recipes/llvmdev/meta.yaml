@@ -1,6 +1,3 @@
-# debug version suffix, appended to the version
-{% set VERSION_SUFFIX = "" %}
-
 # LLVM 10.0.0 and 10.0.1 had issues with aarch64
 {% if aarch64 %}
 
@@ -23,7 +20,6 @@
 package:
   name: llvmdev
   version: {{ version }}
-  version: {{ "%s%s" % (version, VERSION_SUFFIX) }}
 
 source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz
