@@ -64,12 +64,9 @@ Before building, you must have the following:
 Compiling LLVM
 --------------
 
-If you can build llvmlite inside a conda environment, you can install a
-prebuilt LLVM binary package and skip this step::
+The LLVM build process is fully scripted by conda-build_, and the `llvmdev recipe <https://github.com/numba/llvmlite/tree/master/conda-recipes/llvmdev>`_ is the canonical reference for building LLVM for llvmlite.  Please use it if at all possible!
 
     conda install -c numba llvmdev
-
-The LLVM build process is fully scripted by conda-build_, and the `llvmdev recipe <https://github.com/numba/llvmlite/tree/master/conda-recipes/llvmdev>`_ is the canonical reference for building LLVM for llvmlite.  Please use it if at all possible!
 
 The manual instructions below describe the main steps, but refer to the recipe
 for details:
