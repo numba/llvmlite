@@ -18,8 +18,7 @@ def parse_assembly(llvmir, context=None):
     strbuf = c_char_p(llvmir)
     with ffi.OutputString() as errmsg:
         mod = ModuleRef(
-            ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg),
-            context)
+            ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg))
         if errmsg:
             mod.close()
             raise RuntimeError("LLVM IR parsing error\n{0}".format(errmsg))
@@ -36,7 +35,7 @@ def parse_bitcode(bitcode, context=None):
     bufsize = len(bitcode)
     with ffi.OutputString() as errmsg:
         mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(
-            context, buf, bufsize, errmsg), context)
+            context, buf, bufsize, errmsg))
         if errmsg:
             mod.close()
             raise RuntimeError(
@@ -49,9 +48,8 @@ class ModuleRef(ffi.ObjectRef):
     A reference to a LLVM module.
     """
 
-    def __init__(self, module_ptr, context):
+    def __init__(self, module_ptr):
         super(ModuleRef, self).__init__(module_ptr)
-        self._context = context
 
     def __str__(self):
         with ffi.OutputString() as outstr:
@@ -198,7 +196,7 @@ class ModuleRef(ffi.ObjectRef):
         return _TypesIterator(it, dict(module=self))
 
     def clone(self):
-        return ModuleRef(ffi.lib.LLVMPY_CloneModule(self), self._context)
+        return ModuleRef(ffi.lib.LLVMPY_CloneModule(self))
 
 
 class _Iterator(ffi.ObjectRef):
