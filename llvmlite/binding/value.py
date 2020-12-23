@@ -139,6 +139,20 @@ class ValueRef(ffi.ObjectRef):
     @property
     def is_operand(self):
         return self._kind == 'operand'
+    
+    @property
+    def is_constant(self):
+        """
+        Returns true is the value is Constant.
+        """
+        return ffi.lib.LLVMPY_ValueIsConstant(self)
+
+    @property
+    def is_constant_expr(self):
+        """
+        Returns true is the value is ConstantExpr.
+        """
+        return ffi.lib.LLVMPY_ValueIsConstantExpr(self)
 
     @property
     def name(self):
@@ -516,3 +530,9 @@ ffi.lib.LLVMPY_OperandsIterNext.restype = ffi.LLVMValueRef
 
 ffi.lib.LLVMPY_GetOpcodeName.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetOpcodeName.restype = c_void_p
+
+ffi.lib.LLVMPY_ValueIsConstant.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_ValueIsConstant.restype = c_bool
+
+ffi.lib.LLVMPY_ValueIsConstantExpr.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_ValueIsConstantExpr.restype = c_bool
