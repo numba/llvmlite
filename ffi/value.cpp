@@ -362,6 +362,28 @@ LLVMPY_PrintValueToString(LLVMValueRef Val,
     *outstr = LLVMPrintValueToString(Val);
 }
 
+API_EXPORT(bool)
+LLVMPY_ValueIsConstant(LLVMValueRef Val)
+{
+    if(dyn_cast<Constant>(unwrap(Val))) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+API_EXPORT(bool)
+LLVMPY_ValueIsConstantExpr(LLVMValueRef Val)
+{
+    if(dyn_cast<ConstantExpr>(unwrap(Val))) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
 API_EXPORT(const char *)
 LLVMPY_GetValueName(LLVMValueRef Val)
 {
