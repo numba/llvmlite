@@ -1,0 +1,272 @@
+[PowerPC] Fix missing nop after call to weak callee.
+
+2812c1515627
+
+Authored by stefanp on Tue, Dec 8, 6:57 AM.
+
+Description
+
+[PowerPC] Fix missing nop after call to weak callee.
+
+Weak functions can be replaced by other functions at link time. Previously it
+was assumed that no matter what the weak callee function was replaced with it
+would still share the same TOC as the caller. This is no longer true as a weak
+callee with a TOC setup can be replaced by another function that was compiled
+with PC Relative and does not have a TOC at all.
+
+This patch makes sure that all calls to functions defined as weak from a caller
+that has a valid TOC have a nop after the call to allow a place for the linker
+to restore the TOC.
+
+Reviewed By: NeHuang
+
+Differential Revision: https://reviews.llvm.org/D91983
+
+Backported to llvm-10.x
+
+---
+
+diff --git a/llvm/lib/Target/PowerPC/PPCISelLowering.cpp b/llvm/lib/Target/PowerPC/PPCISelLowering.cpp
+index ca1649fae..23124708d 100644
+--- a/llvm/lib/Target/PowerPC/PPCISelLowering.cpp
++++ b/llvm/lib/Target/PowerPC/PPCISelLowering.cpp
+@@ -4558,7 +4558,15 @@ callsShareTOCBase(const Function *Caller, SDValue Callee,
+    if (!G)
+      return false;
+ 
+-   const GlobalValue *GV = G->getGlobal();
++  const GlobalValue *GV = G->getGlobal();
++
++  // If the GV is not a strong definition then we need to assume it can be
++  // replaced by another function at link time. The function that replaces
++  // it may not share the same TOC as the caller since the callee may be
++  // replaced by a PC Relative version of the same function.
++  if (!GV->isStrongDefinitionForLinker())
++    return false;
++
+   // The medium and large code models are expected to provide a sufficiently
+   // large TOC to provide all data addressing needs of a module with a
+   // single TOC. Since each module will be addressed with a single TOC then we
+@@ -4567,13 +4575,6 @@ callsShareTOCBase(const Function *Caller, SDValue Callee,
+       CodeModel::Large == TM.getCodeModel())
+     return TM.shouldAssumeDSOLocal(*Caller->getParent(), GV);
+ 
+-  // Otherwise we need to ensure callee and caller are in the same section,
+-  // since the linker may allocate multiple TOCs, and we don't know which
+-  // sections will belong to the same TOC base.
+-
+-  if (!GV->isStrongDefinitionForLinker())
+-    return false;
+-
+   // Any explicitly-specified sections and section prefixes must also match.
+   // Also, if we're using -ffunction-sections, then each function is always in
+   // a different section (the same is true for COMDAT functions).
+diff --git a/llvm/test/CodeGen/PowerPC/ppc64-blnop.ll b/llvm/test/CodeGen/PowerPC/ppc64-blnop.ll
+index 6c3b55d59..da08390e0 100644
+--- a/llvm/test/CodeGen/PowerPC/ppc64-blnop.ll
++++ b/llvm/test/CodeGen/PowerPC/ppc64-blnop.ll
+@@ -76,7 +76,7 @@ define void @wo_hcaller(%class.T* %this, i8* %c) {
+ 
+ ; CHECK-LABEL: wo_hcaller:
+ ; CHECK: bl wo_hcallee
+-; CHECK-NOT: nop
++; CHECK-NEXT: nop
+ 
+ ; SCM-LABEL: wo_hcaller:
+ ; SCM:       bl wo_hcallee
+@@ -90,7 +90,7 @@ define void @wo_pcaller(%class.T* %this, i8* %c) {
+ 
+ ; CHECK-LABEL: wo_pcaller:
+ ; CHECK: bl wo_pcallee
+-; CHECK-NOT: nop
++; CHECK-NEXT: nop
+ 
+ ; SCM-LABEL:   wo_pcaller:
+ ; SCM:         bl wo_pcallee
+@@ -114,7 +114,7 @@ define void @w_pcaller(i8* %ptr) {
+ 
+ ; CHECK-LABEL: w_pcaller:
+ ; CHECK: bl w_pcallee
+-; CHECK-NOT: nop
++; CHECK-NEXT: nop
+ 
+ ; SCM-LABEL: w_pcaller:
+ ; SCM:       bl w_pcallee
+@@ -128,7 +128,7 @@ define void @w_hcaller(i8* %ptr) {
+ 
+ ; CHECK-LABEL: w_hcaller:
+ ; CHECK: bl w_hcallee
+-; CHECK-NOT: nop
++; CHECK-NEXT: nop
+ 
+ ; SCM-LABEL: w_hcaller:
+ ; SCM:       bl w_hcallee
+diff --git a/llvm/test/CodeGen/PowerPC/ppc64-calls.ll b/llvm/test/CodeGen/PowerPC/ppc64-calls.ll
+index 245056f7a..87a746093 100644
+--- a/llvm/test/CodeGen/PowerPC/ppc64-calls.ll
++++ b/llvm/test/CodeGen/PowerPC/ppc64-calls.ll
+@@ -23,18 +23,14 @@ define void @test_direct() nounwind readnone {
+   ret void
+ }
+ 
+-; Calls to weak function requires a TOC restore 'nop' with the small codemodel
++; Calls to weak function requires a TOC restore 'nop' with all code models
+ ; because the definition that gets choosen at link time may come from a
+-; different section even though we have seen a weak definition in the same
+-; section at compile time.
+-; With large and medium codemodels no TOC restore is needed, since we know
+-; whichever definition is choosen it resides within the same DSO boundaries and
+-; therefore shares the same TOC.
++; different compilation unit that was compiled with PC Relative and has no TOC.
+ define void @test_weak() nounwind readnone {
+   tail call void @foo_weak() nounwind
+ ; CHECK-LABEL: test_weak:
+-; CHECK: b foo_weak
+-; CHECK-NOT: nop
++; CHECK:       bl foo_weak
++; CHECK-NEXT:  nop
+ 
+ ; SCM-LABEL: test_weak:
+ ; SCM:       bl foo_weak
+diff --git a/llvm/test/CodeGen/PowerPC/ppc64-sibcall.ll b/llvm/test/CodeGen/PowerPC/ppc64-sibcall.ll
+index fc0e71f87..67a027ec6 100644
+--- a/llvm/test/CodeGen/PowerPC/ppc64-sibcall.ll
++++ b/llvm/test/CodeGen/PowerPC/ppc64-sibcall.ll
+@@ -152,7 +152,7 @@ define void @wo_hcaller(%class.T* %this, i8* %c) {
+   ret void
+ 
+ ; CHECK-SCO-LABEL: wo_hcaller:
+-; CHECK-SCO: b wo_hcallee
++; CHECK-SCO: bl wo_hcallee
+ 
+ ; SCM-LABEL: wo_hcaller:
+ ; SCM:       bl wo_hcallee
+@@ -164,7 +164,7 @@ define void @wo_pcaller(%class.T* %this, i8* %c) {
+   ret void
+ 
+ ; CHECK-SCO-LABEL: wo_pcaller:
+-; CHECK-SCO: b wo_pcallee
++; CHECK-SCO: bl wo_pcallee
+ 
+ ; SCM-LABEL: wo_pcaller:
+ ; SCM:       bl wo_pcallee
+@@ -176,7 +176,7 @@ define void @wo_caller(%class.T* %this, i8* %c) {
+   ret void
+ 
+ ; CHECK-SCO-LABEL: wo_caller:
+-; CHECK-SCO: b wo_callee
++; CHECK-SCO: bl wo_callee
+ 
+ ; SCM-LABEL: wo_caller:
+ ; SCM:       bl wo_callee
+@@ -188,7 +188,7 @@ define void @w_pcaller(i8* %ptr) {
+   ret void
+ 
+ ; CHECK-SCO-LABEL: w_pcaller:
+-; CHECK-SCO: b w_pcallee
++; CHECK-SCO: bl w_pcallee
+ 
+ ; SCM-LABEL: w_pcaller:
+ ; SCM:       bl w_pcallee
+@@ -200,7 +200,7 @@ define void @w_hcaller(i8* %ptr) {
+   ret void
+ 
+ ; CHECK-SCO-LABEL: w_hcaller:
+-; CHECK-SCO: b w_hcallee
++; CHECK-SCO: bl w_hcallee
+ 
+ ; SCM-LABEL: w_hcaller:
+ ; SCM:       bl w_hcallee
+@@ -212,7 +212,7 @@ define void @w_caller(i8* %ptr) {
+   ret void
+ 
+ ; CHECK-SCO-LABEL: w_caller:
+-; CHECK-SCO: b w_callee
++; CHECK-SCO: bl w_callee
+ 
+ ; SCM-LABEL: w_caller:
+ ; SCM:       bl w_callee
+diff --git a/llvm/test/CodeGen/PowerPC/pr41088.ll b/llvm/test/CodeGen/PowerPC/pr41088.ll
+index 26094358c..f3899bb15 100644
+--- a/llvm/test/CodeGen/PowerPC/pr41088.ll
++++ b/llvm/test/CodeGen/PowerPC/pr41088.ll
+@@ -54,6 +54,7 @@ define void @test(%6* %arg, %7* %arg1, %12* %arg2) unnamed_addr personality i32
+ ; CHECK-NEXT:  # %bb.2: # %bb12
+ ; CHECK-NEXT:    clrldi r4, r3, 32
+ ; CHECK-NEXT:    bl test3
++; CHECK-NEXT:    nop
+ ; CHECK-NEXT:    addi r1, r1, 32
+ ; CHECK-NEXT:    ld r0, 16(r1)
+ ; CHECK-NEXT:    mtlr r0
+diff --git a/llvm/test/CodeGen/PowerPC/preemption.ll b/llvm/test/CodeGen/PowerPC/preemption.ll
+index 9a0d81fbb..96365900e 100644
+--- a/llvm/test/CodeGen/PowerPC/preemption.ll
++++ b/llvm/test/CodeGen/PowerPC/preemption.ll
+@@ -170,7 +170,7 @@ define signext i32 @weak_default_function_caller(i32 %i) {
+ 
+ ; STATIC-LABEL: @weak_default_function_caller
+ ; STATIC:       bl weak_default_function
+-; STATIC-NOT:   nop
++; STATIC-NEXT:  nop
+ ; STATIC:       blr
+ 
+ ; CHECK-LABEL:  @weak_default_function_caller
+@@ -223,12 +223,12 @@ define signext i32 @weak_local_function_caller(i32 %i) {
+ 
+ ; STATIC-LABEL: @weak_local_function_caller
+ ; STATIC:       bl weak_local_function
+-; STATIC-NOT:   nop
++; STATIC-NEXT:  nop
+ ; STATIC:       blr
+ 
+ ; CHECK-LABEL:  @weak_local_function_caller
+ ; CHECK:        bl weak_local_function
+-; CHECK-NOT:    nop
++; CHECK-NEXT:   nop
+ ; CHECK:        blr
+ }
+ 
+@@ -239,12 +239,12 @@ define i32 @external_local_function_caller(i32 %i) {
+ 
+ ; STATIC-LABEL: @external_local_function_caller
+ ; STATIC:       bl external_local_function
+-; STATIC-NOT:  nop
++; STATIC-NEXT:  nop
+ ; STATIC:       blr
+ 
+ ; CHECK-LABEL:  @external_local_function_caller
+ ; CHECK:        bl external_local_function
+-; CHECK-NOT:    nop
++; CHECK-NEXT:   nop
+ ; CHECK:        blr
+ }
+ 
+@@ -275,7 +275,7 @@ define signext i32 @weak_preemptable_function_caller(i32 %i) {
+ 
+ ; STATIC-LABEL: @weak_preemptable_function_caller
+ ; STATIC:       bl weak_preemptable_function
+-; STATIC-NOT:   nop
++; STATIC-NEXT:  nop
+ ; STATIC:       blr
+ 
+ ; CHECK-LABEL:  @weak_preemptable_function_caller
+diff --git a/llvm/test/CodeGen/PowerPC/xray-tail-call-hidden.ll b/llvm/test/CodeGen/PowerPC/xray-tail-call-hidden.ll
+index 3b1cd5f58..d427dbb42 100644
+--- a/llvm/test/CodeGen/PowerPC/xray-tail-call-hidden.ll
++++ b/llvm/test/CodeGen/PowerPC/xray-tail-call-hidden.ll
+@@ -12,12 +12,12 @@ define i32 @caller() nounwind noinline uwtable "function-instrument"="xray-alway
+ ; CHECK-NEXT:         nop
+ ; CHECK-NEXT:         mtlr 0
+ ; CHECK-LABEL: .Ltmp1:
++; CHECK:              bl callee
++; CHECK-NEXT:         nop
+   %retval = tail call i32 @callee()
+   ret i32 %retval
+ ; CHECK-LABEL: .Ltmp2:
+-; CHECK:              b callee
+-; CHECK-NEXT:         nop
+-; CHECK-NEXT:         std 0, -8(1)
++; CHECK:              std 0, -8(1)
+ ; CHECK-NEXT:         mflr 0
+ ; CHECK-NEXT:         bl __xray_FunctionExit
+ ; CHECK-NEXT:         nop

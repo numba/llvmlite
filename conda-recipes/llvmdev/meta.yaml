@@ -45,6 +45,8 @@ source:
     # * https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     - ../intel-D47188-svml-VF.patch
     - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
+    # * https://github.com/numba/numba/issues/6606
+    - ../weak_GV_add_TOC_nop_by_stefanp.patch
     {% endif %}
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
