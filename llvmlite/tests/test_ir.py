@@ -645,14 +645,16 @@ my_block:
     def test_unary_ops(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
-        builder.neg(a, 'c')
-        builder.not_(b, 'd')
+        a, b, c = builder.function.args[:3]
+        builder.neg(a, 'd')
+        builder.not_(b, 'e')
+        builder.fneg(c, 'f')
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
-                %"c" = sub i32 0, %".1"
-                %"d" = xor i32 %".2", -1
+                %"d" = sub i32 0, %".1"
+                %"e" = xor i32 %".2", -1
+                %"f" = fneg double %".3"
             """)
 
     def test_replace_operand(self):
