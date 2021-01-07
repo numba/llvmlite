@@ -66,8 +66,6 @@ Compiling LLVM
 
 The LLVM build process is fully scripted by conda-build_, and the `llvmdev recipe <https://github.com/numba/llvmlite/tree/master/conda-recipes/llvmdev>`_ is the canonical reference for building LLVM for llvmlite.  Please use it if at all possible!
 
-    conda install -c numba llvmdev
-
 The manual instructions below describe the main steps, but refer to the recipe
 for details:
 
