@@ -1,9 +1,9 @@
 ========
 llvmlite
 ========
-.. image:: https://travis-ci.org/numba/llvmlite.svg?branch=master
-   :target: https://travis-ci.org/numba/llvmlite
-   :alt: Travis CI
+.. image:: https://dev.azure.com/numba/numba/_apis/build/status/numba.llvmlite?branchName=refs%2Fpull%2F676%2Fmerge
+   :target: https://dev.azure.com/numba/numba/_build/latest?definitionId=2&branchName=refs%2Fpull%2F676%2Fmerge
+   :alt: Azure Pipelines
 .. image:: https://codeclimate.com/github/numba/llvmlite/badges/gpa.svg
    :target: https://codeclimate.com/github/numba/llvmlite
    :alt: Code Climate
