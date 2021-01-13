@@ -1580,5 +1580,34 @@ class TestTimePasses(BaseTest):
         self.assertFalse(llvm.report_and_reset_timings())
 
 
+class TestLLVMLockCallbacks(BaseTest):
+    def test_lock_callbacks(self):
+        events = []
+
+        def acq():
+            events.append('acq')
+
+        def rel():
+            events.append('rel')
+
+        # register callback
+        llvm.ffi.register_lock_callback(acq, rel)
+
+        # Check: events are initially empty
+        self.assertFalse(events)
+        # Call LLVM functions
+        llvm.create_module_pass_manager()
+        # Check: there must be at least one acq and one rel
+        self.assertIn("acq", events)
+        self.assertIn("rel", events)
+
+        # unregister callback
+        llvm.ffi.unregister_lock_callback(acq, rel)
+
+        # Check: removing non-existent callbacks will trigger a ValueError
+        with self.assertRaises(ValueError):
+            llvm.ffi.unregister_lock_callback(acq, rel)
+
+
 if __name__ == "__main__":
     unittest.main()
