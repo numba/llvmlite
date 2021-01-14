@@ -14,12 +14,8 @@ llvmlite
    :target: https://llvmlite.readthedocs.io
    :alt: Readthedocs.io
 
-A lightweight LLVM python binding for writing JIT compilers
-
-The old llvmpy_  binding exposes a lot of LLVM APIs but the mapping of
-C++-style memory management to Python is error prone. Numba_ and many JIT
-compilers do not need a full LLVM API.  Only the IR builder, optimizer,
-and JIT compiler APIs are necessary.
+A Lightweight LLVM Python Binding for Writing JIT Compilers
+-----------------------------------------------------------
 
 .. _llvmpy: https://github.com/llvmpy/llvmpy
 
@@ -31,7 +27,14 @@ following approach:
 * A ctypes Python wrapper around the C API.
 * A pure Python implementation of the subset of the LLVM IR builder that we
   need for Numba.
+  
+Why llvmlite
+============
 
+The old llvmpy_  binding exposes a lot of LLVM APIs but the mapping of
+C++-style memory management to Python is error prone. Numba_ and many JIT
+compilers do not need a full LLVM API.  Only the IR builder, optimizer,
+and JIT compiler APIs are necessary.
 
 Key Benefits
 ============
