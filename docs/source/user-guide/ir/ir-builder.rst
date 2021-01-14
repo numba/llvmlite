@@ -301,6 +301,10 @@ Floating-point
 
      Floating-point remainder of *lhs* divided by *rhs*.
 
+* .. method:: IRBuilder.fneg(arg, name='', flags=())
+
+     Floating-point negation of *arg*.
+
 
 Conversions
 -----------
