@@ -31,5 +31,6 @@ implement Numba_'s JIT compiler.
    optimization-passes
    analysis-utilities
    pass_timings
+   misc
    examples
 
