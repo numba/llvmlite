@@ -38,7 +38,7 @@ LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
 
 
 class _LLVMLock:
-    """A Lock to guarantee thread-safety for LLVM C-API.
+    """A Lock to guarantee thread-safety for the LLVM C-API.
 
     This class implements __enter__ and __exit__ for acquiring and releasing
     the lock as a context manager.
@@ -53,7 +53,7 @@ class _LLVMLock:
         self._cblist = []
 
     def register(self, acq_fn, rel_fn):
-        """Register callbacks that is invoked immediately after the lock is
+        """Register callbacks that are invoked immediately after the lock is
         acquired (``acq_fn()``) and immediately before the lock is released
         (``rel_fn()``).
         """
