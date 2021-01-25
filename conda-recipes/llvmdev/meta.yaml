@@ -13,7 +13,7 @@
 {% set version = "10.0.1" %}
 {% set sha256_llvm = "c5d8e30b57cbded7128d78e5e8dad811bff97a8d471896812f57fa99ee82cdf3" %}
 {% set sha256_lld = "591449e0aa623a6318d5ce2371860401653c48bb540982ccdd933992cb88df7a" %}
-{% set build_number = "1" %}
+{% set build_number = "2" %}
 
 {% endif %}
 
@@ -72,16 +72,11 @@ requirements:
     - {{ compiler('c') }} # [unix and not (armv6l or armv7l)]
     - {{ compiler('cxx') }} # [unix and not (armv6l or armv7l)]
     - cmake
+    - make # [unix and not (armv6l or armv7l or aarch64)]
     # Needed to unpack the source tarball
-    - m2w64-xz  # [py27 and win]
-    # ninja not currently used, bld.bat needs an update
-    - ninja  # [win]
+    - m2w64-xz  # [win]
     # Needed to build LLVM
     - python >=3
-    # need vs2015_runtime to build, do not want it at run time
-    # as extensions for py27 need vs2008
-    - vs2015_runtime # [win]
-    - make # [unix and not (armv6l or armv7l or aarch64)]
   host:
     # needed for llc at runtime
     - zlib # [not win]

@@ -37,5 +37,5 @@ index 31df6408..4538f912 100644
 +    ${CMAKE_CURRENT_SOURCE_DIR}/test/lit.cfg.py
 +    )
  endif()
-
+ 
  if (LLVM_INCLUDE_DOCS)
