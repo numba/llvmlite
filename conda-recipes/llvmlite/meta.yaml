@@ -13,6 +13,8 @@ build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   script_env:
     - PY_VCRUNTIME_REDIST
+    - LLVMLITE_SHARED
+    - LLVMLITE_USE_CMAKE
 
 requirements:
   build:
