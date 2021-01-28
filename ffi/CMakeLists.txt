@@ -6,6 +6,11 @@ project(llvmlite_ffi)
 
 include(CheckIncludeFiles)
 
+if(NOT MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -g")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g")
+endif()
+
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
