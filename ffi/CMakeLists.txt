@@ -6,6 +6,11 @@ project(llvmlite_ffi)
 
 include(CheckIncludeFiles)
 
+if(NOT MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -g")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g")
+endif()
+
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -43,7 +48,11 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
 # the LLVM cmake setup, so we use the workaround instead.
 # Bug reported upstream at: https://bugs.llvm.org/show_bug.cgi?id=47003
 # BROKEN: llvm_map_components_to_libnames(llvm_libs all)
-set(llvm_libs ${LLVM_AVAILABLE_LIBS})
+if ($ENV{LLVMLITE_SHARED})
+    set(llvm_libs LLVM)
+else()
+    set(llvm_libs ${LLVM_AVAILABLE_LIBS})
+endif()
 
 # Since LLVM 8 "OptRemarks" is built as a shared library only and also appears
 # under the llvm_libs for the "all" components map. This breaks static linking

@@ -102,7 +102,19 @@ def main_windows():
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
 
 
+def main_posix_cmake(kind, library_ext):
+    generator = 'Unix Makefiles'
+    config = 'Release'
+    if not os.path.exists(build_dir):
+        os.mkdir(build_dir)
+    try_cmake(here_dir, build_dir, generator)
+    subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
+    shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext), target_dir)
+
 def main_posix(kind, library_ext):
+    if os.environ.get("LLVMLITE_USE_CMAKE", "0") == "1":
+        return main_posix_cmake(kind, library_ext)
+
     os.chdir(here_dir)
     # Check availability of llvm-config
     llvm_config = os.environ.get('LLVM_CONFIG', 'llvm-config')
