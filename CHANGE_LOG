@@ -21,6 +21,7 @@ Pull requests:
 * PR #673: use build 2 on windows
 * PR #677: Support building with CMake on posix systems
 * PR #682: slight rearrangement of intro
+* PR #685: Added fneg instruction
 * PR #687: Cleanup public CI configuration and badge
 * PR #689: fixup azure badge to point at master branch
 * PR #690: Callback to track when the llvm lock is acquired and released
