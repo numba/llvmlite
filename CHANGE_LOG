@@ -1,3 +1,42 @@
+v0.36.0RC1 (February 03, 2021)
+---------------------------
+
+The main features in this release is Python 3.9 support. Also, some changes to
+the build scripts were included: the llvmdev recipe now supports compilation on
+Windows 10 and llvmlite may now be compiled with cmake on POSIX systems.
+Additionally, both the timings from the LLVM passes themselves and the time
+spent within the LLVM thread-safe access lock are now available for diagnostic
+purposes. Lastly, several minor cosmetic changes to the documentation and
+project files are included.
+
+* PR #624: Expose pass timings
+* PR #655: Switch encoding to UTF-8 from latin1
+* PR #662: Delete `requirements.txt`
+* PR #666: fix rst syntax in install docs
+* PR #668: Modify cmake options to work with VS2019
+* PR #670: Llvmdev windows 10
+* PR #671: Python 3.9 support
+* PR #673: use build 2 on windows
+* PR #677: Support building with CMake on posix systems
+* PR #682: slight rearrangement of intro
+* PR #687: Cleanup public CI configuration and badge
+* PR #689: fixup azure badge to point at master branch
+* PR #690: Callback to track when the llvm lock is acquired and released
+
+Authors:
+
+@ARF1
+@abebeos
+@0x5h4un
+Peter-Jan Gootzen
+John Kirkham
+Graham Markall
+Uwe L. Korn
+Stan Seibert (core dev)
+Valentin Haenel (core dev)
+Siu Kwan Lam (core dev)
+Stuart Archibald (core dev)
+
 v0.35.0 (November 30, 2020)
 ---------------------------
 
