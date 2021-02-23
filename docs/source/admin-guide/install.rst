@@ -27,13 +27,15 @@ Official Conda packages are available in the Anaconda_ distribution::
     conda install llvmlite
 
 Development releases are built from the Git master branch and uploaded to
-the Numba_ channel on `Anaconda Cloud <https://anaconda.org/numba>`_::
+the Numba_ development channel on `Anaconda Cloud <https://anaconda.org/numba>`_::
 
-    conda install --channel numba llvmlite
+    conda install -c numba/label/dev llvmlite
 
 Binary wheels are also available for installation from PyPI_::
 
     pip install llvmlite
+
+Development releases for binary wheels are not made available.
 
 Contrary to what you might expect, the llvmlite packages built by the Numba
 maintainers do *not* use any LLVM shared libraries that may be present on the
