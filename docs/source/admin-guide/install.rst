@@ -47,7 +47,7 @@ also that llvmlite packages compiled by other parties, e.g. conda-forge may
 split this into and ``llvmlite`` and ``llvm`` package.
 
 Conda packages:
-~~~~~~~~~~~~~~~
+---------------
 
 The Numba maintainers ship to the Numba channel:
 
@@ -75,7 +75,7 @@ called ``libllvm`` that contains the DSOs, but the ``llvm`` package is referred 
 so as to get the ``run_exports``).
 
 Using `pip`
-~~~~~~~~~~~
+-----------
 
 The Numba maintainers ship binary wheels:
 
