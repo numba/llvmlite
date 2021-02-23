@@ -44,7 +44,7 @@ are statically linked at build time.  As a result, installing llvmlite from a
 binary package does not also require the end user to install LLVM.  (For more
 details on the reasoning behind this, see: :ref:`faq_why_static`). Note however
 also that llvmlite packages compiled by other parties, e.g. conda-forge may
-split this into and `llvmlite` and `llvm` package.
+split this into and ``llvmlite`` and ``llvm`` package.
 
 Conda packages:
 ~~~~~~~~~~~~~~~
@@ -57,56 +57,56 @@ The Numba maintainers ship to the Numba channel:
 
 The llvmdev packages are not needed at runtime by llvmlite packages as
 llvmlite's dynamic libraries are statically linked (see above) at compile time
-against LLVM through the dependency on the `llvmdev` package.
+against LLVM through the dependency on the ``llvmdev`` package.
 
 The Anaconda distribution and conda-forge channels ship:
 
   * Numba packages
   * llvmlite packages
-  * LLVM split into runtime libraries (package called `llvm`) and compile time
+  * LLVM split into runtime libraries (package called ``llvm``) and compile time
     libraries/headers etc this contains a build of LLVM (package called
-    `llvmdev`)
+    ``llvmdev``)
 
-At compile time the `llvmdev` and `llvm` packages are used to build llvmlite and
+At compile time the ``llvmdev`` and ``llvm`` packages are used to build llvmlite and
 llvmlite's dynamic libraries are dynamically linked against the libraries in the
-`llvm` meta-package. This means at runtime `llvmlite` depends on the `llvm`
+``llvm`` meta-package. This means at runtime ``llvmlite`` depends on the ``llvm``
 package which has the LLVM shared libraries in it (it's actually a package
-called `libllvm` that contains the DSOs, but the `llvm` package is referred to
-so as to get the `run_exports`).
+called ``libllvm`` that contains the DSOs, but the ``llvm`` package is referred to
+so as to get the ``run_exports``).
 
 Using `pip`
 ~~~~~~~~~~~
 
 The Numba maintainers ship binary wheels:
 
-  * Numba wheels (`x86*` architectures)
-  * llvmlite wheels (`x86*` architectures)
+  * Numba wheels (``x86*`` architectures)
+  * llvmlite wheels (``x86*`` architectures)
 
 Note that the llvmlite wheels are statically linked against LLVM, as per the
 conda packages on the Numba channel. This mitigates the need for a LLVM based
 binary wheel. Not also that this, as of version 0.36 does not include the
-`aarch64` architectures, for example installation on a RaspberryPis is not
+``aarch64`` architectures, for example installation on a RaspberryPis is not
 supported.
 
-The Numba maintainers ship an `sdist` for:
+The Numba maintainers ship an ``sdist`` for:
 
   * Numba
   * llvmlite
 
-Note that there is no `sdist` provided for LLVM. If you try and build `llvmlite`
-from `sdist` you will need to bootstrap the package with your own appropriate
+Note that there is no ``sdist`` provided for LLVM. If you try and build ``llvmlite``
+from ``sdist`` you will need to bootstrap the package with your own appropriate
 LLVM.
 
 How this ends up being a problem.
 
-1. If you are on an unsupported architecture (i.e. not `x86*`) or unsupported
-   Python version for binary wheels (e.g. Python alphas) then `pip` will try and
-   build Numba from `sdist` which in turn will try and build `llvmlite` from
-   `sdist`. This will inevitably fail as the `llvmlite` source distribution
+1. If you are on an unsupported architecture (i.e. not ``x86*``) or unsupported
+   Python version for binary wheels (e.g. Python alphas) then ``pip`` will try and
+   build Numba from ``sdist`` which in turn will try and build ``llvmlite`` from
+   ``sdist``. This will inevitably fail as the ``llvmlite`` source distribution
    needs an appropriate LLVM installation to build.
-2. If you are using `pip < 19.0` then `manylinux2010` wheels will not
+2. If you are using ``pip < 19.0`` then ``manylinux2010`` wheels will not
    install and you end up in the situation in 1. i.e. something unsupported so
-   building from `sdist`.
+   building from ``sdist``.
 
 Historically, this issues has manifested itself as the following error
 message, which included here verbatim for future reference::
@@ -115,15 +115,15 @@ message, which included here verbatim for future reference::
 
 Things to "fix" it...
 
-1. If you are using `pip < 19.0` and on `x86*`, then update it if you can, this will
-   let you use the `manylinux2010` binary wheels.
+1. If you are using ``pip < 19.0`` and on ``x86*``, then update it if you can, this will
+   let you use the ``manylinux2010`` binary wheels.
 
 2. If you are on an unsupported architecture, for example RaspberryPis, please
-   use `conda` if you have that available.
+   use ``conda`` if you have that available.
 
 3. Otherwise: you will probably need to build from source, this means providing
    an LLVM. If you have conda available you could use this to bootstrap the
-   installation with a working `llvm`/`llvmdev` package. If you have a system
+   installation with a working ``llvm``/`llvmdev` package. If you have a system
    LLVM that's of an appropriate version you could use that. See
    https://llvmlite.readthedocs.io/en/latest/admin-guide/install.html#building-manually
    and in particular note the use of the ``LLVM_CONFIG`` environment variable
