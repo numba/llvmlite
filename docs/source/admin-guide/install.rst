@@ -9,10 +9,11 @@ The Numba/llvmlite stack consists of the following major components:
 * *LLVM*  is the JIT compiler framework for producing executable code from various
   inputs.
 
-All components must be compiled to binary to be used. And since each component
+All components must be compiled in order to be used. And, since each component
 on the stack depends on the previous one, you need to compile LLVM in order to
-compile llvmlite and then Numba. The LLVM package has a significant size and
-may take significant time and skill to compile depending on the platform.
+compile llvmlite in order to compile Numba. The LLVM package has a significant
+size and may take significant time (magnitude, roughly an hour) and skill to
+compile depending on the platform.
 
 Pre-built binaries
 ==================
