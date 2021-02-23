@@ -129,6 +129,12 @@ Things to "fix" it...
    and in particular note the use of the ``LLVM_CONFIG`` environment variable
    for specifying where your LLVM install is.
 
+What not to do...
+
+1. Do not install a  pre-built LLVM package through your package manager (apt,
+   yum, brew...) or otherwise. The LLVM contained within almost certainly
+   doesn't carry the patches needed for running the Numba/llvmlite stack. Doing
+   this anyway may result in erroneous behaviour at runtime.
 
 Building manually
 =================
