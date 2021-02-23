@@ -124,8 +124,9 @@ def main_posix(kind, library_ext):
         out = subprocess.check_output([llvm_config, '--version'])
     except FileNotFoundError:
         msg = ("Could not find a `llvm-config` binary. There are a number of "
-               "reasons this could occur, please see: <TODO:REFERENCE> for "
-               "help.")
+               "reasons this could occur, please see: "
+               "https://llvmlite.readthedocs.io/en/latest/admin-guide/"
+               "install.html#using-pip for help.")
         # Raise from None, this is to hide the file not found for llvm-config
         # as this tends to cause users to install an LLVM which may or may not
         # work. Redirect instead to some instructions about how to deal with
