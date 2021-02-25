@@ -908,9 +908,11 @@ class IRBuilder(object):
         return self.asm(ftype, "", "{%s}" % reg_name, [value], True, name)
 
     def invoke(self, fn, args, normal_to, unwind_to,
-               name='', cconv=None):
+               name='', cconv=None, fastmath=(), attrs=(), arg_attrs=None):
         inst = instructions.InvokeInstr(self.block, fn, args, normal_to,
-                                        unwind_to, name=name, cconv=cconv)
+                                        unwind_to, name=name, cconv=cconv,
+                                        fastmath=fastmath, attrs=attrs,
+                                        arg_attrs=arg_attrs)
         self._set_terminator(inst)
         return inst
 

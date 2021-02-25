@@ -154,10 +154,12 @@ class CallInstr(Instruction):
 
 class InvokeInstr(CallInstr):
     def __init__(self, parent, func, args, normal_to, unwind_to, name='',
-                 cconv=None):
+                 cconv=None, fastmath=(), attrs=(), arg_attrs=None):
         assert isinstance(normal_to, Block)
         assert isinstance(unwind_to, Block)
-        super(InvokeInstr, self).__init__(parent, func, args, name, cconv)
+        super(InvokeInstr, self).__init__(parent, func, args, name, cconv,
+                                          tail=False, fastmath=fastmath,
+                                          attrs=attrs, arg_attrs=arg_attrs)
         self.opname = "invoke"
         self.normal_to = normal_to
         self.unwind_to = unwind_to
