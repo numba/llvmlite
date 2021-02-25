@@ -576,13 +576,11 @@ The following methods are all :ref:`terminators <terminator>`:
 Exception handling
 ------------------
 
-* .. method:: IRBuilder.invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None, tail=False)
+* .. method:: IRBuilder.invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None)
 
      Call function *fn* with arguments *args*, a sequence of values.
 
-     * *cconv* is the optional calling convention.
-     * *tail*, if ``True``, is a hint for the optimizer to perform
-       tail-call optimization.
+     *cconv* is the optional calling convention.
 
      If the function *fn* returns normally, control is transferred
      to *normal_to*. Otherwise, it is transferred to *unwind_to*,
