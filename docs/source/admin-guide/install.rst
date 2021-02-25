@@ -125,18 +125,22 @@ Things to "fix" it...
 
 3. Otherwise: you will probably need to build from source, this means providing
    an LLVM. If you have conda available you could use this to bootstrap the
-   installation with a working ``llvm``/``llvmdev`` package. If you have a system
-   LLVM that's of an appropriate version you could use that. See
-   https://llvmlite.readthedocs.io/en/latest/admin-guide/install.html#building-manually
+   installation with a working ``llvm``/``llvmdev`` package. Learn more about
+   compiling from source in the section on `Building manually`_ below.
    and in particular note the use of the ``LLVM_CONFIG`` environment variable
    for specifying where your LLVM install is.
 
-What not to do...
+What to be aware of when using a pre-built LLVM package
+.......................................................
 
-1. Do not install a  pre-built LLVM package through your package manager (apt,
-   yum, brew...) or otherwise. The LLVM contained within almost certainly
-   doesn't carry the patches needed for running the Numba/llvmlite stack. Doing
-   this anyway may result in erroneous behaviour at runtime.
+When using a system provided LLVM package, there are a number of things that
+could go wrong:
+
+1. The LLVM package may not work with Numba/llvmlite at all
+2. If it does it is unlikely the carry the correct patches for Numba/llvmlite
+   to work appropriately.
+3. Since the Numba/llvmlite maintainers may not know how the package was
+   compiled it may be more difficult to get help when things do go wrong.
 
 Building manually
 =================
