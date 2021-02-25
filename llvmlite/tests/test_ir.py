@@ -1181,6 +1181,30 @@ my_block:
                 call void @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
             """)  # noqa E501
 
+    def test_call_attributes(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(
+            ir.VoidType(), (int32.as_pointer(), int32, int32.as_pointer()))
+        fun = ir.Function(builder.function.module, fun_ty, 'fun')
+        fun.args[0].add_attribute('sret')
+        retval = builder.alloca(int32, name='retval')
+        other = builder.alloca(int32, name='other')
+        builder.call(
+            fun,
+            (retval, ir.Constant(int32, 42), other),
+            arg_attrs={
+                0: ('sret', 'noalias'),
+                2: 'noalias'
+            }
+        )
+        self.check_block(block, """\
+        my_block:
+            %"retval" = alloca i32
+            %"other" = alloca i32
+            call void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other")
+        """)  # noqa E501
+
     def test_invoke(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
