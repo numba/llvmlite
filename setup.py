@@ -21,6 +21,39 @@ from distutils.spawn import spawn
 import os
 import sys
 
+
+_version_module = None
+try:
+    from packaging import version as _version_module
+except ImportError:
+    try:
+        from setuptools._vendor.packaging import version as _version_module
+    except ImportError:
+        pass
+
+
+min_python_version = "3.6"
+max_python_version = "3.10"  # exclusive
+
+
+def _guard_py_ver():
+    if _version_module is None:
+        return
+
+    parse = _version_module.parse
+
+    min_py = parse(min_python_version)
+    max_py = parse(max_python_version)
+    cur_py = parse('.'.join(map(str, sys.version_info[:3])))
+
+    if not min_py <= cur_py < max_py:
+        msg = ('Cannot install on Python version {}; only versions >={},<{} '
+               'are supported.')
+        raise RuntimeError(msg.format(cur_py, min_py, max_py))
+
+
+_guard_py_ver()
+
 if os.environ.get('READTHEDOCS', None) == 'True':
     sys.exit("setup.py disabled on readthedocs: called with %s"
              % (sys.argv,))
@@ -192,5 +225,6 @@ setup(name='llvmlite',
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,
-      python_requires=">=3.6",
+      python_requires=">={},<{}".format(min_python_version,
+                                        max_python_version),
       )
