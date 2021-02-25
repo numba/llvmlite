@@ -18,8 +18,8 @@ compile depending on the platform.
 Pre-built binaries
 ==================
 
-As mentioned above, building LLVM for llvmlite is challenging. Installing a binary
-package that has been built and tested is *strongly* recommend.
+As mentioned above, building LLVM for llvmlite is challenging. Installing a
+binary package that has been built and tested is *strongly* recommend.
 
 Official Conda packages are available in the Anaconda_ distribution::
 
