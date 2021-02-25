@@ -130,15 +130,15 @@ Things to "fix" it...
    and in particular note the use of the ``LLVM_CONFIG`` environment variable
    for specifying where your LLVM install is.
 
-What to be aware of when using a pre-built LLVM package
-.......................................................
+What to be aware of when using a system provided LLVM package.
+..............................................................
 
 When using a system provided LLVM package, there are a number of things that
 could go wrong:
 
-1. The LLVM package may not work with Numba/llvmlite at all
-2. If it does it is unlikely the carry the correct patches for Numba/llvmlite
-   to work appropriately.
+1. The LLVM package may not work with Numba/llvmlite at all.
+2. If it does work to some degree it is unlikely the carry the correct patches
+   for Numba/llvmlite to work entirely correctly.
 3. Since the Numba/llvmlite maintainers may not know how the package was
    compiled it may be more difficult to get help when things do go wrong.
 
