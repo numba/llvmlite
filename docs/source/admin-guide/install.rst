@@ -98,6 +98,7 @@ from ``sdist`` you will need to bootstrap the package with your own appropriate
 LLVM.
 
 How this ends up being a problem.
+.................................
 
 1. If you are on an unsupported architecture (i.e. not ``x86*``) or unsupported
    Python version for binary wheels (e.g. Python alphas) then ``pip`` will try and
@@ -114,6 +115,7 @@ message, which included here verbatim for future reference::
     FileNotFoundError: [Errno 2] No such file or directory: 'llvm-config'
 
 Things to "fix" it...
+.....................
 
 1. If you are using ``pip < 19.0`` and on ``x86*``, then update it if you can, this will
    let you use the ``manylinux2010`` binary wheels.
