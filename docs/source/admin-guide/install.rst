@@ -2,31 +2,145 @@
 Installation
 ==============
 
-Contrary to what you might expect, llvmlite does *not* use any LLVM shared
-libraries that may be present on the system, or in the conda environment.  The
-parts of LLVM required by llvmlite are statically linked at build time.  As a
-result, installing llvmlite from a binary package does not also require the
-end user to install LLVM.  (For more details on the reasoning behind this,
-see: :ref:`faq_why_static`).
+The Numba/llvmlite stack consists of the following major components:
+
+* *Numba* is the compiler package, this depends on llvmlite.
+* *llvmlite* is a lightweight binding package to the LLVM APIs, it depends on LLVM.
+* *LLVM*  is the JIT compiler framework for producing executable code from various
+  inputs.
+
+All components must be compiled in order to be used. And, since each component
+on the stack depends on the previous one, you need to compile LLVM in order to
+compile llvmlite in order to compile Numba. The LLVM package is a significant
+size and may take significant time (magnitude, roughly an hour) and skill to
+compile depending on the platform.
 
 Pre-built binaries
 ==================
 
-Building LLVM for llvmlite is challenging, so we *strongly* recommend
-installing a binary package where we have built and tested everything for you.
-Official conda packages are available in the Anaconda_ distribution::
+As mentioned above, building LLVM for llvmlite is challenging. Installing a
+binary package that has been built and tested is *strongly* recommend.
+
+Official Conda packages are available in the Anaconda_ distribution::
 
     conda install llvmlite
 
 Development releases are built from the Git master branch and uploaded to
-the Numba_ channel on `Anaconda Cloud <https://anaconda.org/numba>`_::
+the Numba_ development channel on `Anaconda Cloud <https://anaconda.org/numba>`_::
 
-    conda install --channel numba llvmlite
+    conda install -c numba/label/dev llvmlite
 
 Binary wheels are also available for installation from PyPI_::
 
     pip install llvmlite
 
+Development releases of binary wheels are not made available.
+
+Contrary to what might be expected, the llvmlite packages built by the Numba
+maintainers do *not* use any LLVM shared libraries that may be present on the
+system, and/or in the Conda environment. The parts of LLVM required by llvmlite
+are statically linked at build time.  As a result, installing llvmlite from a
+binary package from the Numba channel does not also require the end user to
+install LLVM.  (For more
+details on the reasoning behind this, see: :ref:`faq_why_static`). Note however
+also that llvmlite packages compiled by other parties, e.g. conda-forge may
+split this into and ``llvmlite`` and ``llvm`` package and link dynamically.
+
+Conda packages:
+---------------
+
+The Numba maintainers ship to the Numba channel:
+
+  * Numba packages
+  * llvmlite packages
+  * llvmdev packages (this contains a build of LLVM)
+
+The llvmdev packages are not needed at runtime by llvmlite packages as
+llvmlite's dynamic libraries are statically linked (see above) at compile time
+against LLVM through the dependency on the ``llvmdev`` package.
+
+The Anaconda distribution and conda-forge channels ship:
+
+  * Numba packages
+  * llvmlite packages
+  * LLVM split into runtime libraries (package called ``llvm``) and compile time
+    libraries/headers etc this contains a build of LLVM (package called
+    ``llvmdev``)
+
+At compile time the ``llvmdev`` and ``llvm`` packages are used to build llvmlite and
+llvmlite's dynamic libraries are dynamically linked against the libraries in the
+``llvm`` meta-package. This means at runtime ``llvmlite`` depends on the ``llvm``
+package which has the LLVM shared libraries in it (it's actually a package
+called ``libllvm`` that contains the DSOs, but the ``llvm`` package is referred to
+so as to get the ``run_exports``).
+
+Using ``pip``
+-------------
+
+The Numba maintainers ship binary wheels:
+
+  * Numba wheels (``x86*`` architectures)
+  * llvmlite wheels (``x86*`` architectures)
+
+Note that the llvmlite wheels are statically linked against LLVM, as per the
+conda packages on the Numba channel. This mitigates the need for a LLVM based
+binary wheel. Note also that this, as of version 0.36, does not include the
+``aarch64`` architectures, for example installation on a Raspberry Pi is not
+supported.
+
+The Numba maintainers ship an ``sdist`` for:
+
+  * Numba
+  * llvmlite
+
+Note that there is no ``sdist`` provided for LLVM. If you try and build ``llvmlite``
+from ``sdist`` you will need to bootstrap the package with your own appropriate
+LLVM.
+
+How this ends up being a problem.
+.................................
+
+1. If you are on an unsupported architecture (i.e. not ``x86*``) or unsupported
+   Python version for binary wheels (e.g. Python alphas) then ``pip`` will try and
+   build Numba from ``sdist`` which in turn will try and build ``llvmlite`` from
+   ``sdist``. This will inevitably fail as the ``llvmlite`` source distribution
+   needs an appropriate LLVM installation to build.
+2. If you are using ``pip < 19.0`` then ``manylinux2010`` wheels will not
+   install and you end up in the situation in 1. i.e. something unsupported so
+   building from ``sdist``.
+
+Historically, this issues has manifested itself as the following error
+message, which included here verbatim for future reference::
+
+    FileNotFoundError: [Errno 2] No such file or directory: 'llvm-config'
+
+Things to "fix" it...
+.....................
+
+1. If you are using ``pip < 19.0`` and on ``x86*``, then update it if you can, this will
+   let you use the ``manylinux2010`` binary wheels.
+
+2. If you are on an unsupported architecture, for example Raspberry Pi, please
+   use ``conda`` if you have that available.
+
+3. Otherwise: you will probably need to build from source, this means providing
+   an LLVM. If you have conda available you could use this to bootstrap the
+   installation with a working ``llvm``/``llvmdev`` package. Learn more about
+   compiling from source in the section on `Building manually`_ below.
+   and in particular note the use of the ``LLVM_CONFIG`` environment variable
+   for specifying where your LLVM install is.
+
+What to be aware of when using a system provided LLVM package.
+..............................................................
+
+When using a system provided LLVM package, there are a number of things that
+could go wrong:
+
+1. The LLVM package may not work with Numba/llvmlite at all.
+2. If it does work to some degree it is unlikely the carry the correct patches
+   for Numba/llvmlite to work entirely correctly.
+3. Since the Numba/llvmlite maintainers may not know how the package was
+   compiled it may be more difficult to get help when things do go wrong.
 
 Building manually
 =================
