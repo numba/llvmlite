@@ -626,12 +626,13 @@ class IRBuilder(object):
         self._insert(instr)
         return instr
 
-    def select(self, cond, lhs, rhs, name=''):
+    def select(self, cond, lhs, rhs, name='', flags=[]):
         """
         Ternary select operator:
             name = cond ? lhs : rhs
         """
-        instr = instructions.SelectInstr(self.block, cond, lhs, rhs, name=name)
+        instr = instructions.SelectInstr(self.block, cond, lhs, rhs, name=name,
+                                         flags=flags)
         self._insert(instr)
         return instr
 
@@ -985,8 +986,8 @@ class IRBuilder(object):
 
     # PHI APIs
 
-    def phi(self, typ, name=''):
-        inst = instructions.PhiInstr(self.block, typ, name=name)
+    def phi(self, typ, name='', flags=()):
+        inst = instructions.PhiInstr(self.block, typ, name=name, flags=flags)
         self._insert(inst)
         return inst
 

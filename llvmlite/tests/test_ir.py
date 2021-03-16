@@ -857,13 +857,13 @@ my_block:
         t = ir.Constant(int1, True)
         builder = ir.IRBuilder(block)
         a, b = builder.function.args[:2]
-        builder.select(t, a, b, 'c')
+        builder.select(t, a, b, 'c', flags=('arcp', 'nnan'))
         self.assertFalse(block.is_terminated)
         builder.unreachable()
         self.assertTrue(block.is_terminated)
         self.check_block(block, """\
             my_block:
-                %"c" = select i1 true, i32 %".1", i32 %".2"
+                %"c" = select arcp nnan i1 true, i32 %".1", i32 %".2"
                 unreachable
             """)
 
@@ -873,13 +873,13 @@ my_block:
         a, b = builder.function.args[:2]
         bb2 = builder.function.append_basic_block('b2')
         bb3 = builder.function.append_basic_block('b3')
-        phi = builder.phi(int32, 'my_phi')
+        phi = builder.phi(int32, 'my_phi', flags=('fast',))
         phi.add_incoming(a, bb2)
         phi.add_incoming(b, bb3)
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
-                %"my_phi" = phi i32 [%".1", %"b2"], [%".2", %"b3"]
+                %"my_phi" = phi fast i32 [%".1", %"b2"], [%".2", %"b3"]
             """)
 
     def test_mem_ops(self):
