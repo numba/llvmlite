@@ -243,11 +243,13 @@ class Builder(ir.IRBuilder):
         else:
             return self.icmp_signed(_icmp_smap[pred], lhs, rhs, name=name)
 
-    def fcmp(self, pred, lhs, rhs, name=''):
+    def fcmp(self, pred, lhs, rhs, name='', flags=()):
         if pred in _fcmp_umap:
-            return self.fcmp_unordered(_fcmp_umap[pred], lhs, rhs, name=name)
+            return self.fcmp_unordered(_fcmp_umap[pred], lhs, rhs, name=name,
+                                       flags=flags)
         else:
-            return self.fcmp_ordered(_fcmp_omap[pred], lhs, rhs, name=name)
+            return self.fcmp_ordered(_fcmp_omap[pred], lhs, rhs, name=name,
+                                     flags=flags)
 
 
 class MetaDataString(ir.MetaDataString):
