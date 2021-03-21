@@ -78,3 +78,17 @@ class _HasMetadata(object):
             return ', '.join(buf)
         else:
             return ''
+
+
+def bytes_to_represent(i):
+    """Take a Python integer `i` and return the power-of-two number
+    of bytes required to represent the integer."""
+    N_BITS_IN_BYTE = 8
+    def ceil_div(a, b):
+        return  (a + b - 1) // b
+    nbits  = i.bit_length()
+    nbytes = ceil_div(nbits, N_BITS_IN_BYTE)
+     # make the number of bytes a power of 2
+    return 2 ** max(nbytes - 1, 0).bit_length()
+
+

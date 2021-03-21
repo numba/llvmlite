@@ -7,6 +7,7 @@ from llvmlite.ir.values import (Block, Function, Value, NamedValue, Constant,
                                 MetaDataArgument, MetaDataString, AttributeSet,
                                 Undefined)
 from llvmlite.ir._utils import _HasMetadata
+from ._utils import bytes_to_represent
 
 
 class Instruction(NamedValue, _HasMetadata):
@@ -494,7 +495,13 @@ class GEPInstr(Instruction):
         typ = ptr.type
         lasttyp = None
         lastaddrspace = 0
+        indices_new = []
         for i in indices:
+            if isinstance(i, int):
+                bits = bytes_to_represent(i) * 8
+                i_type = types.IntType(bits)
+                i = i_type(i)
+            indices_new.append(i)
             lasttyp, typ = typ, typ.gep(i)
             # inherit the addrspace from the last seen pointer
             if isinstance(lasttyp, types.PointerType):
@@ -507,9 +514,9 @@ class GEPInstr(Instruction):
             typ = typ.as_pointer(lastaddrspace)
 
         super(GEPInstr, self).__init__(parent, typ, "getelementptr",
-                                       [ptr] + list(indices), name=name)
+                                       [ptr] + indices_new, name=name)
         self.pointer = ptr
-        self.indices = indices
+        self.indices = indices_new
         self.inbounds = inbounds
 
     def descr(self, buf):
