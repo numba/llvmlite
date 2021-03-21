@@ -7,7 +7,6 @@ from llvmlite.ir.values import (Block, Function, Value, NamedValue, Constant,
                                 MetaDataArgument, MetaDataString, AttributeSet,
                                 Undefined)
 from llvmlite.ir._utils import _HasMetadata
-from ._utils import bytes_to_represent
 
 
 class Instruction(NamedValue, _HasMetadata):
@@ -498,7 +497,7 @@ class GEPInstr(Instruction):
         indices_new = []
         for i in indices:
             if isinstance(i, int):
-                bits = bytes_to_represent(i) * 8
+                bits   = max(i.bit_length(), 32)
                 i_type = types.IntType(bits)
                 i = i_type(i)
             indices_new.append(i)

@@ -847,7 +847,7 @@ my_block:
         self.check_block(block, """\
             my_block:
                 %"c" = alloca {i32, i32}*
-                %"d" = getelementptr {i32, i32}*, {i32, i32}** %"c", i32 5, i32 %".1", i8 1
+                %"d" = getelementptr {i32, i32}*, {i32, i32}** %"c", i32 5, i32 %".1", i32 1
             """)
         # XXX test with more complex types
 
