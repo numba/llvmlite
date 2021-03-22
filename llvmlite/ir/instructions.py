@@ -497,7 +497,7 @@ class GEPInstr(Instruction):
         indices_new = []
         for i in indices:
             if isinstance(i, int):
-                bits   = max(i.bit_length(), 32)
+                bits = max(i.bit_length(), 32)
                 i_type = types.IntType(bits)
                 i = i_type(i)
             indices_new.append(i)
