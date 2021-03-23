@@ -1,0 +1,6 @@
+# Conda environment configuration for readthedocs
+
+name: rtdenv
+dependencies:
+- python=3.9
+- sphinx
