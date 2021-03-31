@@ -61,6 +61,13 @@ class TypeRef(ffi.ObjectRef):
         return ffi.lib.LLVMPY_TypeIsPointer(self)
 
     @property
+    def is_single_value_type(self):
+        """
+        Returns whether the type is a valid type for a register in codegen.
+        """
+        return ffi.lib.LLVMPY_TypeIsSingleValueType(self)
+
+    @property
     def element_type(self):
         """
         Returns the pointed-to type. When the type is not a pointer,
@@ -431,6 +438,8 @@ ffi.lib.LLVMPY_TypeIsPointer.restype = c_bool
 ffi.lib.LLVMPY_GetElementType.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetElementType.restype = ffi.LLVMTypeRef
 
+ffi.lib.LLVMPY_TypeIsSingleValueType.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_TypeIsSingleValueType.restype = c_bool
 
 ffi.lib.LLVMPY_GetTypeName.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetTypeName.restype = c_void_p

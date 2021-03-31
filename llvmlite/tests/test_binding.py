@@ -904,6 +904,13 @@ class TestValueRef(BaseTest):
         tp = glob.type
         self.assertIsInstance(tp, llvm.TypeRef)
 
+    def test_single_value(self):
+        mod = self.module()
+        small_glob = mod.get_global_variable("glob")
+        large_glob = mod.get_global_variable("glob_struct")
+        self.assertTrue(small_glob.type.is_single_value_type)
+        self.assertFalse(large_glob.type.is_single_value_type)
+
     def test_type_name(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")

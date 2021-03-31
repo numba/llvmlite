@@ -425,6 +425,12 @@ LLVMPY_GetElementType(LLVMTypeRef type)
     return nullptr;
 }
 
+API_EXPORT(bool)
+LLVMPY_IsSingleValueType(LLVMTypeRef type)
+{
+    return llvm::unwrap(type)->isSingleValueType();
+}
+
 API_EXPORT(void)
 LLVMPY_SetLinkage(LLVMValueRef Val, int Linkage)
 {
