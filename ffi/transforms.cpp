@@ -6,23 +6,6 @@
 
 extern "C" {
 
-#if LLVM_VERSION_MAJOR == 9
-namespace llvm {
-    inline PassManagerBuilder *unwrap(LLVMPassManagerBuilderRef P) {
-        return reinterpret_cast<PassManagerBuilder*>(P);
-    }
-
-    inline LLVMPassManagerBuilderRef wrap(PassManagerBuilder *P) {
-        return reinterpret_cast<LLVMPassManagerBuilderRef>(P);
-    }
-}
-#elif LLVM_VERSION_MAJOR == 11
-// LLVM 11 adds the above already
-#else
-#error Invalid LLVM version/LLVM_VERSION_MAJOR not defined
-#endif
-
-
 
 API_EXPORT(LLVMPassManagerBuilderRef)
 LLVMPY_PassManagerBuilderCreate()
