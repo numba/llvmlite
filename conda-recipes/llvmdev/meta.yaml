@@ -102,9 +102,6 @@ test:
     - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
 
     - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
-    # Test for Twine bug
-    - $PREFIX/bin/opt -dot-cfg cfg_test.ll -o cfg.testme.tmp # [not win]
-    - python test_cfg_dot.py                                 # [not win]
 
     # LLD tests
     - ld.lld --version                                       # [unix]
