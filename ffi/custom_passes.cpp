@@ -400,7 +400,7 @@ struct RefPrunePass : public FunctionPass {
                 // LLVM 9 postdomtree.dominates takes basic blocks
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref->getParent(), incref->getParent()) ){
-#elif LLVM_VERSION_MAJOR == 10
+#elif LLVM_VERSION_MAJOR == 11
                 // LLVM 10 postdomtree.dominates can handle instructions
                 if ( domtree.dominates(incref, decref)
                         && postdomtree.dominates(decref, incref) ){

@@ -163,8 +163,8 @@ def main_posix(kind, library_ext):
         print(warning + '\n')
     else:
 
-        if not (out.startswith('10.0.') or out.startswith('9.0')):
-            msg = ("Building llvmlite requires LLVM 10.0.x or 9.0.x, got "
+        if not (out.startswith('11.1') or out.startswith('9.0')):
+            msg = ("Building llvmlite requires LLVM 11.1.x or 9.0.x, got "
                    "{!r}. Be sure to set LLVM_CONFIG to the right executable "
                    "path.\nRead the documentation at "
                    "http://llvmlite.pydata.org/ for more information about "

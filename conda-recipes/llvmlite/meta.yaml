@@ -31,8 +31,8 @@ requirements:
     - python
     # On channel https://anaconda.org/numba/
     # Build using LLVM (llvmdev) 10.0.1-1 on most platforms
-    - llvmdev 10.0.1 *1 # [not aarch64 and not win]
-    - llvmdev 10.0.1 2 # [win]
+    - llvmdev 11.1.0 *0 # [not aarch64 and not win]
+    - llvmdev 11.1.0 0 # [win]
     # Build using LLVM (llvmdev) 9.0.* on aarch64
     - llvmdev 9.0.* # [aarch64]
     - vs2015_runtime # [win]
