@@ -1,12 +1,12 @@
 
 CXX = clang++ -std=c++11 -stdlib=libc++
 CXXFLAGS = $(LLVM_CXXFLAGS)
-NOEXPORT = -Wl,-unexported_symbol,_ZTVN4llvm* \
-     -Wl,-unexported_symbol,_ZNK4llvm* \
-     -Wl,-unexported_symbol,_ZN4llvm* \
-     -Wl,-unexported_symbol,_ZTIN4llvm* \
+NOEXPORT = -Wl,-unexported_symbol,__ZTVN4llvm* \
+     -Wl,-unexported_symbol,__ZNK4llvm* \
+     -Wl,-unexported_symbol,__ZN4llvm* \
+     -Wl,-unexported_symbol,__ZTIN4llvm* \
      -Wl,-unexported_symbol,_LLVM* \
-     -Wl,-unexported_symbol,_ZTSN4llvm* \
+     -Wl,-unexported_symbol,__ZTSN4llvm*
 LDFLAGS :=  $(LDFLAGS) $(NOEXPORT) $(LLVM_LDFLAGS)
 LIBS = $(LLVM_LIBS)
 INCLUDE = core.h
