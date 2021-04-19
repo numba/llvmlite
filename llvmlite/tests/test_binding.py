@@ -398,7 +398,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = [(10, 0), (9, 0)]
+        valid = [(11, 1), (9, 0)]
         self.assertIn((major, minor), valid)
         self.assertIn(patch, range(10))
 
