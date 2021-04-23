@@ -489,10 +489,17 @@ LLVMPY_WriteCFG(LLVMValueRef Fval, const char **OutStr, int ShowInst) {
     Function *F  = unwrap<Function>(Fval);
     std::string buffer;
     raw_string_ostream stream(buffer);
+    #if LLVM_VERSION_MAJOR == 9
     // Note: The (const Function*)F is necessary to trigger the right behavior.
     //       A non constant Function* will result in the instruction not
     //       printed regardless of the value in the 3rd argument.
     WriteGraph(stream, (const Function*)F, !ShowInst);
+    #elif LLVM_VERSION_MAJOR == 11
+    DOTFuncInfo CFGInfo(F, nullptr, nullptr, 0);
+    WriteGraph(stream, &CFGInfo, !ShowInst);
+    #else
+    #error Invalid LLVM version/LLVM_VERSION_MAJOR not defined
+    #endif
     *OutStr = LLVMPY_CreateString(stream.str().c_str());
 }
 
