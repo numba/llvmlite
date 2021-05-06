@@ -1,7 +1,7 @@
-From d7ee1644d27469fed4e2b91b70eddf0c1124e6a3 Mon Sep 17 00:00:00 2001
-From: Ivan Butygin <ivan.butygin@intel.com>
-Date: Tue, 8 Sep 2020 19:22:12 +0300
-Subject: [PATCH] Fixes vectorizer and extends SVML support
+From 8dafb9d1d333b856f820ce39c803d50ff7afb159 Mon Sep 17 00:00:00 2001
+From: Butygin <ivan.butygin@intel.com>
+Date: Thu, 6 May 2021 11:19:31 +0300
+Subject: [PATCH 1/1] [PATCH] Fixes vectorizer and extends SVML support
 
 Patch was updated to fix SVML calling convention issues uncovered by llvm 10.
 In previous versions of patch SVML calling convention was selected based on
@@ -37,7 +37,7 @@ Author: Karthik Senthil
  include/llvm/IR/CallingConv.h                      |   5 +
  include/llvm/IR/SVML.td                            |  62 +++
  lib/Analysis/CMakeLists.txt                        |   1 +
- lib/Analysis/TargetLibraryInfo.cpp                 |  55 ++-
+ lib/Analysis/TargetLibraryInfo.cpp                 |  54 ++-
  lib/AsmParser/LLLexer.cpp                          |   3 +
  lib/AsmParser/LLParser.cpp                         |   6 +
  lib/AsmParser/LLToken.h                            |   3 +
@@ -58,7 +58,7 @@ Author: Karthik Senthil
  utils/TableGen/TableGen.cpp                        |   8 +-
  utils/TableGen/TableGenBackends.h                  |   1 +
  utils/vim/syntax/llvm.vim                          |   1 +
- 26 files changed, 1315 insertions(+), 48 deletions(-)
+ 26 files changed, 1314 insertions(+), 48 deletions(-)
  create mode 100644 llvm/include/llvm/IR/SVML.td
  create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
  create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
@@ -226,7 +226,7 @@ index 7036233..015e350 100644
    LINK_LIBS
    ${MLLinkDeps}
 diff --git a/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
-index 60cfb04..1417550 100644
+index 60cfb04..fa86e99 100644
 --- a/lib/Analysis/TargetLibraryInfo.cpp
 +++ b/lib/Analysis/TargetLibraryInfo.cpp
 @@ -63,6 +63,11 @@ static bool hasBcmp(const Triple &TT) {
@@ -253,7 +253,7 @@ index 60cfb04..1417550 100644
      };
      addVectorizableFunctions(VecFuncs);
      break;
-@@ -1580,19 +1586,52 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
+@@ -1580,19 +1586,51 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
    return I != VectorDescs.end() && StringRef(I->ScalarFnName) == funcName;
  }
  
@@ -304,8 +304,7 @@ index 60cfb04..1417550 100644
 +Optional<CallingConv::ID>
 +TargetLibraryInfoImpl::getVectorizedFunctionCallingConv(
 +    StringRef F, const FunctionType &FTy, const DataLayout &DL) const {
-+  if (ClVectorLibrary == SVML) {
-+    assert(F.startswith("__svml"));
++  if (F.startswith("__svml")) {
 +    return getSVMLCallingConv(DL, FTy);
 +  }
 +  return {};
@@ -500,7 +499,7 @@ index 802e694..2b8855e 100644
 +                                                    (sequence "ZMM%u", 6, 21),
 +                                                    K4, K5, K6, K7)>;
 diff --git a/lib/Target/X86/X86ISelLowering.cpp b/lib/Target/X86/X86ISelLowering.cpp
-index 16719171..f78b0f7 100644
+index 56690c3..c5c5127 100644
 --- a/lib/Target/X86/X86ISelLowering.cpp
 +++ b/lib/Target/X86/X86ISelLowering.cpp
 @@ -3496,7 +3496,8 @@ void VarArgsLoweringHelper::forwardMustTailParameters(SDValue &Chain) {
@@ -2008,5 +2007,5 @@ index ce36b76..da3a4a9 100644
        \ linkonce
        \ linkonce_odr
 -- 
-2.7.4
+2.9.2.windows.1
 
