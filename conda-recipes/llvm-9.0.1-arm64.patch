@@ -1,0 +1,24 @@
+diff --git a/llvm/include/llvm/ADT/Triple.h b/llvm/include/llvm/ADT/Triple.h
+index edeb31e..faae6f9 100644
+--- a/llvm/include/llvm/ADT/Triple.h
++++ b/llvm/include/llvm/ADT/Triple.h
+@@ -45,6 +45,7 @@ public:
+   enum ArchType {
+     UnknownArch,
+ 
++    arm64,
+     arm,            // ARM (little endian): arm, armv.*, xscale
+     armeb,          // ARM (big endian): armeb
+     aarch64,        // AArch64 (little endian): aarch64
+diff --git a/llvm/lib/Support/Triple.cpp b/llvm/lib/Support/Triple.cpp
+index d419463..399b6de 100644
+--- a/llvm/lib/Support/Triple.cpp
++++ b/llvm/lib/Support/Triple.cpp
+@@ -1384,6 +1384,7 @@ Triple Triple::get64BitArchVariant() const {
+     T.setArch(UnknownArch);
+     break;
+ 
++  case Triple::arm64:
+   case Triple::aarch64:
+   case Triple::aarch64_be:
+   case Triple::bpfel:
