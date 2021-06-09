@@ -556,6 +556,13 @@ class FunctionAttributes(AttributeSet):
         self._personality = None
         super(FunctionAttributes, self).__init__(args)
 
+    def add(self, name):
+        if ((name == 'alwaysinline' and 'noinline' in self) or
+                (name == 'noinline' and 'alwaysinline' in self)):
+            raise ValueError("Can't have alwaysinline and noinline")
+
+        super().add(name)
+
     @property
     def alignstack(self):
         return self._alignstack
