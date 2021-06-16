@@ -209,6 +209,24 @@ class TestFunction(TestBase):
         fn = self.function()
         self.assert_pickle_correctly(fn)
 
+    def test_alwaysinline_noinline_disallowed(self):
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add('alwaysinline')
+
+        msg = "Can't have alwaysinline and noinline"
+        with self.assertRaisesRegex(ValueError, msg):
+            func.attributes.add('noinline')
+
+    def test_noinline_alwaysinline_disallowed(self):
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add('noinline')
+
+        msg = "Can't have alwaysinline and noinline"
+        with self.assertRaisesRegex(ValueError, msg):
+            func.attributes.add('alwaysinline')
+
 
 class TestIR(TestBase):
 
