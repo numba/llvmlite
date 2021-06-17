@@ -69,7 +69,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                               -Wl,-unexported_symbol,__ZNK4llvm* \
                               -Wl,-unexported_symbol,__ZN4llvm* \
                               -Wl,-unexported_symbol,__ZTIN4llvm* \
-                              -Wl,-unexported_symbol,_LLVM*  \
+                              -Wl,-unexported_symbol,_LLVM_*  \
                               -Wl,-unexported_symbol,__ZTSN4llvm*")
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "${LLVM_EXCLUDE_SYMBOLS}")
 endif()
