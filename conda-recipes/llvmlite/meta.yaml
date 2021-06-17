@@ -1,4 +1,4 @@
-{% set VERSION_SUFFIX = "LLVM_11.1.0" %} # debug version suffix, appended to the version
+{% set VERSION_SUFFIX = "LLVM_11.1.0_2" %} # debug version suffix, appended to the version
 
 package:
   name: llvmlite
@@ -30,8 +30,8 @@ requirements:
   host:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 11.1.0 *1 # [not win]
-    - llvmdev 11.1.0 1 # [win]
+    - llvmdev 11.1.0 *2 # [not win]
+    - llvmdev 11.1.0 2 # [win]
     - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
     - zlib           # [unix and not (armv6l or armv7l or aarch64)]
