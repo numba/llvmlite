@@ -11,7 +11,7 @@ jobs:
     matrix:
       py39:
         PYTHON: '3.9'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
 
 
   steps:

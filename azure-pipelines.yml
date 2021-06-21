@@ -7,16 +7,16 @@ jobs:
     matrix:
       py36:
         PYTHON: '3.6'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
       py37:
         PYTHON: '3.7'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
       py38:
         PYTHON: '3.8'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
       py39:
         PYTHON: '3.9'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
@@ -25,37 +25,37 @@ jobs:
     matrix:
       py36:
         PYTHON: '3.6'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
       py37:
         PYTHON: '3.7'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
       py38:
         PYTHON: '3.8'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
         RUN_FLAKE8: yes
       py39:
         PYTHON: '3.9'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
         RUN_FLAKE8: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
-#         CONDA_ENV: travisci
+#         CONDA_ENV: cienv
       py36_wheel:
         PYTHON: '3.6'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
         WHEEL: 'yes'
       py37_wheel:
         PYTHON: '3.7'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
         WHEEL: 'yes'
       py38_wheel:
         PYTHON: '3.8'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
         WHEEL: 'yes'
       py39_wheel:
         PYTHON: '3.9'
-        CONDA_ENV: travisci
+        CONDA_ENV: cienv
         WHEEL: 'yes'
 
 - template: buildscripts/azure/azure-windows.yml
