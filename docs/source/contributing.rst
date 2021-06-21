@@ -87,13 +87,10 @@ Platform support
 Llvmlite will be kept compatible with Python 3.6 and later
 under at least Windows, macOS and Linux.
 
-We do not expect contributors to test their code on all platforms.
-Pull requests are automatically built and tested using
-`Travis-CI <https://travis-ci.org/numba/llvmlite>`_, which
-addresses Linux compatibility. Other operating systems are tested
-on an internal continuous integration platform at
-Anaconda\ |reg|.
-
+We do not expect contributors to test their code on all platforms.  Pull
+requests are automatically built and tested using `Azure Pipelines
+<https://dev.azure.com/numba/numba/_build?definitionId=2>`_ for Winows, OSX and
+Linux.
 
 Documentation
 =============
