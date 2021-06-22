@@ -64,12 +64,9 @@ target_link_libraries(llvmlite ${llvm_libs})
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "-flto -Wl,--exclude-libs,ALL")
+# On Darwin we only include the LLVMPY symbols we require and exclude
+# everything else.
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(LLVM_EXCLUDE_SYMBOLS "-Wl,-unexported_symbol,__ZTVN4llvm* \
-                              -Wl,-unexported_symbol,__ZNK4llvm* \
-                              -Wl,-unexported_symbol,__ZN4llvm* \
-                              -Wl,-unexported_symbol,__ZTIN4llvm* \
-                              -Wl,-unexported_symbol,_LLVM_*  \
-                              -Wl,-unexported_symbol,__ZTSN4llvm*")
-    set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "${LLVM_EXCLUDE_SYMBOLS}")
+    set(LLVM_EXPORTED_SYMBOLS "-Wl,-exported_symbol,_LLVMPY_*")
+    set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "${LLVM_EXPORTED_SYMBOLS}")
 endif()
