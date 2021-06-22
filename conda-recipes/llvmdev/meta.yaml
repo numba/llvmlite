@@ -15,10 +15,8 @@ source:
     patches:
     - ../partial-testing.patch
     # Intel SVML optimizations (two patches)
-    # Latest versions from:
-    # * https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/intel-D47188-svml-VF.patch
-    # * https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     - ../intel-D47188-svml-VF.patch
+    # Second patch from https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
