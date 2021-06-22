@@ -64,9 +64,7 @@ test:
   requires:
     - python
   files:
-    - cfg_test.ll
     - numba-3016.ll
-    - test_cfg_dot.py
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
     - $PREFIX/bin/llc -version                               # [not win]
