@@ -61,8 +61,6 @@ requirements:
     - python # [not (armv6l or armv7l or aarch64 or win)]
 
 test:
-  requires:
-    - python
   files:
     - numba-3016.ll
   commands:
