@@ -1,4 +1,4 @@
-{% set VERSION_SUFFIX = "LLVM_11.1.0_2" %} # debug version suffix, appended to the version
+{% set VERSION_SUFFIX = "" %} # debug version suffix, appended to the version
 
 package:
   name: llvmlite
