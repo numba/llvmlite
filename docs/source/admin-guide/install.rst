@@ -188,7 +188,7 @@ The LLVM build process is fully scripted by conda-build_, and the `llvmdev recip
 The manual instructions below describe the main steps, but refer to the recipe
 for details:
 
-#. Download the `LLVM 10.0.1 source code <https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/llvm-10.0.1.src.tar.xz>`_.
+#. Download the `LLVM 11.1.0 source code <https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/llvm-11.1.0.src.tar.xz>`_.
 
 #. Download or git checkout the `llvmlite source code <https://github.com/numba/llvmlite>`_.
 
