@@ -1,7 +1,7 @@
-From 9316767d7d480b6c3f145c8121f1b55b5d5b0d8b Mon Sep 17 00:00:00 2001
-From: Ivan Butygin <ivan.butygin@intel.com>
-Date: Thu, 20 Aug 2020 19:45:01 +0300
-Subject: [PATCH] Fixes vectorizer and extends SVML support
+From 8dafb9d1d333b856f820ce39c803d50ff7afb159 Mon Sep 17 00:00:00 2001
+From: Butygin <ivan.butygin@intel.com>
+Date: Thu, 6 May 2021 11:19:31 +0300
+Subject: [PATCH 1/1] [PATCH] Fixes vectorizer and extends SVML support
 
 Patch was updated to fix SVML calling convention issues uncovered by llvm 10.
 In previous versions of patch SVML calling convention was selected based on
@@ -32,12 +32,12 @@ Author: Karthik Senthil
 
 3. Functional merge of the patches above, which fixes calling convention
 ---
- include/llvm/Analysis/TargetLibraryInfo.h          |  17 +-
+ include/llvm/Analysis/TargetLibraryInfo.h          |  21 +-
  include/llvm/IR/CMakeLists.txt                     |   4 +
  include/llvm/IR/CallingConv.h                      |   5 +
  include/llvm/IR/SVML.td                            |  62 +++
  lib/Analysis/CMakeLists.txt                        |   1 +
- lib/Analysis/TargetLibraryInfo.cpp                 |  25 +-
+ lib/Analysis/TargetLibraryInfo.cpp                 |  54 ++-
  lib/AsmParser/LLLexer.cpp                          |   3 +
  lib/AsmParser/LLParser.cpp                         |   6 +
  lib/AsmParser/LLToken.h                            |   3 +
@@ -48,9 +48,9 @@ Author: Karthik Senthil
  lib/Target/X86/X86RegisterInfo.cpp                 |  46 ++
  lib/Target/X86/X86Subtarget.h                      |   3 +
  lib/Transforms/Utils/InjectTLIMappings.cpp         |   3 +-
- lib/Transforms/Vectorize/LoopVectorize.cpp         | 298 +++++++++++-
- .../LoopVectorize/X86/svml-calls-finite.ll         |   9 +-
- test/Transforms/LoopVectorize/X86/svml-calls.ll    |  81 +++-
+ lib/Transforms/Vectorize/LoopVectorize.cpp         | 273 ++++++++++-
+ .../LoopVectorize/X86/svml-calls-finite.ll         |  15 +-
+ test/Transforms/LoopVectorize/X86/svml-calls.ll    |  88 +++-
  .../LoopVectorize/X86/svml-legal-calls.ll          | 513 +++++++++++++++++++++
  .../LoopVectorize/X86/svml-legal-codegen.ll        |  61 +++
  utils/TableGen/CMakeLists.txt                      |   1 +
@@ -58,14 +58,14 @@ Author: Karthik Senthil
  utils/TableGen/TableGen.cpp                        |   8 +-
  utils/TableGen/TableGenBackends.h                  |   1 +
  utils/vim/syntax/llvm.vim                          |   1 +
- 26 files changed, 1299 insertions(+), 42 deletions(-)
+ 26 files changed, 1314 insertions(+), 48 deletions(-)
  create mode 100644 llvm/include/llvm/IR/SVML.td
  create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
  create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
  create mode 100644 llvm/utils/TableGen/SVMLEmitter.cpp
 
 diff --git a/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
-index 1bd9db7..e91833b 100644
+index 3a7c26e..4d37b34 100644
 --- a/include/llvm/Analysis/TargetLibraryInfo.h
 +++ b/include/llvm/Analysis/TargetLibraryInfo.h
 @@ -39,6 +39,12 @@ struct VecDesc {
@@ -81,35 +81,39 @@ index 1bd9db7..e91833b 100644
  /// Implementation of the target library information.
  ///
  /// This class constructs tables that hold the target library information and
-@@ -152,7 +158,8 @@ public:
+@@ -152,7 +158,7 @@ public:
    /// Return true if the function F has a vector equivalent with vectorization
    /// factor VF.
    bool isFunctionVectorizable(StringRef F, unsigned VF) const {
 -    return !getVectorizedFunction(F, VF).empty();
-+     bool Ignored;
-+     return !getVectorizedFunction(F, VF, Ignored, false).empty();
++     return !getVectorizedFunction(F, VF, false).empty();
    }
  
    /// Return true if the function F has a vector equivalent with any
-@@ -161,7 +168,8 @@ public:
+@@ -161,7 +167,10 @@ public:
  
    /// Return the name of the equivalent of F, vectorized with factor VF. If no
    /// such mapping exists, return the empty string.
 -  StringRef getVectorizedFunction(StringRef F, unsigned VF) const;
-+  std::string getVectorizedFunction(StringRef F, unsigned VF, bool &FromSVML,
-+                                    bool IsFast) const;
++  std::string getVectorizedFunction(StringRef F, unsigned VF, bool IsFast) const;
++
++  Optional<CallingConv::ID> getVectorizedFunctionCallingConv(
++    StringRef F, const FunctionType &FTy, const DataLayout &DL) const;
  
    /// Return true if the function F has a scalar equivalent, and set VF to be
    /// the vectorization factor.
-@@ -307,8 +315,9 @@ public:
+@@ -322,8 +331,12 @@ public:
    bool isFunctionVectorizable(StringRef F) const {
      return Impl->isFunctionVectorizable(F);
    }
 -  StringRef getVectorizedFunction(StringRef F, unsigned VF) const {
 -    return Impl->getVectorizedFunction(F, VF);
-+  std::string getVectorizedFunction(StringRef F, unsigned VF, bool &FromSVML,
-+                                    bool IsFast) const {
-+    return Impl->getVectorizedFunction(F, VF, FromSVML, IsFast);
++  std::string getVectorizedFunction(StringRef F, unsigned VF, bool IsFast) const {
++    return Impl->getVectorizedFunction(F, VF, IsFast);
++  }
++  Optional<CallingConv::ID> getVectorizedFunctionCallingConv(
++    StringRef F, const FunctionType &FTy, const DataLayout &DL) const {
++    return Impl->getVectorizedFunctionCallingConv(F, FTy, DL);
    }
  
    /// Tests if the function is both available and a candidate for optimized code
@@ -210,17 +214,19 @@ index 0000000..5af7104
 +// def rint       : SvmlVariant;
 +// def round      : SvmlVariant;
 diff --git a/lib/Analysis/CMakeLists.txt b/lib/Analysis/CMakeLists.txt
-index cc9ff0b..e0da04d 100644
+index 7036233..015e350 100644
 --- a/lib/Analysis/CMakeLists.txt
 +++ b/lib/Analysis/CMakeLists.txt
-@@ -104,4 +104,5 @@ add_llvm_component_library(LLVMAnalysis
+@@ -143,6 +143,7 @@ add_llvm_component_library(LLVMAnalysis
  
    DEPENDS
    intrinsics_gen
 +  svml_gen
-   )
+ 
+   LINK_LIBS
+   ${MLLinkDeps}
 diff --git a/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
-index 1a32adf..bfa6476 100644
+index 60cfb04..fa86e99 100644
 --- a/lib/Analysis/TargetLibraryInfo.cpp
 +++ b/lib/Analysis/TargetLibraryInfo.cpp
 @@ -63,6 +63,11 @@ static bool hasBcmp(const Triple &TT) {
@@ -228,14 +234,14 @@ index 1a32adf..bfa6476 100644
  }
  
 +std::string svmlMangle(StringRef FnName, const bool IsFast) {
-+  std::string FullName = FnName;
++  std::string FullName = FnName.str();
 +  return IsFast ? FullName : FullName + "_ha";
 +}
 +
  /// Initialize the set of available library functions based on the specified
  /// target triple. This should be carefully written so that a missing target
  /// triple gets a sane set of defaults.
-@@ -1539,8 +1544,9 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
+@@ -1559,8 +1564,9 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
    }
    case SVML: {
      const VecDesc VecFuncs[] = {
@@ -247,7 +253,7 @@ index 1a32adf..bfa6476 100644
      };
      addVectorizableFunctions(VecFuncs);
      break;
-@@ -1560,19 +1566,26 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
+@@ -1580,19 +1586,51 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
    return I != VectorDescs.end() && StringRef(I->ScalarFnName) == funcName;
  }
  
@@ -255,31 +261,58 @@ index 1a32adf..bfa6476 100644
 -                                                       unsigned VF) const {
 +std::string TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
 +                                                         unsigned VF,
-+                                                         bool &FromSVML,
 +                                                         bool IsFast) const {
-+  FromSVML = ClVectorLibrary == SVML;
++  bool FromSVML = ClVectorLibrary == SVML;
    F = sanitizeFunctionName(F);
    if (F.empty())
-     return F;
+-    return F;
++    return F.str();
    std::vector<VecDesc>::const_iterator I =
        llvm::lower_bound(VectorDescs, F, compareWithScalarFnName);
    while (I != VectorDescs.end() && StringRef(I->ScalarFnName) == F) {
 -    if (I->VectorizationFactor == VF)
+-      return I->VectorFnName;
 +    if (I->VectorizationFactor == VF) {
 +      if (FromSVML) {
 +        return svmlMangle(I->VectorFnName, IsFast);
 +      }
-       return I->VectorFnName;
++      return I->VectorFnName.str();
 +    }
      ++I;
    }
 -  return StringRef();
 +  return std::string();
++}
++
++static CallingConv::ID getSVMLCallingConv(const DataLayout &DL, const FunctionType &FType)
++{
++  assert(isa<VectorType>(FType.getReturnType()));
++  auto *VecCallRetType = cast<VectorType>(FType.getReturnType());
++  auto TypeBitWidth = DL.getTypeSizeInBits(VecCallRetType);
++  if (TypeBitWidth == 128) {
++    return CallingConv::Intel_SVML128;
++  } else if (TypeBitWidth == 256) {
++    return CallingConv::Intel_SVML256;
++  } else if (TypeBitWidth == 512) {
++    return CallingConv::Intel_SVML512;
++  } else {
++    llvm_unreachable("Invalid vector width");
++  }
++  return 0; // not reachable
++}
++
++Optional<CallingConv::ID>
++TargetLibraryInfoImpl::getVectorizedFunctionCallingConv(
++    StringRef F, const FunctionType &FTy, const DataLayout &DL) const {
++  if (F.startswith("__svml")) {
++    return getSVMLCallingConv(DL, FTy);
++  }
++  return {};
  }
  
  StringRef TargetLibraryInfoImpl::getScalarizedFunction(StringRef F,
 diff --git a/lib/AsmParser/LLLexer.cpp b/lib/AsmParser/LLLexer.cpp
-index d96b5e0..de731ba 100644
+index 777ce3a..9a92418 100644
 --- a/lib/AsmParser/LLLexer.cpp
 +++ b/lib/AsmParser/LLLexer.cpp
 @@ -603,6 +603,9 @@ lltok::Kind LLLexer::LexIdentifier() {
@@ -293,10 +326,10 @@ index d96b5e0..de731ba 100644
    KEYWORD(win64cc);
    KEYWORD(x86_regcallcc);
 diff --git a/lib/AsmParser/LLParser.cpp b/lib/AsmParser/LLParser.cpp
-index 1a17f633..02db328 100644
+index c9f21ee..6dac503 100644
 --- a/lib/AsmParser/LLParser.cpp
 +++ b/lib/AsmParser/LLParser.cpp
-@@ -1921,6 +1921,9 @@ void LLParser::ParseOptionalDLLStorageClass(unsigned &Res) {
+@@ -1978,6 +1978,9 @@ void LLParser::ParseOptionalDLLStorageClass(unsigned &Res) {
  ///   ::= 'ccc'
  ///   ::= 'fastcc'
  ///   ::= 'intel_ocl_bicc'
@@ -306,7 +339,7 @@ index 1a17f633..02db328 100644
  ///   ::= 'coldcc'
  ///   ::= 'cfguard_checkcc'
  ///   ::= 'x86_stdcallcc'
-@@ -1989,6 +1992,9 @@ bool LLParser::ParseOptionalCallingConv(unsigned &CC) {
+@@ -2046,6 +2049,9 @@ bool LLParser::ParseOptionalCallingConv(unsigned &CC) {
    case lltok::kw_spir_kernel:    CC = CallingConv::SPIR_KERNEL; break;
    case lltok::kw_spir_func:      CC = CallingConv::SPIR_FUNC; break;
    case lltok::kw_intel_ocl_bicc: CC = CallingConv::Intel_OCL_BI; break;
@@ -317,7 +350,7 @@ index 1a17f633..02db328 100644
    case lltok::kw_win64cc:        CC = CallingConv::Win64; break;
    case lltok::kw_webkit_jscc:    CC = CallingConv::WebKit_JS; break;
 diff --git a/lib/AsmParser/LLToken.h b/lib/AsmParser/LLToken.h
-index e430e0f..9096d3b 100644
+index 0fb3bae..b2dabda 100644
 --- a/lib/AsmParser/LLToken.h
 +++ b/lib/AsmParser/LLToken.h
 @@ -132,6 +132,9 @@ enum Kind {
@@ -331,7 +364,7 @@ index e430e0f..9096d3b 100644
    kw_x86_stdcallcc,
    kw_x86_fastcallcc,
 diff --git a/lib/IR/AsmWriter.cpp b/lib/IR/AsmWriter.cpp
-index 1f978d1..14218138 100644
+index fd08310..f1afb8e 100644
 --- a/lib/IR/AsmWriter.cpp
 +++ b/lib/IR/AsmWriter.cpp
 @@ -360,6 +360,9 @@ static void PrintCallingConv(unsigned cc, raw_ostream &Out) {
@@ -345,10 +378,10 @@ index 1f978d1..14218138 100644
    case CallingConv::ARM_AAPCS:     Out << "arm_aapcscc"; break;
    case CallingConv::ARM_AAPCS_VFP: Out << "arm_aapcs_vfpcc"; break;
 diff --git a/lib/IR/Verifier.cpp b/lib/IR/Verifier.cpp
-index 61707cc..61a650d 100644
+index c518ae8..c4bb0fb 100644
 --- a/lib/IR/Verifier.cpp
 +++ b/lib/IR/Verifier.cpp
-@@ -2222,6 +2222,9 @@ void Verifier::visitFunction(const Function &F) {
+@@ -2296,6 +2296,9 @@ void Verifier::visitFunction(const Function &F) {
    case CallingConv::Fast:
    case CallingConv::Cold:
    case CallingConv::Intel_OCL_BI:
@@ -359,7 +392,7 @@ index 61707cc..61a650d 100644
    case CallingConv::PTX_Device:
      Assert(!F.isVarArg(), "Calling convention does not support varargs or "
 diff --git a/lib/Target/X86/X86CallingConv.td b/lib/Target/X86/X86CallingConv.td
-index db1aef2..835dd55 100644
+index 802e694..2b8855e 100644
 --- a/lib/Target/X86/X86CallingConv.td
 +++ b/lib/Target/X86/X86CallingConv.td
 @@ -482,6 +482,21 @@ def RetCC_X86_64 : CallingConv<[
@@ -395,7 +428,7 @@ index db1aef2..835dd55 100644
    CCIfSubtarget<"is64Bit()", CCDelegateTo<RetCC_X86_64>>,
    CCDelegateTo<RetCC_X86_32>
  ]>;
-@@ -1005,6 +1024,30 @@ def CC_Intel_OCL_BI : CallingConv<[
+@@ -1006,6 +1025,30 @@ def CC_Intel_OCL_BI : CallingConv<[
    CCDelegateTo<CC_X86_32_C>
  ]>;
  
@@ -426,7 +459,7 @@ index db1aef2..835dd55 100644
  //===----------------------------------------------------------------------===//
  // X86 Root Argument Calling Conventions
  //===----------------------------------------------------------------------===//
-@@ -1056,6 +1099,9 @@ def CC_X86_64 : CallingConv<[
+@@ -1057,6 +1100,9 @@ def CC_X86_64 : CallingConv<[
  let Entry = 1 in
  def CC_X86 : CallingConv<[
    CCIfCC<"CallingConv::Intel_OCL_BI", CCDelegateTo<CC_Intel_OCL_BI>>,
@@ -436,7 +469,7 @@ index db1aef2..835dd55 100644
    CCIfSubtarget<"is64Bit()", CCDelegateTo<CC_X86_64>>,
    CCDelegateTo<CC_X86_32>
  ]>;
-@@ -1166,4 +1212,27 @@ def CSR_SysV64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP, RSP,
+@@ -1167,4 +1213,27 @@ def CSR_SysV64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP, RSP,
                                                 (sequence "R%u", 12, 15))>;
  def CSR_SysV64_RegCall       : CalleeSavedRegs<(add CSR_SysV64_RegCall_NoSSE,               
                                                 (sequence "XMM%u", 8, 15))>;
@@ -466,24 +499,24 @@ index db1aef2..835dd55 100644
 +                                                    (sequence "ZMM%u", 6, 21),
 +                                                    K4, K5, K6, K7)>;
 diff --git a/lib/Target/X86/X86ISelLowering.cpp b/lib/Target/X86/X86ISelLowering.cpp
-index c8720d9..58738f1 100644
+index 56690c3..c5c5127 100644
 --- a/lib/Target/X86/X86ISelLowering.cpp
 +++ b/lib/Target/X86/X86ISelLowering.cpp
-@@ -3623,7 +3623,8 @@ SDValue X86TargetLowering::LowerFormalArguments(
-     // FIXME: Only some x86_32 calling conventions support AVX512.
-     if (Subtarget.useAVX512Regs() &&
-         (Is64Bit || (CallConv == CallingConv::X86_VectorCall ||
+@@ -3496,7 +3496,8 @@ void VarArgsLoweringHelper::forwardMustTailParameters(SDValue &Chain) {
+   // FIXME: Only some x86_32 calling conventions support AVX512.
+   if (Subtarget.useAVX512Regs() &&
+       (is64Bit() || (CallConv == CallingConv::X86_VectorCall ||
 -                     CallConv == CallingConv::Intel_OCL_BI)))
 +                     CallConv == CallingConv::Intel_OCL_BI   ||
 +                     CallConv == CallingConv::Intel_SVML512)))
-       VecVT = MVT::v16f32;
-     else if (Subtarget.hasAVX())
-       VecVT = MVT::v8f32;
+     VecVT = MVT::v16f32;
+   else if (Subtarget.hasAVX())
+     VecVT = MVT::v8f32;
 diff --git a/lib/Target/X86/X86RegisterInfo.cpp b/lib/Target/X86/X86RegisterInfo.cpp
-index f69626b..e45c493 100644
+index f456728..48e3ae6 100644
 --- a/lib/Target/X86/X86RegisterInfo.cpp
 +++ b/lib/Target/X86/X86RegisterInfo.cpp
-@@ -276,6 +276,42 @@ X86RegisterInfo::getRegPressureLimit(const TargetRegisterClass *RC,
+@@ -270,6 +270,42 @@ X86RegisterInfo::getRegPressureLimit(const TargetRegisterClass *RC,
    }
  }
  
@@ -526,7 +559,7 @@ index f69626b..e45c493 100644
  const MCPhysReg *
  X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
    assert(MF && "MachineFunction required");
-@@ -326,6 +362,11 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
+@@ -320,6 +356,11 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
        return CSR_64_Intel_OCL_BI_SaveList;
      break;
    }
@@ -538,7 +571,7 @@ index f69626b..e45c493 100644
    case CallingConv::HHVM:
      return CSR_64_HHVM_SaveList;
    case CallingConv::X86_RegCall:
-@@ -444,6 +485,11 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
+@@ -438,6 +479,11 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
        return CSR_64_Intel_OCL_BI_RegMask;
      break;
    }
@@ -551,10 +584,10 @@ index f69626b..e45c493 100644
      return CSR_64_HHVM_RegMask;
    case CallingConv::X86_RegCall:
 diff --git a/lib/Target/X86/X86Subtarget.h b/lib/Target/X86/X86Subtarget.h
-index af51532..a297230c 100644
+index de45d35..6acc768 100644
 --- a/lib/Target/X86/X86Subtarget.h
 +++ b/lib/Target/X86/X86Subtarget.h
-@@ -843,6 +843,9 @@ public:
+@@ -876,6 +876,9 @@ public:
      case CallingConv::X86_ThisCall:
      case CallingConv::X86_VectorCall:
      case CallingConv::Intel_OCL_BI:
@@ -565,24 +598,24 @@ index af51532..a297230c 100644
      // This convention allows using the Win64 convention on other targets.
      case CallingConv::Win64:
 diff --git a/lib/Transforms/Utils/InjectTLIMappings.cpp b/lib/Transforms/Utils/InjectTLIMappings.cpp
-index 9192e74..8c11e6f 100644
+index 9d8f59d..87cf764 100644
 --- a/lib/Transforms/Utils/InjectTLIMappings.cpp
 +++ b/lib/Transforms/Utils/InjectTLIMappings.cpp
-@@ -120,7 +120,8 @@ static void addMappingsFromTLI(const TargetLibraryInfo &TLI, CallInst &CI) {
+@@ -90,8 +90,7 @@ static void addMappingsFromTLI(const TargetLibraryInfo &TLI, CallInst &CI) {
    //  All VFs in the TLI are powers of 2.
    for (unsigned VF = 2, WidestVF = TLI.getWidestVF(ScalarName); VF <= WidestVF;
         VF *= 2) {
--    const std::string TLIName = TLI.getVectorizedFunction(ScalarName, VF);
-+      bool Ignored = false;
-+    const std::string TLIName = TLI.getVectorizedFunction(ScalarName, VF, Ignored, CI.getFastMathFlags().isFast());
+-    const std::string TLIName =
+-        std::string(TLI.getVectorizedFunction(ScalarName, VF));
++    const std::string TLIName = TLI.getVectorizedFunction(ScalarName, VF, CI.getFastMathFlags().isFast());
      if (!TLIName.empty()) {
-       std::string MangledName = mangleTLIName(TLIName, CI, VF);
-       if (!OriginalSetOfMappings.count(MangledName)) {
+       std::string MangledName = VFABI::mangleTLIVectorName(
+           TLIName, ScalarName, CI.getNumArgOperands(), VF);
 diff --git a/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
-index ebfd5fe..d30691d 100644
+index 35af8e4..d4305fe 100644
 --- a/lib/Transforms/Vectorize/LoopVectorize.cpp
 +++ b/lib/Transforms/Vectorize/LoopVectorize.cpp
-@@ -667,6 +667,27 @@ protected:
+@@ -672,6 +672,27 @@ protected:
    /// vector of instructions.
    void addMetadata(ArrayRef<Value *> To, Instruction *From);
  
@@ -610,62 +643,39 @@ index ebfd5fe..d30691d 100644
    /// The original loop.
    Loop *OrigLoop;
  
-@@ -4203,6 +4224,23 @@ static bool mayDivideByZero(Instruction &I) {
-   return !CInt || CInt->isZero();
+@@ -4362,6 +4383,17 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I, VPUser &User,
+   } // end of switch.
  }
  
-+static CallingConv::ID getSVMLCallingConv(const DataLayout &DL, FunctionType *FType)
-+{
-+  assert(isa<VectorType>(FType->getReturnType()));
-+  auto *VecCallRetType = cast<VectorType>(FType->getReturnType());
-+  auto TypeBitWidth = DL.getTypeSizeInBits(VecCallRetType);
-+  if (TypeBitWidth == 128) {
-+    return CallingConv::Intel_SVML128;
-+  } else if (TypeBitWidth == 256) {
-+    return CallingConv::Intel_SVML256;
-+  } else if (TypeBitWidth == 512) {
-+    return CallingConv::Intel_SVML512;
-+  } else {
-+    llvm_unreachable("Invalid vector width");
++static void setVectorFunctionCallingConv(CallInst &CI, const DataLayout &DL,
++                                         const TargetLibraryInfo &TLI) {
++  Function *VectorF = CI.getCalledFunction();
++  FunctionType *FTy = VectorF->getFunctionType();
++  StringRef VFName = VectorF->getName();
++  auto CC = TLI.getVectorizedFunctionCallingConv(VFName, *FTy, DL);
++  if (CC) {
++    CI.setCallingConv(*CC);
 +  }
-+  return 0; // not reachable
 +}
 +
- void InnerLoopVectorizer::widenInstruction(Instruction &I) {
-   switch (I.getOpcode()) {
-   case Instruction::Br:
-@@ -4370,6 +4408,7 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
-       }
- 
-       Function *VectorF;
-+      bool FromSVML = false;
-       if (UseVectorIntrinsic) {
-         // Use vector version of the intrinsic.
-         Type *TysForDecl[] = {CI->getType()};
-@@ -4378,7 +4417,8 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
-         VectorF = Intrinsic::getDeclaration(M, ID, TysForDecl);
-       } else {
-         // Use vector version of the library call.
--        StringRef VFnName = TLI->getVectorizedFunction(FnName, VF);
-+        bool IsFast = CI->getFastMathFlags().isFast();
-+        std::string VFnName = TLI->getVectorizedFunction(FnName, VF, FromSVML, IsFast);
-         assert(!VFnName.empty() && "Vector function name is empty.");
-         VectorF = M->getFunction(VFnName);
-         if (!VectorF) {
-@@ -4397,9 +4437,22 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
- 
+ void InnerLoopVectorizer::widenCallInstruction(CallInst &I, VPUser &ArgOperands,
+                                                VPTransformState &State) {
+   assert(!isa<DbgInfoIntrinsic>(I) &&
+@@ -4426,8 +4458,24 @@ void InnerLoopVectorizer::widenCallInstruction(CallInst &I, VPUser &ArgOperands,
        if (isa<FPMathOperator>(V))
          V->copyFastMathFlags(CI);
--
+ 
 -      VectorLoopValueMap.setVectorValue(&I, Part, V);
 -      addMetadata(V, &I);
++      const DataLayout &DL = V->getModule()->getDataLayout();
++      setVectorFunctionCallingConv(*V, DL, *TLI);
++
 +      // Perform legalization of SVML call instruction only if original call
 +      // was not Intrinsic
-+      if (FromSVML) {
-+        assert((V->getCalledFunction()->getName()).startswith("__svml"));
++      if (!UseVectorIntrinsic &&
++          (V->getCalledFunction()->getName()).startswith("__svml")) {
++        // assert((V->getCalledFunction()->getName()).startswith("__svml"));
 +        LLVM_DEBUG(dbgs() << "LV(SVML): Vector call inst:"; V->dump());
-+        const DataLayout &DL = V->getModule()->getDataLayout();
-+        V->setCallingConv(getSVMLCallingConv(DL, V->getFunctionType()));
 +        auto *LegalV = cast<Instruction>(legalizeSVMLCall(V, CI));
 +        LLVM_DEBUG(dbgs() << "LV: Completed SVML legalization.\n LegalV: ";
 +                   LegalV->dump());
@@ -675,11 +685,11 @@ index ebfd5fe..d30691d 100644
 +        VectorLoopValueMap.setVectorValue(&I, Part, V);
 +        addMetadata(V, &I);
 +      }
-     }
+   }
+ }
  
-     break;
-@@ -4412,6 +4465,243 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I) {
-   } // end of switch.
+@@ -4455,6 +4503,227 @@ void InnerLoopVectorizer::widenSelectInstruction(SelectInst &I,
+   }
  }
  
 +//===----------------------------------------------------------------------===//
@@ -743,7 +753,6 @@ index ebfd5fe..d30691d 100644
 +  // Convert args, types and return type to match legal VF
 +  SmallVector<Type *, 4> NewTys;
 +  SmallVector<Value *, 4> NewArgs;
-+  Type *NewRetTy = ToVectorTy(Call->getType(), LegalVF);
 +
 +  for (Value *ArgOperand : Call->arg_operands()) {
 +    Type *Ty = ToVectorTy(ArgOperand->getType(), LegalVF);
@@ -752,47 +761,32 @@ index ebfd5fe..d30691d 100644
 +  }
 +
 +  // Construct legal vector function
-+  Function *F = Call->getCalledFunction();
-+  StringRef FnName = F->getName();
-+  Module *M = Call->getModule();
-+  bool unused = false;
-+  std::string LegalVFnName = TLI->getVectorizedFunction(FnName, LegalVF, unused, Call->getFastMathFlags().isFast());
-+  LLVM_DEBUG(dbgs() << "LV(SVML): LegalVFnName: " << LegalVFnName << " FnName: " << FnName << "\n");
-+  assert(!LegalVFnName.empty() && (LegalVFnName != FnName) &&
-+         "Could not find legal vector function in TLI.");
-+
-+  Function *LegalVectorF = M->getFunction(LegalVFnName);
-+  if (!LegalVectorF) {
-+    FunctionType *LegalFTy = FunctionType::get(NewRetTy, NewTys, false);
-+    LegalVectorF = Function::Create(LegalFTy, Function::ExternalLinkage, LegalVFnName, M);
-+    LegalVectorF->copyAttributesFrom(F);
-+  }
-+  assert(LegalVectorF && "Can't create legal SVML vector function.");
++  const VFShape Shape =
++    VFShape::get(*Call, {LegalVF, false} /*EC*/, false /*HasGlobalPred*/);
++  Function *LegalVectorF = VFDatabase(*Call).getVectorizedFunction(Shape);
++  assert(LegalVectorF != nullptr && "Can't create legal vector function.");
 +
 +  LLVM_DEBUG(dbgs() << "LV(SVML): LegalVectorF: "; LegalVectorF->dump());
 +
 +  SmallVector<OperandBundleDef, 1> OpBundles;
 +  Call->getOperandBundlesAsDefs(OpBundles);
-+  CallInst *LegalV = CallInst::Create(LegalVectorF, NewArgs, OpBundles);
++  auto LegalV = std::unique_ptr<CallInst>(CallInst::Create(LegalVectorF, NewArgs, OpBundles));
 +
 +  if (isa<FPMathOperator>(LegalV))
 +    LegalV->copyFastMathFlags(Call);
 +
 +  const DataLayout &DL = VecCall->getModule()->getDataLayout();
 +  // Set SVML calling conventions
-+  LegalV->setCallingConv(getSVMLCallingConv(DL, LegalV->getFunctionType()));
++  setVectorFunctionCallingConv(*LegalV, DL, *TLI);
 +
 +  LLVM_DEBUG(dbgs() << "LV(SVML): LegalV: "; LegalV->dump());
 +
-+  Value *LegalizedCall = partialVectorizeCall(VecCall, LegalV, LegalVF);
++  Value *LegalizedCall = partialVectorizeCall(VecCall, LegalV.get(), LegalVF);
 +
 +  LLVM_DEBUG(dbgs() << "LV(SVML): LegalizedCall: "; LegalizedCall->dump());
 +
 +  // Remove the illegal call from Builder
 +  VecCall->eraseFromParent();
-+
-+  if (LegalV)
-+    delete LegalV;
 +
 +  return LegalizedCall;
 +}
@@ -864,13 +858,13 @@ index ebfd5fe..d30691d 100644
 +
 +  assert(isa<VectorType>(V->getType()) &&
 +         "Cannot generate shuffles for non-vector values.");
-+  SmallVector<unsigned, 4> ShuffleMask;
++  SmallVector<int, 4> ShuffleMask;
 +  Value *Undef = UndefValue::get(V->getType());
 +
 +  unsigned ElemIdx = Part * LegalVF;
 +
 +  for (unsigned K = 0; K < LegalVF; K++)
-+    ShuffleMask.push_back(ElemIdx + K);
++    ShuffleMask.push_back(static_cast<int>(ElemIdx + K));
 +
 +  auto *ShuffleInst =
 +      Builder.CreateShuffleVector(V, Undef, ShuffleMask, "shuffle");
@@ -897,9 +891,9 @@ index ebfd5fe..d30691d 100644
 +
 +  while (NumRegs > 1) {
 +    for (unsigned I = 0; I < NumRegs; I += 2) {
-+      SmallVector<unsigned, 4> ShuffleMask;
++      SmallVector<int, 4> ShuffleMask;
 +      for (unsigned J = 0; J < NumElems; J++)
-+        ShuffleMask.push_back(J);
++        ShuffleMask.push_back(static_cast<int>(J));
 +
 +      CombinedShuffle = Builder.CreateShuffleVector(
 +          CallResults[I], CallResults[I + 1], ShuffleMask, "combined");
@@ -923,7 +917,7 @@ index ebfd5fe..d30691d 100644
    // We should not collect Scalars more than once per VF. Right now, this
    // function is called from collectUniformsAndScalars(), which already does
 diff --git a/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll b/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
-index 5a4bfe5..4da2e48 100644
+index 1e55e7d..5cf1f9d 100644
 --- a/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
 +++ b/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
 @@ -39,7 +39,8 @@ for.end:                                          ; preds = %for.body
@@ -956,11 +950,31 @@ index 5a4bfe5..4da2e48 100644
  ; CHECK: ret
  define void @pow_f64(double* nocapture %varray, double* nocapture readonly %exp) {
  entry:
+@@ -190,7 +193,8 @@ declare float @__exp2f_finite(float) #0
+ 
+ define void @exp2f_finite(float* nocapture %varray) {
+ ; CHECK-LABEL: @exp2f_finite(
+-; CHECK:    call <4 x float> @__svml_exp2f4(<4 x float> %{{.*}})
++; CHECK:    call intel_svmlcc128 <4 x float> @__svml_exp2f4_ha(<4 x float> %{{.*}})
++; CHECK:    call intel_svmlcc128 <4 x float> @__svml_exp2f4_ha(<4 x float> %{{.*}})
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -219,7 +223,8 @@ declare double @__exp2_finite(double) #0
+ 
+ define void @exp2_finite(double* nocapture %varray) {
+ ; CHECK-LABEL: @exp2_finite(
+-; CHECK:    call <4 x double> @__svml_exp24(<4 x double> {{.*}})
++; CHECK:    call intel_svmlcc128 <2 x double> @__svml_exp22_ha(<2 x double> {{.*}})
++; CHECK:    call intel_svmlcc128 <2 x double> @__svml_exp22_ha(<2 x double> {{.*}})
+ ; CHECK:    ret void
+ ;
+ entry:
 diff --git a/test/Transforms/LoopVectorize/X86/svml-calls.ll b/test/Transforms/LoopVectorize/X86/svml-calls.ll
-index 8ff62f1..3d462c1 100644
+index 1f2b71f..e84d9ae 100644
 --- a/test/Transforms/LoopVectorize/X86/svml-calls.ll
 +++ b/test/Transforms/LoopVectorize/X86/svml-calls.ll
-@@ -31,7 +31,7 @@ declare float @llvm.log.f32(float) #0
+@@ -35,7 +35,7 @@ declare float @llvm.exp2.f32(float) #0
  
  define void @sin_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @sin_f64(
@@ -969,7 +983,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -54,7 +54,7 @@ for.end:
+@@ -58,7 +58,7 @@ for.end:
  
  define void @sin_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @sin_f32(
@@ -978,7 +992,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -77,7 +77,7 @@ for.end:
+@@ -81,7 +81,7 @@ for.end:
  
  define void @sin_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @sin_f64_intrinsic(
@@ -987,7 +1001,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -100,7 +100,7 @@ for.end:
+@@ -104,7 +104,7 @@ for.end:
  
  define void @sin_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @sin_f32_intrinsic(
@@ -996,7 +1010,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -123,7 +123,7 @@ for.end:
+@@ -127,7 +127,7 @@ for.end:
  
  define void @cos_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @cos_f64(
@@ -1005,7 +1019,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -146,7 +146,7 @@ for.end:
+@@ -150,7 +150,7 @@ for.end:
  
  define void @cos_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @cos_f32(
@@ -1014,7 +1028,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -169,7 +169,7 @@ for.end:
+@@ -173,7 +173,7 @@ for.end:
  
  define void @cos_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @cos_f64_intrinsic(
@@ -1023,7 +1037,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -192,7 +192,7 @@ for.end:
+@@ -196,7 +196,7 @@ for.end:
  
  define void @cos_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @cos_f32_intrinsic(
@@ -1032,7 +1046,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -215,7 +215,7 @@ for.end:
+@@ -219,7 +219,7 @@ for.end:
  
  define void @pow_f64(double* nocapture %varray, double* nocapture readonly %exp) {
  ; CHECK-LABEL: @pow_f64(
@@ -1041,7 +1055,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -240,7 +240,7 @@ for.end:
+@@ -244,7 +244,7 @@ for.end:
  
  define void @pow_f64_intrinsic(double* nocapture %varray, double* nocapture readonly %exp) {
  ; CHECK-LABEL: @pow_f64_intrinsic(
@@ -1050,7 +1064,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -265,7 +265,7 @@ for.end:
+@@ -269,7 +269,7 @@ for.end:
  
  define void @pow_f32(float* nocapture %varray, float* nocapture readonly %exp) {
  ; CHECK-LABEL: @pow_f32(
@@ -1059,7 +1073,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -290,7 +290,7 @@ for.end:
+@@ -294,7 +294,7 @@ for.end:
  
  define void @pow_f32_intrinsic(float* nocapture %varray, float* nocapture readonly %exp) {
  ; CHECK-LABEL: @pow_f32_intrinsic(
@@ -1068,7 +1082,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -315,7 +315,7 @@ for.end:
+@@ -319,7 +319,7 @@ for.end:
  
  define void @exp_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @exp_f64(
@@ -1077,7 +1091,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -338,7 +338,7 @@ for.end:
+@@ -342,7 +342,7 @@ for.end:
  
  define void @exp_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @exp_f32(
@@ -1086,7 +1100,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -361,7 +361,7 @@ for.end:
+@@ -365,7 +365,7 @@ for.end:
  
  define void @exp_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @exp_f64_intrinsic(
@@ -1095,7 +1109,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -384,7 +384,7 @@ for.end:
+@@ -388,7 +388,7 @@ for.end:
  
  define void @exp_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @exp_f32_intrinsic(
@@ -1104,7 +1118,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -407,7 +407,7 @@ for.end:
+@@ -411,7 +411,7 @@ for.end:
  
  define void @log_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @log_f64(
@@ -1113,7 +1127,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -430,7 +430,7 @@ for.end:
+@@ -434,7 +434,7 @@ for.end:
  
  define void @log_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @log_f32(
@@ -1122,7 +1136,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -453,7 +453,7 @@ for.end:
+@@ -457,7 +457,7 @@ for.end:
  
  define void @log_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @log_f64_intrinsic(
@@ -1131,7 +1145,7 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -476,7 +476,7 @@ for.end:
+@@ -480,7 +480,7 @@ for.end:
  
  define void @log_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @log_f32_intrinsic(
@@ -1140,18 +1154,53 @@ index 8ff62f1..3d462c1 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -497,5 +497,44 @@ for.end:
+@@ -503,7 +503,7 @@ for.end:
+ 
+ define void @exp2_f64(double* nocapture %varray) {
+ ; CHECK-LABEL: @exp2_f64(
+-; CHECK:    [[TMP5:%.*]] = call <4 x double> @__svml_exp24(<4 x double> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc256 <4 x double> @__svml_exp24_ha(<4 x double> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -526,7 +526,7 @@ for.end:
+ 
+ define void @exp2_f32(float* nocapture %varray) {
+ ; CHECK-LABEL: @exp2_f32(
+-; CHECK:    [[TMP5:%.*]] = call <4 x float> @__svml_exp2f4(<4 x float> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc128 <4 x float> @__svml_exp2f4_ha(<4 x float> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -549,7 +549,7 @@ for.end:
+ 
+ define void @exp2_f64_intrinsic(double* nocapture %varray) {
+ ; CHECK-LABEL: @exp2_f64_intrinsic(
+-; CHECK:    [[TMP5:%.*]] = call <4 x double> @__svml_exp24(<4 x double> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc256 <4 x double> @__svml_exp24_ha(<4 x double> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -572,7 +572,7 @@ for.end:
+ 
+ define void @exp2_f32_intrinsic(float* nocapture %varray) {
+ ; CHECK-LABEL: @exp2_f32_intrinsic(
+-; CHECK:    [[TMP5:%.*]] = call <4 x float> @__svml_exp2f4(<4 x float> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc128 <4 x float> @__svml_exp2f4_ha(<4 x float> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -593,4 +593,44 @@ for.end:
    ret void
  }
  
--attributes #0 = { nounwind readnone }
 +; CHECK-LABEL: @atan2_finite
 +; CHECK: intel_svmlcc256 <4 x double> @__svml_atan24
 +; CHECK: intel_svmlcc256 <4 x double> @__svml_atan24
 +; CHECK: ret
 +
 +declare double @__atan2_finite(double, double) local_unnamed_addr #0
- 
++
 +define void @atan2_finite([100 x double]* nocapture %varray) local_unnamed_addr #0 {
 +entry:
 +  br label %for.cond1.preheader
@@ -1182,7 +1231,7 @@ index 8ff62f1..3d462c1 100644
 +  ret void
 +}
 +
-+attributes #0 = { nounwind readnone }
+ attributes #0 = { nounwind readnone }
 +!5 = distinct !{!5, !6, !7}
 +!6 = !{!"llvm.loop.vectorize.width", i32 8}
 +!7 = !{!"llvm.loop.vectorize.enable", i1 true}
@@ -1773,10 +1822,10 @@ index 0000000..f9e9170
 +!6 = distinct !{!6, !7}
 +!7 = !{!"llvm.loop.vectorize.width", i32 8}
 diff --git a/utils/TableGen/CMakeLists.txt b/utils/TableGen/CMakeLists.txt
-index dbca62c..93f4612 100644
+index 8673a25..dcf2430 100644
 --- a/utils/TableGen/CMakeLists.txt
 +++ b/utils/TableGen/CMakeLists.txt
-@@ -45,6 +45,7 @@ add_tablegen(llvm-tblgen LLVM
+@@ -46,6 +46,7 @@ add_tablegen(llvm-tblgen LLVM
    SearchableTableEmitter.cpp
    SubtargetEmitter.cpp
    SubtargetFeatureInfo.cpp
@@ -1901,31 +1950,31 @@ index 0000000..8800ca8
 +
 +} // End llvm namespace
 diff --git a/utils/TableGen/TableGen.cpp b/utils/TableGen/TableGen.cpp
-index bdb963c..0767597 100644
+index 8015a58..a61a7b3 100644
 --- a/utils/TableGen/TableGen.cpp
 +++ b/utils/TableGen/TableGen.cpp
-@@ -54,6 +54,7 @@ enum ActionType {
-   GenRegisterBank,
-   GenExegesis,
-   GenAutomata,
+@@ -57,6 +57,7 @@ enum ActionType {
+   GenDirectivesEnumDecl,
+   GenDirectivesEnumImpl,
+   GenDirectivesEnumGen,
 +  GenSVMLVariants,
  };
  
  namespace llvm {
-@@ -122,7 +123,9 @@ cl::opt<ActionType> Action(
-                    "Generate registers bank descriptions"),
-         clEnumValN(GenExegesis, "gen-exegesis",
-                    "Generate llvm-exegesis tables"),
--        clEnumValN(GenAutomata, "gen-automata", "Generate generic automata")));
-+        clEnumValN(GenAutomata, "gen-automata", "Generate generic automata"),
+@@ -137,7 +138,9 @@ cl::opt<ActionType> Action(
+         clEnumValN(GenDirectivesEnumImpl, "gen-directive-impl",
+                    "Generate directive related implementation code"),
+         clEnumValN(GenDirectivesEnumGen, "gen-directive-gen",
+-                   "Generate directive related implementation code part")));
++                   "Generate directive related implementation code part"),
 +        clEnumValN(GenSVMLVariants, "gen-svml",
 +                   "Generate SVML variant function names")));
  
  cl::OptionCategory PrintEnumsCat("Options for -print-enums");
  cl::opt<std::string> Class("class", cl::desc("Print Enum list for this class"),
-@@ -247,6 +250,9 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
-   case GenAutomata:
-     EmitAutomata(Records, OS);
+@@ -271,6 +274,9 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
+   case GenDirectivesEnumGen:
+     EmitDirectivesGen(Records, OS);
      break;
 +  case GenSVMLVariants:
 +    EmitSVMLVariants(Records, OS);
@@ -1934,19 +1983,19 @@ index bdb963c..0767597 100644
  
    return false;
 diff --git a/utils/TableGen/TableGenBackends.h b/utils/TableGen/TableGenBackends.h
-index 9eef77a..2c43852 100644
+index 92204f3..c1bcadc 100644
 --- a/utils/TableGen/TableGenBackends.h
 +++ b/utils/TableGen/TableGenBackends.h
-@@ -90,6 +90,7 @@ void EmitX86FoldTables(RecordKeeper &RK, raw_ostream &OS);
- void EmitRegisterBank(RecordKeeper &RK, raw_ostream &OS);
- void EmitExegesis(RecordKeeper &RK, raw_ostream &OS);
- void EmitAutomata(RecordKeeper &RK, raw_ostream &OS);
+@@ -93,6 +93,7 @@ void EmitAutomata(RecordKeeper &RK, raw_ostream &OS);
+ void EmitDirectivesDecl(RecordKeeper &RK, raw_ostream &OS);
+ void EmitDirectivesImpl(RecordKeeper &RK, raw_ostream &OS);
+ void EmitDirectivesGen(RecordKeeper &RK, raw_ostream &OS);
 +void EmitSVMLVariants(RecordKeeper &RK, raw_ostream &OS);
  
  } // End llvm namespace
  
 diff --git a/utils/vim/syntax/llvm.vim b/utils/vim/syntax/llvm.vim
-index 487a37b..89095f4 100644
+index ce36b76..da3a4a9 100644
 --- a/utils/vim/syntax/llvm.vim
 +++ b/utils/vim/syntax/llvm.vim
 @@ -96,6 +96,7 @@ syn keyword llvmKeyword
@@ -1958,5 +2007,5 @@ index 487a37b..89095f4 100644
        \ linkonce
        \ linkonce_odr
 -- 
-2.7.4
+2.9.2.windows.1
 
