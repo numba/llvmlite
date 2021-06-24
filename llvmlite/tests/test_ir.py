@@ -2232,8 +2232,8 @@ class TestConstant(TestBase):
     def test_add(self):
         one = ir.Constant(int32, 1)
         two = ir.Constant(int32, 2)
-        two = one.add(two)
-        self.assertEqual(str(two), 'add (i32 1, i32 2)')
+        three = one.add(two)
+        self.assertEqual(str(three), 'add (i32 1, i32 2)')
 
 
 class TestTransforms(TestBase):

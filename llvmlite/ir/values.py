@@ -266,7 +266,7 @@ class _ConstOpMixin(object):
             self.get_reference(), ', '.join(strindices))
         return FormattedConstant(outtype.as_pointer(self.addrspace), op)
 
-    
+
 class Value(object):
     """
     The base class for all values.
