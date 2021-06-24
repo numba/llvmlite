@@ -38,7 +38,7 @@ def _escape_string(text, _map={}):
     return ''.join(buf)
 
 
-def _binop(fn):
+def _binop(opname):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(lhs, rhs):
@@ -47,7 +47,7 @@ def _binop(fn):
                                  % (lhs.type, rhs.type))
 
             fmt = "{0} ({1}, {2})"
-            return FormattedConstant(lhs.type, fmt.format(fn.__name__, lhs, rhs))
+            return FormattedConstant(lhs.type, fmt.format(opname, lhs, rhs))
 
         return wrapped
 

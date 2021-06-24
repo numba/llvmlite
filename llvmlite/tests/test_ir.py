@@ -2235,7 +2235,13 @@ class TestConstant(TestBase):
         three = one.add(two)
         self.assertEqual(str(three), 'add (i32 1, i32 2)')
 
+    def test_or(self):
+        one = ir.Constant(int32, 1)
+        two = ir.Constant(int32, 2)
+        three = one.or_(two)
+        self.assertEqual(str(three), 'or (i32 1, i32 2)')
 
+        
 class TestTransforms(TestBase):
     def test_call_transform(self):
         mod = ir.Module()
