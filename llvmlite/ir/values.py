@@ -3,10 +3,11 @@ Classes that are LLVM values: Value, Constant...
 Instructions are in the instructions module.
 """
 
+import functools
 import string
 import re
 
-from llvmlite.ir import types, _utils
+from llvmlite.ir import values, types, _utils
 from llvmlite.ir._utils import (_StrCaching, _StringReferenceCaching,
                                 _HasMetadata)
 
@@ -37,10 +38,187 @@ def _escape_string(text, _map={}):
     return ''.join(buf)
 
 
+def _binop(fn):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(lhs, rhs):
+            if lhs.type != rhs.type:
+                raise ValueError("Operands must be the same type, got (%s, %s)"
+                                 % (lhs.type, rhs.type))
+
+            fmt = "{0} ({1}, {2})"
+            return FormattedConstant(lhs.type, fmt.format(fn.__name__, lhs, rhs))
+
+        return wrapped
+
+    return wrap
+
+
 class _ConstOpMixin(object):
     """
     A mixin defining constant operations, for use in constant-like classes.
     """
+
+    #
+    # Arithmetic APIs
+    #
+
+    @_binop('shl')
+    def shl(self, other):
+        """
+        Left integer shift:
+            lhs << rhs
+        """
+
+    @_binop('lshr')
+    def lshr(self, other):
+        """
+        Logical (unsigned) right integer shift:
+            lhs >> rhs
+        """
+
+    @_binop('ashr')
+    def ashr(self, other):
+        """
+        Arithmetic (signed) right integer shift:
+            lhs >> rhs
+        """
+
+    @_binop('add')
+    def add(self, other):
+        """
+        Integer addition:
+            lhs + rhs
+        """
+
+    @_binop('fadd')
+    def fadd(self, other):
+        """
+        Floating-point addition:
+            lhs + rhs
+        """
+
+    @_binop('sub')
+    def sub(self, other):
+        """
+        Integer subtraction:
+            lhs - rhs
+        """
+
+    @_binop('fsub')
+    def fsub(self, other):
+        """
+        Floating-point subtraction:
+            lhs - rhs
+        """
+
+    @_binop('mul')
+    def mul(self, other):
+        """
+        Integer multiplication:
+            lhs * rhs
+        """
+
+    @_binop('fmul')
+    def fmul(self, other):
+        """
+        Floating-point multiplication:
+            lhs * rhs
+        """
+
+    @_binop('udiv')
+    def udiv(self, other):
+        """
+        Unsigned integer division:
+            lhs / rhs
+        """
+
+    @_binop('sdiv')
+    def sdiv(self, other):
+        """
+        Signed integer division:
+            lhs / rhs
+        """
+
+    @_binop('fdiv')
+    def fdiv(self, other):
+        """
+        Floating-point division:
+            lhs / rhs
+        """
+
+    @_binop('urem')
+    def urem(self, other):
+        """
+        Unsigned integer remainder:
+            lhs % rhs
+        """
+
+    @_binop('srem')
+    def srem(self, other):
+        """
+        Signed integer remainder:
+            lhs % rhs
+        """
+
+    @_binop('frem')
+    def frem(self, other):
+        """
+        Floating-point remainder:
+            lhs % rhs
+        """
+
+    @_binop('or')
+    def or_(self, other):
+        """
+        Bitwise integer OR:
+            lhs | rhs
+        """
+
+    @_binop('and')
+    def and_(self, other):
+        """
+        Bitwise integer AND:
+            lhs & rhs
+        """
+
+    @_binop('xor')
+    def xor(self, other):
+        """
+        Bitwise integer XOR:
+            lhs ^ rhs
+        """
+
+    #
+    # Unary APIs
+    #
+
+    def not_(self):
+        """
+        Bitwise integer complement:
+            ~value
+        """
+        if isinstance(self.type, types.VectorType):
+            rhs = values.Constant(self.type, (-1,) * self.type.count)
+        else:
+            rhs = values.Constant(self.type, -1)
+        
+        return self.xor(rhs)
+    
+    def neg(self):
+        """
+        Integer negative:
+            -value
+        """
+        zero = values.Constant(self.type, 0)
+        return zero.sub(self)
+    
+    def fneg(self):
+        """
+        Floating-point negative:
+            -value
+        """
+        return self.neg()
 
     def bitcast(self, typ):
         """
@@ -88,7 +266,7 @@ class _ConstOpMixin(object):
             self.get_reference(), ', '.join(strindices))
         return FormattedConstant(outtype.as_pointer(self.addrspace), op)
 
-
+    
 class Value(object):
     """
     The base class for all values.
