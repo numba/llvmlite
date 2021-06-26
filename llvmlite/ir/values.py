@@ -55,8 +55,11 @@ def _binop(opname):
                 raise ValueError("Operands must be the same type, got (%s, %s)"
                                  % (lhs.type, rhs.type))
 
-            fmt = "{0} ({1}, {2})"
-            return FormattedConstant(lhs.type, fmt.format(opname, lhs, rhs))
+            fmt = "{0} ({1} {2}, {3} {4})".format(opname,
+                lhs.type, lhs.get_reference(),
+                rhs.type, rhs.get_reference()
+            )
+            return FormattedConstant(lhs.type, fmt)
 
         return wrapped
 
@@ -204,17 +207,20 @@ class _ConstOpMixin(object):
             op = _CMP_MAP[cmpop]
         except KeyError:
             raise ValueError("invalid comparison %r for %s" % (cmpop, ins))
-        if cmpop not in ('==', '!='):
+
+        if not (prefix == 'i' and cmpop in ('==', '!=')):
             op = sign + op
 
         if self.type != other.type:
             raise ValueError("Operands must be the same type, got (%s, %s)"
                                  % (self.type, other.type))
 
-
-        int1 = types.IntType(1)
-        fmt = "{0} {1} ({2}, {3})"
-        return FormattedConstant(int1, fmt.format(ins, op, self, other))
+        fmt = "{0} {1} ({2} {3}, {4} {5})".format(
+            ins, op,
+            self.type, self.get_reference(),
+            other.type, other.get_reference())
+        
+        return FormattedConstant(types.IntType(1), fmt)
     
     def icmp_signed(self, cmpop, other):
         """
