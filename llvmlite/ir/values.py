@@ -18,6 +18,15 @@ _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
 
 _SIMPLE_IDENTIFIER_RE = re.compile(r"[-a-zA-Z$._][-a-zA-Z$._0-9]*$")
 
+_CMP_MAP = {
+    '>': 'gt',
+    '<': 'lt',
+    '==': 'eq',
+    '!=': 'ne',
+    '>=': 'ge',
+    '<=': 'le',
+}
+
 
 def _escape_string(text, _map={}):
     """
@@ -189,6 +198,60 @@ class _ConstOpMixin(object):
             lhs ^ rhs
         """
 
+    def _cmp(self, prefix, sign, cmpop, other):
+        ins = prefix + 'cmp'
+        try:
+            op = _CMP_MAP[cmpop]
+        except KeyError:
+            raise ValueError("invalid comparison %r for %s" % (cmpop, ins))
+        if cmpop not in ('==', '!='):
+            op = sign + op
+
+        if self.type != other.type:
+            raise ValueError("Operands must be the same type, got (%s, %s)"
+                                 % (self.type, other.type))
+
+
+        int1 = types.IntType(1)
+        fmt = "{0} {1} ({2}, {3})"
+        return FormattedConstant(int1, fmt.format(ins, op, self, other))
+    
+    def icmp_signed(self, cmpop, other):
+        """
+        Signed integer comparison:
+            lhs <cmpop> rhs
+
+        where cmpop can be '==', '!=', '<', '<=', '>', '>='
+        """
+        return self._cmp('i', 's', cmpop, other)
+
+    def icmp_unsigned(self, cmpop, other):
+        """
+        Unsigned integer (or pointer) comparison:
+            lhs <cmpop> rhs
+
+        where cmpop can be '==', '!=', '<', '<=', '>', '>='
+        """
+        return self._cmp('i', 'u', cmpop, other)
+
+    def fcmp_ordered(self, cmpop, other):
+        """
+        Floating-point ordered comparison:
+            lhs <cmpop> rhs
+
+        where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
+        """
+        return self._cmp('f', 'o', cmpop, other)
+    
+    def fcmp_unordered(self, cmpop, other):
+        """
+        Floating-point unordered comparison:
+            lhs <cmpop> rhs
+
+        where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
+        """
+        return self._cmp('f', 'u', cmpop, other)
+    
     #
     # Unary APIs
     #
