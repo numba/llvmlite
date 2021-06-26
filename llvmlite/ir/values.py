@@ -287,7 +287,8 @@ class _ConstOpMixin(object):
         Floating-point negative:
             -value
         """
-        return self.neg()
+        fmt = "fneg ({0} {1})".format(self.type, self.get_reference())
+        return FormattedConstant(self.type, fmt)
 
     def bitcast(self, typ):
         """
