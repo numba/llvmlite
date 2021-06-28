@@ -1,4 +1,4 @@
-v0.37.0dev0 (June 30 2021)
+v0.37.0 RC1 (June 30 2021)
 --------------------------
 
 The biggest new feature in this release is LLVM 11 support for all platforms!
