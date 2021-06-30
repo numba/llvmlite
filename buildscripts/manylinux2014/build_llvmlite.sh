@@ -19,7 +19,7 @@ ls -l /opt/python/$pyver/bin
 conda create -y -n $envname
 source activate $envname
 # Install llvmdev
-conda install -y -c numba/label/manylinux2010 llvmdev
+conda install -y -c numba/label/manylinux2014 llvmdev
 
 # Prepend builtin Python Path
 export PATH=/opt/python/$pyver/bin:$PATH

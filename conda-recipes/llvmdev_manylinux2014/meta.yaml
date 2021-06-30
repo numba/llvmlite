@@ -30,7 +30,7 @@ source:
 
 build:
   number: {{ build_number }}
-  string: "manylinux2010h{{ PKG_HASH }}"
+  string: "manylinux2014h{{ PKG_HASH }}"
   script_env:
     - CFLAGS
     - CXXFLAGS
