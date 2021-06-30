@@ -56,9 +56,8 @@ def _binop(opname):
                                  % (lhs.type, rhs.type))
 
             fmt = "{0} ({1} {2}, {3} {4})".format(opname,
-                lhs.type, lhs.get_reference(),
-                rhs.type, rhs.get_reference()
-            )
+                                                  lhs.type, lhs.get_reference(),
+                                                  rhs.type, rhs.get_reference())
             return FormattedConstant(lhs.type, fmt)
 
         return wrapped
@@ -213,15 +212,15 @@ class _ConstOpMixin(object):
 
         if self.type != other.type:
             raise ValueError("Operands must be the same type, got (%s, %s)"
-                                 % (self.type, other.type))
+                             % (self.type, other.type))
 
         fmt = "{0} {1} ({2} {3}, {4} {5})".format(
             ins, op,
             self.type, self.get_reference(),
             other.type, other.get_reference())
-        
+
         return FormattedConstant(types.IntType(1), fmt)
-    
+
     def icmp_signed(self, cmpop, other):
         """
         Signed integer comparison:
@@ -248,7 +247,7 @@ class _ConstOpMixin(object):
         where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
         """
         return self._cmp('f', 'o', cmpop, other)
-    
+
     def fcmp_unordered(self, cmpop, other):
         """
         Floating-point unordered comparison:
@@ -257,7 +256,7 @@ class _ConstOpMixin(object):
         where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
         """
         return self._cmp('f', 'u', cmpop, other)
-    
+
     #
     # Unary APIs
     #
@@ -271,9 +270,9 @@ class _ConstOpMixin(object):
             rhs = values.Constant(self.type, (-1,) * self.type.count)
         else:
             rhs = values.Constant(self.type, -1)
-        
+
         return self.xor(rhs)
-    
+
     def neg(self):
         """
         Integer negative:
@@ -281,7 +280,7 @@ class _ConstOpMixin(object):
         """
         zero = values.Constant(self.type, 0)
         return zero.sub(self)
-    
+
     def fneg(self):
         """
         Floating-point negative:

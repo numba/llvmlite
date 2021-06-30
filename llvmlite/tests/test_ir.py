@@ -2241,7 +2241,7 @@ class TestConstant(TestBase):
         three = one.or_(two)
         self.assertEqual(str(three), 'or (i32 1, i32 2)')
 
-        
+
 class TestTransforms(TestBase):
     def test_call_transform(self):
         mod = ir.Module()
