@@ -1,7 +1,33 @@
-v0.37.0dev0
------------
+v0.37.0 RC1 (June 30 2021)
+--------------------------
 
-In development
+The biggest new feature in this release is LLVM 11 support for all platforms!
+This is important, because the ``aarch64`` platform had been 'stuck' on LLVM 9
+for several releases. A special thanks to David Spickett from Linaro for
+supplying the relevant patch.
+
+Pull-Requests:
+
+* PR `#711 <https://github.com/numba/llvmlite/pull/711>`_: Use conda for readthedocs with Python 3.9 (`Antoine Pitrou <https://github.com/pitrou>`_ `esc <https://github.com/esc>`_)
+* PR `#715 <https://github.com/numba/llvmlite/pull/715>`_: LLVM 11.1.0 (`Ivan Butygin <https://github.com/Hardcode84>`_ `esc <https://github.com/esc>`_)
+* PR `#726 <https://github.com/numba/llvmlite/pull/726>`_: Disallow alwaysinline and noinline on functions (`Graham Markall <https://github.com/gmarkall>`_)
+* PR `#730 <https://github.com/numba/llvmlite/pull/730>`_: Don't export LLVM symbols when linking statically (`Chris Burr <https://github.com/chrisburr>`_ `esc <https://github.com/esc>`_)
+* PR `#732 <https://github.com/numba/llvmlite/pull/732>`_: Docs/remove travis (`esc <https://github.com/esc>`_)
+* PR `#734 <https://github.com/numba/llvmlite/pull/734>`_: bump llvmdev to 11 (`esc <https://github.com/esc>`_)
+
+Total PRs: 10
+
+Authors:
+
+* `Ivan Butygin <https://github.com/Hardcode84>`_
+* `Chris Burr <https://github.com/chrisburr>`_
+* `esc <https://github.com/esc>`_
+* `Graham Markall <https://github.com/gmarkall>`_
+* `Antoine Pitrou <https://github.com/pitrou>`_
+* `Siu Kwan Lam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+
+Total authors: 7
 
 v0.36.0 (March 11, 2021)
 ------------------------
