@@ -2229,17 +2229,72 @@ class TestConstant(TestBase):
         c = ir.Constant(int32, 0).inttoptr(int64.as_pointer())
         self.assertEqual(str(c), 'inttoptr (i32 0 to i64*)')
 
-    def test_add(self):
+    def test_neg(self):
         one = ir.Constant(int32, 1)
-        two = ir.Constant(int32, 2)
-        three = one.add(two)
-        self.assertEqual(str(three), 'add (i32 1, i32 2)')
+        self.assertEqual(str(one.neg()), 'sub (i32 0, i32 1)')
 
-    def test_or(self):
+    def test_not(self):
+        one = ir.Constant(int32, 1)
+        self.assertEqual(str(one.not_()), 'xor (i32 1, i32 -1)')
+
+    def test_fneg(self):
+        one = ir.Constant(flt, 1)
+        self.assertEqual(str(one.fneg()), 'fneg (float 0x3ff0000000000000)')
+
+    def test_int_binops(self):
         one = ir.Constant(int32, 1)
         two = ir.Constant(int32, 2)
-        three = one.or_(two)
-        self.assertEqual(str(three), 'or (i32 1, i32 2)')
+        
+        oracle = {one.shl:  'shl',  one.lshr: 'lshr', one.ashr: 'ashr',
+                  one.add:  'add',  one.sub:  'sub',  one.mul:  'mul',
+                  one.udiv: 'udiv', one.sdiv: 'sdiv', one.urem: 'urem',
+                  one.srem: 'srem', one.or_:  'or',   one.and_: 'and',
+                  one.xor:  'xor'}
+        for fn, irop in oracle.items():
+            self.assertEqual(str(fn(two)), irop + ' (i32 1, i32 2)')
+
+        # unsigned integer compare
+        oracle = {'==': 'eq', '!=': 'ne', '>' : 'ugt', '>=' : 'uge',
+                  '<' : 'ult', '<=' : 'ule'}
+        for cop, cond  in oracle.items():
+            actual = str(one.icmp_unsigned(cop, two))
+            expected = 'icmp ' + cond + ' (i32 1, i32 2)'
+            self.assertEqual(actual, expected)
+
+        # signed integer compare
+        oracle = {'==': 'eq', '!=': 'ne', '>' : 'sgt', '>=' : 'sge',
+                  '<' : 'slt', '<=' : 'sle'}
+        for cop, cond  in oracle.items():
+            actual = str(one.icmp_signed(cop, two))
+            expected = 'icmp ' + cond + ' (i32 1, i32 2)'
+            self.assertEqual(actual, expected)
+
+    def test_flt_binops(self):
+        one = ir.Constant(flt, 1)
+        two = ir.Constant(flt, 2)
+
+        oracle = {one.fadd: 'fadd', one.fsub: 'fsub', one.fmul:  'fmul',
+                  one.fdiv: 'fdiv', one.frem: 'frem'}
+        for fn, irop in oracle.items():
+            actual = str(fn(two))
+            expected = irop + ' (float 0x3ff0000000000000, float 0x4000000000000000)'
+            self.assertEqual(actual, expected)
+
+        # ordered float compare
+        oracle = {'==': 'oeq', '!=': 'one', '>' : 'ogt', '>=' : 'oge',
+                  '<' : 'olt', '<=' : 'ole'}
+        for cop, cond  in oracle.items():
+            actual = str(one.fcmp_ordered(cop, two))
+            expected = 'fcmp ' + cond + ' (float 0x3ff0000000000000, float 0x4000000000000000)'
+            self.assertEqual(actual, expected)
+
+        # unordered float compare
+        oracle = {'==': 'ueq', '!=': 'une', '>' : 'ugt', '>=' : 'uge',
+                  '<' : 'ult', '<=' : 'ule'}
+        for cop, cond  in oracle.items():
+            actual = str(one.fcmp_unordered(cop, two))
+            expected = 'fcmp ' + cond + ' (float 0x3ff0000000000000, float 0x4000000000000000)'
+            self.assertEqual(actual, expected)
 
 
 class TestTransforms(TestBase):
