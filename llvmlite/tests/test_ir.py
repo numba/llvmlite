@@ -2244,7 +2244,7 @@ class TestConstant(TestBase):
     def test_int_binops(self):
         one = ir.Constant(int32, 1)
         two = ir.Constant(int32, 2)
-        
+
         oracle = {one.shl:  'shl',  one.lshr: 'lshr', one.ashr: 'ashr',
                   one.add:  'add',  one.sub:  'sub',  one.mul:  'mul',
                   one.udiv: 'udiv', one.sdiv: 'sdiv', one.urem: 'urem',
@@ -2254,17 +2254,17 @@ class TestConstant(TestBase):
             self.assertEqual(str(fn(two)), irop + ' (i32 1, i32 2)')
 
         # unsigned integer compare
-        oracle = {'==': 'eq', '!=': 'ne', '>' : 'ugt', '>=' : 'uge',
-                  '<' : 'ult', '<=' : 'ule'}
-        for cop, cond  in oracle.items():
+        oracle = {'==': 'eq', '!=': 'ne', '>':
+                  'ugt', '>=': 'uge', '<': 'ult', '<=': 'ule'}
+        for cop, cond in oracle.items():
             actual = str(one.icmp_unsigned(cop, two))
             expected = 'icmp ' + cond + ' (i32 1, i32 2)'
             self.assertEqual(actual, expected)
 
         # signed integer compare
-        oracle = {'==': 'eq', '!=': 'ne', '>' : 'sgt', '>=' : 'sge',
-                  '<' : 'slt', '<=' : 'sle'}
-        for cop, cond  in oracle.items():
+        oracle = {'==': 'eq', '!=': 'ne',
+                  '>': 'sgt', '>=': 'sge', '<': 'slt', '<=': 'sle'}
+        for cop, cond in oracle.items():
             actual = str(one.icmp_signed(cop, two))
             expected = 'icmp ' + cond + ' (i32 1, i32 2)'
             self.assertEqual(actual, expected)
@@ -2277,23 +2277,26 @@ class TestConstant(TestBase):
                   one.fdiv: 'fdiv', one.frem: 'frem'}
         for fn, irop in oracle.items():
             actual = str(fn(two))
-            expected = irop + ' (float 0x3ff0000000000000, float 0x4000000000000000)'
+            expected = irop + (' (float 0x3ff0000000000000,'
+                               ' float 0x4000000000000000)')
             self.assertEqual(actual, expected)
 
         # ordered float compare
-        oracle = {'==': 'oeq', '!=': 'one', '>' : 'ogt', '>=' : 'oge',
-                  '<' : 'olt', '<=' : 'ole'}
-        for cop, cond  in oracle.items():
+        oracle = {'==': 'oeq', '!=': 'one', '>': 'ogt', '>=': 'oge',
+                  '<': 'olt', '<=': 'ole'}
+        for cop, cond in oracle.items():
             actual = str(one.fcmp_ordered(cop, two))
-            expected = 'fcmp ' + cond + ' (float 0x3ff0000000000000, float 0x4000000000000000)'
+            expected = 'fcmp ' + cond + (' (float 0x3ff0000000000000,'
+                                         ' float 0x4000000000000000)')
             self.assertEqual(actual, expected)
 
         # unordered float compare
-        oracle = {'==': 'ueq', '!=': 'une', '>' : 'ugt', '>=' : 'uge',
-                  '<' : 'ult', '<=' : 'ule'}
-        for cop, cond  in oracle.items():
+        oracle = {'==': 'ueq', '!=': 'une', '>': 'ugt', '>=': 'uge',
+                  '<': 'ult', '<=': 'ule'}
+        for cop, cond in oracle.items():
             actual = str(one.fcmp_unordered(cop, two))
-            expected = 'fcmp ' + cond + ' (float 0x3ff0000000000000, float 0x4000000000000000)'
+            expected = 'fcmp ' + cond + (' (float 0x3ff0000000000000,'
+                                         ' float 0x4000000000000000)')
             self.assertEqual(actual, expected)
 
 
