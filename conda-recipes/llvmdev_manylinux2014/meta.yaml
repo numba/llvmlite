@@ -46,6 +46,8 @@ requirements:
     - m2w64-xz         # [py27 and win]
     # Needed to build LLVM
     - python >=3
+    - libgcc-ng ==7.5.0 # [aarch64]
+    - libstdcxx-ng ==7.5.0 # [aarch64]
 test:
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
