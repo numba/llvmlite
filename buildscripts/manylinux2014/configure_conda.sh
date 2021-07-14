@@ -1,3 +1,4 @@
+#!/bin/bash
 # Setup miniconda environment that is compatible with manylinux2014 docker image
 if [[ $ARCH == "aarch64" ]] ; then
     conda create -n buildenv -y conda conda-build anaconda-client libgcc-ng=7.5.0 libstdcxx-ng=7.5.0
