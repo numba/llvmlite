@@ -1,21 +1,8 @@
-# LLVM 10.0.0 and 10.0.1 had issues with aarch64
-{% if aarch64 %}
-
-{% set shortversion = "9.0" %}
-{% set version = "9.0.1" %}
-{% set sha256_llvm = "00a1ee1f389f81e9979f3a640a01c431b3021de0d42278f6508391a2f0b81c9a" %}
-{% set sha256_lld = "86262bad3e2fd784ba8c5e2158d7aa36f12b85f2515e95bc81d65d75bb9b0c82" %}
-{% set build_number = "0" %}
-
-{% else %}
-
-{% set shortversion = "10.0" %}
-{% set version = "10.0.1" %}
-{% set sha256_llvm = "c5d8e30b57cbded7128d78e5e8dad811bff97a8d471896812f57fa99ee82cdf3" %}
-{% set sha256_lld = "591449e0aa623a6318d5ce2371860401653c48bb540982ccdd933992cb88df7a" %}
-{% set build_number = "1" %}
-
-{% endif %}
+{% set shortversion = "11.1" %}
+{% set version = "11.1.0" %}
+{% set sha256_llvm = "ce8508e318a01a63d4e8b3090ab2ded3c598a50258cc49e2625b9120d4c03ea5" %}
+{% set sha256_lld = "017a788cbe1ecc4a949abf10755870519086d058a2e99f438829aef24f0c66ce" %}
+{% set build_number = "2" %}
 
 package:
   name: llvmdev
@@ -26,28 +13,15 @@ source:
     fn: llvm-{{ version }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
-    # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
-    - ../llvm-lto-static.patch   # [win]
     - ../partial-testing.patch
-    {% if shortversion == '9.0' %}
-    # Intel SVML optimizations
-    # The second part of this patch was published as:
-    # https://reviews.llvm.org/D53035
-    # (the first, as mentioned in the patch itself, was:
-    # https://reviews.llvm.org/D47188)
-    # Latest version of the patch from
-    # https://github.com/conda-forge/llvmdev-feedstock/blob/9.x/recipe/patches/intel-D47188-svml-VF.patch
-    - ../intel-D47188-svml-VF_LLVM9.patch
-    {% else %}
     # Intel SVML optimizations (two patches)
-    # Latest versions from:
-    # * https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/intel-D47188-svml-VF.patch
-    # * https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     - ../intel-D47188-svml-VF.patch
+    # Second patch from https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
-    {% endif %}
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
+    # Fixes for aarch64 on LLVM 11 from https://reviews.llvm.org/D104123
+    - ../llvm_11_consecutive_registers.patch
 
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
@@ -56,7 +30,7 @@ source:
 
 build:
   number: {{ build_number }}
-  string: "manylinux2010h{{ PKG_HASH }}"
+  string: "manylinux2014h{{ PKG_HASH }}"
   script_env:
     - CFLAGS
     - CXXFLAGS
@@ -68,11 +42,12 @@ build:
 requirements:
   build:
     - cmake
-    # - make  # Unavailable in old miniconda
     # Needed to unpack the source tarball
     - m2w64-xz         # [py27 and win]
     # Needed to build LLVM
     - python >=3
+    - libgcc-ng ==7.5.0 # [aarch64]
+    - libstdcxx-ng ==7.5.0 # [aarch64]
 test:
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]

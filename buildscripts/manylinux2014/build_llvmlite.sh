@@ -16,10 +16,15 @@ outputdir="/root/llvmlite/docker_output"
 
 ls -l /opt/python/$pyver/bin
 
-conda create -y -n $envname
+conda create -y -n $envname 
 source activate $envname
 # Install llvmdev
-conda install -y -c numba/label/manylinux2010 llvmdev
+
+if [[ $ARCH == "aarch64" ]] ; then
+    conda install -y numba/label/manylinux2014::llvmdev --no-deps
+else
+    conda install -y -c numba/label/manylinux2014 llvmdev
+fi
 
 # Prepend builtin Python Path
 export PATH=/opt/python/$pyver/bin:$PATH
@@ -37,7 +42,7 @@ python setup.py bdist_wheel -d $distdir
 
 # Audit wheel
 cd $distdir
-auditwheel repair *.whl
+auditwheel --verbose repair *.whl
 
 cd wheelhouse
 ls
