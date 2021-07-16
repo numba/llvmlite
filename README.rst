@@ -66,14 +66,14 @@ Compatibility
 
 llvmlite works with Python 3.6 and greater.
 
-As of version 0.37.0, llvmlite requires LLVM 11.x.x. on all architectures
+As of version 0.37.0, llvmlite requires LLVM 11.x.x on all architectures
 
 Historical compatibility table:
 
 =================  ========================
 llvmlite versions  compatible LLVM versions
 =================  ========================
-0.37.0 - ...       11.1.0
+0.37.0 - ...       11.x.x
 0.34.0 - 0.36.0    10.0.x (9.0.x for  ``aarch64`` only)
 0.33.0             9.0.x
 0.29.0 - 0.32.0    7.0.x, 7.1.x, 8.0.x
