@@ -5,9 +5,6 @@ jobs:
     name: macOS
     vmImage: macOS-10.14
     matrix:
-      py36:
-        PYTHON: '3.6'
-        CONDA_ENV: cienv
       py37:
         PYTHON: '3.7'
         CONDA_ENV: cienv
@@ -23,9 +20,6 @@ jobs:
     name: Linux
     vmImage: ubuntu-16.04
     matrix:
-      py36:
-        PYTHON: '3.6'
-        CONDA_ENV: cienv
       py37:
         PYTHON: '3.7'
         CONDA_ENV: cienv
@@ -41,10 +35,6 @@ jobs:
 #       pypy:
 #         PYTHON: pypy
 #         CONDA_ENV: cienv
-      py36_wheel:
-        PYTHON: '3.6'
-        CONDA_ENV: cienv
-        WHEEL: 'yes'
       py37_wheel:
         PYTHON: '3.7'
         CONDA_ENV: cienv

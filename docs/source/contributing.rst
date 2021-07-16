@@ -84,7 +84,7 @@ Coding conventions
 Platform support
 ----------------
 
-Llvmlite will be kept compatible with Python 3.6 and later
+Llvmlite will be kept compatible with Python 3.7 and later
 under at least Windows, macOS and Linux.
 
 We do not expect contributors to test their code on all platforms.  Pull

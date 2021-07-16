@@ -36,7 +36,7 @@ requirements:
     # llvmdev is built with libz compression support
     - zlib           # [unix and not (armv6l or armv7l or aarch64)]
   run:
-    - python >=3.6
+    - python >=3.7,<3.10
     - vs2015_runtime # [win]
     # osx has dynamically linked libstdc++
     - libcxx >=4.0.1 # [osx]
