@@ -20,7 +20,8 @@ Pull-Requests:
 * PR `#732 <https://github.com/numba/llvmlite/pull/732>`_: Docs/remove travis (`esc <https://github.com/esc>`_)
 * PR `#736 <https://github.com/numba/llvmlite/pull/736>`_: manylinux llvmdev upgrade to LLVM 11 / manylinux2010 to manylinux2014 upgrade (`esc <https://github.com/esc>`_)
 * PR `#747 <https://github.com/numba/llvmlite/pull/747>`_: Remove 3.6 Support (`esc <https://github.com/esc>`_)
-* PR `#748 <https://github.com/numba/llvmlite/pull/736>`_: Fixup readme (`esc <https://github.com/esc>`_)
+* PR `#748 <https://github.com/numba/llvmlite/pull/748>`_: Fixup readme (`esc <https://github.com/esc>`_)
+* PR `#749 <https://github.com/numba/llvmlite/pull/749>`_: adding PRs specific to the RC2 release (`esc <https://github.com/esc>`_)
 
 Total PRs: 10
 
