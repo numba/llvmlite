@@ -1,4 +1,4 @@
-v0.37.0 RC1 (June 30 2021)
+v0.37.0 RC2 (July 16 2021)
 --------------------------
 
 The biggest new feature in this release is LLVM 11 support for all platforms!
@@ -14,6 +14,10 @@ Pull-Requests:
 * PR `#730 <https://github.com/numba/llvmlite/pull/730>`_: Don't export LLVM symbols when linking statically (`Chris Burr <https://github.com/chrisburr>`_ `esc <https://github.com/esc>`_)
 * PR `#732 <https://github.com/numba/llvmlite/pull/732>`_: Docs/remove travis (`esc <https://github.com/esc>`_)
 * PR `#734 <https://github.com/numba/llvmlite/pull/734>`_: bump llvmdev to 11 (`esc <https://github.com/esc>`_)
+* PR `#736 <https://github.com/numba/llvmlite/pull/736>`_: manylinux llvmdev upgrade to LLVM 11 / manylinux2010 to manylinux2014 upgrade (`esc <https://github.com/esc>`_)
+* PR `#747 <https://github.com/numba/llvmlite/pull/747>`_: Remove 3.6 Support (`esc <https://github.com/esc>`_)
+* PR `#748 <https://github.com/numba/llvmlite/pull/748>`_: Fixup readme (`esc <https://github.com/esc>`_)
+* PR `#749 <https://github.com/numba/llvmlite/pull/749>`_: adding PRs specific to the RC2 release (`esc <https://github.com/esc>`_)
 
 Total PRs: 10
 
