@@ -28,7 +28,7 @@ following approach:
 * A ctypes Python wrapper around the C API.
 * A pure Python implementation of the subset of the LLVM IR builder that we
   need for Numba.
-  
+
 Why llvmlite
 ============
 
