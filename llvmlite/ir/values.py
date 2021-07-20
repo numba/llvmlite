@@ -21,9 +21,10 @@ _SIMPLE_IDENTIFIER_RE = re.compile(r"[-a-zA-Z$._][-a-zA-Z$._0-9]*$")
 def _escape_string(text, _map={}):
     """
     Escape the given bytestring for safe use as a LLVM array constant.
+    Any unicode string input is first encoded with utf8 into bytes.
     """
     if isinstance(text, str):
-        text = text.encode('ascii')
+        text = text.encode()
     assert isinstance(text, (bytes, bytearray))
 
     if not _map:
