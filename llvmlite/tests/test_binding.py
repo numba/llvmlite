@@ -1307,6 +1307,8 @@ class TestDylib(BaseTest):
             libm = find_library("m")
         elif system == "Darwin":
             libm = find_library("libm")
+        if libm is None:  # library not found
+            self.skipTest("cannot find libm")
         llvm.load_library_permanently(libm)
 
 
