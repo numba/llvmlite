@@ -61,7 +61,22 @@ def _binop(opname):
             return FormattedConstant(lhs.type, fmt)
 
         return wrapped
+    return wrap
 
+
+def _castop(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, typ):
+            fn(self, typ)
+            if typ == self.type:
+                return self
+
+            op = "{0} ({1} {2} to {3})".format(opname, self.type,
+                                               self.get_reference(), typ)
+            return FormattedConstant(typ, op)
+
+        return wrapped
     return wrap
 
 
@@ -289,19 +304,86 @@ class _ConstOpMixin(object):
         fmt = "fneg ({0} {1})".format(self.type, self.get_reference())
         return FormattedConstant(self.type, fmt)
 
+    #
+    # Cast APIs
+    #
+
+    @_castop('trunc')
+    def trunc(self, typ):
+        """
+        Truncating integer downcast to a smaller type.
+        """
+
+    @_castop('zext')
+    def zext(self, typ):
+        """
+        Zero-extending integer upcast to a larger type
+        """
+
+    @_castop('sext')
+    def sext(self, typ):
+        """
+        Sign-extending integer upcast to a larger type.
+        """
+
+    @_castop('fptrunc')
+    def fptrunc(self, typ):
+        """
+        Floating-point downcast to a less precise type.
+        """
+
+    @_castop('fpext')
+    def fpext(self, typ):
+        """
+        Floating-point upcast to a more precise type.
+        """
+
+    @_castop('bitcast')
     def bitcast(self, typ):
         """
-        Bitcast this pointer constant to the given type.
+        Pointer cast to a different pointer type.
         """
-        if typ == self.type:
-            return self
-        op = "bitcast ({0} {1} to {2})".format(self.type, self.get_reference(),
-                                               typ)
-        return FormattedConstant(typ, op)
 
+    @_castop('fptoui')
+    def fptoui(self, typ):
+        """
+        Convert floating-point to unsigned integer.
+        """
+
+    @_castop('uitofp')
+    def uitofp(self, typ):
+        """
+        Convert unsigned integer to floating-point.
+        """
+
+    @_castop('fptosi')
+    def fptosi(self, typ):
+        """
+        Convert floating-point to signed integer.
+        """
+
+    @_castop('sitofp')
+    def sitofp(self, typ):
+        """
+        Convert signed integer to floating-point.
+        """
+
+    @_castop('ptrtoint')
+    def ptrtoint(self, typ):
+        """
+        Cast pointer to integer.
+        """
+        if not isinstance(self.type, types.PointerType):
+            msg = "can only call ptrtoint() on pointer constants, not '%s'"
+            raise TypeError(msg % (self.type,))
+        if not isinstance(typ, types.IntType):
+            raise TypeError("can only ptrtoint() to integer type, not '%s'"
+                            % (typ,))
+
+    @_castop('inttoptr')
     def inttoptr(self, typ):
         """
-        Cast this integer constant to the given pointer type.
+        Cast integer to pointer.
         """
         if not isinstance(self.type, types.IntType):
             msg = "can only call inttoptr() on integer constants, not '%s'"
@@ -309,11 +391,6 @@ class _ConstOpMixin(object):
         if not isinstance(typ, types.PointerType):
             raise TypeError("can only inttoptr() to pointer type, not '%s'"
                             % (typ,))
-
-        op = "inttoptr ({0} {1} to {2})".format(self.type,
-                                                self.get_reference(),
-                                                typ)
-        return FormattedConstant(typ, op)
 
     def gep(self, indices):
         """

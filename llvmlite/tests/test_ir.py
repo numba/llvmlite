@@ -2219,15 +2219,65 @@ class TestConstant(TestBase):
                           'addrspace(4)* @"myconstant", i32 0, i32 1)'))
         self.assertEqual(c.type, ir.PointerType(int1, addrspace=addrspace))
 
+    def test_trunc(self):
+        c = ir.Constant(int64, 1).trunc(int32)
+        self.assertEqual(str(c), 'trunc (i64 1 to i32)')
+
+    def test_zext(self):
+        c = ir.Constant(int32, 1).zext(int64)
+        self.assertEqual(str(c), 'zext (i32 1 to i64)')
+
+    def test_sext(self):
+        c = ir.Constant(int32, -1).sext(int64)
+        self.assertEqual(str(c), 'sext (i32 -1 to i64)')
+
+    def test_fptrunc(self):
+        c = ir.Constant(flt, 1).fptrunc(hlf)
+        self.assertEqual(str(c), 'fptrunc (float 0x3ff0000000000000 to half)')
+
+    def test_fpext(self):
+        c = ir.Constant(flt, 1).fpext(dbl)
+        self.assertEqual(str(c), 'fpext (float 0x3ff0000000000000 to double)')
+
     def test_bitcast(self):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
         c = gv.bitcast(int64.as_pointer())
         self.assertEqual(str(c), 'bitcast (i32* @"myconstant" to i64*)')
 
+    def test_fptoui(self):
+        c = ir.Constant(flt, 1).fptoui(int32)
+        self.assertEqual(str(c), 'fptoui (float 0x3ff0000000000000 to i32)')
+
+    def test_uitofp(self):
+        c = ir.Constant(int32, 1).uitofp(flt)
+        self.assertEqual(str(c), 'uitofp (i32 1 to float)')
+
+    def test_fptosi(self):
+        c = ir.Constant(flt, 1).fptosi(int32)
+        self.assertEqual(str(c), 'fptosi (float 0x3ff0000000000000 to i32)')
+
+    def test_sitofp(self):
+        c = ir.Constant(int32, 1).sitofp(flt)
+        self.assertEqual(str(c), 'sitofp (i32 1 to float)')
+
+    def test_ptrtoint(self):
+        ptr = ir.Constant(int64.as_pointer(), None)
+        one = ir.Constant(int32, 1)
+        c = ptr.ptrtoint(int32)
+
+        self.assertRaises(TypeError, one.ptrtoint, int64)
+        self.assertRaises(TypeError, ptr.ptrtoint, flt)
+        self.assertEqual(str(c), 'ptrtoint (i64* null to i32)')
+
     def test_inttoptr(self):
-        c = ir.Constant(int32, 0).inttoptr(int64.as_pointer())
-        self.assertEqual(str(c), 'inttoptr (i32 0 to i64*)')
+        one = ir.Constant(int32, 1)
+        pi = ir.Constant(flt, 3.14)
+        c = one.inttoptr(int64.as_pointer())
+
+        self.assertRaises(TypeError, one.inttoptr, int64)
+        self.assertRaises(TypeError, pi.inttoptr, int64.as_pointer())
+        self.assertEqual(str(c), 'inttoptr (i32 1 to i64*)')
 
     def test_neg(self):
         one = ir.Constant(int32, 1)
