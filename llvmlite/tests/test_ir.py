@@ -387,6 +387,67 @@ class TestIR(TestBase):
                             '"foo")', strmod)
         self.assert_valid_ir(mod)
 
+    def test_debug_info_gvar(self):
+        # This test defines a module with a global variable named 'gvar'.
+        # When the module is compiled and linked with a main function, gdb can
+        # be used to interpret and print the the value of 'gvar'.
+        mod = self.module()
+
+        gvar = ir.GlobalVariable(mod, ir.FloatType(), 'gvar')
+        gvar.initializer = ir.Constant(ir.FloatType(), 42)
+
+        di_float = mod.add_debug_info("DIBasicType", {
+            "name": "float",
+            "size": 32,
+            "encoding": ir.DIToken("DW_ATE_float")
+        })
+        di_gvar = mod.add_debug_info("DIGlobalVariableExpression", {
+            "expr": mod.add_debug_info("DIExpression", {}),
+            "var": mod.add_debug_info("DIGlobalVariable", {
+                "name": gvar.name,
+                "type": di_float,
+                "isDefinition": True
+            }, is_distinct=True)
+        })
+        gvar.set_metadata('dbg', di_gvar)
+
+        # Check output
+        strmod = str(mod)
+        self.assert_ir_line('!0 = !DIBasicType(encoding: DW_ATE_float, '
+                            'name: "float", size: 32)', strmod)
+        self.assert_ir_line('!1 = !DIExpression()', strmod)
+        self.assert_ir_line('!2 = distinct !DIGlobalVariable(isDefinition: '
+                            'true, name: "gvar", type: !0)', strmod)
+        self.assert_ir_line('!3 = !DIGlobalVariableExpression(expr: !1, '
+                            'var: !2)', strmod)
+        self.assert_ir_line('@"gvar" = global float 0x4045000000000000, '
+                            '!dbg !3', strmod)
+
+        # The remaining debug info is not part of the automated test, but
+        # can be used to produce an object file that can be loaded into a
+        # debugger to print the value og gvar, e.g.,
+        #    printf "file test_debug_info_gvar.o \n p gvar" | gdb
+
+        dver = [ir.IntType(32)(2), 'Dwarf Version', ir.IntType(32)(4)]
+        diver = [ir.IntType(32)(2), 'Debug Info Version', ir.IntType(32)(3)]
+        dver = mod.add_metadata(dver)
+        diver = mod.add_metadata(diver)
+        flags = mod.add_named_metadata('llvm.module.flags')
+        flags.add(dver)
+        flags.add(diver)
+
+        di_file = mod.add_debug_info("DIFile", {
+            "filename": "foo",
+            "directory": "bar",
+        })
+        di_cu = mod.add_debug_info("DICompileUnit", {
+            "language": ir.DIToken("DW_LANG_Python"),
+            "file": di_file,
+            'emissionKind': ir.DIToken('FullDebug'),
+            "globals": mod.add_metadata([di_gvar])
+        }, is_distinct=True)
+        mod.add_named_metadata('llvm.dbg.cu', di_cu)
+
     def test_inline_assembly(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')

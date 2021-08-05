@@ -446,7 +446,7 @@ class DIValue(NamedValue):
         return hash((self.is_distinct, self.kind, self.operands))
 
 
-class GlobalValue(NamedValue, _ConstOpMixin):
+class GlobalValue(NamedValue, _ConstOpMixin, _HasMetadata):
     """
     A global value.
     """
@@ -457,6 +457,7 @@ class GlobalValue(NamedValue, _ConstOpMixin):
         super(GlobalValue, self).__init__(*args, **kwargs)
         self.linkage = ''
         self.storage_class = ''
+        self.metadata = {}
 
 
 class GlobalVariable(GlobalValue):
@@ -511,6 +512,9 @@ class GlobalVariable(GlobalValue):
 
         if self.align is not None:
             buf.append(", align %d" % (self.align,))
+
+        if self.metadata:
+            buf.append(self._stringify_metadata(leading_comma=True))
 
         buf.append("\n")
 
@@ -609,7 +613,6 @@ class Function(GlobalValue, _HasMetadata):
         self.return_value = ReturnValue(self, ftype.return_type)
         self.parent.add_global(self)
         self.calling_convention = ''
-        self.metadata = {}
 
     @property
     def module(self):
