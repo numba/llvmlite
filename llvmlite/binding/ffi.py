@@ -183,8 +183,7 @@ else:
 for _lib_path in _lib_paths:
     try:
         lib = ctypes.CDLL(_lib_path)
-    except OSError as e:
-        print(e)
+    except OSError:
         continue
     else:
         break
