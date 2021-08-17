@@ -3,8 +3,8 @@ v0.38.0
 
 In development
 
-v0.37.0 RC2 (July 16 2021)
---------------------------
+v0.37.0 (August 18, 2021)
+-------------------------
 
 The biggest new feature in this release is LLVM 11 support for all platforms!
 This is important, because the ``aarch64`` platform had been 'stuck' on LLVM 9
@@ -23,8 +23,8 @@ Pull-Requests:
 * PR `#747 <https://github.com/numba/llvmlite/pull/747>`_: Remove 3.6 Support (`esc <https://github.com/esc>`_)
 * PR `#748 <https://github.com/numba/llvmlite/pull/748>`_: Fixup readme (`esc <https://github.com/esc>`_)
 * PR `#749 <https://github.com/numba/llvmlite/pull/749>`_: adding PRs specific to the RC2 release (`esc <https://github.com/esc>`_)
-
-Total PRs: 10
+* PR `#762 <https://github.com/numba/llvmlite/pull/762>`_: PR #758 continued. Ensure GCC7 is used on non-ARM platforms. (`esc <https://github.com/esc>`_ `stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#764 <https://github.com/numba/llvmlite/pull/764>`_: Update CHANGE_LOG for 0.37.0 (`stuartarchibald <https://github.com/stuartarchibald>`_)
 
 Authors:
 
@@ -35,8 +35,6 @@ Authors:
 * `Antoine Pitrou <https://github.com/pitrou>`_
 * `Siu Kwan Lam <https://github.com/sklam>`_
 * `stuartarchibald <https://github.com/stuartarchibald>`_
-
-Total authors: 7
 
 v0.36.0 (March 11, 2021)
 ------------------------
