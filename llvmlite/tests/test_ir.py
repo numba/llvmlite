@@ -830,6 +830,13 @@ my_block:
         self.assertEqual(j.type, ir.VoidType())
         k = builder.load_atomic(c, ordering="seq_cst", align=4, name='k')
         self.assertEqual(k.type, int32)
+        # Volatile
+        l = builder.store(b, c, volatile=True)
+        m = builder.load(c, name='m', volatile=True)
+        n = builder.store_atomic(b, c, ordering="seq_cst", align=4,
+                                 volatile=True)
+        o = builder.load_atomic(c, ordering="seq_cst", name='o', align=4,
+                                volatile=True)
         # Not pointer types
         with self.assertRaises(TypeError):
             builder.store(b, a)
@@ -852,6 +859,10 @@ my_block:
                 %"i" = load i32, i32* %"c", align 1
                 store atomic i32 %".2", i32* %"c" seq_cst, align 4
                 %"k" = load atomic i32, i32* %"c" seq_cst, align 4
+                store volatile i32 %".2", i32* %"c"
+                %"m" = load volatile i32, i32* %"c"
+                store atomic volatile i32 %".2", i32* %"c" seq_cst, align 4
+                %"o" = load atomic volatile i32, i32* %"c" seq_cst, align 4
             """)
 
     def test_gep(self):

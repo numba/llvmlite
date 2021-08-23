@@ -752,7 +752,7 @@ class IRBuilder(object):
         self._insert(al)
         return al
 
-    def load(self, ptr, name='', align=None):
+    def load(self, ptr, name='', align=None, volatile=False):
         """
         Load value from pointer, with optional guaranteed alignment:
             name = *ptr
@@ -760,12 +760,12 @@ class IRBuilder(object):
         if not isinstance(ptr.type, types.PointerType):
             msg = "cannot load from value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
-        ld = instructions.LoadInstr(self.block, ptr, name)
+        ld = instructions.LoadInstr(self.block, ptr, name, volatile)
         ld.align = align
         self._insert(ld)
         return ld
 
-    def store(self, value, ptr, align=None):
+    def store(self, value, ptr, align=None, volatile=False):
         """
         Store value to pointer, with optional guaranteed alignment:
             *ptr = name
@@ -776,12 +776,12 @@ class IRBuilder(object):
         if ptr.type.pointee != value.type:
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
-        st = instructions.StoreInstr(self.block, value, ptr)
+        st = instructions.StoreInstr(self.block, value, ptr, volatile)
         st.align = align
         self._insert(st)
         return st
 
-    def load_atomic(self, ptr, ordering, align, name=''):
+    def load_atomic(self, ptr, ordering, align, name='', volatile=False):
         """
         Load value from pointer, with optional guaranteed alignment:
             name = *ptr
@@ -790,11 +790,11 @@ class IRBuilder(object):
             msg = "cannot load from value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
         ld = instructions.LoadAtomicInstr(
-            self.block, ptr, ordering, align, name)
+            self.block, ptr, ordering, align, name, volatile)
         self._insert(ld)
         return ld
 
-    def store_atomic(self, value, ptr, ordering, align):
+    def store_atomic(self, value, ptr, ordering, align, volatile=False):
         """
         Store value to pointer, with optional guaranteed alignment:
             *ptr = name
@@ -806,7 +806,7 @@ class IRBuilder(object):
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
         st = instructions.StoreAtomicInstr(
-            self.block, value, ptr, ordering, align)
+            self.block, value, ptr, ordering, align, volatile)
         self._insert(st)
         return st
 

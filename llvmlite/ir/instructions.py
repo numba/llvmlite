@@ -391,10 +391,11 @@ class CastInstr(Instruction):
 
 class LoadInstr(Instruction):
 
-    def __init__(self, parent, ptr, name=''):
+    def __init__(self, parent, ptr, name='', volatile=False):
         super(LoadInstr, self).__init__(parent, ptr.type.pointee, "load",
                                         [ptr], name=name)
         self.align = None
+        self.volatile = volatile
 
     def descr(self, buf):
         [val] = self.operands
@@ -402,7 +403,8 @@ class LoadInstr(Instruction):
             align = ', align %d' % (self.align)
         else:
             align = ''
-        buf.append("load {0}, {1} {2}{3}{4}\n".format(
+        buf.append("load {0}{1}, {2} {3}{4}{5}\n".format(
+            'volatile ' if self.volatile else '',
             val.type.pointee,
             val.type,
             val.get_reference(),
@@ -412,9 +414,10 @@ class LoadInstr(Instruction):
 
 
 class StoreInstr(Instruction):
-    def __init__(self, parent, val, ptr):
+    def __init__(self, parent, val, ptr, volatile=False):
         super(StoreInstr, self).__init__(parent, types.VoidType(), "store",
                                          [val, ptr])
+        self.volatile = volatile
 
     def descr(self, buf):
         val, ptr = self.operands
@@ -422,7 +425,8 @@ class StoreInstr(Instruction):
             align = ', align %d' % (self.align)
         else:
             align = ''
-        buf.append("store {0} {1}, {2} {3}{4}{5}\n".format(
+        buf.append("store {0}{1} {2}, {3} {4}{5}{6}\n".format(
+            'volatile ' if self.volatile else '',
             val.type,
             val.get_reference(),
             ptr.type,
@@ -433,15 +437,18 @@ class StoreInstr(Instruction):
 
 
 class LoadAtomicInstr(Instruction):
-    def __init__(self, parent, ptr, ordering, align, name=''):
+    def __init__(self, parent, ptr, ordering, align, name='', volatile=False):
         super(LoadAtomicInstr, self).__init__(parent, ptr.type.pointee,
                                               "load atomic", [ptr], name=name)
         self.ordering = ordering
         self.align = align
+        self.volatile = volatile
 
     def descr(self, buf):
         [val] = self.operands
-        buf.append("load atomic {0}, {1} {2} {3}, align {4}{5}\n".format(
+        buf.append("{0} {1}{2}, {3} {4} {5}, align {6}{7}\n".format(
+            self.opname,
+            'volatile ' if self.volatile else '',
             val.type.pointee,
             val.type,
             val.get_reference(),
@@ -452,15 +459,18 @@ class LoadAtomicInstr(Instruction):
 
 
 class StoreAtomicInstr(Instruction):
-    def __init__(self, parent, val, ptr, ordering, align):
+    def __init__(self, parent, val, ptr, ordering, align, volatile=False):
         super(StoreAtomicInstr, self).__init__(parent, types.VoidType(),
                                                "store atomic", [val, ptr])
         self.ordering = ordering
         self.align = align
+        self.volatile = volatile
 
     def descr(self, buf):
         val, ptr = self.operands
-        buf.append("store atomic {0} {1}, {2} {3} {4}, align {5}{6}\n".format(
+        buf.append("{0} {1}{2} {3}, {4} {5} {6}, align {7}{8}\n".format(
+            self.opname,
+            'volatile ' if self.volatile else '',
             val.type,
             val.get_reference(),
             ptr.type,
