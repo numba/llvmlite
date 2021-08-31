@@ -33,7 +33,7 @@ except ImportError:
 
 
 min_python_version = "3.7"
-max_python_version = "3.10"  # exclusive
+max_python_version = "3.11"  # exclusive
 
 
 def _guard_py_ver():
