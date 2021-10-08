@@ -28,6 +28,8 @@ and it can be reached at: `numba.discourse.group
 <https://numba.discourse.group/>`_. It also has a `llvmlite topic
 <https://numba.discourse.group/c/llvmlite/12>`.
 
+.. _report-bugs:
+
 Bug reports
 -----------
 
