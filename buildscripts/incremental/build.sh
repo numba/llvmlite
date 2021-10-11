@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 source activate $CONDA_ENV
 
 # need to build with Anaconda compilers on osx, but they conflict with llvmdev... bootstap
