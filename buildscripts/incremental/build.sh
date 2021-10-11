@@ -19,6 +19,7 @@ if [[ $(uname) == Darwin ]]; then
   SYSROOT_DIR=${CONDA_BUILD_SYSROOT}
   CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
   ${LLVM_CONFIG} --version
+  export SDKROOT=$(xcrun --show-sdk-path)
 fi
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
