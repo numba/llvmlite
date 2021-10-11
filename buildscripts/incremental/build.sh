@@ -15,13 +15,14 @@ if [[ $(uname) == Darwin ]]; then
   export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
   CONDA_PREFIX=${SRC_DIR}/bootstrap \
     . ${SRC_DIR}/bootstrap/etc/conda/activate.d/*
-  export CONDA_BUILD_SYSROOT=${CONDA_BUILD_SYSROOT:-/opt/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk}
+  SDKPATH=$(xcrun --show-sdk-path)
+  export CONDA_BUILD_SYSROOT=${CONDA_BUILD_SYSROOT:-${SDKPATH}}
   export CXXFLAGS=${CFLAGS}" -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
   export CFLAGS=${CFLAGS}" -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
   SYSROOT_DIR=${CONDA_BUILD_SYSROOT}
   CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
   ${LLVM_CONFIG} --version
-  export SDKROOT=$(xcrun --show-sdk-path)
+  export SDKROOT=${SDKPATH}
 fi
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
