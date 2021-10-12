@@ -182,7 +182,8 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
                            const char *RelocModel,
                            const char *CodeModel,
                            int         PrintMC,
-                           int         JIT)
+                           int         JIT,
+                           const char *ABIName)
 {
     using namespace llvm;
     CodeGenOpt::Level cgol;
@@ -233,6 +234,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T,
 
     TargetOptions opt;
     opt.PrintMachineCode = PrintMC;
+    opt.MCOptions.ABIName = ABIName;
 
     bool jit = JIT;
 
