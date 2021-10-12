@@ -823,7 +823,7 @@ class IRBuilder(object):
         return swt
 
     def add_pred(self, block):
-        if not self.basic_block in block.predecessors:
+        if self.basic_block not in block.predecessors:
             block.predecessors.append(self.basic_block)
 
     def branch(self, target):
