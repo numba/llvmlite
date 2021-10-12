@@ -788,10 +788,14 @@ class Block(NamedValue):
         self.scope = parent.scope
         self.instructions = []
         self.terminator = None
+        self.predecessors = []
 
     @property
     def is_terminated(self):
         return self.terminator is not None
+
+    def has_predecessors(self):
+        return len(self.predecessors) > 0
 
     @property
     def function(self):
