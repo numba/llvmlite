@@ -67,7 +67,7 @@ class TestBase(TestCase):
         module = module or self.module()
         fnty = ir.FunctionType(int32, (int32, int32, dbl,
                                        ir.PointerType(int32)))
-        return ir.Function(self.module(), fnty, name)
+        return ir.Function(module, fnty, name)
 
     def block(self, func=None, name=''):
         func = func or self.function()
