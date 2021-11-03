@@ -2225,6 +2225,25 @@ class TestConstant(TestBase):
         c = gv.bitcast(int64.as_pointer())
         self.assertEqual(str(c), 'bitcast (i32* @"myconstant" to i64*)')
 
+    def test_ptrtoint(self):
+        m = self.module()
+        gv = ir.GlobalVariable(m, int32, "myconstant")
+        c = gv.ptrtoint(int64)
+        self.assertEqual(str(c), 'ptrtoint (i32* @"myconstant" to i64)')
+
+        self.assertRaisesRegex(
+            TypeError,
+            "can only ptrtoint\\(\\) to integer type, not 'i64\\*'",
+            gv.ptrtoint,
+            int64.as_pointer())
+
+        c2 = ir.Constant(int32, 0)
+        self.assertRaisesRegex(
+            TypeError,
+            "can only call inttoptr\\(\\) on pointer type, not 'i32'",
+            c2.ptrtoint,
+            int64)
+
     def test_inttoptr(self):
         c = ir.Constant(int32, 0).inttoptr(int64.as_pointer())
         self.assertEqual(str(c), 'inttoptr (i32 0 to i64*)')
