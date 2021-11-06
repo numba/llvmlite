@@ -1205,6 +1205,15 @@ my_block:
             call void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other")
         """)  # noqa E501
 
+    def test_invalid_call_attributes(self):
+        block = self.block()
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(ir.VoidType(), ())
+        fun = ir.Function(builder.function.module, fun_ty, 'fun')
+        with self.assertRaises(ValueError):
+            # The function has no arguments, so this should fail.
+            builder.call(fun, (), arg_attrs={0: 'sret'})
+
     def test_invoke(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
