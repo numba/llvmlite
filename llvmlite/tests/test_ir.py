@@ -2233,14 +2233,14 @@ class TestConstant(TestBase):
 
         self.assertRaisesRegex(
             TypeError,
-            "can only ptrtoint\\(\\) to integer type, not 'i64\\*'",
+            r"can only ptrtoint\(\) to integer type, not 'i64\*'",
             gv.ptrtoint,
             int64.as_pointer())
 
         c2 = ir.Constant(int32, 0)
         self.assertRaisesRegex(
             TypeError,
-            "can only call inttoptr\\(\\) on pointer type, not 'i32'",
+            r"can only call inttoptr\(\) on pointer type, not 'i32'",
             c2.ptrtoint,
             int64)
 
