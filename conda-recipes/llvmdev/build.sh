@@ -5,7 +5,8 @@
 set -x
 
 # allow setting the targets to build as an environment variable
-LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AMDGPU;NVPTX;RISCV"}
+# default is LLVM 11 default architectures + RISCV.  Can remove this entire option in LLVM 13
+LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AArch64;AMDGPU;ARM;BPF;Hexagon;Mips;MSP430;NVPTX;PowerPC;Sparc;SystemZ;X86;XCore;RISCV"}
 
 # This is the clang compiler prefix
 DARWIN_TARGET=x86_64-apple-darwin13.4.0
