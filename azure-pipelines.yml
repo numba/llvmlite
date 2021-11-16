@@ -59,6 +59,11 @@ jobs:
         CONDA_ENV: cienv
         WHEEL: 'yes'
 
+      py39_docs:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
+        BUILD_DOCS: 'yes'
+
 - template: buildscripts/azure/azure-windows.yml
   parameters:
     name: Windows
