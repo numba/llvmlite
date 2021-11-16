@@ -5,7 +5,7 @@
 set -x
 
 # allow setting the targets to build as an environment variable
-LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AMDGPU;NVPTX"}
+LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AMDGPU;NVPTX;RISCV"}
 
 # This is the clang compiler prefix
 DARWIN_TARGET=x86_64-apple-darwin13.4.0
