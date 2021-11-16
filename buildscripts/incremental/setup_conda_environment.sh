@@ -35,17 +35,17 @@ if [[ $(uname) == Linux ]]; then
 $CONDA_INSTALL gcc_linux-64 gxx_linux-64
 fi
 
-# Install enum34 for Python < 3.4 and PyPy, and install dependencies for
-# building the docs.
-if [ "$PYTHON" == "pypy" ]; then
-  $CONDA_INSTALL zlib # pypy has no conda-level zlib linkage
-  python -m ensurepip
-  $PIP_INSTALL enum34
-  # Sphinx 1.5.4 has a bug.
-  $PIP_INSTALL sphinx==1.5.1 sphinx_rtd_theme pygments
-else
-  $CONDA_INSTALL sphinx sphinx_rtd_theme pygments
-fi
+# # Install enum34 for Python < 3.4 and PyPy, and install dependencies for
+# # building the docs.
+# if [ "$PYTHON" == "pypy" ]; then
+#   $CONDA_INSTALL zlib # pypy has no conda-level zlib linkage
+#   python -m ensurepip
+#   $PIP_INSTALL enum34
+#   # Sphinx 1.5.4 has a bug.
+#   $PIP_INSTALL sphinx==1.5.1 sphinx_rtd_theme pygments
+# else
+#   $CONDA_INSTALL sphinx sphinx_rtd_theme pygments
+# fi
 
 # Install dependencies for code coverage (codecov.io)
 if [ "$RUN_COVERAGE" == "yes" ]; then $PIP_INSTALL codecov coveralls; fi
