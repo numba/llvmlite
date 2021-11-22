@@ -7,7 +7,7 @@ REM === Configure step ===
 
 REM allow setting the targets to build as an environment variable
 if "%LLVM_TARGETS_TO_BUILD%"=="" (
-    set "LLVM_TARGETS_TO_BUILD=host;AMDGPU;NVPTX"
+    set "LLVM_TARGETS_TO_BUILD=host;AMDGPU;NVPTX;RISCV"
 )
 if "%ARCH%"=="32" (
     set "ARCH_POSTFIX="
