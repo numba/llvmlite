@@ -88,5 +88,11 @@ make install || exit $?
 if [[ $ARCH == 'x86_64' ]]; then
    bin/opt -S -vector-library=SVML -mcpu=haswell -O3 $RECIPE_DIR/numba-3016.ll | bin/FileCheck $RECIPE_DIR/numba-3016.ll || exit $?
 fi
+
+# run the tests, skip some on linux-32
 cd ../test
-../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+if [[ $ARCH == 'i686' ]]; then
+    ../build/bin/llvm-lit -vv Transforms Analysis CodeGen/X86
+else
+    ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+fi
