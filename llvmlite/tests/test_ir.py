@@ -389,7 +389,7 @@ class TestIR(TestBase):
 
     def test_debug_info_unicode_string(self):
         mod = self.module()
-        di = mod.add_debug_info("DILocalVariable", {"name": "a∆"})
+        mod.add_debug_info("DILocalVariable", {"name": "a∆"})
         # Check output
         strmod = str(mod)
         # The unicode character is utf8 encoded with \XX format, where XX is hex
