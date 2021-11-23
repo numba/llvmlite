@@ -5,7 +5,8 @@
 set -x
 
 # allow setting the targets to build as an environment variable
-LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AMDGPU;NVPTX;RISCV"}
+# default is LLVM 11 default architectures + RISCV.  Can remove this entire option in LLVM 13
+LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AArch64;AMDGPU;ARM;BPF;Hexagon;Mips;MSP430;NVPTX;PowerPC;Sparc;SystemZ;X86;XCore;RISCV"}
 
 # This is the clang compiler prefix
 DARWIN_TARGET=x86_64-apple-darwin13.4.0
@@ -87,5 +88,11 @@ make install || exit $?
 if [[ $ARCH == 'x86_64' ]]; then
    bin/opt -S -vector-library=SVML -mcpu=haswell -O3 $RECIPE_DIR/numba-3016.ll | bin/FileCheck $RECIPE_DIR/numba-3016.ll || exit $?
 fi
+
+# run the tests, skip some on linux-32
 cd ../test
-../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+if [[ $ARCH == 'i686' ]]; then
+    ../build/bin/llvm-lit -vv Transforms Analysis CodeGen/X86
+else
+    ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+fi

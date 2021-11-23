@@ -5,7 +5,7 @@ Implementation of LLVM IR instructions.
 from llvmlite.ir import types
 from llvmlite.ir.values import (Block, Function, Value, NamedValue, Constant,
                                 MetaDataArgument, MetaDataString, AttributeSet,
-                                Undefined)
+                                Undefined, ArgumentAttributes)
 from llvmlite.ir._utils import _HasMetadata
 
 
@@ -63,13 +63,20 @@ class FastMathFlags(AttributeSet):
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name='', cconv=None, tail=False,
-                 fastmath=(), attrs=()):
+                 fastmath=(), attrs=(), arg_attrs=None):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
         self.tail = tail
         self.fastmath = FastMathFlags(fastmath)
         self.attributes = CallInstrAttributes(attrs)
+        self.arg_attributes = {}
+        if arg_attrs:
+            for idx, attrs in arg_attrs.items():
+                if not (0 <= idx < len(args)):
+                    raise ValueError("Invalid argument index {}"
+                                     .format(idx))
+                self.arg_attributes[idx] = ArgumentAttributes(attrs)
 
         # Fix and validate arguments
         args = list(args)
@@ -111,8 +118,13 @@ class CallInstr(Instruction):
         return self.callee
 
     def _descr(self, buf, add_metadata):
-        args = ', '.join(['{0} {1}'.format(a.type, a.get_reference())
-                          for a in self.args])
+        def descr_arg(i, a):
+            if i in self.arg_attributes:
+                attrs = ' '.join(self.arg_attributes[i]._to_list()) + ' '
+            else:
+                attrs = ''
+            return '{0} {1}{2}'.format(a.type, attrs, a.get_reference())
+        args = ', '.join([descr_arg(i, a) for i, a in enumerate(self.args)])
 
         fnty = self.callee.function_type
         # Only print function type if variable-argument
@@ -142,10 +154,12 @@ class CallInstr(Instruction):
 
 class InvokeInstr(CallInstr):
     def __init__(self, parent, func, args, normal_to, unwind_to, name='',
-                 cconv=None):
+                 cconv=None, fastmath=(), attrs=(), arg_attrs=None):
         assert isinstance(normal_to, Block)
         assert isinstance(unwind_to, Block)
-        super(InvokeInstr, self).__init__(parent, func, args, name, cconv)
+        super(InvokeInstr, self).__init__(parent, func, args, name, cconv,
+                                          tail=False, fastmath=fastmath,
+                                          attrs=attrs, arg_attrs=arg_attrs)
         self.opname = "invoke"
         self.normal_to = normal_to
         self.unwind_to = unwind_to

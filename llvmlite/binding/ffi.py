@@ -180,15 +180,19 @@ else:
 
 
 # Try to load from all of the different paths
+errors = []
 for _lib_path in _lib_paths:
     try:
         lib = ctypes.CDLL(_lib_path)
-    except OSError:
+    except OSError as e:
+        errors.append(e)
         continue
     else:
         break
 else:
-    raise OSError("Could not load shared object file: {}".format(_lib_name))
+    msg = ("Could not load shared object file: {}\n".format(_lib_name) +
+           "Errors were: {}".format(errors))
+    raise OSError(msg)
 
 
 lib = _lib_wrapper(lib)

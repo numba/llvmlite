@@ -14,6 +14,9 @@ jobs:
       py39:
         PYTHON: '3.9'
         CONDA_ENV: cienv
+      py310:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
@@ -29,6 +32,10 @@ jobs:
         RUN_FLAKE8: yes
       py39:
         PYTHON: '3.9'
+        CONDA_ENV: cienv
+        RUN_FLAKE8: yes
+      py310:
+        PYTHON: '3.10'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
 # temporarily disabled
@@ -47,6 +54,15 @@ jobs:
         PYTHON: '3.9'
         CONDA_ENV: cienv
         WHEEL: 'yes'
+      py310_wheel:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+
+      py39_docs:
+        PYTHON: '3.9'
+        CONDA_ENV: cienv
+        BUILD_DOCS: 'yes'
 
 - template: buildscripts/azure/azure-windows.yml
   parameters:

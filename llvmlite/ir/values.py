@@ -52,6 +52,24 @@ class _ConstOpMixin(object):
                                                typ)
         return FormattedConstant(typ, op)
 
+    def ptrtoint(self, typ):
+        """
+        Cast this pointer constant to the given integer type.
+        """
+        if not isinstance(typ, types.IntType):
+            raise TypeError(
+                "can only ptrtoint() to integer type, not '%s'"
+                % (typ,))
+        if not isinstance(self.type, types.PointerType):
+            raise TypeError(
+                "can only call inttoptr() on pointer type, not '%s'"
+                % (self.type))
+
+        op = "ptrtoint ({0} {1} to {2})".format(self.type,
+                                                self.get_reference(),
+                                                typ)
+        return FormattedConstant(typ, op)
+
     def inttoptr(self, typ):
         """
         Cast this integer constant to the given pointer type.
