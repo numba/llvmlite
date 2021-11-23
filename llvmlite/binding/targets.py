@@ -218,7 +218,7 @@ class Target(ffi.ObjectRef):
 
     def create_target_machine(self, cpu='', features='',
                               opt=2, reloc='default', codemodel='jitdefault',
-                              printmc=False, jit=False):
+                              printmc=False, jit=False, abiname=''):
         """
         Create a new TargetMachine for this target and the given options.
 
@@ -230,6 +230,9 @@ class Target(ffi.ObjectRef):
 
         The `jit` option should be set when the target-machine is to be used
         in a JIT engine.
+
+        The `abiname` option specifies the ABI. RISC-V targets with hard-float
+        needs to pass the ABI name to LLVM.
         """
         assert 0 <= opt <= 3
         assert reloc in RELOC
@@ -249,6 +252,7 @@ class Target(ffi.ObjectRef):
                                                 _encode_string(codemodel),
                                                 int(printmc),
                                                 int(jit),
+                                                _encode_string(abiname),
                                                 )
         if tm:
             return TargetMachine(tm)
@@ -403,6 +407,8 @@ ffi.lib.LLVMPY_CreateTargetMachine.argtypes = [
     c_int,
     # JIT
     c_int,
+    # ABIName
+    c_char_p,
 ]
 ffi.lib.LLVMPY_CreateTargetMachine.restype = ffi.LLVMTargetMachineRef
 
