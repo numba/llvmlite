@@ -387,6 +387,15 @@ class TestIR(TestBase):
                             '"foo")', strmod)
         self.assert_valid_ir(mod)
 
+    def test_debug_info_unicode_string(self):
+        mod = self.module()
+        mod.add_debug_info("DILocalVariable", {"name": "a∆"})
+        # Check output
+        strmod = str(mod)
+        # The unicode character is utf8 encoded with \XX format, where XX is hex
+        name = ''.join(map(lambda x: f"\\{x:02x}", "∆".encode()))
+        self.assert_ir_line(f'!0 = !DILocalVariable(name: "a{name}")', strmod)
+
     def test_inline_assembly(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
