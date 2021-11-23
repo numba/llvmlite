@@ -8,9 +8,9 @@ about: Tell us about something you'd like llvmlite to support. Not for asking ge
 
 <!--
 
-Thanks for opening an issue! To help the Numba team handle your information
-efficiently, please first ensure that there is no other issue present that
-already describes the issue you have
+Thanks for opening a feature request! To help the Numba team handle your information
+efficiently, please first ensure that there is no other feature request present that
+already describes the feature you would like to see implemented
 (search at https://github.com/numba/llvmlite/issues?&q=is%3Aissue).
 
 -->
