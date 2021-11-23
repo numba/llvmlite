@@ -67,7 +67,7 @@ class TestBase(TestCase):
         module = module or self.module()
         fnty = ir.FunctionType(int32, (int32, int32, dbl,
                                        ir.PointerType(int32)))
-        return ir.Function(self.module(), fnty, name)
+        return ir.Function(module, fnty, name)
 
     def block(self, func=None, name=''):
         func = func or self.function()
@@ -386,6 +386,15 @@ class TestIR(TestBase):
         self.assert_ir_line('!2 = distinct !DIFile(directory: "bar", filename: '
                             '"foo")', strmod)
         self.assert_valid_ir(mod)
+
+    def test_debug_info_unicode_string(self):
+        mod = self.module()
+        mod.add_debug_info("DILocalVariable", {"name": "a∆"})
+        # Check output
+        strmod = str(mod)
+        # The unicode character is utf8 encoded with \XX format, where XX is hex
+        name = ''.join(map(lambda x: f"\\{x:02x}", "∆".encode()))
+        self.assert_ir_line(f'!0 = !DILocalVariable(name: "a{name}")', strmod)
 
     def test_inline_assembly(self):
         mod = self.module()
@@ -1199,6 +1208,39 @@ my_block:
                 call void @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
             """)  # noqa E501
 
+    def test_call_attributes(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(
+            ir.VoidType(), (int32.as_pointer(), int32, int32.as_pointer()))
+        fun = ir.Function(builder.function.module, fun_ty, 'fun')
+        fun.args[0].add_attribute('sret')
+        retval = builder.alloca(int32, name='retval')
+        other = builder.alloca(int32, name='other')
+        builder.call(
+            fun,
+            (retval, ir.Constant(int32, 42), other),
+            arg_attrs={
+                0: ('sret', 'noalias'),
+                2: 'noalias'
+            }
+        )
+        self.check_block(block, """\
+        my_block:
+            %"retval" = alloca i32
+            %"other" = alloca i32
+            call void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other")
+        """)  # noqa E501
+
+    def test_invalid_call_attributes(self):
+        block = self.block()
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(ir.VoidType(), ())
+        fun = ir.Function(builder.function.module, fun_ty, 'fun')
+        with self.assertRaises(ValueError):
+            # The function has no arguments, so this should fail.
+            builder.call(fun, (), arg_attrs={0: 'sret'})
+
     def test_invoke(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -1213,6 +1255,39 @@ my_block:
                 %"res_f" = invoke float @"f"(i32 %".1", i32 %".2")
                     to label %"normal" unwind label %"unwind"
             """)
+
+    def test_invoke_attributes(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(
+            ir.VoidType(), (int32.as_pointer(), int32, int32.as_pointer()))
+        fun = ir.Function(builder.function.module, fun_ty, 'fun')
+        fun.calling_convention = "fastcc"
+        fun.args[0].add_attribute('sret')
+        retval = builder.alloca(int32, name='retval')
+        other = builder.alloca(int32, name='other')
+        bb_normal = builder.function.append_basic_block(name='normal')
+        bb_unwind = builder.function.append_basic_block(name='unwind')
+        builder.invoke(
+            fun,
+            (retval, ir.Constant(int32, 42), other),
+            bb_normal,
+            bb_unwind,
+            cconv='fastcc',
+            fastmath='fast',
+            attrs='noinline',
+            arg_attrs={
+                0: ('sret', 'noalias'),
+                2: 'noalias'
+            }
+        )
+        self.check_block(block, """\
+        my_block:
+            %"retval" = alloca i32
+            %"other" = alloca i32
+            invoke fast fastcc void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other") noinline
+                to label %"normal" unwind label %"unwind"
+        """)  # noqa E501
 
     def test_landingpad(self):
         block = self.block(name='my_block')
@@ -2261,7 +2336,7 @@ class TestConstant(TestBase):
         c = ir.Constant(int32, 1).sitofp(flt)
         self.assertEqual(str(c), 'sitofp (i32 1 to float)')
 
-    def test_ptrtoint(self):
+    def test_ptrtoint_1(self):
         ptr = ir.Constant(int64.as_pointer(), None)
         one = ir.Constant(int32, 1)
         c = ptr.ptrtoint(int32)
@@ -2269,6 +2344,25 @@ class TestConstant(TestBase):
         self.assertRaises(TypeError, one.ptrtoint, int64)
         self.assertRaises(TypeError, ptr.ptrtoint, flt)
         self.assertEqual(str(c), 'ptrtoint (i64* null to i32)')
+
+    def test_ptrtoint_2(self):
+        m = self.module()
+        gv = ir.GlobalVariable(m, int32, "myconstant")
+        c = gv.ptrtoint(int64)
+        self.assertEqual(str(c), 'ptrtoint (i32* @"myconstant" to i64)')
+
+        self.assertRaisesRegex(
+            TypeError,
+            r"can only ptrtoint\(\) to integer type, not 'i64\*'",
+            gv.ptrtoint,
+            int64.as_pointer())
+
+        c2 = ir.Constant(int32, 0)
+        self.assertRaisesRegex(
+            TypeError,
+            r"can only call ptrtoint\(\) on pointer type, not 'i32'",
+            c2.ptrtoint,
+            int64)
 
     def test_inttoptr(self):
         one = ir.Constant(int32, 1)

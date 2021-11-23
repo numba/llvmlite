@@ -872,14 +872,14 @@ class IRBuilder(object):
     # Call APIs
 
     def call(self, fn, args, name='', cconv=None, tail=False, fastmath=(),
-             attrs=()):
+             attrs=(), arg_attrs=None):
         """
         Call function *fn* with *args*:
             name = fn(args...)
         """
         inst = instructions.CallInstr(self.block, fn, args, name=name,
                                       cconv=cconv, tail=tail, fastmath=fastmath,
-                                      attrs=attrs)
+                                      attrs=attrs, arg_attrs=arg_attrs)
         self._insert(inst)
         return inst
 
@@ -908,9 +908,11 @@ class IRBuilder(object):
         return self.asm(ftype, "", "{%s}" % reg_name, [value], True, name)
 
     def invoke(self, fn, args, normal_to, unwind_to,
-               name='', cconv=None, tail=False):
+               name='', cconv=None, fastmath=(), attrs=(), arg_attrs=None):
         inst = instructions.InvokeInstr(self.block, fn, args, normal_to,
-                                        unwind_to, name=name, cconv=cconv)
+                                        unwind_to, name=name, cconv=cconv,
+                                        fastmath=fastmath, attrs=attrs,
+                                        arg_attrs=arg_attrs)
         self._set_terminator(inst)
         return inst
 

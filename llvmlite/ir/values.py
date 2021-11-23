@@ -31,9 +31,10 @@ _CMP_MAP = {
 def _escape_string(text, _map={}):
     """
     Escape the given bytestring for safe use as a LLVM array constant.
+    Any unicode string input is first encoded with utf8 into bytes.
     """
     if isinstance(text, str):
-        text = text.encode('ascii')
+        text = text.encode()
     assert isinstance(text, (bytes, bytearray))
 
     if not _map:
@@ -374,7 +375,7 @@ class _ConstOpMixin(object):
         Cast pointer to integer.
         """
         if not isinstance(self.type, types.PointerType):
-            msg = "can only call ptrtoint() on pointer constants, not '%s'"
+            msg = "can only call ptrtoint() on pointer type, not '%s'"
             raise TypeError(msg % (self.type,))
         if not isinstance(typ, types.IntType):
             raise TypeError("can only ptrtoint() to integer type, not '%s'"
