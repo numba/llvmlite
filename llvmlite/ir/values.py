@@ -63,7 +63,7 @@ class _ConstOpMixin(object):
                 % (typ,))
         if not isinstance(self.type, types.PointerType):
             raise TypeError(
-                "can only call inttoptr() on pointer type, not '%s'"
+                "can only call ptrtoint() on pointer type, not '%s'"
                 % (self.type))
 
         op = "ptrtoint ({0} {1} to {2})".format(self.type,

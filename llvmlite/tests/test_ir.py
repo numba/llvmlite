@@ -2315,7 +2315,7 @@ class TestConstant(TestBase):
         c2 = ir.Constant(int32, 0)
         self.assertRaisesRegex(
             TypeError,
-            r"can only call inttoptr\(\) on pointer type, not 'i32'",
+            r"can only call ptrtoint\(\) on pointer type, not 'i32'",
             c2.ptrtoint,
             int64)
 
