@@ -2294,13 +2294,58 @@ class TestConstant(TestBase):
                           'addrspace(4)* @"myconstant", i32 0, i32 1)'))
         self.assertEqual(c.type, ir.PointerType(int1, addrspace=addrspace))
 
+    def test_trunc(self):
+        c = ir.Constant(int64, 1).trunc(int32)
+        self.assertEqual(str(c), 'trunc (i64 1 to i32)')
+
+    def test_zext(self):
+        c = ir.Constant(int32, 1).zext(int64)
+        self.assertEqual(str(c), 'zext (i32 1 to i64)')
+
+    def test_sext(self):
+        c = ir.Constant(int32, -1).sext(int64)
+        self.assertEqual(str(c), 'sext (i32 -1 to i64)')
+
+    def test_fptrunc(self):
+        c = ir.Constant(flt, 1).fptrunc(hlf)
+        self.assertEqual(str(c), 'fptrunc (float 0x3ff0000000000000 to half)')
+
+    def test_fpext(self):
+        c = ir.Constant(flt, 1).fpext(dbl)
+        self.assertEqual(str(c), 'fpext (float 0x3ff0000000000000 to double)')
+
     def test_bitcast(self):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
         c = gv.bitcast(int64.as_pointer())
         self.assertEqual(str(c), 'bitcast (i32* @"myconstant" to i64*)')
 
-    def test_ptrtoint(self):
+    def test_fptoui(self):
+        c = ir.Constant(flt, 1).fptoui(int32)
+        self.assertEqual(str(c), 'fptoui (float 0x3ff0000000000000 to i32)')
+
+    def test_uitofp(self):
+        c = ir.Constant(int32, 1).uitofp(flt)
+        self.assertEqual(str(c), 'uitofp (i32 1 to float)')
+
+    def test_fptosi(self):
+        c = ir.Constant(flt, 1).fptosi(int32)
+        self.assertEqual(str(c), 'fptosi (float 0x3ff0000000000000 to i32)')
+
+    def test_sitofp(self):
+        c = ir.Constant(int32, 1).sitofp(flt)
+        self.assertEqual(str(c), 'sitofp (i32 1 to float)')
+
+    def test_ptrtoint_1(self):
+        ptr = ir.Constant(int64.as_pointer(), None)
+        one = ir.Constant(int32, 1)
+        c = ptr.ptrtoint(int32)
+
+        self.assertRaises(TypeError, one.ptrtoint, int64)
+        self.assertRaises(TypeError, ptr.ptrtoint, flt)
+        self.assertEqual(str(c), 'ptrtoint (i64* null to i32)')
+
+    def test_ptrtoint_2(self):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
         c = gv.ptrtoint(int64)
@@ -2315,13 +2360,88 @@ class TestConstant(TestBase):
         c2 = ir.Constant(int32, 0)
         self.assertRaisesRegex(
             TypeError,
-            r"can only call inttoptr\(\) on pointer type, not 'i32'",
+            r"can only call ptrtoint\(\) on pointer type, not 'i32'",
             c2.ptrtoint,
             int64)
 
     def test_inttoptr(self):
-        c = ir.Constant(int32, 0).inttoptr(int64.as_pointer())
-        self.assertEqual(str(c), 'inttoptr (i32 0 to i64*)')
+        one = ir.Constant(int32, 1)
+        pi = ir.Constant(flt, 3.14)
+        c = one.inttoptr(int64.as_pointer())
+
+        self.assertRaises(TypeError, one.inttoptr, int64)
+        self.assertRaises(TypeError, pi.inttoptr, int64.as_pointer())
+        self.assertEqual(str(c), 'inttoptr (i32 1 to i64*)')
+
+    def test_neg(self):
+        one = ir.Constant(int32, 1)
+        self.assertEqual(str(one.neg()), 'sub (i32 0, i32 1)')
+
+    def test_not(self):
+        one = ir.Constant(int32, 1)
+        self.assertEqual(str(one.not_()), 'xor (i32 1, i32 -1)')
+
+    def test_fneg(self):
+        one = ir.Constant(flt, 1)
+        self.assertEqual(str(one.fneg()), 'fneg (float 0x3ff0000000000000)')
+
+    def test_int_binops(self):
+        one = ir.Constant(int32, 1)
+        two = ir.Constant(int32, 2)
+
+        oracle = {one.shl:  'shl',  one.lshr: 'lshr', one.ashr: 'ashr',
+                  one.add:  'add',  one.sub:  'sub',  one.mul:  'mul',
+                  one.udiv: 'udiv', one.sdiv: 'sdiv', one.urem: 'urem',
+                  one.srem: 'srem', one.or_:  'or',   one.and_: 'and',
+                  one.xor:  'xor'}
+        for fn, irop in oracle.items():
+            self.assertEqual(str(fn(two)), irop + ' (i32 1, i32 2)')
+
+        # unsigned integer compare
+        oracle = {'==': 'eq', '!=': 'ne', '>':
+                  'ugt', '>=': 'uge', '<': 'ult', '<=': 'ule'}
+        for cop, cond in oracle.items():
+            actual = str(one.icmp_unsigned(cop, two))
+            expected = 'icmp ' + cond + ' (i32 1, i32 2)'
+            self.assertEqual(actual, expected)
+
+        # signed integer compare
+        oracle = {'==': 'eq', '!=': 'ne',
+                  '>': 'sgt', '>=': 'sge', '<': 'slt', '<=': 'sle'}
+        for cop, cond in oracle.items():
+            actual = str(one.icmp_signed(cop, two))
+            expected = 'icmp ' + cond + ' (i32 1, i32 2)'
+            self.assertEqual(actual, expected)
+
+    def test_flt_binops(self):
+        one = ir.Constant(flt, 1)
+        two = ir.Constant(flt, 2)
+
+        oracle = {one.fadd: 'fadd', one.fsub: 'fsub', one.fmul:  'fmul',
+                  one.fdiv: 'fdiv', one.frem: 'frem'}
+        for fn, irop in oracle.items():
+            actual = str(fn(two))
+            expected = irop + (' (float 0x3ff0000000000000,'
+                               ' float 0x4000000000000000)')
+            self.assertEqual(actual, expected)
+
+        # ordered float compare
+        oracle = {'==': 'oeq', '!=': 'one', '>': 'ogt', '>=': 'oge',
+                  '<': 'olt', '<=': 'ole'}
+        for cop, cond in oracle.items():
+            actual = str(one.fcmp_ordered(cop, two))
+            expected = 'fcmp ' + cond + (' (float 0x3ff0000000000000,'
+                                         ' float 0x4000000000000000)')
+            self.assertEqual(actual, expected)
+
+        # unordered float compare
+        oracle = {'==': 'ueq', '!=': 'une', '>': 'ugt', '>=': 'uge',
+                  '<': 'ult', '<=': 'ule'}
+        for cop, cond in oracle.items():
+            actual = str(one.fcmp_unordered(cop, two))
+            expected = 'fcmp ' + cond + (' (float 0x3ff0000000000000,'
+                                         ' float 0x4000000000000000)')
+            self.assertEqual(actual, expected)
 
 
 class TestTransforms(TestBase):
