@@ -155,7 +155,7 @@ A :ref:`module` consists mostly of values.
 
    * .. method:: fptrunc(typ)
 
-      Truncate (approximate ) floating-point value `self` to floating-point
+      Truncate (approximate) floating-point value `self` to floating-point
       type `typ`.
 
    * .. method:: fpext(typ)
