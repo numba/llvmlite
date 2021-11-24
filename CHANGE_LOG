@@ -1,7 +1,40 @@
-v0.38.0
--------
+v0.38.0 (November 24, 2021)
+---------------------------
 
-In development
+The two biggest new features for this release are the support for Python 3.10
+and the ability to cross-compile for existing LLVM targets.
+
+Pull-Requests:
+
+* PR `#702 <https://github.com/numba/llvmlite/pull/702>`_: Implement minimal support for call-site argument attributes (`David Nadlinger <https://github.com/dnadlinger>`_)
+* PR `#739 <https://github.com/numba/llvmlite/pull/739>`_: Bump to 0.38.0 development series (`Siu Kwan Lam <https://github.com/sklam>`_)
+* PR `#751 <https://github.com/numba/llvmlite/pull/751>`_: Fix encoding of unicode string in metadata. (`Siu Kwan Lam <https://github.com/sklam>`_)
+* PR `#757 <https://github.com/numba/llvmlite/pull/757>`_: Add issue templates based on those in Numba (`Graham Markall <https://github.com/gmarkall>`_)
+* PR `#763 <https://github.com/numba/llvmlite/pull/763>`_: Update the Azure default linux image to Ubuntu 18.04 (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#769 <https://github.com/numba/llvmlite/pull/769>`_: Python 3.10 (`esc <https://github.com/esc>`_)
+* PR `#771 <https://github.com/numba/llvmlite/pull/771>`_: cleanup llvmlite metadata (`esc <https://github.com/esc>`_)
+* PR `#774 <https://github.com/numba/llvmlite/pull/774>`_: Fix OSX breakage on master (`esc <https://github.com/esc>`_)
+* PR `#775 <https://github.com/numba/llvmlite/pull/775>`_: targets.py: Add ABIName parameter for RISC-V hard float targets (`Graham Markall <https://github.com/gmarkall>`_ `occheung <https://github.com/occheung>`_)
+* PR `#778 <https://github.com/numba/llvmlite/pull/778>`_: fix: test code typo (`Itmom <https://github.com/Cho-Geonwoo>`_)
+* PR `#779 <https://github.com/numba/llvmlite/pull/779>`_: pin compiler toolchain to version 10 on osx (`esc <https://github.com/esc>`_)
+* PR `#784 <https://github.com/numba/llvmlite/pull/784>`_: Adds _ConstOpMixin.ptrtoint to complement existing bitcast and inttoptr methods. (`Brett Slatkin <https://github.com/bslatkin>`_)
+* PR `#788 <https://github.com/numba/llvmlite/pull/788>`_: Add RISC-V + all default targets to LLVM build (`Stan Seibert <https://github.com/seibert>`_ `esc <https://github.com/esc>`_)
+* PR `#789 <https://github.com/numba/llvmlite/pull/789>`_: don't build docs on every platform, only once (`esc <https://github.com/esc>`_)
+* PR `#791 <https://github.com/numba/llvmlite/pull/791>`_: update to use LLVM 11.1.0 build 4 (`esc <https://github.com/esc>`_)
+* PR `#795 <https://github.com/numba/llvmlite/pull/795>`_: Continue PR #735 (Add support for more constant expressions) (`Graham Markall <https://github.com/gmarkall>`_ `John Törnblom <https://github.com/john-tornblom>`_)
+
+Authors:
+
+* `Itmom <https://github.com/Cho-Geonwoo>`_
+* `Brett Slatkin <https://github.com/bslatkin>`_
+* `David Nadlinger <https://github.com/dnadlinger>`_
+* `esc <https://github.com/esc>`_
+* `Graham Markall <https://github.com/gmarkall>`_
+* `John Törnblom <https://github.com/john-tornblom>`_
+* `occheung <https://github.com/occheung>`_
+* `Stan Seibert <https://github.com/seibert>`_
+* `Siu Kwan Lam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
 
 v0.37.0 (August 19, 2021)
 -------------------------
