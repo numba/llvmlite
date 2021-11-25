@@ -334,15 +334,24 @@ class TestRISCVABI(BaseTest):
     Test calling convention of floating point arguments of RISC-V
     using different ABI.
     """
+    triple = "riscv32-unknown-linux"
 
-    def init_llvm(self):
-        llvm.initialize()
+    def setUp(self):
+        super().setUp()
         llvm.initialize_all_targets()
         llvm.initialize_all_asmprinters()
 
+    def check_riscv_target(self):
+        try:
+            llvm.Target.from_triple(self.triple)
+        except RuntimeError as e:
+            if "No available targets are compatible with triple" in str(e):
+                self.skipTest("RISCV target unsupported by linked LLVM.")
+            else:
+                raise e
+
     def riscv_target_machine(self, **kwarg):
-        triple = "riscv32-unknown-linux"
-        lltarget = llvm.Target.from_triple(triple)
+        lltarget = llvm.Target.from_triple(self.triple)
         return lltarget.create_target_machine(**kwarg)
 
     def fpadd_ll_module(self):
@@ -372,21 +381,21 @@ class TestRISCVABI(BaseTest):
         return asm_list
 
     def test_rv32d_ilp32(self):
-        self.init_llvm()
+        self.check_riscv_target()
         llmod = self.fpadd_ll_module()
         target = self.riscv_target_machine(features="+f,+d")
         self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
                          riscv_asm_ilp32)
 
     def test_rv32d_ilp32f(self):
-        self.init_llvm()
+        self.check_riscv_target()
         llmod = self.fpadd_ll_module()
         target = self.riscv_target_machine(features="+f,+d", abiname="ilp32f")
         self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
                          riscv_asm_ilp32f)
 
     def test_rv32d_ilp32d(self):
-        self.init_llvm()
+        self.check_riscv_target()
         llmod = self.fpadd_ll_module()
         target = self.riscv_target_machine(features="+f,+d", abiname="ilp32d")
         self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
