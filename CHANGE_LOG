@@ -1,8 +1,10 @@
-v0.38.0 (November 24, 2021)
+v0.38.0 (November 25, 2021)
 ---------------------------
 
-The two biggest new features for this release are the support for Python 3.10
-and the ability to cross-compile for existing LLVM targets.
+This release makes llvmlite compatible with Python 3.10. It also adds an
+``abiname`` option to the target machine creation interface that mimics the same
+in LLVM. Further, a large number of functions are added to the IR API to support
+common uses of constant expressions. Finally, a number of bugs were fixed!
 
 Pull-Requests:
 
