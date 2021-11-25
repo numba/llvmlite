@@ -24,6 +24,7 @@ Pull-Requests:
 * PR `#789 <https://github.com/numba/llvmlite/pull/789>`_: don't build docs on every platform, only once (`esc <https://github.com/esc>`_)
 * PR `#791 <https://github.com/numba/llvmlite/pull/791>`_: update to use LLVM 11.1.0 build 4 (`esc <https://github.com/esc>`_)
 * PR `#795 <https://github.com/numba/llvmlite/pull/795>`_: Continue PR #735 (Add support for more constant expressions) (`Graham Markall <https://github.com/gmarkall>`_ `John Törnblom <https://github.com/john-tornblom>`_)
+* PR `#797 <https://github.com/numba/llvmlite/pull/797>`_: Make tests that require cross compilation to RISCV optional. (`stuartarchibald <https://github.com/stuartarchibald>`_)
 
 Authors:
 
