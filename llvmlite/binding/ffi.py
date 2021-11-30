@@ -169,14 +169,10 @@ _lib_paths = [
     os.path.join('.', _lib_name),  # Current directory
 ]
 
-# If pkg_resources is available, try to use it to load the shared object.
-# This allows direct import from egg files.
-try:
-    from pkg_resources import resource_filename
-except ImportError:
-    pass
-else:
-    _lib_paths.append(resource_filename(__name__, _lib_name))
+# use importlib.resources, path returns an context manager, in order to make sure that the file remains available, we keep the context manager alive...
+import importlib.resources
+__handle_of_resource_path = importlib.resources.path(__name__, _lib_name)
+_lib_paths.append(resource_filename(next(__handle_of_resource_path))
 
 
 # Try to load from all of the different paths
