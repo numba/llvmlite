@@ -172,7 +172,7 @@ _lib_paths = [
 # use importlib.resources, path returns an context manager, in order to make sure that the file remains available, we keep the context manager alive...
 import importlib.resources
 __handle_of_resource_path = importlib.resources.path(__name__, _lib_name)
-_lib_paths.append(resource_filename(next(__handle_of_resource_path))
+_lib_paths.append(resource_filename(next(__handle_of_resource_path)))
 
 
 # Try to load from all of the different paths
