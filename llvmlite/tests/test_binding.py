@@ -18,6 +18,16 @@ from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
 
+def clean_string_whitespace(x: str) -> str:
+    # Remove trailing whitespace from the end of each line
+    x = re.sub(r"\s+$", "", x, flags=re.MULTILINE)
+    # Remove intermediate blank lines
+    x = re.sub(r"\n\s*\n", r"\n", x, flags=re.MULTILINE)
+    # Remove extraneous whitespace from the beginning and end of the string
+    x = x.strip()
+    return x
+
+
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
@@ -158,7 +168,7 @@ asm_nonalphanum_blocklabel = """; ModuleID = ""
 target triple = "unknown-unknown-unknown"
 target datalayout = ""
 
-define i32 @"foo"() 
+define i32 @"foo"()
 {
 "<>!*''#":
   ret i32 12345
@@ -424,7 +434,10 @@ class TestMisc(BaseTest):
         bd = ir.IRBuilder(fn.append_basic_block(name="<>!*''#"))
         bd.ret(ir.Constant(ir.IntType(32), 12345))
         asm = str(mod)
-        self.assertEqual(asm, asm_nonalphanum_blocklabel)
+        self.assertEqual(
+            clean_string_whitespace(asm),
+            clean_string_whitespace(asm_nonalphanum_blocklabel)
+        )
 
     def test_global_context(self):
         gcontext1 = llvm.context.get_global_context()
@@ -509,7 +522,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = [(11,)]
+        valid = [(11,), (12,), (13,)]
         self.assertIn((major,), valid)
         self.assertIn(patch, range(10))
 
