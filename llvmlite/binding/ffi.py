@@ -174,8 +174,8 @@ import importlib.resources
 try:
     module = __name__.split(".")[0]
     _lib_name = ".".join(__name__.split(".")[1:])+"."+_lib_name
-    __handle_of_resource_path = iter(importlib.resources.path(module, _lib_name))
-    _lib_paths.append(next(__handle_of_resource_path))
+    __handle_of_resource_path = importlib.resources.path(module, _lib_name)
+    _lib_paths.append(__handle_of_resource_path.__enter__())
 finally:
     pass
 
