@@ -164,11 +164,7 @@ _lib_name = get_library_name()
 
 
 # Possible CDLL loading paths
-_lib_paths = [
-    os.path.join(_lib_dir, _lib_name),  # Absolute
-    _lib_name,  # In PATH
-    os.path.join('.', _lib_name),  # Current directory
-]
+_lib_paths = []
 
 # use importlib.resources, path returns an context manager, 
 #in order to make sure that the file remains available, we 
@@ -179,6 +175,11 @@ try:
     _lib_paths.append(_path2library)
 except Exception as _:
     pass
+
+_lib_paths.extend([ _lib_name,  # In PATH
+    os.path.join('.', _lib_name),  # Current directory
+])
+
 
 # Try to load from all of the different paths
 errors = []
