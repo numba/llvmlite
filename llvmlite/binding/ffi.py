@@ -1,5 +1,6 @@
 import ctypes
 import os
+import sys
 import threading
 import importlib.resources
 
@@ -166,20 +167,28 @@ _lib_name = get_library_name()
 # Possible CDLL loading paths
 _lib_paths = []
 
-# use importlib.resources, path returns an context manager, 
-#in order to make sure that the file remains available, we 
+# use importlib.resources, path returns an context manager,
+#in order to make sure that the file remains available, we
 #keep the context manager alive...
 try:
-    __handle_of_resource_path = importlib.resources.path(__name__, _lib_name)
+    print(__file__)
+    print(__name__)
+    print(_lib_name)
+    __handle_of_resource_path = importlib.resources.path(__name__[:-4], _lib_name)
     _path2library = __handle_of_resource_path.__enter__()
-    _lib_paths.append(_path2library)
+    _lib_paths.append(str(_path2library))
 except Exception as _:
+    print(_)
     pass
 
-_lib_paths.extend([ _lib_name,  # In PATH
-    os.path.join('.', _lib_name),  # Current directory
-])
 
+if os.name == 'nt':
+    if sys.version_info > (3, 8):
+        os.add_dll_directory(str(_path2library.parent))
+    else:
+        # Append DLL directory to PATH, to allow loading of bundled CRT libraries
+        # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).  # noqa E501
+        os.environ['PATH'] += ';' + str(_path2library.parent)
 
 # Try to load from all of the different paths
 errors = []
