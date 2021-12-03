@@ -1,6 +1,7 @@
 import ctypes
 import os
 import threading
+import importlib.resources
 
 from llvmlite.binding.common import _decode_string, _is_shutting_down
 from llvmlite.utils import get_library_name
@@ -169,13 +170,14 @@ _lib_paths = [
     os.path.join('.', _lib_name),  # Current directory
 ]
 
-# use importlib.resources, path returns an context manager, in order to make sure that the file remains available, we keep the context manager alive...
-import importlib.resources
+# use importlib.resources, path returns an context manager, 
+#in order to make sure that the file remains available, we 
+#keep the context manager alive...
 try:
     __handle_of_resource_path = importlib.resources.path(__name__, _lib_name)
     _path2library = __handle_of_resource_path.__enter__()
     _lib_paths.append(_path2library)
-except:
+except Exception as e:
     pass
 
 # Try to load from all of the different paths
