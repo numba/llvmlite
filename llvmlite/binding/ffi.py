@@ -177,7 +177,7 @@ try:
     __handle_of_resource_path = importlib.resources.path(__name__, _lib_name)
     _path2library = __handle_of_resource_path.__enter__()
     _lib_paths.append(_path2library)
-except Exception as e:
+except Exception as _:
     pass
 
 # Try to load from all of the different paths
