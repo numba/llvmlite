@@ -156,9 +156,11 @@ _lib_name = get_library_name()
 
 pkgname = ".".join(__name__.split(".")[0:-1])
 try:
-    with importlib.resources.path(pkgname, _lib_name) as path:
-        lib = ctypes.CDLL(str(path))
-        # outside this context manager the lib may not exist
+    _lib_handle = importlib.resources.path(pkgname, _lib_name)
+    lib = ctypes.CDLL(str(_lib_handle.__enter__()))
+    # on windows file handles to the dll file remain open after
+    # loading, therefore we can not exit the context manager
+    # which might delete the file
 except OSError as e:
     msg = f"""Could not find/load shared object file: {_lib_name}
  Error was: {e}"""
