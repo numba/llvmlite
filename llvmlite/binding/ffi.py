@@ -153,46 +153,26 @@ class _lib_fn_wrapper(object):
             return self._cfn(*args, **kwargs)
 
 
-_lib_dir = os.path.dirname(__file__)
 _lib_name = get_library_name()
-
-
 # Possible CDLL loading paths
-_lib_paths = []
+_lib_path = None
 
 # use importlib.resources, path returns an context manager,
 #in order to make sure that the file remains available, we
 #keep the context manager alive...
 try:
-    pkgname = __name__[:-4]
+    pkgname = ".".join(__name__.split(".")[0:-1])
     __handle_of_resource_path = importlib.resources.path(pkgname, _lib_name)
-    _path2library = __handle_of_resource_path.__enter__()
-    _lib_paths.append(str(_path2library))
+    _lib_path = str(__handle_of_resource_path.__enter__())
 except Exception as e:
-    raise OSError(str(e))
-
-
-if os.name == 'nt':
-    if sys.version_info > (3, 8):
-        os.add_dll_directory(str(_path2library.parent))
-    else:
-        # Append DLL directory to PATH, to allow loading of bundled CRT libraries # noqa E501
-        # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).  # noqa E501
-        os.environ['PATH'] += ';' + str(_path2library.parent)
-
-# Try to load from all of the different paths
-errors = []
-for _lib_path in _lib_paths:
-    try:
-        lib = ctypes.CDLL(_lib_path)
-    except OSError as e:
-        errors.append(e)
-        continue
-    else:
-        break
-else:
+    msg = ("Could not find shared object file: {}\n".format(_lib_name) +
+           "Error was: {}".format(e))
+    raise OSError(msg)
+try:
+    lib = ctypes.CDLL(_lib_path)
+except OSError as e:
     msg = ("Could not load shared object file: {}\n".format(_lib_name) +
-           "Errors were: {}".format(errors))
+           "Error was: {}".format(e))
     raise OSError(msg)
 
 
