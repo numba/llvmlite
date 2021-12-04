@@ -1,6 +1,4 @@
 import ctypes
-import os
-import sys
 import threading
 import importlib.resources
 
@@ -154,25 +152,16 @@ class _lib_fn_wrapper(object):
 
 
 _lib_name = get_library_name()
-# Possible CDLL loading paths
-_lib_path = None
 
-# use importlib.resources, path returns an context manager,
-#in order to make sure that the file remains available, we
-#keep the context manager alive...
+
+pkgname = ".".join(__name__.split(".")[0:-1])
 try:
-    pkgname = ".".join(__name__.split(".")[0:-1])
-    __handle_of_resource_path = importlib.resources.path(pkgname, _lib_name)
-    _lib_path = str(__handle_of_resource_path.__enter__())
-except Exception as e:
-    msg = ("Could not find shared object file: {}\n".format(_lib_name) +
-           "Error was: {}".format(e))
-    raise OSError(msg)
-try:
-    lib = ctypes.CDLL(_lib_path)
+    with importlib.resources.path(pkgname, _lib_name) as path:
+        lib = ctypes.CDLL(str(path))
+        # outside this context manager the lib may not exist
 except OSError as e:
-    msg = ("Could not load shared object file: {}\n".format(_lib_name) +
-           "Error was: {}".format(e))
+    msg = f"""Could not find/load shared object file: {_lib_name}
+ Error was: {e}"""
     raise OSError(msg)
 
 
