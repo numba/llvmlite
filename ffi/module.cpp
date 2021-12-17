@@ -124,6 +124,12 @@ LLVMPY_PrintModuleToString(LLVMModuleRef M,
 }
 
 API_EXPORT(const char *)
+LLVMPY_GetModuleSourceFileName(LLVMModuleRef M)
+{
+    return llvm::unwrap(M)->getSourceFileName().c_str();
+}
+
+API_EXPORT(const char *)
 LLVMPY_GetModuleName(LLVMModuleRef M)
 {
     return llvm::unwrap(M)->getModuleIdentifier().c_str();
