@@ -1,9 +1,10 @@
 ========
 llvmlite
 ========
-.. image:: https://travis-ci.org/numba/llvmlite.svg?branch=master
-   :target: https://travis-ci.org/numba/llvmlite
-   :alt: Travis CI
+
+.. image:: https://dev.azure.com/numba/numba/_apis/build/status/numba.llvmlite?branchName=master
+   :target: https://dev.azure.com/numba/numba/_build/latest?definitionId=2&branchName=master
+   :alt: Azure Pipelines
 .. image:: https://codeclimate.com/github/numba/llvmlite/badges/gpa.svg
    :target: https://codeclimate.com/github/numba/llvmlite
    :alt: Code Climate
@@ -14,12 +15,8 @@ llvmlite
    :target: https://llvmlite.readthedocs.io
    :alt: Readthedocs.io
 
-A lightweight LLVM python binding for writing JIT compilers
-
-The old llvmpy_  binding exposes a lot of LLVM APIs but the mapping of
-C++-style memory management to Python is error prone. Numba_ and many JIT
-compilers do not need a full LLVM API.  Only the IR builder, optimizer,
-and JIT compiler APIs are necessary.
+A Lightweight LLVM Python Binding for Writing JIT Compilers
+-----------------------------------------------------------
 
 .. _llvmpy: https://github.com/llvmpy/llvmpy
 
@@ -32,6 +29,13 @@ following approach:
 * A pure Python implementation of the subset of the LLVM IR builder that we
   need for Numba.
 
+Why llvmlite
+============
+
+The old llvmpy_  binding exposes a lot of LLVM APIs but the mapping of
+C++-style memory management to Python is error prone. Numba_ and many JIT
+compilers do not need a full LLVM API.  Only the IR builder, optimizer,
+and JIT compiler APIs are necessary.
 
 Key Benefits
 ============
@@ -60,17 +64,21 @@ layer.
 Compatibility
 =============
 
-llvmlite works with Python 2.7 and Python 3.4 or greater.
+llvmlite works with Python 3.7 and greater.
 
-As of version 0.23.0, llvmlite requires LLVM 6.0.  It does not support earlier
-or later versions of LLVM.
+As of version 0.37.0, llvmlite requires LLVM 11.x.x on all architectures
 
 Historical compatibility table:
 
 =================  ========================
 llvmlite versions  compatible LLVM versions
 =================  ========================
-0.23.0 - ...       6.0.x
+0.37.0 - ...       11.x.x
+0.34.0 - 0.36.0    10.0.x (9.0.x for  ``aarch64`` only)
+0.33.0             9.0.x
+0.29.0 - 0.32.0    7.0.x, 7.1.x, 8.0.x
+0.27.0 - 0.28.0    7.0.x
+0.23.0 - 0.26.0    6.0.x
 0.21.0 - 0.22.0    5.0.x
 0.17.0 - 0.20.0    4.0.x
 0.16.0 - 0.17.0    3.9.x

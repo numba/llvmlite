@@ -1,0 +1,70 @@
+jobs:
+# Mac and Linux use the same template with different matrixes
+- template: buildscripts/azure/azure-linux-macos.yml
+  parameters:
+    name: macOS
+    vmImage: macOS-10.14
+    matrix:
+      py37:
+        PYTHON: '3.7'
+        CONDA_ENV: cienv
+      py38:
+        PYTHON: '3.8'
+        CONDA_ENV: cienv
+      py39:
+        PYTHON: '3.9'
+        CONDA_ENV: cienv
+      py310:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
+
+- template: buildscripts/azure/azure-linux-macos.yml
+  parameters:
+    name: Linux
+    vmImage: ubuntu-18.04
+    matrix:
+      py37:
+        PYTHON: '3.7'
+        CONDA_ENV: cienv
+      py38:
+        PYTHON: '3.8'
+        CONDA_ENV: cienv
+        RUN_FLAKE8: yes
+      py39:
+        PYTHON: '3.9'
+        CONDA_ENV: cienv
+        RUN_FLAKE8: yes
+      py310:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
+        RUN_FLAKE8: yes
+# temporarily disabled
+#       pypy:
+#         PYTHON: pypy
+#         CONDA_ENV: cienv
+      py37_wheel:
+        PYTHON: '3.7'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py38_wheel:
+        PYTHON: '3.8'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py39_wheel:
+        PYTHON: '3.9'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py310_wheel:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+
+      py39_docs:
+        PYTHON: '3.9'
+        CONDA_ENV: cienv
+        BUILD_DOCS: 'yes'
+
+- template: buildscripts/azure/azure-windows.yml
+  parameters:
+    name: Windows
+    vmImage: vs2017-win2016

@@ -1,0 +1,41 @@
+Patch from:
+https://github.com/conda-forge/llvmdev-feedstock/pull/53
+
+LLVM build system does not allow to use llvm-lit without building
+unittests. However, unittests take a lot of time and the build fails
+in public CI. Thus, enabling only necessary cmake configs here,
+partially copying code from test/CMakeLists.txt
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 31df6408..4538f912 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -951,6 +951,28 @@ if( LLVM_INCLUDE_TESTS )
+   add_custom_target(test-depends
+                     DEPENDS ${LLVM_LIT_DEPENDS} ${LLVM_ADDITIONAL_TEST_DEPENDS})
+   set_target_properties(test-depends PROPERTIES FOLDER "Tests")
++else()
++  # enable partial testing support
++  add_subdirectory(utils/lit)
++  llvm_canonicalize_cmake_booleans(
++    LLVM_TOOL_LTO_BUILD
++    HAVE_OCAMLOPT
++    HAVE_OCAML_OUNIT
++    LLVM_INCLUDE_GO_TESTS
++    LLVM_USE_INTEL_JITEVENTS
++    HAVE_LIBZ
++    HAVE_LIBXAR
++    LLVM_ENABLE_DIA_SDK
++    LLVM_ENABLE_FFI
++    BUILD_SHARED_LIBS
++    LLVM_LINK_LLVM_DYLIB
++    )
++  configure_lit_site_cfg(
++    ${CMAKE_CURRENT_SOURCE_DIR}/test/lit.site.cfg.py.in
++    ${CMAKE_CURRENT_SOURCE_DIR}/test/lit.site.cfg.py
++    MAIN_CONFIG
++    ${CMAKE_CURRENT_SOURCE_DIR}/test/lit.cfg.py
++    )
+ endif()
+ 
+ if (LLVM_INCLUDE_DOCS)

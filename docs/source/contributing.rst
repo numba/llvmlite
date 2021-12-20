@@ -19,17 +19,14 @@ We do welcome any contributions in the form of
 Communication methods
 =====================
 
-Mailing list
-------------
+Forum
+-----
 
-Send email to the Numba users public mailing list at
-numba-users@anaconda.com. You are welcome to send any questions
-about contributing to llvmlite to this mailing list.
-
-You can subscribe and read the archives on
-`Google Groups <https://groups.google.com/a/anaconda.com/forum/#!forum/numba-users>`_.
-The `Gmane mirror <http://news.gmane.org/gmane.comp.python.numba.user>`_
-allows NNTP access.
+llvmlite uses the Numba Discourse as a forum for longer running threads such as
+design discussions and roadmap planning. There are various categories available
+and it can be reached at: `numba.discourse.group
+<https://numba.discourse.group/>`_. It also has a `llvmlite topic
+<https://numba.discourse.group/c/llvmlite/12>`.
 
 .. _report-bugs:
 
@@ -84,18 +81,13 @@ Coding conventions
 Platform support
 ----------------
 
-Llvmlite will be kept compatible with Python 2.7, 3.4 and later
-under at least Windows, macOS and Linux. It needs to be
-compatible only with the currently supported LLVM version---the
-3.8 series.
+Llvmlite will be kept compatible with Python 3.7 and later
+under at least Windows, macOS and Linux.
 
-We do not expect contributors to test their code on all platforms.
-Pull requests are automatically built and tested using
-`Travis-CI <https://travis-ci.org/numba/llvmlite>`_, which
-addresses Linux compatibility. Other operating systems are tested
-on an internal continuous integration platform at
-Anaconda\ |reg|.
-
+We do not expect contributors to test their code on all platforms.  Pull
+requests are automatically built and tested using `Azure Pipelines
+<https://dev.azure.com/numba/numba/_build?definitionId=2>`_ for Winows, OSX and
+Linux.
 
 Documentation
 =============

@@ -1,12 +1,11 @@
-from __future__ import print_function, absolute_import
 from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
                     c_size_t, string_at)
 
-from . import ffi
-from .linker import link_modules
-from .common import _decode_string, _encode_string
-from .value import ValueRef, TypeRef
-from .context import get_global_context
+from llvmlite.binding import ffi
+from llvmlite.binding.linker import link_modules
+from llvmlite.binding.common import _decode_string, _encode_string
+from llvmlite.binding.value import ValueRef, TypeRef
+from llvmlite.binding.context import get_global_context
 
 
 def parse_assembly(llvmir, context=None):
@@ -85,7 +84,7 @@ class ModuleRef(ffi.ObjectRef):
         p = ffi.lib.LLVMPY_GetNamedFunction(self, _encode_string(name))
         if not p:
             raise NameError(name)
-        return ValueRef(p, module=self)
+        return ValueRef(p, 'function', dict(module=self))
 
     def get_global_variable(self, name):
         """
@@ -95,7 +94,7 @@ class ModuleRef(ffi.ObjectRef):
         p = ffi.lib.LLVMPY_GetNamedGlobalVariable(self, _encode_string(name))
         if not p:
             raise NameError(name)
-        return ValueRef(p, module=self)
+        return ValueRef(p, 'global', dict(module=self))
 
     def get_struct_type(self, name):
         """
@@ -178,7 +177,7 @@ class ModuleRef(ffi.ObjectRef):
          LLVM parlance)
         """
         it = ffi.lib.LLVMPY_ModuleGlobalsIter(self)
-        return _GlobalsIterator(it, module=self)
+        return _GlobalsIterator(it, dict(module=self))
 
     @property
     def functions(self):
@@ -187,7 +186,7 @@ class ModuleRef(ffi.ObjectRef):
         The iterator will yield a ValueRef for each function.
         """
         it = ffi.lib.LLVMPY_ModuleFunctionsIter(self)
-        return _FunctionsIterator(it, module=self)
+        return _FunctionsIterator(it, dict(module=self))
 
     @property
     def struct_types(self):
@@ -196,7 +195,7 @@ class ModuleRef(ffi.ObjectRef):
         the module. The iterator will yield a TypeRef.
         """
         it = ffi.lib.LLVMPY_ModuleTypesIter(self)
-        return _TypesIterator(it, module=self)
+        return _TypesIterator(it, dict(module=self))
 
     def clone(self):
         return ModuleRef(ffi.lib.LLVMPY_CloneModule(self), self._context)
@@ -204,15 +203,17 @@ class ModuleRef(ffi.ObjectRef):
 
 class _Iterator(ffi.ObjectRef):
 
-    def __init__(self, ptr, module):
+    kind = None
+
+    def __init__(self, ptr, parents):
         ffi.ObjectRef.__init__(self, ptr)
-        # Keep Module alive
-        self._module = module
+        self._parents = parents
+        assert self.kind is not None
 
     def __next__(self):
         vp = self._next()
         if vp:
-            return ValueRef(vp, self._module)
+            return ValueRef(vp, self.kind, self._parents)
         else:
             raise StopIteration
 
@@ -224,6 +225,8 @@ class _Iterator(ffi.ObjectRef):
 
 class _GlobalsIterator(_Iterator):
 
+    kind = 'global'
+
     def _dispose(self):
         self._capi.LLVMPY_DisposeGlobalsIter(self)
 
@@ -233,6 +236,8 @@ class _GlobalsIterator(_Iterator):
 
 class _FunctionsIterator(_Iterator):
 
+    kind = 'function'
+
     def _dispose(self):
         self._capi.LLVMPY_DisposeFunctionsIter(self)
 
@@ -241,6 +246,8 @@ class _FunctionsIterator(_Iterator):
 
 
 class _TypesIterator(_Iterator):
+
+    kind = 'type'
 
     def _dispose(self):
         self._capi.LLVMPY_DisposeTypesIter(self)

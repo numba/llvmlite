@@ -9,8 +9,13 @@ CallOrInvokeInstruction = ir.CallInstr
 class LLVMException(Exception):
     pass
 
+
 _icmp_ct = itertools.count()
-_icmp_get = lambda: next(_icmp_ct)
+
+
+def _icmp_get():
+    return next(_icmp_ct)
+
 
 ICMP_EQ = _icmp_get()
 ICMP_NE = _icmp_get()
@@ -64,6 +69,10 @@ class Type(object):
     @staticmethod
     def float():
         return ir.FloatType()
+
+    @staticmethod
+    def half():
+        return ir.HalfType()
 
     @staticmethod
     def double():
@@ -189,7 +198,6 @@ class Function(ir.Function):
         return module.declare_intrinsic(intrinsic, tys)
 
 
-
 _icmp_umap = {
     ICMP_EQ: '==',
     ICMP_NE: '!=',
@@ -197,14 +205,14 @@ _icmp_umap = {
     ICMP_ULE: '<=',
     ICMP_UGT: '>',
     ICMP_UGE: '>=',
-    }
+}
 
 _icmp_smap = {
     ICMP_SLT: '<',
     ICMP_SLE: '<=',
     ICMP_SGT: '>',
     ICMP_SGE: '>=',
-    }
+}
 
 _fcmp_omap = {
     FCMP_OEQ: '==',
@@ -214,7 +222,7 @@ _fcmp_omap = {
     FCMP_OLE: '<=',
     FCMP_ONE: '!=',
     FCMP_ORD: 'ord',
-    }
+}
 
 _fcmp_umap = {
     FCMP_UEQ: '==',
@@ -224,7 +232,7 @@ _fcmp_umap = {
     FCMP_ULE: '<=',
     FCMP_UNE: '!=',
     FCMP_UNO: 'uno',
-    }
+}
 
 
 class Builder(ir.IRBuilder):

@@ -21,11 +21,18 @@ target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 is_64bit = sys.maxsize >= 2**32
 
 
-def try_cmake(cmake_dir, build_dir, generator):
+def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     old_dir = os.getcwd()
+    args = ['cmake', '-G', generator]
+    if arch is not None:
+        args += ['-A', arch]
+    if toolkit is not None:
+        args += ['-T', toolkit]
+    args.append(cmake_dir)
     try:
         os.chdir(build_dir)
-        subprocess.check_call(['cmake', '-G', generator, cmake_dir])
+        print('Running:', ' '.join(args))
+        subprocess.check_call(args)
     finally:
         os.chdir(old_dir)
 
@@ -45,7 +52,7 @@ def run_llvm_config(llvm_config, args):
     return out
 
 
-def find_win32_generator():
+def find_windows_generator():
     """
     Find a suitable cmake "generator" under Windows.
     """
@@ -53,27 +60,27 @@ def find_win32_generator():
     # compatible with, the one which was used to compile LLVM... cmake
     # seems a bit lacking here.
     cmake_dir = os.path.join(here_dir, 'dummy')
-    # LLVM 4.0+ needs VS 2015 minimum.
+    # LLVM 9.0 and later needs VS 2017 minimum.
     generators = []
-    if os.environ.get("CMAKE_GENERATOR"):
-        generators.append(os.environ.get("CMAKE_GENERATOR"))
+    env_generator = os.environ.get("CMAKE_GENERATOR", None)
+    if env_generator is not None:
+        env_arch = os.environ.get("CMAKE_GENERATOR_ARCH", None)
+        env_toolkit = os.environ.get("CMAKE_GENERATOR_TOOLKIT", None)
+        generators.append(
+            (env_generator, env_arch, env_toolkit)
+        )
 
-    # Drop generators that are too old
-    vspat = re.compile('Visual Studio (\d+)')
-    def drop_old_vs(g):
-        m = vspat.match(g)
-        if m is None:
-            return True  # keep those we don't recognize
-        ver = int(m.group(1))
-        return ver >= 14
-    generators = list(filter(drop_old_vs, generators))
-
-    generators.append('Visual Studio 14 2015' + (' Win64' if is_64bit else ''))
+    generators.extend([
+        # use VS2017 toolkit on VS2019 to match how llvmdev is built
+        ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v141'),
+        # This is the generator configuration for VS2017
+        ('Visual Studio 15 2017' + (' Win64' if is_64bit else ''), None, None)
+    ])
     for generator in generators:
         build_dir = tempfile.mkdtemp()
         print("Trying generator %r" % (generator,))
         try:
-            try_cmake(cmake_dir, build_dir, generator)
+            try_cmake(cmake_dir, build_dir, *generator)
         except subprocess.CalledProcessError:
             continue
         else:
@@ -84,18 +91,30 @@ def find_win32_generator():
     raise RuntimeError("No compatible cmake generator installed on this machine")
 
 
-def main_win32():
-    generator = find_win32_generator()
+def main_windows():
+    generator = find_windows_generator()
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
     # Run configuration step
-    try_cmake(here_dir, build_dir, generator)
+    try_cmake(here_dir, build_dir, *generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
 
 
+def main_posix_cmake(kind, library_ext):
+    generator = 'Unix Makefiles'
+    config = 'Release'
+    if not os.path.exists(build_dir):
+        os.mkdir(build_dir)
+    try_cmake(here_dir, build_dir, generator)
+    subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
+    shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext), target_dir)
+
 def main_posix(kind, library_ext):
+    if os.environ.get("LLVMLITE_USE_CMAKE", "0") == "1":
+        return main_posix_cmake(kind, library_ext)
+
     os.chdir(here_dir)
     # Check availability of llvm-config
     llvm_config = os.environ.get('LLVM_CONFIG', 'llvm-config')
@@ -103,20 +122,54 @@ def main_posix(kind, library_ext):
     sys.stdout.flush()
     try:
         out = subprocess.check_output([llvm_config, '--version'])
-    except (OSError, subprocess.CalledProcessError):
+    except FileNotFoundError:
+        msg = ("Could not find a `llvm-config` binary. There are a number of "
+               "reasons this could occur, please see: "
+               "https://llvmlite.readthedocs.io/en/latest/admin-guide/"
+               "install.html#using-pip for help.")
+        # Raise from None, this is to hide the file not found for llvm-config
+        # as this tends to cause users to install an LLVM which may or may not
+        # work. Redirect instead to some instructions about how to deal with
+        # this issue.
+        raise RuntimeError(msg) from None
+    except (OSError, subprocess.CalledProcessError) as e:
         raise RuntimeError("%s failed executing, please point LLVM_CONFIG "
                            "to the path for llvm-config" % (llvm_config,))
 
     out = out.decode('latin1')
     print(out)
-    if not out.startswith('6.0.'):
-        msg = (
-            "Building llvmlite requires LLVM 6.0.x. Be sure to "
-            "set LLVM_CONFIG to the right executable path.\n"
-            "Read the documentation at http://llvmlite.pydata.org/ for more "
-            "information about building llvmlite.\n"
-            )
-        raise RuntimeError(msg)
+
+    # See if the user is overriding the version check, this is unsupported
+    try:
+        _ver_check_skip = os.environ.get("LLVMLITE_SKIP_LLVM_VERSION_CHECK", 0)
+        skipcheck = int(_ver_check_skip)
+    except ValueError as e:
+        msg = ('If set, the environment variable '
+               'LLVMLITE_SKIP_LLVM_VERSION_CHECK should be an integer, got '
+               '"{}".')
+        raise ValueError(msg.format(_ver_check_skip)) from e
+
+    if skipcheck:
+        # user wants to use an unsupported version, warn about doing this...
+        msg = ("The LLVM version check for supported versions has been "
+               "overridden.\nThis is unsupported behaviour, llvmlite may not "
+               "work as intended.\nRequested LLVM version: {}".format(
+                   out.strip()))
+        warn = ' * '.join(("WARNING",) * 8)
+        blk = '=' * 80
+        warning = '{}\n{}\n{}'.format(blk, warn, blk)
+        print(warning)
+        print(msg)
+        print(warning + '\n')
+    else:
+
+        if not out.startswith('11'):
+            msg = ("Building llvmlite requires LLVM 11.x.x, got "
+                   "{!r}. Be sure to set LLVM_CONFIG to the right executable "
+                   "path.\nRead the documentation at "
+                   "http://llvmlite.pydata.org/ for more information about "
+                   "building llvmlite.\n".format(out.strip()))
+            raise RuntimeError(msg)
 
     # Get LLVM information for building
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
@@ -130,7 +183,7 @@ def main_posix(kind, library_ext):
 
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
-    svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.gen')
+    svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.inc')
     if os.path.isfile(svml_indicator):
         cxxflags = cxxflags + ['-DHAVE_SVML']
         print('SVML detected')
@@ -152,7 +205,7 @@ def main_posix(kind, library_ext):
 
 def main():
     if sys.platform == 'win32':
-        main_win32()
+        main_windows()
     elif sys.platform.startswith('linux'):
         main_posix('linux', '.so')
     elif sys.platform.startswith(('freebsd','openbsd')):

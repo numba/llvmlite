@@ -84,7 +84,8 @@ Atomic types
 
       The width in bits.
 
-.. class:: HalfFloatType()
+
+.. class:: HalfType()
 
    The type of half-precision, floating-point, real numbers.
 
@@ -129,6 +130,14 @@ Aggregate types
 .. class:: ArrayType(element, count)
 
    The class for array types.
+
+   * *element* is the type of every element.
+   * *count* is a Python integer representing the number of
+     elements.
+
+.. class:: VectorType(element, count)
+
+   The class for vector types.
 
    * *element* is the type of every element.
    * *count* is a Python integer representing the number of

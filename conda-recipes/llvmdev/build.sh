@@ -4,6 +4,10 @@
 
 set -x
 
+# allow setting the targets to build as an environment variable
+# default is LLVM 11 default architectures + RISCV.  Can remove this entire option in LLVM 13
+LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AArch64;AMDGPU;ARM;BPF;Hexagon;Mips;MSP430;NVPTX;PowerPC;Sparc;SystemZ;X86;XCore;RISCV"}
+
 # This is the clang compiler prefix
 DARWIN_TARGET=x86_64-apple-darwin13.4.0
 
@@ -28,12 +32,13 @@ _cmake_config+=(-DHAVE_TERMIOS_H=OFF)
 _cmake_config+=(-DCLANG_ENABLE_LIBXML=OFF)
 _cmake_config+=(-DLIBOMP_INSTALL_ALIASES=OFF)
 _cmake_config+=(-DLLVM_ENABLE_RTTI=OFF)
-_cmake_config+=(-DLLVM_TARGETS_TO_BUILD=host)
+_cmake_config+=(-DLLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD})
+_cmake_config+=(-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly)
+_cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
 # TODO :: It would be nice if we had a cross-ecosystem 'BUILD_TIME_LIMITED' env var we could use to
 #         disable these unnecessary but useful things.
 if [[ ${CONDA_FORGE} == yes ]]; then
   _cmake_config+=(-DLLVM_INCLUDE_TESTS=OFF)
-  _cmake_config+=(-DLLVM_INCLUDE_UTILS=OFF)
   _cmake_config+=(-DLLVM_INCLUDE_DOCS=OFF)
   _cmake_config+=(-DLLVM_INCLUDE_EXAMPLES=OFF)
 fi
@@ -71,8 +76,23 @@ cmake -G'Unix Makefiles'     \
 
 ARCH=`uname -m`
 if [ $ARCH == 'armv7l' ]; then # RPi need thread count throttling
-    make -j1 VERBOSE=1
+    make -j2 VERBOSE=1
 else
     make -j${CPU_COUNT} VERBOSE=1
 fi
-make install
+
+# From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
+make install || exit $?
+
+# SVML tests on x86_64 arch only
+if [[ $ARCH == 'x86_64' ]]; then
+   bin/opt -S -vector-library=SVML -mcpu=haswell -O3 $RECIPE_DIR/numba-3016.ll | bin/FileCheck $RECIPE_DIR/numba-3016.ll || exit $?
+fi
+
+# run the tests, skip some on linux-32
+cd ../test
+if [[ $ARCH == 'i686' ]]; then
+    ../build/bin/llvm-lit -vv Transforms Analysis CodeGen/X86
+else
+    ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+fi

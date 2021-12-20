@@ -5,10 +5,8 @@ Execution engine
 .. currentmodule:: llvmlite.binding
 
 
-The execution engine is where actual code generation and
-execution happen. The currently supported LLVM
-version---LLVM 3.8---exposes a single execution engine, named
-MCJIT.
+The execution engine is where actual code generation and execution happen. At
+present a single execution engine, ``MCJIT``, is exposed.
 
 
 Functions
@@ -71,6 +69,15 @@ The ExecutionEngine class
         the modules owned by the execution engine. This allows
         releasing the resources owned by the module without
         destroying the execution engine.
+
+    * .. method:: add_object_file(object_file)
+
+        Add the symbols from the specified object file to the execution
+        engine.
+
+        * *object_file* str or :class:`ObjectFileRef`: a path to the object file
+            or a object file instance. Object file instance is not usable after this
+            call.
 
    * .. method:: set_object_cache(notify_func=None, getbuffer_func=None)
 

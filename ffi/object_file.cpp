@@ -18,7 +18,6 @@ namespace llvm {
       return reinterpret_cast<LLVMSectionIteratorRef>
         (const_cast<object::section_iterator*>(SI));
     }
-
 } // llvm
 
 extern "C" {
@@ -26,7 +25,7 @@ extern "C" {
 API_EXPORT(LLVMObjectFileRef)
 LLVMPY_CreateObjectFile(const char* buf, const size_t n)
 {
-  return LLVMCreateObjectFile(LLVMCreateMemoryBufferWithMemoryRange(buf, n, "", false));
+  return LLVMCreateObjectFile(LLVMCreateMemoryBufferWithMemoryRangeCopy(buf, n, ""));
 }
 
 API_EXPORT(void)
@@ -63,6 +62,12 @@ API_EXPORT(const char*)
 LLVMPY_GetSectionName(LLVMSectionIteratorRef SI)
 {
   return LLVMGetSectionName(SI);
+}
+
+API_EXPORT(uint64_t)
+LLVMPY_GetSectionAddress(LLVMSectionIteratorRef SI)
+{
+    return LLVMGetSectionAddress(SI);
 }
 
 API_EXPORT(const char*)

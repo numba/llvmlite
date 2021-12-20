@@ -1,1 +1,3 @@
 llvmlite/_version.py export-subst
+# All patch files must be checked out with UNIX line endings even on Windows.
+*.patch text eol=lf

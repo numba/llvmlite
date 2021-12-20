@@ -1,15 +1,42 @@
 #include "core.h"
 
 #include "llvm-c/ExecutionEngine.h"
+#include "llvm-c/Object.h"
+
 
 #include "llvm/IR/Module.h"
+#include "llvm/Object/ObjectFile.h"
+#include "llvm/Object/Binary.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/ExecutionEngine/ObjectCache.h"
 #include "llvm/Support/Memory.h"
 
 #include <cstdio>
+#include <memory>
 
+namespace llvm {
+
+    // wrap/unwrap for LLVMTargetMachineRef.
+    // Ripped from lib/Target/TargetMachineC.cpp.
+
+    inline TargetMachine *unwrap(LLVMTargetMachineRef P) {
+        return reinterpret_cast<TargetMachine*>(P);
+    }
+    inline LLVMTargetMachineRef wrap(const TargetMachine *P) {
+    return
+        reinterpret_cast<LLVMTargetMachineRef>(const_cast<TargetMachine*>(P));
+    }
+
+    // unwrap for LLVMObjectFileRef
+    // from Object/Object.cpp
+    namespace object {
+
+        inline OwningBinary<ObjectFile> *unwrap(LLVMObjectFileRef OF) {
+            return reinterpret_cast<OwningBinary<ObjectFile> *>(OF);
+        }
+    } // object
+} // llvm
 
 extern "C" {
 
@@ -45,26 +72,11 @@ LLVMPY_FinalizeObject(LLVMExecutionEngineRef EE)
     llvm::unwrap(EE)->finalizeObject();
 }
 
-
-// wrap/unwrap for LLVMTargetMachineRef.
-// Ripped from lib/Target/TargetMachineC.cpp.
-
-namespace llvm {
-    inline TargetMachine *unwrap(LLVMTargetMachineRef P) {
-      return reinterpret_cast<TargetMachine*>(P);
-    }
-    inline LLVMTargetMachineRef wrap(const TargetMachine *P) {
-      return
-        reinterpret_cast<LLVMTargetMachineRef>(const_cast<TargetMachine*>(P));
-    }
-}
-
-
 static
 LLVMExecutionEngineRef
 create_execution_engine(LLVMModuleRef M,
                         LLVMTargetMachineRef TM,
-                        char **OutError
+                        const char **OutError
                         )
 {
     LLVMExecutionEngineRef ee = nullptr;
@@ -79,7 +91,7 @@ create_execution_engine(LLVMModuleRef M,
 
 
     if (!engine)
-        *OutError = strdup(err.c_str());
+        *OutError = LLVMPY_CreateString(err.c_str());
     else
         ee = llvm::wrap(engine);
     return ee;
@@ -88,7 +100,7 @@ create_execution_engine(LLVMModuleRef M,
 API_EXPORT(LLVMExecutionEngineRef)
 LLVMPY_CreateMCJITCompiler(LLVMModuleRef M,
                            LLVMTargetMachineRef TM,
-                           char **OutError)
+                           const char **OutError)
 {
     return create_execution_engine(M, TM, OutError);
 }
@@ -171,6 +183,17 @@ LLVMPY_EnableJITEvents(LLVMExecutionEngineRef EE)
         result = true;
     }
     return result;
+}
+
+API_EXPORT(void)
+LLVMPY_MCJITAddObjectFile(LLVMExecutionEngineRef EE, LLVMObjectFileRef ObjF) {
+    using namespace llvm;
+    using namespace llvm::object;
+    auto engine = unwrap(EE);
+    auto object_file = unwrap(ObjF);
+    auto binary_tuple = object_file->takeBinary();
+
+    engine->addObjectFile({std::move(binary_tuple.first), std::move(binary_tuple.second)});
 }
 
 

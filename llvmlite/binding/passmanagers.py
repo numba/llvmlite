@@ -1,6 +1,84 @@
-from __future__ import print_function, absolute_import
-from ctypes import c_bool, c_int
-from . import ffi
+from ctypes import c_bool, c_int, c_size_t, Structure, byref
+from collections import namedtuple
+from enum import IntFlag
+from llvmlite.binding import ffi
+
+_prunestats = namedtuple('PruneStats',
+                         ('basicblock diamond fanout fanout_raise'))
+
+
+class PruneStats(_prunestats):
+    """ Holds statistics from reference count pruning.
+    """
+
+    def __add__(self, other):
+        if not isinstance(other, PruneStats):
+            msg = 'PruneStats can only be added to another PruneStats, got {}.'
+            raise TypeError(msg.format(type(other)))
+        return PruneStats(self.basicblock + other.basicblock,
+                          self.diamond + other.diamond,
+                          self.fanout + other.fanout,
+                          self.fanout_raise + other.fanout_raise)
+
+    def __sub__(self, other):
+        if not isinstance(other, PruneStats):
+            msg = ('PruneStats can only be subtracted from another PruneStats, '
+                   'got {}.')
+            raise TypeError(msg.format(type(other)))
+        return PruneStats(self.basicblock - other.basicblock,
+                          self.diamond - other.diamond,
+                          self.fanout - other.fanout,
+                          self.fanout_raise - other.fanout_raise)
+
+
+class _c_PruneStats(Structure):
+    _fields_ = [
+        ('basicblock', c_size_t),
+        ('diamond', c_size_t),
+        ('fanout', c_size_t),
+        ('fanout_raise', c_size_t)]
+
+
+def dump_refprune_stats(printout=False):
+    """ Returns a namedtuple containing the current values for the refop pruning
+    statistics. If kwarg `printout` is True the stats are printed to stderr,
+    default is False.
+    """
+
+    stats = _c_PruneStats(0, 0, 0, 0)
+    do_print = c_bool(printout)
+
+    ffi.lib.LLVMPY_DumpRefPruneStats(byref(stats), do_print)
+    return PruneStats(stats.basicblock, stats.diamond, stats.fanout,
+                      stats.fanout_raise)
+
+
+def set_time_passes(enable):
+    """Enable or disable the pass timers.
+
+    Parameters
+    ----------
+    enable : bool
+        Set to True to enable the pass timers.
+        Set to False to disable the pass timers.
+    """
+    ffi.lib.LLVMPY_SetTimePasses(c_bool(enable))
+
+
+def report_and_reset_timings():
+    """Returns the pass timings report and resets the LLVM internal timers.
+
+    Pass timers are enabled by ``set_time_passes()``. If the timers are not
+    enabled, this function will return an empty string.
+
+    Returns
+    -------
+    res : str
+        LLVM generated timing report.
+    """
+    with ffi.OutputString() as buf:
+        ffi.lib.LLVMPY_ReportAndResetTimings(buf)
+        return str(buf)
 
 
 def create_module_pass_manager():
@@ -11,6 +89,14 @@ def create_function_pass_manager(module):
     return FunctionPassManager(module)
 
 
+class RefPruneSubpasses(IntFlag):
+    PER_BB       = 0b0001    # noqa: E221
+    DIAMOND      = 0b0010    # noqa: E221
+    FANOUT       = 0b0100    # noqa: E221
+    FANOUT_RAISE = 0b1000
+    ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
+
+
 class PassManager(ffi.ObjectRef):
     """PassManager
     """
@@ -19,31 +105,31 @@ class PassManager(ffi.ObjectRef):
         self._capi.LLVMPY_DisposePassManager(self)
 
     def add_constant_merge_pass(self):
-        """See http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants."""
+        """See http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants."""  # noqa E501
         ffi.lib.LLVMPY_AddConstantMergePass(self)
 
     def add_dead_arg_elimination_pass(self):
-        """See http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination."""
+        """See http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination."""  # noqa E501
         ffi.lib.LLVMPY_AddDeadArgEliminationPass(self)
 
     def add_function_attrs_pass(self):
-        """See http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes."""
+        """See http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes."""  # noqa E501
         ffi.lib.LLVMPY_AddFunctionAttrsPass(self)
 
     def add_function_inlining_pass(self, threshold):
-        """See http://llvm.org/docs/Passes.html#inline-function-integration-inlining."""
+        """See http://llvm.org/docs/Passes.html#inline-function-integration-inlining."""  # noqa E501
         ffi.lib.LLVMPY_AddFunctionInliningPass(self, threshold)
 
     def add_global_dce_pass(self):
-        """See http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination."""
+        """See http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination."""  # noqa E501
         ffi.lib.LLVMPY_AddGlobalDCEPass(self)
 
     def add_global_optimizer_pass(self):
-        """See http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer."""
+        """See http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer."""  # noqa E501
         ffi.lib.LLVMPY_AddGlobalOptimizerPass(self)
 
     def add_ipsccp_pass(self):
-        """See http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation."""
+        """See http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation."""  # noqa E501
         ffi.lib.LLVMPY_AddIPSCCPPass(self)
 
     def add_dead_code_elimination_pass(self):
@@ -63,17 +149,17 @@ class PassManager(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddInstructionCombiningPass(self)
 
     def add_licm_pass(self):
-        """See http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion."""
+        """See http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion."""  # noqa E501
         ffi.lib.LLVMPY_AddLICMPass(self)
 
     def add_sccp_pass(self):
-        """See http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation."""
+        """See http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation."""  # noqa E501
         ffi.lib.LLVMPY_AddSCCPPass(self)
 
     def add_sroa_pass(self):
         """See http://llvm.org/docs/Passes.html#scalarrepl-scalar-replacement-of-aggregates-dt.
         Note that this pass corresponds to the ``opt -sroa`` command-line option,
-        despite the link above."""
+        despite the link above."""  # noqa E501
         ffi.lib.LLVMPY_AddSROAPass(self)
 
     def add_type_based_alias_analysis_pass(self):
@@ -82,6 +168,29 @@ class PassManager(ffi.ObjectRef):
     def add_basic_alias_analysis_pass(self):
         """See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass."""
         ffi.lib.LLVMPY_AddBasicAliasAnalysisPass(self)
+
+    def add_loop_rotate_pass(self):
+        """http://llvm.org/docs/Passes.html#loop-rotate-rotate-loops."""
+        ffi.lib.LLVMPY_LLVMAddLoopRotatePass(self)
+
+    # Non-standard LLVM passes
+
+    def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL,
+                          subgraph_limit=1000):
+        """Add Numba specific Reference count pruning pass.
+
+        Parameters
+        ----------
+        subpasses_flags : RefPruneSubpasses
+            A bitmask to control the subpasses to be enabled.
+        subgraph_limit : int
+            Limit the fanout pruners to working on a subgraph no bigger than
+            this number of basic-blocks to avoid spending too much time in very
+            large graphs. Default is 1000. Subject to change in future
+            versions.
+        """
+        iflags = RefPruneSubpasses(subpasses_flags)
+        ffi.lib.LLVMPY_AddRefPrunePass(self, iflags, subgraph_limit)
 
 
 class ModulePassManager(PassManager):
@@ -154,7 +263,8 @@ ffi.lib.LLVMPY_RunFunctionPassManager.restype = c_bool
 ffi.lib.LLVMPY_AddConstantMergePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadArgEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddFunctionAttrsPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddFunctionInliningPass.argtypes = [ffi.LLVMPassManagerRef, c_int]
+ffi.lib.LLVMPY_AddFunctionInliningPass.argtypes = [
+    ffi.LLVMPassManagerRef, c_int]
 ffi.lib.LLVMPY_AddGlobalDCEPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddGlobalOptimizerPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddIPSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -168,3 +278,6 @@ ffi.lib.LLVMPY_AddSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
+
+ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
+                                           c_size_t]

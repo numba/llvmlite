@@ -1,0 +1,45 @@
+parameters:
+  name: ''
+  vmImage: ''
+
+jobs:
+- job: ${{ parameters.name }}
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+  strategy:
+    maxParallel: 11
+    matrix:
+      py39:
+        PYTHON: '3.9'
+        CONDA_ENV: cienv
+      py310:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
+
+
+  steps:
+
+    - powershell: |
+        $wc = New-Object net.webclient
+        $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
+        Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
+      displayName: 'Install miniconda'
+
+    - script: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call conda list
+        call conda remove --all -q -y -n %CONDA_ENV%
+        call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
+        call activate %CONDA_ENV%
+        call conda install -y -q -c numba llvmdev="11.*"
+      displayName: 'Before Install'
+
+    - script: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call buildscripts\\incremental\\build.cmd
+      displayName: 'Build'
+
+    - script: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call buildscripts\\incremental\\test.cmd
+      displayName: 'Test'

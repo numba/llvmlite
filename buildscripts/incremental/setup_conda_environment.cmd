@@ -14,9 +14,11 @@ conda remove --all -q -y -n %CONDA_ENV%
 
 @rem Create and populate environment
 conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
+if %errorlevel% neq 0 exit /b %errorlevel%
 
 call activate %CONDA_ENV%
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 @rem Install llvmdev
-%CONDA_INSTALL% -c numba llvmdev="6.0*"
-@rem Install enum34 for Python < 3.4
-if %PYTHON% LSS 3.4 (%CONDA_INSTALL% enum34)
+%CONDA_INSTALL% -c numba llvmdev="11.*"
+if %errorlevel% neq 0 exit /b %errorlevel%
