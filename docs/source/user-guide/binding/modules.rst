@@ -126,6 +126,11 @@ The ModuleRef class
         The module's identifier, as a string. This attribute can
         be set.
 
+   * .. attribute:: source_file
+
+        The module's reported source file, as a string. This
+        attribute can not be set.
+	
    * .. attribute:: triple
 
         The platform "triple" string for this module. This
