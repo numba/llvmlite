@@ -565,7 +565,7 @@ class TestModuleRef(BaseTest):
 
     def test_source_file(self):
         mod = self.module()
-        self.assertEqual(mod.source_file, b"asm_sum.c")
+        self.assertEqual(mod.source_file, "asm_sum.c")
         
     def test_data_layout(self):
         mod = self.module()

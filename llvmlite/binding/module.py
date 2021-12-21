@@ -130,7 +130,7 @@ class ModuleRef(ffi.ObjectRef):
         """
         The module's original source file name
         """
-        return ffi.lib.LLVMPY_GetModuleSourceFileName(self)
+        return _decode_string(ffi.lib.LLVMPY_GetModuleSourceFileName(self))
 
     @property
     def data_layout(self):
