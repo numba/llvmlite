@@ -12,6 +12,9 @@ jobs:
       py39:
         PYTHON: '3.9'
         CONDA_ENV: cienv
+      py310:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
 
 
   steps:
