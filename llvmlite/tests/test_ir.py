@@ -425,8 +425,15 @@ class TestIR(TestBase):
 
         # The remaining debug info is not part of the automated test, but
         # can be used to produce an object file that can be loaded into a
-        # debugger to print the value og gvar, e.g.,
-        #    printf "file test_debug_info_gvar.o \n p gvar" | gdb
+        # debugger to print the value of gvar. This can be done by printing the
+        # module then compiling it with clang and inspecting with gdb:
+        #
+        #     clang test_debug_info_gvar.ll -c
+        #     printf "file test_debug_info_gvar.o \n p gvar" | gdb
+        #
+        # Which should result in the output:
+        #
+        #     (gdb) $1 = 42
 
         dver = [ir.IntType(32)(2), 'Dwarf Version', ir.IntType(32)(4)]
         diver = [ir.IntType(32)(2), 'Debug Info Version', ir.IntType(32)(3)]
