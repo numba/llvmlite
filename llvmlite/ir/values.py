@@ -921,7 +921,7 @@ class FunctionAttributes(AttributeSet):
         return ' '.join(attrs)
 
 
-class Function(GlobalValue, _HasMetadata):
+class Function(GlobalValue):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
