@@ -397,6 +397,11 @@ Global values are values accessible using a module-wide name.
 
    Global variables have the following writable attributes:
 
+   * .. method:: set_metadata(name, node)
+
+        Add metadata with the given *name*, pointing to the given
+        metadata *node*---an instance of :class:`MDValue`.
+
    * .. attribute:: global_constant
 
         * If ``True``, the variable is declared a constant,
