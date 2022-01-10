@@ -37,6 +37,7 @@ def no_de_locale():
 
 asm_sum = r"""
     ; ModuleID = '<string>'
+    source_filename = "asm_sum.c"
     target triple = "{triple}"
     %struct.glob_type = type {{ i64, [2 x i64]}}
 
@@ -561,6 +562,10 @@ class TestModuleRef(BaseTest):
         self.assertEqual(mod.name, "foo")
         mod.name = "bar"
         self.assertEqual(mod.name, "bar")
+
+    def test_source_file(self):
+        mod = self.module()
+        self.assertEqual(mod.source_file, "asm_sum.c")
 
     def test_data_layout(self):
         mod = self.module()
