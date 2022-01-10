@@ -150,7 +150,8 @@ class LlvmliteClean(clean):
                 remove_tree(path, dry_run=self.dry_run)
             else:
                 for fname in files:
-                    if fname.endswith('.pyc') or fname.endswith('.so'):
+                    if (fname.endswith('.pyc') or fname.endswith('.so')
+                            or fname.endswith('.o')):
                         fpath = os.path.join(path, fname)
                         os.remove(fpath)
                         log.info("removing '%s'", fpath)
