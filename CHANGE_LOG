@@ -1,5 +1,5 @@
-v0.38.0 (November 25, 2021)
----------------------------
+v0.38.0 (January 13, 2022)
+--------------------------
 
 This release makes llvmlite compatible with Python 3.10. It also adds an
 ``abiname`` option to the target machine creation interface that mimics the same
