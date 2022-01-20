@@ -60,13 +60,6 @@ if os.environ.get('READTHEDOCS', None) == 'True':
 
 import versioneer
 
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'llvmlite/_version.py'
-versioneer.versionfile_build = 'llvmlite/_version.py'
-versioneer.tag_prefix = 'v' # tags are like v1.2.0
-versioneer.parentdir_prefix = 'llvmlite-' # dirname like 'myproject-1.2.0'
-
-
 here_dir = os.path.dirname(os.path.abspath(__file__))
 
 cmdclass = versioneer.get_cmdclass()
