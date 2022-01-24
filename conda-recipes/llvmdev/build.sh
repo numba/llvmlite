@@ -9,7 +9,11 @@ set -x
 LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AArch64;AMDGPU;ARM;BPF;Hexagon;Mips;MSP430;NVPTX;PowerPC;Sparc;SystemZ;X86;XCore;RISCV"}
 
 # This is the clang compiler prefix
-DARWIN_TARGET=x86_64-apple-darwin13.4.0
+if [[ $build_platform == osx-arm64 ]]; then
+    DARWIN_TARGET=arm64-apple-darwin20.0.0
+else
+    DARWIN_TARGET=x86_64-apple-darwin13.4.0
+fi
 
 
 declare -a _cmake_config
