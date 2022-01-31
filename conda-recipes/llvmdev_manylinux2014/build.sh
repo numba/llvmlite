@@ -81,5 +81,10 @@ fi
 # From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
 make install || exit $?
 
+# run the tests, skip some on linux-32
 cd ../test
-../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+if [[ $ARCH == 'i686' ]]; then
+    ../build/bin/llvm-lit -vv Transforms Analysis CodeGen/X86
+else
+    ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+fi
