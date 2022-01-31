@@ -22,7 +22,7 @@ Before submitting a bug report please ensure that you can check off these boxes:
 -->
 
 - [ ] I have tried using the latest released version of llvmlite (most recent is
- visible in the change log (https://github.com/numba/llvmlite/blob/master/CHANGE_LOG).
+ visible in the change log (https://github.com/numba/llvmlite/blob/main/CHANGE_LOG).
 - [ ] I have included a self contained code sample to reproduce the problem.
   i.e. it's possible to run as 'python bug.py'.
 
