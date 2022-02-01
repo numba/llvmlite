@@ -223,6 +223,5 @@ setup(name='llvmlite',
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,
-      python_requires=">={},<{}".format(min_python_version,
-                                        max_python_version),
+      python_requires=">={}".format(min_python_version),
       )
