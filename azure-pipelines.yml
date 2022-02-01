@@ -1,3 +1,6 @@
+trigger:
+- main
+
 jobs:
 # Mac and Linux use the same template with different matrixes
 - template: buildscripts/azure/azure-linux-macos.yml
