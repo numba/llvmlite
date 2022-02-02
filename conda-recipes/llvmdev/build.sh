@@ -69,7 +69,7 @@ fi
 # _cmake_config+=(-Wdev)
 # _cmake_config+=(--debug-output)
 # _cmake_config+=(--trace-expand)
-# CPU_COUNT=1
+ CPU_COUNT=1
 
 mkdir build
 cd build
