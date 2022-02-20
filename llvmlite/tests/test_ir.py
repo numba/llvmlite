@@ -166,6 +166,15 @@ class TestFunction(TestBase):
         # Check pickling
         self.assert_pickle_correctly(func)
 
+    def test_function_section(self):
+        # Output section
+        func = self.function()
+        func.section = "a_section"
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         "declare %s section \"a_section\"" %
+                         self.proto)
+
     def test_define(self):
         # A simple definition
         func = self.function()
@@ -558,6 +567,15 @@ class TestGlobalValues(TestBase):
         g.linkage = "internal"
         g.initializer = int32(123)
         g.align = 16
+        h = ir.GlobalVariable(mod, int32, 'h')
+        h.linkage = "internal"
+        h.initializer = int32(123)
+        h.section = "h_section"
+        i = ir.GlobalVariable(mod, int32, 'i')
+        i.linkage = "internal"
+        i.initializer = int32(456)
+        i.align = 8
+        i.section = "i_section"
         self.check_module_body(mod, """\
             @"a" = external global i8
             @"b" = external addrspace(42) global i8
@@ -566,6 +584,8 @@ class TestGlobalValues(TestBase):
             @"e" = internal global i32 undef
             @"f" = external unnamed_addr addrspace(456) global i32
             @"g" = internal global i32 123, align 16
+            @"h" = internal global i32 123, section "h_section"
+            @"i" = internal global i32 456, section "i_section", align 8
             """)
 
     def test_pickle(self):
