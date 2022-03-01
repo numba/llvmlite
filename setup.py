@@ -219,6 +219,9 @@ setup(name='llvmlite',
       ],
       # Include the separately-compiled shared library
       url="http://llvmlite.readthedocs.io",
+      project_urls={
+          "Source": "https://github.com/numba/llvmlite",
+      },
       packages=packages,
       license="BSD",
       cmdclass=cmdclass,
