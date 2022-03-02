@@ -210,7 +210,7 @@ class TestFunction(TestBase):
         func.section = "a_section"
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         ("declare %s optsize section \"a_section\"" % self.proto))
+                         ("declare %s optsize section \"a_section\"" % self.proto))  # noqa E501
         # Check pickling
         self.assert_pickle_correctly(func)
 
