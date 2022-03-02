@@ -159,7 +159,7 @@ asm_nonalphanum_blocklabel = """; ModuleID = ""
 target triple = "unknown-unknown-unknown"
 target datalayout = ""
 
-define i32 @"foo"() 
+define i32 @"foo"()
 {
 "<>!*''#":
   ret i32 12345
