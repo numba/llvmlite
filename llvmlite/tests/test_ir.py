@@ -174,6 +174,59 @@ class TestFunction(TestBase):
         self.assertEqual(asm,
                          "declare %s section \"a_section\"" %
                          self.proto)
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_section_meta(self):
+        # Now with function metadata
+        module = self.module()
+        func = self.function(module)
+        func.section = "a_section"
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") section "a_section" !dbg !0"""  # noqa E501
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_meta(self):
+        # Now with function metadata
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add("alwaysinline")
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") alwaysinline !dbg !0"""  # noqa E501
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_section(self):
+        # Now with function attributes
+        func = self.function()
+        func.attributes.add("optsize")
+        func.section = "a_section"
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         ("declare %s optsize section \"a_section\"" % self.proto))
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_section_meta(self):
+        # Now with function metadata
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add("alwaysinline")
+        func.section = "a_section"
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") alwaysinline section "a_section" !dbg !0"""  # noqa E501
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
 
     def test_define(self):
         # A simple definition
