@@ -161,7 +161,7 @@ class TestFunction(TestBase):
         func.set_metadata('dbg', module.add_metadata([]))
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") !dbg !0"""  # noqa E501
+                         f'declare {self.proto} !dbg !0'
                          )
         # Check pickling
         self.assert_pickle_correctly(func)
@@ -172,8 +172,8 @@ class TestFunction(TestBase):
         func.section = "a_section"
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         "declare %s section \"a_section\"" %
-                         self.proto)
+                         f'declare {self.proto} section "a_section"'
+                         )
         # Check pickling
         self.assert_pickle_correctly(func)
 
@@ -185,7 +185,7 @@ class TestFunction(TestBase):
         func.set_metadata('dbg', module.add_metadata([]))
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") section "a_section" !dbg !0"""  # noqa E501
+                         f'declare {self.proto} section "a_section" !dbg !0'
                          )
         # Check pickling
         self.assert_pickle_correctly(func)
@@ -198,7 +198,7 @@ class TestFunction(TestBase):
         func.set_metadata('dbg', module.add_metadata([]))
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") alwaysinline !dbg !0"""  # noqa E501
+                         f'declare {self.proto} alwaysinline !dbg !0'
                          )
         # Check pickling
         self.assert_pickle_correctly(func)
@@ -210,7 +210,7 @@ class TestFunction(TestBase):
         func.section = "a_section"
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         ("declare %s optsize section \"a_section\"" % self.proto))  # noqa E501
+                         f'declare {self.proto} optsize section "a_section"')
         # Check pickling
         self.assert_pickle_correctly(func)
 
@@ -223,7 +223,7 @@ class TestFunction(TestBase):
         func.set_metadata('dbg', module.add_metadata([]))
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") alwaysinline section "a_section" !dbg !0"""  # noqa E501
+                         f'declare {self.proto} alwaysinline section "a_section" !dbg !0'  # noqa E501
                          )
         # Check pickling
         self.assert_pickle_correctly(func)
