@@ -167,7 +167,7 @@ class TestFunction(TestBase):
         self.assert_pickle_correctly(func)
 
     def test_function_section(self):
-        # Output section
+        # Test function with section
         func = self.function()
         func.section = "a_section"
         asm = self.descr(func).strip()
@@ -178,7 +178,7 @@ class TestFunction(TestBase):
         self.assert_pickle_correctly(func)
 
     def test_function_section_meta(self):
-        # Now with function metadata
+        # Test function with section and metadata
         module = self.module()
         func = self.function(module)
         func.section = "a_section"
@@ -191,7 +191,7 @@ class TestFunction(TestBase):
         self.assert_pickle_correctly(func)
 
     def test_function_attr_meta(self):
-        # Now with function metadata
+        # Test function with attributes and metadata
         module = self.module()
         func = self.function(module)
         func.attributes.add("alwaysinline")
@@ -204,7 +204,7 @@ class TestFunction(TestBase):
         self.assert_pickle_correctly(func)
 
     def test_function_attr_section(self):
-        # Now with function attributes
+        # Test function with attributes and section
         func = self.function()
         func.attributes.add("optsize")
         func.section = "a_section"
@@ -215,7 +215,7 @@ class TestFunction(TestBase):
         self.assert_pickle_correctly(func)
 
     def test_function_attr_section_meta(self):
-        # Now with function metadata
+        # Test function with attributes, section and metadata
         module = self.module()
         func = self.function(module)
         func.attributes.add("alwaysinline")
