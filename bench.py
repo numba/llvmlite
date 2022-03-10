@@ -100,7 +100,7 @@ def run_bench(verbose):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: %s (llvmlite|llvmpy)"
+        print("Usage: %s llvmlite"
               % (sys.executable,), file=sys.stderr)
         sys.exit(1)
     impl = sys.argv[1]
@@ -108,17 +108,12 @@ if __name__ == "__main__":
     if impl == 'llvmlite':
         import llvmlite.binding as llvm
         import llvmlite.llvmpy.core as lc
-        from llvmlite.llvmpy import ee
 
         llvm.initialize()
         llvm.initialize_native_target()
         llvm.initialize_native_asmprinter()
 
         del llvm
-
-    elif impl == 'llvmpy':
-        import llvm.core as lc
-        from llvm import ee
 
     else:
         raise RuntimeError("Wrong implementation %r" % (impl,))

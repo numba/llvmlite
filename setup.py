@@ -192,7 +192,6 @@ ext_stub = Extension(name="llvmlite.binding._stub",
 packages = ['llvmlite',
             'llvmlite.binding',
             'llvmlite.ir',
-            'llvmlite.llvmpy',
             'llvmlite.tests',
             ]
 
