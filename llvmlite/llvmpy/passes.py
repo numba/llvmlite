@@ -12,6 +12,12 @@ llvm.set_option("test", "-help-hidden")
 
 from llvmlite import binding as llvm
 from collections import namedtuple
+import warnings
+
+warnings.warn(
+    "The module `llvmlite.llvmpy.passes` is deprecated and will be removed in "
+    "the future. If you are using this code, it should be inlined into your "
+    "own project.")
 
 
 def _inlining_threshold(optlevel, sizelevel=0):
