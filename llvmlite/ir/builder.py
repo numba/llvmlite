@@ -555,7 +555,7 @@ class IRBuilder(object):
         return self.sub(values.Constant(value.type, 0), value, name=name)
 
     @_unop('fneg')
-    def fneg(self, arg, name=''):
+    def fneg(self, arg, name='', flags=()):
         """
         Floating-point negative:
             name = -arg
@@ -594,7 +594,7 @@ class IRBuilder(object):
         """
         return self._icmp('u', cmpop, lhs, rhs, name)
 
-    def fcmp_ordered(self, cmpop, lhs, rhs, name='', flags=[]):
+    def fcmp_ordered(self, cmpop, lhs, rhs, name='', flags=()):
         """
         Floating-point ordered comparison:
             name = lhs <cmpop> rhs
@@ -610,7 +610,7 @@ class IRBuilder(object):
         self._insert(instr)
         return instr
 
-    def fcmp_unordered(self, cmpop, lhs, rhs, name='', flags=[]):
+    def fcmp_unordered(self, cmpop, lhs, rhs, name='', flags=()):
         """
         Floating-point unordered comparison:
             name = lhs <cmpop> rhs
@@ -626,7 +626,7 @@ class IRBuilder(object):
         self._insert(instr)
         return instr
 
-    def select(self, cond, lhs, rhs, name='', flags=[]):
+    def select(self, cond, lhs, rhs, name='', flags=()):
         """
         Ternary select operator:
             name = cond ? lhs : rhs
