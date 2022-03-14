@@ -782,6 +782,7 @@ class GlobalValue(NamedValue, _ConstOpMixin, _HasMetadata):
         super(GlobalValue, self).__init__(*args, **kwargs)
         self.linkage = ''
         self.storage_class = ''
+        self.section = ''
         self.metadata = {}
 
 
@@ -834,6 +835,9 @@ class GlobalVariable(GlobalValue):
         elif linkage not in ('external', 'extern_weak'):
             # emit 'undef' for non-external linkage GV
             buf.append(" " + self.value_type(Undefined).get_reference())
+
+        if self.section:
+            buf.append(", section \"%s\"" % (self.section,))
 
         if self.align is not None:
             buf.append(", align %d" % (self.align,))
@@ -972,6 +976,7 @@ class Function(GlobalValue):
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
         attrs = self.attributes
+        attrs = ' {}'.format(attrs) if attrs else ''
         if any(self.args):
             vararg = ', ...' if self.ftype.var_arg else ''
         else:
@@ -980,9 +985,11 @@ class Function(GlobalValue):
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
         metadata = self._stringify_metadata()
-        pt_str = "{prefix} {name}({args}{vararg}) {attrs}{metadata}\n"
+        metadata = ' {}'.format(metadata) if metadata else ''
+        section = ' section "{}"'.format(self.section) if self.section else ''
+        pt_str = "{prefix} {name}({args}{vararg}){attrs}{section}{metadata}\n"
         prototype = pt_str.format(prefix=prefix, name=name, args=args,
-                                  vararg=vararg, attrs=attrs,
+                                  vararg=vararg, attrs=attrs, section=section,
                                   metadata=metadata)
         buf.append(prototype)
 

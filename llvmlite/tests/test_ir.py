@@ -161,7 +161,69 @@ class TestFunction(TestBase):
         func.set_metadata('dbg', module.add_metadata([]))
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") !dbg !0"""  # noqa E501
+                         f'declare {self.proto} !dbg !0'
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_section(self):
+        # Test function with section
+        func = self.function()
+        func.section = "a_section"
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} section "a_section"'
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_section_meta(self):
+        # Test function with section and metadata
+        module = self.module()
+        func = self.function(module)
+        func.section = "a_section"
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} section "a_section" !dbg !0'
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_meta(self):
+        # Test function with attributes and metadata
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add("alwaysinline")
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} alwaysinline !dbg !0'
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_section(self):
+        # Test function with attributes and section
+        func = self.function()
+        func.attributes.add("optsize")
+        func.section = "a_section"
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} optsize section "a_section"')
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_section_meta(self):
+        # Test function with attributes, section and metadata
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add("alwaysinline")
+        func.section = "a_section"
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} alwaysinline section "a_section" !dbg !0'  # noqa E501
                          )
         # Check pickling
         self.assert_pickle_correctly(func)
@@ -558,6 +620,15 @@ class TestGlobalValues(TestBase):
         g.linkage = "internal"
         g.initializer = int32(123)
         g.align = 16
+        h = ir.GlobalVariable(mod, int32, 'h')
+        h.linkage = "internal"
+        h.initializer = int32(123)
+        h.section = "h_section"
+        i = ir.GlobalVariable(mod, int32, 'i')
+        i.linkage = "internal"
+        i.initializer = int32(456)
+        i.align = 8
+        i.section = "i_section"
         self.check_module_body(mod, """\
             @"a" = external global i8
             @"b" = external addrspace(42) global i8
@@ -566,6 +637,8 @@ class TestGlobalValues(TestBase):
             @"e" = internal global i32 undef
             @"f" = external unnamed_addr addrspace(456) global i32
             @"g" = internal global i32 123, align 16
+            @"h" = internal global i32 123, section "h_section"
+            @"i" = internal global i32 456, section "i_section", align 8
             """)
 
     def test_pickle(self):
