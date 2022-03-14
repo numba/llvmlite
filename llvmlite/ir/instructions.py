@@ -289,10 +289,11 @@ class Resume(Terminator):
 
 
 class SelectInstr(Instruction):
-    def __init__(self, parent, cond, lhs, rhs, name=''):
+    def __init__(self, parent, cond, lhs, rhs, name='', flags=()):
         assert lhs.type == rhs.type
         super(SelectInstr, self).__init__(parent, lhs.type, "select",
-                                          [cond, lhs, rhs], name=name)
+                                          [cond, lhs, rhs], name=name,
+                                          flags=flags)
 
     @property
     def cond(self):
@@ -307,7 +308,8 @@ class SelectInstr(Instruction):
         return self.operands[2]
 
     def descr(self, buf):
-        buf.append("select {0} {1}, {2} {3}, {4} {5} {6}\n".format(
+        buf.append("select {0} {1} {2}, {3} {4}, {5} {6} {7}\n".format(
+            ' '.join(self.flags),
             self.cond.type, self.cond.get_reference(),
             self.lhs.type, self.lhs.get_reference(),
             self.rhs.type, self.rhs.get_reference(),
@@ -541,15 +543,17 @@ class GEPInstr(Instruction):
 
 
 class PhiInstr(Instruction):
-    def __init__(self, parent, typ, name):
-        super(PhiInstr, self).__init__(parent, typ, "phi", (), name=name)
+    def __init__(self, parent, typ, name, flags=()):
+        super(PhiInstr, self).__init__(parent, typ, "phi", (), name=name,
+                                       flags=flags)
         self.incomings = []
 
     def descr(self, buf):
         incs = ', '.join('[{0}, {1}]'.format(v.get_reference(),
                                              b.get_reference())
                          for v, b in self.incomings)
-        buf.append("phi {0} {1} {2}\n".format(
+        buf.append("phi {0} {1} {2} {3}\n".format(
+                   ' '.join(self.flags),
                    self.type,
                    incs,
                    self._stringify_metadata(leading_comma=True),
