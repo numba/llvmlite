@@ -25,10 +25,10 @@ fi
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     if [[ $build_platform == osx-arm64 ]]; then
-	export MACOSX_DEPLOYMENT_TARGET=11.0
+        export MACOSX_DEPLOYMENT_TARGET=11.0
     else
-	# OSX needs 10.7 or above with libc++ enabled
-	export MACOSX_DEPLOYMENT_TARGET=10.10
+        # OSX needs 10.7 or above with libc++ enabled
+        export MACOSX_DEPLOYMENT_TARGET=10.10
     fi
 fi
 
