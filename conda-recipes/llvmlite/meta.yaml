@@ -31,7 +31,7 @@ requirements:
     - python
     # On channel https://anaconda.org/numba/
     - llvmdev 11.1.0 *5 # [(osx and arm64)]
-    - llvmdev 11.1.0 *4 # [not (osx and arm64) and not win]
+    - llvmdev 11.1.0 *4 # [not ((osx and arm64) or win)]
     - llvmdev 11.1.0 4 # [win]
     - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
