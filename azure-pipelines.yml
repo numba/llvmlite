@@ -68,3 +68,13 @@ jobs:
   parameters:
     name: Windows
     vmImage: windows-2019
+
+- job: check_formatting
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - script: |
+      set -e
+      sudo apt install -y clang-format
+      clang-format -n -Werror ffi/*.cpp ffi/*.h
+    displayName: Check C++ formatting
