@@ -159,7 +159,7 @@ for lib_context in (
         contextlib.nullcontext(None)):
     try:
         with lib_context as lib_path:
-            lib = ctypes.CDLL(lib_path)
+            lib = ctypes.CDLL(lib_path and str(lib_path))
             # Check that we can look up expected symbols.
             version_info = lib.LLVMPY_GetVersionInfo()
             break
