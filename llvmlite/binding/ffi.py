@@ -166,7 +166,8 @@ for lib_context in (
     except (OSError, AttributeError) as e:
         _lib_load_errors.append(e)
 else:
-    raise OSError("Could not find/load shared object file") from _lib_load_errors[0]
+    raise OSError(
+        "Could not find/load shared object file") from _lib_load_errors[0]
 
 
 lib = _lib_wrapper(lib)
