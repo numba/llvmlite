@@ -1,3 +1,4 @@
+import contextlib
 import ctypes
 import threading
 import importlib.resources
@@ -151,20 +152,21 @@ class _lib_fn_wrapper(object):
             return self._cfn(*args, **kwargs)
 
 
-_lib_name = get_library_name()
-
-
-pkgname = ".".join(__name__.split(".")[0:-1])
-try:
-    _lib_handle = importlib.resources.path(pkgname, _lib_name)
-    lib = ctypes.CDLL(str(_lib_handle.__enter__()))
-    # on windows file handles to the dll file remain open after
-    # loading, therefore we can not exit the context manager
-    # which might delete the file
-except OSError as e:
-    msg = f"""Could not find/load shared object file: {_lib_name}
- Error was: {e}"""
-    raise OSError(msg)
+_lib_load_errors = []
+for lib_context in (
+        importlib.resources.path(
+            __name__.rpartition(".")[0], get_library_name()),
+        contextlib.nullcontext(None)):
+    try:
+        with lib_context as lib_path:
+            lib = ctypes.CDLL(lib_path)
+            # Check that we can look up expected symbols.
+            version_info = lib.LLVMPY_GetVersionInfo()
+            break
+    except (OSError, AttributeError) as e:
+        _lib_load_errors.append(e)
+else:
+    raise OSError("Could not find/load shared object file") from _lib_load_errors[0]
 
 
 lib = _lib_wrapper(lib)
