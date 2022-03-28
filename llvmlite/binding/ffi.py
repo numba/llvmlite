@@ -153,6 +153,12 @@ class _lib_fn_wrapper(object):
 
 
 _lib_load_errors = []
+# llvmlite native code may exist in one of two places, with the first taking
+# priority:
+# 1) In a shared library available as a resource of the llvmlite package.
+#    This may involve unpacking the shared library from an archive.
+# 2) Linked directly into the main binary. Symbols may be resolved from the
+#    main binary by passing None as the argument to ctypes.CDLL.
 for lib_context in (
         importlib.resources.path(
             __name__.rpartition(".")[0], get_library_name()),
@@ -164,8 +170,14 @@ for lib_context in (
             version_info = lib.LLVMPY_GetVersionInfo()
             break
     except (OSError, AttributeError) as e:
+        # OSError may be raised if the file cannot be opened, or is not
+        # a shared library.
+        # AttributeError is raised if LLVMPY_GetVersionInfo does not exist.
         _lib_load_errors.append(e)
 else:
+    # None of the expected locations contains a loadable version of llvmlite.
+    # raise OSError with the first error seen during the load event as the
+    # cause of this exception.
     raise OSError(
         "Could not find/load shared object file") from _lib_load_errors[0]
 
