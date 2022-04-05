@@ -1,8 +1,9 @@
-{% set shortversion = "11.1" %}
-{% set version = "11.1.0" %}
-{% set sha256_llvm = "ce8508e318a01a63d4e8b3090ab2ded3c598a50258cc49e2625b9120d4c03ea5" %}
-{% set sha256_lld = "017a788cbe1ecc4a949abf10755870519086d058a2e99f438829aef24f0c66ce" %}
-{% set build_number = "5" %}
+{% set shortversion = "14.0" %}
+{% set version = "14.0.6" %}
+{% set sha256_llvm = "050922ecaaca5781fdf6631ea92bc715183f202f9d2f15147226f023414f619a" %}
+{% set sha256_lld = "0c28ce0496934d37d20fec96591032dd66af8d10178a45762e0e75e85cf95ad3" %}
+{% set sha256_libunwind = "3bbe9c23c73259fe39c045dc87d0b283236ba6e00750a226b2c2aeac4a51d86b" %}
+{% set build_number = "0" %}
 
 package:
   name: llvmdev
@@ -13,20 +14,16 @@ source:
     fn: llvm-{{ version }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
-    - ../partial-testing.patch
-    # Intel SVML optimizations (two patches)
-    - ../intel-D47188-svml-VF.patch
-    # Second patch from https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
-    - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
-    # Reverts a patch limiting non-GlobalValue name length
-    - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
-    # Fixes for aarch64 on LLVM 11 from https://reviews.llvm.org/D104123
-    - ../llvm_11_consecutive_registers.patch
-
+    - ../llvm14-remove-use-of-clonefile.patch
+    - ../llvm14-svml.patch
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
     sha256: {{ sha256_lld }}
-    folder: tools/lld
+
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/libunwind-{{ version }}.src.tar.xz
+    fn: libunwind-{{ version }}.src.tar.xz
+    sha256: {{ sha256_libunwind }}
+    folder: unwind
 
 build:
   number: {{ build_number }}
@@ -81,5 +78,5 @@ about:
   home: http://llvm.org/
   dev_url: https://github.com/llvm-mirror/llvm
   license: NCSA
-  license_file: LICENSE.TXT
+  license_file: llvm/LICENSE.TXT
   summary: Development headers and libraries for LLVM
