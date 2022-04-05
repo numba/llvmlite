@@ -163,9 +163,10 @@ def main_posix(kind, library_ext):
         print(msg)
         print(warning + '\n')
     else:
-
-        if not out.startswith('11'):
-            msg = ("Building llvmlite requires LLVM 11.x.x, got "
+        (version, _) = out.split('.', 1)
+        version = int(version)
+        if version < 11 or version > 14:
+            msg = ("Building llvmlite requires LLVM 11, 12, 13, or 14, got "
                    "{!r}. Be sure to set LLVM_CONFIG to the right executable "
                    "path.\nRead the documentation at "
                    "http://llvmlite.pydata.org/ for more information about "

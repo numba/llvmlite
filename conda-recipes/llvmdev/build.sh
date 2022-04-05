@@ -15,10 +15,14 @@ else
     DARWIN_TARGET=x86_64-apple-darwin13.4.0
 fi
 
+mv llvm-*.src llvm
+mv lld-*.src lld
+mv unwind/libunwind-*.src libunwind
 
 declare -a _cmake_config
 _cmake_config+=(-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX})
 _cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
+_cmake_config+=(-DLLVM_ENABLE_PROJECTS:STRING="lld")
 # The bootstrap clang I use was built with a static libLLVMObject.a and I trying to get the same here
 # _cmake_config+=(-DBUILD_SHARED_LIBS:BOOL=ON)
 _cmake_config+=(-DLLVM_ENABLE_ASSERTIONS:BOOL=ON)
@@ -27,6 +31,7 @@ _cmake_config+=(-DLINK_POLLY_INTO_TOOLS:BOOL=ON)
 _cmake_config+=(-DLLVM_ENABLE_LIBXML2:BOOL=OFF)
 # Urgh, llvm *really* wants to link to ncurses / terminfo and we *really* do not want it to.
 _cmake_config+=(-DHAVE_TERMINFO_CURSES=OFF)
+_cmake_config+=(-DLLVM_ENABLE_TERMINFO=OFF)
 # Sometimes these are reported as unused. Whatever.
 _cmake_config+=(-DHAVE_TERMINFO_NCURSES=OFF)
 _cmake_config+=(-DHAVE_TERMINFO_NCURSESW=OFF)
@@ -39,10 +44,10 @@ _cmake_config+=(-DLLVM_ENABLE_RTTI=OFF)
 _cmake_config+=(-DLLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD})
 _cmake_config+=(-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly)
 _cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
+_cmake_config+=(-DLLVM_INCLUDE_BENCHMARKS:BOOL=OFF) # doesn't build without the rest of LLVM project
 # TODO :: It would be nice if we had a cross-ecosystem 'BUILD_TIME_LIMITED' env var we could use to
 #         disable these unnecessary but useful things.
 if [[ ${CONDA_FORGE} == yes ]]; then
-  _cmake_config+=(-DLLVM_INCLUDE_TESTS=OFF)
   _cmake_config+=(-DLLVM_INCLUDE_DOCS=OFF)
   _cmake_config+=(-DLLVM_INCLUDE_EXAMPLES=OFF)
 fi
@@ -76,7 +81,7 @@ cd build
 
 cmake -G'Unix Makefiles'     \
       "${_cmake_config[@]}"  \
-      ..
+      ../llvm
 
 ARCH=`uname -m`
 if [ $ARCH == 'armv7l' ]; then # RPi need thread count throttling
@@ -85,18 +90,7 @@ else
     make -j${CPU_COUNT} VERBOSE=1
 fi
 
+make check-llvm-unit || exit $?
+
 # From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
 make install || exit $?
-
-# SVML tests on x86_64 arch only
-if [[ $ARCH == 'x86_64' ]]; then
-   bin/opt -S -vector-library=SVML -mcpu=haswell -O3 $RECIPE_DIR/numba-3016.ll | bin/FileCheck $RECIPE_DIR/numba-3016.ll || exit $?
-fi
-
-# run the tests, skip some on linux-32
-cd ../test
-if [[ $ARCH == 'i686' ]]; then
-    ../build/bin/llvm-lit -vv Transforms Analysis CodeGen/X86
-else
-    ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
-fi

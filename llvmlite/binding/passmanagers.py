@@ -199,7 +199,8 @@ class PassManager(ffi.ObjectRef):
         """
         See https://llvm.org/docs/Passes.html#lint-statically-lint-checks-llvm-ir
 
-        LLVM 11+: `llvm::createLintPass`
+        LLVM 11: `llvm::createLintPass`
+        LLVM 12+: `llvm::createLintLegacyPassPass`
         """  # noqa E501
         ffi.lib.LLVMPY_AddLintPass(self)
 

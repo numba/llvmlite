@@ -1,0 +1,49 @@
+diff -ur a/lib/IR/Value.cpp b/lib/IR/Value.cpp
+--- a/lib/IR/Value.cpp	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/IR/Value.cpp	2022-03-31 15:39:31.000000000 -0400
+@@ -38,10 +38,6 @@
+ 
+ using namespace llvm;
+ 
+-static cl::opt<unsigned> NonGlobalValueMaxNameSize(
+-    "non-global-value-max-name-size", cl::Hidden, cl::init(1024),
+-    cl::desc("Maximum size for the name of non-global values."));
+-
+ //===----------------------------------------------------------------------===//
+ //                                Value Class
+ //===----------------------------------------------------------------------===//
+@@ -319,11 +315,6 @@
+   if (getName() == NameRef)
+     return;
+ 
+-  // Cap the size of non-GlobalValue names.
+-  if (NameRef.size() > NonGlobalValueMaxNameSize && !isa<GlobalValue>(this))
+-    NameRef =
+-        NameRef.substr(0, std::max(1u, (unsigned)NonGlobalValueMaxNameSize));
+-
+   assert(!getType()->isVoidTy() && "Cannot assign a name to void values!");
+ 
+   // Get the symbol table to update for this object.
+diff -ur a/test/Bitcode/value-with-long-name.ll b/test/Bitcode/value-with-long-name.ll
+deleted file mode 1000644
+--- a/test/Bitcode/value-with-long-name.ll
++++ /dev/null
+@@ -1,18 +0,0 @@
+-; Check the size of generated variable when no option is set
+-; RUN: opt -S %s -O2 -o - | FileCheck -check-prefix=CHECK-LONG %s
+-; CHECK-LONG: %{{[a-z]{4}[a-z]+}}
+-
+-; Then check we correctly cap the size of newly generated non-global values name
+-; Force the size to be small so that the check works on release and debug build
+-; RUN: opt -S %s -O2 -o - -non-global-value-max-name-size=0 | FileCheck -check-prefix=CHECK-SHORT %s
+-; RUN: opt -S %s -O2 -o - -non-global-value-max-name-size=1 | FileCheck -check-prefix=CHECK-SHORT %s
+-; CHECK-SHORT-NOT: %{{[a-z][a-z]+}}
+-
+-define i32 @f(i32 %a, i32 %b) {
+-  %c = add i32 %a, %b
+-  %d = add i32 %c, %a
+-  %e = add i32 %d, %b
+-  ret i32 %e
+-}
+-
+-

@@ -1,4 +1,4 @@
-{% set VERSION_SUFFIX = "" %} # debug version suffix, appended to the version
+{% set VERSION_SUFFIX = "llvm14" %} # debug version suffix, appended to the version
 
 package:
   name: llvmlite
@@ -23,22 +23,20 @@ requirements:
     # build.sh deals with it!
     - {{ compiler('c') }}    # [not (osx or armv6l or armv7l or win)]
     - {{ compiler('cxx') }}  # [not (osx or armv6l or armv7l or win)]
-    - vs2017_{{ target_platform  }}    # [win]
+    - vs2022_{{ target_platform  }}    # [win]
     # The DLL build uses cmake on Windows
     - cmake          # [win]
     - make           # [unix and not (armv6l or armv7l or aarch64)]
   host:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 11.1.0 *5 # [(osx and arm64)]
-    - llvmdev 11.1.0 *4 # [not ((osx and arm64) or win)]
-    - llvmdev 11.1.0 4 # [win]
-    - vs2015_runtime # [win]
+    - llvmdev 14.0.1
+    - vs2022_runtime # [win]
     # llvmdev is built with libz compression support
     - zlib           # [unix and not (armv6l or armv7l)]
   run:
     - python >=3.7,<3.10
-    - vs2015_runtime # [win]
+    - vs2022_runtime # [win]
     # osx has dynamically linked libstdc++
     - libcxx >=4.0.1 # [osx]
 
