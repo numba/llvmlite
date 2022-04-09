@@ -84,22 +84,69 @@ class _lib_wrapper(object):
 
     This class duck-types a CDLL.
     """
-    __slots__ = ['_lib', '_fntab', '_lock']
 
-    def __init__(self, lib):
-        self._lib = lib
-        self._fntab = {}
+    def __init__(self):
         self._lock = _LLVMLock()
+        self._lib_handle = None
+
+    def _load_lib(self):
+        _lib_load_errors = []
+        # llvmlite native code may exist in one of two places, with the first taking
+        # priority:
+        # 1) In a shared library available as a resource of the llvmlite package.
+        #    This may involve unpacking the shared library from an archive.
+        # 2) Linked directly into the main binary. Symbols may be resolved from the
+        #    main binary by passing None as the argument to ctypes.CDLL.
+        for lib_context in (
+                importlib.resources.path(
+                    __name__.rpartition(".")[0], get_library_name()),
+                contextlib.nullcontext(None)):
+            try:
+                with lib_context as lib_path:
+                    self._lib_handle = ctypes.CDLL(lib_path and str(lib_path))
+                    # Check that we can look up expected symbols.
+                    version_info = self._lib_handle.LLVMPY_GetVersionInfo()
+                    break
+            except (OSError, AttributeError) as e:
+                # OSError may be raised if the file cannot be opened, or is not
+                # a shared library.
+                # AttributeError is raised if LLVMPY_GetVersionInfo does not exist.
+                _lib_load_errors.append(e)
+        else:
+            # None of the expected locations contains a loadable version of llvmlite.
+            # raise OSError with the first error seen during the load event as the
+            # cause of this exception.
+            raise OSError(
+                "Could not find/load shared object file") from _lib_load_errors[0]
+
+    @property
+    def _lib(self):
+        # Not threadsafe.
+        if not self._lib_handle:
+            self._load_lib()
+        return self._lib_handle
+
+    def _resolve(self, lazy_wrapper):
+        """Resolve a lazy wrapper, and store it in the symbol table."""
+        with self._lock:
+            wrapper = getattr(self, lazy_wrapper.symbol_name)
+            if wrapper is lazy_wrapper:
+                cfn = getattr(self._lib, lazy_wrapper.symbol_name)
+                if hasattr(lazy_wrapper, 'argtypes'):
+                    cfn.argtypes = lazy_wrapper.argtypes
+                if hasattr(lazy_wrapper, 'restype'):
+                    cfn.restype = lazy_wrapper.restype
+                if getattr(lazy_wrapper, 'threadsafe', False):
+                    wrapper = cfn
+                else:
+                    wrapper = _lib_fn_wrapper(self._lock, cfn)
+                setattr(self, lazy_wrapper.symbol_name, wrapper)
+            return wrapper
 
     def __getattr__(self, name):
-        try:
-            return self._fntab[name]
-        except KeyError:
-            # Lazily wraps new functions as they are requested
-            cfn = getattr(self._lib, name)
-            wrapped = _lib_fn_wrapper(self._lock, cfn)
-            self._fntab[name] = wrapped
-            return wrapped
+        wrapper = _lazy_lib_fn_wrapper(name)
+        setattr(self, name, wrapper)
+        return wrapper
 
     @property
     def _name(self):
@@ -116,6 +163,16 @@ class _lib_wrapper(object):
         For duck-typing a ctypes.CDLL
         """
         return self._lib._handle
+
+
+class _lazy_lib_fn_wrapper(object):
+    """A lazy wrapper for a ctypes.CFUNCTYPE that resolves on call."""
+
+    def __init__(self, symbol_name):
+        self.symbol_name = symbol_name
+
+    def __call__(self, *args, **kwargs):
+        return lib._resolve(self)(*args, **kwargs)
 
 
 class _lib_fn_wrapper(object):
@@ -152,37 +209,7 @@ class _lib_fn_wrapper(object):
             return self._cfn(*args, **kwargs)
 
 
-_lib_load_errors = []
-# llvmlite native code may exist in one of two places, with the first taking
-# priority:
-# 1) In a shared library available as a resource of the llvmlite package.
-#    This may involve unpacking the shared library from an archive.
-# 2) Linked directly into the main binary. Symbols may be resolved from the
-#    main binary by passing None as the argument to ctypes.CDLL.
-for lib_context in (
-        importlib.resources.path(
-            __name__.rpartition(".")[0], get_library_name()),
-        contextlib.nullcontext(None)):
-    try:
-        with lib_context as lib_path:
-            lib = ctypes.CDLL(lib_path and str(lib_path))
-            # Check that we can look up expected symbols.
-            version_info = lib.LLVMPY_GetVersionInfo()
-            break
-    except (OSError, AttributeError) as e:
-        # OSError may be raised if the file cannot be opened, or is not
-        # a shared library.
-        # AttributeError is raised if LLVMPY_GetVersionInfo does not exist.
-        _lib_load_errors.append(e)
-else:
-    # None of the expected locations contains a loadable version of llvmlite.
-    # raise OSError with the first error seen during the load event as the
-    # cause of this exception.
-    raise OSError(
-        "Could not find/load shared object file") from _lib_load_errors[0]
-
-
-lib = _lib_wrapper(lib)
+lib = _lib_wrapper()
 
 
 def register_lock_callback(acq_fn, rel_fn):
