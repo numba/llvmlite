@@ -105,6 +105,10 @@ class _lib_wrapper(object):
                 contextlib.nullcontext(None)):
             try:
                 with lib_context as lib_path:
+                    if os.name() == 'nt' and not lib_path:
+                        # The Windows implementation of ctypes.CDLL does not
+                        # support None as an argument.
+                        continue
                     self._lib_handle = ctypes.CDLL(lib_path and str(lib_path))
                     # Check that we can look up expected symbols.
                     _ = self._lib_handle.LLVMPY_GetVersionInfo()
