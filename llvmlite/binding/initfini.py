@@ -68,6 +68,3 @@ def _version_info():
         v.append(x & 0xff)
         x >>= 8
     return tuple(reversed(v))
-
-
-llvm_version_info = _version_info()
