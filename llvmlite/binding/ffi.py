@@ -91,12 +91,14 @@ class _lib_wrapper(object):
 
     def _load_lib(self):
         _lib_load_errors = []
-        # llvmlite native code may exist in one of two places, with the first taking
-        # priority:
-        # 1) In a shared library available as a resource of the llvmlite package.
-        #    This may involve unpacking the shared library from an archive.
-        # 2) Linked directly into the main binary. Symbols may be resolved from the
-        #    main binary by passing None as the argument to ctypes.CDLL.
+        # llvmlite native code may exist in one of two places, with the first
+        # taking priority:
+        # 1) In a shared library available as a resource of the llvmlite
+        #    package. This may involve unpacking the shared library from an
+        #    archive.
+        # 2) Linked directly into the main binary. Symbols may be resolved
+        #    from the main binary by passing None as the argument to
+        #    ctypes.CDLL.
         for lib_context in (
                 importlib.resources.path(
                     __name__.rpartition(".")[0], get_library_name()),
@@ -105,19 +107,20 @@ class _lib_wrapper(object):
                 with lib_context as lib_path:
                     self._lib_handle = ctypes.CDLL(lib_path and str(lib_path))
                     # Check that we can look up expected symbols.
-                    version_info = self._lib_handle.LLVMPY_GetVersionInfo()
+                    _ = self._lib_handle.LLVMPY_GetVersionInfo()
                     break
             except (OSError, AttributeError) as e:
                 # OSError may be raised if the file cannot be opened, or is not
                 # a shared library.
-                # AttributeError is raised if LLVMPY_GetVersionInfo does not exist.
+                # AttributeError is raised if LLVMPY_GetVersionInfo does not
+                # exist.
                 _lib_load_errors.append(e)
         else:
-            # None of the expected locations contains a loadable version of llvmlite.
-            # raise OSError with the first error seen during the load event as the
-            # cause of this exception.
-            raise OSError(
-                "Could not find/load shared object file") from _lib_load_errors[0]
+            # None of the expected locations contains a loadable version of
+            # llvmlite. Raise OSError with the first error seen during the load
+            # event as the cause of this exception.
+            raise OSError("Could not find/load shared object file") \
+                from _lib_load_errors[0]
 
     @property
     def _lib(self):
