@@ -1,7 +1,8 @@
 import contextlib
 import ctypes
-import threading
 import importlib.resources
+import os
+import threading
 
 from llvmlite.binding.common import _decode_string, _is_shutting_down
 from llvmlite.utils import get_library_name
