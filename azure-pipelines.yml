@@ -38,6 +38,7 @@ jobs:
         PYTHON: '3.10'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
+        RUN_CLANG_FORMAT: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
@@ -68,13 +69,3 @@ jobs:
   parameters:
     name: Windows
     vmImage: windows-2019
-
-- job: check_formatting
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-  - script: |
-      set -e
-      sudo apt install -y clang-format
-      clang-format -n -Werror ffi/*.cpp ffi/*.h
-    displayName: Check C++ formatting

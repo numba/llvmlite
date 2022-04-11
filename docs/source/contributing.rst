@@ -72,7 +72,7 @@ Coding conventions
 ------------------
 
 * All Python code should follow `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_.
-* Our C++ code does not have a well-defined coding style.
+* Our C++ code is formatted with `clang-format-13` from the `conda-forge` channel
 * Code and documentation should generally fit within 80 columns,
   for maximum readability with all existing tools, such as code
   review user interfaces.
