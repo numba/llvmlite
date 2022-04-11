@@ -79,6 +79,19 @@ class _LLVMLock:
         self._lock.release()
 
 
+class _suppress_cleanup_errors:
+    def __init__(self, context):
+        self._context = context
+
+    def __enter__(self):
+        return self._context.__enter__()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            return self._context.__exit__(exc_type, exc_value, traceback)
+        except PermissionError:
+            pass  # Resource dylibs can't be deleted on Windows.
+
 class _lib_wrapper(object):
     """Wrap libllvmlite with a lock such that only one thread may access it at
     a time.
@@ -101,8 +114,8 @@ class _lib_wrapper(object):
         #    from the main binary by passing None as the argument to
         #    ctypes.CDLL.
         for lib_context in (
-                importlib.resources.path(
-                    __name__.rpartition(".")[0], get_library_name()),
+                _suppress_cleanup_errors(importlib.resources.path(
+                    __name__.rpartition(".")[0], get_library_name())),
                 contextlib.nullcontext(None)):
             try:
                 with lib_context as lib_path:
