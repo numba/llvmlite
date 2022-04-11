@@ -92,6 +92,7 @@ class _suppress_cleanup_errors:
         except PermissionError:
             pass  # Resource dylibs can't be deleted on Windows.
 
+
 class _lib_wrapper(object):
     """Wrap libllvmlite with a lock such that only one thread may access it at
     a time.
