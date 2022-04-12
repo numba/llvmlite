@@ -55,7 +55,7 @@ jobs:
         export PATH=$HOME/miniconda3/bin:$PATH
         buildscripts/incremental/test.sh
       displayName: 'Test'
-
+# This is last because we need to install a bunch of LLVM stuff that will pollute the build environment
     - script: |
          set -e
          export PATH=$HOME/miniconda3/bin:$PATH
