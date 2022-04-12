@@ -49,7 +49,7 @@ path is relatively short:
   `IntType(8)`)
 - Replace calls to the static methods of `llvmlite.llvmpy.core.Constant` with
   calls to the constructor of `llvmlite.ir.Constant` or
-  `llvmlite.ir.Constanti.literal_struct`, as appropriate. Note that `stringz`
+  `llvmlite.ir.Constant.literal_struct`, as appropriate. Note that `stringz`
   and `array` have no direct equivalents.
 - replace `llvmlite.llvmpy.core.Module`, `Function`, `MetaDataString`,
   `InlineAsm` with the classes of the same name in `llvmlite.ir.`
