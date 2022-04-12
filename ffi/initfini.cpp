@@ -8,9 +8,9 @@
 extern "C" {
 
 #define INIT(F)                                                                \
-  API_EXPORT(void) LLVMPY_Initialize##F() {                                    \
-    LLVMInitialize##F(LLVMGetGlobalPassRegistry());                            \
-  }
+    API_EXPORT(void) LLVMPY_Initialize##F() {                                  \
+        LLVMInitialize##F(LLVMGetGlobalPassRegistry());                        \
+    }
 
 INIT(Core)
 INIT(TransformUtils)
@@ -32,7 +32,7 @@ LLVMPY_Shutdown() { LLVMShutdown(); }
 
 // Target Initialization
 #define INIT(F)                                                                \
-  API_EXPORT(void) LLVMPY_Initialize##F() { LLVMInitialize##F(); }
+    API_EXPORT(void) LLVMPY_Initialize##F() { LLVMInitialize##F(); }
 
 // NOTE: it is important that we don't export functions which we don't use,
 // especially those which may pull in large amounts of additional code or data.
@@ -50,14 +50,14 @@ INIT(NativeAsmPrinter)
 
 API_EXPORT(unsigned int)
 LLVMPY_GetVersionInfo() {
-  unsigned int verinfo = 0;
-  verinfo += LLVM_VERSION_MAJOR << 16;
-  verinfo += LLVM_VERSION_MINOR << 8;
+    unsigned int verinfo = 0;
+    verinfo += LLVM_VERSION_MAJOR << 16;
+    verinfo += LLVM_VERSION_MINOR << 8;
 #ifdef LLVM_VERSION_PATCH
-  /* Not available under Windows... */
-  verinfo += LLVM_VERSION_PATCH << 0;
+    /* Not available under Windows... */
+    verinfo += LLVM_VERSION_PATCH << 0;
 #endif
-  return verinfo;
+    return verinfo;
 }
 
 } // end extern "C"

@@ -28,11 +28,11 @@ LLVMPY_SetTimePasses(bool enable) { TimePassesIsEnabled = enable; }
 
 API_EXPORT(void)
 LLVMPY_ReportAndResetTimings(const char **outmsg) {
-  std::string osbuf;
-  raw_string_ostream os(osbuf);
-  reportAndResetTimings(&os);
-  os.flush();
-  *outmsg = LLVMPY_CreateString(os.str().c_str());
+    std::string osbuf;
+    raw_string_ostream os(osbuf);
+    reportAndResetTimings(&os);
+    os.flush();
+    *outmsg = LLVMPY_CreateString(os.str().c_str());
 }
 
 API_EXPORT(LLVMPassManagerRef)
@@ -40,57 +40,57 @@ LLVMPY_CreatePassManager() { return LLVMCreatePassManager(); }
 
 API_EXPORT(void)
 LLVMPY_DisposePassManager(LLVMPassManagerRef PM) {
-  return LLVMDisposePassManager(PM);
+    return LLVMDisposePassManager(PM);
 }
 
 API_EXPORT(LLVMPassManagerRef)
 LLVMPY_CreateFunctionPassManager(LLVMModuleRef M) {
-  return LLVMCreateFunctionPassManagerForModule(M);
+    return LLVMCreateFunctionPassManagerForModule(M);
 }
 
 API_EXPORT(int)
 LLVMPY_RunPassManager(LLVMPassManagerRef PM, LLVMModuleRef M) {
-  return LLVMRunPassManager(PM, M);
+    return LLVMRunPassManager(PM, M);
 }
 
 API_EXPORT(int)
 LLVMPY_RunFunctionPassManager(LLVMPassManagerRef PM, LLVMValueRef F) {
-  return LLVMRunFunctionPassManager(PM, F);
+    return LLVMRunFunctionPassManager(PM, F);
 }
 
 API_EXPORT(int)
 LLVMPY_InitializeFunctionPassManager(LLVMPassManagerRef FPM) {
-  return LLVMInitializeFunctionPassManager(FPM);
+    return LLVMInitializeFunctionPassManager(FPM);
 }
 
 API_EXPORT(int)
 LLVMPY_FinalizeFunctionPassManager(LLVMPassManagerRef FPM) {
-  return LLVMFinalizeFunctionPassManager(FPM);
+    return LLVMFinalizeFunctionPassManager(FPM);
 }
 
 API_EXPORT(void)
 LLVMPY_AddConstantMergePass(LLVMPassManagerRef PM) {
-  LLVMAddConstantMergePass(PM);
+    LLVMAddConstantMergePass(PM);
 }
 
 API_EXPORT(void)
 LLVMPY_AddDeadArgEliminationPass(LLVMPassManagerRef PM) {
-  LLVMAddDeadArgEliminationPass(PM);
+    LLVMAddDeadArgEliminationPass(PM);
 }
 
 API_EXPORT(void)
 LLVMPY_AddFunctionAttrsPass(LLVMPassManagerRef PM) {
-  LLVMAddFunctionAttrsPass(PM);
+    LLVMAddFunctionAttrsPass(PM);
 }
 
 API_EXPORT(void)
 LLVMPY_AddFunctionInliningPass(LLVMPassManagerRef PM, int Threshold) {
-  unwrap(PM)->add(createFunctionInliningPass(Threshold));
+    unwrap(PM)->add(createFunctionInliningPass(Threshold));
 }
 
 API_EXPORT(void)
 LLVMPY_AddGlobalOptimizerPass(LLVMPassManagerRef PM) {
-  LLVMAddGlobalOptimizerPass(PM);
+    LLVMAddGlobalOptimizerPass(PM);
 }
 
 API_EXPORT(void)
@@ -101,12 +101,12 @@ LLVMPY_AddIPSCCPPass(LLVMPassManagerRef PM) { LLVMAddIPSCCPPass(PM); }
 
 API_EXPORT(void)
 LLVMPY_AddDeadCodeEliminationPass(LLVMPassManagerRef PM) {
-  unwrap(PM)->add(createDeadCodeEliminationPass());
+    unwrap(PM)->add(createDeadCodeEliminationPass());
 }
 
 API_EXPORT(void)
 LLVMPY_AddCFGSimplificationPass(LLVMPassManagerRef PM) {
-  LLVMAddCFGSimplificationPass(PM);
+    LLVMAddCFGSimplificationPass(PM);
 }
 
 API_EXPORT(void)
@@ -114,7 +114,7 @@ LLVMPY_AddGVNPass(LLVMPassManagerRef PM) { LLVMAddGVNPass(PM); }
 
 API_EXPORT(void)
 LLVMPY_AddInstructionCombiningPass(LLVMPassManagerRef PM) {
-  LLVMAddInstructionCombiningPass(PM);
+    LLVMAddInstructionCombiningPass(PM);
 }
 
 API_EXPORT(void)
@@ -128,17 +128,17 @@ LLVMPY_AddSROAPass(LLVMPassManagerRef PM) { unwrap(PM)->add(createSROAPass()); }
 
 API_EXPORT(void)
 LLVMPY_AddTypeBasedAliasAnalysisPass(LLVMPassManagerRef PM) {
-  LLVMAddTypeBasedAliasAnalysisPass(PM);
+    LLVMAddTypeBasedAliasAnalysisPass(PM);
 }
 
 API_EXPORT(void)
 LLVMPY_AddBasicAliasAnalysisPass(LLVMPassManagerRef PM) {
-  LLVMAddBasicAliasAnalysisPass(PM);
+    LLVMAddBasicAliasAnalysisPass(PM);
 }
 
 API_EXPORT(void)
 LLVMPY_LLVMAddLoopRotatePass(LLVMPassManagerRef PM) {
-  LLVMAddLoopRotatePass(PM);
+    LLVMAddLoopRotatePass(PM);
 }
 
 } // end extern "C"
