@@ -32,7 +32,7 @@ Schedule
 The feature change was implemented as follows:
 
 * v0.39 module is deprecated
-* v0.41 module is removed
+* v0.40 module is removed
 
 Recommendations
 ---------------
