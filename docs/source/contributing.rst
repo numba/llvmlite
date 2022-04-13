@@ -26,7 +26,7 @@ llvmlite uses the Numba Discourse as a forum for longer running threads such as
 design discussions and roadmap planning. There are various categories available
 and it can be reached at: `numba.discourse.group
 <https://numba.discourse.group/>`_. It also has a `llvmlite topic
-<https://numba.discourse.group/c/llvmlite/12>`.
+<https://numba.discourse.group/c/llvmlite/12>`_.
 
 .. _report-bugs:
 
