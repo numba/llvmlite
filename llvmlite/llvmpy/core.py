@@ -3,6 +3,12 @@ import itertools
 from llvmlite import ir
 from llvmlite import binding as llvm
 
+import warnings
+
+warnings.warn(
+    "The module `llvmlite.llvmpy.core` is deprecated and will be removed in "
+    "the future. Equivalent functionality is provided by `llvmlite.ir`.")
+
 CallOrInvokeInstruction = ir.CallInstr
 
 
