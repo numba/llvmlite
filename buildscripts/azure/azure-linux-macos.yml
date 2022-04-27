@@ -55,3 +55,11 @@ jobs:
         export PATH=$HOME/miniconda3/bin:$PATH
         buildscripts/incremental/test.sh
       displayName: 'Test'
+# This is last because we need to install a bunch of LLVM stuff that will pollute the build environment
+    - script: |
+         set -e
+         export PATH=$HOME/miniconda3/bin:$PATH
+         conda install -c conda-forge -y clang-format-13
+         clang-format-13 -n -Werror ffi/*.cpp ffi/*.h
+      displayName: Check C++ formatting
+      condition: eq(variables['RUN_CLANG_FORMAT'], 'yes')

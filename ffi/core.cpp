@@ -5,13 +5,11 @@
 extern "C" {
 
 API_EXPORT(const char *)
-LLVMPY_CreateString(const char *msg) {
-    return strdup(msg);
-}
+LLVMPY_CreateString(const char *msg) { return strdup(msg); }
 
 API_EXPORT(const char *)
 LLVMPY_CreateByteString(const char *buf, size_t len) {
-    char *dest = (char *) malloc(len + 1);
+    char *dest = (char *)malloc(len + 1);
     if (dest != NULL) {
         memcpy(dest, buf, len);
         dest[len] = '\0';
@@ -20,19 +18,13 @@ LLVMPY_CreateByteString(const char *buf, size_t len) {
 }
 
 API_EXPORT(void)
-LLVMPY_DisposeString(const char *msg) {
-    free(const_cast<char*>(msg));
-}
+LLVMPY_DisposeString(const char *msg) { free(const_cast<char *>(msg)); }
 
 API_EXPORT(LLVMContextRef)
-LLVMPY_GetGlobalContext() {
-    return LLVMGetGlobalContext();
-}
+LLVMPY_GetGlobalContext() { return LLVMGetGlobalContext(); }
 
 API_EXPORT(LLVMContextRef)
-LLVMPY_ContextCreate() {
-    return LLVMContextCreate();
-}
+LLVMPY_ContextCreate() { return LLVMContextCreate(); }
 
 API_EXPORT(void)
 LLVMPY_ContextDispose(LLVMContextRef context) {
@@ -40,8 +32,7 @@ LLVMPY_ContextDispose(LLVMContextRef context) {
 }
 
 API_EXPORT(void)
-LLVMPY_SetCommandLine(const char *name, const char *option)
-{
+LLVMPY_SetCommandLine(const char *name, const char *option) {
     const char *argv[] = {name, option};
     LLVMParseCommandLineOptions(2, argv, NULL);
 }

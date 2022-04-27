@@ -2,18 +2,17 @@
 #define LLVMPY_CORE_H_
 
 #include "llvm-c/Core.h"
-#include <cstring>
 #include <cstdlib>
-
+#include <cstring>
 
 #if defined(_MSC_VER)
-    #define HAVE_DECLSPEC_DLL
+#define HAVE_DECLSPEC_DLL
 #endif
 
 #if defined(HAVE_DECLSPEC_DLL)
-    #define API_EXPORT(RTYPE) __declspec(dllexport) RTYPE
+#define API_EXPORT(RTYPE) __declspec(dllexport) RTYPE
 #else
-    #define API_EXPORT(RTYPE) RTYPE
+#define API_EXPORT(RTYPE) RTYPE
 #endif
 
 extern "C" {
@@ -34,6 +33,5 @@ API_EXPORT(LLVMContextRef)
 LLVMPY_ContextCreate();
 
 } /* end extern "C" */
-
 
 #endif /* LLVMPY_CORE_H_ */

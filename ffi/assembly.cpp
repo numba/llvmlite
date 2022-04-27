@@ -1,23 +1,20 @@
+#include "llvm/AsmParser/Parser.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
-#include "llvm/AsmParser/Parser.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "llvm-c/Core.h"
 #include "core.h"
+#include "llvm-c/Core.h"
 
-#include <string>
 #include <cstdio>
-
+#include <string>
 
 extern "C" {
 
 API_EXPORT(LLVMModuleRef)
-LLVMPY_ParseAssembly(LLVMContextRef context,
-                     const char *ir,
-                     const char **outmsg)
-{
+LLVMPY_ParseAssembly(LLVMContextRef context, const char *ir,
+                     const char **outmsg) {
     using namespace llvm;
 
     SMDiagnostic error;
