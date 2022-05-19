@@ -2,7 +2,7 @@
 {% set version = "11.1.0" %}
 {% set sha256_llvm = "ce8508e318a01a63d4e8b3090ab2ded3c598a50258cc49e2625b9120d4c03ea5" %}
 {% set sha256_lld = "017a788cbe1ecc4a949abf10755870519086d058a2e99f438829aef24f0c66ce" %}
-{% set build_number = "4" %}
+{% set build_number = "5" %}
 
 package:
   name: llvmdev
@@ -54,7 +54,7 @@ requirements:
   host:
     # needed for llc at runtime
     - zlib # [not win]
-    - xar # [osx]
+    - xar # [osx and x86_64]
     # llvm-lit testing needs *a* python
     - python # [not (armv6l or armv7l or aarch64 or win)]
 
