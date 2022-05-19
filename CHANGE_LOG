@@ -3,6 +3,22 @@ v0.39.0 (XXX YY, ZZZZ)
 
 * In development
 
+v0.38.1 (May 19, 2022)
+----------------------
+
+This is a maintenance release to support the Apple M1 architecture.
+
+Pull-Requests:
+
+* PR `#841 <https://github.com/numba/llvmlite/pull/841>`_: Merge pull request #813 from seibert/m1_support (`esc <https://github.com/esc>`_, `Stan Seibert <https://github.com/seibert>`_)
+* PR `#845 <https://github.com/numba/llvmlite/pull/845>`_: Backport #786 for 0.38.1 (`stuartarchibald <https://github.com/stuartarchibald>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `Stan Seibert <https://github.com/seibert>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+
 v0.38.0 (January 13, 2022)
 --------------------------
 
