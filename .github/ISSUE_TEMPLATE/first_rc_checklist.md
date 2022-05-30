@@ -13,7 +13,8 @@ labels: task
     - [ ] "remaining Pull-Requests from milestone".
 * [ ] Merge change log changes.
     - [ ] "PR with changelog entries".
-* [ ] Create X.Y release branch.
+* [ ] Create X.Y release branch `releaseX.Y`
+* [ ] Annotated tag `vX.Y.Z` on release branch (`llvmlite` tags DO have a `v` prefix).
 * [ ] Build conda packages on buildfarm (check "upload").
 * [ ] Verify packages uploaded to Anaconda Cloud and move to `numba/label/main`.
 * [ ] Build wheels (`$PYTHON_VERSIONS`) on the buildfarm.
