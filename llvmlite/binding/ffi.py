@@ -1,6 +1,6 @@
 import ctypes
-import threading
 import importlib.resources
+import threading
 
 from llvmlite.binding.common import _decode_string, _is_shutting_down
 from llvmlite.utils import get_library_name
@@ -46,6 +46,7 @@ class _LLVMLock:
     Also, callbacks can be attached so that every time the lock is acquired
     and released the corresponding callbacks will be invoked.
     """
+
     def __init__(self):
         # The reentrant lock is needed for callbacks that re-enter
         # the Python interpreter.
@@ -60,8 +61,7 @@ class _LLVMLock:
         self._cblist.append((acq_fn, rel_fn))
 
     def unregister(self, acq_fn, rel_fn):
-        """Remove the registered callbacks.
-        """
+        """Remove the registered callbacks."""
         self._cblist.remove((acq_fn, rel_fn))
 
     def __enter__(self):
@@ -77,13 +77,14 @@ class _LLVMLock:
         self._lock.release()
 
 
-class _lib_wrapper(object):
+class _lib_wrapper:
     """Wrap libllvmlite with a lock such that only one thread may access it at
     a time.
 
     This class duck-types a CDLL.
     """
-    __slots__ = ['_lib', '_fntab', '_lock']
+
+    __slots__ = ["_lib", "_fntab", "_lock"]
 
     def __init__(self, lib):
         self._lib = lib
@@ -117,14 +118,15 @@ class _lib_wrapper(object):
         return self._lib._handle
 
 
-class _lib_fn_wrapper(object):
+class _lib_fn_wrapper:
     """Wraps and duck-types a ctypes.CFUNCTYPE to provide
     automatic locking when the wrapped function is called.
 
     TODO: we can add methods to mark the function as threadsafe
           and remove the locking-step on call when marked.
     """
-    __slots__ = ['_lock', '_cfn']
+
+    __slots__ = ["_lock", "_cfn"]
 
     def __init__(self, lock, cfn):
         self._lock = lock
@@ -184,16 +186,17 @@ def unregister_lock_callback(acq_fn, rel_fn):
     lib._lock.unregister(acq_fn, rel_fn)
 
 
-class _DeadPointer(object):
+class _DeadPointer:
     """
     Dummy class to make error messages more helpful.
     """
 
 
-class OutputString(object):
+class OutputString:
     """
     Object for managing the char* output of LLVM APIs.
     """
+
     _as_parameter_ = _DeadPointer()
 
     @classmethod
@@ -247,29 +250,27 @@ class OutputString(object):
 
     @property
     def bytes(self):
-        """Get the raw bytes of content of the char pointer.
-        """
+        """Get the raw bytes of content of the char pointer."""
         return self._ptr.value
 
 
 def ret_string(ptr):
-    """To wrap string return-value from C-API.
-    """
+    """To wrap string return-value from C-API."""
     if ptr is not None:
         return str(OutputString.from_return(ptr))
 
 
 def ret_bytes(ptr):
-    """To wrap bytes return-value from C-API.
-    """
+    """To wrap bytes return-value from C-API."""
     if ptr is not None:
         return OutputString.from_return(ptr).bytes
 
 
-class ObjectRef(object):
+class ObjectRef:
     """
     A wrapper around a ctypes pointer to a LLVM object ("resource").
     """
+
     _closed = False
     _as_parameter_ = _DeadPointer()
     # Whether this object pointer is owned by another one.
@@ -319,7 +320,7 @@ class ObjectRef(object):
     def __enter__(self):
         assert hasattr(self, "close")
         if self._closed:
-            raise RuntimeError("%s instance already closed" % (self.__class__,))
+            raise RuntimeError(f"{self.__class__} instance already closed")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -336,8 +337,7 @@ class ObjectRef(object):
     def __eq__(self, other):
         if not hasattr(other, "_ptr"):
             return False
-        return ctypes.addressof(self._ptr[0]) == \
-            ctypes.addressof(other._ptr[0])
+        return ctypes.addressof(self._ptr[0]) == ctypes.addressof(other._ptr[0])
 
     __nonzero__ = __bool__
 

@@ -1,15 +1,15 @@
 import collections
 
-from llvmlite.ir import context, values, types, _utils
+from llvmlite.ir import _utils, context, types, values
 
 
-class Module(object):
-    def __init__(self, name='', context=context.global_context):
+class Module:
+    def __init__(self, name="", context=context.global_context):
         self.context = context
-        self.name = name   # name is for debugging/informational
+        self.name = name  # name is for debugging/informational
         self.data_layout = ""
         self.scope = _utils.NameScope()
-        self.triple = 'unknown-unknown-unknown'
+        self.triple = "unknown-unknown-unknown"
         self.globals = collections.OrderedDict()
         # Innamed metadata nodes.
         self.metadata = []
@@ -50,8 +50,10 @@ class Module(object):
         e.g. an instruction.
         """
         if not isinstance(operands, (list, tuple)):
-            raise TypeError("expected a list or tuple of metadata values, "
-                            "got %r" % (operands,))
+            raise TypeError(
+                "expected a list or tuple of metadata values, "
+                "got {0!r}".format(operands)
+            )
         operands = self._fix_metadata_operands(operands)
         key = tuple(operands)
         if key not in self._metadatacache:
@@ -102,8 +104,7 @@ class Module(object):
             if not isinstance(element, values.Value):
                 element = self.add_metadata(element)
             if not isinstance(element.type, types.MetaDataType):
-                raise TypeError("wrong type for metadata element: got %r"
-                                % (element,))
+                raise TypeError(f"wrong type for metadata element: got {element!r}")
             nmd.add(element)
         return nmd
 
@@ -119,8 +120,7 @@ class Module(object):
         """
         A list of functions declared or defined in this module.
         """
-        return [v for v in self.globals.values()
-                if isinstance(v, values.Function)]
+        return [v for v in self.globals.values() if isinstance(v, values.Function)]
 
     @property
     def global_values(self):
@@ -142,7 +142,7 @@ class Module(object):
         assert globalvalue.name not in self.globals
         self.globals[globalvalue.name] = globalvalue
 
-    def get_unique_name(self, name=''):
+    def get_unique_name(self, name=""):
         """
         Get a unique global name with the following *name* hint.
         """
@@ -150,14 +150,15 @@ class Module(object):
 
     def declare_intrinsic(self, intrinsic, tys=(), fnty=None):
         def _error():
-            raise NotImplementedError("unknown intrinsic %r with %d types"
-                                      % (intrinsic, len(tys)))
+            raise NotImplementedError(
+                f"unknown intrinsic {intrinsic!r} with {len(tys)} types"
+            )
 
-        if intrinsic in {'llvm.cttz', 'llvm.ctlz', 'llvm.fma'}:
+        if intrinsic in {"llvm.cttz", "llvm.ctlz", "llvm.fma"}:
             suffixes = [tys[0].intrinsic_name]
         else:
             suffixes = [t.intrinsic_name for t in tys]
-        name = '.'.join([intrinsic] + suffixes)
+        name = ".".join([intrinsic] + suffixes)
         if name in self.globals:
             return self.globals[name]
 
@@ -165,34 +166,33 @@ class Module(object):
             # General case: function type is given
             pass
         # Compute function type if omitted for common cases
-        elif len(tys) == 0 and intrinsic == 'llvm.assume':
+        elif len(tys) == 0 and intrinsic == "llvm.assume":
             fnty = types.FunctionType(types.VoidType(), [types.IntType(1)])
         elif len(tys) == 1:
-            if intrinsic == 'llvm.powi':
+            if intrinsic == "llvm.powi":
                 fnty = types.FunctionType(tys[0], [tys[0], types.IntType(32)])
-            elif intrinsic == 'llvm.pow':
+            elif intrinsic == "llvm.pow":
                 fnty = types.FunctionType(tys[0], tys * 2)
-            elif intrinsic == 'llvm.convert.from.fp16':
+            elif intrinsic == "llvm.convert.from.fp16":
                 fnty = types.FunctionType(tys[0], [types.IntType(16)])
-            elif intrinsic == 'llvm.convert.to.fp16':
+            elif intrinsic == "llvm.convert.to.fp16":
                 fnty = types.FunctionType(types.IntType(16), tys)
             else:
                 fnty = types.FunctionType(tys[0], tys)
         elif len(tys) == 2:
-            if intrinsic == 'llvm.memset':
-                tys = [tys[0], types.IntType(8), tys[1],
-                       types.IntType(1)]
+            if intrinsic == "llvm.memset":
+                tys = [tys[0], types.IntType(8), tys[1], types.IntType(1)]
                 fnty = types.FunctionType(types.VoidType(), tys)
-            elif intrinsic in {'llvm.cttz', 'llvm.ctlz'}:
+            elif intrinsic in {"llvm.cttz", "llvm.ctlz"}:
                 tys = [tys[0], types.IntType(1)]
                 fnty = types.FunctionType(tys[0], tys)
             else:
                 _error()
         elif len(tys) == 3:
-            if intrinsic in ('llvm.memcpy', 'llvm.memmove'):
+            if intrinsic in ("llvm.memcpy", "llvm.memmove"):
                 tys = tys + [types.IntType(1)]
                 fnty = types.FunctionType(types.VoidType(), tys)
-            elif intrinsic == 'llvm.fma':
+            elif intrinsic == "llvm.fma":
                 tys = [tys[0]] * 3
                 fnty = types.FunctionType(tys[0], tys)
             else:
@@ -206,8 +206,7 @@ class Module(object):
 
     def _get_body_lines(self):
         # Type declarations
-        lines = [it.get_declaration()
-                 for it in self.get_identified_types().values()]
+        lines = [it.get_declaration() for it in self.get_identified_types().values()]
         # Global values (including function definitions)
         lines += [str(v) for v in self.globals.values()]
         return lines
@@ -215,9 +214,12 @@ class Module(object):
     def _get_metadata_lines(self):
         mdbuf = []
         for k, v in self.namedmetadata.items():
-            mdbuf.append("!{name} = !{{ {operands} }}".format(
-                name=k, operands=', '.join(i.get_reference()
-                                           for i in v.operands)))
+            mdbuf.append(
+                "!{name} = !{{ {operands} }}".format(
+                    name=k,
+                    operands=", ".join(i.get_reference() for i in v.operands),
+                )
+            )
         for md in self.metadata:
             mdbuf.append(str(md))
         return mdbuf
@@ -234,10 +236,11 @@ class Module(object):
         lines = []
         # Header
         lines += [
-            '; ModuleID = "%s"' % (self.name,),
-            'target triple = "%s"' % (self.triple,),
-            'target datalayout = "%s"' % (self.data_layout,),
-            '']
+            f'; ModuleID = "{self.name}"',
+            f'target triple = "{self.triple}"',
+            f'target datalayout = "{self.data_layout}"',
+            "",
+        ]
         # Body
         lines += self._get_body_lines()
         # Metadata

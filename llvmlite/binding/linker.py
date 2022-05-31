@@ -1,4 +1,5 @@
-from ctypes import c_int, c_char_p, POINTER
+from ctypes import POINTER, c_char_p, c_int
+
 from llvmlite.binding import ffi
 
 

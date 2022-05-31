@@ -61,7 +61,8 @@ def view_dot_graph(graph, filename=None, view=False):
             return src
         else:
             import IPython.display as display
-            format = 'svg'
+
+            format = "svg"
             return display.SVG(data=src.pipe(format))
 
 

@@ -1,329 +1,430 @@
-"""
-Contains tests and a prototype implementation for the fanout algorithm in
-the LLVM refprune pass.
-"""
+# XXX Ripped off from numba.tests; we should factor it out somewhere?
+
+import collections
+import contextlib
+import cProfile
+import gc
+import multiprocessing
+import os
+import sys
+import time
+import unittest
+import warnings
+from io import StringIO
+from unittest import result, runner, signals
+
+# "unittest.main" is really the TestProgram class!
+# (defined in a module named itself "unittest.main"...)
+
+
+class NumbaTestProgram(unittest.main):
+    """
+    A TestProgram subclass adding the following options:
+    * a -R option to enable reference leak detection
+    * a --profile option to enable profiling of the test run
+
+    Currently the options are only added in 3.4+.
+    """
+
+    refleak = False
+    profile = False
+    multiprocess = False
+
+    def __init__(self, *args, **kwargs):
+        self.discovered_suite = kwargs.pop("suite", None)
+        # HACK to force unittest not to change warning display options
+        # (so that NumbaWarnings don't appear all over the place)
+        sys.warnoptions.append(":x")
+        super().__init__(*args, **kwargs)
+
+    def createTests(self):
+        if self.discovered_suite is not None:
+            self.test = self.discovered_suite
+        else:
+            super().createTests()
+
+    def _getParentArgParser(self):
+        # NOTE: this hook only exists on Python 3.4+. The options won't be
+        # added in earlier versions (which use optparse - 3.3 - or getopt()
+        # - 2.x).
+        parser = super()._getParentArgParser()
+        if self.testRunner is None:
+            parser.add_argument(
+                "-R",
+                "--refleak",
+                dest="refleak",
+                action="store_true",
+                help="Detect reference / memory leaks",
+            )
+        parser.add_argument(
+            "-m",
+            "--multiprocess",
+            dest="multiprocess",
+            action="store_true",
+            help="Parallelize tests",
+        )
+        parser.add_argument(
+            "--profile",
+            dest="profile",
+            action="store_true",
+            help="Profile the test run",
+        )
+        return parser
+
+    def parseArgs(self, argv):
+        if sys.version_info < (3, 4):
+            # We want these options to work on all versions, emulate them.
+            if "-R" in argv:
+                argv.remove("-R")
+                self.refleak = True
+            if "-m" in argv:
+                argv.remove("-m")
+                self.multiprocess = True
+        super().parseArgs(argv)
+        if self.verbosity <= 0:
+            # We aren't interested in informational messages / warnings when
+            # running with '-q'.
+            self.buffer = True
+
+    def runTests(self):
+        if self.refleak:
+            self.testRunner = RefleakTestRunner
+
+            if not hasattr(sys, "gettotalrefcount"):
+                warnings.warn(
+                    "detecting reference leaks requires a debug "
+                    "build of Python, only memory leaks will be "
+                    "detected"
+                )
+
+        elif self.testRunner is None:
+            self.testRunner = unittest.TextTestRunner
+
+        if self.multiprocess:
+            self.testRunner = ParallelTestRunner(
+                self.testRunner,
+                verbosity=self.verbosity,
+                failfast=self.failfast,
+                buffer=self.buffer,
+            )
+
+        def run_tests_real():
+            super().runTests()
+
+        if self.profile:
+            filename = (
+                os.path.splitext(os.path.basename(sys.modules["__main__"].__file__))[0]
+                + ".prof"
+            )
+            p = cProfile.Profile(timer=time.perf_counter)  # 3.3+
+            p.enable()
+            try:
+                p.runcall(run_tests_real)
+            finally:
+                p.disable()
+                print("Writing test profile data into %r" % (filename,))
+                p.dump_stats(filename)
+        else:
+            run_tests_real()
+
+
+# Monkey-patch unittest so that individual test modules get our custom
+# options for free.
+unittest.main = NumbaTestProgram
+
+
+# The reference leak detection code is liberally taken and adapted from
+# Python's own Lib/test/regrtest.py.
+
+
+def _refleak_cleanup():
+    # Collect cyclic trash and read memory statistics immediately after.
+    try:
+        func1 = sys.getallocatedblocks
+    except AttributeError:
+
+        def func1():
+            return 42
+
+    try:
+        func2 = sys.gettotalrefcount
+    except AttributeError:
+
+        def func2():
+            return 42
+
+    # Flush standard output, so that buffered data is sent to the OS and
+    # associated Python objects are reclaimed.
+    for stream in (sys.stdout, sys.stderr, sys.__stdout__, sys.__stderr__):
+        if stream is not None:
+            stream.flush()
+
+    sys._clear_type_cache()
+    # This also clears the various internal CPython freelists.
+    gc.collect()
+    return func1(), func2()
+
+
+class ReferenceLeakError(RuntimeError):
+    pass
+
+
+class IntPool(collections.defaultdict):
+    def __missing__(self, key):
+        return key
+
+
+class RefleakTestResult(runner.TextTestResult):
+
+    warmup = 3
+    repetitions = 6
+
+    def _huntLeaks(self, test):
+        self.stream.flush()
+
+        repcount = self.repetitions
+        nwarmup = self.warmup
+        rc_deltas = [0] * (repcount - nwarmup)
+        alloc_deltas = [0] * (repcount - nwarmup)
+        # Preallocate ints likely to be stored in rc_deltas and alloc_deltas,
+        # to make sys.getallocatedblocks() less flaky.
+        _int_pool = IntPool()
+        for i in range(-200, 200):
+            _int_pool[i]
+
+        alloc_before = rc_before = 0
+        for i in range(repcount):
+            # Use a pristine, silent result object to avoid recursion
+            res = result.TestResult()
+            test.run(res)
+            # Poorly-written tests may fail when run several times.
+            # In this case, abort the refleak run and report the failure.
+            if not res.wasSuccessful():
+                self.failures.extend(res.failures)
+                self.errors.extend(res.errors)
+                raise AssertionError
+            del res
+            alloc_after, rc_after = _refleak_cleanup()
+            if i >= nwarmup:
+                rc_deltas[i - nwarmup] = _int_pool[rc_after - rc_before]
+                alloc_deltas[i - nwarmup] = _int_pool[alloc_after - alloc_before]
+            alloc_before, rc_before = alloc_after, rc_after
+        return rc_deltas, alloc_deltas
+
+    def addSuccess(self, test):
+        try:
+            rc_deltas, alloc_deltas = self._huntLeaks(test)
+        except AssertionError:
+            # Test failed when repeated
+            assert not self.wasSuccessful()
+            return
+
+        # These checkers return False on success, True on failure
+        def check_rc_deltas(deltas):
+            return any(deltas)
+
+        def check_alloc_deltas(deltas):
+            # At least 1/3rd of 0s
+            if 3 * deltas.count(0) < len(deltas):
+                return True
+            # Nothing else than 1s, 0s and -1s
+            if not set(deltas) <= set((1, 0, -1)):
+                return True
+            return False
+
+        failed = False
+
+        for deltas, item_name, checker in [
+            (rc_deltas, "references", check_rc_deltas),
+            (alloc_deltas, "memory blocks", check_alloc_deltas),
+        ]:
+            if checker(deltas):
+                msg = "%s leaked %s %s, sum=%s" % (test, deltas, item_name, sum(deltas))
+                failed = True
+                try:
+                    raise ReferenceLeakError(msg)
+                except Exception:
+                    exc_info = sys.exc_info()
+                if self.showAll:
+                    self.stream.write("%s = %r " % (item_name, deltas))
+                self.addFailure(test, exc_info)
+
+        if not failed:
+            super().addSuccess(test)
+
+
+class RefleakTestRunner(runner.TextTestRunner):
+    resultclass = RefleakTestResult
+
+
+def _flatten_suite(test):
+    """Expand suite into list of tests"""
+    if isinstance(test, unittest.TestSuite):
+        tests = []
+        for x in test:
+            tests.extend(_flatten_suite(x))
+        return tests
+    else:
+        return [test]
+
+
+class ParallelTestResult(runner.TextTestResult):
+    """
+    A TestResult able to inject results from other results.
+    """
+
+    def add_results(self, result):
+        """
+        Add the results from the other *result* to this result.
+        """
+        self.stream.write(result.stream.getvalue())
+        self.stream.flush()
+        self.testsRun += result.testsRun
+        self.failures.extend(result.failures)
+        self.errors.extend(result.errors)
+        self.skipped.extend(result.skipped)
+        self.expectedFailures.extend(result.expectedFailures)
+        self.unexpectedSuccesses.extend(result.unexpectedSuccesses)
+
+
+class _MinimalResult:
+    """
+    A minimal, picklable TestResult-alike object.
+    """
+
+    __slots__ = (
+        "failures",
+        "errors",
+        "skipped",
+        "expectedFailures",
+        "unexpectedSuccesses",
+        "stream",
+        "shouldStop",
+        "testsRun",
+    )
+
+    def fixup_case(self, case):
+        """
+        Remove any unpicklable attributes from TestCase instance *case*.
+        """
+        # Python 3.3 doesn't reset this one.
+        case._outcomeForDoCleanups = None
+
+    def __init__(self, original_result):
+        for attr in self.__slots__:
+            setattr(self, attr, getattr(original_result, attr))
+        for case, _ in self.expectedFailures:
+            self.fixup_case(case)
+        for case, _ in self.errors:
+            self.fixup_case(case)
+        for case, _ in self.failures:
+            self.fixup_case(case)
+
+
+class _FakeStringIO:
+    """
+    A trivial picklable StringIO-alike for Python 2.
+    """
+
+    def __init__(self, value):
+        self._value = value
+
+    def getvalue(self):
+        return self._value
+
+
+class _MinimalRunner:
+    """
+    A minimal picklable object able to instantiate a runner in a
+    child process and run a test case with it.
+    """
+
+    def __init__(self, runner_cls, runner_args):
+        self.runner_cls = runner_cls
+        self.runner_args = runner_args
+
+    # Python 2 doesn't know how to pickle instance methods, so we use __call__
+    # instead.
+
+    def __call__(self, test):
+        # Executed in child process
+        kwargs = self.runner_args
+        # Force recording of output in a buffer (it will be printed out
+        # by the parent).
+        kwargs["stream"] = StringIO()
+        runner = self.runner_cls(**kwargs)
+        result = runner._makeResult()
+        # Avoid child tracebacks when Ctrl-C is pressed.
+        signals.installHandler()
+        signals.registerResult(result)
+        result.failfast = runner.failfast
+        result.buffer = runner.buffer
+        with self.cleanup_object(test):
+            test(result)
+        # HACK as cStringIO.StringIO isn't picklable in 2.x
+        result.stream = _FakeStringIO(result.stream.getvalue())
+        return _MinimalResult(result)
+
+    @contextlib.contextmanager
+    def cleanup_object(self, test):
+        """
+        A context manager which cleans up unwanted attributes on a test case
+        (or any other object).
+        """
+        vanilla_attrs = set(test.__dict__)
+        try:
+            yield test
+        finally:
+            spurious_attrs = set(test.__dict__) - vanilla_attrs
+            for name in spurious_attrs:
+                del test.__dict__[name]
+
+
+class ParallelTestRunner(runner.TextTestRunner):
+    """
+    A test runner which delegates the actual running to a pool of child
+    processes.
+    """
+
+    resultclass = ParallelTestResult
+
+    def __init__(self, runner_cls, **kwargs):
+        runner.TextTestRunner.__init__(self, **kwargs)
+        self.runner_cls = runner_cls
+        self.runner_args = kwargs
+
+    def _run_inner(self, result):
+        # We hijack TextTestRunner.run()'s inner logic by passing this
+        # method as if it were a test case.
+        child_runner = _MinimalRunner(self.runner_cls, self.runner_args)
+        pool = multiprocessing.Pool()
+        imap = pool.imap_unordered
+        try:
+            for child_result in imap(child_runner, self._test_list):
+                result.add_results(child_result)
+                if child_result.shouldStop:
+                    break
+            return result
+        finally:
+            # Kill the still active workers
+            pool.terminate()
+            pool.join()
+
+    def run(self, test):
+        self._test_list = _flatten_suite(test)
+        # This will call self._run_inner() on the created result object,
+        # and print out the detailed test results at the end.
+        return super().run(self._run_inner)
+
 
 try:
-    from graphviz import Digraph
+    import faulthandler
 except ImportError:
     pass
-from collections import defaultdict
-
-# The entry block. It's always the same.
-ENTRY = "A"
-
-
-# The following caseNN() functions returns a 3-tuple of
-# (nodes, edges, expected).
-# `nodes` maps BB nodes to incref/decref inside the block.
-# `edges` maps BB nodes to their successor BB.
-# `expected` maps BB-node with incref to a set of BB-nodes with the decrefs, or
-#            the value can be None, indicating invalid prune.
-
-def case1():
-    edges = {
-        "A": ["B"],
-        "B": ["C", "D"],
-        "C": [],
-        "D": ["E", "F"],
-        "E": ["G"],
-        "F": [],
-        "G": ["H", "I"],
-        "I": ["G", "F"],
-        "H": ["J", "K"],
-        "J": ["L", "M"],
-        "K": [],
-        "L": ["Z"],
-        "M": ["Z", "O", "P"],
-        "O": ["Z"],
-        "P": ["Z"],
-        "Z": [],
-    }
-    nodes = defaultdict(list)
-    nodes["D"] = ["incref"]
-    nodes["H"] = ["decref"]
-    nodes["F"] = ["decref", "decref"]
-    expected = {"D": {"H", "F"}}
-    return nodes, edges, expected
-
-
-def case2():
-    edges = {
-        "A": ["B", "C"],
-        "B": ["C"],
-        "C": [],
-    }
-    nodes = defaultdict(list)
-    nodes["A"] = ["incref"]
-    nodes["B"] = ["decref"]
-    nodes["C"] = ["decref"]
-    expected = {"A": None}
-    return nodes, edges, expected
-
-
-def case3():
-    nodes, edges, _ = case1()
-    # adds an invalid edge
-    edges["H"].append("F")
-    expected = {"D": None}
-    return nodes, edges, expected
-
-
-def case4():
-    nodes, edges, _ = case1()
-    # adds an invalid edge
-    edges["H"].append("E")
-    expected = {"D": None}
-    return nodes, edges, expected
-
-
-def case5():
-    nodes, edges, _ = case1()
-    # adds backedge to go before incref
-    edges["B"].append("I")
-    expected = {"D": None}
-    return nodes, edges, expected
-
-
-def case6():
-    nodes, edges, _ = case1()
-    # adds backedge to go before incref
-    edges["I"].append("B")
-    expected = {"D": None}
-    return nodes, edges, expected
-
-
-def case7():
-    nodes, edges, _ = case1()
-    # adds forward jump outside
-    edges["I"].append("M")
-    expected = {"D": None}
-    return nodes, edges, expected
-
-
-def case8():
-    edges = {
-        "A": ["B", "C"],
-        "B": ["C"],
-        "C": [],
-    }
-    nodes = defaultdict(list)
-    nodes["A"] = ["incref"]
-    nodes["C"] = ["decref"]
-    expected = {"A": {"C"}}
-    return nodes, edges, expected
-
-
-def case9():
-    nodes, edges, _ = case8()
-    # adds back edge
-    edges["C"].append("B")
-    expected = {"A": None}
-    return nodes, edges, expected
-
-
-def case10():
-    nodes, edges, _ = case8()
-    # adds back edge to A
-    edges["C"].append("A")
-    expected = {"A": {"C"}}
-    return nodes, edges, expected
-
-
-def case11():
-    nodes, edges, _ = case8()
-    edges["C"].append("D")
-    edges["D"] = []
-    expected = {"A": {"C"}}
-    return nodes, edges, expected
-
-
-def case12():
-    nodes, edges, _ = case8()
-    edges["C"].append("D")
-    edges["D"] = ["A"]
-    expected = {"A": {"C"}}
-    return nodes, edges, expected
-
-
-def case13():
-    nodes, edges, _ = case8()
-    edges["C"].append("D")
-    edges["D"] = ["B"]
-    expected = {"A": None}
-    return nodes, edges, expected
-
-
-def make_predecessor_map(edges):
-    d = defaultdict(set)
-    for src, outgoings in edges.items():
-        for dst in outgoings:
-            d[dst].add(src)
-    return d
-
-
-class FanoutAlgorithm:
-    def __init__(self, nodes, edges, verbose=False):
-        self.nodes = nodes
-        self.edges = edges
-        self.rev_edges = make_predecessor_map(edges)
-        self.print = print if verbose else self._null_print
-
-    def run(self):
-        return self.find_fanout_in_function()
-
-    def _null_print(self, *args, **kwargs):
-        pass
-
-    def find_fanout_in_function(self):
-        got = {}
-        for cur_node in self.edges:
-            for incref in (x for x in self.nodes[cur_node] if x == "incref"):
-                decref_blocks = self.find_fanout(cur_node)
-                self.print(">>", cur_node, "===", decref_blocks)
-                got[cur_node] = decref_blocks
-        return got
-
-    def find_fanout(self, head_node):
-        decref_blocks = self.find_decref_candidates(head_node)
-        self.print("candidates", decref_blocks)
-        if not decref_blocks:
-            return None
-        if not self.verify_non_overlapping(
-            head_node, decref_blocks, entry=ENTRY
-        ):
-            return None
-        return set(decref_blocks)
-
-    def verify_non_overlapping(self, head_node, decref_blocks, entry):
-        self.print("verify_non_overlapping".center(80, "-"))
-        # reverse walk for each decref_blocks
-        # they should end at head_node
-        todo = list(decref_blocks)
-        while todo:
-            cur_node = todo.pop()
-            visited = set()
-
-            workstack = [cur_node]
-            del cur_node
-            while workstack:
-                cur_node = workstack.pop()
-                self.print("cur_node", cur_node, "|", workstack)
-                if cur_node in visited:
-                    continue  # skip
-                if cur_node == entry:
-                    # Entry node
-                    self.print(
-                        "!! failed because we arrived at entry", cur_node
-                    )
-                    return False
-                visited.add(cur_node)
-                # check all predecessors
-                self.print(
-                    f"   {cur_node} preds {self.get_predecessors(cur_node)}"
-                )
-                for pred in self.get_predecessors(cur_node):
-                    if pred in decref_blocks:
-                        # reject because there's a predecessor in decref_blocks
-                        self.print(
-                            "!! reject because predecessor in decref_blocks"
-                        )
-                        return False
-                    if pred != head_node:
-
-                        workstack.append(pred)
-
-        return True
-
-    def get_successors(self, node):
-        return tuple(self.edges[node])
-
-    def get_predecessors(self, node):
-        return tuple(self.rev_edges[node])
-
-    def has_decref(self, node):
-        return "decref" in self.nodes[node]
-
-    def walk_child_for_decref(
-        self, cur_node, path_stack, decref_blocks, depth=10
-    ):
-        indent = " " * len(path_stack)
-        self.print(indent, "walk", path_stack, cur_node)
-        if depth <= 0:
-            return False  # missing
-        if cur_node in path_stack:
-            if cur_node == path_stack[0]:
-                return False  # reject interior node backedge
-            return True  # skip
-        if self.has_decref(cur_node):
-            decref_blocks.add(cur_node)
-            self.print(indent, "found decref")
-            return True
-
-        depth -= 1
-        path_stack += (cur_node,)
-        found = False
-        for child in self.get_successors(cur_node):
-            if not self.walk_child_for_decref(
-                child, path_stack, decref_blocks
-            ):
-                found = False
-                break
-            else:
-                found = True
-
-        self.print(indent, f"ret {found}")
-        return found
-
-    def find_decref_candidates(self, cur_node):
-        # Forward pass
-        self.print("find_decref_candidates".center(80, "-"))
-        path_stack = (cur_node,)
-        found = False
-        decref_blocks = set()
-        for child in self.get_successors(cur_node):
-            if not self.walk_child_for_decref(
-                child, path_stack, decref_blocks
-            ):
-                found = False
-                break
-            else:
-                found = True
-        if not found:
-            return set()
-        else:
-            return decref_blocks
-
-
-def check_once():
-    nodes, edges, expected = case13()
-
-    # Render graph
-    G = Digraph()
-    for node in edges:
-        G.node(node, shape="rect", label=f"{node}\n" + r"\l".join(nodes[node]))
-    for node, children in edges.items():
-        for child in children:
-            G.edge(node, child)
-
-    G.view()
-
-    algo = FanoutAlgorithm(nodes, edges, verbose=True)
-    got = algo.run()
-    assert expected == got
-
-
-def check_all():
-    for k, fn in list(globals().items()):
-        if k.startswith("case"):
-            print(f"{fn}".center(80, "-"))
-            nodes, edges, expected = fn()
-            algo = FanoutAlgorithm(nodes, edges)
-            got = algo.run()
-            assert expected == got
-    print("ALL PASSED")
-
-
-if __name__ == "__main__":
-    # check_once()
-    check_all()
+else:
+    try:
+        # May fail in IPython Notebook with UnsupportedOperation
+        faulthandler.enable()
+    except BaseException as e:
+        msg = "Failed to enable faulthandler due to:\n{err}"
+        warnings.warn(msg.format(err=e))

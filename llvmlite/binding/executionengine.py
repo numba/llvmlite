@@ -1,9 +1,19 @@
-from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
-                    c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast,
-                    py_object, Structure)
+from ctypes import (
+    CFUNCTYPE,
+    POINTER,
+    Structure,
+    c_bool,
+    c_char_p,
+    c_int,
+    c_size_t,
+    c_uint64,
+    c_void_p,
+    cast,
+    py_object,
+    string_at,
+)
 
-from llvmlite.binding import ffi, targets, object_file
-
+from llvmlite.binding import ffi, object_file, targets
 
 # Just check these weren't optimized out of the DLL.
 ffi.lib.LLVMPY_LinkInMCJIT
@@ -15,8 +25,7 @@ def create_mcjit_compiler(module, target_machine):
     *target_machine*.
     """
     with ffi.OutputString() as outerr:
-        engine = ffi.lib.LLVMPY_CreateMCJITCompiler(
-            module, target_machine, outerr)
+        engine = ffi.lib.LLVMPY_CreateMCJITCompiler(module, target_machine, outerr)
         if not engine:
             raise RuntimeError(str(outerr))
 
@@ -31,11 +40,12 @@ def check_jit_execution():
     """
     errno = ffi.lib.LLVMPY_TryAllocateExecutableMemory()
     if errno != 0:
-        raise OSError(errno,
-                      "cannot allocate executable memory. "
-                      "This may be due to security restrictions on your "
-                      "system, such as SELinux or similar mechanisms."
-                      )
+        raise OSError(
+            errno,
+            "cannot allocate executable memory. "
+            "This may be due to security restrictions on your "
+            "system, such as SELinux or similar mechanisms.",
+        )
 
 
 class ExecutionEngine(ffi.ObjectRef):
@@ -43,6 +53,7 @@ class ExecutionEngine(ffi.ObjectRef):
     Deleting the engine will remove all associated modules.
     It is an error to delete the associated modules.
     """
+
     _object_cache = None
 
     def __init__(self, ptr, module):
@@ -182,8 +193,9 @@ class ExecutionEngine(ffi.ObjectRef):
         if module is None:
             # The LLVM EE should only give notifications for modules
             # known by us.
-            raise RuntimeError("object compilation notification "
-                               "for unknown module %s" % (module_ptr,))
+            raise RuntimeError(
+                f"object compilation notification for unknown module {module_ptr}"
+            )
         self._object_cache_notify(module, buf)
 
     def _raw_object_cache_getbuffer(self, data):
@@ -197,8 +209,9 @@ class ExecutionEngine(ffi.ObjectRef):
         if module is None:
             # The LLVM EE should only give notifications for modules
             # known by us.
-            raise RuntimeError("object compilation notification "
-                               "for unknown module %s" % (module_ptr,))
+            raise RuntimeError(
+                f"object compilation notification for unknown module {module_ptr}"
+            )
 
         buf = self._object_cache_getbuffer(module)
         if buf is not None:
@@ -223,9 +236,7 @@ class _ObjectCacheRef(ffi.ObjectRef):
     """
 
     def __init__(self, obj):
-        ptr = ffi.lib.LLVMPY_CreateObjectCache(_notify_c_hook,
-                                               _getbuffer_c_hook,
-                                               obj)
+        ptr = ffi.lib.LLVMPY_CreateObjectCache(_notify_c_hook, _getbuffer_c_hook, obj)
         ffi.ObjectRef.__init__(self, ptr)
 
     def _dispose(self):
@@ -250,73 +261,66 @@ ffi.lib.LLVMPY_RemoveModule.argtypes = [
 ]
 ffi.lib.LLVMPY_RemoveModule.restype = c_bool
 
-ffi.lib.LLVMPY_AddModule.argtypes = [
-    ffi.LLVMExecutionEngineRef,
-    ffi.LLVMModuleRef
-]
+ffi.lib.LLVMPY_AddModule.argtypes = [ffi.LLVMExecutionEngineRef, ffi.LLVMModuleRef]
 
-ffi.lib.LLVMPY_AddGlobalMapping.argtypes = [ffi.LLVMExecutionEngineRef,
-                                            ffi.LLVMValueRef,
-                                            c_void_p]
+ffi.lib.LLVMPY_AddGlobalMapping.argtypes = [
+    ffi.LLVMExecutionEngineRef,
+    ffi.LLVMValueRef,
+    c_void_p,
+]
 
 ffi.lib.LLVMPY_FinalizeObject.argtypes = [ffi.LLVMExecutionEngineRef]
 
-ffi.lib.LLVMPY_GetExecutionEngineTargetData.argtypes = [
-    ffi.LLVMExecutionEngineRef
-]
+ffi.lib.LLVMPY_GetExecutionEngineTargetData.argtypes = [ffi.LLVMExecutionEngineRef]
 ffi.lib.LLVMPY_GetExecutionEngineTargetData.restype = ffi.LLVMTargetDataRef
 
 ffi.lib.LLVMPY_TryAllocateExecutableMemory.argtypes = []
 ffi.lib.LLVMPY_TryAllocateExecutableMemory.restype = c_int
 
-ffi.lib.LLVMPY_GetFunctionAddress.argtypes = [
-    ffi.LLVMExecutionEngineRef,
-    c_char_p
-]
+ffi.lib.LLVMPY_GetFunctionAddress.argtypes = [ffi.LLVMExecutionEngineRef, c_char_p]
 ffi.lib.LLVMPY_GetFunctionAddress.restype = c_uint64
 
-ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [
-    ffi.LLVMExecutionEngineRef,
-    c_char_p
-]
+ffi.lib.LLVMPY_GetGlobalValueAddress.argtypes = [ffi.LLVMExecutionEngineRef, c_char_p]
 ffi.lib.LLVMPY_GetGlobalValueAddress.restype = c_uint64
 
 ffi.lib.LLVMPY_MCJITAddObjectFile.argtypes = [
     ffi.LLVMExecutionEngineRef,
-    ffi.LLVMObjectFileRef
+    ffi.LLVMObjectFileRef,
 ]
 
 
 class _ObjectCacheData(Structure):
     _fields_ = [
-        ('module_ptr', ffi.LLVMModuleRef),
-        ('buf_ptr', c_void_p),
-        ('buf_len', c_size_t),
+        ("module_ptr", ffi.LLVMModuleRef),
+        ("buf_ptr", c_void_p),
+        ("buf_len", c_size_t),
     ]
 
 
-_ObjectCacheNotifyFunc = CFUNCTYPE(None, py_object,
-                                   POINTER(_ObjectCacheData))
-_ObjectCacheGetBufferFunc = CFUNCTYPE(None, py_object,
-                                      POINTER(_ObjectCacheData))
+_ObjectCacheNotifyFunc = CFUNCTYPE(None, py_object, POINTER(_ObjectCacheData))
+_ObjectCacheGetBufferFunc = CFUNCTYPE(None, py_object, POINTER(_ObjectCacheData))
 
 # XXX The ctypes function wrappers are created at the top-level, otherwise
 # there are issues when creating CFUNCTYPEs in child processes on CentOS 5
 # 32 bits.
-_notify_c_hook = _ObjectCacheNotifyFunc(
-    ExecutionEngine._raw_object_cache_notify)
+_notify_c_hook = _ObjectCacheNotifyFunc(ExecutionEngine._raw_object_cache_notify)
 _getbuffer_c_hook = _ObjectCacheGetBufferFunc(
-    ExecutionEngine._raw_object_cache_getbuffer)
+    ExecutionEngine._raw_object_cache_getbuffer
+)
 
-ffi.lib.LLVMPY_CreateObjectCache.argtypes = [_ObjectCacheNotifyFunc,
-                                             _ObjectCacheGetBufferFunc,
-                                             py_object]
+ffi.lib.LLVMPY_CreateObjectCache.argtypes = [
+    _ObjectCacheNotifyFunc,
+    _ObjectCacheGetBufferFunc,
+    py_object,
+]
 ffi.lib.LLVMPY_CreateObjectCache.restype = ffi.LLVMObjectCacheRef
 
 ffi.lib.LLVMPY_DisposeObjectCache.argtypes = [ffi.LLVMObjectCacheRef]
 
-ffi.lib.LLVMPY_SetObjectCache.argtypes = [ffi.LLVMExecutionEngineRef,
-                                          ffi.LLVMObjectCacheRef]
+ffi.lib.LLVMPY_SetObjectCache.argtypes = [
+    ffi.LLVMExecutionEngineRef,
+    ffi.LLVMObjectCacheRef,
+]
 
 ffi.lib.LLVMPY_CreateByteString.restype = c_void_p
 ffi.lib.LLVMPY_CreateByteString.argtypes = [c_void_p, c_size_t]

@@ -1,3 +1,8 @@
 llvmlite/_version.py export-subst
+# disable windows git auto crlf, because that's hella annoying on devcontainers
+* text=auto eol=lf
 # All patch files must be checked out with UNIX line endings even on Windows.
 *.patch text eol=lf
+# .cmd / .bat files on the other hand need crlf
+*.{cmd,[cC][mM][dD]} text eol=crlf
+*.{bat,[bB][aA][tT]} text eol=crlf

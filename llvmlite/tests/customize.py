@@ -3,19 +3,19 @@
 import collections
 import contextlib
 import cProfile
-from io import StringIO
 import gc
-import os
 import multiprocessing
+import os
 import sys
 import time
 import unittest
 import warnings
+from io import StringIO
 from unittest import result, runner, signals
-
 
 # "unittest.main" is really the TestProgram class!
 # (defined in a module named itself "unittest.main"...)
+
 
 class NumbaTestProgram(unittest.main):
     """
@@ -31,45 +31,56 @@ class NumbaTestProgram(unittest.main):
     multiprocess = False
 
     def __init__(self, *args, **kwargs):
-        self.discovered_suite = kwargs.pop('suite', None)
+        self.discovered_suite = kwargs.pop("suite", None)
         # HACK to force unittest not to change warning display options
         # (so that NumbaWarnings don't appear all over the place)
-        sys.warnoptions.append(':x')
-        super(NumbaTestProgram, self).__init__(*args, **kwargs)
+        sys.warnoptions.append(":x")
+        super().__init__(*args, **kwargs)
 
     def createTests(self):
         if self.discovered_suite is not None:
             self.test = self.discovered_suite
         else:
-            super(NumbaTestProgram, self).createTests()
+            super().createTests()
 
     def _getParentArgParser(self):
         # NOTE: this hook only exists on Python 3.4+. The options won't be
         # added in earlier versions (which use optparse - 3.3 - or getopt()
         # - 2.x).
-        parser = super(NumbaTestProgram, self)._getParentArgParser()
+        parser = super()._getParentArgParser()
         if self.testRunner is None:
-            parser.add_argument('-R', '--refleak', dest='refleak',
-                                action='store_true',
-                                help='Detect reference / memory leaks')
-        parser.add_argument('-m', '--multiprocess', dest='multiprocess',
-                            action='store_true',
-                            help='Parallelize tests')
-        parser.add_argument('--profile', dest='profile',
-                            action='store_true',
-                            help='Profile the test run')
+            parser.add_argument(
+                "-R",
+                "--refleak",
+                dest="refleak",
+                action="store_true",
+                help="Detect reference / memory leaks",
+            )
+        parser.add_argument(
+            "-m",
+            "--multiprocess",
+            dest="multiprocess",
+            action="store_true",
+            help="Parallelize tests",
+        )
+        parser.add_argument(
+            "--profile",
+            dest="profile",
+            action="store_true",
+            help="Profile the test run",
+        )
         return parser
 
     def parseArgs(self, argv):
         if sys.version_info < (3, 4):
             # We want these options to work on all versions, emulate them.
-            if '-R' in argv:
-                argv.remove('-R')
+            if "-R" in argv:
+                argv.remove("-R")
                 self.refleak = True
-            if '-m' in argv:
-                argv.remove('-m')
+            if "-m" in argv:
+                argv.remove("-m")
                 self.multiprocess = True
-        super(NumbaTestProgram, self).parseArgs(argv)
+        super().parseArgs(argv)
         if self.verbosity <= 0:
             # We aren't interested in informational messages / warnings when
             # running with '-q'.
@@ -80,26 +91,31 @@ class NumbaTestProgram(unittest.main):
             self.testRunner = RefleakTestRunner
 
             if not hasattr(sys, "gettotalrefcount"):
-                warnings.warn("detecting reference leaks requires a debug "
-                              "build of Python, only memory leaks will be "
-                              "detected")
+                warnings.warn(
+                    "detecting reference leaks requires a debug "
+                    "build of Python, only memory leaks will be "
+                    "detected"
+                )
 
         elif self.testRunner is None:
             self.testRunner = unittest.TextTestRunner
 
         if self.multiprocess:
-            self.testRunner = ParallelTestRunner(self.testRunner,
-                                                 verbosity=self.verbosity,
-                                                 failfast=self.failfast,
-                                                 buffer=self.buffer)
+            self.testRunner = ParallelTestRunner(
+                self.testRunner,
+                verbosity=self.verbosity,
+                failfast=self.failfast,
+                buffer=self.buffer,
+            )
 
         def run_tests_real():
-            super(NumbaTestProgram, self).runTests()
+            super().runTests()
 
         if self.profile:
-            filename = os.path.splitext(
-                os.path.basename(sys.modules['__main__'].__file__)
-            )[0] + '.prof'
+            filename = (
+                os.path.splitext(os.path.basename(sys.modules["__main__"].__file__))[0]
+                + ".prof"
+            )
             p = cProfile.Profile(timer=time.perf_counter)  # 3.3+
             p.enable()
             try:
@@ -120,16 +136,20 @@ unittest.main = NumbaTestProgram
 # The reference leak detection code is liberally taken and adapted from
 # Python's own Lib/test/regrtest.py.
 
+
 def _refleak_cleanup():
     # Collect cyclic trash and read memory statistics immediately after.
     try:
         func1 = sys.getallocatedblocks
     except AttributeError:
+
         def func1():
             return 42
+
     try:
         func2 = sys.gettotalrefcount
     except AttributeError:
+
         def func2():
             return 42
 
@@ -150,7 +170,6 @@ class ReferenceLeakError(RuntimeError):
 
 
 class IntPool(collections.defaultdict):
-
     def __missing__(self, key):
         return key
 
@@ -188,9 +207,7 @@ class RefleakTestResult(runner.TextTestResult):
             alloc_after, rc_after = _refleak_cleanup()
             if i >= nwarmup:
                 rc_deltas[i - nwarmup] = _int_pool[rc_after - rc_before]
-                alloc_deltas[i -
-                             nwarmup] = _int_pool[alloc_after -
-                                                  alloc_before]
+                alloc_deltas[i - nwarmup] = _int_pool[alloc_after - alloc_before]
             alloc_before, rc_before = alloc_after, rc_after
         return rc_deltas, alloc_deltas
 
@@ -218,11 +235,11 @@ class RefleakTestResult(runner.TextTestResult):
         failed = False
 
         for deltas, item_name, checker in [
-            (rc_deltas, 'references', check_rc_deltas),
-                (alloc_deltas, 'memory blocks', check_alloc_deltas)]:
+            (rc_deltas, "references", check_rc_deltas),
+            (alloc_deltas, "memory blocks", check_alloc_deltas),
+        ]:
             if checker(deltas):
-                msg = '%s leaked %s %s, sum=%s' % (
-                    test, deltas, item_name, sum(deltas))
+                msg = "%s leaked %s %s, sum=%s" % (test, deltas, item_name, sum(deltas))
                 failed = True
                 try:
                     raise ReferenceLeakError(msg)
@@ -233,7 +250,7 @@ class RefleakTestResult(runner.TextTestResult):
                 self.addFailure(test, exc_info)
 
         if not failed:
-            super(RefleakTestResult, self).addSuccess(test)
+            super().addSuccess(test)
 
 
 class RefleakTestRunner(runner.TextTestRunner):
@@ -241,8 +258,7 @@ class RefleakTestRunner(runner.TextTestRunner):
 
 
 def _flatten_suite(test):
-    """Expand suite into list of tests
-    """
+    """Expand suite into list of tests"""
     if isinstance(test, unittest.TestSuite):
         tests = []
         for x in test:
@@ -271,14 +287,21 @@ class ParallelTestResult(runner.TextTestResult):
         self.unexpectedSuccesses.extend(result.unexpectedSuccesses)
 
 
-class _MinimalResult(object):
+class _MinimalResult:
     """
     A minimal, picklable TestResult-alike object.
     """
 
     __slots__ = (
-        'failures', 'errors', 'skipped', 'expectedFailures',
-        'unexpectedSuccesses', 'stream', 'shouldStop', 'testsRun')
+        "failures",
+        "errors",
+        "skipped",
+        "expectedFailures",
+        "unexpectedSuccesses",
+        "stream",
+        "shouldStop",
+        "testsRun",
+    )
 
     def fixup_case(self, case):
         """
@@ -298,7 +321,7 @@ class _MinimalResult(object):
             self.fixup_case(case)
 
 
-class _FakeStringIO(object):
+class _FakeStringIO:
     """
     A trivial picklable StringIO-alike for Python 2.
     """
@@ -310,7 +333,7 @@ class _FakeStringIO(object):
         return self._value
 
 
-class _MinimalRunner(object):
+class _MinimalRunner:
     """
     A minimal picklable object able to instantiate a runner in a
     child process and run a test case with it.
@@ -328,7 +351,7 @@ class _MinimalRunner(object):
         kwargs = self.runner_args
         # Force recording of output in a buffer (it will be printed out
         # by the parent).
-        kwargs['stream'] = StringIO()
+        kwargs["stream"] = StringIO()
         runner = self.runner_cls(**kwargs)
         result = runner._makeResult()
         # Avoid child tracebacks when Ctrl-C is pressed.
@@ -391,7 +414,7 @@ class ParallelTestRunner(runner.TextTestRunner):
         self._test_list = _flatten_suite(test)
         # This will call self._run_inner() on the created result object,
         # and print out the detailed test results at the end.
-        return super(ParallelTestRunner, self).run(self._run_inner)
+        return super().run(self._run_inner)
 
 
 try:

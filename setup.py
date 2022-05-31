@@ -1,10 +1,11 @@
 try:
-    from setuptools import setup, Extension
+    from setuptools import Extension, setup
+
     # Required for compatibility with pip (issue #177)
     from setuptools.command.install import install
 except ImportError:
-    from distutils.core import setup, Extension
     from distutils.command.install import install
+    from distutils.core import Extension, setup
 
 
 try:
@@ -12,15 +13,16 @@ try:
 except ImportError:
     bdist_wheel = None
 
+import os
+import sys
+from distutils import log
 from distutils.command.build import build
 from distutils.command.build_ext import build_ext
 from distutils.command.clean import clean
-from distutils import log
 from distutils.dir_util import remove_tree
 from distutils.spawn import spawn
-import os
-import sys
 
+import versioneer
 
 _version_module = None
 try:
@@ -44,47 +46,46 @@ def _guard_py_ver():
 
     min_py = parse(min_python_version)
     max_py = parse(max_python_version)
-    cur_py = parse('.'.join(map(str, sys.version_info[:3])))
+    cur_py = parse(".".join(map(str, sys.version_info[:3])))
 
     if not min_py <= cur_py < max_py:
-        msg = ('Cannot install on Python version {}; only versions >={},<{} '
-               'are supported.')
+        msg = (
+            "Cannot install on Python version {}; only versions >={},<{} "
+            "are supported."
+        )
         raise RuntimeError(msg.format(cur_py, min_py, max_py))
 
 
 _guard_py_ver()
 
-if os.environ.get('READTHEDOCS', None) == 'True':
-    sys.exit("setup.py disabled on readthedocs: called with %s"
-             % (sys.argv,))
+if os.environ.get("READTHEDOCS", None) == "True":
+    sys.exit(f"setup.py disabled on readthedocs: called with {sys.argv}")
 
-import versioneer
 
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'llvmlite/_version.py'
-versioneer.versionfile_build = 'llvmlite/_version.py'
-versioneer.tag_prefix = 'v' # tags are like v1.2.0
-versioneer.parentdir_prefix = 'llvmlite-' # dirname like 'myproject-1.2.0'
+versioneer.VCS = "git"
+versioneer.versionfile_source = "llvmlite/_version.py"
+versioneer.versionfile_build = "llvmlite/_version.py"
+versioneer.tag_prefix = "v"  # tags are like v1.2.0
+versioneer.parentdir_prefix = "llvmlite-"  # dirname like 'myproject-1.2.0'
 
 
 here_dir = os.path.dirname(os.path.abspath(__file__))
 
 cmdclass = versioneer.get_cmdclass()
-build = cmdclass.get('build', build)
-build_ext = cmdclass.get('build_ext', build_ext)
+build = cmdclass.get("build", build)
+build_ext = cmdclass.get("build_ext", build_ext)
 
 
 def build_library_files(dry_run):
-    cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
+    cmd = [sys.executable, os.path.join(here_dir, "ffi", "build.py")]
     # Turn on -fPIC for building on Linux, BSD, and OS X
     plt = sys.platform
-    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt:
-        os.environ['CXXFLAGS'] = os.environ.get('CXXFLAGS', '') + ' -fPIC'
+    if "linux" in plt or "bsd" in plt or "darwin" in plt:
+        os.environ["CXXFLAGS"] = os.environ.get("CXXFLAGS", "") + " -fPIC"
     spawn(cmd, dry_run=dry_run)
 
 
 class LlvmliteBuild(build):
-
     def finalize_options(self):
         build.finalize_options(self)
         # The build isn't platform-independent
@@ -95,19 +96,19 @@ class LlvmliteBuild(build):
         # Force "build_ext" invocation.
         commands = build.get_sub_commands(self)
         for c in commands:
-            if c == 'build_ext':
+            if c == "build_ext":
                 return commands
-        return ['build_ext'] + commands
+        return ["build_ext"] + commands
 
 
 class LlvmliteBuildExt(build_ext):
-
     def run(self):
         build_ext.run(self)
         build_library_files(self.dry_run)
         # HACK: this makes sure the library file (which is large) is only
         # included in binary builds, not source builds.
         from llvmlite.utils import get_library_files
+
         self.distribution.package_data = {
             "llvmlite.binding": get_library_files(),
         }
@@ -118,6 +119,7 @@ class LlvmliteInstall(install):
     # This seems to only be necessary on OSX.
     def run(self):
         from llvmlite.utils import get_library_files
+
         self.distribution.package_data = {
             "llvmlite.binding": get_library_files(),
         }
@@ -133,9 +135,10 @@ class LlvmliteInstall(install):
 
 class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
+
     def run(self):
         clean.run(self)
-        path = os.path.join(here_dir, 'llvmlite.egg-info')
+        path = os.path.join(here_dir, "llvmlite.egg-info")
         if os.path.isdir(path):
             remove_tree(path, dry_run=self.dry_run)
         if not self.dry_run:
@@ -143,29 +146,36 @@ class LlvmliteClean(clean):
 
     def _rm_walk(self):
         for path, dirs, files in os.walk(here_dir):
-            if any(p.startswith('.') for p in path.split(os.path.sep)):
+            if any(p.startswith(".") for p in path.split(os.path.sep)):
                 # Skip hidden directories like the git folder right away
                 continue
-            if path.endswith('__pycache__'):
+            if path.endswith("__pycache__"):
                 remove_tree(path, dry_run=self.dry_run)
             else:
                 for fname in files:
-                    if (fname.endswith('.pyc') or fname.endswith('.so')
-                            or fname.endswith('.o')):
+                    if (
+                        fname.endswith(".pyc")
+                        or fname.endswith(".so")
+                        or fname.endswith(".o")
+                    ):
                         fpath = os.path.join(path, fname)
                         os.remove(fpath)
-                        log.info("removing '%s'", fpath)
+                        log.info("removing '{}'".format(fpath))
 
 
 if bdist_wheel:
+
     class LLvmliteBDistWheel(bdist_wheel):
         def run(self):
             # Ensure the binding file exist when running wheel build
             from llvmlite.utils import get_library_files
+
             build_library_files(self.dry_run)
-            self.distribution.package_data.update({
-                "llvmlite.binding": get_library_files(),
-            })
+            self.distribution.package_data.update(
+                {
+                    "llvmlite.binding": get_library_files(),
+                }
+            )
             # Run wheel build command
             bdist_wheel.run(self)
 
@@ -175,56 +185,62 @@ if bdist_wheel:
             self.root_is_pure = False
 
 
-cmdclass.update({'build': LlvmliteBuild,
-                 'build_ext': LlvmliteBuildExt,
-                 'install': LlvmliteInstall,
-                 'clean': LlvmliteClean,
-                 })
+cmdclass.update(
+    {
+        "build": LlvmliteBuild,
+        "build_ext": LlvmliteBuildExt,
+        "install": LlvmliteInstall,
+        "clean": LlvmliteClean,
+    }
+)
 
 if bdist_wheel:
-    cmdclass.update({'bdist_wheel': LLvmliteBDistWheel})
+    cmdclass.update({"bdist_wheel": LLvmliteBDistWheel})
 
 # A stub C-extension to make bdist_wheel build an arch dependent build
-ext_stub = Extension(name="llvmlite.binding._stub",
-                     sources=["llvmlite/binding/_stub.c"])
+ext_stub = Extension(
+    name="llvmlite.binding._stub", sources=["llvmlite/binding/_stub.c"]
+)
 
 
-packages = ['llvmlite',
-            'llvmlite.binding',
-            'llvmlite.ir',
-            'llvmlite.llvmpy',
-            'llvmlite.tests',
-            ]
+packages = [
+    "llvmlite",
+    "llvmlite.binding",
+    "llvmlite.ir",
+    "llvmlite.llvmpy",
+    "llvmlite.tests",
+]
 
 
-with open('README.rst') as f:
+with open("README.rst") as f:
     long_description = f.read()
 
 
-setup(name='llvmlite',
-      description="lightweight wrapper around basic LLVM functionality",
-      version=versioneer.get_version(),
-      classifiers=[
-          "Development Status :: 4 - Beta",
-          "Intended Audience :: Developers",
-          "Operating System :: OS Independent",
-          "Programming Language :: Python",
-          "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.7",
-          "Programming Language :: Python :: 3.8",
-          "Programming Language :: Python :: 3.9",
-          "Programming Language :: Python :: 3.10",
-          "Topic :: Software Development :: Code Generators",
-          "Topic :: Software Development :: Compilers",
-      ],
-      # Include the separately-compiled shared library
-      url="http://llvmlite.readthedocs.io",
-      project_urls={
-          "Source": "https://github.com/numba/llvmlite",
-      },
-      packages=packages,
-      license="BSD",
-      cmdclass=cmdclass,
-      long_description=long_description,
-      python_requires=">={}".format(min_python_version),
-      )
+setup(
+    name="llvmlite",
+    description="lightweight wrapper around basic LLVM functionality",
+    version=versioneer.get_version(),
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Topic :: Software Development :: Code Generators",
+        "Topic :: Software Development :: Compilers",
+    ],
+    # Include the separately-compiled shared library
+    url="http://llvmlite.readthedocs.io",
+    project_urls={
+        "Source": "https://github.com/numba/llvmlite",
+    },
+    packages=packages,
+    license="BSD",
+    cmdclass=cmdclass,
+    long_description=long_description,
+    python_requires=">={}".format(min_python_version),
+)

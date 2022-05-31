@@ -10,14 +10,16 @@ llvm.set_option("test", "-help-hidden")
 
 """
 
-from llvmlite import binding as llvm
-from collections import namedtuple
 import warnings
+from collections import namedtuple
+
+from llvmlite import binding as llvm
 
 warnings.warn(
     "The module `llvmlite.llvmpy.passes` is deprecated and will be removed in "
     "the future. If you are using this code, it should be inlined into your "
-    "own project.")
+    "own project."
+)
 
 
 def _inlining_threshold(optlevel, sizelevel=0):
@@ -36,8 +38,7 @@ def _inlining_threshold(optlevel, sizelevel=0):
     return 225
 
 
-def create_pass_manager_builder(opt=2, loop_vectorize=False,
-                                slp_vectorize=False):
+def create_pass_manager_builder(opt=2, loop_vectorize=False, slp_vectorize=False):
     pmb = llvm.create_pass_manager_builder()
     pmb.opt_level = opt
     pmb.loop_vectorize = loop_vectorize
@@ -47,32 +48,32 @@ def create_pass_manager_builder(opt=2, loop_vectorize=False,
 
 
 def build_pass_managers(**kws):
-    mod = kws.get('mod')
+    mod = kws.get("mod")
     if not mod:
         raise NameError("module must be provided")
 
     pm = llvm.create_module_pass_manager()
 
-    if kws.get('fpm', True):
+    if kws.get("fpm", True):
         assert isinstance(mod, llvm.ModuleRef)
         fpm = llvm.create_function_pass_manager(mod)
     else:
         fpm = None
 
     with llvm.create_pass_manager_builder() as pmb:
-        pmb.opt_level = opt = kws.get('opt', 2)
-        pmb.loop_vectorize = kws.get('loop_vectorize', False)
-        pmb.slp_vectorize = kws.get('slp_vectorize', False)
+        pmb.opt_level = opt = kws.get("opt", 2)
+        pmb.loop_vectorize = kws.get("loop_vectorize", False)
+        pmb.slp_vectorize = kws.get("slp_vectorize", False)
         pmb.inlining_threshold = _inlining_threshold(optlevel=opt)
 
         if mod:
             tli = llvm.create_target_library_info(mod.triple)
-            if kws.get('nobuiltins', False):
+            if kws.get("nobuiltins", False):
                 # Disable all builtins (-fno-builtins)
                 tli.disable_all()
             else:
                 # Disable a list of builtins given
-                for k in kws.get('disable_builtins', ()):
+                for k in kws.get("disable_builtins", ()):
                     libf = tli.get_libfunc(k)
                     tli.set_unavailable(libf)
 
@@ -80,7 +81,7 @@ def build_pass_managers(**kws):
             if fpm is not None:
                 tli.add_pass(fpm)
 
-        tm = kws.get('tm')
+        tm = kws.get("tm")
         if tm:
             tm.add_analysis_passes(pm)
             if fpm is not None:
@@ -90,4 +91,4 @@ def build_pass_managers(**kws):
         if fpm is not None:
             pmb.populate(fpm)
 
-        return namedtuple("pms", ['pm', 'fpm'])(pm=pm, fpm=fpm)
+        return namedtuple("pms", ["pm", "fpm"])(pm=pm, fpm=fpm)

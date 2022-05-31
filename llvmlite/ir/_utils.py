@@ -5,9 +5,9 @@ class DuplicatedNameError(NameError):
     pass
 
 
-class NameScope(object):
+class NameScope:
     def __init__(self):
-        self._useset = set([''])
+        self._useset = set([""])
         self._basenamemap = defaultdict(int)
 
     def is_used(self, name):
@@ -33,8 +33,7 @@ class NameScope(object):
         return type(self)(parent=self)
 
 
-class _StrCaching(object):
-
+class _StrCaching:
     def _clear_string_cache(self):
         try:
             del self.__cached_str
@@ -49,8 +48,7 @@ class _StrCaching(object):
             return s
 
 
-class _StringReferenceCaching(object):
-
+class _StringReferenceCaching:
     def get_reference(self):
         try:
             return self.__cached_refstr
@@ -59,8 +57,7 @@ class _StringReferenceCaching(object):
             return s
 
 
-class _HasMetadata(object):
-
+class _HasMetadata:
     def set_metadata(self, name, node):
         """
         Attach unnamed metadata *node* to the metadata slot *name* of this
@@ -73,8 +70,10 @@ class _HasMetadata(object):
             buf = []
             if leading_comma:
                 buf.append("")
-            buf += ["!{0} {1}".format(k, v.get_reference())
-                    for k, v in self.metadata.items()]
-            return ', '.join(buf)
+            buf += [
+                "!{0} {1}".format(k, v.get_reference())
+                for k, v in self.metadata.items()
+            ]
+            return ", ".join(buf)
         else:
-            return ''
+            return ""

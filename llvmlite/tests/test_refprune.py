@@ -1,6 +1,7 @@
 import unittest
-from llvmlite import ir
+
 from llvmlite import binding as llvm
+from llvmlite import ir
 from llvmlite.tests import TestCase
 
 from . import refprune_proto as proto
@@ -10,18 +11,20 @@ def _iterate_cases(generate_test):
     def wrap(fn):
         def wrapped(self):
             return generate_test(self, fn)
+
         wrapped.__doc__ = f"generated test for {fn.__module__}.{fn.__name__}"
         return wrapped
 
     for k, case_fn in proto.__dict__.items():
-        if k.startswith('case'):
-            yield f'test_{k}', wrap(case_fn)
+        if k.startswith("case"):
+            yield f"test_{k}", wrap(case_fn)
 
 
 class TestRefPrunePrototype(TestCase):
     """
     Test that the prototype is working.
     """
+
     def generate_test(self, case_gen):
         nodes, edges, expected = case_gen()
         got = proto.FanoutAlgorithm(nodes, edges).run()
@@ -46,19 +49,19 @@ class TestRefPrunePass(TestCase):
 
     def make_incref(self, m):
         fnty = ir.FunctionType(ir.VoidType(), [ptr_ty])
-        return ir.Function(m, fnty, name='NRT_incref')
+        return ir.Function(m, fnty, name="NRT_incref")
 
     def make_decref(self, m):
         fnty = ir.FunctionType(ir.VoidType(), [ptr_ty])
-        return ir.Function(m, fnty, name='NRT_decref')
+        return ir.Function(m, fnty, name="NRT_decref")
 
     def make_switcher(self, m):
         fnty = ir.FunctionType(ir.IntType(32), ())
-        return ir.Function(m, fnty, name='switcher')
+        return ir.Function(m, fnty, name="switcher")
 
     def make_brancher(self, m):
         fnty = ir.FunctionType(ir.IntType(1), ())
-        return ir.Function(m, fnty, name='brancher')
+        return ir.Function(m, fnty, name="brancher")
 
     def generate_ir(self, nodes, edges):
         # Build LLVM module for the CFG
@@ -70,9 +73,9 @@ class TestRefPrunePass(TestCase):
         brancher_fn = self.make_brancher(m)
 
         fnty = ir.FunctionType(ir.VoidType(), [ptr_ty])
-        fn = ir.Function(m, fnty, name='main')
+        fn = ir.Function(m, fnty, name="main")
         [ptr] = fn.args
-        ptr.name = 'mem'
+        ptr.name = "mem"
         # populate the BB nodes
         bbmap = {}
         for bb in edges:
@@ -83,12 +86,12 @@ class TestRefPrunePass(TestCase):
             builder.position_at_end(bbmap[bb])
             # Insert increfs and decrefs
             for action in nodes[bb]:
-                if action == 'incref':
+                if action == "incref":
                     builder.call(incref_fn, [ptr])
-                elif action == 'decref':
+                elif action == "decref":
                     builder.call(decref_fn, [ptr])
                 else:
-                    raise AssertionError('unreachable')
+                    raise AssertionError("unreachable")
 
             # Insert the terminator.
             # Switch base on the number of jump targets.
@@ -110,7 +113,7 @@ class TestRefPrunePass(TestCase):
                 for i, dst in enumerate(tail):
                     sw.add_case(sel.type(i), bbmap[dst])
             else:
-                raise AssertionError('unreachable')
+                raise AssertionError("unreachable")
 
         return m
 
@@ -125,27 +128,27 @@ class TestRefPrunePass(TestCase):
         # preprocess incref/decref locations
         d = {}
         for k, vs in nodes.items():
-            n_incref = vs.count('incref')
-            n_decref = vs.count('decref')
-            d[k] = {'incref': n_incref, 'decref': n_decref}
+            n_incref = vs.count("incref")
+            n_decref = vs.count("decref")
+            d[k] = {"incref": n_incref, "decref": n_decref}
         for k, stats in d.items():
             if expected.get(k):
-                stats['incref'] -= 1
+                stats["incref"] -= 1
                 for dec_bb in expected[k]:
-                    d[dec_bb]['decref'] -= 1
+                    d[dec_bb]["decref"] -= 1
 
         # find the main function
         for f in mod.functions:
-            if f.name == 'main':
+            if f.name == "main":
                 break
         # check each BB
         for bb in f.blocks:
             stats = d[bb.name]
             text = str(bb)
-            n_incref = text.count('NRT_incref')
-            n_decref = text.count('NRT_decref')
-            self.assertEqual(stats['incref'], n_incref, msg=f'BB {bb}')
-            self.assertEqual(stats['decref'], n_decref, msg=f'BB {bb}')
+            n_incref = text.count("NRT_incref")
+            n_decref = text.count("NRT_decref")
+            self.assertEqual(stats["incref"], n_incref, msg=f"BB {bb}")
+            self.assertEqual(stats["decref"], n_decref, msg=f"BB {bb}")
 
     def generate_test(self, case_gen):
         nodes, edges, expected = case_gen()
@@ -172,8 +175,7 @@ declare void @NRT_decref(i8* %ptr)
         if subgraph_limit is None:
             pm.add_refprune_pass(self.refprune_bitmask)
         else:
-            pm.add_refprune_pass(self.refprune_bitmask,
-                                 subgraph_limit=subgraph_limit)
+            pm.add_refprune_pass(self.refprune_bitmask, subgraph_limit=subgraph_limit)
         before = llvm.dump_refprune_stats()
         pm.run(mod)
         after = llvm.dump_refprune_stats()
@@ -347,8 +349,7 @@ bb_D:
 
 
 class TestFanout(BaseTestByIR):
-    """More complex cases are tested in TestRefPrunePass
-    """
+    """More complex cases are tested in TestRefPrunePass"""
 
     refprune_bitmask = llvm.RefPruneSubpasses.FANOUT
 
@@ -496,5 +497,5 @@ bb_C:
         self.assertEqual(stats.fanout_raise, 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

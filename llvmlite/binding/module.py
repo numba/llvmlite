@@ -1,11 +1,18 @@
-from ctypes import (c_char_p, byref, POINTER, c_bool, create_string_buffer,
-                    c_size_t, string_at)
+from ctypes import (
+    POINTER,
+    byref,
+    c_bool,
+    c_char_p,
+    c_size_t,
+    create_string_buffer,
+    string_at,
+)
 
 from llvmlite.binding import ffi
-from llvmlite.binding.linker import link_modules
 from llvmlite.binding.common import _decode_string, _encode_string
-from llvmlite.binding.value import ValueRef, TypeRef
 from llvmlite.binding.context import get_global_context
+from llvmlite.binding.linker import link_modules
+from llvmlite.binding.value import TypeRef, ValueRef
 
 
 def parse_assembly(llvmir, context=None):
@@ -17,9 +24,7 @@ def parse_assembly(llvmir, context=None):
     llvmir = _encode_string(llvmir)
     strbuf = c_char_p(llvmir)
     with ffi.OutputString() as errmsg:
-        mod = ModuleRef(
-            ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg),
-            context)
+        mod = ModuleRef(ffi.lib.LLVMPY_ParseAssembly(context, strbuf, errmsg), context)
         if errmsg:
             mod.close()
             raise RuntimeError("LLVM IR parsing error\n{0}".format(errmsg))
@@ -35,12 +40,12 @@ def parse_bitcode(bitcode, context=None):
     buf = c_char_p(bitcode)
     bufsize = len(bitcode)
     with ffi.OutputString() as errmsg:
-        mod = ModuleRef(ffi.lib.LLVMPY_ParseBitcode(
-            context, buf, bufsize, errmsg), context)
+        mod = ModuleRef(
+            ffi.lib.LLVMPY_ParseBitcode(context, buf, bufsize, errmsg), context
+        )
         if errmsg:
             mod.close()
-            raise RuntimeError(
-                "LLVM bitcode parsing error\n{0}".format(errmsg))
+            raise RuntimeError("LLVM bitcode parsing error\n{0}".format(errmsg))
     return mod
 
 
@@ -50,7 +55,7 @@ class ModuleRef(ffi.ObjectRef):
     """
 
     def __init__(self, module_ptr, context):
-        super(ModuleRef, self).__init__(module_ptr)
+        super().__init__(module_ptr)
         self._context = context
 
     def __str__(self):
@@ -84,7 +89,7 @@ class ModuleRef(ffi.ObjectRef):
         p = ffi.lib.LLVMPY_GetNamedFunction(self, _encode_string(name))
         if not p:
             raise NameError(name)
-        return ValueRef(p, 'function', dict(module=self))
+        return ValueRef(p, "function", dict(module=self))
 
     def get_global_variable(self, name):
         """
@@ -94,7 +99,7 @@ class ModuleRef(ffi.ObjectRef):
         p = ffi.lib.LLVMPY_GetNamedGlobalVariable(self, _encode_string(name))
         if not p:
             raise NameError(name)
-        return ValueRef(p, 'global', dict(module=self))
+        return ValueRef(p, "global", dict(module=self))
 
     def get_struct_type(self, name):
         """
@@ -144,9 +149,7 @@ class ModuleRef(ffi.ObjectRef):
 
     @data_layout.setter
     def data_layout(self, strrep):
-        ffi.lib.LLVMPY_SetDataLayout(self,
-                                     create_string_buffer(
-                                         strrep.encode('utf8')))
+        ffi.lib.LLVMPY_SetDataLayout(self, create_string_buffer(strrep.encode("utf8")))
 
     @property
     def triple(self):
@@ -160,9 +163,7 @@ class ModuleRef(ffi.ObjectRef):
 
     @triple.setter
     def triple(self, strrep):
-        ffi.lib.LLVMPY_SetTarget(self,
-                                 create_string_buffer(
-                                     strrep.encode('utf8')))
+        ffi.lib.LLVMPY_SetTarget(self, create_string_buffer(strrep.encode("utf8")))
 
     def link_in(self, other, preserve=False):
         """
@@ -232,7 +233,7 @@ class _Iterator(ffi.ObjectRef):
 
 class _GlobalsIterator(_Iterator):
 
-    kind = 'global'
+    kind = "global"
 
     def _dispose(self):
         self._capi.LLVMPY_DisposeGlobalsIter(self)
@@ -243,7 +244,7 @@ class _GlobalsIterator(_Iterator):
 
 class _FunctionsIterator(_Iterator):
 
-    kind = 'function'
+    kind = "function"
 
     def _dispose(self):
         self._capi.LLVMPY_DisposeFunctionsIter(self)
@@ -254,7 +255,7 @@ class _FunctionsIterator(_Iterator):
 
 class _TypesIterator(_Iterator):
 
-    kind = 'type'
+    kind = "type"
 
     def _dispose(self):
         self._capi.LLVMPY_DisposeTypesIter(self)
@@ -275,30 +276,34 @@ class _TypesIterator(_Iterator):
 # =============================================================================
 # Set function FFI
 
-ffi.lib.LLVMPY_ParseAssembly.argtypes = [ffi.LLVMContextRef,
-                                         c_char_p,
-                                         POINTER(c_char_p)]
+ffi.lib.LLVMPY_ParseAssembly.argtypes = [
+    ffi.LLVMContextRef,
+    c_char_p,
+    POINTER(c_char_p),
+]
 ffi.lib.LLVMPY_ParseAssembly.restype = ffi.LLVMModuleRef
 
-ffi.lib.LLVMPY_ParseBitcode.argtypes = [ffi.LLVMContextRef,
-                                        c_char_p, c_size_t,
-                                        POINTER(c_char_p)]
+ffi.lib.LLVMPY_ParseBitcode.argtypes = [
+    ffi.LLVMContextRef,
+    c_char_p,
+    c_size_t,
+    POINTER(c_char_p),
+]
 ffi.lib.LLVMPY_ParseBitcode.restype = ffi.LLVMModuleRef
 
 ffi.lib.LLVMPY_DisposeModule.argtypes = [ffi.LLVMModuleRef]
 
-ffi.lib.LLVMPY_PrintModuleToString.argtypes = [ffi.LLVMModuleRef,
-                                               POINTER(c_char_p)]
-ffi.lib.LLVMPY_WriteBitcodeToString.argtypes = [ffi.LLVMModuleRef,
-                                                POINTER(c_char_p),
-                                                POINTER(c_size_t)]
+ffi.lib.LLVMPY_PrintModuleToString.argtypes = [ffi.LLVMModuleRef, POINTER(c_char_p)]
+ffi.lib.LLVMPY_WriteBitcodeToString.argtypes = [
+    ffi.LLVMModuleRef,
+    POINTER(c_char_p),
+    POINTER(c_size_t),
+]
 
-ffi.lib.LLVMPY_GetNamedFunction.argtypes = [ffi.LLVMModuleRef,
-                                            c_char_p]
+ffi.lib.LLVMPY_GetNamedFunction.argtypes = [ffi.LLVMModuleRef, c_char_p]
 ffi.lib.LLVMPY_GetNamedFunction.restype = ffi.LLVMValueRef
 
-ffi.lib.LLVMPY_VerifyModule.argtypes = [ffi.LLVMModuleRef,
-                                        POINTER(c_char_p)]
+ffi.lib.LLVMPY_VerifyModule.argtypes = [ffi.LLVMModuleRef, POINTER(c_char_p)]
 ffi.lib.LLVMPY_VerifyModule.restype = c_bool
 
 ffi.lib.LLVMPY_GetDataLayout.argtypes = [ffi.LLVMModuleRef, POINTER(c_char_p)]

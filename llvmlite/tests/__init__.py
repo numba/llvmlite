@@ -1,10 +1,7 @@
+import faulthandler
 import sys
-
 import unittest
 from unittest import TestCase
-
-import faulthandler
-
 
 try:
     # May fail in IPython Notebook with UnsupportedOperation
@@ -19,8 +16,7 @@ from llvmlite.tests import customize
 
 
 def discover_tests(startdir):
-    """Discover test under a directory
-    """
+    """Discover test under a directory"""
     # Avoid importing unittest
     loader = unittest.TestLoader()
     suite = loader.discover(startdir)
@@ -44,11 +40,13 @@ def run_tests(suite=None, xmloutput=None, verbosity=1):
         suite = discover_tests("llvmlite.tests")
     if xmloutput is not None:
         import xmlrunner
+
         runner = xmlrunner.XMLTestRunner(output=xmloutput)
     else:
         runner = None
-    prog = unittest.main(suite=suite, testRunner=runner, exit=False,
-                         verbosity=verbosity)
+    prog = unittest.main(
+        suite=suite, testRunner=runner, exit=False, verbosity=verbosity
+    )
     return prog.result
 
 

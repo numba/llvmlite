@@ -1,6 +1,5 @@
 import os
-from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
-                    c_void_p, string_at)
+from ctypes import POINTER, c_char_p, c_int, c_longlong, c_size_t, c_void_p, string_at
 
 from llvmlite.binding import ffi
 from llvmlite.binding.common import _decode_string, _encode_string
@@ -38,9 +37,8 @@ class FeatureMap(dict):
 
         """
         iterator = sorted(self.items()) if sort else iter(self.items())
-        flag_map = {True: '+', False: '-'}
-        return ','.join('{0}{1}'.format(flag_map[v], k)
-                        for k, v in iterator)
+        flag_map = {True: "+", False: "-"}
+        return ",".join("{0}{1}".format(flag_map[v], k) for k, v in iterator)
 
 
 def get_host_cpu_features():
@@ -59,10 +57,10 @@ def get_host_cpu_features():
         outdict = FeatureMap()
         if not ffi.lib.LLVMPY_GetHostCPUFeatures(out):
             return outdict
-        flag_map = {'+': True, '-': False}
+        flag_map = {"+": True, "-": False}
         content = str(out)
         if content:  # protect against empty string
-            for feat in content.split(','):
+            for feat in content.split(","):
                 if feat:  # protect against empty feature
                     outdict[feat[1:]] = flag_map[feat[0]]
         return outdict
@@ -142,9 +140,11 @@ class TargetData(ffi.ObjectRef):
 
         offset = ffi.lib.LLVMPY_OffsetOfElement(self, ty, position)
         if offset == -1:
-            raise ValueError("Could not determined offset of {}th "
-                             "element of the type '{}'. Is it a struct"
-                             "type?".format(position, str(ty)))
+            raise ValueError(
+                "Could not determined offset of {}th "
+                "element of the type '{}'. Is it a struct"
+                "type?".format(position, str(ty))
+            )
         return offset
 
     def get_pointee_abi_size(self, ty):
@@ -166,13 +166,12 @@ class TargetData(ffi.ObjectRef):
         return size
 
 
-RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
-CODEMODEL = frozenset(['default', 'jitdefault', 'small', 'kernel', 'medium',
-                       'large'])
+RELOC = frozenset(["default", "static", "pic", "dynamicnopic"])
+CODEMODEL = frozenset(["default", "jitdefault", "small", "kernel", "medium", "large"])
 
 
 class Target(ffi.ObjectRef):
-    _triple = ''
+    _triple = ""
 
     # No _dispose() method since LLVMGetTargetFromTriple() returns a
     # persistent object.
@@ -191,8 +190,7 @@ class Target(ffi.ObjectRef):
         Create a Target instance for the given triple (a string).
         """
         with ffi.OutputString() as outerr:
-            target = ffi.lib.LLVMPY_GetTargetFromTriple(triple.encode('utf8'),
-                                                        outerr)
+            target = ffi.lib.LLVMPY_GetTargetFromTriple(triple.encode("utf8"), outerr)
             if not target:
                 raise RuntimeError(str(outerr))
             target = cls(target)
@@ -216,9 +214,17 @@ class Target(ffi.ObjectRef):
     def __str__(self):
         return "<Target {0} ({1})>".format(self.name, self.description)
 
-    def create_target_machine(self, cpu='', features='',
-                              opt=2, reloc='default', codemodel='jitdefault',
-                              printmc=False, jit=False, abiname=''):
+    def create_target_machine(
+        self,
+        cpu="",
+        features="",
+        opt=2,
+        reloc="default",
+        codemodel="jitdefault",
+        printmc=False,
+        jit=False,
+        abiname="",
+    ):
         """
         Create a new TargetMachine for this target and the given options.
 
@@ -241,19 +247,20 @@ class Target(ffi.ObjectRef):
         # MCJIT under Windows only supports ELF objects, see
         # http://lists.llvm.org/pipermail/llvm-dev/2013-December/068341.html
         # Note we still want to produce regular COFF files in AOT mode.
-        if os.name == 'nt' and codemodel == 'jitdefault':
-            triple += '-elf'
-        tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
-                                                _encode_string(triple),
-                                                _encode_string(cpu),
-                                                _encode_string(features),
-                                                opt,
-                                                _encode_string(reloc),
-                                                _encode_string(codemodel),
-                                                int(printmc),
-                                                int(jit),
-                                                _encode_string(abiname),
-                                                )
+        if os.name == "nt" and codemodel == "jitdefault":
+            triple += "-elf"
+        tm = ffi.lib.LLVMPY_CreateTargetMachine(
+            self,
+            _encode_string(triple),
+            _encode_string(cpu),
+            _encode_string(features),
+            opt,
+            _encode_string(reloc),
+            _encode_string(codemodel),
+            int(printmc),
+            int(jit),
+            _encode_string(abiname),
+        )
         if tm:
             return TargetMachine(tm)
         else:
@@ -261,7 +268,6 @@ class Target(ffi.ObjectRef):
 
 
 class TargetMachine(ffi.ObjectRef):
-
     def _dispose(self):
         self._capi.LLVMPY_DisposeTargetMachine(self)
 
@@ -302,9 +308,9 @@ class TargetMachine(ffi.ObjectRef):
             Emit object code or (if False) emit assembly code.
         """
         with ffi.OutputString() as outerr:
-            mb = ffi.lib.LLVMPY_TargetMachineEmitToMemory(self, module,
-                                                          int(use_object),
-                                                          outerr)
+            mb = ffi.lib.LLVMPY_TargetMachineEmitToMemory(
+                self, module, int(use_object), outerr
+            )
             if not mb:
                 raise RuntimeError(str(outerr))
 
@@ -363,21 +369,23 @@ ffi.lib.LLVMPY_DisposeTargetData.argtypes = [
     ffi.LLVMTargetDataRef,
 ]
 
-ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
-                                         ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef, ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_ABISizeOfType.restype = c_longlong
 
-ffi.lib.LLVMPY_OffsetOfElement.argtypes = [ffi.LLVMTargetDataRef,
-                                           ffi.LLVMTypeRef,
-                                           c_int]
+ffi.lib.LLVMPY_OffsetOfElement.argtypes = [
+    ffi.LLVMTargetDataRef,
+    ffi.LLVMTypeRef,
+    c_int,
+]
 ffi.lib.LLVMPY_OffsetOfElement.restype = c_longlong
 
-ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef,
-                                                ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef, ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_ABISizeOfElementType.restype = c_longlong
 
-ffi.lib.LLVMPY_ABIAlignmentOfElementType.argtypes = [ffi.LLVMTargetDataRef,
-                                                     ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ABIAlignmentOfElementType.argtypes = [
+    ffi.LLVMTargetDataRef,
+    ffi.LLVMTypeRef,
+]
 ffi.lib.LLVMPY_ABIAlignmentOfElementType.restype = c_longlong
 
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
@@ -414,11 +422,12 @@ ffi.lib.LLVMPY_CreateTargetMachine.restype = ffi.LLVMTargetMachineRef
 
 ffi.lib.LLVMPY_DisposeTargetMachine.argtypes = [ffi.LLVMTargetMachineRef]
 
-ffi.lib.LLVMPY_GetTargetMachineTriple.argtypes = [ffi.LLVMTargetMachineRef,
-                                                  POINTER(c_char_p)]
+ffi.lib.LLVMPY_GetTargetMachineTriple.argtypes = [
+    ffi.LLVMTargetMachineRef,
+    POINTER(c_char_p),
+]
 
-ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity.argtypes = [
-    ffi.LLVMTargetMachineRef, c_int]
+ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity.argtypes = [ffi.LLVMTargetMachineRef, c_int]
 
 ffi.lib.LLVMPY_AddAnalysisPasses.argtypes = [
     ffi.LLVMTargetMachineRef,

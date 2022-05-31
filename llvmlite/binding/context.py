@@ -11,7 +11,7 @@ def get_global_context():
 
 class ContextRef(ffi.ObjectRef):
     def __init__(self, context_ptr):
-        super(ContextRef, self).__init__(context_ptr)
+        super().__init__(context_ptr)
 
     def _dispose(self):
         ffi.lib.LLVMPY_ContextDispose(self)

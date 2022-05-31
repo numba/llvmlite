@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-from ctypes import CFUNCTYPE, c_int, POINTER
-import sys
+from ctypes import CFUNCTYPE, POINTER, c_int
+
 try:
     from time import perf_counter as time
 except ImportError:
@@ -10,13 +10,14 @@ except ImportError:
 import numpy as np
 
 try:
-    import faulthandler; faulthandler.enable()
+    import faulthandler
+
+    faulthandler.enable()
 except ImportError:
     pass
 
-import llvmlite.ir as ll
 import llvmlite.binding as llvm
-
+import llvmlite.ir as ll
 
 llvm.initialize()
 llvm.initialize_native_target()
@@ -25,8 +26,7 @@ llvm.initialize_native_asmprinter()
 
 t1 = time()
 
-fnty = ll.FunctionType(ll.IntType(32), [ll.IntType(32).as_pointer(),
-                                        ll.IntType(32)])
+fnty = ll.FunctionType(ll.IntType(32), [ll.IntType(32).as_pointer(), ll.IntType(32)])
 module = ll.Module()
 
 func = ll.Function(module, fnty, name="sum")
@@ -55,7 +55,7 @@ accum.add_incoming(added, bb_loop)
 indexp1 = builder.add(index, ll.Constant(index.type, 1))
 index.add_incoming(indexp1, bb_loop)
 
-cond = builder.icmp_unsigned('<', indexp1, func.args[1])
+cond = builder.icmp_unsigned("<", indexp1, func.args[1])
 builder.cbranch(cond, bb_loop, bb_exit)
 
 builder.position_at_end(bb_exit)
@@ -65,7 +65,7 @@ strmod = str(module)
 
 t2 = time()
 
-print("-- generate IR:", t2-t1)
+print("-- generate IR:", t2 - t1)
 
 t3 = time()
 
@@ -73,7 +73,7 @@ llmod = llvm.parse_assembly(strmod)
 
 t4 = time()
 
-print("-- parse assembly:", t4-t3)
+print("-- parse assembly:", t4 - t3)
 
 print(llmod)
 
@@ -88,7 +88,7 @@ pm.run(llmod)
 
 t6 = time()
 
-print("-- optimize:", t6-t5)
+print("-- optimize:", t6 - t5)
 
 t7 = time()
 
@@ -108,4 +108,3 @@ with llvm.create_mcjit_compiler(llmod, target_machine) as ee:
     res = cfunc(A.ctypes.data_as(POINTER(c_int)), A.size)
 
     print(res, A.sum())
-

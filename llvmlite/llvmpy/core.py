@@ -1,13 +1,13 @@
 import itertools
-
-from llvmlite import ir
-from llvmlite import binding as llvm
-
 import warnings
+
+from llvmlite import binding as llvm
+from llvmlite import ir
 
 warnings.warn(
     "The module `llvmlite.llvmpy.core` is deprecated and will be removed in "
-    "the future. Equivalent functionality is provided by `llvmlite.ir`.")
+    "the future. Equivalent functionality is provided by `llvmlite.ir`."
+)
 
 CallOrInvokeInstruction = ir.CallInstr
 
@@ -56,18 +56,18 @@ INTR_LOG = "llvm.log"
 INTR_LOG10 = "llvm.log10"
 INTR_SIN = "llvm.sin"
 INTR_COS = "llvm.cos"
-INTR_POWI = 'llvm.powi'
-INTR_POW = 'llvm.pow'
-INTR_FLOOR = 'llvm.floor'
+INTR_POWI = "llvm.powi"
+INTR_POW = "llvm.pow"
+INTR_FLOOR = "llvm.floor"
 
-LINKAGE_EXTERNAL = 'external'
-LINKAGE_INTERNAL = 'internal'
-LINKAGE_LINKONCE_ODR = 'linkonce_odr'
+LINKAGE_EXTERNAL = "external"
+LINKAGE_INTERNAL = "internal"
+LINKAGE_LINKONCE_ODR = "linkonce_odr"
 
-ATTR_NO_CAPTURE = 'nocapture'
+ATTR_NO_CAPTURE = "nocapture"
 
 
-class Type(object):
+class Type:
     @staticmethod
     def int(width=32):
         return ir.IntType(width)
@@ -105,11 +105,11 @@ class Type(object):
         return ir.VoidType()
 
 
-class Constant(object):
+class Constant:
     @staticmethod
     def all_ones(ty):
         if isinstance(ty, ir.IntType):
-            return Constant.int(ty, int('1' * ty.width, 2))
+            return Constant.int(ty, int("1" * ty.width, 2))
         else:
             raise NotImplementedError(ty)
 
@@ -139,10 +139,10 @@ class Constant(object):
 
     @staticmethod
     def stringz(string):
-        n = (len(string) + 1)
-        buf = bytearray((' ' * n).encode('ascii'))
+        n = len(string) + 1
+        buf = bytearray((" " * n).encode("ascii"))
         buf[-1] = 0
-        buf[:-1] = string.encode('utf-8')
+        buf[:-1] = string.encode("utf-8")
         return ir.Constant(ir.ArrayType(ir.IntType(8), n), buf)
 
     @staticmethod
@@ -163,7 +163,6 @@ class Constant(object):
 
 
 class Module(ir.Module):
-
     def get_or_insert_function(self, fnty, name):
         if name in self.globals:
             return self.globals[name]
@@ -177,8 +176,7 @@ class Module(ir.Module):
         return ir.Function(self, fnty, name)
 
     def add_global_variable(self, ty, name, addrspace=0):
-        return ir.GlobalVariable(self, ty, self.get_unique_name(name),
-                                 addrspace)
+        return ir.GlobalVariable(self, ty, self.get_unique_name(name), addrspace)
 
     def get_global_variable_named(self, name):
         try:
@@ -194,9 +192,8 @@ class Module(ir.Module):
 
 
 class Function(ir.Function):
-
     @classmethod
-    def new(cls, module_obj, functy, name=''):
+    def new(cls, module_obj, functy, name=""):
         return cls(module_obj, functy, name)
 
     @staticmethod
@@ -205,51 +202,50 @@ class Function(ir.Function):
 
 
 _icmp_umap = {
-    ICMP_EQ: '==',
-    ICMP_NE: '!=',
-    ICMP_ULT: '<',
-    ICMP_ULE: '<=',
-    ICMP_UGT: '>',
-    ICMP_UGE: '>=',
+    ICMP_EQ: "==",
+    ICMP_NE: "!=",
+    ICMP_ULT: "<",
+    ICMP_ULE: "<=",
+    ICMP_UGT: ">",
+    ICMP_UGE: ">=",
 }
 
 _icmp_smap = {
-    ICMP_SLT: '<',
-    ICMP_SLE: '<=',
-    ICMP_SGT: '>',
-    ICMP_SGE: '>=',
+    ICMP_SLT: "<",
+    ICMP_SLE: "<=",
+    ICMP_SGT: ">",
+    ICMP_SGE: ">=",
 }
 
 _fcmp_omap = {
-    FCMP_OEQ: '==',
-    FCMP_OGT: '>',
-    FCMP_OGE: '>=',
-    FCMP_OLT: '<',
-    FCMP_OLE: '<=',
-    FCMP_ONE: '!=',
-    FCMP_ORD: 'ord',
+    FCMP_OEQ: "==",
+    FCMP_OGT: ">",
+    FCMP_OGE: ">=",
+    FCMP_OLT: "<",
+    FCMP_OLE: "<=",
+    FCMP_ONE: "!=",
+    FCMP_ORD: "ord",
 }
 
 _fcmp_umap = {
-    FCMP_UEQ: '==',
-    FCMP_UGT: '>',
-    FCMP_UGE: '>=',
-    FCMP_ULT: '<',
-    FCMP_ULE: '<=',
-    FCMP_UNE: '!=',
-    FCMP_UNO: 'uno',
+    FCMP_UEQ: "==",
+    FCMP_UGT: ">",
+    FCMP_UGE: ">=",
+    FCMP_ULT: "<",
+    FCMP_ULE: "<=",
+    FCMP_UNE: "!=",
+    FCMP_UNO: "uno",
 }
 
 
 class Builder(ir.IRBuilder):
-
-    def icmp(self, pred, lhs, rhs, name=''):
+    def icmp(self, pred, lhs, rhs, name=""):
         if pred in _icmp_umap:
             return self.icmp_unsigned(_icmp_umap[pred], lhs, rhs, name=name)
         else:
             return self.icmp_signed(_icmp_smap[pred], lhs, rhs, name=name)
 
-    def fcmp(self, pred, lhs, rhs, name=''):
+    def fcmp(self, pred, lhs, rhs, name=""):
         if pred in _fcmp_umap:
             return self.fcmp_unordered(_fcmp_umap[pred], lhs, rhs, name=name)
         else:
@@ -262,7 +258,7 @@ class MetaDataString(ir.MetaDataString):
         return MetaDataString(module, text)
 
 
-class MetaData(object):
+class MetaData:
     @staticmethod
     def get(module, values):
         return module.add_metadata(values)

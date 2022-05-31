@@ -1,46 +1,51 @@
-from ctypes import c_bool, c_int, c_size_t, Structure, byref
 from collections import namedtuple
+from ctypes import Structure, byref, c_bool, c_int, c_size_t
 from enum import IntFlag
+
 from llvmlite.binding import ffi
 
-_prunestats = namedtuple('PruneStats',
-                         ('basicblock diamond fanout fanout_raise'))
+_prunestats = namedtuple("PruneStats", ("basicblock diamond fanout fanout_raise"))
 
 
 class PruneStats(_prunestats):
-    """ Holds statistics from reference count pruning.
-    """
+    """Holds statistics from reference count pruning."""
 
     def __add__(self, other):
         if not isinstance(other, PruneStats):
-            msg = 'PruneStats can only be added to another PruneStats, got {}.'
+            msg = "PruneStats can only be added to another PruneStats, got {}."
             raise TypeError(msg.format(type(other)))
-        return PruneStats(self.basicblock + other.basicblock,
-                          self.diamond + other.diamond,
-                          self.fanout + other.fanout,
-                          self.fanout_raise + other.fanout_raise)
+        return PruneStats(
+            self.basicblock + other.basicblock,
+            self.diamond + other.diamond,
+            self.fanout + other.fanout,
+            self.fanout_raise + other.fanout_raise,
+        )
 
     def __sub__(self, other):
         if not isinstance(other, PruneStats):
-            msg = ('PruneStats can only be subtracted from another PruneStats, '
-                   'got {}.')
+            msg = (
+                "PruneStats can only be subtracted from another PruneStats, " "got {}."
+            )
             raise TypeError(msg.format(type(other)))
-        return PruneStats(self.basicblock - other.basicblock,
-                          self.diamond - other.diamond,
-                          self.fanout - other.fanout,
-                          self.fanout_raise - other.fanout_raise)
+        return PruneStats(
+            self.basicblock - other.basicblock,
+            self.diamond - other.diamond,
+            self.fanout - other.fanout,
+            self.fanout_raise - other.fanout_raise,
+        )
 
 
 class _c_PruneStats(Structure):
     _fields_ = [
-        ('basicblock', c_size_t),
-        ('diamond', c_size_t),
-        ('fanout', c_size_t),
-        ('fanout_raise', c_size_t)]
+        ("basicblock", c_size_t),
+        ("diamond", c_size_t),
+        ("fanout", c_size_t),
+        ("fanout_raise", c_size_t),
+    ]
 
 
 def dump_refprune_stats(printout=False):
-    """ Returns a namedtuple containing the current values for the refop pruning
+    """Returns a namedtuple containing the current values for the refop pruning
     statistics. If kwarg `printout` is True the stats are printed to stderr,
     default is False.
     """
@@ -49,8 +54,7 @@ def dump_refprune_stats(printout=False):
     do_print = c_bool(printout)
 
     ffi.lib.LLVMPY_DumpRefPruneStats(byref(stats), do_print)
-    return PruneStats(stats.basicblock, stats.diamond, stats.fanout,
-                      stats.fanout_raise)
+    return PruneStats(stats.basicblock, stats.diamond, stats.fanout, stats.fanout_raise)
 
 
 def set_time_passes(enable):
@@ -90,16 +94,15 @@ def create_function_pass_manager(module):
 
 
 class RefPruneSubpasses(IntFlag):
-    PER_BB       = 0b0001    # noqa: E221
-    DIAMOND      = 0b0010    # noqa: E221
-    FANOUT       = 0b0100    # noqa: E221
+    PER_BB = 0b0001  # noqa: E221
+    DIAMOND = 0b0010  # noqa: E221
+    FANOUT = 0b0100  # noqa: E221
     FANOUT_RAISE = 0b1000
     ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 
 class PassManager(ffi.ObjectRef):
-    """PassManager
-    """
+    """PassManager"""
 
     def _dispose(self):
         self._capi.LLVMPY_DisposePassManager(self)
@@ -175,8 +178,9 @@ class PassManager(ffi.ObjectRef):
 
     # Non-standard LLVM passes
 
-    def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL,
-                          subgraph_limit=1000):
+    def add_refprune_pass(
+        self, subpasses_flags=RefPruneSubpasses.ALL, subgraph_limit=1000
+    ):
         """Add Numba specific Reference count pruning pass.
 
         Parameters
@@ -194,7 +198,6 @@ class PassManager(ffi.ObjectRef):
 
 
 class ModulePassManager(PassManager):
-
     def __init__(self, ptr=None):
         if ptr is None:
             ptr = ffi.lib.LLVMPY_CreatePassManager()
@@ -208,7 +211,6 @@ class ModulePassManager(PassManager):
 
 
 class FunctionPassManager(PassManager):
-
     def __init__(self, module):
         ptr = ffi.lib.LLVMPY_CreateFunctionPassManager(module)
         self._module = module
@@ -246,8 +248,7 @@ ffi.lib.LLVMPY_CreateFunctionPassManager.restype = ffi.LLVMPassManagerRef
 
 ffi.lib.LLVMPY_DisposePassManager.argtypes = [ffi.LLVMPassManagerRef]
 
-ffi.lib.LLVMPY_RunPassManager.argtypes = [ffi.LLVMPassManagerRef,
-                                          ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_RunPassManager.argtypes = [ffi.LLVMPassManagerRef, ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_RunPassManager.restype = c_bool
 
 ffi.lib.LLVMPY_InitializeFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef]
@@ -256,15 +257,16 @@ ffi.lib.LLVMPY_InitializeFunctionPassManager.restype = c_bool
 ffi.lib.LLVMPY_FinalizeFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_FinalizeFunctionPassManager.restype = c_bool
 
-ffi.lib.LLVMPY_RunFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef,
-                                                  ffi.LLVMValueRef]
+ffi.lib.LLVMPY_RunFunctionPassManager.argtypes = [
+    ffi.LLVMPassManagerRef,
+    ffi.LLVMValueRef,
+]
 ffi.lib.LLVMPY_RunFunctionPassManager.restype = c_bool
 
 ffi.lib.LLVMPY_AddConstantMergePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadArgEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddFunctionAttrsPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddFunctionInliningPass.argtypes = [
-    ffi.LLVMPassManagerRef, c_int]
+ffi.lib.LLVMPY_AddFunctionInliningPass.argtypes = [ffi.LLVMPassManagerRef, c_int]
 ffi.lib.LLVMPY_AddGlobalDCEPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddGlobalOptimizerPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddIPSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -279,5 +281,4 @@ ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 
-ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
-                                           c_size_t]
+ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int, c_size_t]

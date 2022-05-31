@@ -4,7 +4,6 @@ from ctypes import CFUNCTYPE, c_double
 
 import llvmlite.binding as llvm
 
-
 # All these initializations are required for code generation!
 llvm.initialize()
 llvm.initialize_native_target()
@@ -22,6 +21,7 @@ llvm_ir = """
      ret double %"res"
    }
    """
+
 
 def create_execution_engine():
     """

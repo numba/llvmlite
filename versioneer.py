@@ -1,4 +1,3 @@
-
 # Version: 0.14
 
 """
@@ -308,9 +307,12 @@ def run_command(commands, args, cwd=None, verbose=False, hide_stderr=False):
     for c in commands:
         try:
             # remember shell=False, so use git.cmd on windows, not just git
-            p = subprocess.Popen([c] + args, cwd=cwd, stdout=subprocess.PIPE,
-                                 stderr=(subprocess.PIPE if hide_stderr
-                                         else None))
+            p = subprocess.Popen(
+                [c] + args,
+                cwd=cwd,
+                stdout=subprocess.PIPE,
+                stderr=(subprocess.PIPE if hide_stderr else None),
+            )
             break
         except EnvironmentError:
             e = sys.exc_info()[1]
@@ -332,7 +334,11 @@ def run_command(commands, args, cwd=None, verbose=False, hide_stderr=False):
             print("unable to run %s (error)" % args[0])
         return None
     return stdout
-LONG_VERSION_PY['git'] = '''
+
+
+LONG_VERSION_PY[
+    "git"
+] = """
 # This file helps to compute a version number in source trees obtained from
 # git-archive tarball (such as those provided by githubs download-from-tag
 # feature). Distribution tarballs (built by setup.py sdist) and build
@@ -571,7 +577,7 @@ def get_versions(default={"version": "0+unknown", "full": ""}, verbose=False):
     return (git_versions_from_vcs(tag_prefix, root, verbose)
             or versions_from_parentdir(parentdir_prefix, root, verbose)
             or default)
-'''
+"""
 
 
 def git_get_keywords(versionfile_abs):
@@ -609,7 +615,7 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
     # starting in git-1.8.3, tags are listed as "tag: foo-1.0" instead of
     # just "foo-1.0". If we see a "tag: " prefix, prefer those.
     TAG = "tag: "
-    tags = set([r[len(TAG):] for r in refs if r.startswith(TAG)])
+    tags = set([r[len(TAG) :] for r in refs if r.startswith(TAG)])
     if not tags:
         # Either we're using git < 1.8.3, or there really are no tags. We use
         # a heuristic: assume all version tags have a digit. The old git %d
@@ -618,24 +624,22 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose=False):
         # between branches and tags. By ignoring refnames without digits, we
         # filter out many common branch names like "release" and
         # "stabilization", as well as "HEAD" and "master".
-        tags = set([r for r in refs if re.search(r'\d', r)])
+        tags = set([r for r in refs if re.search(r"\d", r)])
         if verbose:
-            print("discarding '%s', no digits" % ",".join(refs-tags))
+            print("discarding '%s', no digits" % ",".join(refs - tags))
     if verbose:
         print("likely tags: %s" % ",".join(sorted(tags)))
     for ref in sorted(tags):
         # sorting will prefer e.g. "2.0" over "2.0rc1"
         if ref.startswith(tag_prefix):
-            r = ref[len(tag_prefix):]
+            r = ref[len(tag_prefix) :]
             if verbose:
                 print("picking %s" % r)
-            return {"version": r,
-                    "full": keywords["full"].strip()}
+            return {"version": r, "full": keywords["full"].strip()}
     # no suitable tags, so version is "0+unknown", but full hex is still there
     if verbose:
         print("no suitable tags, using unknown + full revision id")
-    return {"version": "0+unknown",
-            "full": keywords["full"].strip()}
+    return {"version": "0+unknown", "full": keywords["full"].strip()}
 
 
 def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
@@ -644,19 +648,19 @@ def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
     # dirty
     dirty = git_describe.endswith("-dirty")
     if dirty:
-        git_describe = git_describe[:git_describe.rindex("-dirty")]
+        git_describe = git_describe[: git_describe.rindex("-dirty")]
     dirty_suffix = ".dirty" if dirty else ""
 
     # now we have TAG-NUM-gHEX or HEX
 
     if "-" not in git_describe:  # just HEX
-        return "0+untagged.g"+git_describe+dirty_suffix, dirty
+        return "0+untagged.g" + git_describe + dirty_suffix, dirty
 
     # just TAG-NUM-gHEX
-    mo = re.search(r'^(.+)-(\d+)-g([0-9a-f]+)$', git_describe)
+    mo = re.search(r"^(.+)-(\d+)-g([0-9a-f]+)$", git_describe)
     if not mo:
         # unparseable. Maybe git-describe is misbehaving?
-        return "0+unparseable"+dirty_suffix, dirty
+        return "0+unparseable" + dirty_suffix, dirty
 
     # tag
     full_tag = mo.group(1)
@@ -665,7 +669,7 @@ def git_parse_vcs_describe(git_describe, tag_prefix, verbose=False):
             fmt = "tag '%s' doesn't start with prefix '%s'"
             print(fmt % (full_tag, tag_prefix))
         return None, dirty
-    tag = full_tag[len(tag_prefix):]
+    tag = full_tag[len(tag_prefix) :]
 
     # distance: number of commits since tag
     distance = int(mo.group(2))
@@ -700,9 +704,9 @@ def git_versions_from_vcs(tag_prefix, root, verbose=False):
         GITS = ["git.cmd", "git.exe"]
     # if there is a tag, this yields TAG-NUM-gHEX[-dirty]
     # if there are no tags, this yields HEX[-dirty] (no NUM)
-    stdout = run_command(GITS, ["describe", "--tags", "--dirty",
-                                "--always", "--long"],
-                         cwd=root)
+    stdout = run_command(
+        GITS, ["describe", "--tags", "--dirty", "--always", "--long"], cwd=root
+    )
     # --long was added in git-1.5.5
     if stdout is None:
         return {}  # try next method
@@ -758,10 +762,13 @@ def versions_from_parentdir(parentdir_prefix, root, verbose=False):
     dirname = os.path.basename(root)
     if not dirname.startswith(parentdir_prefix):
         if verbose:
-            print("guessing rootdir is '%s', but '%s' doesn't start with "
-                  "prefix '%s'" % (root, dirname, parentdir_prefix))
+            print(
+                "guessing rootdir is '%s', but '%s' doesn't start with "
+                "prefix '%s'" % (root, dirname, parentdir_prefix)
+            )
         return None
-    return {"version": dirname[len(parentdir_prefix):], "full": ""}
+    return {"version": dirname[len(parentdir_prefix) :], "full": ""}
+
 
 SHORT_VERSION_PY = """
 # This file was generated by 'versioneer.py' (0.14) from
@@ -811,16 +818,14 @@ def get_root():
 
 
 def vcs_function(vcs, suffix):
-    return getattr(sys.modules[__name__], '%s_%s' % (vcs, suffix), None)
+    return getattr(sys.modules[__name__], "%s_%s" % (vcs, suffix), None)
 
 
 def get_versions(default=DEFAULT, verbose=False):
     # returns dict with two keys: 'version' and 'full'
-    assert versionfile_source is not None, \
-        "please set versioneer.versionfile_source"
+    assert versionfile_source is not None, "please set versioneer.versionfile_source"
     assert tag_prefix is not None, "please set versioneer.tag_prefix"
-    assert parentdir_prefix is not None, \
-        "please set versioneer.parentdir_prefix"
+    assert parentdir_prefix is not None, "please set versioneer.parentdir_prefix"
     assert VCS is not None, "please set versioneer.VCS"
 
     # I am in versioneer.py, which must live at the top of the source tree,
@@ -899,14 +904,14 @@ class cmd_build(_build):
         # now locate _version.py in the new build/ directory and replace it
         # with an updated value
         if versionfile_build:
-            target_versionfile = os.path.join(self.build_lib,
-                                              versionfile_build)
+            target_versionfile = os.path.join(self.build_lib, versionfile_build)
             print("UPDATING %s" % target_versionfile)
             os.unlink(target_versionfile)
             with open(target_versionfile, "w") as f:
                 f.write(SHORT_VERSION_PY % versions)
 
-if 'cx_Freeze' in sys.modules:  # cx_freeze enabled?
+
+if "cx_Freeze" in sys.modules:  # cx_freeze enabled?
     from cx_Freeze.dist import build_exe as _build_exe
 
     class cmd_build_exe(_build_exe):
@@ -923,11 +928,15 @@ if 'cx_Freeze' in sys.modules:  # cx_freeze enabled?
             with open(versionfile_source, "w") as f:
                 assert VCS is not None, "please set versioneer.VCS"
                 LONG = LONG_VERSION_PY[VCS]
-                f.write(LONG % {"DOLLAR": "$",
-                                "TAG_PREFIX": tag_prefix,
-                                "PARENTDIR_PREFIX": parentdir_prefix,
-                                "VERSIONFILE_SOURCE": versionfile_source,
-                                })
+                f.write(
+                    LONG
+                    % {
+                        "DOLLAR": "$",
+                        "TAG_PREFIX": tag_prefix,
+                        "PARENTDIR_PREFIX": parentdir_prefix,
+                        "VERSIONFILE_SOURCE": versionfile_source,
+                    }
+                )
 
 
 class cmd_sdist(_sdist):
@@ -948,6 +957,7 @@ class cmd_sdist(_sdist):
         with open(target_versionfile, "w") as f:
             f.write(SHORT_VERSION_PY % self._versioneer_generated_versions)
 
+
 INIT_PY_SNIPPET = """
 from ._version import get_versions
 __version__ = get_versions()['version']
@@ -956,8 +966,7 @@ del get_versions
 
 
 class cmd_update_files(Command):
-    description = ("install/upgrade Versioneer files: "
-                   "__init__.py SRC/_version.py")
+    description = "install/upgrade Versioneer files: " "__init__.py SRC/_version.py"
     user_options = []
     boolean_options = []
 
@@ -972,11 +981,15 @@ class cmd_update_files(Command):
         with open(versionfile_source, "w") as f:
             assert VCS is not None, "please set versioneer.VCS"
             LONG = LONG_VERSION_PY[VCS]
-            f.write(LONG % {"DOLLAR": "$",
-                            "TAG_PREFIX": tag_prefix,
-                            "PARENTDIR_PREFIX": parentdir_prefix,
-                            "VERSIONFILE_SOURCE": versionfile_source,
-                            })
+            f.write(
+                LONG
+                % {
+                    "DOLLAR": "$",
+                    "TAG_PREFIX": tag_prefix,
+                    "PARENTDIR_PREFIX": parentdir_prefix,
+                    "VERSIONFILE_SOURCE": versionfile_source,
+                }
+            )
 
         ipy = os.path.join(os.path.dirname(versionfile_source), "__init__.py")
         if os.path.exists(ipy):
@@ -1020,8 +1033,10 @@ class cmd_update_files(Command):
         else:
             print(" 'versioneer.py' already in MANIFEST.in")
         if versionfile_source not in simple_includes:
-            print(" appending versionfile_source ('%s') to MANIFEST.in" %
-                  versionfile_source)
+            print(
+                " appending versionfile_source ('%s') to MANIFEST.in"
+                % versionfile_source
+            )
             with open(manifest_in, "a") as f:
                 f.write("include %s\n" % versionfile_source)
         else:
@@ -1034,13 +1049,14 @@ class cmd_update_files(Command):
 
 
 def get_cmdclass():
-    cmds = {'version': cmd_version,
-            'versioneer': cmd_update_files,
-            'build': cmd_build,
-            'sdist': cmd_sdist,
-            }
-    if 'cx_Freeze' in sys.modules:  # cx_freeze enabled?
-        cmds['build_exe'] = cmd_build_exe
-        del cmds['build']
+    cmds = {
+        "version": cmd_version,
+        "versioneer": cmd_update_files,
+        "build": cmd_build,
+        "sdist": cmd_sdist,
+    }
+    if "cx_Freeze" in sys.modules:  # cx_freeze enabled?
+        cmds["build_exe"] = cmd_build_exe
+        del cmds["build"]
 
     return cmds

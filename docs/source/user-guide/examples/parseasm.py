@@ -7,8 +7,7 @@ llvm.initialize_native_asmprinter()
 
 mod = lc.Module()
 mod.triple = llvm.get_default_triple()
-func = lc.Function(mod, lc.FunctionType(lc.VoidType(), [lc.IntType(32)]),
-                   name='foo')
+func = lc.Function(mod, lc.FunctionType(lc.VoidType(), [lc.IntType(32)]), name="foo")
 builder = lc.IRBuilder(func.append_basic_block())
 builder.ret_void()
 
@@ -34,4 +33,3 @@ print(func, ee.get_function_address("foo"))
 ee.close()
 
 llvm.shutdown()
-

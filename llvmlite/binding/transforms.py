@@ -1,6 +1,6 @@
-from ctypes import c_uint, c_bool
-from llvmlite.binding import ffi
-from llvmlite.binding import passmanagers
+from ctypes import c_bool, c_uint
+
+from llvmlite.binding import ffi, passmanagers
 
 
 def create_pass_manager_builder():
@@ -47,8 +47,7 @@ class PassManagerBuilder(ffi.ObjectRef):
 
     @inlining_threshold.setter
     def inlining_threshold(self, threshold):
-        ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(
-            self, threshold)
+        ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(self, threshold)
 
     @property
     def disable_unroll_loops(self):
@@ -123,29 +122,33 @@ ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager.argtypes = [
 
 # Unsigned int PassManagerBuilder properties
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderSetOptLevel,
-              ffi.lib.LLVMPY_PassManagerBuilderSetSizeLevel,
-              ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold,
-              ):
+for _func in (
+    ffi.lib.LLVMPY_PassManagerBuilderSetOptLevel,
+    ffi.lib.LLVMPY_PassManagerBuilderSetSizeLevel,
+    ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold,
+):
     _func.argtypes = [ffi.LLVMPassManagerBuilderRef, c_uint]
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel,
-              ffi.lib.LLVMPY_PassManagerBuilderGetSizeLevel,
-              ):
+for _func in (
+    ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel,
+    ffi.lib.LLVMPY_PassManagerBuilderGetSizeLevel,
+):
     _func.argtypes = [ffi.LLVMPassManagerBuilderRef]
     _func.restype = c_uint
 
 # Boolean PassManagerBuilder properties
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops,
-              ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize,
-              ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize,
-              ):
+for _func in (
+    ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops,
+    ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize,
+    ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize,
+):
     _func.argtypes = [ffi.LLVMPassManagerBuilderRef, c_bool]
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
-              ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize,
-              ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize,
-              ):
+for _func in (
+    ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
+    ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize,
+    ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize,
+):
     _func.argtypes = [ffi.LLVMPassManagerBuilderRef]
     _func.restype = c_bool

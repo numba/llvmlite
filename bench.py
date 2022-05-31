@@ -4,8 +4,9 @@ Crude benchmark to compare llvmlite and llvmpy performance.
 
 from __future__ import print_function
 
-from ctypes import CFUNCTYPE, c_int, POINTER
 import sys
+from ctypes import CFUNCTYPE, POINTER, c_int
+
 try:
     from time import perf_counter as time
 except ImportError:
@@ -14,7 +15,9 @@ except ImportError:
 import numpy as np
 
 try:
-    import faulthandler; faulthandler.enable()
+    import faulthandler
+
+    faulthandler.enable()
 except ImportError:
     pass
 
@@ -24,13 +27,13 @@ def run_bench(verbose):
 
     int32 = lc.Type.int(32)
     fnty = lc.Type.function(int32, [lc.Type.pointer(int32), int32])
-    module = lc.Module.new('foo')
+    module = lc.Module.new("foo")
 
     func = lc.Function.new(module, fnty, name="sum")
 
-    bb_entry = func.append_basic_block('entry')
-    bb_loop = func.append_basic_block('loop')
-    bb_exit = func.append_basic_block('exit')
+    bb_entry = func.append_basic_block("entry")
+    bb_loop = func.append_basic_block("loop")
+    bb_exit = func.append_basic_block("exit")
 
     builder = lc.Builder.new(bb_entry)
     builder.position_at_end(bb_entry)
@@ -58,21 +61,21 @@ def run_bench(verbose):
     builder.position_at_end(bb_exit)
     builder.ret(added)
 
-    #strmod = str(module)
+    # strmod = str(module)
 
     dt = time() - t
     if verbose:
-        print("generate IR: %s" % (dt,))
+        print(f"generate IR: {dt}")
 
     t = time()
 
-    eb = ee.EngineBuilder.new(module) #.opt(3)
+    eb = ee.EngineBuilder.new(module)  # .opt(3)
     tm = ee.TargetMachine.new(opt=2)
     engine = eb.create(tm)
 
     dt = time() - t
     if verbose:
-        print("create EngineBuilder: %s" % (dt,))
+        print(f"create EngineBuilder: {dt}")
 
     t = time()
 
@@ -88,7 +91,7 @@ def run_bench(verbose):
 
     dt = time() - t
     if verbose:
-        print("JIT compile: %s" % (dt,))
+        print(f"JIT compile: {dt}")
 
     # Check function calling
     cfunc = CFUNCTYPE(c_int, POINTER(c_int), c_int)(cfptr)
@@ -100,12 +103,11 @@ def run_bench(verbose):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: %s (llvmlite|llvmpy)"
-              % (sys.executable,), file=sys.stderr)
+        print(f"Usage: {sys.executable} (llvmlite|llvmpy)", file=sys.stderr)
         sys.exit(1)
     impl = sys.argv[1]
 
-    if impl == 'llvmlite':
+    if impl == "llvmlite":
         import llvmlite.binding as llvm
         import llvmlite.llvmpy.core as lc
         from llvmlite.llvmpy import ee
@@ -116,12 +118,12 @@ if __name__ == "__main__":
 
         del llvm
 
-    elif impl == 'llvmpy':
+    elif impl == "llvmpy":
         import llvm.core as lc
         from llvm import ee
 
     else:
-        raise RuntimeError("Wrong implementation %r" % (impl,))
+        raise RuntimeError(f"Wrong implementation {impl!r}")
 
     for i in range(3):
         run_bench(True)

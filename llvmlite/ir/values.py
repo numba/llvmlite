@@ -4,27 +4,27 @@ Instructions are in the instructions module.
 """
 
 import functools
-import string
 import re
+import string
 
-from llvmlite.ir import values, types, _utils
-from llvmlite.ir._utils import (_StrCaching, _StringReferenceCaching,
-                                _HasMetadata)
+from llvmlite.ir import _utils, types, values
+from llvmlite.ir._utils import _HasMetadata, _StrCaching, _StringReferenceCaching
 
-
-_VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
-                frozenset(map(ord, string.digits)) |
-                frozenset(map(ord, ' !#$%&\'()*+,-./:;<=>?@[]^_`{|}~')))
+_VALID_CHARS = (
+    frozenset(map(ord, string.ascii_letters))
+    | frozenset(map(ord, string.digits))
+    | frozenset(map(ord, " !#$%&'()*+,-./:;<=>?@[]^_`{|}~"))
+)
 
 _SIMPLE_IDENTIFIER_RE = re.compile(r"[-a-zA-Z$._][-a-zA-Z$._0-9]*$")
 
 _CMP_MAP = {
-    '>': 'gt',
-    '<': 'lt',
-    '==': 'eq',
-    '!=': 'ne',
-    '>=': 'ge',
-    '<=': 'le',
+    ">": "gt",
+    "<": "lt",
+    "==": "eq",
+    "!=": "ne",
+    ">=": "ge",
+    "<=": "le",
 }
 
 
@@ -42,10 +42,10 @@ def _escape_string(text, _map={}):
             if ch in _VALID_CHARS:
                 _map[ch] = chr(ch)
             else:
-                _map[ch] = '\\%02x' % ch
+                _map[ch] = f"\\{ch:02x}"
 
     buf = [_map[ch] for ch in text]
-    return ''.join(buf)
+    return "".join(buf)
 
 
 def _binop(opname):
@@ -53,15 +53,20 @@ def _binop(opname):
         @functools.wraps(fn)
         def wrapped(lhs, rhs):
             if lhs.type != rhs.type:
-                raise ValueError("Operands must be the same type, got (%s, %s)"
-                                 % (lhs.type, rhs.type))
+                raise ValueError(
+                    "Operands must be the same type, got ({0}, {1})".format(
+                        self.type,
+                        rhs.type,
+                    )
+                )
 
-            fmt = "{0} ({1} {2}, {3} {4})".format(opname,
-                                                  lhs.type, lhs.get_reference(),
-                                                  rhs.type, rhs.get_reference())
+            fmt = "{0} ({1} {2}, {3} {4})".format(
+                opname, lhs.type, lhs.get_reference(), rhs.type, rhs.get_reference()
+            )
             return FormattedConstant(lhs.type, fmt)
 
         return wrapped
+
     return wrap
 
 
@@ -73,15 +78,17 @@ def _castop(opname):
             if typ == self.type:
                 return self
 
-            op = "{0} ({1} {2} to {3})".format(opname, self.type,
-                                               self.get_reference(), typ)
+            op = "{0} ({1} {2} to {3})".format(
+                opname, self.type, self.get_reference(), typ
+            )
             return FormattedConstant(typ, op)
 
         return wrapped
+
     return wrap
 
 
-class _ConstOpMixin(object):
+class _ConstOpMixin:
     """
     A mixin defining constant operations, for use in constant-like classes.
     """
@@ -90,126 +97,126 @@ class _ConstOpMixin(object):
     # Arithmetic APIs
     #
 
-    @_binop('shl')
+    @_binop("shl")
     def shl(self, other):
         """
         Left integer shift:
             lhs << rhs
         """
 
-    @_binop('lshr')
+    @_binop("lshr")
     def lshr(self, other):
         """
         Logical (unsigned) right integer shift:
             lhs >> rhs
         """
 
-    @_binop('ashr')
+    @_binop("ashr")
     def ashr(self, other):
         """
         Arithmetic (signed) right integer shift:
             lhs >> rhs
         """
 
-    @_binop('add')
+    @_binop("add")
     def add(self, other):
         """
         Integer addition:
             lhs + rhs
         """
 
-    @_binop('fadd')
+    @_binop("fadd")
     def fadd(self, other):
         """
         Floating-point addition:
             lhs + rhs
         """
 
-    @_binop('sub')
+    @_binop("sub")
     def sub(self, other):
         """
         Integer subtraction:
             lhs - rhs
         """
 
-    @_binop('fsub')
+    @_binop("fsub")
     def fsub(self, other):
         """
         Floating-point subtraction:
             lhs - rhs
         """
 
-    @_binop('mul')
+    @_binop("mul")
     def mul(self, other):
         """
         Integer multiplication:
             lhs * rhs
         """
 
-    @_binop('fmul')
+    @_binop("fmul")
     def fmul(self, other):
         """
         Floating-point multiplication:
             lhs * rhs
         """
 
-    @_binop('udiv')
+    @_binop("udiv")
     def udiv(self, other):
         """
         Unsigned integer division:
             lhs / rhs
         """
 
-    @_binop('sdiv')
+    @_binop("sdiv")
     def sdiv(self, other):
         """
         Signed integer division:
             lhs / rhs
         """
 
-    @_binop('fdiv')
+    @_binop("fdiv")
     def fdiv(self, other):
         """
         Floating-point division:
             lhs / rhs
         """
 
-    @_binop('urem')
+    @_binop("urem")
     def urem(self, other):
         """
         Unsigned integer remainder:
             lhs % rhs
         """
 
-    @_binop('srem')
+    @_binop("srem")
     def srem(self, other):
         """
         Signed integer remainder:
             lhs % rhs
         """
 
-    @_binop('frem')
+    @_binop("frem")
     def frem(self, other):
         """
         Floating-point remainder:
             lhs % rhs
         """
 
-    @_binop('or')
+    @_binop("or")
     def or_(self, other):
         """
         Bitwise integer OR:
             lhs | rhs
         """
 
-    @_binop('and')
+    @_binop("and")
     def and_(self, other):
         """
         Bitwise integer AND:
             lhs & rhs
         """
 
-    @_binop('xor')
+    @_binop("xor")
     def xor(self, other):
         """
         Bitwise integer XOR:
@@ -217,23 +224,25 @@ class _ConstOpMixin(object):
         """
 
     def _cmp(self, prefix, sign, cmpop, other):
-        ins = prefix + 'cmp'
+        ins = prefix + "cmp"
         try:
             op = _CMP_MAP[cmpop]
         except KeyError:
-            raise ValueError("invalid comparison %r for %s" % (cmpop, ins))
+            raise ValueError(f"invalid comparison {cmpop!r} for {ins}")
 
-        if not (prefix == 'i' and cmpop in ('==', '!=')):
+        if not (prefix == "i" and cmpop in ("==", "!=")):
             op = sign + op
 
         if self.type != other.type:
-            raise ValueError("Operands must be the same type, got (%s, %s)"
-                             % (self.type, other.type))
+            raise ValueError(
+                "Operands must be the same type, got ({0}, {1})".format(
+                    self.type, other.type
+                )
+            )
 
         fmt = "{0} {1} ({2} {3}, {4} {5})".format(
-            ins, op,
-            self.type, self.get_reference(),
-            other.type, other.get_reference())
+            ins, op, self.type, self.get_reference(), other.type, other.get_reference()
+        )
 
         return FormattedConstant(types.IntType(1), fmt)
 
@@ -244,7 +253,7 @@ class _ConstOpMixin(object):
 
         where cmpop can be '==', '!=', '<', '<=', '>', '>='
         """
-        return self._cmp('i', 's', cmpop, other)
+        return self._cmp("i", "s", cmpop, other)
 
     def icmp_unsigned(self, cmpop, other):
         """
@@ -253,7 +262,7 @@ class _ConstOpMixin(object):
 
         where cmpop can be '==', '!=', '<', '<=', '>', '>='
         """
-        return self._cmp('i', 'u', cmpop, other)
+        return self._cmp("i", "u", cmpop, other)
 
     def fcmp_ordered(self, cmpop, other):
         """
@@ -262,7 +271,7 @@ class _ConstOpMixin(object):
 
         where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
         """
-        return self._cmp('f', 'o', cmpop, other)
+        return self._cmp("f", "o", cmpop, other)
 
     def fcmp_unordered(self, cmpop, other):
         """
@@ -271,7 +280,7 @@ class _ConstOpMixin(object):
 
         where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
         """
-        return self._cmp('f', 'u', cmpop, other)
+        return self._cmp("f", "u", cmpop, other)
 
     #
     # Unary APIs
@@ -309,124 +318,127 @@ class _ConstOpMixin(object):
     # Cast APIs
     #
 
-    @_castop('trunc')
+    @_castop("trunc")
     def trunc(self, typ):
         """
         Truncating integer downcast to a smaller type.
         """
 
-    @_castop('zext')
+    @_castop("zext")
     def zext(self, typ):
         """
         Zero-extending integer upcast to a larger type
         """
 
-    @_castop('sext')
+    @_castop("sext")
     def sext(self, typ):
         """
         Sign-extending integer upcast to a larger type.
         """
 
-    @_castop('fptrunc')
+    @_castop("fptrunc")
     def fptrunc(self, typ):
         """
         Floating-point downcast to a less precise type.
         """
 
-    @_castop('fpext')
+    @_castop("fpext")
     def fpext(self, typ):
         """
         Floating-point upcast to a more precise type.
         """
 
-    @_castop('bitcast')
+    @_castop("bitcast")
     def bitcast(self, typ):
         """
         Pointer cast to a different pointer type.
         """
 
-    @_castop('fptoui')
+    @_castop("fptoui")
     def fptoui(self, typ):
         """
         Convert floating-point to unsigned integer.
         """
 
-    @_castop('uitofp')
+    @_castop("uitofp")
     def uitofp(self, typ):
         """
         Convert unsigned integer to floating-point.
         """
 
-    @_castop('fptosi')
+    @_castop("fptosi")
     def fptosi(self, typ):
         """
         Convert floating-point to signed integer.
         """
 
-    @_castop('sitofp')
+    @_castop("sitofp")
     def sitofp(self, typ):
         """
         Convert signed integer to floating-point.
         """
 
-    @_castop('ptrtoint')
+    @_castop("ptrtoint")
     def ptrtoint(self, typ):
         """
         Cast pointer to integer.
         """
         if not isinstance(self.type, types.PointerType):
-            msg = "can only call ptrtoint() on pointer type, not '%s'"
-            raise TypeError(msg % (self.type,))
+            msg = "can only call ptrtoint() on pointer type, not '{}'"
+            raise TypeError(msg.format(self.type))
         if not isinstance(typ, types.IntType):
-            raise TypeError("can only ptrtoint() to integer type, not '%s'"
-                            % (typ,))
+            raise TypeError(f"can only ptrtoint() to integer type, not '{typ}'")
 
-    @_castop('inttoptr')
+    @_castop("inttoptr")
     def inttoptr(self, typ):
         """
         Cast integer to pointer.
         """
         if not isinstance(self.type, types.IntType):
-            msg = "can only call inttoptr() on integer constants, not '%s'"
-            raise TypeError(msg % (self.type,))
+            raise TypeError(
+                f"can only call inttoptr() on integer constants, not '{self.type}'"
+            )
         if not isinstance(typ, types.PointerType):
-            raise TypeError("can only inttoptr() to pointer type, not '%s'"
-                            % (typ,))
+            raise TypeError(f"can only inttoptr() to pointer type, not '{typ}'")
 
     def gep(self, indices):
         """
         Call getelementptr on this pointer constant.
         """
         if not isinstance(self.type, types.PointerType):
-            raise TypeError("can only call gep() on pointer constants, not '%s'"
-                            % (self.type,))
+            raise TypeError(
+                f"can only call gep() on pointer constants, not '{self.type}'"
+            )
 
         outtype = self.type
         for i in indices:
             outtype = outtype.gep(i)
 
-        strindices = ["{0} {1}".format(idx.type, idx.get_reference())
-                      for idx in indices]
+        strindices = [f"{idx.type} {idx.get_reference()}" for idx in indices]
 
         op = "getelementptr ({0}, {1} {2}, {3})".format(
-            self.type.pointee, self.type,
-            self.get_reference(), ', '.join(strindices))
+            self.type.pointee, self.type, self.get_reference(), ", ".join(strindices)
+        )
         return FormattedConstant(outtype.as_pointer(self.addrspace), op)
 
 
-class Value(object):
+class Value:
     """
     The base class for all values.
     """
 
     def __repr__(self):
-        return "<ir.%s type='%s' ...>" % (self.__class__.__name__, self.type,)
+        return "<ir.{0} type='{1}' ...>".format(
+            self.__class__.__name__,
+            self.type,
+        )
 
 
-class _Undefined(object):
+class _Undefined:
     """
     'undef': a value for undefined values.
     """
+
     def __new__(cls):
         try:
             return Undefined
@@ -450,7 +462,7 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         self.constant = constant
 
     def _to_string(self):
-        return '{0} {1}'.format(self.type, self.get_reference())
+        return f"{self.type} {self.get_reference()}"
 
     def _get_reference(self):
         if self.constant is None:
@@ -460,7 +472,7 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
             val = "undef"
 
         elif isinstance(self.constant, bytearray):
-            val = 'c"{0}"'.format(_escape_string(self.constant))
+            val = f'c"{_escape_string(self.constant)}"'
 
         else:
             val = self.type.format_constant(self.constant)
@@ -508,7 +520,7 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         return hash(str(self))
 
     def __repr__(self):
-        return "<ir.Constant type='%s' value=%r>" % (self.type, self.constant)
+        return f"<ir.Constant type='{self.type}' value={self.constant!r}>"
 
 
 class FormattedConstant(Constant):
@@ -531,7 +543,8 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
     """
     The base class for named values.
     """
-    name_prefix = '%'
+
+    name_prefix = "%"
     deduplicate_name = True
 
     def __init__(self, parent, type, name):
@@ -544,7 +557,7 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
     def _to_string(self):
         buf = []
         if not isinstance(self.type, types.VoidType):
-            buf.append("{0} = ".format(self.get_reference()))
+            buf.append(f"{self.get_reference()} = ")
         self.descr(buf)
         return "".join(buf).rstrip()
 
@@ -555,8 +568,7 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
         return self._name
 
     def _set_name(self, name):
-        name = self.parent.scope.register(name,
-                                          deduplicate=self.deduplicate_name)
+        name = self.parent.scope.register(name, deduplicate=self.deduplicate_name)
         self._name = name
 
     name = property(_get_name, _set_name)
@@ -564,13 +576,16 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
     def _get_reference(self):
         name = self.name
         # Quote and escape value name
-        if '\\' in name or '"' in name:
-            name = name.replace('\\', '\\5c').replace('"', '\\22')
-        return '{0}"{1}"'.format(self.name_prefix, name)
+        if "\\" in name or '"' in name:
+            name = name.replace("\\", "\\5c").replace('"', "\\22")
+        return f'{self.name_prefix}"{name}"'
 
     def __repr__(self):
-        return "<ir.%s %r of type '%s'>" % (
-            self.__class__.__name__, self.name, self.type)
+        return "<ir.{} {!r} of type '{}'>".format(
+            self.__class__.__name__,
+            self.name,
+            self.type,
+        )
 
     @property
     def function_type(self):
@@ -580,7 +595,7 @@ class NamedValue(_StrCaching, _StringReferenceCaching, Value):
         if isinstance(ty, types.FunctionType):
             return ty
         else:
-            raise TypeError("Not a function: {0}".format(self.type))
+            raise TypeError(f"Not a function: {self.type}")
 
 
 class MetaDataString(NamedValue):
@@ -590,16 +605,14 @@ class MetaDataString(NamedValue):
     """
 
     def __init__(self, parent, string):
-        super(MetaDataString, self).__init__(parent,
-                                             types.MetaDataType(),
-                                             name="")
+        super().__init__(parent, types.MetaDataType(), name="")
         self.string = string
 
     def descr(self, buf):
         buf += (self.get_reference(), "\n")
 
     def _get_reference(self):
-        return '!"{0}"'.format(_escape_string(self.string))
+        return f'!"{_escape_string(self.string)}"'
 
     _to_string = _get_reference
 
@@ -633,13 +646,15 @@ class MetaDataArgument(_StrCaching, _StringReferenceCaching, Value):
 
     def _get_reference(self):
         # e.g. "i32* %2"
-        return "{0} {1}".format(self.wrapped_value.type,
-                                self.wrapped_value.get_reference())
+        return "{0} {1}".format(
+            self.wrapped_value.type,
+            self.wrapped_value.get_reference(),
+        )
 
     _to_string = _get_reference
 
 
-class NamedMetaData(object):
+class NamedMetaData:
     """
     A named metadata node.
 
@@ -660,12 +675,11 @@ class MDValue(NamedValue):
 
     Do not instantiate directly, use Module.add_metadata() instead.
     """
-    name_prefix = '!'
+
+    name_prefix = "!"
 
     def __init__(self, parent, values, name):
-        super(MDValue, self).__init__(parent,
-                                      types.MetaDataType(),
-                                      name=name)
+        super().__init__(parent, types.MetaDataType(), name=name)
         self.operands = tuple(values)
         parent.metadata.append(self)
 
@@ -678,9 +692,9 @@ class MDValue(NamedValue):
                 else:
                     operands.append(op.get_reference())
             else:
-                operands.append("{0} {1}".format(op.type, op.get_reference()))
-        operands = ', '.join(operands)
-        buf += ("!{{ {0} }}".format(operands), "\n")
+                operands.append(f"{op.type} {op.get_reference()}")
+        ops = ", ".join(operands)
+        buf += (f"!{{ {ops} }}", "\n")
 
     def _get_reference(self):
         return self.name_prefix + str(self.name)
@@ -716,12 +730,11 @@ class DIValue(NamedValue):
 
     Do not instantiate directly, use Module.add_debug_info() instead.
     """
-    name_prefix = '!'
+
+    name_prefix = "!"
 
     def __init__(self, parent, is_distinct, kind, operands, name):
-        super(DIValue, self).__init__(parent,
-                                      types.MetaDataType(),
-                                      name=name)
+        super().__init__(parent, types.MetaDataType(), name=name)
         self.is_distinct = is_distinct
         self.kind = kind
         self.operands = tuple(operands)
@@ -741,26 +754,27 @@ class DIValue(NamedValue):
             elif isinstance(value, DIToken):
                 strvalue = value.value
             elif isinstance(value, str):
-                strvalue = '"{}"'.format(_escape_string(value))
+                strvalue = f'"{_escape_string(value)}"'
             elif isinstance(value, int):
                 strvalue = str(value)
             elif isinstance(value, NamedValue):
                 strvalue = value.get_reference()
             else:
-                raise TypeError("invalid operand type for debug info: %r"
-                                % (value,))
-            operands.append("{0}: {1}".format(key, strvalue))
-        operands = ', '.join(operands)
-        buf += ("!", self.kind, "(", operands, ")\n")
+                raise TypeError(f"invalid operand type for debug info: {value!r}")
+            operands.append(f"{key}: {strvalue}")
+        ops = ", ".join(operands)
+        buf += ("!", self.kind, "(", ops, ")\n")
 
     def _get_reference(self):
         return self.name_prefix + str(self.name)
 
     def __eq__(self, other):
         if isinstance(other, DIValue):
-            return self.is_distinct == other.is_distinct and \
-                self.kind == other.kind and \
-                self.operands == other.operands
+            return (
+                self.is_distinct == other.is_distinct
+                and self.kind == other.kind
+                and self.operands == other.operands
+            )
         else:
             return False
 
@@ -775,14 +789,15 @@ class GlobalValue(NamedValue, _ConstOpMixin, _HasMetadata):
     """
     A global value.
     """
-    name_prefix = '@'
+
+    name_prefix = "@"
     deduplicate_name = False
 
     def __init__(self, *args, **kwargs):
-        super(GlobalValue, self).__init__(*args, **kwargs)
-        self.linkage = ''
-        self.storage_class = ''
-        self.section = ''
+        super().__init__(*args, **kwargs)
+        self.linkage = ""
+        self.storage_class = ""
+        self.section = ""
         self.metadata = {}
 
 
@@ -793,8 +808,7 @@ class GlobalVariable(GlobalValue):
 
     def __init__(self, module, typ, name, addrspace=0):
         assert isinstance(typ, types.Type)
-        super(GlobalVariable, self).__init__(module, typ.as_pointer(addrspace),
-                                             name=name)
+        super().__init__(module, typ.as_pointer(addrspace), name=name)
         self.value_type = typ
         self.initializer = None
         self.unnamed_addr = False
@@ -805,13 +819,13 @@ class GlobalVariable(GlobalValue):
 
     def descr(self, buf):
         if self.global_constant:
-            kind = 'constant'
+            kind = "constant"
         else:
-            kind = 'global'
+            kind = "global"
 
         if not self.linkage:
             # Default to external linkage
-            linkage = 'external' if self.initializer is None else ''
+            linkage = "external" if self.initializer is None else ""
         else:
             linkage = self.linkage
 
@@ -822,25 +836,26 @@ class GlobalVariable(GlobalValue):
         if self.unnamed_addr:
             buf.append("unnamed_addr ")
         if self.addrspace != 0:
-            buf.append('addrspace({0:d}) '.format(self.addrspace))
+            buf.append(f"addrspace({self.addrspace:d}) ")
 
-        buf.append("{kind} {type}" .format(kind=kind, type=self.value_type))
+        buf.append(f"{kind} {self.value_type}")
 
         if self.initializer is not None:
             if self.initializer.type != self.value_type:
-                raise TypeError("got initializer of type %s "
-                                "for global value type %s"
-                                % (self.initializer.type, self.value_type))
+                raise TypeError(
+                    f"got initializer of type {self.initializer.type} "  # type: ignore
+                    f"for global value type {self.value_type}"
+                )
             buf.append(" " + self.initializer.get_reference())
-        elif linkage not in ('external', 'extern_weak'):
+        elif linkage not in ("external", "extern_weak"):
             # emit 'undef' for non-external linkage GV
             buf.append(" " + self.value_type(Undefined).get_reference())
 
         if self.section:
-            buf.append(", section \"%s\"" % (self.section,))
+            buf.append(f", section {self.section!r}")
 
         if self.align is not None:
-            buf.append(", align %d" % (self.align,))
+            buf.append(f", align {self.align}")
 
         if self.metadata:
             buf.append(self._stringify_metadata(leading_comma=True))
@@ -855,6 +870,7 @@ class AttributeSet(set):
     Properties:
     * Iterate in sorted order
     """
+
     _known = ()
 
     def __init__(self, args=()):
@@ -865,33 +881,60 @@ class AttributeSet(set):
 
     def add(self, name):
         if name not in self._known:
-            raise ValueError('unknown attr {!r} for {}'.format(name, self))
-        return super(AttributeSet, self).add(name)
+            raise ValueError(f"unknown attr {name!r} for {self}")
+        return super().add(name)
 
     def __iter__(self):
         # In sorted order
-        return iter(sorted(super(AttributeSet, self).__iter__()))
+        return iter(sorted(super().__iter__()))
 
 
 class FunctionAttributes(AttributeSet):
-    _known = frozenset([
-        'argmemonly', 'alwaysinline', 'builtin', 'cold',
-        'inaccessiblememonly', 'inaccessiblemem_or_argmemonly', 'inlinehint',
-        'jumptable', 'minsize', 'naked', 'nobuiltin', 'noduplicate',
-        'noimplicitfloat', 'noinline', 'nonlazybind', 'norecurse',
-        'noredzone', 'noreturn', 'nounwind', 'optnone', 'optsize',
-        'readnone', 'readonly', 'returns_twice', 'sanitize_address',
-        'sanitize_memory', 'sanitize_thread', 'ssp',
-        'sspreg', 'sspstrong', 'uwtable'])
+    _known = frozenset(
+        [
+            "argmemonly",
+            "alwaysinline",
+            "builtin",
+            "cold",
+            "inaccessiblememonly",
+            "inaccessiblemem_or_argmemonly",
+            "inlinehint",
+            "jumptable",
+            "minsize",
+            "naked",
+            "nobuiltin",
+            "noduplicate",
+            "noimplicitfloat",
+            "noinline",
+            "nonlazybind",
+            "norecurse",
+            "noredzone",
+            "noreturn",
+            "nounwind",
+            "optnone",
+            "optsize",
+            "readnone",
+            "readonly",
+            "returns_twice",
+            "sanitize_address",
+            "sanitize_memory",
+            "sanitize_thread",
+            "ssp",
+            "sspreg",
+            "sspstrong",
+            "uwtable",
+        ]
+    )
 
     def __init__(self, args=()):
         self._alignstack = 0
         self._personality = None
-        super(FunctionAttributes, self).__init__(args)
+        super().__init__(args)
 
     def add(self, name):
-        if ((name == 'alwaysinline' and 'noinline' in self) or
-                (name == 'noinline' and 'alwaysinline' in self)):
+        if (name == "alwaysinline" and "noinline" in self) or (
+            name == "noinline" and "alwaysinline" in self
+        ):
             raise ValueError("Can't have alwaysinline and noinline")
 
         super().add(name)
@@ -917,12 +960,12 @@ class FunctionAttributes(AttributeSet):
     def __repr__(self):
         attrs = list(self)
         if self.alignstack:
-            attrs.append('alignstack({0:d})'.format(self.alignstack))
+            attrs.append(f"alignstack({self.alignstack:d})")
         if self.personality:
-            attrs.append('personality {persty} {persfn}'.format(
-                persty=self.personality.type,
-                persfn=self.personality.get_reference()))
-        return ' '.join(attrs)
+            attrs.append(
+                f"personality {self.personality.type} {self.personality.get_reference()}"
+            )
+        return " ".join(attrs)
 
 
 class Function(GlobalValue):
@@ -932,16 +975,15 @@ class Function(GlobalValue):
 
     def __init__(self, module, ftype, name):
         assert isinstance(ftype, types.Type)
-        super(Function, self).__init__(module, ftype.as_pointer(), name=name)
+        super().__init__(module, ftype.as_pointer(), name=name)
         self.ftype = ftype
         self.scope = _utils.NameScope()
         self.blocks = []
         self.attributes = FunctionAttributes()
-        self.args = tuple([Argument(self, t)
-                           for t in ftype.args])
+        self.args = tuple([Argument(self, t) for t in ftype.args])
         self.return_value = ReturnValue(self, ftype.return_type)
         self.parent.add_global(self)
-        self.calling_convention = ''
+        self.calling_convention = ""
 
     @property
     def module(self):
@@ -955,14 +997,13 @@ class Function(GlobalValue):
     def basic_blocks(self):
         return self.blocks
 
-    def append_basic_block(self, name=''):
+    def append_basic_block(self, name=""):
         blk = Block(parent=self, name=name)
         self.blocks.append(blk)
         return blk
 
-    def insert_basic_block(self, before, name=''):
-        """Insert block before
-        """
+    def insert_basic_block(self, before, name=""):
+        """Insert block before"""
         blk = Block(parent=self, name=name)
         self.blocks.insert(before, blk)
         return blk
@@ -976,21 +1017,27 @@ class Function(GlobalValue):
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
         attrs = self.attributes
-        attrs = ' {}'.format(attrs) if attrs else ''
+        attrs = " {}".format(attrs) if attrs else ""
         if any(self.args):
-            vararg = ', ...' if self.ftype.var_arg else ''
+            vararg = ", ..." if self.ftype.var_arg else ""
         else:
-            vararg = '...' if self.ftype.var_arg else ''
+            vararg = "..." if self.ftype.var_arg else ""
         linkage = self.linkage
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
         metadata = self._stringify_metadata()
-        metadata = ' {}'.format(metadata) if metadata else ''
-        section = ' section "{}"'.format(self.section) if self.section else ''
+        metadata = " {}".format(metadata) if metadata else ""
+        section = ' section "{}"'.format(self.section) if self.section else ""
         pt_str = "{prefix} {name}({args}{vararg}){attrs}{section}{metadata}\n"
-        prototype = pt_str.format(prefix=prefix, name=name, args=args,
-                                  vararg=vararg, attrs=attrs, section=section,
-                                  metadata=metadata)
+        prototype = pt_str.format(
+            prefix=prefix,
+            name=name,
+            args=args,
+            vararg=vararg,
+            attrs=attrs,
+            section=section,
+            metadata=metadata,
+        )
         buf.append(prototype)
 
     def descr_body(self, buf):
@@ -1018,15 +1065,27 @@ class Function(GlobalValue):
 
 
 class ArgumentAttributes(AttributeSet):
-    _known = frozenset(['byval', 'inalloca', 'inreg', 'nest', 'noalias',
-                        'nocapture', 'nonnull', 'returned', 'signext',
-                        'sret', 'zeroext'])
+    _known = frozenset(
+        [
+            "byval",
+            "inalloca",
+            "inreg",
+            "nest",
+            "noalias",
+            "nocapture",
+            "nonnull",
+            "returned",
+            "signext",
+            "sret",
+            "zeroext",
+        ]
+    )
 
     def __init__(self, args=()):
         self._align = 0
         self._dereferenceable = 0
         self._dereferenceable_or_null = 0
-        super(ArgumentAttributes, self).__init__(args)
+        super().__init__(args)
 
     @property
     def align(self):
@@ -1058,25 +1117,27 @@ class ArgumentAttributes(AttributeSet):
     def _to_list(self):
         attrs = sorted(self)
         if self.align:
-            attrs.append('align {0:d}'.format(self.align))
+            attrs.append(f"align {self.align:d}")
         if self.dereferenceable:
-            attrs.append('dereferenceable({0:d})'.format(self.dereferenceable))
+            attrs.append(f"dereferenceable({self.dereferenceable:d})")
         if self.dereferenceable_or_null:
-            dref = 'dereferenceable_or_null({0:d})'
-            attrs.append(dref.format(self.dereferenceable_or_null))
+            attrs.append(f"dereferenceable_or_null({self.dereferenceable_or_null:d})")
         return attrs
 
 
 class _BaseArgument(NamedValue):
-    def __init__(self, parent, typ, name=''):
+    def __init__(self, parent, typ, name=""):
         assert isinstance(typ, types.Type)
-        super(_BaseArgument, self).__init__(parent, typ, name=name)
+        super().__init__(parent, typ, name=name)
         self.parent = parent
         self.attributes = ArgumentAttributes()
 
     def __repr__(self):
-        return "<ir.%s %r of type %s>" % (self.__class__.__name__, self.name,
-                                          self.type)
+        return "<ir.{0} {1!r} of type {2}>".format(
+            self.__class__.__name__,
+            self.name,
+            self.type,
+        )
 
     def add_attribute(self, attr):
         self.attributes.add(attr)
@@ -1090,10 +1151,11 @@ class Argument(_BaseArgument):
     def __str__(self):
         attrs = self.attributes._to_list()
         if attrs:
-            return "{0} {1} {2}".format(self.type, ' '.join(attrs),
-                                        self.get_reference())
+            return "{0} {1} {2}".format(
+                self.type, " ".join(attrs), self.get_reference()
+            )
         else:
-            return "{0} {1}".format(self.type, self.get_reference())
+            return f"{self.type} {self.get_reference()}"
 
 
 class ReturnValue(_BaseArgument):
@@ -1104,7 +1166,7 @@ class ReturnValue(_BaseArgument):
     def __str__(self):
         attrs = self.attributes._to_list()
         if attrs:
-            return "{0} {1}".format(' '.join(attrs), self.type)
+            return "{0} {1}".format(" ".join(attrs), self.type)
         else:
             return str(self.type)
 
@@ -1118,8 +1180,8 @@ class Block(NamedValue):
     instruction.
     """
 
-    def __init__(self, parent, name=''):
-        super(Block, self).__init__(parent, types.LabelType(), name=name)
+    def __init__(self, parent, name=""):
+        super().__init__(parent, types.LabelType(), name=name)
         self.scope = parent.scope
         self.instructions = []
         self.terminator = None
@@ -1137,8 +1199,8 @@ class Block(NamedValue):
         return self.parent.module
 
     def descr(self, buf):
-        buf.append("{0}:\n".format(self._format_name()))
-        buf += ["  {0}\n".format(instr) for instr in self.instructions]
+        buf.append(f"{self._format_name()}:\n")
+        buf += [f"  {instr}\n" for instr in self.instructions]
 
     def replace(self, old, new):
         """Replace an instruction"""
@@ -1158,8 +1220,8 @@ class Block(NamedValue):
         # Otherwise, the identifier must be quoted and escaped.
         name = self.name
         if not _SIMPLE_IDENTIFIER_RE.match(name):
-            name = name.replace('\\', '\\5c').replace('"', '\\22')
-            name = '"{0}"'.format(name)
+            name = name.replace("\\", "\\5c").replace('"', "\\22")
+            name = f'"{name}"'
         return name
 
 
@@ -1176,9 +1238,10 @@ class BlockAddress(Value):
         self.basic_block = basic_block
 
     def __str__(self):
-        return '{0} {1}'.format(self.type, self.get_reference())
+        return f"{self.type} {self.get_reference()}"
 
     def get_reference(self):
         return "blockaddress({0}, {1})".format(
             self.function.get_reference(),
-            self.basic_block.get_reference())
+            self.basic_block.get_reference(),
+        )

@@ -1,8 +1,7 @@
-from llvmlite.ir import _utils
-from llvmlite.ir import types
+from llvmlite.ir import _utils, types
 
 
-class Context(object):
+class Context:
     def __init__(self):
         self.scope = _utils.NameScope()
         self.identified_types = {}

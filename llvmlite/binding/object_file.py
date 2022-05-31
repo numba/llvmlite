@@ -1,6 +1,6 @@
+from ctypes import POINTER, c_bool, c_char, c_char_p, c_size_t, c_uint64, string_at
+
 from llvmlite.binding import ffi
-from ctypes import (c_bool, c_char_p, c_char, c_size_t, string_at, c_uint64,
-                    POINTER)
 
 
 class SectionIteratorRef(ffi.ObjectRef):
@@ -36,7 +36,7 @@ class ObjectFileRef(ffi.ObjectRef):
 
     @classmethod
     def from_path(cls, path):
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             data = f.read()
         return cls(ffi.lib.LLVMPY_CreateObjectFile(data, len(data)))
 
@@ -63,7 +63,9 @@ ffi.lib.LLVMPY_DisposeSectionIterator.argtypes = [ffi.LLVMSectionIteratorRef]
 ffi.lib.LLVMPY_MoveToNextSection.argtypes = [ffi.LLVMSectionIteratorRef]
 
 ffi.lib.LLVMPY_IsSectionIteratorAtEnd.argtypes = [
-    ffi.LLVMObjectFileRef, ffi.LLVMSectionIteratorRef]
+    ffi.LLVMObjectFileRef,
+    ffi.LLVMSectionIteratorRef,
+]
 ffi.lib.LLVMPY_IsSectionIteratorAtEnd.restype = c_bool
 
 ffi.lib.LLVMPY_GetSectionName.argtypes = [ffi.LLVMSectionIteratorRef]

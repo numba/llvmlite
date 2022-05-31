@@ -65,7 +65,7 @@ def _version_info():
     v = []
     x = ffi.lib.LLVMPY_GetVersionInfo()
     while x:
-        v.append(x & 0xff)
+        v.append(x & 0xFF)
         x >>= 8
     return tuple(reversed(v))
 

@@ -1,6 +1,4 @@
 import ctypes
-from ctypes import CFUNCTYPE, c_int
-from ctypes.util import find_library
 import gc
 import locale
 import os
@@ -10,23 +8,24 @@ import subprocess
 import sys
 import unittest
 from contextlib import contextmanager
+from ctypes import CFUNCTYPE, c_int
+from ctypes.util import find_library
 from tempfile import mkstemp
 
-from llvmlite import ir
 from llvmlite import binding as llvm
+from llvmlite import ir
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
-
 # arvm7l needs extra ABI symbols to link successfully
-if platform.machine() == 'armv7l':
-    llvm.load_library_permanently('libgcc_s.so.1')
+if platform.machine() == "armv7l":
+    llvm.load_library_permanently("libgcc_s.so.1")
 
 
 def no_de_locale():
     cur = locale.setlocale(locale.LC_ALL)
     try:
-        locale.setlocale(locale.LC_ALL, 'de_DE')
+        locale.setlocale(locale.LC_ALL, "de_DE")
     except locale.Error:
         return True
     else:
@@ -168,41 +167,37 @@ define i32 @"foo"()
 
 
 riscv_asm_ilp32 = [
-    'addi\tsp, sp, -16',
-    'sw\ta1, 8(sp)',
-    'sw\ta2, 12(sp)',
-    'fld\tft0, 8(sp)',
-    'fmv.w.x\tft1, a0',
-    'fcvt.d.s\tft1, ft1',
-    'fadd.d\tft0, ft1, ft0',
-    'fsd\tft0, 8(sp)',
-    'lw\ta0, 8(sp)',
-    'lw\ta1, 12(sp)',
-    'addi\tsp, sp, 16',
-    'ret'
+    "addi\tsp, sp, -16",
+    "sw\ta1, 8(sp)",
+    "sw\ta2, 12(sp)",
+    "fld\tft0, 8(sp)",
+    "fmv.w.x\tft1, a0",
+    "fcvt.d.s\tft1, ft1",
+    "fadd.d\tft0, ft1, ft0",
+    "fsd\tft0, 8(sp)",
+    "lw\ta0, 8(sp)",
+    "lw\ta1, 12(sp)",
+    "addi\tsp, sp, 16",
+    "ret",
 ]
 
 
 riscv_asm_ilp32f = [
-    'addi\tsp, sp, -16',
-    'sw\ta0, 8(sp)',
-    'sw\ta1, 12(sp)',
-    'fld\tft0, 8(sp)',
-    'fcvt.d.s\tft1, fa0',
-    'fadd.d\tft0, ft1, ft0',
-    'fsd\tft0, 8(sp)',
-    'lw\ta0, 8(sp)',
-    'lw\ta1, 12(sp)',
-    'addi\tsp, sp, 16',
-    'ret'
+    "addi\tsp, sp, -16",
+    "sw\ta0, 8(sp)",
+    "sw\ta1, 12(sp)",
+    "fld\tft0, 8(sp)",
+    "fcvt.d.s\tft1, fa0",
+    "fadd.d\tft0, ft1, ft0",
+    "fsd\tft0, 8(sp)",
+    "lw\ta0, 8(sp)",
+    "lw\ta1, 12(sp)",
+    "addi\tsp, sp, 16",
+    "ret",
 ]
 
 
-riscv_asm_ilp32d = [
-    'fcvt.d.s\tft0, fa0',
-    'fadd.d\tfa0, ft0, fa1',
-    'ret'
-]
+riscv_asm_ilp32d = ["fcvt.d.s\tft0, fa0", "fadd.d\tfa0, ft0, fa1", "ret"]
 
 
 asm_attributes = r"""
@@ -231,31 +226,30 @@ declare i8* @a_arg0_return_func(i8* returned, i32*)
 #   18:	00 10 70
 #   1b:	48 0f af c8          	imul   %rax,%rcx
 
-issue_632_elf = \
-    "7f454c4602010100000000000000000001003e00010000000000000000000000000000" \
-    "0000000000e0000000000000000000000040000000000040000500010048c1e2204809" \
-    "c24889d048c1c03d4831d048b90120000480001070480fafc800000000000000000000" \
-    "0000000000000000000000000000002f0000000400f1ff000000000000000000000000" \
-    "00000000070000001200020000000000000000001f00000000000000002e7465787400" \
-    "5f5f617279626f002e6e6f74652e474e552d737461636b002e737472746162002e7379" \
-    "6d746162003c737472696e673e00000000000000000000000000000000000000000000" \
-    "0000000000000000000000000000000000000000000000000000000000000000000000" \
-    "00000000000000001f0000000300000000000000000000000000000000000000a80000" \
-    "0000000000380000000000000000000000000000000100000000000000000000000000" \
-    "000001000000010000000600000000000000000000000000000040000000000000001f" \
-    "000000000000000000000000000000100000000000000000000000000000000f000000" \
-    "01000000000000000000000000000000000000005f0000000000000000000000000000" \
-    "0000000000000000000100000000000000000000000000000027000000020000000000" \
-    "0000000000000000000000000000600000000000000048000000000000000100000002" \
+issue_632_elf = (
+    "7f454c4602010100000000000000000001003e00010000000000000000000000000000"
+    "0000000000e0000000000000000000000040000000000040000500010048c1e2204809"
+    "c24889d048c1c03d4831d048b90120000480001070480fafc800000000000000000000"
+    "0000000000000000000000000000002f0000000400f1ff000000000000000000000000"
+    "00000000070000001200020000000000000000001f00000000000000002e7465787400"
+    "5f5f617279626f002e6e6f74652e474e552d737461636b002e737472746162002e7379"
+    "6d746162003c737472696e673e00000000000000000000000000000000000000000000"
+    "0000000000000000000000000000000000000000000000000000000000000000000000"
+    "00000000000000001f0000000300000000000000000000000000000000000000a80000"
+    "0000000000380000000000000000000000000000000100000000000000000000000000"
+    "000001000000010000000600000000000000000000000000000040000000000000001f"
+    "000000000000000000000000000000100000000000000000000000000000000f000000"
+    "01000000000000000000000000000000000000005f0000000000000000000000000000"
+    "0000000000000000000100000000000000000000000000000027000000020000000000"
+    "0000000000000000000000000000600000000000000048000000000000000100000002"
     "00000008000000000000001800000000000000"
+)
 
 
-issue_632_text = \
-    "48c1e2204809c24889d048c1c03d4831d048b90120000480001070480fafc8"
+issue_632_text = "48c1e2204809c24889d048c1c03d4831d048b90120000480001070480fafc8"
 
 
 class BaseTest(TestCase):
-
     def setUp(self):
         llvm.initialize()
         llvm.initialize_native_target()
@@ -278,7 +272,7 @@ class BaseTest(TestCase):
         mod = llvm.parse_assembly(asm, context)
         return mod
 
-    def glob(self, name='glob', mod=None):
+    def glob(self, name="glob", mod=None):
         if mod is None:
             mod = self.module()
         return mod.get_global_variable(name)
@@ -293,40 +287,52 @@ class TestDependencies(BaseTest):
     Test DLL dependencies are within a certain expected set.
     """
 
-    @unittest.skipUnless(sys.platform.startswith('linux'),
-                         "Linux-specific test")
-    @unittest.skipUnless(os.environ.get('LLVMLITE_DIST_TEST'),
-                         "Distribution-specific test")
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux-specific test")
+    @unittest.skipUnless(
+        os.environ.get("LLVMLITE_DIST_TEST"), "Distribution-specific test"
+    )
     def test_linux(self):
         lib_path = ffi.lib._name
         env = os.environ.copy()
-        env['LANG'] = 'C'
-        p = subprocess.Popen(["objdump", "-p", lib_path],
-                             stdout=subprocess.PIPE, env=env)
+        env["LANG"] = "C"
+        p = subprocess.Popen(
+            ["objdump", "-p", lib_path], stdout=subprocess.PIPE, env=env
+        )
         out, _ = p.communicate()
         self.assertEqual(0, p.returncode)
         # Parse library dependencies
-        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
+        lib_pat = re.compile(r"^([-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$")
         deps = set()
         for line in out.decode().splitlines():
             parts = line.split()
-            if parts and parts[0] == 'NEEDED':
+            if parts and parts[0] == "NEEDED":
                 dep = parts[1]
                 m = lib_pat.match(dep)
                 if len(parts) != 2 or not m:
                     self.fail("invalid NEEDED line: %r" % (line,))
                 deps.add(m.group(1))
         # Sanity check that our dependencies were parsed ok
-        if 'libc' not in deps or 'libpthread' not in deps:
+        if "libc" not in deps or "libpthread" not in deps:
             self.fail("failed parsing dependencies? got %r" % (deps,))
         # Ensure all dependencies are expected
-        allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
-                       'libgcc_s', 'libc', 'ld-linux', 'ld64'])
-        if platform.python_implementation() == 'PyPy':
-            allowed.add('libtinfo')
+        allowed = set(
+            [
+                "librt",
+                "libdl",
+                "libpthread",
+                "libz",
+                "libm",
+                "libgcc_s",
+                "libc",
+                "ld-linux",
+                "ld64",
+            ]
+        )
+        if platform.python_implementation() == "PyPy":
+            allowed.add("libtinfo")
 
         for dep in deps:
-            if not dep.startswith('ld-linux-') and dep not in allowed:
+            if not dep.startswith("ld-linux-") and dep not in allowed:
                 self.fail("unexpected dependency %r in %r" % (dep, deps))
 
 
@@ -335,6 +341,7 @@ class TestRISCVABI(BaseTest):
     Test calling convention of floating point arguments of RISC-V
     using different ABI.
     """
+
     triple = "riscv32-unknown-linux"
 
     def setUp(self):
@@ -376,8 +383,9 @@ class TestRISCVABI(BaseTest):
         asm_list = []
         for line in asm.splitlines():
             s_line = line.strip()
-            if not (s_line.startswith(".") or s_line.startswith("fpadd")
-                    or s_line == ""):
+            if not (
+                s_line.startswith(".") or s_line.startswith("fpadd") or s_line == ""
+            ):
                 asm_list.append(s_line)
         return asm_list
 
@@ -385,22 +393,25 @@ class TestRISCVABI(BaseTest):
         self.check_riscv_target()
         llmod = self.fpadd_ll_module()
         target = self.riscv_target_machine(features="+f,+d")
-        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
-                         riscv_asm_ilp32)
+        self.assertEqual(
+            self.break_up_asm(target.emit_assembly(llmod)), riscv_asm_ilp32
+        )
 
     def test_rv32d_ilp32f(self):
         self.check_riscv_target()
         llmod = self.fpadd_ll_module()
         target = self.riscv_target_machine(features="+f,+d", abiname="ilp32f")
-        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
-                         riscv_asm_ilp32f)
+        self.assertEqual(
+            self.break_up_asm(target.emit_assembly(llmod)), riscv_asm_ilp32f
+        )
 
     def test_rv32d_ilp32d(self):
         self.check_riscv_target()
         llmod = self.fpadd_ll_module()
         target = self.riscv_target_machine(features="+f,+d", abiname="ilp32d")
-        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
-                         riscv_asm_ilp32d)
+        self.assertEqual(
+            self.break_up_asm(target.emit_assembly(llmod)), riscv_asm_ilp32d
+        )
 
 
 class TestMisc(BaseTest):
@@ -451,8 +462,8 @@ class TestMisc(BaseTest):
         self.assertIsInstance(triple, str)
         self.assertTrue(triple)
 
-        default_parts = default.split('-')
-        triple_parts = triple.split('-')
+        default_parts = default.split("-")
+        triple_parts = triple.split("-")
         # Arch must be equal
         self.assertEqual(default_parts[0], triple_parts[0])
 
@@ -523,7 +534,7 @@ class TestMisc(BaseTest):
         expect = str(m)
         # Change the locale so that comma is used as decimal-point
         # to trigger the LLVM bug (llvmlite issue #80)
-        locale.setlocale(locale.LC_ALL, 'de_DE')
+        locale.setlocale(locale.LC_ALL, "de_DE")
         # The LLVM bug is trigged by print the module with double constant
         got = str(m)
         # Changing the locale should not affect the LLVM IR
@@ -531,11 +542,10 @@ class TestMisc(BaseTest):
 
 
 class TestModuleRef(BaseTest):
-
     def test_str(self):
         mod = self.module()
         s = str(mod).strip()
-        self.assertTrue(s.startswith('; ModuleID ='), s)
+        self.assertTrue(s.startswith("; ModuleID ="), s)
 
     def test_close(self):
         mod = self.module()
@@ -578,8 +588,8 @@ class TestModuleRef(BaseTest):
         mod = self.module()
         s = mod.triple
         self.assertEqual(s, llvm.get_default_triple())
-        mod.triple = ''
-        self.assertEqual(mod.triple, '')
+        mod.triple = ""
+        self.assertEqual(mod.triple, "")
 
     def test_verify(self):
         # Verify successful
@@ -610,9 +620,11 @@ class TestModuleRef(BaseTest):
         st_ty = mod.get_struct_type("struct.glob_type")
         self.assertEqual(st_ty.name, "struct.glob_type")
         # also match struct names of form "%struct.glob_type.{some_index}"
-        self.assertIsNotNone(re.match(
-            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }',
-            str(st_ty)))
+        self.assertIsNotNone(
+            re.match(
+                r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }", str(st_ty)
+            )
+        )
 
         with self.assertRaises(NameError):
             mod.get_struct_type("struct.doesnt_exist")
@@ -636,8 +648,9 @@ class TestModuleRef(BaseTest):
         del mod
         globs = sorted(it, key=lambda value: value.name)
         self.assertEqual(len(globs), 4)
-        self.assertEqual([g.name for g in globs],
-                         ["glob", "glob_b", "glob_f", "glob_struct"])
+        self.assertEqual(
+            [g.name for g in globs], ["glob", "glob_b", "glob_f", "glob_struct"]
+        )
 
     def test_functions(self):
         mod = self.module()
@@ -653,18 +666,19 @@ class TestModuleRef(BaseTest):
         del mod
         structs = list(it)
         self.assertEqual(len(structs), 1)
-        self.assertIsNotNone(re.match(r'struct\.glob_type(\.[\d]+)?',
-                                      structs[0].name))
-        self.assertIsNotNone(re.match(
-            r'%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }',
-            str(structs[0])))
+        self.assertIsNotNone(re.match(r"struct\.glob_type(\.[\d]+)?", structs[0].name))
+        self.assertIsNotNone(
+            re.match(
+                r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
+                str(structs[0]),
+            )
+        )
 
     def test_link_in(self):
         dest = self.module()
         src = self.module(asm_mul)
         dest.link_in(src)
-        self.assertEqual(
-            sorted(f.name for f in dest.functions), ["mul", "sum"])
+        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.get_function("mul")
         dest.close()
         with self.assertRaises(ctypes.ArgumentError):
@@ -674,8 +688,7 @@ class TestModuleRef(BaseTest):
         dest = self.module()
         src2 = self.module(asm_mul)
         dest.link_in(src2, preserve=True)
-        self.assertEqual(
-            sorted(f.name for f in dest.functions), ["mul", "sum"])
+        self.assertEqual(sorted(f.name for f in dest.functions), ["mul", "sum"])
         dest.close()
         self.assertEqual(sorted(f.name for f in src2.functions), ["mul"])
         src2.get_function("mul")
@@ -694,10 +707,11 @@ class TestModuleRef(BaseTest):
         bc = mod.as_bitcode()
         # Refer to http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00064  # noqa E501
         # and http://llvm.org/docs/doxygen/html/ReaderWriter_8h_source.html#l00092  # noqa E501
-        bitcode_wrapper_magic = b'\xde\xc0\x17\x0b'
-        bitcode_magic = b'BC'
-        self.assertTrue(bc.startswith(bitcode_magic) or
-                        bc.startswith(bitcode_wrapper_magic))
+        bitcode_wrapper_magic = b"\xde\xc0\x17\x0b"
+        bitcode_magic = b"BC"
+        self.assertTrue(
+            bc.startswith(bitcode_magic) or bc.startswith(bitcode_wrapper_magic)
+        )
 
     def test_parse_bitcode_error(self):
         with self.assertRaises(RuntimeError) as cm:
@@ -708,7 +722,8 @@ class TestModuleRef(BaseTest):
             self.assertIn("Invalid bitcode signature", str(cm.exception))
         else:
             self.assertIn(
-                "file too small to contain bitcode header", str(cm.exception),
+                "file too small to contain bitcode header",
+                str(cm.exception),
             )
 
     def test_bitcode_roundtrip(self):
@@ -729,7 +744,7 @@ class TestModuleRef(BaseTest):
         self.assertEqual(cloned.as_bitcode(), m.as_bitcode())
 
 
-class JITTestMixin(object):
+class JITTestMixin:
     """
     Mixin for ExecutionEngine tests.
     """
@@ -829,7 +844,7 @@ class JITTestMixin(object):
         gv_i8 = mod.get_global_variable("glob_b")
         gv_struct = mod.get_global_variable("glob_struct")
         # A global is a pointer, it has the ABI size of a pointer
-        pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
+        pointer_size = 4 if sys.maxsize < 2**32 else 8
         for g in (gv_i32, gv_i8, gv_struct):
             self.assertEqual(td.get_abi_size(g.type), pointer_size)
 
@@ -915,7 +930,6 @@ class JITTestMixin(object):
 
 
 class JITWithTMTestMixin(JITTestMixin):
-
     def test_emit_assembly(self):
         """Test TargetMachineRef.emit_assembly()"""
         target_machine = self.target_machine(jit=True)
@@ -935,7 +949,7 @@ class JITWithTMTestMixin(JITTestMixin):
         ee = self.jit(mod, target_machine)  # noqa F841 # Keeps pointers alive
         code_object = target_machine.emit_object(mod)
         self.assertIsInstance(code_object, bytes)
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith("linux"):
             # Sanity check
             self.assertIn(b"ELF", code_object[:10])
 
@@ -952,7 +966,6 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
 
 
 class TestValueRef(BaseTest):
-
     def test_str(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
@@ -1026,14 +1039,15 @@ class TestValueRef(BaseTest):
         tp = glob.type
         self.assertEqual(tp.name, "")
         st = mod.get_global_variable("glob_struct")
-        self.assertIsNotNone(re.match(r"struct\.glob_type(\.[\d]+)?",
-                                      st.type.element_type.name))
+        self.assertIsNotNone(
+            re.match(r"struct\.glob_type(\.[\d]+)?", st.type.element_type.name)
+        )
 
     def test_type_printing_variable(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
         tp = glob.type
-        self.assertEqual(str(tp), 'i32*')
+        self.assertEqual(str(tp), "i32*")
 
     def test_type_printing_function(self):
         mod = self.module()
@@ -1044,11 +1058,13 @@ class TestValueRef(BaseTest):
         mod = self.module()
         st = mod.get_global_variable("glob_struct")
         self.assertTrue(st.type.is_pointer)
-        self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
-                                      str(st.type)))
-        self.assertIsNotNone(re.match(
-            r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
-            str(st.type.element_type)))
+        self.assertIsNotNone(re.match(r"%struct\.glob_type(\.[\d]+)?\*", str(st.type)))
+        self.assertIsNotNone(
+            re.match(
+                r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
+                str(st.type.element_type),
+            )
+        )
 
     def test_close(self):
         glob = self.glob()
@@ -1056,8 +1072,8 @@ class TestValueRef(BaseTest):
         glob.close()
 
     def test_is_declaration(self):
-        defined = self.module().get_function('sum')
-        declared = self.module(asm_sum_declare).get_function('sum')
+        defined = self.module().get_function("sum")
+        declared = self.module(asm_sum_declare).get_function("sum")
         self.assertFalse(defined.is_declaration)
         self.assertTrue(declared.is_declaration)
 
@@ -1074,7 +1090,7 @@ class TestValueRef(BaseTest):
         self.assertEqual(len(funcs), 1)
         func = funcs[0]
         self.assertTrue(func.is_function)
-        self.assertEqual(func.name, 'sum')
+        self.assertEqual(func.name, "sum")
 
         with self.assertRaises(ValueError):
             func.instructions
@@ -1085,16 +1101,16 @@ class TestValueRef(BaseTest):
 
     def test_function_arguments(self):
         mod = self.module()
-        func = mod.get_function('sum')
+        func = mod.get_function("sum")
         self.assertTrue(func.is_function)
         args = list(func.arguments)
         self.assertEqual(len(args), 2)
         self.assertTrue(args[0].is_argument)
         self.assertTrue(args[1].is_argument)
-        self.assertEqual(args[0].name, '.1')
-        self.assertEqual(str(args[0].type), 'i32')
-        self.assertEqual(args[1].name, '.2')
-        self.assertEqual(str(args[1].type), 'i32')
+        self.assertEqual(args[0].name, ".1")
+        self.assertEqual(str(args[0].type), "i32")
+        self.assertEqual(args[1].name, ".2")
+        self.assertEqual(str(args[1].type), "i32")
 
         with self.assertRaises(ValueError):
             args[0].blocks
@@ -1102,57 +1118,55 @@ class TestValueRef(BaseTest):
             args[0].arguments
 
     def test_function_blocks(self):
-        func = self.module().get_function('sum')
+        func = self.module().get_function("sum")
         blocks = list(func.blocks)
         self.assertEqual(len(blocks), 1)
         block = blocks[0]
         self.assertTrue(block.is_block)
 
     def test_block_instructions(self):
-        func = self.module().get_function('sum')
+        func = self.module().get_function("sum")
         insts = list(list(func.blocks)[0].instructions)
         self.assertEqual(len(insts), 3)
         self.assertTrue(insts[0].is_instruction)
         self.assertTrue(insts[1].is_instruction)
         self.assertTrue(insts[2].is_instruction)
-        self.assertEqual(insts[0].opcode, 'add')
-        self.assertEqual(insts[1].opcode, 'add')
-        self.assertEqual(insts[2].opcode, 'ret')
+        self.assertEqual(insts[0].opcode, "add")
+        self.assertEqual(insts[1].opcode, "add")
+        self.assertEqual(insts[2].opcode, "ret")
 
     def test_instruction_operands(self):
-        func = self.module().get_function('sum')
+        func = self.module().get_function("sum")
         add = list(list(func.blocks)[0].instructions)[0]
-        self.assertEqual(add.opcode, 'add')
+        self.assertEqual(add.opcode, "add")
         operands = list(add.operands)
         self.assertEqual(len(operands), 2)
         self.assertTrue(operands[0].is_operand)
         self.assertTrue(operands[1].is_operand)
-        self.assertEqual(operands[0].name, '.1')
-        self.assertEqual(str(operands[0].type), 'i32')
-        self.assertEqual(operands[1].name, '.2')
-        self.assertEqual(str(operands[1].type), 'i32')
+        self.assertEqual(operands[0].name, ".1")
+        self.assertEqual(str(operands[0].type), "i32")
+        self.assertEqual(operands[1].name, ".2")
+        self.assertEqual(str(operands[1].type), "i32")
 
     def test_function_attributes(self):
         mod = self.module(asm_attributes)
         for func in mod.functions:
             attrs = list(func.attributes)
-            if func.name == 'a_readonly_func':
-                self.assertEqual(attrs, [b'readonly'])
-            elif func.name == 'a_arg0_return_func':
+            if func.name == "a_readonly_func":
+                self.assertEqual(attrs, [b"readonly"])
+            elif func.name == "a_arg0_return_func":
                 self.assertEqual(attrs, [])
                 args = list(func.arguments)
-                self.assertEqual(list(args[0].attributes), [b'returned'])
+                self.assertEqual(list(args[0].attributes), [b"returned"])
                 self.assertEqual(list(args[1].attributes), [])
 
 
 class TestTarget(BaseTest):
-
     def test_from_triple(self):
         f = llvm.Target.from_triple
         with self.assertRaises(RuntimeError) as cm:
             f("foobar")
-        self.assertIn("No available targets are compatible with",
-                      str(cm.exception))
+        self.assertIn("No available targets are compatible with", str(cm.exception))
         triple = llvm.get_default_triple()
         target = f(triple)
         self.assertEqual(target.triple, triple)
@@ -1161,10 +1175,10 @@ class TestTarget(BaseTest):
     def test_create_target_machine(self):
         target = llvm.Target.from_triple(llvm.get_default_triple())
         # With the default settings
-        target.create_target_machine('', '', 1, 'default', 'default')
+        target.create_target_machine("", "", 1, "default", "default")
         # With the host's CPU
         cpu = llvm.get_host_cpu_name()
-        target.create_target_machine(cpu, '', 1, 'default', 'default')
+        target.create_target_machine(cpu, "", 1, "default", "default")
 
     def test_name(self):
         t = llvm.Target.from_triple(llvm.get_default_triple())
@@ -1186,7 +1200,6 @@ class TestTarget(BaseTest):
 
 
 class TestTargetData(BaseTest):
-
     def target_data(self):
         return llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
 
@@ -1217,7 +1230,6 @@ class TestTargetData(BaseTest):
 
 
 class TestTargetMachine(BaseTest):
-
     def test_add_analysis_passes(self):
         tm = self.target_machine(jit=False)
         pm = llvm.create_module_pass_manager()
@@ -1229,12 +1241,11 @@ class TestTargetMachine(BaseTest):
         mod = self.module()
         gv_i32 = mod.get_global_variable("glob")
         # A global is a pointer, it has the ABI size of a pointer
-        pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
+        pointer_size = 4 if sys.maxsize < 2**32 else 8
         self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
 
 
 class TestPassManagerBuilder(BaseTest):
-
     def pmb(self):
         return llvm.PassManagerBuilder()
 
@@ -1307,8 +1318,7 @@ class TestPassManagerBuilder(BaseTest):
         pm.close()
 
 
-class PassManagerTestMixin(object):
-
+class PassManagerTestMixin:
     def pmb(self):
         pmb = llvm.create_pass_manager_builder()
         pmb.opt_level = 2
@@ -1321,7 +1331,6 @@ class PassManagerTestMixin(object):
 
 
 class TestModulePassManager(BaseTest, PassManagerTestMixin):
-
     def pm(self):
         return llvm.create_module_pass_manager()
 
@@ -1340,8 +1349,8 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         # where X in %.X is 3 or 4
         opt_asm_split = opt_asm.splitlines()
         for idx, l in enumerate(opt_asm_split):
-            if l.strip().startswith('ret i32'):
-                toks = {'%.3', '%.4'}
+            if l.strip().startswith("ret i32"):
+                toks = {"%.3", "%.4"}
                 for t in toks:
                     if t in l:
                         break
@@ -1357,7 +1366,6 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
 
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
-
     def pm(self, mod=None):
         mod = mod or self.module()
         return llvm.create_function_pass_manager(mod)
@@ -1384,7 +1392,6 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
 
 
 class TestPasses(BaseTest, PassManagerTestMixin):
-
     def pm(self):
         return llvm.create_module_pass_manager()
 
@@ -1410,13 +1417,13 @@ class TestPasses(BaseTest, PassManagerTestMixin):
 
 
 class TestDylib(BaseTest):
-
     def test_bad_library(self):
         with self.assertRaises(RuntimeError):
             llvm.load_library_permanently("zzzasdkf;jasd;l")
 
-    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"],
-                         "test only works on Linux and Darwin")
+    @unittest.skipUnless(
+        platform.system() in ["Linux", "Darwin"], "test only works on Linux and Darwin"
+    )
     def test_libm(self):
         system = platform.system()
         if system == "Linux":
@@ -1439,7 +1446,7 @@ class TestAnalysis(BaseTest):
 
     def test_get_function_cfg_on_ir(self):
         mod = self.build_ir_module()
-        foo = mod.get_global('foo')
+        foo = mod.get_global("foo")
         dot_showing_inst = llvm.get_function_cfg(foo)
         dot_without_inst = llvm.get_function_cfg(foo, show_inst=False)
         inst = "%.5 = add i32 %.1, %.2"
@@ -1447,11 +1454,11 @@ class TestAnalysis(BaseTest):
         self.assertNotIn(inst, dot_without_inst)
 
     def test_function_cfg_on_llvm_value(self):
-        defined = self.module().get_function('sum')
+        defined = self.module().get_function("sum")
         dot_showing_inst = llvm.get_function_cfg(defined, show_inst=True)
         dot_without_inst = llvm.get_function_cfg(defined, show_inst=False)
         # Check "digraph"
-        prefix = 'digraph'
+        prefix = "digraph"
         self.assertIn(prefix, dot_showing_inst)
         self.assertIn(prefix, dot_without_inst)
         # Check function name
@@ -1485,8 +1492,7 @@ class TestTypeParsing(BaseTest):
 
         # Packed layout
         with self.check_parsing() as mod:
-            typ = ir.LiteralStructType([ir.IntType(32)],
-                                       packed=True)
+            typ = ir.LiteralStructType([ir.IntType(32)], packed=True)
             gv = ir.GlobalVariable(mod, typ, "foo")
             # Also test constant text repr
             gv.initializer = ir.Constant(typ, [1])
@@ -1533,54 +1539,54 @@ class TestGlobalVariables(BaseTest):
         asm = str(mod)
         # check if 'undef' is present
         if has_undef:
-            self.assertIn('undef', asm)
+            self.assertIn("undef", asm)
         else:
-            self.assertNotIn('undef', asm)
+            self.assertNotIn("undef", asm)
         # parse assembly to ensure correctness
         self.module(asm)
 
     def test_internal_linkage(self):
-        self.check_global_variable_linkage('internal')
+        self.check_global_variable_linkage("internal")
 
     def test_common_linkage(self):
-        self.check_global_variable_linkage('common')
+        self.check_global_variable_linkage("common")
 
     def test_external_linkage(self):
-        self.check_global_variable_linkage('external', has_undef=False)
+        self.check_global_variable_linkage("external", has_undef=False)
 
     def test_available_externally_linkage(self):
-        self.check_global_variable_linkage('available_externally')
+        self.check_global_variable_linkage("available_externally")
 
     def test_private_linkage(self):
-        self.check_global_variable_linkage('private')
+        self.check_global_variable_linkage("private")
 
     def test_linkonce_linkage(self):
-        self.check_global_variable_linkage('linkonce')
+        self.check_global_variable_linkage("linkonce")
 
     def test_weak_linkage(self):
-        self.check_global_variable_linkage('weak')
+        self.check_global_variable_linkage("weak")
 
     def test_appending_linkage(self):
-        self.check_global_variable_linkage('appending')
+        self.check_global_variable_linkage("appending")
 
     def test_extern_weak_linkage(self):
-        self.check_global_variable_linkage('extern_weak', has_undef=False)
+        self.check_global_variable_linkage("extern_weak", has_undef=False)
 
     def test_linkonce_odr_linkage(self):
-        self.check_global_variable_linkage('linkonce_odr')
+        self.check_global_variable_linkage("linkonce_odr")
 
     def test_weak_odr_linkage(self):
-        self.check_global_variable_linkage('weak_odr')
+        self.check_global_variable_linkage("weak_odr")
 
 
-@unittest.skipUnless(platform.machine().startswith('x86'), "only on x86")
+@unittest.skipUnless(platform.machine().startswith("x86"), "only on x86")
 class TestInlineAsm(BaseTest):
     def test_inlineasm(self):
         llvm.initialize_native_asmparser()
         m = self.module(asm=asm_inlineasm)
         tm = self.target_machine(jit=False)
         asm = tm.emit_assembly(m)
-        self.assertIn('nop', asm)
+        self.assertIn("nop", asm)
 
 
 class TestObjectFile(BaseTest):
@@ -1624,13 +1630,13 @@ class TestObjectFile(BaseTest):
         obj_bin = target_machine.emit_object(mod)
         obj = llvm.ObjectFileRef.from_data(obj_bin)
 
-        jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
-                                         target_machine)
+        jit = llvm.create_mcjit_compiler(self.module(self.mod_asm), target_machine)
 
         jit.add_object_file(obj)
 
         sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
-            jit.get_function_address("sum_twice"))
+            jit.get_function_address("sum_twice")
+        )
 
         self.assertEqual(sum_twice(2, 3), 10)
 
@@ -1648,15 +1654,15 @@ class TestObjectFile(BaseTest):
             finally:
                 f.close()
 
-            jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
-                                             target_machine)
+            jit = llvm.create_mcjit_compiler(self.module(self.mod_asm), target_machine)
 
             jit.add_object_file(temp_path)
         finally:
             os.unlink(temp_path)
 
         sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
-            jit.get_function_address("sum_twice"))
+            jit.get_function_address("sum_twice")
+        )
 
         self.assertEqual(sum_twice(2, 3), 10)
 
@@ -1701,10 +1707,10 @@ class TestLLVMLockCallbacks(BaseTest):
         events = []
 
         def acq():
-            events.append('acq')
+            events.append("acq")
 
         def rel():
-            events.append('rel')
+            events.append("rel")
 
         # register callback
         llvm.ffi.register_lock_callback(acq, rel)

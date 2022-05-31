@@ -1,7 +1,7 @@
 from llvmlite.ir import CallInstr
 
 
-class Visitor(object):
+class Visitor:
     def visit(self, module):
         self._module = module
         for func in module.functions:
@@ -44,7 +44,7 @@ class CallVisitor(Visitor):
 
 class ReplaceCalls(CallVisitor):
     def __init__(self, orig, repl):
-        super(ReplaceCalls, self).__init__()
+        super().__init__()
         self.orig = orig
         self.repl = repl
         self.calls = []

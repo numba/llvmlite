@@ -3,10 +3,15 @@ import sys
 import unittest
 
 from llvmlite.ir import (
-    Constant, FloatType, DoubleType, LiteralStructType, IntType,
-    ArrayType, HalfType)
+    ArrayType,
+    Constant,
+    DoubleType,
+    FloatType,
+    HalfType,
+    IntType,
+    LiteralStructType,
+)
 from llvmlite.tests import TestCase
-
 
 int8 = IntType(8)
 int16 = IntType(16)
@@ -16,31 +21,33 @@ PY36_OR_LATER = sys.version_info[:2] >= (3, 6)
 
 
 class TestValueRepr(TestCase):
-
     def test_double_repr(self):
         def check_repr(val, expected):
             c = Constant(DoubleType(), val)
             self.assertEqual(str(c), expected)
+
         check_repr(math.pi, "double 0x400921fb54442d18")
-        check_repr(float('inf'), "double 0x7ff0000000000000")
-        check_repr(float('-inf'), "double 0xfff0000000000000")
+        check_repr(float("inf"), "double 0x7ff0000000000000")
+        check_repr(float("-inf"), "double 0xfff0000000000000")
 
     def test_float_repr(self):
         def check_repr(val, expected):
             c = Constant(FloatType(), val)
             self.assertEqual(str(c), expected)
-        check_repr(math.pi, "float 0x400921fb60000000")
-        check_repr(float('inf'), "float 0x7ff0000000000000")
-        check_repr(float('-inf'), "float 0xfff0000000000000")
 
-    @unittest.skipUnless(PY36_OR_LATER, 'py36+ only')
+        check_repr(math.pi, "float 0x400921fb60000000")
+        check_repr(float("inf"), "float 0x7ff0000000000000")
+        check_repr(float("-inf"), "float 0xfff0000000000000")
+
+    @unittest.skipUnless(PY36_OR_LATER, "py36+ only")
     def test_half_repr(self):
         def check_repr(val, expected):
             c = Constant(HalfType(), val)
             self.assertEqual(str(c), expected)
+
         check_repr(math.pi, "half 0x4009200000000000")
-        check_repr(float('inf'), "half 0x7ff0000000000000")
-        check_repr(float('-inf'), "half 0xfff0000000000000")
+        check_repr(float("inf"), "half 0x7ff0000000000000")
+        check_repr(float("-inf"), "half 0xfff0000000000000")
 
     def test_struct_repr(self):
         tp = LiteralStructType([int8, int16])
