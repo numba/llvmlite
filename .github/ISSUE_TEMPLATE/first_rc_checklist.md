@@ -17,7 +17,7 @@ labels: task
 * [ ] Annotated tag `vX.Y.Z` on release branch (`llvmlite` tags DO have a `v` prefix).
 * [ ] Build conda packages on buildfarm (check "upload").
 * [ ] Verify packages uploaded to Anaconda Cloud and move to `numba/label/main`.
-* [ ] Build wheels (`$PYTHON_VERSIONS`) on the buildfarm.
+* [ ] Build wheels and sdist (`$PYTHON_VERSIONS`) on the buildfarm.
 * [ ] Upload wheels and sdist to PyPI and verify arrival. (upload from `ci_artifacts`).
 * [ ] Initialize and verify ReadTheDocs build.
 * [ ] Send RC announcement email / post announcement to discourse group.
