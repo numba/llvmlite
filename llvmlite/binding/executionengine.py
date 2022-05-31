@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ctypes import (
     CFUNCTYPE,
     POINTER,
@@ -12,14 +14,18 @@ from ctypes import (
     py_object,
     string_at,
 )
+from typing import Any, Callable
 
 from llvmlite.binding import ffi, object_file, targets
+from llvmlite.binding.module import ModuleRef
 
 # Just check these weren't optimized out of the DLL.
 ffi.lib.LLVMPY_LinkInMCJIT
 
 
-def create_mcjit_compiler(module, target_machine):
+def create_mcjit_compiler(
+    module: ModuleRef, target_machine: targets.TargetMachine
+) -> ExecutionEngine:
     """
     Create a MCJIT ExecutionEngine from the given *module* and
     *target_machine*.
@@ -33,7 +39,7 @@ def create_mcjit_compiler(module, target_machine):
     return ExecutionEngine(engine, module=module)
 
 
-def check_jit_execution():
+def check_jit_execution() -> None:
     """
     Check the system allows execution of in-memory JITted functions.
     An exception is raised otherwise.
@@ -56,16 +62,16 @@ class ExecutionEngine(ffi.ObjectRef):
 
     _object_cache = None
 
-    def __init__(self, ptr, module):
+    def __init__(self, ptr: Any, module: ModuleRef) -> None:
         """
         Module ownership is transferred to the EE
         """
         self._modules = set([module])
-        self._td = None
+        self._td: targets.TargetData | None = None
         module._owned = True
         ffi.ObjectRef.__init__(self, ptr)
 
-    def get_function_address(self, name):
+    def get_function_address(self, name: str) -> Any:
         """
         Return the address of the function named *name* as an integer.
 
@@ -73,7 +79,7 @@ class ExecutionEngine(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_GetFunctionAddress(self, name.encode("ascii"))
 
-    def get_global_value_address(self, name):
+    def get_global_value_address(self, name: str) -> Any:
         """
         Return the address of the global value named *name* as an integer.
 
@@ -81,11 +87,11 @@ class ExecutionEngine(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_GetGlobalValueAddress(self, name.encode("ascii"))
 
-    def add_global_mapping(self, gv, addr):
+    def add_global_mapping(self, gv: Any, addr: Any) -> None:
         # XXX unused?
         ffi.lib.LLVMPY_AddGlobalMapping(self, gv, addr)
 
-    def add_module(self, module):
+    def add_module(self, module: ModuleRef) -> None:
         """
         Ownership of module is transferred to the execution engine
         """
@@ -95,27 +101,27 @@ class ExecutionEngine(ffi.ObjectRef):
         module._owned = True
         self._modules.add(module)
 
-    def finalize_object(self):
+    def finalize_object(self) -> None:
         """
         Make sure all modules owned by the execution engine are fully processed
         and "usable" for execution.
         """
         ffi.lib.LLVMPY_FinalizeObject(self)
 
-    def run_static_constructors(self):
+    def run_static_constructors(self) -> None:
         """
         Run static constructors which initialize module-level static objects.
         """
         ffi.lib.LLVMPY_RunStaticConstructors(self)
 
-    def run_static_destructors(self):
+    def run_static_destructors(self) -> None:
         """
         Run static destructors which perform module-level cleanup of static
         resources.
         """
         ffi.lib.LLVMPY_RunStaticDestructors(self)
 
-    def remove_module(self, module):
+    def remove_module(self, module: ModuleRef) -> None:
         """
         Ownership of module is returned
         """
@@ -126,7 +132,7 @@ class ExecutionEngine(ffi.ObjectRef):
         module._owned = False
 
     @property
-    def target_data(self):
+    def target_data(self) -> targets.TargetData:
         """
         The TargetData for this execution engine.
         """
@@ -137,7 +143,7 @@ class ExecutionEngine(ffi.ObjectRef):
         self._td._owned = True
         return self._td
 
-    def enable_jit_events(self):
+    def enable_jit_events(self) -> Any:
         """
         Enable JIT events for profiling of generated code.
         Return value indicates whether connection to profiling tool
@@ -146,7 +152,7 @@ class ExecutionEngine(ffi.ObjectRef):
         ret = ffi.lib.LLVMPY_EnableJITEvents(self)
         return ret
 
-    def _find_module_ptr(self, module_ptr):
+    def _find_module_ptr(self, module_ptr: Any) -> ModuleRef | None:
         """
         Find the ModuleRef corresponding to the given pointer.
         """
@@ -156,7 +162,7 @@ class ExecutionEngine(ffi.ObjectRef):
                 return module
         return None
 
-    def add_object_file(self, obj_file):
+    def add_object_file(self, obj_file: str | object_file.ObjectFileRef) -> None:
         """
         Add object file to the jit. object_file can be instance of
         :class:ObjectFile or a string representing file system path
@@ -166,7 +172,11 @@ class ExecutionEngine(ffi.ObjectRef):
 
         ffi.lib.LLVMPY_MCJITAddObjectFile(self, obj_file)
 
-    def set_object_cache(self, notify_func=None, getbuffer_func=None):
+    def set_object_cache(
+        self,
+        notify_func: Callable[[ModuleRef, bytes], Any] | None = None,
+        getbuffer_func: Callable[[ModuleRef], Any] | None = None,
+    ) -> None:
         """
         Set the object cache "notifyObjectCompiled" and "getBuffer"
         callbacks to the given Python functions.
@@ -179,7 +189,7 @@ class ExecutionEngine(ffi.ObjectRef):
         # cycles.
         ffi.lib.LLVMPY_SetObjectCache(self, self._object_cache)
 
-    def _raw_object_cache_notify(self, data):
+    def _raw_object_cache_notify(self, data: Any) -> None:
         """
         Low-level notify hook.
         """
@@ -198,7 +208,7 @@ class ExecutionEngine(ffi.ObjectRef):
             )
         self._object_cache_notify(module, buf)
 
-    def _raw_object_cache_getbuffer(self, data):
+    def _raw_object_cache_getbuffer(self, data: Any) -> None:
         """
         Low-level getbuffer hook.
         """
@@ -219,7 +229,7 @@ class ExecutionEngine(ffi.ObjectRef):
             data[0].buf_ptr = ffi.lib.LLVMPY_CreateByteString(buf, len(buf))
             data[0].buf_len = len(buf)
 
-    def _dispose(self):
+    def _dispose(self) -> None:
         # The modules will be cleaned up by the EE
         for mod in self._modules:
             mod.detach()
@@ -235,11 +245,11 @@ class _ObjectCacheRef(ffi.ObjectRef):
     Internal: an ObjectCache instance for use within an ExecutionEngine.
     """
 
-    def __init__(self, obj):
+    def __init__(self, obj: Any) -> None:
         ptr = ffi.lib.LLVMPY_CreateObjectCache(_notify_c_hook, _getbuffer_c_hook, obj)
         ffi.ObjectRef.__init__(self, ptr)
 
-    def _dispose(self):
+    def _dispose(self) -> None:
         self._capi.LLVMPY_DisposeObjectCache(self)
 
 

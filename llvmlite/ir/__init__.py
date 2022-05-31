@@ -2,6 +2,8 @@
 This subpackage implements the LLVM IR classes in pure python
 """
 
+from __future__ import annotations
+
 from .builder import *
 from .context import Context, global_context
 from .instructions import *

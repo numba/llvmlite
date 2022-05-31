@@ -2,6 +2,8 @@
 Tests for legacy llvmpy-compatibility APIs.
 """
 
+from __future__ import annotations
+
 import unittest
 
 from llvmlite.tests import TestCase

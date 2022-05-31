@@ -1,6 +1,8 @@
 """
 Things that rely on the LLVM library
 """
+from __future__ import annotations
+
 from .analysis import *
 from .context import *
 from .dylib import *

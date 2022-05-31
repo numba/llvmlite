@@ -1,52 +1,55 @@
+from __future__ import annotations
+
 from ctypes import POINTER, c_bool, c_char, c_char_p, c_size_t, c_uint64, string_at
+from typing import Any, Iterator
 
 from llvmlite.binding import ffi
 
 
 class SectionIteratorRef(ffi.ObjectRef):
-    def name(self):
+    def name(self) -> Any:
         return ffi.lib.LLVMPY_GetSectionName(self)
 
-    def is_text(self):
+    def is_text(self) -> Any:
         return ffi.lib.LLVMPY_IsSectionText(self)
 
-    def size(self):
+    def size(self) -> Any:
         return ffi.lib.LLVMPY_GetSectionSize(self)
 
-    def address(self):
+    def address(self) -> Any:
         return ffi.lib.LLVMPY_GetSectionAddress(self)
 
-    def data(self):
+    def data(self) -> bytes:
         return string_at(ffi.lib.LLVMPY_GetSectionContents(self), self.size())
 
-    def is_end(self, object_file):
+    def is_end(self, object_file: ObjectFileRef) -> Any:
         return ffi.lib.LLVMPY_IsSectionIteratorAtEnd(object_file, self)
 
-    def next(self):
+    def next(self) -> Any:
         ffi.lib.LLVMPY_MoveToNextSection(self)
 
-    def _dispose(self):
+    def _dispose(self) -> None:
         ffi.lib.LLVMPY_DisposeSectionIterator(self)
 
 
 class ObjectFileRef(ffi.ObjectRef):
     @classmethod
-    def from_data(cls, data):
+    def from_data(cls, data: bytes) -> ObjectFileRef:
         return cls(ffi.lib.LLVMPY_CreateObjectFile(data, len(data)))
 
     @classmethod
-    def from_path(cls, path):
+    def from_path(cls, path: str) -> ObjectFileRef:
         with open(path, "rb") as f:
             data = f.read()
         return cls(ffi.lib.LLVMPY_CreateObjectFile(data, len(data)))
 
-    def sections(self):
+    def sections(self) -> Iterator[Any]:
         it = SectionIteratorRef(ffi.lib.LLVMPY_GetSections(self))
         while not it.is_end(self):
             yield it
             it.next()
 
-    def _dispose(self):
+    def _dispose(self) -> None:
         ffi.lib.LLVMPY_DisposeObjectFile(self)
 
 

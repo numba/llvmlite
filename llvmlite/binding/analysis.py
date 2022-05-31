@@ -2,14 +2,18 @@
 A collection of analysis utilities
 """
 
+from __future__ import annotations
+
 from ctypes import POINTER, c_char_p, c_int
+from typing import Any
 
 from llvmlite import ir
 from llvmlite.binding import ffi
 from llvmlite.binding.module import parse_assembly
+from llvmlite.binding.value import ValueRef
 
 
-def get_function_cfg(func, show_inst=True):
+def get_function_cfg(func: ir.Function | ValueRef, show_inst: bool = True) -> str:
     """Return a string of the control-flow graph of the function in DOT
     format. If the input `func` is not a materialized function, the module
     containing the function is parsed to create an actual LLVM module.
@@ -27,7 +31,7 @@ def get_function_cfg(func, show_inst=True):
         return str(dotstr)
 
 
-def view_dot_graph(graph, filename=None, view=False):
+def view_dot_graph(graph: Any, filename: str | None = None, view: bool = False) -> Any:
     """
     View the given DOT source.  If view is True, the image is rendered
     and viewed by the default application in the system.  The file path of
@@ -47,23 +51,23 @@ def view_dot_graph(graph, filename=None, view=False):
 
     """
     # Optionally depends on graphviz package
-    import graphviz as gv
+    import graphviz as gv  # type: ignore
 
-    src = gv.Source(graph)
+    src = gv.Source(graph)  # type: ignore
     if view:
         # Returns the output file path
-        return src.render(filename, view=view)
+        return src.render(filename, view=view)  # type: ignore
     else:
         # Attempts to show the graph in IPython notebook
         try:
-            __IPYTHON__
+            __IPYTHON__  # type: ignore
         except NameError:
-            return src
+            return src  # type: ignore
         else:
-            import IPython.display as display
+            import IPython.display as display  # type: ignore
 
             format = "svg"
-            return display.SVG(data=src.pipe(format))
+            return display.SVG(data=src.pipe(format))  # type: ignore
 
 
 # Ctypes binding

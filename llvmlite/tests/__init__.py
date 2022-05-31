@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import faulthandler
 import sys
 import unittest

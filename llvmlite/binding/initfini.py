@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 from ctypes import c_uint
 
 from llvmlite.binding import ffi
 
 
-def initialize():
+def initialize() -> None:
     """
     Initialize the LLVM core.
     """
     ffi.lib.LLVMPY_InitializeCore()
 
 
-def initialize_all_targets():
+def initialize_all_targets() -> None:
     """
     Initialize all targets. Necessary before targets can be looked up
     via the :class:`Target` class.
@@ -20,7 +22,7 @@ def initialize_all_targets():
     ffi.lib.LLVMPY_InitializeAllTargetMCs()
 
 
-def initialize_all_asmprinters():
+def initialize_all_asmprinters() -> None:
     """
     Initialize all code generators. Necessary before generating
     any assembly or machine code via the :meth:`TargetMachine.emit_object`
@@ -29,7 +31,7 @@ def initialize_all_asmprinters():
     ffi.lib.LLVMPY_InitializeAllAsmPrinters()
 
 
-def initialize_native_target():
+def initialize_native_target() -> None:
     """
     Initialize the native (host) target.  Necessary before doing any
     code generation.
@@ -37,21 +39,21 @@ def initialize_native_target():
     ffi.lib.LLVMPY_InitializeNativeTarget()
 
 
-def initialize_native_asmprinter():
+def initialize_native_asmprinter() -> None:
     """
     Initialize the native ASM printer.
     """
     ffi.lib.LLVMPY_InitializeNativeAsmPrinter()
 
 
-def initialize_native_asmparser():
+def initialize_native_asmparser() -> None:
     """
     Initialize the native ASM parser.
     """
     ffi.lib.LLVMPY_InitializeNativeAsmParser()
 
 
-def shutdown():
+def shutdown() -> None:
     ffi.lib.LLVMPY_Shutdown()
 
 
@@ -61,8 +63,8 @@ def shutdown():
 ffi.lib.LLVMPY_GetVersionInfo.restype = c_uint
 
 
-def _version_info():
-    v = []
+def _version_info() -> tuple[int, ...]:
+    v: list[int] = []
     x = ffi.lib.LLVMPY_GetVersionInfo()
     while x:
         v.append(x & 0xFF)

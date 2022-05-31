@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import unittest
 
 from llvmlite import binding as llvm

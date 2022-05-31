@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 from llvmlite.ir import _utils, types
 
 
 class Context:
-    def __init__(self):
+    def __init__(self) -> None:
         self.scope = _utils.NameScope()
-        self.identified_types = {}
+        self.identified_types: dict[str, types.IdentifiedStructType] = {}
 
-    def get_identified_type(self, name):
+    def get_identified_type(self, name: str) -> types.IdentifiedStructType:
         if name not in self.identified_types:
             self.scope.register(name)
             ty = types.IdentifiedStructType(self, name)

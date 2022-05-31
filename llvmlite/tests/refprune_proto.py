@@ -417,6 +417,8 @@ class ParallelTestRunner(runner.TextTestRunner):
         return super().run(self._run_inner)
 
 
+from __future__ import annotations
+
 try:
     import faulthandler
 except ImportError:

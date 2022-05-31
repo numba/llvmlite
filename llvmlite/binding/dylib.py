@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 from ctypes import POINTER, c_bool, c_char_p, c_void_p
+from typing import Any
 
 from llvmlite.binding import ffi
 from llvmlite.binding.common import _encode_string
 
 
-def address_of_symbol(name):
+def address_of_symbol(name: str) -> Any:
     """
     Get the in-process address of symbol named *name*.
     An integer is returned, or None if the symbol isn't found.
@@ -12,7 +15,7 @@ def address_of_symbol(name):
     return ffi.lib.LLVMPY_SearchAddressOfSymbol(_encode_string(name))
 
 
-def add_symbol(name, address):
+def add_symbol(name: str, address: int) -> None:
     """
     Register the *address* of global symbol *name*.  This will make
     it usable (e.g. callable) from LLVM-compiled functions.
@@ -20,7 +23,7 @@ def add_symbol(name, address):
     ffi.lib.LLVMPY_AddSymbol(_encode_string(name), c_void_p(address))
 
 
-def load_library_permanently(filename):
+def load_library_permanently(filename: str) -> None:
     """
     Load an external library
     """

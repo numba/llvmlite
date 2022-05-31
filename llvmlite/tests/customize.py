@@ -1,5 +1,7 @@
 # XXX Ripped off from numba.tests; we should factor it out somewhere?
 
+from __future__ import annotations
+
 import collections
 import contextlib
 import cProfile
