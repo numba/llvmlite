@@ -1131,15 +1131,12 @@ class ArgumentAttributes(AttributeSet):
 class _BaseArgument(NamedValue):
     def __init__(self, parent: Block, type: types.Type, name: str = "") -> None:
         assert isinstance(type, types.Type)
-        super(_BaseArgument, self).__init__(parent, typ, name=name)  # type: ignore
+        super(_BaseArgument, self).__init__(parent, type, name=name)
         self.attributes = ArgumentAttributes()
 
     def __repr__(self) -> str:
-        return "<ir.{0} {1!r} of type {2}>".format(
-            self.__class__.__name__,
-            self.name,
-            self.type,  # type: ignore
-        )
+        return "<ir.%s %r of type %s>" % (self.__class__.__name__, self.name,
+                                          self.type)
 
     def add_attribute(self, attr: str) -> None:
         self.attributes.add(attr)
