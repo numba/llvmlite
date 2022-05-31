@@ -1,6 +1,12 @@
+from __future__ import annotations
+
+import builtins
 import itertools
+from typing import Iterable
 
 from llvmlite import ir
+from llvmlite.ir.instructions import FCMPInstr, ICMPInstr
+from llvmlite.ir.values import GlobalVariable, MDValue, NamedMetaData
 from llvmlite import binding as llvm
 
 import warnings
@@ -19,7 +25,7 @@ class LLVMException(Exception):
 _icmp_ct = itertools.count()
 
 
-def _icmp_get():
+def _icmp_get() -> int:
     return next(_icmp_ct)
 
 
@@ -69,124 +75,130 @@ ATTR_NO_CAPTURE = 'nocapture'
 
 class Type(object):
     @staticmethod
-    def int(width=32):
+    def int(width: builtins.int = 32) -> ir.IntType:
         return ir.IntType(width)
 
     @staticmethod
-    def float():
-        return ir.FloatType()
+    def float() -> ir.FloatType:
+        return ir.FloatType()  # type: ignore
 
     @staticmethod
-    def half():
-        return ir.HalfType()
+    def half() -> ir.HalfType:
+        return ir.HalfType()  # type: ignore
 
     @staticmethod
-    def double():
-        return ir.DoubleType()
+    def double() -> ir.DoubleType:
+        return ir.DoubleType()  # type: ignore
 
     @staticmethod
-    def pointer(ty, addrspace=0):
+    def pointer(
+        ty: ir.IntType | ir.PointerType | ir.FunctionType, addrspace: builtins.int = 0
+    ) -> ir.PointerType:
         return ir.PointerType(ty, addrspace)
 
     @staticmethod
-    def function(res, args, var_arg=False):
+    def function(
+        res: ir.Type, args: list[ir.Type], var_arg: bool = False
+    ) -> ir.FunctionType:
         return ir.FunctionType(res, args, var_arg=var_arg)
 
     @staticmethod
-    def struct(members):
+    def struct(members: Iterable[ir.Type]) -> ir.LiteralStructType:
         return ir.LiteralStructType(members)
 
     @staticmethod
-    def array(element, count):
+    def array(element: ir.Type, count: builtins.int) -> ir.ArrayType:
         return ir.ArrayType(element, count)
 
     @staticmethod
-    def void():
+    def void() -> ir.VoidType:
         return ir.VoidType()
 
 
 class Constant(object):
     @staticmethod
-    def all_ones(ty):
+    def all_ones(ty: ir.IntType) -> ir.Constant:
         if isinstance(ty, ir.IntType):
             return Constant.int(ty, int('1' * ty.width, 2))
         else:
             raise NotImplementedError(ty)
 
     @staticmethod
-    def int(ty, n):
+    def int(ty: ir.Type, n: builtins.int) -> ir.Constant:
         return ir.Constant(ty, n)
 
     @staticmethod
-    def int_signextend(ty, n):
+    def int_signextend(ty: ir.Type, n: builtins.int) -> ir.Constant:
         return ir.Constant(ty, n)
 
     @staticmethod
-    def real(ty, n):
+    def real(ty: ir.Type, n: builtins.int) -> ir.Constant:
         return ir.Constant(ty, n)
 
     @staticmethod
-    def struct(elems):
+    def struct(elems: list[ir.Constant]) -> ir.Constant:
         return ir.Constant.literal_struct(elems)
 
     @staticmethod
-    def null(ty):
+    def null(ty: ir.Type) -> ir.Constant:
         return ir.Constant(ty, None)
 
     @staticmethod
-    def undef(ty):
+    def undef(ty: ir.Type) -> ir.Constant:
         return ir.Constant(ty, ir.Undefined)
 
     @staticmethod
-    def stringz(string):
-        n = (len(string) + 1)
-        buf = bytearray((' ' * n).encode('ascii'))
+    def stringz(string: str) -> ir.Constant:
+        n = len(string) + 1
+        buf = bytearray((" " * n).encode("ascii"))
         buf[-1] = 0
         buf[:-1] = string.encode('utf-8')
         return ir.Constant(ir.ArrayType(ir.IntType(8), n), buf)
 
     @staticmethod
-    def array(typ, val):
+    def array(typ: ir.Type, val: list[ir.Constant]) -> ir.Constant:
         return ir.Constant(ir.ArrayType(typ, len(val)), val)
 
     @staticmethod
-    def bitcast(const, typ):
-        return const.bitcast(typ)
+    def bitcast(const: ir.Constant, typ: ir.Type) -> ir.FormattedConstant:
+        return const.bitcast(typ)  # type: ignore
 
     @staticmethod
-    def inttoptr(const, typ):
-        return const.inttoptr(typ)
+    def inttoptr(const: ir.Constant, typ: ir.Type) -> ir.FormattedConstant:
+        return const.inttoptr(typ)  # type: ignore
 
     @staticmethod
-    def gep(const, indices):
+    def gep(const: ir.Constant, indices: list[ir.Constant]) -> ir.FormattedConstant:
         return const.gep(indices)
 
 
 class Module(ir.Module):
 
-    def get_or_insert_function(self, fnty, name):
+    def get_or_insert_function(self, fnty: ir.FunctionType, name: str) -> ir.Function:
         if name in self.globals:
-            return self.globals[name]
+            return self.globals[name]  # type: ignore
         else:
             return ir.Function(self, fnty, name)
 
-    def verify(self):
-        llvm.parse_assembly(str(self))
+    def verify(self) -> None:
+        llvm.parse_assembly(str(self))  # type: ignore
 
-    def add_function(self, fnty, name):
+    def add_function(self, fnty: ir.FunctionType, name: str) -> ir.Function:
         return ir.Function(self, fnty, name)
 
-    def add_global_variable(self, ty, name, addrspace=0):
+    def add_global_variable(
+        self, ty: ir.Type, name: str, addrspace: builtins.int = 0
+    ) -> ir.GlobalVariable:
         return ir.GlobalVariable(self, ty, self.get_unique_name(name),
                                  addrspace)
 
-    def get_global_variable_named(self, name):
+    def get_global_variable_named(self, name: str) -> ir.GlobalVariable:
         try:
             return self.globals[name]
         except KeyError:
             raise LLVMException(name)
 
-    def get_or_insert_named_metadata(self, name):
+    def get_or_insert_named_metadata(self, name: str) -> NamedMetaData:
         try:
             return self.get_named_metadata(name)
         except KeyError:
@@ -196,11 +208,15 @@ class Module(ir.Module):
 class Function(ir.Function):
 
     @classmethod
-    def new(cls, module_obj, functy, name=''):
+    def new(
+        cls, module_obj: Module, functy: ir.FunctionType, name: str = ""
+    ) -> Function:
         return cls(module_obj, functy, name)
 
     @staticmethod
-    def intrinsic(module, intrinsic, tys):
+    def intrinsic(
+        module: Module, intrinsic: str, tys: list[ir.Type]
+    ) -> GlobalVariable | ir.Function:
         return module.declare_intrinsic(intrinsic, tys)
 
 
@@ -242,33 +258,41 @@ _fcmp_umap = {
 
 
 class Builder(ir.IRBuilder):
-
-    def icmp(self, pred, lhs, rhs, name=''):
+    def icmp(
+        self, pred: str, lhs: ir.Constant, rhs: ir.Constant, name: str = ""
+    ) -> ICMPInstr:
         if pred in _icmp_umap:
-            return self.icmp_unsigned(_icmp_umap[pred], lhs, rhs, name=name)
+            return self.icmp_unsigned(_icmp_umap[pred], lhs, rhs, name=name)  # type: ignore
         else:
-            return self.icmp_signed(_icmp_smap[pred], lhs, rhs, name=name)
+            return self.icmp_signed(_icmp_smap[pred], lhs, rhs, name=name)  # type: ignore
 
-    def fcmp(self, pred, lhs, rhs, name=''):
+    def fcmp(
+        self, pred: str, lhs: ir.Constant, rhs: ir.Constant, name: str = ""
+    ) -> FCMPInstr:
         if pred in _fcmp_umap:
-            return self.fcmp_unordered(_fcmp_umap[pred], lhs, rhs, name=name)
+            return self.fcmp_unordered(_fcmp_umap[pred], lhs, rhs, name=name)  # type: ignore
         else:
-            return self.fcmp_ordered(_fcmp_omap[pred], lhs, rhs, name=name)
+            return self.fcmp_ordered(_fcmp_omap[pred], lhs, rhs, name=name)  # type: ignore
 
 
 class MetaDataString(ir.MetaDataString):
     @staticmethod
-    def get(module, text):
+    def get(module: Module, text: str) -> MetaDataString:
         return MetaDataString(module, text)
 
 
 class MetaData(object):
     @staticmethod
-    def get(module, values):
+    def get(module: Module, values: list[ir.Constant]) -> MDValue:
         return module.add_metadata(values)
 
 
 class InlineAsm(ir.InlineAsm):
     @staticmethod
-    def get(*args, **kwargs):
-        return InlineAsm(*args, **kwargs)
+    def get(
+        ftype: ir.FunctionType,
+        asm: str,
+        constraint: ir.Value,
+        side_effect: bool = False,
+    ) -> InlineAsm:
+        return InlineAsm(ftype, asm, constraint, side_effect)
