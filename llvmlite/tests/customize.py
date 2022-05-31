@@ -111,7 +111,7 @@ class NumbaTestProgram(unittest.main):
             )
 
         def run_tests_real():
-            super().runTests()
+            super(NumbaTestProgram, self).runTests()
 
         if self.profile:
             filename = (
