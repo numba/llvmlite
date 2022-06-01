@@ -205,6 +205,7 @@ for details:
        test failure caused by the previous patch.
     #. ``0001-Revert-Limit-size-of-non-GlobalValue-name.patch``: Revert the
        limit put on the length of a non-GlobalValue name.
+    #. ``llvm_11_consecutive_registers.patch``: Handle arrays of struct properly
 
 #. For Linux/macOS:
 
