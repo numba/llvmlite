@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sys
 
@@ -5,7 +7,8 @@ import sys
 # This module must be importable without loading the binding, to avoid
 # bootstrapping issues in setup.py.
 
-def get_library_name():
+
+def get_library_name() -> str:
     """
     Return the name of the llvmlite shared library file.
     """
@@ -19,7 +22,7 @@ def get_library_name():
         return 'llvmlite.dll'
 
 
-def get_library_files():
+def get_library_files() -> list[str]:
     """
     Return the names of shared library files needed for this platform.
     """

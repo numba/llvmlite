@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from llvmlite.binding import ffi
 from llvmlite.binding.common import _encode_string
 from ctypes import c_char_p
 
 
-def set_option(name, option):
+def set_option(name: str, option: str) -> None:
     """
     Set the given LLVM "command-line" option.
 

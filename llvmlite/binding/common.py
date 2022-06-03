@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import atexit
 
 
-def _encode_string(s):
+def _encode_string(s: str) -> bytes:
     encoded = s.encode('utf-8')
     return encoded
 
 
-def _decode_string(b):
+def _decode_string(b: bytes) -> str:
     return b.decode('utf-8')
 
 
@@ -17,14 +19,14 @@ _decode_string.__doc__ = """Decode a LLVM character (byte)string."""
 _shutting_down = [False]
 
 
-def _at_shutdown():
+def _at_shutdown() -> None:
     _shutting_down[0] = True
 
 
 atexit.register(_at_shutdown)
 
 
-def _is_shutting_down(_shutting_down=_shutting_down):
+def _is_shutting_down(_shutting_down: list[bool] = _shutting_down) -> bool:
     """
     Whether the interpreter is currently shutting down.
     For use in finalizers, __del__ methods, and similar; it is advised

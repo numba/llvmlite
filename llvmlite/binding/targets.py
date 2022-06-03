@@ -1,12 +1,20 @@
+from __future__ import annotations
+
 import os
 from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
                     c_void_p, string_at)
+from typing import Any, cast as _cast
+
+# from typing_extensions import Literal
 
 from llvmlite.binding import ffi
 from llvmlite.binding.common import _decode_string, _encode_string
+from llvmlite.binding.module import ModuleRef
+from llvmlite.binding.passmanagers import PassManager
+from llvmlite.binding.value import TypeRef
 
 
-def get_process_triple():
+def get_process_triple() -> str:
     """
     Return a target triple suitable for generating code for the current process.
     An example when the default triple from ``get_default_triple()`` is not be
@@ -18,13 +26,14 @@ def get_process_triple():
         return str(out)
 
 
+# subclassing built-ins isn't exactly great in < 3.9
 class FeatureMap(dict):
     """
     Maps feature name to a boolean indicating the availability of the feature.
     Extends ``dict`` to add `.flatten()` method.
     """
 
-    def flatten(self, sort=True):
+    def flatten(self, sort: bool = True) -> str:
         """
         Args
         ----
@@ -43,7 +52,7 @@ class FeatureMap(dict):
                         for k, v in iterator)
 
 
-def get_host_cpu_features():
+def get_host_cpu_features() -> FeatureMap:
     """
     Returns a dictionary-like object indicating the CPU features for current
     architecture and whether they are enabled for this CPU.  The key-value pairs
@@ -68,7 +77,7 @@ def get_host_cpu_features():
         return outdict
 
 
-def get_default_triple():
+def get_default_triple() -> str:
     """
     Return the default target triple LLVM is configured to produce code for.
     """
@@ -77,7 +86,7 @@ def get_default_triple():
         return str(out)
 
 
-def get_host_cpu_name():
+def get_host_cpu_name() -> str:
     """
     Get the name of the host's CPU, suitable for using with
     :meth:`Target.create_target_machine()`.
@@ -94,7 +103,7 @@ _object_formats = {
 }
 
 
-def get_object_format(triple=None):
+def get_object_format(triple: str | None = None) -> str:
     """
     Get the object format for the given *triple* string (or the default
     triple if omitted).
@@ -106,7 +115,7 @@ def get_object_format(triple=None):
     return _object_formats[res]
 
 
-def create_target_data(layout):
+def create_target_data(layout: str) -> TargetData:
     """
     Create a TargetData instance for the given *layout* string.
     """
@@ -119,48 +128,48 @@ class TargetData(ffi.ObjectRef):
     Use :func:`create_target_data` to create instances.
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self._closed:
             return "<dead TargetData>"
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_CopyStringRepOfTargetData(self, out)
             return str(out)
 
-    def _dispose(self):
+    def _dispose(self) -> None:
         self._capi.LLVMPY_DisposeTargetData(self)
 
-    def get_abi_size(self, ty):
+    def get_abi_size(self, ty: Any) -> int:
         """
         Get ABI size of LLVM type *ty*.
         """
-        return ffi.lib.LLVMPY_ABISizeOfType(self, ty)
+        return _cast(int, ffi.lib.LLVMPY_ABISizeOfType(self, ty))
 
-    def get_element_offset(self, ty, position):
+    def get_element_offset(self, ty: Any, position: int) -> int:
         """
         Get byte offset of type's ty element at the given position
         """
 
-        offset = ffi.lib.LLVMPY_OffsetOfElement(self, ty, position)
+        offset = _cast(int, ffi.lib.LLVMPY_OffsetOfElement(self, ty, position))
         if offset == -1:
             raise ValueError("Could not determined offset of {}th "
                              "element of the type '{}'. Is it a struct"
                              "type?".format(position, str(ty)))
         return offset
 
-    def get_pointee_abi_size(self, ty):
+    def get_pointee_abi_size(self, ty: TypeRef) -> int:
         """
         Get ABI size of pointee type of LLVM pointer type *ty*.
         """
-        size = ffi.lib.LLVMPY_ABISizeOfElementType(self, ty)
+        size = _cast(int, ffi.lib.LLVMPY_ABISizeOfElementType(self, ty))
         if size == -1:
             raise RuntimeError("Not a pointer type: %s" % (ty,))
         return size
 
-    def get_pointee_abi_alignment(self, ty):
+    def get_pointee_abi_alignment(self, ty: TypeRef) -> int:
         """
         Get minimum ABI alignment of pointee type of LLVM pointer type *ty*.
         """
-        size = ffi.lib.LLVMPY_ABIAlignmentOfElementType(self, ty)
+        size = _cast(int, ffi.lib.LLVMPY_ABIAlignmentOfElementType(self, ty))
         if size == -1:
             raise RuntimeError("Not a pointer type: %s" % (ty,))
         return size
@@ -178,7 +187,7 @@ class Target(ffi.ObjectRef):
     # persistent object.
 
     @classmethod
-    def from_default_triple(cls):
+    def from_default_triple(cls) -> Target:
         """
         Create a Target instance for the default triple.
         """
@@ -186,13 +195,14 @@ class Target(ffi.ObjectRef):
         return cls.from_triple(triple)
 
     @classmethod
-    def from_triple(cls, triple):
+    def from_triple(cls, triple: str) -> Target:
         """
         Create a Target instance for the given triple (a string).
         """
         with ffi.OutputString() as outerr:
-            target = ffi.lib.LLVMPY_GetTargetFromTriple(triple.encode('utf8'),
-                                                        outerr)
+            target = _cast(Target,
+                ffi.lib.LLVMPY_GetTargetFromTriple(triple.encode('utf8'), outerr)
+            )
             if not target:
                 raise RuntimeError(str(outerr))
             target = cls(target)
@@ -200,25 +210,33 @@ class Target(ffi.ObjectRef):
             return target
 
     @property
-    def name(self):
+    def name(self) -> str:
         s = ffi.lib.LLVMPY_GetTargetName(self)
         return _decode_string(s)
 
     @property
-    def description(self):
+    def description(self) -> str:
         s = ffi.lib.LLVMPY_GetTargetDescription(self)
         return _decode_string(s)
 
     @property
-    def triple(self):
+    def triple(self) -> str:
         return self._triple
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "<Target {0} ({1})>".format(self.name, self.description)
 
-    def create_target_machine(self, cpu='', features='',
-                              opt=2, reloc='default', codemodel='jitdefault',
-                              printmc=False, jit=False, abiname=''):
+    def create_target_machine(
+        self,
+        cpu: str = "",
+        features: str = "",
+        opt: int = 2,  # Literal[0, 1, 2, 3]
+        reloc: str = "default",
+        codemodel: str = "jitdefault",
+        printmc: bool = False,
+        jit: bool = False,
+        abiname: str = "",
+    ) -> TargetMachine:
         """
         Create a new TargetMachine for this target and the given options.
 
@@ -262,30 +280,30 @@ class Target(ffi.ObjectRef):
 
 class TargetMachine(ffi.ObjectRef):
 
-    def _dispose(self):
+    def _dispose(self) -> None:
         self._capi.LLVMPY_DisposeTargetMachine(self)
 
-    def add_analysis_passes(self, pm):
+    def add_analysis_passes(self, pm: PassManager) -> None:
         """
         Register analysis passes for this target machine with a pass manager.
         """
         ffi.lib.LLVMPY_AddAnalysisPasses(self, pm)
 
-    def set_asm_verbosity(self, verbose):
+    def set_asm_verbosity(self, verbose: bool) -> None:
         """
         Set whether this target machine will emit assembly with human-readable
         comments describing control flow, debug information, and so on.
         """
         ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity(self, verbose)
 
-    def emit_object(self, module):
+    def emit_object(self, module: ModuleRef) -> bytes:
         """
         Represent the module as a code object, suitable for use with
         the platform's linker.  Returns a byte string.
         """
         return self._emit_to_memory(module, use_object=True)
 
-    def emit_assembly(self, module):
+    def emit_assembly(self, module: ModuleRef) -> str:
         """
         Return the raw assembler of the module, as a string.
 
@@ -293,7 +311,7 @@ class TargetMachine(ffi.ObjectRef):
         """
         return _decode_string(self._emit_to_memory(module, use_object=False))
 
-    def _emit_to_memory(self, module, use_object=False):
+    def _emit_to_memory(self, module: ModuleRef, use_object: bool = False) -> bytes:
         """Returns bytes of object code of the module.
 
         Args
@@ -316,17 +334,17 @@ class TargetMachine(ffi.ObjectRef):
             ffi.lib.LLVMPY_DisposeMemoryBuffer(mb)
 
     @property
-    def target_data(self):
+    def target_data(self) -> TargetData:
         return TargetData(ffi.lib.LLVMPY_CreateTargetMachineData(self))
 
     @property
-    def triple(self):
+    def triple(self) -> str:
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_GetTargetMachineTriple(self, out)
             return str(out)
 
 
-def has_svml():
+def has_svml() -> bool:
     """
     Returns True if SVML was enabled at FFI support compile time.
     """

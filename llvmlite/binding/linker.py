@@ -1,8 +1,14 @@
+from __future__ import annotations
+
 from ctypes import c_int, c_char_p, POINTER
+from typing import TYPE_CHECKING
 from llvmlite.binding import ffi
 
+if TYPE_CHECKING:
+    from llvmlite.binding.module import ModuleRef
 
-def link_modules(dst, src):
+
+def link_modules(dst: ModuleRef, src: ModuleRef) -> None:
     with ffi.OutputString() as outerr:
         err = ffi.lib.LLVMPY_LinkModules(dst, src, outerr)
         # The underlying module was destroyed

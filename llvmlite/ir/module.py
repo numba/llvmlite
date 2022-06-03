@@ -1,24 +1,37 @@
+from __future__ import annotations
+
 import collections
+from typing import Any, Iterable, NoReturn, OrderedDict, Sequence
 
 from llvmlite.ir import context, values, types, _utils
 
 
-class Module(object):
-    def __init__(self, name='', context=context.global_context):
+class Module:
+    def __init__(
+        self,
+        name: str = "",
+        # this one is fine with pylance, but not with mypy for some reason
+        context: context.Context = context.global_context,  # type: ignore
+    ) -> None:
         self.context = context
         self.name = name   # name is for debugging/informational
         self.data_layout = ""
         self.scope = _utils.NameScope()
         self.triple = 'unknown-unknown-unknown'
-        self.globals = collections.OrderedDict()
+        self.globals: OrderedDict[
+            str, values.GlobalVariable
+        ] = collections.OrderedDict()
         # Innamed metadata nodes.
-        self.metadata = []
+        self.metadata: list[values.MDValue | values.DIValue] = []
         # Named metadata nodes
-        self.namedmetadata = {}
+        self.namedmetadata: dict[str, values.NamedMetaData] = {}
         # Cache for metadata node deduplication
-        self._metadatacache = {}
+        self._metadatacache: dict[Any, Any] = {}
 
-    def _fix_metadata_operands(self, operands):
+    def _fix_metadata_operands(
+        self, operands: list[Iterable[values.Value] | str | None]
+    ) -> list[types.MetaDataType | values.MetaDataString | values.MDValue]:
+        op: Any
         fixed_ops = []
         for op in operands:
             if op is None:
@@ -29,20 +42,25 @@ class Module(object):
                 op = values.MetaDataString(self, op)
             elif isinstance(op, (list, tuple)):
                 # A sequence creates a metadata node reference
-                op = self.add_metadata(op)
+                op = self.add_metadata(op)  # type: ignore
             fixed_ops.append(op)
         return fixed_ops
 
-    def _fix_di_operands(self, operands):
+    def _fix_di_operands(
+        self, operands: Iterable[tuple[str, values.Value]]
+    ) -> list[tuple[str, values.MDValue]]:
         fixed_ops = []
         for name, op in operands:
             if isinstance(op, (list, tuple)):
                 # A sequence creates a metadata node reference
-                op = self.add_metadata(op)
-            fixed_ops.append((name, op))
-        return fixed_ops
+                op = self.add_metadata(op)  # type: ignore
+            fixed_ops.append((name, op))  # type: ignore
+        return fixed_ops  # type: ignore
 
-    def add_metadata(self, operands):
+    def add_metadata(
+        self,
+        operands: list[values.Constant],
+    ) -> values.MDValue:
         """
         Add an unnamed metadata to the module with the given *operands*
         (a sequence of values) or return a previous equivalent metadata.
@@ -52,7 +70,7 @@ class Module(object):
         if not isinstance(operands, (list, tuple)):
             raise TypeError("expected a list or tuple of metadata values, "
                             "got %r" % (operands,))
-        operands = self._fix_metadata_operands(operands)
+        operands = self._fix_metadata_operands(operands)  # type: ignore
         key = tuple(operands)
         if key not in self._metadatacache:
             n = len(self.metadata)
@@ -62,7 +80,9 @@ class Module(object):
             md = self._metadatacache[key]
         return md
 
-    def add_debug_info(self, kind, operands, is_distinct=False):
+    def add_debug_info(
+        self, kind: str, operands: dict[str, values.Value], is_distinct: bool = False
+    ) -> values.DIValue:
         """
         Add debug information metadata to the module with the given
         *operands* (a dict of values with string keys) or return
@@ -72,17 +92,19 @@ class Module(object):
         A DIValue instance is returned, it can then be associated to e.g.
         an instruction.
         """
-        operands = tuple(sorted(self._fix_di_operands(operands.items())))
-        key = (kind, operands, is_distinct)
+        op_tuple = tuple(sorted(self._fix_di_operands(operands.items())))
+        key = (kind, op_tuple, is_distinct)
         if key not in self._metadatacache:
             n = len(self.metadata)
-            di = values.DIValue(self, is_distinct, kind, operands, name=str(n))
+            di = values.DIValue(self, is_distinct, kind, op_tuple, name=str(n))
             self._metadatacache[key] = di
         else:
             di = self._metadatacache[key]
         return di
 
-    def add_named_metadata(self, name, element=None):
+    def add_named_metadata(
+        self, name: str, element: None = None
+    ) -> values.NamedMetaData:
         """
         Add a named metadata node to the module, if it doesn't exist,
         or return the existing node.
@@ -97,17 +119,17 @@ class Module(object):
         if name in self.namedmetadata:
             nmd = self.namedmetadata[name]
         else:
-            nmd = self.namedmetadata[name] = values.NamedMetaData(self)
+            nmd = self.namedmetadata[name] = values.NamedMetaData(self)  # type: ignore
         if element is not None:
             if not isinstance(element, values.Value):
-                element = self.add_metadata(element)
-            if not isinstance(element.type, types.MetaDataType):
+                element = self.add_metadata(element)  # type: ignore
+            if not isinstance(element.type, types.MetaDataType):  # type: ignore
                 raise TypeError("wrong type for metadata element: got %r"
                                 % (element,))
-            nmd.add(element)
-        return nmd
+            nmd.add(element)  # type: ignore
+        return nmd  # type: ignore
 
-    def get_named_metadata(self, name):
+    def get_named_metadata(self, name: str) -> values.NamedMetaData:
         """
         Return the metadata node with the given *name*.  KeyError is raised
         if no such node exists (contrast with add_named_metadata()).
@@ -115,7 +137,7 @@ class Module(object):
         return self.namedmetadata[name]
 
     @property
-    def functions(self):
+    def functions(self) -> list[values.Function]:
         """
         A list of functions declared or defined in this module.
         """
@@ -123,40 +145,46 @@ class Module(object):
                 if isinstance(v, values.Function)]
 
     @property
-    def global_values(self):
+    def global_values(self) -> Iterable[values.GlobalVariable]:
         """
         An iterable of global values in this module.
         """
         return self.globals.values()
 
-    def get_global(self, name):
+    def get_global(self, name: str) -> values.GlobalVariable:
         """
         Get a global value by name.
         """
         return self.globals[name]
 
-    def add_global(self, globalvalue):
+    def add_global(self, globalvalue: values.GlobalVariable) -> None:
         """
         Add a new global value.
         """
         assert globalvalue.name not in self.globals
         self.globals[globalvalue.name] = globalvalue
 
-    def get_unique_name(self, name=''):
+    def get_unique_name(self, name: str = "") -> str:
         """
         Get a unique global name with the following *name* hint.
         """
         return self.scope.deduplicate(name)
 
-    def declare_intrinsic(self, intrinsic, tys=(), fnty=None):
-        def _error():
+    def declare_intrinsic(
+        self,
+        intrinsic: str,
+        tys: Sequence[types.Type] = (),
+        fnty: types.FunctionType | None = None,
+    ) -> values.GlobalVariable | values.Function:
+        def _error() -> NoReturn:
             raise NotImplementedError("unknown intrinsic %r with %d types"
                                       % (intrinsic, len(tys)))
-
+        suffixes: list[str]
         if intrinsic in {'llvm.cttz', 'llvm.ctlz', 'llvm.fma'}:
-            suffixes = [tys[0].intrinsic_name]
+            # FIXME: .intrinsic_name is unknown
+            suffixes = [tys[0].intrinsic_name]  # type: ignore
         else:
-            suffixes = [t.intrinsic_name for t in tys]
+            suffixes = [t.intrinsic_name for t in tys]  # type: ignore
         name = '.'.join([intrinsic] + suffixes)
         if name in self.globals:
             return self.globals[name]
@@ -171,7 +199,7 @@ class Module(object):
             if intrinsic == 'llvm.powi':
                 fnty = types.FunctionType(tys[0], [tys[0], types.IntType(32)])
             elif intrinsic == 'llvm.pow':
-                fnty = types.FunctionType(tys[0], tys * 2)
+                fnty = types.FunctionType(tys[0], tys * 2)  # type: ignore
             elif intrinsic == 'llvm.convert.from.fp16':
                 fnty = types.FunctionType(tys[0], [types.IntType(16)])
             elif intrinsic == 'llvm.convert.to.fp16':
@@ -190,7 +218,7 @@ class Module(object):
                 _error()
         elif len(tys) == 3:
             if intrinsic in ('llvm.memcpy', 'llvm.memmove'):
-                tys = tys + [types.IntType(1)]
+                tys = tys + [types.IntType(1)]  # type: ignore
                 fnty = types.FunctionType(types.VoidType(), tys)
             elif intrinsic == 'llvm.fma':
                 tys = [tys[0]] * 3
@@ -201,10 +229,10 @@ class Module(object):
             _error()
         return values.Function(self, fnty, name=name)
 
-    def get_identified_types(self):
+    def get_identified_types(self) -> dict[str, types.IdentifiedStructType]:
         return self.context.identified_types
 
-    def _get_body_lines(self):
+    def _get_body_lines(self) -> list[str]:
         # Type declarations
         lines = [it.get_declaration()
                  for it in self.get_identified_types().values()]
@@ -212,8 +240,8 @@ class Module(object):
         lines += [str(v) for v in self.globals.values()]
         return lines
 
-    def _get_metadata_lines(self):
-        mdbuf = []
+    def _get_metadata_lines(self) -> list[str]:
+        mdbuf: list[str] = []
         for k, v in self.namedmetadata.items():
             mdbuf.append("!{name} = !{{ {operands} }}".format(
                 name=k, operands=', '.join(i.get_reference()
@@ -222,16 +250,16 @@ class Module(object):
             mdbuf.append(str(md))
         return mdbuf
 
-    def _stringify_body(self):
+    def _stringify_body(self) -> str:
         # For testing
         return "\n".join(self._get_body_lines())
 
-    def _stringify_metadata(self):
+    def _stringify_metadata(self) -> str:
         # For testing
         return "\n".join(self._get_metadata_lines())
 
-    def __repr__(self):
-        lines = []
+    def __repr__(self) -> str:
+        lines: list[str] = []
         # Header
         lines += [
             '; ModuleID = "%s"' % (self.name,),
