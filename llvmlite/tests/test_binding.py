@@ -15,7 +15,7 @@ from tempfile import mkstemp
 from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
-from . import TestCase
+from llvmlite.tests import TestCase
 
 
 # arvm7l needs extra ABI symbols to link successfully
@@ -153,12 +153,12 @@ source_filename = "test.c"
 target triple = "{triple}"
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable
-define void @inlineme() #0 !dbg !15 {{
+define void @inlineme() noinline !dbg !15 {{
   ret void, !dbg !18
 }}
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable
-define i32 @foo(i32 %0, i32 %1) #0 !dbg !19 {{
+define i32 @foo(i32 %0, i32 %1) !dbg !19 {{
   %3 = alloca i32, align 4
   %4 = alloca i32, align 4
   store i32 %0, i32* %3, align 4
@@ -1464,9 +1464,11 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         mod = self.module(asm_inlineasm3)
         (status, remarks) = pm.run_with_remarks(mod)
         self.assertTrue(status)
-        # Inlining has happened?  The remark will tell us.
-        self.assertIn("Passed", remarks)
+
+        # Inlining has not happened?  The remark will tell us.
+        self.assertIn("Missed", remarks)
         self.assertIn("inlineme", remarks)
+        self.assertIn("noinline function attribute", remarks)
 
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):

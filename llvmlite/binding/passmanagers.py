@@ -203,7 +203,8 @@ class ModulePassManager(PassManager):
             ptr = ffi.lib.LLVMPY_CreatePassManager()
         PassManager.__init__(self, ptr)
 
-    def run(self, module, remarks_file=None, remarks_format='yaml'):
+    def run(self, module, remarks_file=None, remarks_format='yaml',
+            remarks_filter=''):
         """
         Run optimization passes on the given module.
 
@@ -215,18 +216,22 @@ class ModulePassManager(PassManager):
             If not `None`, it is the file to store the optimization remarks.
         remarks_format : str; optional
             The format to write; YAML is default
+        remarks_filter : str; optional
+            The filter that should be applied to the remarks output.
         """
         if remarks_file is None:
             return ffi.lib.LLVMPY_RunPassManager(self, module)
         else:
             r = ffi.lib.LLVMPY_RunPassManagerWithRemarks(
                 self, module, _encode_string(remarks_format),
+                _encode_string(remarks_filter),
                 _encode_string(remarks_file))
             if r == -1:
                 raise IOError("Failed to initialize remarks file.")
-            return bool(r)
+            return r > 0
 
-    def run_with_remarks(self, module, remarks_format='yaml'):
+    def run_with_remarks(self, module, remarks_format='yaml',
+                         remarks_filter=''):
         """
         Run optimization passes on the given module and returns the result and
         the remarks data.
@@ -236,7 +241,9 @@ class ModulePassManager(PassManager):
         module : llvmlite.binding.ModuleRef
             The module to be optimized
         remarks_format : str
-            The remarks output
+            The remarks output; YAML is the default
+        remarks_filter : str; optional
+            The filter that should be applied to the remarks output.
         """
         remarkdesc, remarkfile = mkstemp()
         try:
@@ -244,6 +251,7 @@ class ModulePassManager(PassManager):
                 pass
             r = ffi.lib.LLVMPY_RunPassManagerWithRemarks(
                 self, module, _encode_string(remarks_format),
+                _encode_string(remarks_filter),
                 _encode_string(remarkfile))
             if r == -1:
                 raise IOError("Failed to initialize remarks file.")
@@ -275,7 +283,8 @@ class FunctionPassManager(PassManager):
         """
         return ffi.lib.LLVMPY_FinalizeFunctionPassManager(self)
 
-    def run(self, function, remarks_file=None, remarks_format='yaml'):
+    def run(self, function, remarks_file=None, remarks_format='yaml',
+            remarks_filter=''):
         """
         Run optimization passes on the given function.
 
@@ -285,20 +294,24 @@ class FunctionPassManager(PassManager):
             The function to be optimized inplace
         remarks_file : str; optional
             If not `None`, it is the file to store the optimization remarks.
-        remarks_format : str
+        remarks_format : str; optional
             The format of the remarks file; the default is YAML
+        remarks_filter : str; optional
+            The filter that should be applied to the remarks output.
         """
         if remarks_file is None:
             return ffi.lib.LLVMPY_RunFunctionPassManager(self, function)
         else:
             r = ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks(
                 self, function, _encode_string(remarks_format),
+                _encode_string(remarks_filter),
                 _encode_string(remarks_file))
             if r == -1:
                 raise IOError("Failed to initialize remarks file.")
             return bool(r)
 
-    def run_with_remarks(self, function, remarks_format='yaml'):
+    def run_with_remarks(self, function, remarks_format='yaml',
+                         remarks_filter=''):
         """
         Run optimization passes on the given function and returns the result
         and the remarks data.
@@ -307,7 +320,10 @@ class FunctionPassManager(PassManager):
         ----------
         function : llvmlite.binding.FunctionRef
             The function to be optimized inplace
-        remarks_format : str
+        remarks_format : str; optional
+            The format of the remarks file; the default is YAML
+        remarks_filter : str; optional
+            The filter that should be applied to the remarks output.
         """
         remarkdesc, remarkfile = mkstemp()
         try:
@@ -315,6 +331,7 @@ class FunctionPassManager(PassManager):
                 pass
             r = ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks(
                 self, function, _encode_string(remarks_format),
+                _encode_string(remarks_filter),
                 _encode_string(remarkfile))
             if r == -1:
                 raise IOError("Failed to initialize remarks file.")
@@ -341,6 +358,7 @@ ffi.lib.LLVMPY_RunPassManager.restype = c_bool
 ffi.lib.LLVMPY_RunPassManagerWithRemarks.argtypes = [ffi.LLVMPassManagerRef,
                                                      ffi.LLVMModuleRef,
                                                      c_char_p,
+                                                     c_char_p,
                                                      c_char_p]
 ffi.lib.LLVMPY_RunPassManagerWithRemarks.restype = c_int
 
@@ -355,7 +373,7 @@ ffi.lib.LLVMPY_RunFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef,
 ffi.lib.LLVMPY_RunFunctionPassManager.restype = c_bool
 
 ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks.argtypes = [
-    ffi.LLVMPassManagerRef, ffi.LLVMValueRef, c_char_p, c_char_p
+    ffi.LLVMPassManagerRef, ffi.LLVMValueRef, c_char_p, c_char_p, c_char_p
 ]
 ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks.restype = c_int
 

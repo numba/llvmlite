@@ -63,9 +63,11 @@ LLVMPY_CreateFunctionPassManager(LLVMModuleRef M) {
 API_EXPORT(int)
 LLVMPY_RunPassManagerWithRemarks(LLVMPassManagerRef PM, LLVMModuleRef M,
                                  const char *remarks_format,
+                                 const char *remarks_filter,
                                  const char *record_filename) {
     auto setupResult = llvm::setupLLVMOptimizationRemarks(
-        unwrap(M)->getContext(), record_filename, "", remarks_format, true);
+        unwrap(M)->getContext(), record_filename, remarks_filter,
+        remarks_format, true);
     if (!setupResult) {
         return -1;
     }
@@ -88,9 +90,11 @@ LLVMPY_RunPassManager(LLVMPassManagerRef PM, LLVMModuleRef M) {
 API_EXPORT(int)
 LLVMPY_RunFunctionPassManagerWithRemarks(LLVMPassManagerRef PM, LLVMValueRef F,
                                          const char *remarks_format,
+                                         const char *remarks_filter,
                                          const char *record_filename) {
     auto setupResult = llvm::setupLLVMOptimizationRemarks(
-        unwrap(F)->getContext(), record_filename, "", remarks_format, true);
+        unwrap(F)->getContext(), record_filename, remarks_filter,
+        remarks_format, true);
     if (!setupResult) {
         return -1;
     }
