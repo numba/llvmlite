@@ -15,10 +15,11 @@ labels: task
     - [ ] "PR with changelog entries".
 * [ ] Create X.Y release branch `releaseX.Y`
 * [ ] Annotated tag `vX.Y.Z` on release branch (`llvmlite` tags DO have a `v` prefix).
-* [ ] Build conda packages on buildfarm (check "upload").
+* [ ] Build and upload conda packages on buildfarm (check "upload").
 * [ ] Verify packages uploaded to Anaconda Cloud and move to `numba/label/main`.
-* [ ] Build wheels and sdist (`$PYTHON_VERSIONS`) on the buildfarm.
-* [ ] Upload wheels and sdist to PyPI and verify arrival. (upload from `ci_artifacts`).
+* [ ] Build wheels and sdist on the buildfarm.
+* [ ] Upload wheels and sdist to PyPI. (upload from `ci_artifacts`).
+* [ ] Verify wheels for all platforms arrived on PyPi.
 * [ ] Initialize and verify ReadTheDocs build.
 * [ ] Send RC announcement email / post announcement to discourse group.
 * [ ] Post link to Twitter.
@@ -26,6 +27,7 @@ labels: task
 ### Post Release:
 
 * [ ] Clean up `ci_artifacts`.
+* [ ] Tag X.Y+1.0dev0 to start new development cycle on `main`.
 * [ ] Update release checklist template with any additional bullet points that
       may have arisen during the release.
 * [ ] Close milestone (and then close this release issue).
