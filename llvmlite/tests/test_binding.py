@@ -215,6 +215,46 @@ attributes #1 = {{ nofree nosync nounwind readnone speculatable willreturn }}
 !31 = !DILocation(line: 5, column: 5, scope: !19)
 """  # noqa E501
 
+licm_asm = r"""
+; ModuleID = "<string>"
+target triple = "{triple}"
+    
+define double @licm(i32 %0) {{
+  %2 = alloca i32, align 4
+  %3 = alloca double, align 8
+  %4 = alloca i32, align 4
+  %5 = alloca double, align 8
+  store i32 %0, i32* %2, align 4
+  store double 0.000000e+00, double* %3, align 8
+  store i32 0, i32* %4, align 4
+  br label %6
+
+6:                                                ; preds = %14, %1
+  %7 = load i32, i32* %4, align 4
+  %8 = load i32, i32* %2, align 4
+  %9 = icmp slt i32 %7, %8
+  br i1 %9, label %10, label %17
+
+10:                                               ; preds = %6
+  store double 7.000000e+00, double* %5, align 8
+  %11 = load double, double* %5, align 8
+  %12 = load double, double* %3, align 8
+  %13 = fadd double %12, %11
+  store double %13, double* %3, align 8
+  br label %14
+
+14:                                               ; preds = %10
+  %15 = load i32, i32* %4, align 4
+  %16 = add nsw i32 %15, 1
+  store i32 %16, i32* %4, align 4
+  br label %6
+
+17:                                               ; preds = %6
+  %18 = load double, double* %3, align 8
+  ret double %18
+}}
+"""  # noqa E501
+
 asm_global_ctors = r"""
     ; ModuleID = "<string>"
     target triple = "{triple}"
@@ -1498,32 +1538,19 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         self.assertNotIn("%.4", opt_asm)
 
     def test_run_with_remarks(self):
-        mod = self.module(asm_inlineasm)
-        fn = mod.get_function("foo")
+        mod = self.module(licm_asm)
+        fn = mod.get_function("licm")
         pm = self.pm(mod)
+        pm.add_licm_pass()
         self.pmb().populate(pm)
         mod.close()
 
         pm.initialize()
-        remarkdesc, remarkfile = mkstemp()
-        try:
-            # Cannot find a trivial IR that will trigger a function pass to
-            # write a remark. So instead we write some junk into the file to
-            # observe that it has been overwritten.
-            magicstr = "deadbeef"
-            with os.fdopen(remarkdesc, 'w') as fout:
-                fout.write(magicstr)
-
-            pm.run(fn, remarks_file=remarkfile)
-
-            with open(remarkfile) as fin:
-                value = fin.read()
-                # Check that our magic string is not in the file
-                self.assertNotIn(magicstr, value)
-
-            pm.finalize()
-        finally:
-            os.unlink(remarkfile)
+        (ok, remarks) = pm.run_with_remarks(fn)
+        pm.finalize()
+        self.assertTrue(ok)
+        self.assertIn("Passed", remarks)
+        self.assertIn("licm", remarks)
 
 
 class TestPasses(BaseTest, PassManagerTestMixin):
