@@ -1510,6 +1510,15 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         self.assertIn("inlineme", remarks)
         self.assertIn("noinline function attribute", remarks)
 
+    def test_run_with_remarks_inline_filter(self):
+        pm = self.pm()
+        pm.add_function_inlining_pass(70)
+        self.pmb().populate(pm)
+        mod = self.module(asm_inlineasm2)
+        (status, remarks) = pm.run_with_remarks(mod, remarks_filter="nothing")
+        self.assertTrue(status)
+        self.assertEqual("", remarks)
+
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
 
@@ -1551,6 +1560,20 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         self.assertTrue(ok)
         self.assertIn("Passed", remarks)
         self.assertIn("licm", remarks)
+
+    def test_run_with_remarks_filter(self):
+        mod = self.module(licm_asm)
+        fn = mod.get_function("licm")
+        pm = self.pm(mod)
+        pm.add_licm_pass()
+        self.pmb().populate(pm)
+        mod.close()
+
+        pm.initialize()
+        (ok, remarks) = pm.run_with_remarks(fn, remarks_filter="nothing")
+        pm.finalize()
+        self.assertTrue(ok)
+        self.assertEqual("", remarks)
 
 
 class TestPasses(BaseTest, PassManagerTestMixin):
