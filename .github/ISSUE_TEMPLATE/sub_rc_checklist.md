@@ -14,7 +14,7 @@ labels: task
 * [ ] Merge change log modifications and cherry-picks to X.Y release branch.
   * [ ] https://github.com/numba/numba/pull/XXXX
 * [ ] Annotated tag `vX.Y.Z` on release branch (`llvmlite` tags DO have a `v` prefix).
-* [ ] Build conda packages on buildfarm (check "upload").
+* [ ] Build and upload conda packages on buildfarm (check "upload").
 * [ ] Build wheels and sdist on the buildfarm (check "upload").
 * [ ] Verify packages uploaded to Anaconda Cloud and move to `numba/label/main`.
 * [ ] Upload wheels and sdist to PyPI. (upload from `ci_artifacts`).
