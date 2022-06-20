@@ -1486,7 +1486,7 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         else:
             raise RuntimeError("expected IR not found")
 
-    def test_run_with_remarks_inline(self):
+    def test_run_with_remarks_successful_inline(self):
         pm = self.pm()
         pm.add_function_inlining_pass(70)
         self.pmb().populate(pm)
@@ -1497,7 +1497,7 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         self.assertIn("Passed", remarks)
         self.assertIn("inlineme", remarks)
 
-    def test_run_with_remarks_inline2(self):
+    def test_run_with_remarks_failed_inline(self):
         pm = self.pm()
         pm.add_function_inlining_pass(0)
         self.pmb().populate(pm)

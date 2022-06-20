@@ -4,7 +4,7 @@ from enum import IntFlag
 from llvmlite.binding import ffi
 import os
 from tempfile import mkstemp
-from .common import _encode_string
+from llvmlite.binding.common import _encode_string
 
 _prunestats = namedtuple('PruneStats',
                          ('basicblock diamond fanout fanout_raise'))
@@ -325,8 +325,12 @@ class FunctionPassManager(PassManager):
         remarks_filter : str; optional
             The filter that should be applied to the remarks output.
         """
+        # LLVM is going to need to close this file and then reopen it, so we
+        # can't use an unlinked temporary file.
         remarkdesc, remarkfile = mkstemp()
         try:
+            # We get an open handle, but we need LLVM to write first, so close
+            # it.
             with os.fdopen(remarkdesc, 'r'):
                 pass
             r = ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks(
