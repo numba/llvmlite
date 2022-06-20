@@ -15,9 +15,10 @@ labels: task
   * [ ] https://github.com/numba/numba/pull/XXXX
 * [ ] Annotated tag `vX.Y.Z` on release branch (`llvmlite` tags DO have a `v` prefix).
 * [ ] Build conda packages on buildfarm (check "upload").
-* [ ] Verify packages uploaded to Anaconda Cloud and move to `numba/label/main`.
 * [ ] Build wheels and sdist on the buildfarm (check "upload").
-* [ ] Upload wheels and sdist to PyPI and verify arrival. (upload from `ci_artifacts`).
+* [ ] Verify packages uploaded to Anaconda Cloud and move to `numba/label/main`.
+* [ ] Upload wheels and sdist to PyPI. (upload from `ci_artifacts`).
+* [ ] Verify wheels for all platforms arrived on PyPi.
 * [ ] Verify ReadTheDocs build.
 * [ ] Send RC/FINAL announcement email / post announcement to discourse group.
 * [ ] Post link to Twitter.
