@@ -249,10 +249,7 @@ class ModulePassManager(PassManager):
         try:
             with os.fdopen(remarkdesc, 'r'):
                 pass
-            r = ffi.lib.LLVMPY_RunPassManagerWithRemarks(
-                self, module, _encode_string(remarks_format),
-                _encode_string(remarks_filter),
-                _encode_string(remarkfile))
+            r = self.run(module, remarkfile, remarks_format, remarks_filter)
             if r == -1:
                 raise IOError("Failed to initialize remarks file.")
             with open(remarkfile) as f:
@@ -333,10 +330,7 @@ class FunctionPassManager(PassManager):
             # it.
             with os.fdopen(remarkdesc, 'r'):
                 pass
-            r = ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks(
-                self, function, _encode_string(remarks_format),
-                _encode_string(remarks_filter),
-                _encode_string(remarkfile))
+            r = self.run(function, remarkfile, remarks_format, remarks_filter)
             if r == -1:
                 raise IOError("Failed to initialize remarks file.")
             with open(remarkfile) as f:
