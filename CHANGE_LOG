@@ -1,7 +1,23 @@
-v0.39.0 (XXX YY, ZZZZ)
-----------------------
+v0.39.0 (TBC)
+-------------
 
-* In development
+This release predominantly adds new features and improves functionality.
+
+* It's now possible to directly set LLVM ``metadata`` on global variables.
+* Functions and global variables now support the specification of a ``section``
+  in which they should be placed.
+* The attribute ``source_file`` had been added to the ``ModuleRef`` class, it
+  returns the module's original file name.
+* The FFI library binding to LLVM is now loaded with ``importlib`` to increase
+  compatibility with other projects and improve start-up times.
+* Linux builds now use the parallel option to ``make`` to speed up building the
+  FFI library.
+* Preliminary work to expose LLVM's optimization-remarks interface has been
+  undertaken. The bindings are exposed and tested, but not yet documented for
+  general use (additional work is needed).
+
+Authors: TBC
+
 
 v0.38.1 (May 19, 2022)
 ----------------------
