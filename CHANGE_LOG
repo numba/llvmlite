@@ -18,8 +18,8 @@ This release predominantly adds new features and improves functionality.
 
 Deprecations:
 
-* The `llvmlite.llvmpy` module has been deprecated as the functionality it
-  provides is available through the `llvmlite.ir` module. See the deprecation
+* The ``llvmlite.llvmpy`` module has been deprecated as the functionality it
+  provides is available through the ``llvmlite.ir`` module. See the deprecation
   guide in the user documentation for details and recommendations regarding
   replacement.
 
