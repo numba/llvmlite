@@ -16,6 +16,13 @@ This release predominantly adds new features and improves functionality.
   undertaken. The bindings are exposed and tested, but not yet documented for
   general use (additional work is needed).
 
+Deprecations:
+
+* The `llvmlite.llvmpy` module has been deprecated as the functionality it
+  provides is available through the `llvmlite.ir` module. See the deprecation
+  guide in the user documentation for details and recommendations regarding
+  replacement.
+
 Pull-Requests:
 
 * PR `#328 <https://github.com/numba/llvmlite/pull/328>`_: Build C files separately on Linux and support parallel make (`Michał Górny <https://github.com/mgorny>`_)
