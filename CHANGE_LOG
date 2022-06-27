@@ -24,6 +24,7 @@ Pull-Requests:
 * PR `#786 <https://github.com/numba/llvmlite/pull/786>`_: Update Windows and OSX CI images. (`stuartarchibald <https://github.com/stuartarchibald>`_)
 * PR `#801 <https://github.com/numba/llvmlite/pull/801>`_: Update ffi.py (`franzhaas <https://github.com/franzhaas>`_)
 * PR `#803 <https://github.com/numba/llvmlite/pull/803>`_: llvm::Module::GetSourceFileName (`J. Aaron Pendergrass <https://github.com/japendergrass>`_)
+* PR `#806 <https://github.com/numba/llvmlite/pull/806>`_: Bump to v0.39.0dev (`esc <https://github.com/esc>`_)
 * PR `#807 <https://github.com/numba/llvmlite/pull/807>`_: Exclude ExecutionEngine tests on linux 32 (`esc <https://github.com/esc>`_)
 * PR `#809 <https://github.com/numba/llvmlite/pull/809>`_: Update CHANGE_LOG for 0.38.0 (`stuartarchibald <https://github.com/stuartarchibald>`_)
 * PR `#813 <https://github.com/numba/llvmlite/pull/813>`_: Add m1 support to conda build scripts (`esc <https://github.com/esc>`_ `Stan Seibert <https://github.com/seibert>`_)
@@ -43,7 +44,7 @@ Pull-Requests:
 * PR `#851 <https://github.com/numba/llvmlite/pull/851>`_: adding the llvm_11_consecutive_registers.patch (`esc <https://github.com/esc>`_)
 * PR `#857 <https://github.com/numba/llvmlite/pull/857>`_: Delegate passmanager remarks methods (`Andre Masella <https://github.com/apmasell>`_)
 
-Total PRs: 24
+Total PRs: 25
 
 Authors:
 
