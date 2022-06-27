@@ -16,8 +16,50 @@ This release predominantly adds new features and improves functionality.
   undertaken. The bindings are exposed and tested, but not yet documented for
   general use (additional work is needed).
 
-Authors: TBC
+Pull-Requests:
 
+* PR `#328 <https://github.com/numba/llvmlite/pull/328>`_: Build C files separately on Linux and support parallel make (`Michał Górny <https://github.com/mgorny>`_)
+* PR `#754 <https://github.com/numba/llvmlite/pull/754>`_: manylinux2014 aarch64 wheels with system compilers (`esc <https://github.com/esc>`_)
+* PR `#760 <https://github.com/numba/llvmlite/pull/760>`_: add support for attaching metadata to global variables (`Graham Markall <https://github.com/gmarkall>`_ `John Törnblom <https://github.com/john-tornblom>`_)
+* PR `#786 <https://github.com/numba/llvmlite/pull/786>`_: Update Windows and OSX CI images. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#801 <https://github.com/numba/llvmlite/pull/801>`_: Update ffi.py (`franzhaas <https://github.com/franzhaas>`_)
+* PR `#803 <https://github.com/numba/llvmlite/pull/803>`_: llvm::Module::GetSourceFileName ()
+* PR `#807 <https://github.com/numba/llvmlite/pull/807>`_: Exclude ExecutionEngine tests on linux 32 (`esc <https://github.com/esc>`_)
+* PR `#809 <https://github.com/numba/llvmlite/pull/809>`_: Update CHANGE_LOG for 0.38.0 (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#813 <https://github.com/numba/llvmlite/pull/813>`_: Add m1 support to conda build scripts (`esc <https://github.com/esc>`_ `Stan Seibert <https://github.com/seibert>`_)
+* PR `#815 <https://github.com/numba/llvmlite/pull/815>`_: update local references (`esc <https://github.com/esc>`_)
+* PR `#816 <https://github.com/numba/llvmlite/pull/816>`_: remove configuration landscape service as it is no longer used (`esc <https://github.com/esc>`_)
+* PR `#817 <https://github.com/numba/llvmlite/pull/817>`_: remove uppper limit on Python requires (`esc <https://github.com/esc>`_)
+* PR `#819 <https://github.com/numba/llvmlite/pull/819>`_: adding rc and final release checklist templates (`esc <https://github.com/esc>`_)
+* PR `#823 <https://github.com/numba/llvmlite/pull/823>`_: Add section to globals (`Andreas Wrisley <https://github.com/anlofw>`_)
+* PR `#824 <https://github.com/numba/llvmlite/pull/824>`_: add GitHub URL for PyPi (`Andrii Oriekhov <https://github.com/andriyor>`_)
+* PR `#825 <https://github.com/numba/llvmlite/pull/825>`_: Add flag handling to more instructions. (`stuartarchibald <https://github.com/stuartarchibald>`_ `Andre Masella <https://github.com/apmasell>`_)
+* PR `#826 <https://github.com/numba/llvmlite/pull/826>`_: Deprecated `llvmlite.llvmpy` (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#831 <https://github.com/numba/llvmlite/pull/831>`_: Format C++ code (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#832 <https://github.com/numba/llvmlite/pull/832>`_: DOC: Fix the syntax for the llvmlite discourse topic link. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#835 <https://github.com/numba/llvmlite/pull/835>`_: Add pre-commit hooks for clang-format (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#837 <https://github.com/numba/llvmlite/pull/837>`_: Add support for optimization remarks in pass managers (`Siu Kwan Lam <https://github.com/sklam>`_ `Andre Masella <https://github.com/apmasell>`_)
+* PR `#846 <https://github.com/numba/llvmlite/pull/846>`_: Cherry-Pick: #842 --> `main` :Changelog for 0.38.1 (`esc <https://github.com/esc>`_)
+* PR `#851 <https://github.com/numba/llvmlite/pull/851>`_: adding the llvm_11_consecutive_registers.patch (`esc <https://github.com/esc>`_)
+* PR `#857 <https://github.com/numba/llvmlite/pull/857>`_: Delegate passmanager remarks methods (`Andre Masella <https://github.com/apmasell>`_)
+
+Total PRs: 24
+
+Authors:
+
+* `Andrii Oriekhov <https://github.com/andriyor>`_
+* `Andreas Wrisley <https://github.com/anlofw>`_
+* `Andre Masella <https://github.com/apmasell>`_
+* `esc <https://github.com/esc>`_
+* `franzhaas <https://github.com/franzhaas>`_
+* `Graham Markall <https://github.com/gmarkall>`_
+* `John Törnblom <https://github.com/john-tornblom>`_
+* `Michał Górny <https://github.com/mgorny>`_
+* `Stan Seibert <https://github.com/seibert>`_
+* `Siu Kwan Lam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+
+Total authors: 11
 
 v0.38.1 (May 19, 2022)
 ----------------------
