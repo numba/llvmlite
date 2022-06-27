@@ -23,7 +23,7 @@ Pull-Requests:
 * PR `#760 <https://github.com/numba/llvmlite/pull/760>`_: add support for attaching metadata to global variables (`Graham Markall <https://github.com/gmarkall>`_ `John Törnblom <https://github.com/john-tornblom>`_)
 * PR `#786 <https://github.com/numba/llvmlite/pull/786>`_: Update Windows and OSX CI images. (`stuartarchibald <https://github.com/stuartarchibald>`_)
 * PR `#801 <https://github.com/numba/llvmlite/pull/801>`_: Update ffi.py (`franzhaas <https://github.com/franzhaas>`_)
-* PR `#803 <https://github.com/numba/llvmlite/pull/803>`_: llvm::Module::GetSourceFileName ()
+* PR `#803 <https://github.com/numba/llvmlite/pull/803>`_: llvm::Module::GetSourceFileName (`J. Aaron Pendergrass <https://github.com/japendergrass>`_)
 * PR `#807 <https://github.com/numba/llvmlite/pull/807>`_: Exclude ExecutionEngine tests on linux 32 (`esc <https://github.com/esc>`_)
 * PR `#809 <https://github.com/numba/llvmlite/pull/809>`_: Update CHANGE_LOG for 0.38.0 (`stuartarchibald <https://github.com/stuartarchibald>`_)
 * PR `#813 <https://github.com/numba/llvmlite/pull/813>`_: Add m1 support to conda build scripts (`esc <https://github.com/esc>`_ `Stan Seibert <https://github.com/seibert>`_)
@@ -53,13 +53,14 @@ Authors:
 * `esc <https://github.com/esc>`_
 * `franzhaas <https://github.com/franzhaas>`_
 * `Graham Markall <https://github.com/gmarkall>`_
+* `J. Aaron Pendergrass <https://github.com/japendergrass>`_
 * `John Törnblom <https://github.com/john-tornblom>`_
 * `Michał Górny <https://github.com/mgorny>`_
 * `Stan Seibert <https://github.com/seibert>`_
 * `Siu Kwan Lam <https://github.com/sklam>`_
 * `stuartarchibald <https://github.com/stuartarchibald>`_
 
-Total authors: 11
+Total authors: 12
 
 v0.38.1 (May 19, 2022)
 ----------------------
