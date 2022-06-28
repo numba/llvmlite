@@ -14,7 +14,7 @@ labels: task
 * [ ] Merge change log changes.
     - [ ] "PR with changelog entries".
 * [ ] Create X.Y release branch `releaseX.Y`
-* [ ] Annotated tag `vX.Y.Z` on release branch (`llvmlite` tags DO have a `v` prefix).
+* [ ] Annotated tag `vX.Y.Zrc1` on release branch (`llvmlite` tags DO have a `v` prefix).
 * [ ] Build and upload conda packages on buildfarm (check "upload").
 * [ ] Build wheels and sdist on the buildfarm (check "upload").
 * [ ] Verify packages uploaded to Anaconda Cloud and move to `numba/label/main`.
