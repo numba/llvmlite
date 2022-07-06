@@ -156,10 +156,6 @@ class PassManager(ffi.ObjectRef):
         """See https://llvm.org/docs/Passes.html#lazy-value-info-lazy-value-information-analysis"""  # noqa E501
         ffi.lib.LLVMPY_AddLazyValueInfoPass(self)
 
-    def add_intervals_pass(self):
-        """See https://llvm.org/docs/Passes.html#intervals-interval-partition-construction"""  # noqa E501
-        ffi.lib.LLVMPY_AddIntervalsPass(self)
-
     def add_module_debug_info_pass(self):
         """See https://llvm.org/docs/Passes.html#module-debuginfo-decodes-module-level-debug-info"""  # noqa E501
         ffi.lib.LLVMPY_AddModuleDebugInfoPrinterPass(self)
@@ -499,7 +495,6 @@ ffi.lib.LLVMPY_AddLoopDeletionPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopExtractorPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSingleLoopExtractorPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopStrengthReducePass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddLoopStrengthReducePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopSimplificationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopUnrollPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopUnrollAndJamPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -507,7 +502,6 @@ ffi.lib.LLVMPY_AddLoopUnswitchPass.argtypes = [
     ffi.LLVMPassManagerRef,
     c_bool,
     c_bool]
-ffi.lib.LLVMPY_AddLoopUnrollPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerAtomicPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerInvokePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerSwitchPass.argtypes = [ffi.LLVMPassManagerRef]

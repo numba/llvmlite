@@ -20,6 +20,7 @@
 #include <llvm/Analysis/CFGPrinter.h>
 #include <llvm/Analysis/CallPrinter.h>
 #include <llvm/Analysis/DependenceAnalysis.h>
+#include <llvm/Analysis/DependenceAnalysis.h>
 #include <llvm/Analysis/DomPrinter.h>
 #include <llvm/Analysis/GlobalsModRef.h>
 #include <llvm/Analysis/IVUsers.h>
@@ -27,7 +28,9 @@
 #include <llvm/Analysis/Passes.h>
 #include <llvm/Analysis/ScalarEvolutionAliasAnalysis.h>
 #include <llvm/CodeGen/Passes.h>
+#include <llvm/CodeGen/Passes.h>
 #include <llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h>
+#include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
 #include <llvm/Transforms/Utils.h>

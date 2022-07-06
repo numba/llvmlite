@@ -1445,6 +1445,18 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_strip_debug_declare_pass()
         pm.add_strip_nondebug_symbols_pass()
         pm.add_tail_call_elimination_pass()
+        pm.add_basic_aa_pass()
+        pm.add_dependence_analysis_pass()
+        pm.add_dot_call_graph_pass()
+        pm.add_dot_cfg_printer_pass()
+        pm.add_dot_dom_printer_pass()
+        pm.add_dot_postdom_printer_pass()
+        pm.add_globals_mod_ref_aa_pass()
+        pm.add_iv_users_pass()
+        pm.add_lazy_value_info_pass()
+        pm.add_lint_pass()
+        pm.add_module_debug_info_pass()
+        pm.add_refprune_pass()
 
 
 class TestDylib(BaseTest):
