@@ -1,5 +1,5 @@
-v0.39.0 RC1 (June 27, 2022)
----------------------------
+v0.39.0 (July 25, 2022)
+-----------------------
 
 This release predominantly adds new features and improves functionality.
 
@@ -50,8 +50,10 @@ Pull-Requests:
 * PR `#846 <https://github.com/numba/llvmlite/pull/846>`_: Cherry-Pick: #842 --> `main` :Changelog for 0.38.1 (`esc <https://github.com/esc>`_)
 * PR `#851 <https://github.com/numba/llvmlite/pull/851>`_: adding the llvm_11_consecutive_registers.patch (`esc <https://github.com/esc>`_)
 * PR `#857 <https://github.com/numba/llvmlite/pull/857>`_: Delegate passmanager remarks methods (`Andre Masella <https://github.com/apmasell>`_)
-
-Total PRs: 25
+* PR `#858 <https://github.com/numba/llvmlite/pull/858>`_: Update CHANGE_LOG for 0.39.0 (`esc <https://github.com/esc>`_ `Graham Markall <https://github.com/gmarkall>`_ `stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#863 <https://github.com/numba/llvmlite/pull/863>`_: Update changelog for 0.39.0 release (`Siu Kwan Lam <https://github.com/sklam>`_)
+* PR `#864 <https://github.com/numba/llvmlite/pull/864>`_: Update release date for 0.39.0 release. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#867 <https://github.com/numba/llvmlite/pull/867>`_: Update CHANGE_LOG 0.39.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
 
 Authors:
 
@@ -67,8 +69,6 @@ Authors:
 * `Stan Seibert <https://github.com/seibert>`_
 * `Siu Kwan Lam <https://github.com/sklam>`_
 * `stuartarchibald <https://github.com/stuartarchibald>`_
-
-Total authors: 12
 
 v0.38.1 (May 19, 2022)
 ----------------------
