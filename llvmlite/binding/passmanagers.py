@@ -275,7 +275,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddDeadStoreEliminationPass(self)
 
-    def add_post_order_function_attrs_pass(self):
+    def add_reverse_post_order_function_attrs_pass(self):
         """
         See https://llvm.org/docs/Passes.html#function-attrs-deduce-function-attributes
 

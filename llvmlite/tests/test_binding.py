@@ -1633,7 +1633,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_arg_promotion_pass(42)
         pm.add_break_critical_edges_pass()
         pm.add_dead_store_elimination_pass()
-        pm.add_post_order_function_attrs_pass()
+        pm.add_reverse_post_order_function_attrs_pass()
         pm.add_aggressive_instruction_combining_pass()
         pm.add_internalize_pass()
         pm.add_jump_threading_pass(7)
