@@ -159,9 +159,9 @@ class PassManager(ffi.ObjectRef):
         """
         See https://llvm.org/docs/Passes.html#dot-cfg-print-cfg-of-function-to-dot-file
 
-        LLVM 11+: `llvm::createCallGraphViewerPass`
+        LLVM 11+: `llvm::createCFGPrinterLegacyPassPass`
         """  # noqa E501
-        ffi.lib.LLVMPY_AddCallGraphViewerPass(self)
+        ffi.lib.LLVMPY_AddCFGPrinterPass(self)
 
     def add_dot_dom_printer_pass(self, show_body=False):
         """
@@ -839,7 +839,7 @@ ffi.lib.LLVMPY_AddConstantMergePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadArgEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDependenceAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddCallGraphDOTPrinterPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddCallGraphViewerPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddCFGPrinterPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDotDomPrinterPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
 ffi.lib.LLVMPY_AddDotPostDomPrinterPass.argtypes = [
     ffi.LLVMPassManagerRef,

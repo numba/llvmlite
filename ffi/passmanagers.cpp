@@ -158,11 +158,6 @@ LLVMPY_AddDependenceAnalysisPass(LLVMPassManagerRef PM) {
 }
 
 API_EXPORT(void)
-LLVMPY_AddCallGraphViewerPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createCallGraphViewerPass());
-}
-
-API_EXPORT(void)
 LLVMPY_AddCallGraphDOTPrinterPass(LLVMPassManagerRef PM) {
     unwrap(PM)->add(llvm::createCallGraphDOTPrinterPass());
 }
