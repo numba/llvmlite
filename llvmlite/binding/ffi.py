@@ -124,6 +124,31 @@ class _lib_wrapper(object):
         if not self._lib_handle:
             self._load_lib()
         return self._lib_handle
+
+    def _resolve(self, lazy_wrapper):
+        """Resolve a lazy wrapper, and store it as an attribute."""
+        with self._lock:
+            # If not already done, atomically replace a lazy wrapper
+            # with either a locking wrapper or a direct reference to
+            # the function (if marked as threadsafe).
+            wrapper = self._fntab[lazy_wrapper.symbol_name]
+            if isinstance(wrapper, _lazy_lib_fn_wrapper):
+                # Nothing else has resolved the lazy wrapper yet.
+                cfn = getattr(self._lib, lazy_wrapper.symbol_name)
+                if hasattr(lazy_wrapper, 'argtypes'):
+                    cfn.argtypes = lazy_wrapper.argtypes
+                if hasattr(lazy_wrapper, 'restype'):
+                    cfn.restype = lazy_wrapper.restype
+                if getattr(lazy_wrapper, 'threadsafe', False):
+                    # If wrapper.threadsafe is True, then this function
+                    # can safely be called directly without acquiring
+                    # the library lock.
+                    wrapper = cfn
+                else:
+                    wrapper = _lib_fn_wrapper(self._lock, cfn)
+                self._fntab[lazy_wrapper.symbol_name] = wrapper
+            return wrapper
+
     def __getattr__(self, name):
         try:
             return self._fntab[name]
@@ -133,9 +158,9 @@ class _lib_wrapper(object):
                 try:
                     return self._fntab[name]
                 except KeyError:
-                    wrapped = _lib_fn_wrapper(self._lock, cfn)
-                    self._fntab[name] = wrapped
-                    return wrapped
+                    wrapper = _lazy_lib_fn_wrapper(name)
+                    self._fntab[name] = wrapper
+                    return wrapper
 
     @property
     def _name(self):
@@ -143,7 +168,8 @@ class _lib_wrapper(object):
 
         For duck-typing a ctypes.CDLL
         """
-        return self._lib._name
+        with self._lock:
+            return self._lib._name
 
     @property
     def _handle(self):
@@ -151,7 +177,18 @@ class _lib_wrapper(object):
 
         For duck-typing a ctypes.CDLL
         """
-        return self._lib._handle
+        with self._lock:
+            return self._lib._handle
+
+
+class _lazy_lib_fn_wrapper(object):
+    """A lazy wrapper for a ctypes.CFUNCTYPE that resolves on call."""
+
+    def __init__(self, symbol_name):
+        self.symbol_name = symbol_name
+
+    def __call__(self, *args, **kwargs):
+        return lib._resolve(self)(*args, **kwargs)
 
 
 class _lib_fn_wrapper(object):
