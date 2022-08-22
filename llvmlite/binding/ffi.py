@@ -128,11 +128,14 @@ class _lib_wrapper(object):
         try:
             return self._fntab[name]
         except KeyError:
-            # Lazily wraps new functions as they are requested
-            cfn = getattr(self._lib, name)
-            wrapped = _lib_fn_wrapper(self._lock, cfn)
-            self._fntab[name] = wrapped
-            return wrapped
+            with self._lock:
+                # Double checking to avoid wrapper creation race.
+                try:
+                    return self._fntab[name]
+                except KeyError:
+                    wrapped = _lib_fn_wrapper(self._lock, cfn)
+                    self._fntab[name] = wrapped
+                    return wrapped
 
     @property
     def _name(self):
