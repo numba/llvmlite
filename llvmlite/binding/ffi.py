@@ -107,7 +107,7 @@ class _lib_wrapper(object):
     def _load_lib(self):
         try:
             with _suppress_cleanup_errors(importlib.resources.path(
-                __name__.rpartition(".")[0], get_library_name())) as lib_path:
+                    __name__.rpartition(".")[0], get_library_name())) as lib_path:
                 self._lib_handle = ctypes.CDLL(str(lib_path))
                 # Check that we can look up expected symbols.
                 _ = self._lib_handle.LLVMPY_GetVersionInfo()
@@ -124,6 +124,7 @@ class _lib_wrapper(object):
         if not self._lib_handle:
             self._load_lib()
         return self._lib_handle
+
     def __getattr__(self, name):
         try:
             return self._fntab[name]
