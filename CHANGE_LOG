@@ -1,10 +1,134 @@
-v0.38.0
--------
+v0.39.0 (July 25, 2022)
+-----------------------
 
-In development
+This release predominantly adds new features and improves functionality.
 
-v0.37.0 RC2 (July 16 2021)
+* It's now possible to directly set LLVM ``metadata`` on global variables.
+* Functions and global variables now support the specification of a ``section``
+  in which they should be placed.
+* The attribute ``source_file`` had been added to the ``ModuleRef`` class, it
+  returns the module's original file name.
+* The FFI library binding to LLVM is now loaded with ``importlib`` to increase
+  compatibility with other projects and improve start-up times.
+* Linux builds now use the parallel option to ``make`` to speed up building the
+  FFI library.
+* Preliminary work to expose LLVM's optimization-remarks interface has been
+  undertaken. The bindings are exposed and tested, but not yet documented for
+  general use (additional work is needed).
+
+Deprecations:
+
+* The ``llvmlite.llvmpy`` module has been deprecated as the functionality it
+  provides is available through the ``llvmlite.ir`` module. See the deprecation
+  guide in the user documentation for details and recommendations regarding
+  replacement.
+
+Pull-Requests:
+
+* PR `#328 <https://github.com/numba/llvmlite/pull/328>`_: Build C files separately on Linux and support parallel make (`Michał Górny <https://github.com/mgorny>`_)
+* PR `#754 <https://github.com/numba/llvmlite/pull/754>`_: manylinux2014 aarch64 wheels with system compilers (`esc <https://github.com/esc>`_)
+* PR `#760 <https://github.com/numba/llvmlite/pull/760>`_: add support for attaching metadata to global variables (`Graham Markall <https://github.com/gmarkall>`_ `John Törnblom <https://github.com/john-tornblom>`_)
+* PR `#786 <https://github.com/numba/llvmlite/pull/786>`_: Update Windows and OSX CI images. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#801 <https://github.com/numba/llvmlite/pull/801>`_: Update ffi.py (`franzhaas <https://github.com/franzhaas>`_)
+* PR `#803 <https://github.com/numba/llvmlite/pull/803>`_: llvm::Module::GetSourceFileName (`J. Aaron Pendergrass <https://github.com/japendergrass>`_)
+* PR `#806 <https://github.com/numba/llvmlite/pull/806>`_: Bump to v0.39.0dev (`esc <https://github.com/esc>`_)
+* PR `#807 <https://github.com/numba/llvmlite/pull/807>`_: Exclude ExecutionEngine tests on linux 32 (`esc <https://github.com/esc>`_)
+* PR `#809 <https://github.com/numba/llvmlite/pull/809>`_: Update CHANGE_LOG for 0.38.0 (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#813 <https://github.com/numba/llvmlite/pull/813>`_: Add m1 support to conda build scripts (`esc <https://github.com/esc>`_ `Stan Seibert <https://github.com/seibert>`_)
+* PR `#815 <https://github.com/numba/llvmlite/pull/815>`_: update local references (`esc <https://github.com/esc>`_)
+* PR `#816 <https://github.com/numba/llvmlite/pull/816>`_: remove configuration landscape service as it is no longer used (`esc <https://github.com/esc>`_)
+* PR `#817 <https://github.com/numba/llvmlite/pull/817>`_: remove uppper limit on Python requires (`esc <https://github.com/esc>`_)
+* PR `#819 <https://github.com/numba/llvmlite/pull/819>`_: adding rc and final release checklist templates (`esc <https://github.com/esc>`_)
+* PR `#823 <https://github.com/numba/llvmlite/pull/823>`_: Add section to globals (`Andreas Wrisley <https://github.com/anlofw>`_)
+* PR `#824 <https://github.com/numba/llvmlite/pull/824>`_: add GitHub URL for PyPi (`Andrii Oriekhov <https://github.com/andriyor>`_)
+* PR `#825 <https://github.com/numba/llvmlite/pull/825>`_: Add flag handling to more instructions. (`stuartarchibald <https://github.com/stuartarchibald>`_ `Andre Masella <https://github.com/apmasell>`_)
+* PR `#826 <https://github.com/numba/llvmlite/pull/826>`_: Deprecated `llvmlite.llvmpy` (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#831 <https://github.com/numba/llvmlite/pull/831>`_: Format C++ code (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#832 <https://github.com/numba/llvmlite/pull/832>`_: DOC: Fix the syntax for the llvmlite discourse topic link. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#835 <https://github.com/numba/llvmlite/pull/835>`_: Add pre-commit hooks for clang-format (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#837 <https://github.com/numba/llvmlite/pull/837>`_: Add support for optimization remarks in pass managers (`Siu Kwan Lam <https://github.com/sklam>`_ `Andre Masella <https://github.com/apmasell>`_)
+* PR `#846 <https://github.com/numba/llvmlite/pull/846>`_: Cherry-Pick: #842 --> `main` :Changelog for 0.38.1 (`esc <https://github.com/esc>`_)
+* PR `#851 <https://github.com/numba/llvmlite/pull/851>`_: adding the llvm_11_consecutive_registers.patch (`esc <https://github.com/esc>`_)
+* PR `#857 <https://github.com/numba/llvmlite/pull/857>`_: Delegate passmanager remarks methods (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#858 <https://github.com/numba/llvmlite/pull/858>`_: Update CHANGE_LOG for 0.39.0 (`esc <https://github.com/esc>`_ `Graham Markall <https://github.com/gmarkall>`_ `stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#863 <https://github.com/numba/llvmlite/pull/863>`_: Update changelog for 0.39.0 release (`Siu Kwan Lam <https://github.com/sklam>`_)
+* PR `#864 <https://github.com/numba/llvmlite/pull/864>`_: Update release date for 0.39.0 release. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#867 <https://github.com/numba/llvmlite/pull/867>`_: Update CHANGE_LOG 0.39.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+
+Authors:
+
+* `Andrii Oriekhov <https://github.com/andriyor>`_
+* `Andreas Wrisley <https://github.com/anlofw>`_
+* `Andre Masella <https://github.com/apmasell>`_
+* `esc <https://github.com/esc>`_
+* `franzhaas <https://github.com/franzhaas>`_
+* `Graham Markall <https://github.com/gmarkall>`_
+* `J. Aaron Pendergrass <https://github.com/japendergrass>`_
+* `John Törnblom <https://github.com/john-tornblom>`_
+* `Michał Górny <https://github.com/mgorny>`_
+* `Stan Seibert <https://github.com/seibert>`_
+* `Siu Kwan Lam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+
+v0.38.1 (May 19, 2022)
+----------------------
+
+This is a maintenance release to support the Apple M1 architecture.
+
+Pull-Requests:
+
+* PR `#841 <https://github.com/numba/llvmlite/pull/841>`_: Merge pull request #813 from seibert/m1_support (`esc <https://github.com/esc>`_, `Stan Seibert <https://github.com/seibert>`_)
+* PR `#845 <https://github.com/numba/llvmlite/pull/845>`_: Backport #786 for 0.38.1 (`stuartarchibald <https://github.com/stuartarchibald>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `Stan Seibert <https://github.com/seibert>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+
+v0.38.0 (January 13, 2022)
 --------------------------
+
+This release makes llvmlite compatible with Python 3.10. It also adds an
+``abiname`` option to the target machine creation interface that mimics the same
+in LLVM. Further, a large number of functions are added to the IR API to support
+common uses of constant expressions. Finally, a number of bugs were fixed!
+
+Pull-Requests:
+
+* PR `#702 <https://github.com/numba/llvmlite/pull/702>`_: Implement minimal support for call-site argument attributes (`David Nadlinger <https://github.com/dnadlinger>`_)
+* PR `#739 <https://github.com/numba/llvmlite/pull/739>`_: Bump to 0.38.0 development series (`Siu Kwan Lam <https://github.com/sklam>`_)
+* PR `#751 <https://github.com/numba/llvmlite/pull/751>`_: Fix encoding of unicode string in metadata. (`Siu Kwan Lam <https://github.com/sklam>`_)
+* PR `#757 <https://github.com/numba/llvmlite/pull/757>`_: Add issue templates based on those in Numba (`Graham Markall <https://github.com/gmarkall>`_)
+* PR `#763 <https://github.com/numba/llvmlite/pull/763>`_: Update the Azure default linux image to Ubuntu 18.04 (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#769 <https://github.com/numba/llvmlite/pull/769>`_: Python 3.10 (`esc <https://github.com/esc>`_)
+* PR `#771 <https://github.com/numba/llvmlite/pull/771>`_: cleanup llvmlite metadata (`esc <https://github.com/esc>`_)
+* PR `#774 <https://github.com/numba/llvmlite/pull/774>`_: Fix OSX breakage on master (`esc <https://github.com/esc>`_)
+* PR `#775 <https://github.com/numba/llvmlite/pull/775>`_: targets.py: Add ABIName parameter for RISC-V hard float targets (`Graham Markall <https://github.com/gmarkall>`_ `occheung <https://github.com/occheung>`_)
+* PR `#778 <https://github.com/numba/llvmlite/pull/778>`_: fix: test code typo (`Itmom <https://github.com/Cho-Geonwoo>`_)
+* PR `#779 <https://github.com/numba/llvmlite/pull/779>`_: pin compiler toolchain to version 10 on osx (`esc <https://github.com/esc>`_)
+* PR `#784 <https://github.com/numba/llvmlite/pull/784>`_: Adds _ConstOpMixin.ptrtoint to complement existing bitcast and inttoptr methods. (`Brett Slatkin <https://github.com/bslatkin>`_)
+* PR `#788 <https://github.com/numba/llvmlite/pull/788>`_: Add RISC-V + all default targets to LLVM build (`Stan Seibert <https://github.com/seibert>`_ `esc <https://github.com/esc>`_)
+* PR `#789 <https://github.com/numba/llvmlite/pull/789>`_: don't build docs on every platform, only once (`esc <https://github.com/esc>`_)
+* PR `#791 <https://github.com/numba/llvmlite/pull/791>`_: update to use LLVM 11.1.0 build 4 (`esc <https://github.com/esc>`_)
+* PR `#795 <https://github.com/numba/llvmlite/pull/795>`_: Continue PR #735 (Add support for more constant expressions) (`Graham Markall <https://github.com/gmarkall>`_ `John Törnblom <https://github.com/john-tornblom>`_)
+* PR `#797 <https://github.com/numba/llvmlite/pull/797>`_: Make tests that require cross compilation to RISCV optional. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+
+Authors:
+
+* `Itmom <https://github.com/Cho-Geonwoo>`_
+* `Brett Slatkin <https://github.com/bslatkin>`_
+* `David Nadlinger <https://github.com/dnadlinger>`_
+* `esc <https://github.com/esc>`_
+* `Graham Markall <https://github.com/gmarkall>`_
+* `John Törnblom <https://github.com/john-tornblom>`_
+* `occheung <https://github.com/occheung>`_
+* `Stan Seibert <https://github.com/seibert>`_
+* `Siu Kwan Lam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+
+v0.37.0 (August 19, 2021)
+-------------------------
 
 The biggest new feature in this release is LLVM 11 support for all platforms!
 This is important, because the ``aarch64`` platform had been 'stuck' on LLVM 9
@@ -23,8 +147,8 @@ Pull-Requests:
 * PR `#747 <https://github.com/numba/llvmlite/pull/747>`_: Remove 3.6 Support (`esc <https://github.com/esc>`_)
 * PR `#748 <https://github.com/numba/llvmlite/pull/748>`_: Fixup readme (`esc <https://github.com/esc>`_)
 * PR `#749 <https://github.com/numba/llvmlite/pull/749>`_: adding PRs specific to the RC2 release (`esc <https://github.com/esc>`_)
-
-Total PRs: 10
+* PR `#762 <https://github.com/numba/llvmlite/pull/762>`_: PR #758 continued. Ensure GCC7 is used on non-ARM platforms. (`esc <https://github.com/esc>`_ `stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#764 <https://github.com/numba/llvmlite/pull/764>`_: Update CHANGE_LOG for 0.37.0 (`stuartarchibald <https://github.com/stuartarchibald>`_)
 
 Authors:
 
@@ -35,8 +159,6 @@ Authors:
 * `Antoine Pitrou <https://github.com/pitrou>`_
 * `Siu Kwan Lam <https://github.com/sklam>`_
 * `stuartarchibald <https://github.com/stuartarchibald>`_
-
-Total authors: 7
 
 v0.36.0 (March 11, 2021)
 ------------------------

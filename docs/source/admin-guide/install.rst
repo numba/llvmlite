@@ -25,7 +25,7 @@ Official Conda packages are available in the Anaconda_ distribution::
 
     conda install llvmlite
 
-Development releases are built from the Git master branch and uploaded to
+Development releases are built from the Git main branch and uploaded to
 the Numba_ development channel on `Anaconda Cloud <https://anaconda.org/numba>`_::
 
     conda install -c numba/label/dev llvmlite
@@ -183,7 +183,7 @@ prebuilt LLVM binary package and skip this step::
 
     conda install -c numba llvmdev
 
-The LLVM build process is fully scripted by conda-build_, and the `llvmdev recipe <https://github.com/numba/llvmlite/tree/master/conda-recipes/llvmdev>`_ is the canonical reference for building LLVM for llvmlite.  Please use it if at all possible!
+The LLVM build process is fully scripted by conda-build_, and the `llvmdev recipe <https://github.com/numba/llvmlite/tree/main/conda-recipes/llvmdev>`_ is the canonical reference for building LLVM for llvmlite.  Please use it if at all possible!
 
 The manual instructions below describe the main steps, but refer to the recipe
 for details:
@@ -205,18 +205,19 @@ for details:
        test failure caused by the previous patch.
     #. ``0001-Revert-Limit-size-of-non-GlobalValue-name.patch``: Revert the
        limit put on the length of a non-GlobalValue name.
+    #. ``llvm_11_consecutive_registers.patch``: Handle arrays of struct properly
 
 #. For Linux/macOS:
 
     #. ``export PREFIX=desired_install_location CPU_COUNT=N``
        ( ``N`` is number of parallel compile tasks)
-    #. Run the `build.sh <https://github.com/numba/llvmlite/blob/master/conda-recipes/llvmdev/build.sh>`_
+    #. Run the `build.sh <https://github.com/numba/llvmlite/blob/main/conda-recipes/llvmdev/build.sh>`_
        script in the llvmdev conda recipe from the LLVM source directory.
 
 #. For Windows:
 
     #. ``set PREFIX=desired_install_location``
-    #. Run the `bld.bat <https://github.com/numba/llvmlite/blob/master/conda-recipes/llvmdev/bld.bat>`_
+    #. Run the `bld.bat <https://github.com/numba/llvmlite/blob/main/conda-recipes/llvmdev/bld.bat>`_
        script in the llvmdev conda recipe from the LLVM source directory.
 
 

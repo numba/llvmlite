@@ -3,10 +3,11 @@ Classes that are LLVM values: Value, Constant...
 Instructions are in the instructions module.
 """
 
+import functools
 import string
 import re
 
-from llvmlite.ir import types, _utils
+from llvmlite.ir import values, types, _utils
 from llvmlite.ir._utils import (_StrCaching, _StringReferenceCaching,
                                 _HasMetadata)
 
@@ -17,13 +18,23 @@ _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
 
 _SIMPLE_IDENTIFIER_RE = re.compile(r"[-a-zA-Z$._][-a-zA-Z$._0-9]*$")
 
+_CMP_MAP = {
+    '>': 'gt',
+    '<': 'lt',
+    '==': 'eq',
+    '!=': 'ne',
+    '>=': 'ge',
+    '<=': 'le',
+}
+
 
 def _escape_string(text, _map={}):
     """
     Escape the given bytestring for safe use as a LLVM array constant.
+    Any unicode string input is first encoded with utf8 into bytes.
     """
     if isinstance(text, str):
-        text = text.encode('ascii')
+        text = text.encode()
     assert isinstance(text, (bytes, bytearray))
 
     if not _map:
@@ -37,24 +48,343 @@ def _escape_string(text, _map={}):
     return ''.join(buf)
 
 
+def _binop(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(lhs, rhs):
+            if lhs.type != rhs.type:
+                raise ValueError("Operands must be the same type, got (%s, %s)"
+                                 % (lhs.type, rhs.type))
+
+            fmt = "{0} ({1} {2}, {3} {4})".format(opname,
+                                                  lhs.type, lhs.get_reference(),
+                                                  rhs.type, rhs.get_reference())
+            return FormattedConstant(lhs.type, fmt)
+
+        return wrapped
+    return wrap
+
+
+def _castop(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, typ):
+            fn(self, typ)
+            if typ == self.type:
+                return self
+
+            op = "{0} ({1} {2} to {3})".format(opname, self.type,
+                                               self.get_reference(), typ)
+            return FormattedConstant(typ, op)
+
+        return wrapped
+    return wrap
+
+
 class _ConstOpMixin(object):
     """
     A mixin defining constant operations, for use in constant-like classes.
     """
 
+    #
+    # Arithmetic APIs
+    #
+
+    @_binop('shl')
+    def shl(self, other):
+        """
+        Left integer shift:
+            lhs << rhs
+        """
+
+    @_binop('lshr')
+    def lshr(self, other):
+        """
+        Logical (unsigned) right integer shift:
+            lhs >> rhs
+        """
+
+    @_binop('ashr')
+    def ashr(self, other):
+        """
+        Arithmetic (signed) right integer shift:
+            lhs >> rhs
+        """
+
+    @_binop('add')
+    def add(self, other):
+        """
+        Integer addition:
+            lhs + rhs
+        """
+
+    @_binop('fadd')
+    def fadd(self, other):
+        """
+        Floating-point addition:
+            lhs + rhs
+        """
+
+    @_binop('sub')
+    def sub(self, other):
+        """
+        Integer subtraction:
+            lhs - rhs
+        """
+
+    @_binop('fsub')
+    def fsub(self, other):
+        """
+        Floating-point subtraction:
+            lhs - rhs
+        """
+
+    @_binop('mul')
+    def mul(self, other):
+        """
+        Integer multiplication:
+            lhs * rhs
+        """
+
+    @_binop('fmul')
+    def fmul(self, other):
+        """
+        Floating-point multiplication:
+            lhs * rhs
+        """
+
+    @_binop('udiv')
+    def udiv(self, other):
+        """
+        Unsigned integer division:
+            lhs / rhs
+        """
+
+    @_binop('sdiv')
+    def sdiv(self, other):
+        """
+        Signed integer division:
+            lhs / rhs
+        """
+
+    @_binop('fdiv')
+    def fdiv(self, other):
+        """
+        Floating-point division:
+            lhs / rhs
+        """
+
+    @_binop('urem')
+    def urem(self, other):
+        """
+        Unsigned integer remainder:
+            lhs % rhs
+        """
+
+    @_binop('srem')
+    def srem(self, other):
+        """
+        Signed integer remainder:
+            lhs % rhs
+        """
+
+    @_binop('frem')
+    def frem(self, other):
+        """
+        Floating-point remainder:
+            lhs % rhs
+        """
+
+    @_binop('or')
+    def or_(self, other):
+        """
+        Bitwise integer OR:
+            lhs | rhs
+        """
+
+    @_binop('and')
+    def and_(self, other):
+        """
+        Bitwise integer AND:
+            lhs & rhs
+        """
+
+    @_binop('xor')
+    def xor(self, other):
+        """
+        Bitwise integer XOR:
+            lhs ^ rhs
+        """
+
+    def _cmp(self, prefix, sign, cmpop, other):
+        ins = prefix + 'cmp'
+        try:
+            op = _CMP_MAP[cmpop]
+        except KeyError:
+            raise ValueError("invalid comparison %r for %s" % (cmpop, ins))
+
+        if not (prefix == 'i' and cmpop in ('==', '!=')):
+            op = sign + op
+
+        if self.type != other.type:
+            raise ValueError("Operands must be the same type, got (%s, %s)"
+                             % (self.type, other.type))
+
+        fmt = "{0} {1} ({2} {3}, {4} {5})".format(
+            ins, op,
+            self.type, self.get_reference(),
+            other.type, other.get_reference())
+
+        return FormattedConstant(types.IntType(1), fmt)
+
+    def icmp_signed(self, cmpop, other):
+        """
+        Signed integer comparison:
+            lhs <cmpop> rhs
+
+        where cmpop can be '==', '!=', '<', '<=', '>', '>='
+        """
+        return self._cmp('i', 's', cmpop, other)
+
+    def icmp_unsigned(self, cmpop, other):
+        """
+        Unsigned integer (or pointer) comparison:
+            lhs <cmpop> rhs
+
+        where cmpop can be '==', '!=', '<', '<=', '>', '>='
+        """
+        return self._cmp('i', 'u', cmpop, other)
+
+    def fcmp_ordered(self, cmpop, other):
+        """
+        Floating-point ordered comparison:
+            lhs <cmpop> rhs
+
+        where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
+        """
+        return self._cmp('f', 'o', cmpop, other)
+
+    def fcmp_unordered(self, cmpop, other):
+        """
+        Floating-point unordered comparison:
+            lhs <cmpop> rhs
+
+        where cmpop can be '==', '!=', '<', '<=', '>', '>=', 'ord', 'uno'
+        """
+        return self._cmp('f', 'u', cmpop, other)
+
+    #
+    # Unary APIs
+    #
+
+    def not_(self):
+        """
+        Bitwise integer complement:
+            ~value
+        """
+        if isinstance(self.type, types.VectorType):
+            rhs = values.Constant(self.type, (-1,) * self.type.count)
+        else:
+            rhs = values.Constant(self.type, -1)
+
+        return self.xor(rhs)
+
+    def neg(self):
+        """
+        Integer negative:
+            -value
+        """
+        zero = values.Constant(self.type, 0)
+        return zero.sub(self)
+
+    def fneg(self):
+        """
+        Floating-point negative:
+            -value
+        """
+        fmt = "fneg ({0} {1})".format(self.type, self.get_reference())
+        return FormattedConstant(self.type, fmt)
+
+    #
+    # Cast APIs
+    #
+
+    @_castop('trunc')
+    def trunc(self, typ):
+        """
+        Truncating integer downcast to a smaller type.
+        """
+
+    @_castop('zext')
+    def zext(self, typ):
+        """
+        Zero-extending integer upcast to a larger type
+        """
+
+    @_castop('sext')
+    def sext(self, typ):
+        """
+        Sign-extending integer upcast to a larger type.
+        """
+
+    @_castop('fptrunc')
+    def fptrunc(self, typ):
+        """
+        Floating-point downcast to a less precise type.
+        """
+
+    @_castop('fpext')
+    def fpext(self, typ):
+        """
+        Floating-point upcast to a more precise type.
+        """
+
+    @_castop('bitcast')
     def bitcast(self, typ):
         """
-        Bitcast this pointer constant to the given type.
+        Pointer cast to a different pointer type.
         """
-        if typ == self.type:
-            return self
-        op = "bitcast ({0} {1} to {2})".format(self.type, self.get_reference(),
-                                               typ)
-        return FormattedConstant(typ, op)
 
+    @_castop('fptoui')
+    def fptoui(self, typ):
+        """
+        Convert floating-point to unsigned integer.
+        """
+
+    @_castop('uitofp')
+    def uitofp(self, typ):
+        """
+        Convert unsigned integer to floating-point.
+        """
+
+    @_castop('fptosi')
+    def fptosi(self, typ):
+        """
+        Convert floating-point to signed integer.
+        """
+
+    @_castop('sitofp')
+    def sitofp(self, typ):
+        """
+        Convert signed integer to floating-point.
+        """
+
+    @_castop('ptrtoint')
+    def ptrtoint(self, typ):
+        """
+        Cast pointer to integer.
+        """
+        if not isinstance(self.type, types.PointerType):
+            msg = "can only call ptrtoint() on pointer type, not '%s'"
+            raise TypeError(msg % (self.type,))
+        if not isinstance(typ, types.IntType):
+            raise TypeError("can only ptrtoint() to integer type, not '%s'"
+                            % (typ,))
+
+    @_castop('inttoptr')
     def inttoptr(self, typ):
         """
-        Cast this integer constant to the given pointer type.
+        Cast integer to pointer.
         """
         if not isinstance(self.type, types.IntType):
             msg = "can only call inttoptr() on integer constants, not '%s'"
@@ -62,11 +392,6 @@ class _ConstOpMixin(object):
         if not isinstance(typ, types.PointerType):
             raise TypeError("can only inttoptr() to pointer type, not '%s'"
                             % (typ,))
-
-        op = "inttoptr ({0} {1} to {2})".format(self.type,
-                                                self.get_reference(),
-                                                typ)
-        return FormattedConstant(typ, op)
 
     def gep(self, indices):
         """
@@ -446,7 +771,7 @@ class DIValue(NamedValue):
         return hash((self.is_distinct, self.kind, self.operands))
 
 
-class GlobalValue(NamedValue, _ConstOpMixin):
+class GlobalValue(NamedValue, _ConstOpMixin, _HasMetadata):
     """
     A global value.
     """
@@ -457,6 +782,8 @@ class GlobalValue(NamedValue, _ConstOpMixin):
         super(GlobalValue, self).__init__(*args, **kwargs)
         self.linkage = ''
         self.storage_class = ''
+        self.section = ''
+        self.metadata = {}
 
 
 class GlobalVariable(GlobalValue):
@@ -509,8 +836,14 @@ class GlobalVariable(GlobalValue):
             # emit 'undef' for non-external linkage GV
             buf.append(" " + self.value_type(Undefined).get_reference())
 
+        if self.section:
+            buf.append(", section \"%s\"" % (self.section,))
+
         if self.align is not None:
             buf.append(", align %d" % (self.align,))
+
+        if self.metadata:
+            buf.append(self._stringify_metadata(leading_comma=True))
 
         buf.append("\n")
 
@@ -592,7 +925,7 @@ class FunctionAttributes(AttributeSet):
         return ' '.join(attrs)
 
 
-class Function(GlobalValue, _HasMetadata):
+class Function(GlobalValue):
     """Represent a LLVM Function but does uses a Module as parent.
     Global Values are stored as a set of dependencies (attribute `depends`).
     """
@@ -609,7 +942,6 @@ class Function(GlobalValue, _HasMetadata):
         self.return_value = ReturnValue(self, ftype.return_type)
         self.parent.add_global(self)
         self.calling_convention = ''
-        self.metadata = {}
 
     @property
     def module(self):
@@ -644,6 +976,7 @@ class Function(GlobalValue, _HasMetadata):
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
         attrs = self.attributes
+        attrs = ' {}'.format(attrs) if attrs else ''
         if any(self.args):
             vararg = ', ...' if self.ftype.var_arg else ''
         else:
@@ -652,9 +985,11 @@ class Function(GlobalValue, _HasMetadata):
         cconv = self.calling_convention
         prefix = " ".join(str(x) for x in [state, linkage, cconv, ret] if x)
         metadata = self._stringify_metadata()
-        pt_str = "{prefix} {name}({args}{vararg}) {attrs}{metadata}\n"
+        metadata = ' {}'.format(metadata) if metadata else ''
+        section = ' section "{}"'.format(self.section) if self.section else ''
+        pt_str = "{prefix} {name}({args}{vararg}){attrs}{section}{metadata}\n"
         prototype = pt_str.format(prefix=prefix, name=name, args=args,
-                                  vararg=vararg, attrs=attrs,
+                                  vararg=vararg, attrs=attrs, section=section,
                                   metadata=metadata)
         buf.append(prototype)
 

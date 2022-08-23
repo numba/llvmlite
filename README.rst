@@ -2,8 +2,8 @@
 llvmlite
 ========
 
-.. image:: https://dev.azure.com/numba/numba/_apis/build/status/numba.llvmlite?branchName=master
-   :target: https://dev.azure.com/numba/numba/_build/latest?definitionId=2&branchName=master
+.. image:: https://dev.azure.com/numba/numba/_apis/build/status/numba.llvmlite?branchName=main
+   :target: https://dev.azure.com/numba/numba/_build/latest?definitionId=2&branchName=main
    :alt: Azure Pipelines
 .. image:: https://codeclimate.com/github/numba/llvmlite/badges/gpa.svg
    :target: https://codeclimate.com/github/numba/llvmlite

@@ -126,6 +126,13 @@ class ModuleRef(ffi.ObjectRef):
         ffi.lib.LLVMPY_SetModuleName(self, _encode_string(value))
 
     @property
+    def source_file(self):
+        """
+        The module's original source file name
+        """
+        return _decode_string(ffi.lib.LLVMPY_GetModuleSourceFileName(self))
+
+    @property
     def data_layout(self):
         """
         This module's data layout specification, as a string.
@@ -337,3 +344,6 @@ ffi.lib.LLVMPY_GetModuleName.argtypes = [ffi.LLVMModuleRef]
 ffi.lib.LLVMPY_GetModuleName.restype = c_char_p
 
 ffi.lib.LLVMPY_SetModuleName.argtypes = [ffi.LLVMModuleRef, c_char_p]
+
+ffi.lib.LLVMPY_GetModuleSourceFileName.argtypes = [ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_GetModuleSourceFileName.restype = c_char_p

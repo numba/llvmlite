@@ -3,7 +3,12 @@
 set -x
 
 if [[ $(uname) == Darwin ]]; then
-  ${SYS_PREFIX}/bin/conda create -y -p ${SRC_DIR}/bootstrap clangxx_osx-64
+  if [[ $build_platform == osx-arm64 ]]; then
+      CLANG_PKG_SELECTOR=clangxx_osx-arm64=12
+  else
+      CLANG_PKG_SELECTOR=clangxx_osx-64=10
+  fi
+  ${SYS_PREFIX}/bin/conda create -y -p ${SRC_DIR}/bootstrap ${CLANG_PKG_SELECTOR}
   export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
   CONDA_PREFIX=${SRC_DIR}/bootstrap \
     . ${SRC_DIR}/bootstrap/etc/conda/activate.d/*
@@ -19,11 +24,21 @@ if [[ $(uname) == Darwin ]]; then
 fi
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    # OSX needs 10.7 or above with libc++ enabled
-    export MACOSX_DEPLOYMENT_TARGET=10.10
+    if [[ $build_platform == osx-arm64 ]]; then
+        export MACOSX_DEPLOYMENT_TARGET=11.0
+    else
+        # OSX needs 10.7 or above with libc++ enabled
+        export MACOSX_DEPLOYMENT_TARGET=10.10
+    fi
 fi
 
-DARWIN_TARGET=x86_64-apple-darwin13.4.0
+
+# This is the clang compiler prefix
+if [[ $build_platform == osx-arm64 ]]; then
+    DARWIN_TARGET=arm64-apple-darwin20.0.0
+else
+    DARWIN_TARGET=x86_64-apple-darwin13.4.0
+fi
 
 
 export PYTHONNOUSERSITE=1

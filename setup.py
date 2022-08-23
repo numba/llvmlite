@@ -33,7 +33,7 @@ except ImportError:
 
 
 min_python_version = "3.7"
-max_python_version = "3.10"  # exclusive
+max_python_version = "3.11"  # exclusive
 
 
 def _guard_py_ver():
@@ -150,7 +150,8 @@ class LlvmliteClean(clean):
                 remove_tree(path, dry_run=self.dry_run)
             else:
                 for fname in files:
-                    if fname.endswith('.pyc') or fname.endswith('.so'):
+                    if (fname.endswith('.pyc') or fname.endswith('.so')
+                            or fname.endswith('.o')):
                         fpath = os.path.join(path, fname)
                         os.remove(fpath)
                         log.info("removing '%s'", fpath)
@@ -212,18 +213,18 @@ setup(name='llvmlite',
           "Programming Language :: Python :: 3.7",
           "Programming Language :: Python :: 3.8",
           "Programming Language :: Python :: 3.9",
+          "Programming Language :: Python :: 3.10",
           "Topic :: Software Development :: Code Generators",
           "Topic :: Software Development :: Compilers",
       ],
       # Include the separately-compiled shared library
-      author="Continuum Analytics, Inc.",
-      author_email="numba-users@continuum.io",
-      url="http://llvmlite.pydata.org",
-      download_url="https://github.com/numba/llvmlite",
+      url="http://llvmlite.readthedocs.io",
+      project_urls={
+          "Source": "https://github.com/numba/llvmlite",
+      },
       packages=packages,
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,
-      python_requires=">={},<{}".format(min_python_version,
-                                        max_python_version),
+      python_requires=">={}".format(min_python_version),
       )

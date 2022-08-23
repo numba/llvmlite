@@ -37,6 +37,7 @@ def no_de_locale():
 
 asm_sum = r"""
     ; ModuleID = '<string>'
+    source_filename = "asm_sum.c"
     target triple = "{triple}"
     %struct.glob_type = type {{ i64, [2 x i64]}}
 
@@ -124,6 +125,136 @@ asm_inlineasm = r"""
     }}
     """
 
+asm_inlineasm2 = """
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @inlineme() {{
+        ret void
+    }}
+
+    define i32 @caller(i32 %.1, i32 %.2) {{
+    entry:
+      %stack = alloca i32
+      store i32 %.1, i32* %stack
+      br label %main
+    main:
+      %loaded = load i32, i32* %stack
+      %.3 = add i32 %loaded, %.2
+      %.4 = add i32 0, %.3
+      call void @inlineme()
+      ret i32 %.4
+    }}
+"""
+
+asm_inlineasm3 = """
+; ModuleID = 'test.c'
+source_filename = "test.c"
+target triple = "{triple}"
+
+; Function Attrs: noinline nounwind optnone ssp uwtable
+define void @inlineme() noinline !dbg !15 {{
+  ret void, !dbg !18
+}}
+
+; Function Attrs: noinline nounwind optnone ssp uwtable
+define i32 @foo(i32 %0, i32 %1) !dbg !19 {{
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  store i32 %0, i32* %3, align 4
+  call void @llvm.dbg.declare(metadata i32* %3, metadata !23, metadata !DIExpression()), !dbg !24
+  store i32 %1, i32* %4, align 4
+  call void @llvm.dbg.declare(metadata i32* %4, metadata !25, metadata !DIExpression()), !dbg !26
+  call void @inlineme(), !dbg !27
+  %5 = load i32, i32* %3, align 4, !dbg !28
+  %6 = load i32, i32* %4, align 4, !dbg !29
+  %7 = add nsw i32 %5, %6, !dbg !30
+  ret i32 %7, !dbg !31
+}}
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
+
+attributes #1 = {{ nofree nosync nounwind readnone speculatable willreturn }}
+
+!llvm.module.flags = !{{!1, !2, !3, !4, !5, !6, !7, !8, !9, !10}}
+!llvm.dbg.cu = !{{!11}}
+!llvm.ident = !{{!14}}
+
+!0 = !{{i32 2, !"SDK Version", [2 x i32] [i32 12, i32 3]}}
+!1 = !{{i32 7, !"Dwarf Version", i32 4}}
+!2 = !{{i32 2, !"Debug Info Version", i32 3}}
+!3 = !{{i32 1, !"wchar_size", i32 4}}
+!4 = !{{i32 1, !"branch-target-enforcement", i32 0}}
+!5 = !{{i32 1, !"sign-return-address", i32 0}}
+!6 = !{{i32 1, !"sign-return-address-all", i32 0}}
+!7 = !{{i32 1, !"sign-return-address-with-bkey", i32 0}}
+!8 = !{{i32 7, !"PIC Level", i32 2}}
+!9 = !{{i32 7, !"uwtable", i32 1}}
+!10 = !{{i32 7, !"frame-pointer", i32 1}}
+!11 = distinct !DICompileUnit(language: DW_LANG_C99, file: !12, producer: "Apple clang version 13.1.6 (clang-1316.0.21.2.3)", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !13, splitDebugInlining: false, nameTableKind: None, sysroot: "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk", sdk: "MacOSX.sdk")
+!12 = !DIFile(filename: "test.c", directory: "/")
+!13 = !{{}}
+!14 = !{{!"Apple clang version 13.1.6 (clang-1316.0.21.2.3)"}}
+!15 = distinct !DISubprogram(name: "inlineme", scope: !12, file: !12, line: 1, type: !16, scopeLine: 1, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !11, retainedNodes: !13)
+!16 = !DISubroutineType(types: !17)
+!17 = !{{null}}
+!18 = !DILocation(line: 1, column: 22, scope: !15)
+!19 = distinct !DISubprogram(name: "foo", scope: !12, file: !12, line: 3, type: !20, scopeLine: 3, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !11, retainedNodes: !13)
+!20 = !DISubroutineType(types: !21)
+!21 = !{{!22, !22, !22}}
+!22 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
+!23 = !DILocalVariable(name: "a", arg: 1, scope: !19, file: !12, line: 3, type: !22)
+!24 = !DILocation(line: 3, column: 13, scope: !19)
+!25 = !DILocalVariable(name: "b", arg: 2, scope: !19, file: !12, line: 3, type: !22)
+!26 = !DILocation(line: 3, column: 20, scope: !19)
+!27 = !DILocation(line: 4, column: 5, scope: !19)
+!28 = !DILocation(line: 5, column: 12, scope: !19)
+!29 = !DILocation(line: 5, column: 16, scope: !19)
+!30 = !DILocation(line: 5, column: 14, scope: !19)
+!31 = !DILocation(line: 5, column: 5, scope: !19)
+"""  # noqa E501
+
+licm_asm = r"""
+; ModuleID = "<string>"
+target triple = "{triple}"
+    
+define double @licm(i32 %0) {{
+  %2 = alloca i32, align 4
+  %3 = alloca double, align 8
+  %4 = alloca i32, align 4
+  %5 = alloca double, align 8
+  store i32 %0, i32* %2, align 4
+  store double 0.000000e+00, double* %3, align 8
+  store i32 0, i32* %4, align 4
+  br label %6
+
+6:                                                ; preds = %14, %1
+  %7 = load i32, i32* %4, align 4
+  %8 = load i32, i32* %2, align 4
+  %9 = icmp slt i32 %7, %8
+  br i1 %9, label %10, label %17
+
+10:                                               ; preds = %6
+  store double 7.000000e+00, double* %5, align 8
+  %11 = load double, double* %5, align 8
+  %12 = load double, double* %3, align 8
+  %13 = fadd double %12, %11
+  store double %13, double* %3, align 8
+  br label %14
+
+14:                                               ; preds = %10
+  %15 = load i32, i32* %4, align 4
+  %16 = add nsw i32 %15, 1
+  store i32 %16, i32* %4, align 4
+  br label %6
+
+17:                                               ; preds = %6
+  %18 = load double, double* %3, align 8
+  ret double %18
+}}
+"""  # noqa E501
+
 asm_global_ctors = r"""
     ; ModuleID = "<string>"
     target triple = "{triple}"
@@ -158,12 +289,50 @@ asm_nonalphanum_blocklabel = """; ModuleID = ""
 target triple = "unknown-unknown-unknown"
 target datalayout = ""
 
-define i32 @"foo"() 
+define i32 @"foo"()
 {
 "<>!*''#":
   ret i32 12345
 }
 """  # noqa W291 # trailing space needed for match later
+
+
+riscv_asm_ilp32 = [
+    'addi\tsp, sp, -16',
+    'sw\ta1, 8(sp)',
+    'sw\ta2, 12(sp)',
+    'fld\tft0, 8(sp)',
+    'fmv.w.x\tft1, a0',
+    'fcvt.d.s\tft1, ft1',
+    'fadd.d\tft0, ft1, ft0',
+    'fsd\tft0, 8(sp)',
+    'lw\ta0, 8(sp)',
+    'lw\ta1, 12(sp)',
+    'addi\tsp, sp, 16',
+    'ret'
+]
+
+
+riscv_asm_ilp32f = [
+    'addi\tsp, sp, -16',
+    'sw\ta0, 8(sp)',
+    'sw\ta1, 12(sp)',
+    'fld\tft0, 8(sp)',
+    'fcvt.d.s\tft1, fa0',
+    'fadd.d\tft0, ft1, ft0',
+    'fsd\tft0, 8(sp)',
+    'lw\ta0, 8(sp)',
+    'lw\ta1, 12(sp)',
+    'addi\tsp, sp, 16',
+    'ret'
+]
+
+
+riscv_asm_ilp32d = [
+    'fcvt.d.s\tft0, fa0',
+    'fadd.d\tfa0, ft0, fa1',
+    'ret'
+]
 
 
 asm_attributes = r"""
@@ -289,6 +458,79 @@ class TestDependencies(BaseTest):
         for dep in deps:
             if not dep.startswith('ld-linux-') and dep not in allowed:
                 self.fail("unexpected dependency %r in %r" % (dep, deps))
+
+
+class TestRISCVABI(BaseTest):
+    """
+    Test calling convention of floating point arguments of RISC-V
+    using different ABI.
+    """
+    triple = "riscv32-unknown-linux"
+
+    def setUp(self):
+        super().setUp()
+        llvm.initialize_all_targets()
+        llvm.initialize_all_asmprinters()
+
+    def check_riscv_target(self):
+        try:
+            llvm.Target.from_triple(self.triple)
+        except RuntimeError as e:
+            if "No available targets are compatible with triple" in str(e):
+                self.skipTest("RISCV target unsupported by linked LLVM.")
+            else:
+                raise e
+
+    def riscv_target_machine(self, **kwarg):
+        lltarget = llvm.Target.from_triple(self.triple)
+        return lltarget.create_target_machine(**kwarg)
+
+    def fpadd_ll_module(self):
+        f64 = ir.DoubleType()
+        f32 = ir.FloatType()
+        fnty = ir.FunctionType(f64, (f32, f64))
+        module = ir.Module()
+        func = ir.Function(module, fnty, name="fpadd")
+        block = func.append_basic_block()
+        builder = ir.IRBuilder(block)
+        a, b = func.args
+        arg0 = builder.fpext(a, f64)
+        result = builder.fadd(arg0, b)
+        builder.ret(result)
+
+        llmod = llvm.parse_assembly(str(module))
+        llmod.verify()
+        return llmod
+
+    def break_up_asm(self, asm):
+        asm_list = []
+        for line in asm.splitlines():
+            s_line = line.strip()
+            if not (s_line.startswith(".") or s_line.startswith("fpadd")
+                    or s_line == ""):
+                asm_list.append(s_line)
+        return asm_list
+
+    def test_rv32d_ilp32(self):
+        self.check_riscv_target()
+        llmod = self.fpadd_ll_module()
+        target = self.riscv_target_machine(features="+f,+d")
+        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
+                         riscv_asm_ilp32)
+
+    def test_rv32d_ilp32f(self):
+        self.check_riscv_target()
+        llmod = self.fpadd_ll_module()
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32f")
+        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
+                         riscv_asm_ilp32f)
+
+    def test_rv32d_ilp32d(self):
+        self.check_riscv_target()
+        llmod = self.fpadd_ll_module()
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32d")
+        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
+                         riscv_asm_ilp32d)
 
 
 class TestMisc(BaseTest):
@@ -450,6 +692,10 @@ class TestModuleRef(BaseTest):
         self.assertEqual(mod.name, "foo")
         mod.name = "bar"
         self.assertEqual(mod.name, "bar")
+
+    def test_source_file(self):
+        mod = self.module()
+        self.assertEqual(mod.source_file, "asm_sum.c")
 
     def test_data_layout(self):
         mod = self.module()
@@ -1196,6 +1442,7 @@ class PassManagerTestMixin(object):
     def pmb(self):
         pmb = llvm.create_pass_manager_builder()
         pmb.opt_level = 2
+        pmb.inlining_threshold = 300
         return pmb
 
     def test_close(self):
@@ -1239,6 +1486,49 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         else:
             raise RuntimeError("expected IR not found")
 
+    def test_run_with_remarks_successful_inline(self):
+        pm = self.pm()
+        pm.add_function_inlining_pass(70)
+        self.pmb().populate(pm)
+        mod = self.module(asm_inlineasm2)
+        (status, remarks) = pm.run_with_remarks(mod)
+        self.assertTrue(status)
+        # Inlining has happened?  The remark will tell us.
+        self.assertIn("Passed", remarks)
+        self.assertIn("inlineme", remarks)
+
+    def test_run_with_remarks_failed_inline(self):
+        pm = self.pm()
+        pm.add_function_inlining_pass(0)
+        self.pmb().populate(pm)
+        mod = self.module(asm_inlineasm3)
+        (status, remarks) = pm.run_with_remarks(mod)
+        self.assertTrue(status)
+
+        # Inlining has not happened?  The remark will tell us.
+        self.assertIn("Missed", remarks)
+        self.assertIn("inlineme", remarks)
+        self.assertIn("noinline function attribute", remarks)
+
+    def test_run_with_remarks_inline_filter_out(self):
+        pm = self.pm()
+        pm.add_function_inlining_pass(70)
+        self.pmb().populate(pm)
+        mod = self.module(asm_inlineasm2)
+        (status, remarks) = pm.run_with_remarks(mod, remarks_filter="nothing")
+        self.assertTrue(status)
+        self.assertEqual("", remarks)
+
+    def test_run_with_remarks_inline_filter_in(self):
+        pm = self.pm()
+        pm.add_function_inlining_pass(70)
+        self.pmb().populate(pm)
+        mod = self.module(asm_inlineasm2)
+        (status, remarks) = pm.run_with_remarks(mod, remarks_filter="inlin.*")
+        self.assertTrue(status)
+        self.assertIn("Passed", remarks)
+        self.assertIn("inlineme", remarks)
+
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
 
@@ -1265,6 +1555,50 @@ class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
         # Quick check that optimizations were run
         self.assertIn("%.4", orig_asm)
         self.assertNotIn("%.4", opt_asm)
+
+    def test_run_with_remarks(self):
+        mod = self.module(licm_asm)
+        fn = mod.get_function("licm")
+        pm = self.pm(mod)
+        pm.add_licm_pass()
+        self.pmb().populate(pm)
+        mod.close()
+
+        pm.initialize()
+        (ok, remarks) = pm.run_with_remarks(fn)
+        pm.finalize()
+        self.assertTrue(ok)
+        self.assertIn("Passed", remarks)
+        self.assertIn("licm", remarks)
+
+    def test_run_with_remarks_filter_out(self):
+        mod = self.module(licm_asm)
+        fn = mod.get_function("licm")
+        pm = self.pm(mod)
+        pm.add_licm_pass()
+        self.pmb().populate(pm)
+        mod.close()
+
+        pm.initialize()
+        (ok, remarks) = pm.run_with_remarks(fn, remarks_filter="nothing")
+        pm.finalize()
+        self.assertTrue(ok)
+        self.assertEqual("", remarks)
+
+    def test_run_with_remarks_filter_in(self):
+        mod = self.module(licm_asm)
+        fn = mod.get_function("licm")
+        pm = self.pm(mod)
+        pm.add_licm_pass()
+        self.pmb().populate(pm)
+        mod.close()
+
+        pm.initialize()
+        (ok, remarks) = pm.run_with_remarks(fn, remarks_filter="licm")
+        pm.finalize()
+        self.assertTrue(ok)
+        self.assertIn("Passed", remarks)
+        self.assertIn("licm", remarks)
 
 
 class TestPasses(BaseTest, PassManagerTestMixin):

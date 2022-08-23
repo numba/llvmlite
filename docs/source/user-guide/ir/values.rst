@@ -23,6 +23,175 @@ A :ref:`module` consists mostly of values.
    The base class for all IR values.
 
 
+.. class:: _ConstOpMixin
+
+   This is the base class for :class:`Constant` and :class:`GlobalValue`; do
+   not instantiate it directly.
+
+   Integer arithmetic operations:
+
+   * .. method:: add(other)
+
+      Integer add `self` and `other`.
+
+   * .. method:: sub(other)
+
+      Integer subtract `other` from `self`.
+
+   * .. method:: mul(other)
+
+      Integer multiply `self` with `other`.
+
+   * .. method:: udiv(other)
+
+      Unsigned integer divide `self` by `other`.
+
+   * .. method:: sdiv(other)a
+
+      Signed integer divide `self` by `other`.
+
+   * .. method:: urem(other)
+
+      Unsigned integer remainder of `self` divided by `other`.
+
+   * .. method:: srem(other)
+
+      Signed integer remainder of `self` divided by `other`.
+
+   * .. method:: neg()
+
+      Negate `self`.
+
+   Integer logical operations:
+
+   * .. method:: shl(other)
+
+      Left-shift `self` by `other` bits.
+
+   * .. method:: ashr(other)
+
+      Arithmetic, signed, right-shift `self` by `other` bits.
+
+   * .. method:: lshr(other)
+
+      Logical right-shift `self` by `other` bits.
+
+   * .. method:: or_(other)
+
+      Bitwise OR `self` with `other`.
+
+   * .. method:: and_(other)
+
+      Bitwise AND `self` with `other`.
+
+   * .. method:: xor(other)
+
+      Bitwise XOR `self` with `other`.
+
+   Floating point arithmetic:
+
+   * .. method:: fadd(other)
+
+      Floating-point add `self` and `other`.
+
+   * .. method:: fsub(other)
+
+      Floating-point subtract `other` from `self`.
+
+   * .. method:: fmul(other)
+
+      Floating-point multiply `self` by `other`.
+
+   * .. method:: fdiv(other)
+
+      Floating-point divide `self` by `other`.
+
+   * .. method:: frem(other)
+
+      Floating-point remainder of `self` divided by `other`.
+
+   Comparisons:
+
+   * .. method:: icmp_signed(cmpop, other)
+
+      Signed integer compare `self` with `other`. The string `cmpop` can be one
+      of ``<``, ``<=``, ``==``, ``!=``, ``>=`` or ``>``.
+
+   * .. method:: icmp_unsigned(cmpop, other)
+
+      Unsigned integer compare `self` with `other`. The string `cmpop` can be
+      one of ``<``, ``<=``, ``==``, ``!=``, ``>=`` or ``>``.
+
+   * .. method:: fcmp_ordered(cmpop, other)
+
+      Floating-point ordered compare `self` with `other`. The string `cmpop`
+      can be one of ``<``, ``<=``, ``==``, ``!=``, ``>=`` or ``>``.
+
+   * .. method:: fcmp_unordered(cmpop, other)
+
+      Floating-point unordered compare `self` with `other`. The string `cmpop`
+      can be one of ``<``, ``<=``, ``==``, ``!=``, ``>=`` or ``>``.
+
+   Integer casts:
+
+   * .. method:: trunc(typ)
+
+      Truncate `self` to integer type `typ`.
+
+   * .. method:: zext(typ)
+
+      Zero-extend `self` to integer type `typ`.
+
+   * .. method:: sext(typ)
+
+       Sign-extend `self` to integer type `typ`.
+
+   * .. method:: bitcast(typ)
+
+      Convert this pointer constant to a constant of the given pointer type
+      `typ`.
+
+   Floating-point casts:
+
+   * .. method:: fptrunc(typ)
+
+      Truncate (approximate) floating-point value `self` to floating-point
+      type `typ`.
+
+   * .. method:: fpext(typ)
+
+      Extend floating-point value `self` to floating-point type `typ`.
+
+   Integer / floating-point conversion:
+
+   * .. method:: fptoui(typ)
+
+      Convert floating-point value `self` to unsigned integer type `typ`.
+
+   * .. method:: uitofp(typ)
+
+      Convert unsigned integer value `self` to floating-point type `typ`.
+
+   * .. method:: fptosi(typ)
+
+      Convert floating-point value `self` to signed integer type `typ`.
+
+   * .. method:: sitofp(typ)
+
+      Convert signed integer value `self` to floating-point type `typ`.
+
+   Integer / pointer conversions:
+
+   * .. method:: inttoptr(typ)
+
+      Convert this integer constant `self` to a constant of the given pointer
+      type `typ`.
+
+   * .. method:: ptrtoint(typ)
+
+      Convert this pointer constant `self` to a constant of the given integer
+      type `typ`.
+
 .. class:: Constant(typ, constant)
 
    A literal value.
@@ -53,6 +222,8 @@ A :ref:`module` consists mostly of values.
      instance to initialize the array from a string of bytes.
      This is useful for character constants.
 
+   See also :class:`_ConstOpMixin`.
+
    .. classmethod:: literal_array(elements)
 
       An alternate constructor for constant arrays.
@@ -71,21 +242,11 @@ A :ref:`module` consists mostly of values.
         otherwise. Returns a constant struct containing the
         *elements* in order.
 
-   .. method:: bitcast(typ)
-
-      Convert this pointer constant to a constant of the
-      given pointer type.
-
    .. method:: gep(indices)
 
       Compute the address of the inner element given by the
       sequence of *indices*. The constant must have a pointer
       type.
-
-   .. method:: inttoptr(typ)
-
-      Convert this integer constant to a constant of the
-      given pointer type.
 
    NOTE: You cannot define constant functions. Use a
    :ref:`function declaration` instead.
@@ -212,6 +373,14 @@ Global values are values accessible using a module-wide name.
         * Other possible values include ``dllimport`` and
           ``dllexport``.
 
+   * .. attribute:: section
+
+        A Python string describing the section a global value
+        should be in after translation. The default is the empty
+        string, meaning no specific section.
+
+
+   See also :class:`_ConstOpMixin`.
 
 .. class:: GlobalVariable(module, typ, name, addrspace=0)
 
@@ -234,6 +403,11 @@ Global values are values accessible using a module-wide name.
      variable in.
 
    Global variables have the following writable attributes:
+
+   * .. method:: set_metadata(name, node)
+
+        Add metadata with the given *name*, pointing to the given
+        metadata *node*---an instance of :class:`MDValue`.
 
    * .. attribute:: global_constant
 
