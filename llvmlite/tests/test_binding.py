@@ -218,7 +218,7 @@ attributes #1 = {{ nofree nosync nounwind readnone speculatable willreturn }}
 licm_asm = r"""
 ; ModuleID = "<string>"
 target triple = "{triple}"
-    
+
 define double @licm(i32 %0) {{
   %2 = alloca i32, align 4
   %3 = alloca double, align 8
@@ -1633,14 +1633,10 @@ class TestDylib(BaseTest):
         with self.assertRaises(RuntimeError):
             llvm.load_library_permanently("zzzasdkf;jasd;l")
 
-    @unittest.skipUnless(platform.system() in ["Linux", "Darwin"],
-                         "test only works on Linux and Darwin")
+    @unittest.skipUnless(platform.system() in ["Linux"],
+                         "test only works on Linux")
     def test_libm(self):
-        system = platform.system()
-        if system == "Linux":
-            libm = find_library("m")
-        elif system == "Darwin":
-            libm = find_library("libm")
+        libm = find_library("m")
         llvm.load_library_permanently(libm)
 
 
