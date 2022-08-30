@@ -1,3 +1,15 @@
+v0.39.1 (September 1, 2022)
+---------------------------
+
+This is a maintenance release to fix build issues on MacOS.
+
+Pull-Requests:
+
+* PR `#752 <https://github.com/numba/llvmlite/pull/752>`_: Skip test if libm is not found (`Siu Kwan Lam <https://github.com/sklam>`_)
+* PR `#865 <https://github.com/numba/llvmlite/pull/865>`_: Move Azure to use macos-11 (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#874 <https://github.com/numba/llvmlite/pull/874>`_: Add zlib as a dependency for aarch64 (`esc <https://github.com/esc>`_)
+* PR `#878 <https://github.com/numba/llvmlite/pull/878>`_: Update changelog (`Andre Masella <https://github.com/apmasell>`_)
+
 v0.39.0 (July 25, 2022)
 -----------------------
 
