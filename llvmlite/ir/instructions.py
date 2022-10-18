@@ -56,6 +56,9 @@ class CallInstrAttributes(AttributeSet):
                         'noinline', 'alwaysinline'])
 
 
+TailMarkerOptions = frozenset(['tail', 'musttail', 'notail'])
+
+
 class FastMathFlags(AttributeSet):
     _known = frozenset(['fast', 'nnan', 'ninf', 'nsz', 'arcp', 'contract',
                         'afn', 'reassoc'])
@@ -67,6 +70,16 @@ class CallInstr(Instruction):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
+
+        # For backwards compatibility with previous API of accepting a "truthy"
+        # vaule for a hint to the optimizer to potentially tail optimize.
+        if isinstance(tail, str) and tail in TailMarkerOptions:
+            pass
+        elif tail:
+            tail = "tail"
+        else:
+            tail = ""
+
         self.tail = tail
         self.fastmath = FastMathFlags(fastmath)
         self.attributes = CallInstrAttributes(attrs)
@@ -137,8 +150,13 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(ty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
+
+        tail_marker = ""
+        if self.tail:
+            tail_marker = "{0} ".format(self.tail)
+
         buf.append("{tail}{op}{fastmath} {callee}({args}){attr}{meta}\n".format(
-            tail='tail ' if self.tail else '',
+            tail=tail_marker,
             op=self.opname,
             callee=callee_ref,
             fastmath=''.join([" " + attr for attr in self.fastmath]),

@@ -1373,6 +1373,33 @@ my_block:
             call void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other")
         """)  # noqa E501
 
+    def test_call_tail(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(ir.VoidType(), ())
+        fun = ir.Function(builder.function.module, fun_ty, 'my_fun')
+
+        builder.call(fun, ())
+        builder.call(fun, (), tail=False)
+        builder.call(fun, (), tail=True)
+        builder.call(fun, (), tail='tail')
+        builder.call(fun, (), tail='notail')
+        builder.call(fun, (), tail='musttail')
+        builder.call(fun, (), tail=[])  # This is a falsy value
+        builder.call(fun, (), tail='not a marker')  # This is a truthy value
+
+        self.check_block(block, """\
+        my_block:
+            call void @"my_fun"()
+            call void @"my_fun"()
+            tail call void @"my_fun"()
+            tail call void @"my_fun"()
+            notail call void @"my_fun"()
+            musttail call void @"my_fun"()
+            call void @"my_fun"()
+            tail call void @"my_fun"()
+        """)  # noqa E501
+
     def test_invalid_call_attributes(self):
         block = self.block()
         builder = ir.IRBuilder(block)
