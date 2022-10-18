@@ -72,7 +72,7 @@ class CallInstr(Instruction):
                       else cconv)
 
         # For backwards compatibility with previous API of accepting a "truthy"
-        # vaule for a hint to the optimizer to potentially tail optimize.
+        # value for a hint to the optimizer to potentially tail optimize.
         if isinstance(tail, str) and tail in TailMarkerOptions:
             pass
         elif tail:
