@@ -516,7 +516,7 @@ Memory
 Function call
 ---------------
 
-.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=False, \
+.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=None, \
    fastmath=(), attrs=(), arg_attrs=None)
 
    Call function *fn* with arguments *args*, a sequence of values.
