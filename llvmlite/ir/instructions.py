@@ -65,7 +65,7 @@ class FastMathFlags(AttributeSet):
 
 
 class CallInstr(Instruction):
-    def __init__(self, parent, func, args, name='', cconv=None, tail=False,
+    def __init__(self, parent, func, args, name='', cconv=None, tail=None,
                  fastmath=(), attrs=(), arg_attrs=None):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
