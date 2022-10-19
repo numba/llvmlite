@@ -522,8 +522,22 @@ Function call
    Call function *fn* with arguments *args*, a sequence of values.
 
    * *cconv* is the optional calling convention.
-   * *tail*, if ``"tail"`` it's a hint for the optimizer to perform
-     tail-call optimization. Use ``"musttail"`` to indicate the specified call must be tail-call optimized in order for the program to be correct. Use ``"notail"`` to indicate that the call should never be tail-call optimized. Alternatively, may provide ``False`` to indicate no specific tail-call optimization behavior, or ``True`` to request ``"tail"`` hint behavior (support for a boolean value is for backwards compatibility with the previous API).
+   * *tail* controls tail-call optimization behavior. It may be one of:
+
+     * ``None`` (the default): indicates no specific tail-call optimization
+       behavior.
+     * ``"tail"``: a hint that indicates that the call should be tail-call
+       optimized, but may be ignored.
+     * ``"musttail"``: indicates that the call must be tail-call optimized for
+       program correctness.
+     * ``"notail"``: indicate thats the call should never be tail-call
+       optimized.
+
+     For backwards compatibility with previous versions, the following values
+     are also accepted:
+
+     * ``False`` is equivalent to ``None``, indicating no specific behavior.
+     * ``True`` is equivalent to ``"tail"``, suggesting tail-call optimization.
    * *fastmath* is a string or a sequence of strings of names for
      `fast-math flags
      <http://llvm.org/docs/LangRef.html#fast-math-flags>`_.
