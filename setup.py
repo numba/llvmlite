@@ -22,31 +22,21 @@ import os
 import sys
 
 
-_version_module = None
-try:
-    from packaging import version as _version_module
-except ImportError:
-    try:
-        from setuptools._vendor.packaging import version as _version_module
-    except ImportError:
-        pass
+min_python_version = (3, 7)
+max_python_version = (3, 11)  # exclusive
 
 
-min_python_version = "3.7"
-max_python_version = "3.11"  # exclusive
+def _version_info_str(int_tuple):
+    return ".".join(map(str, int_tuple))
 
 
 def _guard_py_ver():
-    if _version_module is None:
-        return
+    currrent_python_version = sys.version_info[:3]
+    min_py = _version_info_str(min_python_version)
+    max_py = _version_info_str(max_python_version)
+    cur_py = _version_info_str(currrent_python_version)
 
-    parse = _version_module.parse
-
-    min_py = parse(min_python_version)
-    max_py = parse(max_python_version)
-    cur_py = parse('.'.join(map(str, sys.version_info[:3])))
-
-    if not min_py <= cur_py < max_py:
+    if not min_python_version <= currrent_python_version < max_python_version:
         msg = ('Cannot install on Python version {}; only versions >={},<{} '
                'are supported.')
         raise RuntimeError(msg.format(cur_py, min_py, max_py))
@@ -226,5 +216,5 @@ setup(name='llvmlite',
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,
-      python_requires=">={}".format(min_python_version),
+      python_requires=">={}".format(_version_info_str(min_python_version)),
       )
