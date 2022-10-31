@@ -610,6 +610,26 @@ class TestIR(TestBase):
 
         self.assertEqual(503, len(mod._metadatacache))
 
+    def test_debug_info_pickle(self):
+        mod = self.module()
+
+        di_file = mod.add_debug_info(
+                'DIFile',
+                {
+                    'directory': 'my_directory',
+                    'filename': 'my_path.foo',
+                })
+        self.assertEqual(hash(di_file), di_file.hash_cache)
+        found_di_file = pickle.loads(pickle.dumps(di_file))
+        self.assertIsNone(found_di_file.hash_cache)
+        self.assertEqual(di_file, found_di_file)
+
+        meta = mod.add_metadata([di_file])
+        self.assertEqual(hash(meta), meta.hash_cache)
+        found_meta = pickle.loads(pickle.dumps(meta))
+        self.assertIsNone(found_meta.hash_cache)
+        self.assertEqual(meta, found_meta)
+
     def test_inline_assembly(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
