@@ -585,29 +585,13 @@ class TestIR(TestBase):
                     ir.Constant(ir.IntType(bits=32), i),
                     ir.Constant(ir.IntType(bits=32), i + 1))
 
-        # Use this section to measure overall performance
         total_time = timeit.timeit(
             'do_test()',
             'setup_test()',
             number=10,
             globals=locals())
 
-        # print('test_debug_info_performance took', total_time, 'to finish')
-
-        # Use this section to profile the caching behavior
-        # setup_test()
-
-        # import cProfile, pstats
-        # from pstats import SortKey
-        # with cProfile.Profile() as pr:
-        #     for i in range(10):
-        #         do_test()
-
-        # stats = pstats.Stats(pr)
-        # stats = stats.strip_dirs()
-        # stats = stats.sort_stats(SortKey.CUMULATIVE, SortKey.TIME, SortKey.NAME)
-        # stats.print_stats()
-        # stats.print_callers()
+        print('test_debug_info_performance took', total_time, 'to finish')
 
         self.assertEqual(100004, len(mod._metadatacache))
 
