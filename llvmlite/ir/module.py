@@ -53,13 +53,15 @@ class Module(object):
             raise TypeError("expected a list or tuple of metadata values, "
                             "got %r" % (operands,))
         key = hash(tuple(operands))
-        if key not in self._metadatacache:
-            n = len(self.metadata)
-            fixed_operands = self._fix_metadata_operands(operands)
-            md = values.MDValue(self, fixed_operands, name=str(n))
-            self._metadatacache[key] = md
-        else:
-            md = self._metadatacache[key]
+        try:
+            return self._metadatacache[key]
+        except KeyError:
+            pass
+
+        n = len(self.metadata)
+        fixed_operands = self._fix_metadata_operands(operands)
+        md = values.MDValue(self, fixed_operands, name=str(n))
+        self._metadatacache[key] = md
         return md
 
     def add_debug_info(self, kind, operands, is_distinct=False):
@@ -74,14 +76,17 @@ class Module(object):
         """
         sorted_operands = sorted(operands.items())
         key = hash((kind, tuple(sorted_operands), is_distinct))
-        if key not in self._metadatacache:
-            n = len(self.metadata)
-            fixed_operands = self._fix_di_operands(sorted_operands)
-            di = values.DIValue(
-                self, is_distinct, kind, fixed_operands, name=str(n))
-            self._metadatacache[key] = di
-        else:
-            di = self._metadatacache[key]
+
+        try:
+            return self._metadatacache[key]
+        except KeyError:
+            pass
+
+        n = len(self.metadata)
+        fixed_operands = self._fix_di_operands(sorted_operands)
+        di = values.DIValue(
+            self, is_distinct, kind, fixed_operands, name=str(n))
+        self._metadatacache[key] = di
         return di
 
     def add_named_metadata(self, name, element=None):
