@@ -569,13 +569,14 @@ class TestIR(TestBase):
             builder = ir.IRBuilder(foo.append_basic_block(''))
 
         def do_test():
-            for i in range(500):
+            for i in range(100_000):
                 di_location = mod.add_debug_info(
                     'DILocation',
                     {
                         'scope': di_subprogram,
                         'line': i,
-                        'column': 15
+                        'column': 15,
+                        'other': [di_subprogram, di_subprogram],
                     })
 
                 builder.debug_metadata = di_location
@@ -588,10 +589,10 @@ class TestIR(TestBase):
         total_time = timeit.timeit(
             'do_test()',
             'setup_test()',
-            number=1000,
+            number=10,
             globals=locals())
 
-        # print(f'test_debug_info_performance took {total_time} to finish')
+        print(f'test_debug_info_performance took {total_time} to finish')
 
         # Use this section to profile the caching behavior
         # setup_test()
@@ -599,7 +600,7 @@ class TestIR(TestBase):
         # import cProfile, pstats
         # from pstats import SortKey
         # with cProfile.Profile() as pr:
-        #     for i in range(1000):
+        #     for i in range(10):
         #         do_test()
 
         # stats = pstats.Stats(pr)
@@ -608,7 +609,7 @@ class TestIR(TestBase):
         # stats.print_stats()
         # stats.print_callers()
 
-        self.assertEqual(503, len(mod._metadatacache))
+        self.assertEqual(100004, len(mod._metadatacache))
 
     def test_debug_info_pickle(self):
         mod = self.module()
