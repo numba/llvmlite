@@ -52,6 +52,7 @@ class Module(object):
         if not isinstance(operands, (list, tuple)):
             raise TypeError("expected a list or tuple of metadata values, "
                             "got %r" % (operands,))
+
         key = hash(tuple(operands))
         try:
             return self._metadatacache[key]

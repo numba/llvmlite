@@ -566,8 +566,7 @@ class TestIR(TestBase):
                         'scope': di_file,
                         'scopeLine': 123,
                         'unit': di_compile_unit,
-                    },
-                    is_distinct=True)
+                    })
 
                 di_location = mod.add_debug_info(
                     'DILocation',
@@ -584,28 +583,30 @@ class TestIR(TestBase):
                     ir.Constant(ir.IntType(bits=32), i + 1))
 
         # Use this section to measure overall performance
-        total_time = timeit.timeit(
-            'do_test()',
-            'setup_test()',
-            number=500,
-            globals=locals())
+        # total_time = timeit.timeit(
+        #     'do_test()',
+        #     'setup_test()',
+        #     number=500,
+        #     globals=locals())
 
-        print(f'test_debug_info_performance took {total_time} to finish')
+        # print(f'test_debug_info_performance took {total_time} to finish')
+
+        print(mod)
 
         # Use this section to profile the caching behavior
-        # setup_test()
+        setup_test()
 
-        # import cProfile, pstats
-        # from pstats import SortKey
-        # with cProfile.Profile() as pr:
-        #     for i in range(200):
-        #         do_test()
+        import cProfile, pstats
+        from pstats import SortKey
+        with cProfile.Profile() as pr:
+            for i in range(500):
+                do_test()
 
-        # stats = pstats.Stats(pr)
-        # stats = stats.strip_dirs()
-        # stats = stats.sort_stats(SortKey.CUMULATIVE, SortKey.TIME, SortKey.NAME)
-        # stats.print_stats()
-        # stats.print_callers()
+        stats = pstats.Stats(pr)
+        stats = stats.strip_dirs()
+        stats = stats.sort_stats(SortKey.CUMULATIVE, SortKey.TIME, SortKey.NAME)
+        stats.print_stats()
+        stats.print_callers()
 
         self.assertEqual(750001, len(mod._metadatacache))
 
