@@ -75,8 +75,8 @@ class Module(object):
         A DIValue instance is returned, it can then be associated to e.g.
         an instruction.
         """
-        sorted_operands = sorted(operands.items())
-        key = hash((kind, tuple(sorted_operands), is_distinct))
+        fixed_operands = self._fix_di_operands(sorted(operands.items()))
+        key = hash((kind, tuple(fixed_operands), is_distinct))
 
         try:
             return self._metadatacache[key]
@@ -84,7 +84,6 @@ class Module(object):
             pass
 
         n = len(self.metadata)
-        fixed_operands = self._fix_di_operands(sorted_operands)
         di = values.DIValue(
             self, is_distinct, kind, fixed_operands, name=str(n))
         self._metadatacache[key] = di
