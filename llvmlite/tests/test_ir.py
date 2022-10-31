@@ -592,7 +592,7 @@ class TestIR(TestBase):
             number=10,
             globals=locals())
 
-        print(f'test_debug_info_performance took {total_time} to finish')
+        # print('test_debug_info_performance took', total_time, 'to finish')
 
         # Use this section to profile the caching behavior
         # setup_test()
