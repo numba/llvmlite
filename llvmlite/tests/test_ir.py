@@ -7,6 +7,7 @@ import itertools
 import pickle
 import re
 import textwrap
+import timeit
 import unittest
 
 from . import TestCase
@@ -525,6 +526,88 @@ class TestIR(TestBase):
         # The unicode character is utf8 encoded with \XX format, where XX is hex
         name = ''.join(map(lambda x: f"\\{x:02x}", "∆".encode()))
         self.assert_ir_line(f'!0 = !DILocalVariable(name: "a{name}")', strmod)
+
+    def test_debug_info_caching(self):
+        mod = None
+        foo = None
+        builder = None
+
+        def setup_test():
+            nonlocal mod, foo, builder
+            mod = self.module()
+            foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+            builder = ir.IRBuilder(foo.append_basic_block(''))
+
+        def do_test():
+            for i in range(500):
+                di_file = mod.add_debug_info(
+                    'DIFile',
+                    {
+                        'directory': 'my_directory',
+                        'filename': 'my_path.foo',
+                    })
+
+                di_compile_unit = mod.add_debug_info(
+                    'DICompileUnit',
+                    {
+                        'emissionKind': ir.DIToken('FullDebug'),
+                        'file': di_file,
+                        'isOptimized': False,
+                        'language': ir.DIToken('DW_LANG_C99'),
+                        'producer': 'llvmlite-test',
+                    })
+
+                di_subprogram = mod.add_debug_info(
+                    'DISubprogram',
+                    {
+                        'file': di_file,
+                        'line': 123,
+                        'name': 'my function',
+                        'scope': di_file,
+                        'scopeLine': 123,
+                        'unit': di_compile_unit,
+                    },
+                    is_distinct=True)
+
+                di_location = mod.add_debug_info(
+                    'DILocation',
+                    {
+                        'scope': di_subprogram,
+                        'line': i,
+                        'column': 15
+                    })
+
+                builder.debug_metadata = di_location
+
+                builder.and_(
+                    ir.Constant(ir.IntType(bits=32), i),
+                    ir.Constant(ir.IntType(bits=32), i + 1))
+
+        # Use this section to measure overall performance
+        # total_time = timeit.timeit(
+        #     'do_test()',
+        #     'setup_test()',
+        #     number=200,
+        #     globals=locals())
+
+        # print(f'test_debug_info_performance took {total_time} to finish')
+
+        # Use this section to profile the caching behavior
+        setup_test()
+
+        import cProfile, pstats
+        from pstats import SortKey
+        with cProfile.Profile() as pr:
+            for i in range(200):
+                do_test()
+
+        stats = pstats.Stats(pr)
+        stats = stats.strip_dirs()
+        stats = stats.sort_stats(SortKey.CUMULATIVE, SortKey.TIME, SortKey.NAME)
+        stats.print_stats()
+        stats.print_callers()
+
+        self.assertEqual(300001, len(mod._metadatacache))
 
     def test_inline_assembly(self):
         mod = self.module()
