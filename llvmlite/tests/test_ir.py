@@ -599,11 +599,11 @@ class TestIR(TestBase):
         mod = self.module()
 
         di_file = mod.add_debug_info(
-                'DIFile',
-                {
-                    'directory': 'my_directory',
-                    'filename': 'my_path.foo',
-                })
+            'DIFile',
+            {
+                'directory': 'my_directory',
+                'filename': 'my_path.foo',
+            })
         self.assertEqual(hash(di_file), di_file.hash_cache)
         found_di_file = pickle.loads(pickle.dumps(di_file))
         self.assertIsNone(found_di_file.hash_cache)
