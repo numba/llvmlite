@@ -53,14 +53,14 @@ class Module(object):
             raise TypeError("expected a list or tuple of metadata values, "
                             "got %r" % (operands,))
 
-        key = hash(tuple(operands))
+        fixed_operands = self._fix_metadata_operands(operands)
+        key = hash(tuple(fixed_operands))
         try:
             return self._metadatacache[key]
         except KeyError:
             pass
 
         n = len(self.metadata)
-        fixed_operands = self._fix_metadata_operands(operands)
         md = values.MDValue(self, fixed_operands, name=str(n))
         self._metadatacache[key] = md
         return md

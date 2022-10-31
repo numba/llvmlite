@@ -588,12 +588,10 @@ class TestIR(TestBase):
         total_time = timeit.timeit(
             'do_test()',
             'setup_test()',
-            number=500,
+            number=1000,
             globals=locals())
 
-        print(f'test_debug_info_performance took {total_time} to finish')
-
-        print(mod)
+        # print(f'test_debug_info_performance took {total_time} to finish')
 
         # Use this section to profile the caching behavior
         # setup_test()
@@ -601,7 +599,7 @@ class TestIR(TestBase):
         # import cProfile, pstats
         # from pstats import SortKey
         # with cProfile.Profile() as pr:
-        #     for i in range(500):
+        #     for i in range(1000):
         #         do_test()
 
         # stats = pstats.Stats(pr)
