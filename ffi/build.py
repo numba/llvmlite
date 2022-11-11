@@ -72,10 +72,10 @@ def find_windows_generator():
         )
 
     generators.extend([
-        # use VS2017 toolkit on VS2019 to match how llvmdev is built
-        ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v141'),
-        # This is the generator configuration for VS2017
-        ('Visual Studio 15 2017' + (' Win64' if is_64bit else ''), None, None)
+        # use VS2019 to match how llvmdev is built
+        ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v142'),
+        # # This is the generator configuration for VS2017
+        # ('Visual Studio 15 2017' + (' Win64' if is_64bit else ''), None, None)
     ])
     for generator in generators:
         build_dir = tempfile.mkdtemp()
