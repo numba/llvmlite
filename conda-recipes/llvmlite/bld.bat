@@ -12,8 +12,11 @@ if "%ARCH%"=="32" (
     @rem set CMAKE_GENERATOR_ARCH=Win64
     set CMAKE_GENERATOR_ARCH=x64
 )
-set CMAKE_GENERATOR=Visual Studio 17 2022
-set CMAKE_GENERATOR_TOOLKIT=
+@rem for older VS:
+@rem set CMAKE_GENERATOR=Visual Studio 15 2017
+@rem do not set CMAKE_GENERATOR_TOOLKIT
+set CMAKE_GENERATOR=Visual Studio 16 2019
+set CMAKE_GENERATOR_TOOLKIT=v142
 
 @rem Ensure there are no build leftovers (CMake can complain)
 if exist ffi\build rmdir /S /Q ffi\build
