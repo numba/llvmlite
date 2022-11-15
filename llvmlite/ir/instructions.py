@@ -114,7 +114,7 @@ class CallInstr(Instruction):
 
     @property
     def called_function(self):
-        """Alias for llvmpy"""
+        """The callee function"""
         return self.callee
 
     def _descr(self, buf, add_metadata):

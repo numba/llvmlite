@@ -54,13 +54,6 @@ Key Benefits
 * llvmlite is quite faster than llvmpy's thanks to a much simpler architeture
   (the Numba_ test suite is twice faster than it was).
 
-llvmpy Compatibility Layer
---------------------------
-
-The ``llvmlite.llvmpy`` namespace provides a minimal llvmpy compatibility
-layer.
-
-
 Compatibility
 =============
 
