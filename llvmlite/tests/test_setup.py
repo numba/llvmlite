@@ -26,7 +26,7 @@ class TestSetup(TestCase):
         Ensure setup.py's _guard_py_ver aborts setup for an unsupported version
         """
         # NOTE: Adjust this when max_python_version in setup.py changes.
-        unsupported_version = (3, 11, 0)
+        unsupported_version = (3, 12, 0)
         unsupported_version_info = namedtuple(
             "version_info",
             (
