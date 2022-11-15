@@ -516,14 +516,28 @@ Memory
 Function call
 ---------------
 
-.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=False, \
+.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=None, \
    fastmath=(), attrs=(), arg_attrs=None)
 
    Call function *fn* with arguments *args*, a sequence of values.
 
    * *cconv* is the optional calling convention.
-   * *tail*, if ``True``, is a hint for the optimizer to perform
-     tail-call optimization.
+   * *tail* controls tail-call optimization behavior. It may be one of:
+
+     * ``None`` (the default): indicates no specific tail-call optimization
+       behavior.
+     * ``"tail"``: a hint that indicates that the call should be tail-call
+       optimized, but may be ignored.
+     * ``"musttail"``: indicates that the call must be tail-call optimized for
+       program correctness.
+     * ``"notail"``: indicate thats the call should never be tail-call
+       optimized.
+
+     For backwards compatibility with previous versions, the following values
+     are also accepted:
+
+     * ``False`` is equivalent to ``None``, indicating no specific behavior.
+     * ``True`` is equivalent to ``"tail"``, suggesting tail-call optimization.
    * *fastmath* is a string or a sequence of strings of names for
      `fast-math flags
      <http://llvm.org/docs/LangRef.html#fast-math-flags>`_.
