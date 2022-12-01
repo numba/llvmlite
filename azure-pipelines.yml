@@ -21,7 +21,7 @@ jobs:
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: Linux
-    vmImage: ubuntu-18.04
+    vmImage: ubuntu-20.04
     matrix:
       py37:
         PYTHON: '3.7'
