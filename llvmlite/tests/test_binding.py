@@ -2017,7 +2017,7 @@ class TestLLD_x86(BaseTest):
         with TemporaryDirectory() as tmpdir:
             objfile = os.path.join(tmpdir, "test1.o")
             binfile = os.path.join(tmpdir, "test1")
-            target_machine = self.target_machine()
+            target_machine = self.target_machine(jit=False)
             mod = llvm.parse_assembly(asm_lld_executable)
             mod.verify()
             with open(objfile, "wb") as o:

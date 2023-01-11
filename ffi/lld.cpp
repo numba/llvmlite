@@ -1,13 +1,20 @@
+#include "core.h"
 #include "lld/Common/Driver.h"
 #include "llvm/Support/raw_ostream.h"
 
 extern "C" {
 
-bool lld_main(int Argc, const char **Argv) {
+bool lld_main(int Argc, const char **Argv, const char **outstr) {
     //InitLLVM X(Argc, Argv);
-    llvm::raw_ostream &output = llvm::outs();
+    std::string command_output;
+    llvm::raw_string_ostream command_stream(command_output);
     std::vector<const char *> Args(Argv, Argv + Argc);
-    return !lld::elf::link(Args, false, output, output);
+
+    bool linker_output = !lld::elf::link(Args, false, command_stream, command_stream);
+
+    *outstr = LLVMPY_CreateString(command_output.c_str());
+
+    return linker_output;
 }
 
 } // end extern "C"

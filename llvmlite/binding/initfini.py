@@ -1,31 +1,7 @@
-from ctypes import c_bool, c_uint, POINTER, c_char_p, c_int
+from ctypes import byref, c_bool, c_uint, POINTER, c_char_p, c_int
 
 from llvmlite.binding import ffi
-
-ffi.lib.lld_main.restype = c_bool
-ffi.lib.lld_main.argtypes = [c_int, POINTER(c_char_p)]
-def lld_main(lld_args):
-    """
-    Calls LLD - the LLVM linker.
-
-    The function calls the `lld::elf::link()` with the `lld_args` (list of
-    strings) as arguments.
-
-    Examples
-    ~~~~~~~~
-
-    Shows help:
-
-    >>> from llvmlite.binding import lld_main
-    >>> lld_main(["ld.lld", "--help"])
-    """
-    args = (c_char_p*len(lld_args))()
-    for i, arg in enumerate(lld_args):
-        args[i] = arg.encode()
-    r = ffi.lib.lld_main(len(lld_args), args)
-    if r != False:
-        raise Exception("lld_main() failed, error code: %d" % r)
-
+from llvmlite.binding.common import _encode_string
 
 def initialize():
     """
