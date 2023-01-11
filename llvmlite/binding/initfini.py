@@ -1,8 +1,8 @@
-from ctypes import c_uint, POINTER, c_char_p, c_int
+from ctypes import c_bool, c_uint, POINTER, c_char_p, c_int
 
 from llvmlite.binding import ffi
 
-ffi.lib.lld_main.restype = c_int
+ffi.lib.lld_main.restype = c_bool
 ffi.lib.lld_main.argtypes = [c_int, POINTER(c_char_p)]
 def lld_main(lld_args):
     """
@@ -23,7 +23,7 @@ def lld_main(lld_args):
     for i, arg in enumerate(lld_args):
         args[i] = arg.encode()
     r = ffi.lib.lld_main(len(lld_args), args)
-    if r != 0:
+    if r != False:
         raise Exception("lld_main() failed, error code: %d" % r)
 
 
