@@ -2,12 +2,11 @@
 Implementation of LLVM IR instructions.
 """
 
-from __future__ import print_function, absolute_import
-
-from . import types
-from .values import (Block, Function, Value, NamedValue, Constant,
-                     MetaDataArgument, MetaDataString, AttributeSet, Undefined)
-from ._utils import _HasMetadata
+from llvmlite.ir import types
+from llvmlite.ir.values import (Block, Function, Value, NamedValue, Constant,
+                                MetaDataArgument, MetaDataString, AttributeSet,
+                                Undefined, ArgumentAttributes)
+from llvmlite.ir._utils import _HasMetadata
 
 
 class Instruction(NamedValue, _HasMetadata):
@@ -53,22 +52,44 @@ class Instruction(NamedValue, _HasMetadata):
 
 
 class CallInstrAttributes(AttributeSet):
-    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone'])
+    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone',
+                        'noinline', 'alwaysinline'])
+
+
+TailMarkerOptions = frozenset(['tail', 'musttail', 'notail'])
 
 
 class FastMathFlags(AttributeSet):
-    _known = frozenset(['fast', 'nnan', 'ninf', 'nsz', 'arcp'])
+    _known = frozenset(['fast', 'nnan', 'ninf', 'nsz', 'arcp', 'contract',
+                        'afn', 'reassoc'])
 
 
 class CallInstr(Instruction):
-    def __init__(self, parent, func, args, name='', cconv=None, tail=False,
-                 fastmath=()):
+    def __init__(self, parent, func, args, name='', cconv=None, tail=None,
+                 fastmath=(), attrs=(), arg_attrs=None):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
+
+        # For backwards compatibility with previous API of accepting a "truthy"
+        # value for a hint to the optimizer to potentially tail optimize.
+        if isinstance(tail, str) and tail in TailMarkerOptions:
+            pass
+        elif tail:
+            tail = "tail"
+        else:
+            tail = ""
+
         self.tail = tail
         self.fastmath = FastMathFlags(fastmath)
-        self.attributes = CallInstrAttributes()
+        self.attributes = CallInstrAttributes(attrs)
+        self.arg_attributes = {}
+        if arg_attrs:
+            for idx, attrs in arg_attrs.items():
+                if not (0 <= idx < len(args)):
+                    raise ValueError("Invalid argument index {}"
+                                     .format(idx))
+                self.arg_attributes[idx] = ArgumentAttributes(attrs)
 
         # Fix and validate arguments
         args = list(args)
@@ -76,7 +97,7 @@ class CallInstr(Instruction):
             arg = args[i]
             expected_type = func.function_type.args[i]
             if (isinstance(expected_type, types.MetaDataType) and
-                arg.type != expected_type):
+                    arg.type != expected_type):
                 arg = MetaDataArgument(arg)
             if arg.type != expected_type:
                 msg = ("Type of #{0} arg mismatch: {1} != {2}"
@@ -106,12 +127,17 @@ class CallInstr(Instruction):
 
     @property
     def called_function(self):
-        """Alias for llvmpy"""
+        """The callee function"""
         return self.callee
 
     def _descr(self, buf, add_metadata):
-        args = ', '.join(['{0} {1}'.format(a.type, a.get_reference())
-                          for a in self.args])
+        def descr_arg(i, a):
+            if i in self.arg_attributes:
+                attrs = ' '.join(self.arg_attributes[i]._to_list()) + ' '
+            else:
+                attrs = ''
+            return '{0} {1}{2}'.format(a.type, attrs, a.get_reference())
+        args = ', '.join([descr_arg(i, a) for i, a in enumerate(self.args)])
 
         fnty = self.callee.function_type
         # Only print function type if variable-argument
@@ -124,8 +150,13 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(ty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
+
+        tail_marker = ""
+        if self.tail:
+            tail_marker = "{0} ".format(self.tail)
+
         buf.append("{tail}{op}{fastmath} {callee}({args}){attr}{meta}\n".format(
-            tail='tail ' if self.tail else '',
+            tail=tail_marker,
             op=self.opname,
             callee=callee_ref,
             fastmath=''.join([" " + attr for attr in self.fastmath]),
@@ -140,10 +171,13 @@ class CallInstr(Instruction):
 
 
 class InvokeInstr(CallInstr):
-    def __init__(self, parent, func, args, normal_to, unwind_to, name='', cconv=None):
+    def __init__(self, parent, func, args, normal_to, unwind_to, name='',
+                 cconv=None, fastmath=(), attrs=(), arg_attrs=None):
         assert isinstance(normal_to, Block)
         assert isinstance(unwind_to, Block)
-        super(InvokeInstr, self).__init__(parent, func, args, name, cconv)
+        super(InvokeInstr, self).__init__(parent, func, args, name, cconv,
+                                          tail=False, fastmath=fastmath,
+                                          attrs=attrs, arg_attrs=arg_attrs)
         self.opname = "invoke"
         self.normal_to = normal_to
         self.unwind_to = unwind_to
@@ -154,7 +188,7 @@ class InvokeInstr(CallInstr):
             self.normal_to.get_reference(),
             self.unwind_to.get_reference(),
             metadata=self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class Terminator(Instruction):
@@ -235,7 +269,7 @@ class IndirectBranch(PredictableInstr, Terminator):
             self.address.get_reference(),
             ', '.join(destinations),
             self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class SwitchInstr(PredictableInstr, Terminator):
@@ -265,7 +299,7 @@ class SwitchInstr(PredictableInstr, Terminator):
             self.default.get_reference(),
             ' '.join(cases),
             self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class Resume(Terminator):
@@ -273,10 +307,11 @@ class Resume(Terminator):
 
 
 class SelectInstr(Instruction):
-    def __init__(self, parent, cond, lhs, rhs, name=''):
+    def __init__(self, parent, cond, lhs, rhs, name='', flags=()):
         assert lhs.type == rhs.type
         super(SelectInstr, self).__init__(parent, lhs.type, "select",
-                                          [cond, lhs, rhs], name=name)
+                                          [cond, lhs, rhs], name=name,
+                                          flags=flags)
 
     @property
     def cond(self):
@@ -291,12 +326,13 @@ class SelectInstr(Instruction):
         return self.operands[2]
 
     def descr(self, buf):
-        buf.append("select {0} {1}, {2} {3}, {4} {5} {6}\n".format(
+        buf.append("select {0} {1} {2}, {3} {4}, {5} {6} {7}\n".format(
+            ' '.join(self.flags),
             self.cond.type, self.cond.get_reference(),
             self.lhs.type, self.lhs.get_reference(),
             self.rhs.type, self.rhs.get_reference(),
             self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class CompareInstr(Instruction):
@@ -329,7 +365,7 @@ class CompareInstr(Instruction):
             lhs=self.operands[0].get_reference(),
             rhs=self.operands[1].get_reference(),
             meta=self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class ICMPInstr(CompareInstr):
@@ -369,7 +405,8 @@ class FCMPInstr(CompareInstr):
         'uno': 'unordered (either nans)',
         'true': 'no comparison, always returns true',
     }
-    VALID_FLAG = {'nnan', 'ninf', 'nsz', 'arcp', 'fast'}
+    VALID_FLAG = {'nnan', 'ninf', 'nsz', 'arcp', 'contract', 'afn', 'reassoc',
+                  'fast'}
 
 
 class CastInstr(Instruction):
@@ -383,7 +420,7 @@ class CastInstr(Instruction):
             self.operands[0].get_reference(),
             self.type,
             self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class LoadInstr(Instruction):
@@ -405,7 +442,7 @@ class LoadInstr(Instruction):
             val.get_reference(),
             align,
             self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class StoreInstr(Instruction):
@@ -426,13 +463,13 @@ class StoreInstr(Instruction):
             ptr.get_reference(),
             align,
             self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class LoadAtomicInstr(Instruction):
     def __init__(self, parent, ptr, ordering, align, name=''):
-        super(LoadAtomicInstr, self).__init__(parent, ptr.type.pointee, "load atomic",
-                                              [ptr], name=name)
+        super(LoadAtomicInstr, self).__init__(parent, ptr.type.pointee,
+                                              "load atomic", [ptr], name=name)
         self.ordering = ordering
         self.align = align
 
@@ -445,13 +482,13 @@ class LoadAtomicInstr(Instruction):
             self.ordering,
             self.align,
             self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class StoreAtomicInstr(Instruction):
     def __init__(self, parent, val, ptr, ordering, align):
-        super(StoreAtomicInstr, self).__init__(parent, types.VoidType(), "store atomic",
-                                               [val, ptr])
+        super(StoreAtomicInstr, self).__init__(parent, types.VoidType(),
+                                               "store atomic", [val, ptr])
         self.ordering = ordering
         self.align = align
 
@@ -465,7 +502,7 @@ class StoreAtomicInstr(Instruction):
             self.ordering,
             self.align,
             self._stringify_metadata(leading_comma=True),
-            ))
+        ))
 
 
 class AllocaInstr(Instruction):
@@ -524,15 +561,17 @@ class GEPInstr(Instruction):
 
 
 class PhiInstr(Instruction):
-    def __init__(self, parent, typ, name):
-        super(PhiInstr, self).__init__(parent, typ, "phi", (), name=name)
+    def __init__(self, parent, typ, name, flags=()):
+        super(PhiInstr, self).__init__(parent, typ, "phi", (), name=name,
+                                       flags=flags)
         self.incomings = []
 
     def descr(self, buf):
         incs = ', '.join('[{0}, {1}]'.format(v.get_reference(),
                                              b.get_reference())
                          for v, b in self.incomings)
-        buf.append("phi {0} {1} {2}\n".format(
+        buf.append("phi {0} {1} {2} {3}\n".format(
+                   ' '.join(self.flags),
                    self.type,
                    incs,
                    self._stringify_metadata(leading_comma=True),
@@ -546,6 +585,7 @@ class PhiInstr(Instruction):
         self.incomings = [((new if val is old else val), blk)
                           for (val, blk) in self.incomings]
 
+
 class ExtractElement(Instruction):
     def __init__(self, parent, vector, index, name=''):
         if not isinstance(vector.type, types.VectorType):
@@ -554,32 +594,35 @@ class ExtractElement(Instruction):
             raise TypeError("index needs to be of IntType.")
         typ = vector.type.element
         super(ExtractElement, self).__init__(parent, typ, "extractelement",
-                                           [vector, index], name=name)
+                                             [vector, index], name=name)
 
     def descr(self, buf):
         operands = ", ".join("{0} {1}".format(
                    op.type, op.get_reference()) for op in self.operands)
         buf.append("{opname} {operands}\n".format(
-                   opname = self.opname, operands = operands))
+                   opname=self.opname, operands=operands))
+
 
 class InsertElement(Instruction):
     def __init__(self, parent, vector, value, index, name=''):
         if not isinstance(vector.type, types.VectorType):
             raise TypeError("vector needs to be of VectorType.")
         if not value.type == vector.type.element:
-            raise TypeError("value needs to be of type % not %."
-                            % (vector.type.element, value.type))
+            raise TypeError(
+                "value needs to be of type {} not {}.".format(
+                    vector.type.element, value.type))
         if not isinstance(index.type, types.IntType):
             raise TypeError("index needs to be of IntType.")
         typ = vector.type
         super(InsertElement, self).__init__(parent, typ, "insertelement",
-                                           [vector, value, index], name=name)
+                                            [vector, value, index], name=name)
 
     def descr(self, buf):
         operands = ", ".join("{0} {1}".format(
                    op.type, op.get_reference()) for op in self.operands)
         buf.append("{opname} {operands}\n".format(
-                   opname = self.opname, operands = operands))
+                   opname=self.opname, operands=operands))
+
 
 class ShuffleVector(Instruction):
     def __init__(self, parent, vector1, vector2, mask, name=''):
@@ -591,7 +634,8 @@ class ShuffleVector(Instruction):
                                 "Undefined or of the same type as vector1.")
         if (not isinstance(mask, Constant) or
             not isinstance(mask.type, types.VectorType) or
-            mask.type.element != types.IntType(32)):
+            not (isinstance(mask.type.element, types.IntType) and
+                 mask.type.element.width == 32)):
             raise TypeError("mask needs to be a constant i32 vector.")
         typ = types.VectorType(vector1.type.element, mask.type.count)
         index_range = range(vector1.type.count
@@ -602,7 +646,7 @@ class ShuffleVector(Instruction):
                 "mask values need to be in {0}".format(index_range),
             )
         super(ShuffleVector, self).__init__(parent, typ, "shufflevector",
-                                           [vector1, vector2, mask], name=name)
+                                            [vector1, vector2, mask], name=name)
 
     def descr(self, buf):
         buf.append("shufflevector {0} {1}\n".format(
@@ -610,6 +654,7 @@ class ShuffleVector(Instruction):
                              for op in self.operands),
                    self._stringify_metadata(leading_comma=True),
                    ))
+
 
 class ExtractValue(Instruction):
     def __init__(self, parent, agg, indices, name=''):
@@ -709,14 +754,16 @@ class AtomicRMW(Instruction):
 
     def descr(self, buf):
         ptr, val = self.operands
-        fmt = "atomicrmw {op} {ptrty} {ptr}, {valty} {val} {ordering} {metadata}\n"
+        fmt = ("atomicrmw {op} {ptrty} {ptr}, {valty} {val} {ordering} "
+               "{metadata}\n")
         buf.append(fmt.format(op=self.operation,
                               ptrty=ptr.type,
                               ptr=ptr.get_reference(),
                               valty=val.type,
                               val=val.get_reference(),
                               ordering=self.ordering,
-                              metadata=self._stringify_metadata(leading_comma=True),
+                              metadata=self._stringify_metadata(
+                                  leading_comma=True),
                               ))
 
 
@@ -724,6 +771,7 @@ class CmpXchg(Instruction):
     """This instruction has changed since llvm3.5.  It is not compatible with
     older llvm versions.
     """
+
     def __init__(self, parent, ptr, cmp, val, ordering, failordering, name):
         outtype = types.LiteralStructType([val.type, types.IntType(1)])
         super(CmpXchg, self).__init__(parent, outtype, "cmpxchg",
@@ -742,7 +790,8 @@ class CmpXchg(Instruction):
                               val=val.get_reference(),
                               ordering=self.ordering,
                               failordering=self.failordering,
-                              metadata=self._stringify_metadata(leading_comma=True),
+                              metadata=self._stringify_metadata(
+                                  leading_comma=True),
                               ))
 
 
@@ -756,8 +805,10 @@ class _LandingPadClause(object):
             type=self.value.type,
             value=self.value.get_reference())
 
+
 class CatchClause(_LandingPadClause):
     kind = 'catch'
+
 
 class FilterClause(_LandingPadClause):
     kind = 'filter'
@@ -767,9 +818,11 @@ class FilterClause(_LandingPadClause):
         assert isinstance(value.type, types.ArrayType)
         super(FilterClause, self).__init__(value)
 
+
 class LandingPadInstr(Instruction):
     def __init__(self, parent, typ, name='', cleanup=False):
-        super(LandingPadInstr, self).__init__(parent, typ, "landingpad", [], name=name)
+        super(LandingPadInstr, self).__init__(parent, typ, "landingpad", [],
+                                              name=name)
         self.cleanup = cleanup
         self.clauses = []
 
@@ -785,6 +838,7 @@ class LandingPadInstr(Instruction):
                                                for clause in self.clauses]),
                               ))
 
+
 class Fence(Instruction):
     """
     The `fence` instruction.
@@ -797,10 +851,12 @@ class Fence(Instruction):
     VALID_FENCE_ORDERINGS = {"acquire", "release", "acq_rel", "seq_cst"}
 
     def __init__(self, parent, ordering, targetscope=None, name=''):
-        super(Fence, self).__init__(parent, types.VoidType(), "fence", (), name=name)
+        super(Fence, self).__init__(parent, types.VoidType(), "fence", (),
+                                    name=name)
         if ordering not in self.VALID_FENCE_ORDERINGS:
-            raise ValueError("Invalid fence ordering \"{0}\"! Should be one of {1}."
-                             .format(ordering, ", ".join(self.VALID_FENCE_ORDERINGS)))
+            msg = "Invalid fence ordering \"{0}\"! Should be one of {1}."
+            raise ValueError(msg .format(ordering,
+                                         ", ".join(self.VALID_FENCE_ORDERINGS)))
         self.ordering = ordering
         self.targetscope = targetscope
 
@@ -814,4 +870,3 @@ class Fence(Instruction):
         buf.append(fmt.format(syncscope=syncscope,
                               ordering=self.ordering,
                               ))
-

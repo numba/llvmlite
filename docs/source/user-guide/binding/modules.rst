@@ -116,7 +116,7 @@ The ModuleRef class
         module. Each global variable is a :class:`ValueRef`
         instance.
 
-    * .. attribute:: struct_types
+   * .. attribute:: struct_types
 
         An iterator over the struct types defined in this module.
         Each type is a :class:`TypeRef` instance.
@@ -126,6 +126,11 @@ The ModuleRef class
         The module's identifier, as a string. This attribute can
         be set.
 
+   * .. attribute:: source_file
+
+        The module's reported source file, as a string. This
+        attribute can not be set.
+	
    * .. attribute:: triple
 
         The platform "triple" string for this module. This

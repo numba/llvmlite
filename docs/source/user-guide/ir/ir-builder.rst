@@ -205,6 +205,16 @@ Integer
 
      Arithmetic, signed, right-shift *lhs* by *rhs* bits.
 
+* .. method:: IRBuilder.cttz(value, flag)
+
+     Counts trailing zero bits in *value*. Boolean *flag* indicates whether the
+     result is defined for ``0``.
+
+* .. method:: IRBuilder.ctlz(value, flag)
+
+     Counts leading zero bits in *value*. Boolean *flag* indicates whether the
+     result is defined for ``0``.
+
 * .. method:: IRBuilder.add(lhs, rhs, name='', flags=())
 
      Integer add *lhs* and *rhs*.
@@ -290,6 +300,10 @@ Floating-point
 * .. method:: IRBuilder.frem(lhs, rhs, name='', flags=())
 
      Floating-point remainder of *lhs* divided by *rhs*.
+
+* .. method:: IRBuilder.fneg(arg, name='', flags=())
+
+     Floating-point negation of *arg*.
 
 
 Conversions
@@ -502,16 +516,43 @@ Memory
 Function call
 ---------------
 
-.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=False, fastmath=())
+.. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=None, \
+   fastmath=(), attrs=(), arg_attrs=None)
 
    Call function *fn* with arguments *args*, a sequence of values.
 
    * *cconv* is the optional calling convention.
-   * *tail*, if ``True``, is a hint for the optimizer to perform
-     tail-call optimization.
+   * *tail* controls tail-call optimization behavior. It may be one of:
+
+     * ``None`` (the default): indicates no specific tail-call optimization
+       behavior.
+     * ``"tail"``: a hint that indicates that the call should be tail-call
+       optimized, but may be ignored.
+     * ``"musttail"``: indicates that the call must be tail-call optimized for
+       program correctness.
+     * ``"notail"``: indicate thats the call should never be tail-call
+       optimized.
+
+     For backwards compatibility with previous versions, the following values
+     are also accepted:
+
+     * ``False`` is equivalent to ``None``, indicating no specific behavior.
+     * ``True`` is equivalent to ``"tail"``, suggesting tail-call optimization.
    * *fastmath* is a string or a sequence of strings of names for
      `fast-math flags
      <http://llvm.org/docs/LangRef.html#fast-math-flags>`_.
+   * *attrs* is a string or sequence of strings of function attributes to
+     attach to the call site.
+   * *arg_attrs* is a dictionary matching argument indices (as regular
+     integers, starting at zero) to strings or sequences of strings giving
+     the attributes to attach to the respective argument at this call site.
+     If an index is not present in the dictionary, or *arg_attrs* is missing
+     entirely, no attributes are emitted for the given argument.
+
+     If some attributes, such as ``sret``, are specified at the function
+     declaration, they must also be specified at each call site for
+     correctness. (As of LLVM 11, this does not seem to be explicitly
+     specified in the LLVM language reference.)
 
 
 Branches
@@ -546,7 +587,7 @@ The following methods are all :ref:`terminators <terminator>`:
      To add non-default targets, use the
      :meth:`~SwitchInstr.add_case` method on the return value.
 
-* .. method:: IRBuilder.indirectbr(address)
+* .. method:: IRBuilder.branch_indirect(address)
 
      Jump to the basic block with the address *address*, a value
      of type `IntType(8).as_pointer()`.
@@ -562,17 +603,17 @@ The following methods are all :ref:`terminators <terminator>`:
 Exception handling
 ------------------
 
-* .. method:: IRBuilder.invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None, tail=False)
+* .. method:: IRBuilder.invoke(fn, args, normal_to, unwind_to, name='', \
+     cconv=None, fastmath=(), attrs=(), arg_attrs=None)
 
      Call function *fn* with arguments *args*, a sequence of values.
-
-     * *cconv* is the optional calling convention.
-     * *tail*, if ``True``, is a hint for the optimizer to perform
-       tail-call optimization.
 
      If the function *fn* returns normally, control is transferred
      to *normal_to*. Otherwise, it is transferred to *unwind_to*,
      whose first non-phi instruction must be :class:`LandingPad`.
+
+     The remaining arguments give additional attributes to specify
+     at the call site; see :meth:`call` for a description.
 
 * .. method:: IRBuilder.landingpad(typ, personality, name='', cleanup=False)
 
@@ -647,7 +688,7 @@ Inline assembler
 
         fty = FunctionType(IntType(64), [IntType(64),IntType(64)])
         add = builder.asm(fty, "mov $2, $0\nadd $1, $0", "=r,r,r",
-                          (arg_0, arg_1), name="asm_add")
+                          (arg_0, arg_1), True, name="asm_add")
 
 
 * .. method:: IRBuilder.load_reg(reg_type, reg_name, name='')

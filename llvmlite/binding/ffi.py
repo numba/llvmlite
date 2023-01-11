@@ -1,10 +1,9 @@
 import ctypes
-import os
 import threading
+import importlib.resources
 
-from .common import _decode_string, _is_shutting_down
-from ..utils import get_library_name
-from ..six import PY2
+from llvmlite.binding.common import _decode_string, _is_shutting_down
+from llvmlite.utils import get_library_name
 
 
 def _make_opaque_ref(name):
@@ -24,12 +23,58 @@ LLVMTargetLibraryInfoRef = _make_opaque_ref("LLVMTargetLibraryInfo")
 LLVMTargetRef = _make_opaque_ref("LLVMTarget")
 LLVMTargetMachineRef = _make_opaque_ref("LLVMTargetMachine")
 LLVMMemoryBufferRef = _make_opaque_ref("LLVMMemoryBuffer")
+LLVMAttributeListIterator = _make_opaque_ref("LLVMAttributeListIterator")
+LLVMAttributeSetIterator = _make_opaque_ref("LLVMAttributeSetIterator")
 LLVMGlobalsIterator = _make_opaque_ref("LLVMGlobalsIterator")
 LLVMFunctionsIterator = _make_opaque_ref("LLVMFunctionsIterator")
+LLVMBlocksIterator = _make_opaque_ref("LLVMBlocksIterator")
+LLVMArgumentsIterator = _make_opaque_ref("LLVMArgumentsIterator")
+LLVMInstructionsIterator = _make_opaque_ref("LLVMInstructionsIterator")
+LLVMOperandsIterator = _make_opaque_ref("LLVMOperandsIterator")
 LLVMTypesIterator = _make_opaque_ref("LLVMTypesIterator")
 LLVMObjectCacheRef = _make_opaque_ref("LLVMObjectCache")
 LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
+
+
+class _LLVMLock:
+    """A Lock to guarantee thread-safety for the LLVM C-API.
+
+    This class implements __enter__ and __exit__ for acquiring and releasing
+    the lock as a context manager.
+
+    Also, callbacks can be attached so that every time the lock is acquired
+    and released the corresponding callbacks will be invoked.
+    """
+    def __init__(self):
+        # The reentrant lock is needed for callbacks that re-enter
+        # the Python interpreter.
+        self._lock = threading.RLock()
+        self._cblist = []
+
+    def register(self, acq_fn, rel_fn):
+        """Register callbacks that are invoked immediately after the lock is
+        acquired (``acq_fn()``) and immediately before the lock is released
+        (``rel_fn()``).
+        """
+        self._cblist.append((acq_fn, rel_fn))
+
+    def unregister(self, acq_fn, rel_fn):
+        """Remove the registered callbacks.
+        """
+        self._cblist.remove((acq_fn, rel_fn))
+
+    def __enter__(self):
+        self._lock.acquire()
+        # Invoke all callbacks
+        for acq_fn, rel_fn in self._cblist:
+            acq_fn()
+
+    def __exit__(self, *exc_details):
+        # Invoke all callbacks
+        for acq_fn, rel_fn in self._cblist:
+            rel_fn()
+        self._lock.release()
 
 
 class _lib_wrapper(object):
@@ -43,9 +88,7 @@ class _lib_wrapper(object):
     def __init__(self, lib):
         self._lib = lib
         self._fntab = {}
-        # The reentrant lock is needed for callbacks that re-enter
-        # the Python interpreter.
-        self._lock = threading.RLock()
+        self._lock = _LLVMLock()
 
     def __getattr__(self, name):
         try:
@@ -108,27 +151,37 @@ class _lib_fn_wrapper(object):
             return self._cfn(*args, **kwargs)
 
 
-_lib_dir = os.path.dirname(__file__)
-
-if os.name == 'nt':
-    # Append DLL directory to PATH, to allow loading of bundled CRT libraries
-    # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).
-    os.environ['PATH'] += ';' + _lib_dir
-
 _lib_name = get_library_name()
+
+
+pkgname = ".".join(__name__.split(".")[0:-1])
 try:
-    lib = ctypes.CDLL(os.path.join(_lib_dir, _lib_name))
+    _lib_handle = importlib.resources.path(pkgname, _lib_name)
+    lib = ctypes.CDLL(str(_lib_handle.__enter__()))
+    # on windows file handles to the dll file remain open after
+    # loading, therefore we can not exit the context manager
+    # which might delete the file
 except OSError as e:
-    # Allow finding the llvmlite DLL in the current directory, for ease
-    # of bundling with frozen applications.
-    try:
-        lib = ctypes.CDLL(_lib_name)
-    except OSError:
-        if PY2:
-            raise e
-        raise
+    msg = f"""Could not find/load shared object file: {_lib_name}
+ Error was: {e}"""
+    raise OSError(msg)
+
 
 lib = _lib_wrapper(lib)
+
+
+def register_lock_callback(acq_fn, rel_fn):
+    """Register callback functions for lock acquire and release.
+    *acq_fn* and *rel_fn* are callables that take no arguments.
+    """
+    lib._lock.register(acq_fn, rel_fn)
+
+
+def unregister_lock_callback(acq_fn, rel_fn):
+    """Remove the registered callback functions for lock acquire and release.
+    The arguments are the same as used in `register_lock_callback()`.
+    """
+    lib._lock.unregister(acq_fn, rel_fn)
 
 
 class _DeadPointer(object):
@@ -143,8 +196,20 @@ class OutputString(object):
     """
     _as_parameter_ = _DeadPointer()
 
-    def __init__(self, owned=True):
-        self._ptr = ctypes.c_char_p(None)
+    @classmethod
+    def from_return(cls, ptr):
+        """Constructing from a pointer returned from the C-API.
+        The pointer must be allocated with LLVMPY_CreateString.
+
+        Note
+        ----
+        Because ctypes auto-converts *restype* of *c_char_p* into a python
+        string, we must use *c_void_p* to obtain the raw pointer.
+        """
+        return cls(init=ctypes.cast(ptr, ctypes.c_char_p))
+
+    def __init__(self, owned=True, init=None):
+        self._ptr = init if init is not None else ctypes.c_char_p(None)
         self._as_parameter_ = ctypes.byref(self._ptr)
         self._owned = owned
 
@@ -179,6 +244,26 @@ class OutputString(object):
         return bool(self._ptr)
 
     __nonzero__ = __bool__
+
+    @property
+    def bytes(self):
+        """Get the raw bytes of content of the char pointer.
+        """
+        return self._ptr.value
+
+
+def ret_string(ptr):
+    """To wrap string return-value from C-API.
+    """
+    if ptr is not None:
+        return str(OutputString.from_return(ptr))
+
+
+def ret_bytes(ptr):
+    """To wrap bytes return-value from C-API.
+    """
+    if ptr is not None:
+        return OutputString.from_return(ptr).bytes
 
 
 class ObjectRef(object):
@@ -252,7 +337,7 @@ class ObjectRef(object):
         if not hasattr(other, "_ptr"):
             return False
         return ctypes.addressof(self._ptr[0]) == \
-                ctypes.addressof(other._ptr[0])
+            ctypes.addressof(other._ptr[0])
 
     __nonzero__ = __bool__
 

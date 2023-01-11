@@ -5,10 +5,8 @@ Execution engine
 .. currentmodule:: llvmlite.binding
 
 
-The execution engine is where actual code generation and
-execution happen. The currently supported LLVM
-version---LLVM 3.8---exposes a single execution engine, named
-MCJIT.
+The execution engine is where actual code generation and execution happen. At
+present a single execution engine, ``MCJIT``, is exposed.
 
 
 Functions

@@ -1,6 +1,5 @@
-from __future__ import print_function, absolute_import
-from . import _utils
-from . import types
+from llvmlite.ir import _utils
+from llvmlite.ir import types
 
 
 class Context(object):

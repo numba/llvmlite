@@ -1,8 +1,7 @@
-from __future__ import absolute_import, print_function
 from ctypes import c_void_p, c_char_p, c_bool, POINTER
 
-from . import ffi
-from .common import _encode_string
+from llvmlite.binding import ffi
+from llvmlite.binding.common import _encode_string
 
 
 def address_of_symbol(name):
@@ -20,6 +19,7 @@ def add_symbol(name, address):
     """
     ffi.lib.LLVMPY_AddSymbol(_encode_string(name), c_void_p(address))
 
+
 def load_library_permanently(filename):
     """
     Load an external library
@@ -31,6 +31,7 @@ def load_library_permanently(filename):
 
 # ============================================================================
 # FFI
+
 
 ffi.lib.LLVMPY_AddSymbol.argtypes = [
     c_char_p,

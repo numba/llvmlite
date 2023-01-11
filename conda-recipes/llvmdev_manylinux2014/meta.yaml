@@ -1,0 +1,68 @@
+{% set shortversion = "11.1" %}
+{% set version = "11.1.0" %}
+{% set sha256_llvm = "ce8508e318a01a63d4e8b3090ab2ded3c598a50258cc49e2625b9120d4c03ea5" %}
+{% set sha256_lld = "017a788cbe1ecc4a949abf10755870519086d058a2e99f438829aef24f0c66ce" %}
+{% set build_number = "3" %}
+
+package:
+  name: llvmdev
+  version: {{ version }}
+
+source:
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz
+    fn: llvm-{{ version }}.src.tar.xz
+    sha256: {{ sha256_llvm }}
+    patches:
+    - ../partial-testing.patch
+    # Intel SVML optimizations (two patches)
+    - ../intel-D47188-svml-VF.patch
+    # Second patch from https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
+    - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
+    # Reverts a patch limiting non-GlobalValue name length
+    - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
+    # Fixes for aarch64 on LLVM 11 from https://reviews.llvm.org/D104123
+    - ../llvm_11_consecutive_registers.patch
+
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
+    fn: lld-{{ version }}.src.tar.xz
+    sha256: {{ sha256_lld }}
+    folder: tools/lld
+
+build:
+  number: {{ build_number }}
+  string: "manylinux2014h{{ PKG_HASH }}"
+  script_env:
+    - CFLAGS
+    - CXXFLAGS
+    - PY_VCRUNTIME_REDIST
+  ignore_run_exports:
+    # Is static-linked
+    - xar
+
+requirements:
+  build:
+    - cmake
+    # Needed to unpack the source tarball
+    - m2w64-xz         # [py27 and win]
+test:
+  commands:
+    - $PREFIX/bin/llvm-config --libs                         # [not win]
+    - $PREFIX/bin/llc -version                               # [not win]
+
+    - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1        # [win]
+    - if not exist %LIBRARY_LIB%\\LLVMSupport.lib exit 1     # [win]
+
+    - test -f $PREFIX/include/llvm/Pass.h                    # [unix]
+    - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
+
+    - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
+
+    # LLD tests
+    - ld.lld --version                                       # [unix]
+
+about:
+  home: http://llvm.org/
+  dev_url: https://github.com/llvm-mirror/llvm
+  license: NCSA
+  license_file: LICENSE.TXT
+  summary: Development headers and libraries for LLVM

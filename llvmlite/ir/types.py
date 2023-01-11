@@ -2,11 +2,9 @@
 Classes that are LLVM types
 """
 
-from __future__ import print_function, absolute_import
-
 import struct
 
-from ._utils import _StrCaching
+from llvmlite.ir._utils import _StrCaching
 
 
 def _wrapname(x):
@@ -36,8 +34,8 @@ class Type(_StrCaching):
         """
         Convert this type object to an LLVM type.
         """
-        from . import Module, GlobalVariable
-        from ..binding import parse_assembly
+        from llvmlite.ir import Module, GlobalVariable
+        from llvmlite.binding import parse_assembly
 
         if context is None:
             m = Module()
@@ -80,7 +78,7 @@ class Type(_StrCaching):
         """
         Create a LLVM constant of this type with the given Python value.
         """
-        from . import Constant
+        from llvmlite.ir import Constant
         return Constant(self, value)
 
 
@@ -245,6 +243,11 @@ class IntType(Type):
         else:
             return str(val)
 
+    def wrap_constant_value(self, val):
+        if val is None:
+            return 0
+        return val
+
     @property
     def intrinsic_name(self):
         return str(self)
@@ -255,6 +258,17 @@ def _as_float(value):
     Truncate to single-precision float.
     """
     return struct.unpack('f', struct.pack('f', value))[0]
+
+
+def _as_half(value):
+    """
+    Truncate to half-precision float.
+    """
+    try:
+        return struct.unpack('e', struct.pack('e', value))[0]
+    except struct.error:
+        # 'e' only added in Python 3.6+
+        return _as_float(value)
 
 
 def _format_float_as_hex(value, packfmt, unpackfmt, numdigits):
@@ -288,6 +302,20 @@ class _BaseFloatType(Type):
         cls._instance_cache = super(_BaseFloatType, cls).__new__(cls)
 
 
+class HalfType(_BaseFloatType):
+    """
+    The type for single-precision floats.
+    """
+    null = '0.0'
+    intrinsic_name = 'f16'
+
+    def __str__(self):
+        return 'half'
+
+    def format_constant(self, value):
+        return _format_double(_as_half(value))
+
+
 class FloatType(_BaseFloatType):
     """
     The type for single-precision floats.
@@ -316,7 +344,7 @@ class DoubleType(_BaseFloatType):
         return _format_double(value)
 
 
-for _cls in (FloatType, DoubleType):
+for _cls in (HalfType, FloatType, DoubleType):
     _cls._create_instance()
 
 
@@ -333,6 +361,7 @@ class _Repeat(object):
             return self.value
         else:
             raise IndexError(item)
+
 
 class VectorType(Type):
     """
@@ -374,8 +403,8 @@ class VectorType(Type):
         if not isinstance(values, (list, tuple)):
             if isinstance(values, Constant):
                 if values.type != self.element:
-                    raise TypeError("expected % for %"
-                                    % (self.element, values.type))
+                    raise TypeError("expected {} for {}".format(
+                        self.element, values.type))
                 return (values, ) * self.count
             return (Constant(self.element, values), ) * self.count
         if len(values) != len(self):
@@ -383,7 +412,6 @@ class VectorType(Type):
                              % (self, len(values)))
         return [Constant(ty, val) if not isinstance(val, Value) else val
                 for ty, val in zip(self.elements, values)]
-
 
 
 class Aggregate(Type):

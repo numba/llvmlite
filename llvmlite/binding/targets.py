@@ -1,11 +1,9 @@
-from __future__ import print_function, absolute_import
-
 import os
 from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
                     c_void_p, string_at)
 
-from . import ffi
-from .common import _decode_string, _encode_string
+from llvmlite.binding import ffi
+from llvmlite.binding.common import _decode_string, _encode_string
 
 
 def get_process_triple():
@@ -25,6 +23,7 @@ class FeatureMap(dict):
     Maps feature name to a boolean indicating the availability of the feature.
     Extends ``dict`` to add `.flatten()` method.
     """
+
     def flatten(self, sort=True):
         """
         Args
@@ -59,7 +58,7 @@ def get_host_cpu_features():
     with ffi.OutputString() as out:
         outdict = FeatureMap()
         if not ffi.lib.LLVMPY_GetHostCPUFeatures(out):
-            raise RuntimeError("failed to get host cpu features.")
+            return outdict
         flag_map = {'+': True, '-': False}
         content = str(out)
         if content:  # protect against empty string
@@ -77,6 +76,7 @@ def get_default_triple():
         ffi.lib.LLVMPY_GetDefaultTargetTriple(out)
         return str(out)
 
+
 def get_host_cpu_name():
     """
     Get the name of the host's CPU, suitable for using with
@@ -86,11 +86,13 @@ def get_host_cpu_name():
         ffi.lib.LLVMPY_GetHostCPUName(out)
         return str(out)
 
+
 _object_formats = {
     1: "COFF",
     2: "ELF",
     3: "MachO",
-    }
+}
+
 
 def get_object_format(triple=None):
     """
@@ -141,8 +143,8 @@ class TargetData(ffi.ObjectRef):
         offset = ffi.lib.LLVMPY_OffsetOfElement(self, ty, position)
         if offset == -1:
             raise ValueError("Could not determined offset of {}th "
-                    "element of the type '{}'. Is it a struct type?".format(
-                    position, str(ty)))
+                             "element of the type '{}'. Is it a struct"
+                             "type?".format(position, str(ty)))
         return offset
 
     def get_pointee_abi_size(self, ty):
@@ -216,13 +218,21 @@ class Target(ffi.ObjectRef):
 
     def create_target_machine(self, cpu='', features='',
                               opt=2, reloc='default', codemodel='jitdefault',
-                              jitdebug=False, printmc=False):
+                              printmc=False, jit=False, abiname=''):
         """
         Create a new TargetMachine for this target and the given options.
 
         Specifying codemodel='default' will result in the use of the "small"
         code model. Specifying codemodel='jitdefault' will result in the code
         model being picked based on platform bitness (32="small", 64="large").
+
+        The `printmc` option corresponds to llvm's `-print-machineinstrs`.
+
+        The `jit` option should be set when the target-machine is to be used
+        in a JIT engine.
+
+        The `abiname` option specifies the ABI. RISC-V targets with hard-float
+        needs to pass the ABI name to LLVM.
         """
         assert 0 <= opt <= 3
         assert reloc in RELOC
@@ -240,9 +250,10 @@ class Target(ffi.ObjectRef):
                                                 opt,
                                                 _encode_string(reloc),
                                                 _encode_string(codemodel),
-                                                int(jitdebug),
                                                 int(printmc),
-        )
+                                                int(jit),
+                                                _encode_string(abiname),
+                                                )
         if tm:
             return TargetMachine(tm)
         else:
@@ -313,6 +324,7 @@ class TargetMachine(ffi.ObjectRef):
         with ffi.OutputString() as out:
             ffi.lib.LLVMPY_GetTargetMachineTriple(self, out)
             return str(out)
+
 
 def has_svml():
     """
@@ -391,6 +403,12 @@ ffi.lib.LLVMPY_CreateTargetMachine.argtypes = [
     c_char_p,
     # CodeModel
     c_char_p,
+    # PrintMC
+    c_int,
+    # JIT
+    c_int,
+    # ABIName
+    c_char_p,
 ]
 ffi.lib.LLVMPY_CreateTargetMachine.restype = ffi.LLVMTargetMachineRef
 
@@ -399,8 +417,8 @@ ffi.lib.LLVMPY_DisposeTargetMachine.argtypes = [ffi.LLVMTargetMachineRef]
 ffi.lib.LLVMPY_GetTargetMachineTriple.argtypes = [ffi.LLVMTargetMachineRef,
                                                   POINTER(c_char_p)]
 
-ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity.argtypes = [ffi.LLVMTargetMachineRef,
-                                                        c_int]
+ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity.argtypes = [
+    ffi.LLVMTargetMachineRef, c_int]
 
 ffi.lib.LLVMPY_AddAnalysisPasses.argtypes = [
     ffi.LLVMTargetMachineRef,

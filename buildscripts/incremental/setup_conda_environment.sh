@@ -27,28 +27,12 @@ source activate $CONDA_ENV
 set -v
 
 # Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c numba llvmdev="7.0*"
-if [ "$PYTHON" == "2.7" ]; then
-    pip install backports.tempfile
-fi
+$CONDA_INSTALL -c numba llvmdev="11.*"
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
 if [[ $(uname) == Linux ]]; then
 $CONDA_INSTALL gcc_linux-64 gxx_linux-64
-fi
-
-# Install enum34 for Python < 3.4 and PyPy, and install dependencies for
-# building the docs. Sphinx 1.5.4 has a bug.
-if [ "$PYTHON" == "pypy" ]; then
-  python -m ensurepip
-  $PIP_INSTALL enum34
-  $PIP_INSTALL sphinx==1.5.1 sphinx_rtd_theme pygments
-else
-  $CONDA_INSTALL sphinx=1.5.1 sphinx_rtd_theme pygments
-  if [ "x$PYTHON" != "x" -a "$PYTHON" \< "3.4" -a "$WHEEL" != "yes" ]; then
-    $CONDA_INSTALL enum34
-  fi
 fi
 
 # Install dependencies for code coverage (codecov.io)

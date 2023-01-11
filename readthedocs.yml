@@ -1,0 +1,5 @@
+# Configuration file for readthedocs
+# See https://read-the-docs.readthedocs.org/en/latest/yaml-config.html
+
+conda:
+    file: docs/environment.yml

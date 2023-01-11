@@ -1,9 +1,7 @@
-from __future__ import print_function, absolute_import
-
 import contextlib
 import functools
 
-from . import instructions, types, values
+from llvmlite.ir import instructions, types, values
 
 _CMP_MAP = {
     '>': 'gt',
@@ -13,6 +11,19 @@ _CMP_MAP = {
     '>=': 'ge',
     '<=': 'le',
 }
+
+
+def _unop(opname, cls=instructions.Instruction):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, arg, name='', flags=()):
+            instr = cls(self.block, arg.type, opname, [arg], name, flags)
+            self._insert(instr)
+            return instr
+
+        return wrapped
+
+    return wrap
 
 
 def _binop(opname, cls=instructions.Instruction):
@@ -69,12 +80,29 @@ def _uniop(opname, cls=instructions.Instruction):
     return wrap
 
 
-def _uniop_intrinsic(opname):
+def _uniop_intrinsic_int(opname):
     def wrap(fn):
         @functools.wraps(fn)
         def wrapped(self, operand, name=''):
             if not isinstance(operand.type, types.IntType):
-                raise TypeError("expected an integer type, got %s" % operand.type)
+                raise TypeError(
+                    "expected an integer type, got %s" %
+                    operand.type)
+            fn = self.module.declare_intrinsic(opname, [operand.type])
+            return self.call(fn, [operand], name)
+
+        return wrapped
+
+    return wrap
+
+
+def _uniop_intrinsic_float(opname):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, operand, name=''):
+            if not isinstance(
+                    operand.type, (types.FloatType, types.DoubleType)):
+                raise TypeError("expected a float type, got %s" % operand.type)
             fn = self.module.declare_intrinsic(opname, [operand.type])
             return self.call(fn, [operand], name)
 
@@ -88,10 +116,14 @@ def _uniop_intrinsic_with_flag(opname):
         @functools.wraps(fn)
         def wrapped(self, operand, flag, name=''):
             if not isinstance(operand.type, types.IntType):
-                raise TypeError("expected an integer type, got %s" % operand.type)
-            if flag.type != types.IntType(1):
+                raise TypeError(
+                    "expected an integer type, got %s" %
+                    operand.type)
+            if not(isinstance(flag.type, types.IntType) and
+                   flag.type.width == 1):
                 raise TypeError("expected an i1 type, got %s" % flag.type)
-            fn = self.module.declare_intrinsic(opname, [operand.type, flag.type])
+            fn = self.module.declare_intrinsic(
+                opname, [operand.type, flag.type])
             return self.call(fn, [operand, flag], name)
 
         return wrapped
@@ -102,15 +134,19 @@ def _uniop_intrinsic_with_flag(opname):
 def _triop_intrinsic(opname):
     def wrap(fn):
         @functools.wraps(fn)
-        def wrapped(self, a, b, c,  name=''):
+        def wrapped(self, a, b, c, name=''):
             if a.type != b.type or b.type != c.type:
                 raise TypeError(
                     "expected types to be the same, got %s, %s, %s" % (
                         a.type,
                         b.type,
                         c.type))
-            elif not isinstance(a.type, (types.FloatType, types.DoubleType)):
-                raise TypeError("expected an floating point type, got %s" % a.type)
+            elif not isinstance(
+                    a.type,
+                    (types.HalfType, types.FloatType, types.DoubleType)):
+                raise TypeError(
+                    "expected an floating point type, got %s" %
+                    a.type)
             fn = self.module.declare_intrinsic(opname, [a.type, b.type, c.type])
             return self.call(fn, [a, b, c], name)
 
@@ -215,6 +251,15 @@ class IRBuilder(object):
         function.  The current block is not changed.  The new block is returned.
         """
         return self.function.append_basic_block(name)
+
+    def remove(self, instr):
+        """Remove the given instruction."""
+        idx = self._block.instructions.index(instr)
+        del self._block.instructions[idx]
+        if self._block.terminator == instr:
+            self._block.terminator = None
+        if self._anchor > idx:
+            self._anchor -= 1
 
     @contextlib.contextmanager
     def goto_block(self, block):
@@ -509,6 +554,13 @@ class IRBuilder(object):
         """
         return self.sub(values.Constant(value.type, 0), value, name=name)
 
+    @_unop('fneg')
+    def fneg(self, arg, name='', flags=()):
+        """
+        Floating-point negative:
+            name = -arg
+        """
+
     #
     # Comparison APIs
     #
@@ -542,7 +594,7 @@ class IRBuilder(object):
         """
         return self._icmp('u', cmpop, lhs, rhs, name)
 
-    def fcmp_ordered(self, cmpop, lhs, rhs, name='', flags=[]):
+    def fcmp_ordered(self, cmpop, lhs, rhs, name='', flags=()):
         """
         Floating-point ordered comparison:
             name = lhs <cmpop> rhs
@@ -553,11 +605,12 @@ class IRBuilder(object):
             op = 'o' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name, flags=flags)
+        instr = instructions.FCMPInstr(
+            self.block, op, lhs, rhs, name=name, flags=flags)
         self._insert(instr)
         return instr
 
-    def fcmp_unordered(self, cmpop, lhs, rhs, name='', flags=[]):
+    def fcmp_unordered(self, cmpop, lhs, rhs, name='', flags=()):
         """
         Floating-point unordered comparison:
             name = lhs <cmpop> rhs
@@ -568,16 +621,18 @@ class IRBuilder(object):
             op = 'u' + _CMP_MAP[cmpop]
         else:
             op = cmpop
-        instr = instructions.FCMPInstr(self.block, op, lhs, rhs, name=name, flags=flags)
+        instr = instructions.FCMPInstr(
+            self.block, op, lhs, rhs, name=name, flags=flags)
         self._insert(instr)
         return instr
 
-    def select(self, cond, lhs, rhs, name=''):
+    def select(self, cond, lhs, rhs, name='', flags=()):
         """
         Ternary select operator:
             name = cond ? lhs : rhs
         """
-        instr = instructions.SelectInstr(self.block, cond, lhs, rhs, name=name)
+        instr = instructions.SelectInstr(self.block, cond, lhs, rhs, name=name,
+                                         flags=flags)
         self._insert(instr)
         return instr
 
@@ -704,8 +759,8 @@ class IRBuilder(object):
             name = *ptr
         """
         if not isinstance(ptr.type, types.PointerType):
-            raise TypeError("cannot load from value of type %s (%r): not a pointer"
-                            % (ptr.type, str(ptr)))
+            msg = "cannot load from value of type %s (%r): not a pointer"
+            raise TypeError(msg % (ptr.type, str(ptr)))
         ld = instructions.LoadInstr(self.block, ptr, name)
         ld.align = align
         self._insert(ld)
@@ -717,8 +772,8 @@ class IRBuilder(object):
             *ptr = name
         """
         if not isinstance(ptr.type, types.PointerType):
-            raise TypeError("cannot store to value of type %s (%r): not a pointer"
-                            % (ptr.type, str(ptr)))
+            msg = "cannot store to value of type %s (%r): not a pointer"
+            raise TypeError(msg % (ptr.type, str(ptr)))
         if ptr.type.pointee != value.type:
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
@@ -733,9 +788,10 @@ class IRBuilder(object):
             name = *ptr
         """
         if not isinstance(ptr.type, types.PointerType):
-            raise TypeError("cannot load from value of type %s (%r): not a pointer"
-                            % (ptr.type, str(ptr)))
-        ld = instructions.LoadAtomicInstr(self.block, ptr, ordering, align, name)
+            msg = "cannot load from value of type %s (%r): not a pointer"
+            raise TypeError(msg % (ptr.type, str(ptr)))
+        ld = instructions.LoadAtomicInstr(
+            self.block, ptr, ordering, align, name)
         self._insert(ld)
         return ld
 
@@ -745,15 +801,15 @@ class IRBuilder(object):
             *ptr = name
         """
         if not isinstance(ptr.type, types.PointerType):
-            raise TypeError("cannot store to value of type %s (%r): not a pointer"
-                            % (ptr.type, str(ptr)))
+            msg = "cannot store to value of type %s (%r): not a pointer"
+            raise TypeError(msg % (ptr.type, str(ptr)))
         if ptr.type.pointee != value.type:
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
-        st = instructions.StoreAtomicInstr(self.block, value, ptr, ordering, align)
+        st = instructions.StoreAtomicInstr(
+            self.block, value, ptr, ordering, align)
         self._insert(st)
         return st
-
 
     #
     # Terminators APIs
@@ -816,13 +872,15 @@ class IRBuilder(object):
 
     # Call APIs
 
-    def call(self, fn, args, name='', cconv=None, tail=False, fastmath=()):
+    def call(self, fn, args, name='', cconv=None, tail=False, fastmath=(),
+             attrs=(), arg_attrs=None):
         """
         Call function *fn* with *args*:
             name = fn(args...)
         """
         inst = instructions.CallInstr(self.block, fn, args, name=name,
-                                      cconv=cconv, tail=tail, fastmath=fastmath)
+                                      cconv=cconv, tail=tail, fastmath=fastmath,
+                                      attrs=attrs, arg_attrs=arg_attrs)
         self._insert(inst)
         return inst
 
@@ -844,14 +902,18 @@ class IRBuilder(object):
     def store_reg(self, value, reg_type, reg_name, name=''):
         """
         Store an LLVM value inside a register
-          Example: store_reg(Constant(IntType(32), 0xAAAAAAAA), IntType(32), "eax")
+        Example:
+          store_reg(Constant(IntType(32), 0xAAAAAAAA), IntType(32), "eax")
         """
         ftype = types.FunctionType(types.VoidType(), [reg_type])
         return self.asm(ftype, "", "{%s}" % reg_name, [value], True, name)
 
-    def invoke(self, fn, args, normal_to, unwind_to, name='', cconv=None, tail=False):
-        inst = instructions.InvokeInstr(self.block, fn, args, normal_to, unwind_to, name=name,
-                                        cconv=cconv)
+    def invoke(self, fn, args, normal_to, unwind_to,
+               name='', cconv=None, fastmath=(), attrs=(), arg_attrs=None):
+        inst = instructions.InvokeInstr(self.block, fn, args, normal_to,
+                                        unwind_to, name=name, cconv=cconv,
+                                        fastmath=fastmath, attrs=attrs,
+                                        arg_attrs=arg_attrs)
         self._set_terminator(inst)
         return inst
 
@@ -924,8 +986,8 @@ class IRBuilder(object):
 
     # PHI APIs
 
-    def phi(self, typ, name=''):
-        inst = instructions.PhiInstr(self.block, typ, name=name)
+    def phi(self, typ, name='', flags=()):
+        inst = instructions.PhiInstr(self.block, typ, name=name, flags=flags)
         self._insert(inst)
         return inst
 
@@ -937,7 +999,8 @@ class IRBuilder(object):
         return inst
 
     def atomic_rmw(self, op, ptr, val, ordering, name=''):
-        inst = instructions.AtomicRMW(self.block, op, ptr, val, ordering, name=name)
+        inst = instructions.AtomicRMW(
+            self.block, op, ptr, val, ordering, name=name)
         self._insert(inst)
         return inst
 
@@ -974,26 +1037,29 @@ class IRBuilder(object):
 
     def fence(self, ordering, targetscope=None, name=''):
         """
-        Add a memory barrier, preventing certain reorderings of load and/or store accesses with
+        Add a memory barrier, preventing certain reorderings of load and/or
+        store accesses with
         respect to other processors and devices.
         """
         inst = instructions.Fence(self.block, ordering, targetscope, name=name)
         self._insert(inst)
         return inst
 
-    @_uniop_intrinsic("llvm.bswap")
+    @_uniop_intrinsic_int("llvm.bswap")
     def bswap(self, cond):
         """
-        Used to byte swap integer values with an even number of bytes (positive multiple of 16 bits)
+        Used to byte swap integer values with an even number of bytes (positive
+        multiple of 16 bits)
         """
 
-    @_uniop_intrinsic("llvm.bitreverse")
+    @_uniop_intrinsic_int("llvm.bitreverse")
     def bitreverse(self, cond):
         """
-        Reverse the bitpattern of an integer value; for example 0b10110110 becomes 0b01101101.
+        Reverse the bitpattern of an integer value; for example 0b10110110
+        becomes 0b01101101.
         """
 
-    @_uniop_intrinsic("llvm.ctpop")
+    @_uniop_intrinsic_int("llvm.ctpop")
     def ctpop(self, cond):
         """
         Counts the number of bits set in a value.
@@ -1002,17 +1068,40 @@ class IRBuilder(object):
     @_uniop_intrinsic_with_flag("llvm.ctlz")
     def ctlz(self, cond, flag):
         """
-        Counts the number of leading zeros in a variable.
+        Counts leading zero bits in *value*. Boolean *flag* indicates whether
+        the result is defined for ``0``.
         """
 
     @_uniop_intrinsic_with_flag("llvm.cttz")
     def cttz(self, cond, flag):
         """
-        Counts the number of trailing zeros in a variable.
+        Counts trailing zero bits in *value*. Boolean *flag* indicates whether
+        the result is defined for ``0``.
         """
 
     @_triop_intrinsic("llvm.fma")
     def fma(self, a, b, c):
         """
         Perform the fused multiply-add operation.
+        """
+
+    def convert_from_fp16(self, a, to=None, name=''):
+        """
+        Convert from an i16 to the given FP type
+        """
+        if not to:
+            raise TypeError("expected a float return type")
+        if not isinstance(to, (types.FloatType, types.DoubleType)):
+            raise TypeError("expected a float type, got %s" % to)
+        if not (isinstance(a.type, types.IntType) and a.type.width == 16):
+            raise TypeError("expected an i16 type, got %s" % a.type)
+
+        opname = 'llvm.convert.from.fp16'
+        fn = self.module.declare_intrinsic(opname, [to])
+        return self.call(fn, [a], name)
+
+    @_uniop_intrinsic_float("llvm.convert.to.fp16")
+    def convert_to_fp16(self, a):
+        """
+        Convert the given FP number to an i16
         """

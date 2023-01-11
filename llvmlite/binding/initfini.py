@@ -1,6 +1,6 @@
 from ctypes import c_uint, POINTER, c_char_p, c_int
 
-from . import ffi
+from llvmlite.binding import ffi
 
 ffi.lib.lld_main.restype = c_int
 ffi.lib.lld_main.argtypes = [c_int, POINTER(c_char_p)]
@@ -42,6 +42,7 @@ def initialize_all_targets():
     ffi.lib.LLVMPY_InitializeAllTargetInfos()
     ffi.lib.LLVMPY_InitializeAllTargets()
     ffi.lib.LLVMPY_InitializeAllTargetMCs()
+
 
 def initialize_all_asmprinters():
     """
@@ -91,5 +92,6 @@ def _version_info():
         v.append(x & 0xff)
         x >>= 8
     return tuple(reversed(v))
+
 
 llvm_version_info = _version_info()

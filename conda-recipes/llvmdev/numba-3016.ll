@@ -4,9 +4,9 @@
 ; compiled: -fvectorize -fveclib=SVML -O -S -mavx -mllvm -disable-llvm-optzns -emit-llvm
 
 ; RUN: opt -vector-library=SVML -mcpu=haswell -O3 -S < %s | FileCheck %s
-; CHECK: __svml_sin4_ha
-; CHECK-NOT: __svml_sin4(
-; CHECK-NOT: __svml_sin8
+; CHECK: call {{.*}}__svml_sin4_ha(
+; CHECK-NOT: call {{.*}}__svml_sin4(
+; CHECK-NOT: call {{.*}}__svml_sin8
 
 source_filename = "svml-3016.c"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"

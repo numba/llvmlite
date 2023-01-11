@@ -3,6 +3,7 @@
 import collections
 import contextlib
 import cProfile
+from io import StringIO
 import gc
 import os
 import multiprocessing
@@ -11,8 +12,6 @@ import time
 import unittest
 import warnings
 from unittest import result, runner, signals
-
-from ..six import StringIO
 
 
 # "unittest.main" is really the TestProgram class!
@@ -37,7 +36,6 @@ class NumbaTestProgram(unittest.main):
         # (so that NumbaWarnings don't appear all over the place)
         sys.warnoptions.append(':x')
         super(NumbaTestProgram, self).__init__(*args, **kwargs)
-
 
     def createTests(self):
         if self.discovered_suite is not None:
@@ -82,8 +80,9 @@ class NumbaTestProgram(unittest.main):
             self.testRunner = RefleakTestRunner
 
             if not hasattr(sys, "gettotalrefcount"):
-                warnings.warn("detecting reference leaks requires a debug build "
-                              "of Python, only memory leaks will be detected")
+                warnings.warn("detecting reference leaks requires a debug "
+                              "build of Python, only memory leaks will be "
+                              "detected")
 
         elif self.testRunner is None:
             self.testRunner = unittest.TextTestRunner
@@ -100,7 +99,7 @@ class NumbaTestProgram(unittest.main):
         if self.profile:
             filename = os.path.splitext(
                 os.path.basename(sys.modules['__main__'].__file__)
-                )[0] + '.prof'
+            )[0] + '.prof'
             p = cProfile.Profile(timer=time.perf_counter)  # 3.3+
             p.enable()
             try:
@@ -126,11 +125,13 @@ def _refleak_cleanup():
     try:
         func1 = sys.getallocatedblocks
     except AttributeError:
-        func1 = lambda: 42
+        def func1():
+            return 42
     try:
         func2 = sys.gettotalrefcount
     except AttributeError:
-        func2 = lambda: 42
+        def func2():
+            return 42
 
     # Flush standard output, so that buffered data is sent to the OS and
     # associated Python objects are reclaimed.
@@ -172,6 +173,7 @@ class RefleakTestResult(runner.TextTestResult):
         for i in range(-200, 200):
             _int_pool[i]
 
+        alloc_before = rc_before = 0
         for i in range(repcount):
             # Use a pristine, silent result object to avoid recursion
             res = result.TestResult()
@@ -186,7 +188,9 @@ class RefleakTestResult(runner.TextTestResult):
             alloc_after, rc_after = _refleak_cleanup()
             if i >= nwarmup:
                 rc_deltas[i - nwarmup] = _int_pool[rc_after - rc_before]
-                alloc_deltas[i - nwarmup] = _int_pool[alloc_after - alloc_before]
+                alloc_deltas[i -
+                             nwarmup] = _int_pool[alloc_after -
+                                                  alloc_before]
             alloc_before, rc_before = alloc_after, rc_after
         return rc_deltas, alloc_deltas
 
@@ -201,12 +205,13 @@ class RefleakTestResult(runner.TextTestResult):
         # These checkers return False on success, True on failure
         def check_rc_deltas(deltas):
             return any(deltas)
+
         def check_alloc_deltas(deltas):
             # At least 1/3rd of 0s
             if 3 * deltas.count(0) < len(deltas):
                 return True
             # Nothing else than 1s, 0s and -1s
-            if not set(deltas) <= set((1,0,-1)):
+            if not set(deltas) <= set((1, 0, -1)):
                 return True
             return False
 
@@ -214,7 +219,7 @@ class RefleakTestResult(runner.TextTestResult):
 
         for deltas, item_name, checker in [
             (rc_deltas, 'references', check_rc_deltas),
-            (alloc_deltas, 'memory blocks', check_alloc_deltas)]:
+                (alloc_deltas, 'memory blocks', check_alloc_deltas)]:
             if checker(deltas):
                 msg = '%s leaked %s %s, sum=%s' % (
                     test, deltas, item_name, sum(deltas))
