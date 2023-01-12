@@ -10,7 +10,13 @@ bool lld_main(int Argc, const char **Argv, const char **outstr) {
     llvm::raw_string_ostream command_stream(command_output);
     std::vector<const char *> Args(Argv, Argv + Argc);
 
-    bool linker_output = !lld::elf::link(Args, false, command_stream, command_stream);
+    #if defined __linux__ || __unix__
+        bool linker_output = !lld::elf::link(Args, false, command_stream, command_stream);
+    #elif defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+        bool linker_output = !lld::coff::link(Args, false, command_stream, command_stream);
+    #else
+        bool linker_output = !lld::macho::link(Args, false, command_stream, command_stream);
+    #endif
 
     *outstr = LLVMPY_CreateString(command_output.c_str());
 
