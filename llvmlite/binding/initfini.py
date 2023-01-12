@@ -1,7 +1,7 @@
-from ctypes import byref, c_bool, c_uint, POINTER, c_char_p, c_int
+from ctypes import c_uint
 
 from llvmlite.binding import ffi
-from llvmlite.binding.common import _encode_string
+
 
 def initialize():
     """
