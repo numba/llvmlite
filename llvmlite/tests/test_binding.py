@@ -2018,7 +2018,7 @@ class TestLLD_x86(BaseTest):
             mod.verify()
             with open(objfile, "wb") as o:
                 o.write(target_machine.emit_object(mod))
-            llvm.lld_main(["ld.lld", "-o", binfile, objfile])
+            llvm.lld.lld_auto(binfile, [objfile])
             r = subprocess.call("%s" % binfile)
             self.assertEqual(r, 42)
 

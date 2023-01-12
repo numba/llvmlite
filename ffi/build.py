@@ -97,7 +97,8 @@ def main_windows():
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
-    # Run configuration step
+    os.environ['LLVM_LIBS'] += \
+        '-llldCOFF -llldCommon -llldCore -llldDriver -llldELF -llldMachO -llldMinGW -llldReaderWriter -llldWasm -llldYAML'
     try_cmake(here_dir, build_dir, *generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
