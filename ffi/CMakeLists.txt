@@ -55,6 +55,8 @@ if ($ENV{LLVMLITE_SHARED})
     set(llvm_libs lldCOFF lldCommon lldCore lldDriver lldELF lldMachO lldMinGW lldReaderWriter lldWasm lldYAML LLVM)
 else()
     message("NOT ENV LLVMLITE_SHARED")
+    message(${LLVM_AVAILABLE_LIBS})
+    message("------------------------")
     set(llvm_libs ${LLVM_AVAILABLE_LIBS})
 endif()
 
