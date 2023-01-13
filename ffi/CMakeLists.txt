@@ -12,6 +12,7 @@ if(NOT MSVC)
 endif()
 
 find_package(LLVM REQUIRED CONFIG)
+find_package(LLD REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -21,16 +22,16 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 # you will need to enable C++11 support
 # for your compiler.
 
-include_directories(${LLVM_INCLUDE_DIRS})
+include_directories(${LLVM_INCLUDE_DIRS} ${LLD_SOURCE_DIR}/include)
 add_definitions(${LLVM_DEFINITIONS})
 
 # Look for SVML
-set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS})
+set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS} ${LLD_SOURCE_DIR}/include)
 
 CHECK_INCLUDE_FILES("llvm/IR/SVML.inc" HAVE_SVML)
 if(HAVE_SVML)
     message(STATUS "SVML found")
-    add_definitions(-DHAVE_SVML)
+    add_definitions(-DHAVE_SVML -DLLVM_ENABLE_PROJECTS="lld")
     add_library(lldCOFF lldCommon lldCore lldDriver lldELF lldMachO lldMinGW lldReaderWriter lldWasm lldYAML)
 else()
     message(STATUS "SVML not found")
@@ -50,7 +51,7 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
 # Bug reported upstream at: https://bugs.llvm.org/show_bug.cgi?id=47003
 # BROKEN: llvm_map_components_to_libnames(llvm_libs all)
 if ($ENV{LLVMLITE_SHARED})
-    set(llvm_libs LLVM)
+    set(llvm_libs LLVM LLD)
 else()
     set(llvm_libs ${LLVM_AVAILABLE_LIBS})
 endif()
