@@ -22,16 +22,16 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 # you will need to enable C++11 support
 # for your compiler.
 
-include_directories(${LLVM_INCLUDE_DIRS} ${LLD_SOURCE_DIR}/include)
+include_directories(${LLVM_INCLUDE_DIRS} ${LLD_SOURCE_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
 # Look for SVML
-set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS} ${LLD_SOURCE_DIR}/include)
+set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS} ${LLD_SOURCE_DIR})
 
 CHECK_INCLUDE_FILES("llvm/IR/SVML.inc" HAVE_SVML)
 if(HAVE_SVML)
     message(STATUS "SVML found")
-    add_definitions(-DHAVE_SVML)
+    add_definitions(-DHAVE_SVML -DLLVM_ENABLE_PROJECTS="lld")
     add_library(lldCOFF lldCommon lldCore lldDriver lldELF lldMachO lldMinGW lldReaderWriter lldWasm lldYAML)
 else()
     message(STATUS "SVML not found")
