@@ -75,4 +75,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(LLVM_EXPORTED_SYMBOLS "-Wl,-exported_symbol,_LLVMPY_*")
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "${LLVM_EXPORTED_SYMBOLS}")
+else()
+    set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "-flto -Wl,--exclude-libs,ALL")
 endif()
