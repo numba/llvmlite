@@ -51,7 +51,7 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
 # Bug reported upstream at: https://bugs.llvm.org/show_bug.cgi?id=47003
 # BROKEN: llvm_map_components_to_libnames(llvm_libs all)
 if ($ENV{LLVMLITE_SHARED})
-    set(llvm_libs LLVM LLD)
+    set(llvm_libs LLVM lldCOFF lldCommon lldCore lldDriver lldELF lldMachO lldMinGW lldReaderWriter lldWasm lldYAML)
 else()
     set(llvm_libs ${LLVM_AVAILABLE_LIBS})
 endif()
