@@ -2014,7 +2014,7 @@ class TestLLD_Help(BaseTest):
         if system == "Linux":
             llvm.lld.lld_main(["ld.lld", "--help"])
         elif system == "Windows":
-            llvm.lld.lld_main(["lld-link", "--help"])
+            llvm.lld.lld_main(["lld-link", "-help"])
         elif system == "Darwin": # Macos
             llvm.lld.lld_main(["ld64.lld", "--help"])
 

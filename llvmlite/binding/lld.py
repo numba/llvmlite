@@ -35,7 +35,7 @@ def lld_main(lld_args) -> str:
         return str(outstr)
 
 
-def lld_runner(command: str):
+def lld_runner(command: str, out_arg="-o"):
     '''creates lld functions while still allowing docstrings for users to see.'''
     def wrapped(output: str, objects: List[str], args: List[str] = []) -> str:
         '''
@@ -45,11 +45,11 @@ def lld_runner(command: str):
         object: a list of input .o files as strings
         args: additional arguments for the command
         '''
-        return lld_main([command, "-o", output, *objects, *args])
+        return lld_main([command, out_arg, output, *objects, *args])
     return wrapped
 
 
-lld_windows = lld_runner("lld-link")
+lld_windows = lld_runner("lld-link", out_arg="-out")
 lld_macos = lld_runner("ld64.lld")
 lld_linux = lld_runner("ld.lld")
 lld_wasm = lld_runner("wasm-ld")
