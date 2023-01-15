@@ -2007,6 +2007,19 @@ class TestLLVMLockCallbacks(BaseTest):
             llvm.ffi.unregister_lock_callback(acq, rel)
 
 
+class TestLLD_Help(BaseTest):
+    def test_lld_help(self):
+        system = platform.system()
+
+        if system == "Linux":
+            llvm.lld.lld_main(["ld.lld", "--help"])
+        elif system == "Windows":
+            llvm.lld.lld_main(["lld-link", "--help"])
+        elif system == "Darwin": # Macos
+            llvm.lld.lld_main(["ld64.lld", "--help"])
+
+
+# @unittest.skipUnless(platform.machine().startswith('x86'), "only on x86")
 class TestLLD(BaseTest):
     def test_standalone_executable(self):
         test_ir = """

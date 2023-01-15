@@ -30,7 +30,7 @@ def lld_main(lld_args) -> str:
     with ffi.OutputString() as outstr:
         r = ffi.lib.lld_main(len(lld_args), args, outstr)
         if not r:
-            raise Exception("lld_main() failed, error code: %d" % r)
+            raise Exception("lld_main() failed, error code: %d\nCommand Output: %s" % (r, str(outstr)))
 
         return str(outstr)
 
