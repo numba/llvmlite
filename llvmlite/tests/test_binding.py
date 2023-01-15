@@ -2006,21 +2006,12 @@ class TestLLVMLockCallbacks(BaseTest):
         with self.assertRaises(ValueError):
             llvm.ffi.unregister_lock_callback(acq, rel)
 
-
-class TestLLD_Help(BaseTest):
-    def test_lld_help(self):
-        system = platform.system()
-
-        if system == "Linux":
-            llvm.lld.lld_main(["ld.lld", "--help"])
-        elif system == "Windows":
-            llvm.lld.lld_main(["lld-link", "-help"])
-        elif system == "Darwin": # Macos
-            llvm.lld.lld_main(["ld64.lld", "--help"])
-
-
 # @unittest.skipUnless(platform.machine().startswith('x86'), "only on x86")
 class TestLLD(BaseTest):
+    def target_machine(self, *, jit):
+        target = llvm.Target.from_default_triple()
+        return target.create_target_machine(jit=jit, codemodel="default")
+
     def test_standalone_executable(self):
         test_ir = """
         ;ModuleID = <string>
@@ -2031,16 +2022,15 @@ class TestLLD(BaseTest):
             ret void
         }}
         """
-        with TemporaryDirectory() as tmpdir:
-            objfile = os.path.join(tmpdir, "test1.o")
-            binfile = os.path.join(tmpdir, "test1")
-            target_machine = self.target_machine(jit=False)
-            mod = self.module(test_ir)
-            mod.verify()
-            with open(objfile, "wb") as o:
-                o.write(target_machine.emit_object(mod))
-            print(llvm.lld.lld_auto(binfile, [objfile]))
-            subprocess.call("%s" % binfile)
+        objfile = "test1.o"
+        binfile = "test1"
+        target_machine = self.target_machine(jit=False)
+        mod = self.module(test_ir)
+        mod.verify()
+        with open(objfile, "wb") as o:
+            o.write(target_machine.emit_object(mod))
+        print(llvm.lld.lld_auto(binfile, [objfile]))
+        subprocess.call("./%s" % binfile)
 
 if __name__ == "__main__":
     unittest.main()

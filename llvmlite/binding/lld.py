@@ -29,13 +29,13 @@ def lld_main(lld_args) -> str:
         args[i] = arg.encode()
     with ffi.OutputString() as outstr:
         r = ffi.lib.lld_main(len(lld_args), args, outstr)
-        if not r:
+        if r:
             raise Exception("lld_main() failed, error code: %d\nCommand Output: %s" % (r, str(outstr)))
 
         return str(outstr)
 
 
-def lld_runner(command: str, out_arg="-o"):
+def lld_runner(command: str, out_arg="-o "):
     '''creates lld functions while still allowing docstrings for users to see.'''
     def wrapped(output: str, objects: List[str], args: List[str] = []) -> str:
         '''
@@ -45,11 +45,12 @@ def lld_runner(command: str, out_arg="-o"):
         object: a list of input .o files as strings
         args: additional arguments for the command
         '''
-        return lld_main([command, out_arg, output, *objects, *args])
+        out_args = (out_arg + output).split(' ')
+        return lld_main([command, *out_args, *objects, *args])
     return wrapped
 
 
-lld_windows = lld_runner("lld-link", out_arg="-out")
+lld_windows = lld_runner("lld-link", out_arg="/out:")
 lld_macos = lld_runner("ld64.lld")
 lld_linux = lld_runner("ld.lld")
 lld_wasm = lld_runner("wasm-ld")
