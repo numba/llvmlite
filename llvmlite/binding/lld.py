@@ -30,13 +30,13 @@ def lld_main(lld_args) -> str:
     with ffi.OutputString() as outstr:
         r = ffi.lib.lld_main(len(lld_args), args, outstr)
         if r:
-            raise Exception("lld_main() failed, error code: %d\nCommand Output: %s" % (r, str(outstr)))
+            raise Exception("lld_main() failed, error code: \
+                             %d\nCommand Output: %s" % (r, str(outstr)))
 
         return str(outstr)
 
 
 def lld_runner(command: str, out_arg="-o "):
-    '''creates lld functions while still allowing docstrings for users to see.'''
     def wrapped(output: str, objects: List[str], args: List[str] = []) -> str:
         '''
         runs the command:
