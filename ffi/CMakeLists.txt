@@ -16,6 +16,8 @@ find_package(LLD REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+message(STATUS "Found LLD ${LLD_PACKAGE_VERSION}")
+message(STATUS "Using LLDConfig.cmake in: ${LLD_DIR}")
 
 # Set your project compile flags.
 # E.g. if using the C++ header files
@@ -58,7 +60,7 @@ else()
     message(${LLVM_AVAILABLE_LIBS})
     message("------------------------")
     # set(llvm_libs ${LLVM_AVAILABLE_LIBS})
-    set(llvm_libs ${LLVM_AVAILABLE_LIBS})
+    set(llvm_libs ${LLVM_AVAILABLE_LIBS} lldCOFF lldCommon lldCore lldDriver lldELF lldMachO lldMinGW lldReaderWriter lldWasm lldYAML)
 endif()
 
 # Since LLVM 8 "OptRemarks" is built as a shared library only and also appears
