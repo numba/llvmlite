@@ -2006,7 +2006,7 @@ class TestLLVMLockCallbacks(BaseTest):
         with self.assertRaises(ValueError):
             llvm.ffi.unregister_lock_callback(acq, rel)
 
-# @unittest.skipUnless(platform.machine().startswith('x86'), "only on x86")
+
 class TestLLD(BaseTest):
     def test_standalone_executable(self):
         test_ir = """
@@ -2035,7 +2035,7 @@ class TestLLD(BaseTest):
             self.assertTrue(os.path.exists(f"{binfile}.exe"))
         elif system == "Darwin": # Macos
             self.assertTrue(os.path.exists(f"{binfile}.app"))
-        
+
 
 if __name__ == "__main__":
     unittest.main()

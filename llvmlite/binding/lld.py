@@ -30,13 +30,12 @@ def lld_main(lld_args) -> str:
     with ffi.OutputString() as outstr:
         r = ffi.lib.lld_main(len(lld_args), args, outstr)
         if r:
-            raise Exception("lld_main() failed, error code: \
-                            %d\nCommand Output: %s" % (r, str(outstr)))
-        
+            raise Exception("lld_main() failed, error code: %d\
+                            \nCommand Output: %s" % (r, str(outstr))) 
         return str(outstr)
 
 
-def lld_runner(command: str, out_arg="-o "):
+def lld_runner(command: str):
     def wrapped(output: str, objects: List[str], args: List[str] = []) -> str:
         '''
         runs the command:
@@ -45,12 +44,11 @@ def lld_runner(command: str, out_arg="-o "):
         object: a list of input .o files as strings
         args: additional arguments for the command
         '''
-        out_args = (out_arg + output).split(' ')
-        return lld_main([command, *out_args, *objects, *args])
+        return lld_main([command, '-o', output, *objects, *args])
     return wrapped
 
 
-lld_windows = lld_runner("lld-link", out_arg="-o ")
+lld_windows = lld_runner("lld-link")
 lld_macos = lld_runner("ld64.lld")
 lld_linux = lld_runner("ld.lld")
 lld_wasm = lld_runner("wasm-ld")
