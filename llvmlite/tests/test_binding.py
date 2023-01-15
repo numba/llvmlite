@@ -2008,10 +2008,6 @@ class TestLLVMLockCallbacks(BaseTest):
 
 # @unittest.skipUnless(platform.machine().startswith('x86'), "only on x86")
 class TestLLD(BaseTest):
-    def target_machine(self, *, jit):
-        target = llvm.Target.from_default_triple()
-        return target.create_target_machine(jit=jit, codemodel="default")
-
     def test_standalone_executable(self):
         test_ir = """
         ;ModuleID = <string>
@@ -2030,7 +2026,16 @@ class TestLLD(BaseTest):
         with open(objfile, "wb") as o:
             o.write(target_machine.emit_object(mod))
         print(llvm.lld.lld_auto(binfile, [objfile]))
-        subprocess.call("./%s" % binfile)
+        system = platform.system()
+
+        if system == "Linux":
+            # has no standard file extension
+            self.assertTrue(os.path.exists(binfile))
+        elif system == "Windows":
+            self.assertTrue(os.path.exists(f"{binfile}.exe"))
+        elif system == "Darwin": # Macos
+            self.assertTrue(os.path.exists(f"{binfile}.app"))
+        
 
 if __name__ == "__main__":
     unittest.main()

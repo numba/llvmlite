@@ -31,8 +31,8 @@ def lld_main(lld_args) -> str:
         r = ffi.lib.lld_main(len(lld_args), args, outstr)
         if r:
             raise Exception("lld_main() failed, error code: \
-                             %d\nCommand Output: %s" % (r, str(outstr)))
-
+                            %d\nCommand Output: %s" % (r, str(outstr)))
+        
         return str(outstr)
 
 
@@ -50,7 +50,7 @@ def lld_runner(command: str, out_arg="-o "):
     return wrapped
 
 
-lld_windows = lld_runner("lld-link", out_arg="/out:")
+lld_windows = lld_runner("lld-link", out_arg="-o ")
 lld_macos = lld_runner("ld64.lld")
 lld_linux = lld_runner("ld.lld")
 lld_wasm = lld_runner("wasm-ld")
