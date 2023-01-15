@@ -39,7 +39,8 @@ def lld_runner(command: str):
     '''creates lld functions while still allowing docstrings for users to see.'''
     def wrapped(output: str, objects: List[str], args: List[str] = []) -> str:
         '''
-        runs the command "{platform's lld command} -o {output-file} {*input_files} {*args}"
+        runs the command:
+        "{platform's lld command} -o {output-file} {*input_files} {*args}"
         output: output file as a str
         object: a list of input .o files as strings
         args: additional arguments for the command
@@ -56,7 +57,9 @@ lld_wasm = lld_runner("wasm-ld")
 
 def lld_auto(output: str, objects: list[str], args: list[str] = [], add_extension = True) -> str:
     '''
-    Automatically determines which lld function to run based on the hosts system.
+    Automatically determines which lld function
+    to run based on the hosts system.
+
     Does not use `lld_wasm()`
 
     add_extension: adds `.exe` and other file endings automatically
