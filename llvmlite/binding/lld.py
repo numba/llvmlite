@@ -54,8 +54,8 @@ lld_linux = lld_runner("ld.lld")
 lld_wasm = lld_runner("wasm-ld")
 
 
-def lld_auto(output: str, objects: list[str],
-             args: list[str] = [],
+def lld_auto(output: str, objects: List[str],
+             args: List[str] = [],
              add_extension=True) -> str:
     '''
     Automatically determines which lld function
