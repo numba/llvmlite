@@ -31,49 +31,30 @@ Functions
 
 * .. function:: lld_linux(output_file, objects, args=[])
 
-    * ``output`` is the name of the output file as a **string**
     * ``objects`` is a list of object files' names as **strings**.
     * ``args`` is a list of strings passed to the lld linker as arguments (at the end of the command)
     * returns the output of lld_main for the given arguments
 
-    Links given object files into an executable using ``lld_main()``
+    Links given object files into an executable using :func:`lld_main()`
 
 
 * .. function:: lld_windows(output_file, objects, args=[])
 
-    * ``output`` is the name of the output file as a **string**
-    * ``objects`` is a list of object files' names as **strings**.
-    * ``args`` is a list of strings passed to the lld linker as arguments (at the end of the command)
-    * returns the output of lld_main for the given arguments
-
-    Links given object files into an executable using ``lld_main()``
+    Link for Windows target
 
 
 * .. function:: lld_macos(output_file, objects, args=[])
 
-    * ``output`` is the name of the output file as a **string**
-    * ``objects`` is a list of object files' names as **strings**.
-    * ``args`` is a list of strings passed to the lld linker as arguments (at the end of the command)
-    * returns the output of lld_main for the given arguments
-
-    Links given object files into an executable using ``lld_main()``
+    Link for Macos target
 
 
 * .. function:: lld_wasm(output_file, objects, args=[])
 
-    * ``output`` is the name of the output file as a **string**
-    * ``objects`` is a list of object files' names as **strings**.
-    * ``args`` is a list of strings passed to the lld linker as arguments (at the end of the command)
-    * returns the output of lld_main for the given arguments
-
-    Links given object files into an executable using ``lld_main()``
+    Link for wasm target
 
 
 * .. function:: lld_auto(output_file, objects, args=[], add_extension=True)
-
-    * ``output`` is the name of the output file as a **string**
-    * ``objects`` is a list of object files' names as **strings**.
-    * ``args`` is a list of strings passed to the lld linker as arguments (at the end of the command)
+    
     * ``add_extension`` should this function automatically add **.exe** and **.app** for windows and macos targets
     * returns the output of lld_main for the given arguments
 
