@@ -31,7 +31,7 @@ def lld_main(lld_args) -> str:
         r = ffi.lib.lld_main(len(lld_args), args, outstr)
         if r:
             raise Exception("lld_main() failed, error code: %d\
-                            \nCommand Output: %s" % (r, str(outstr))) 
+                            \nCommand Output: %s" % (r, str(outstr)))
         return str(outstr)
 
 
@@ -54,7 +54,9 @@ lld_linux = lld_runner("ld.lld")
 lld_wasm = lld_runner("wasm-ld")
 
 
-def lld_auto(output: str, objects: list[str], args: list[str] = [], add_extension = True) -> str:
+def lld_auto(output: str, objects: list[str],
+             args: list[str] = [],
+             add_extension=True) -> str:
     '''
     Automatically determines which lld function
     to run based on the hosts system.
