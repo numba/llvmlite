@@ -4,7 +4,8 @@
 
 extern "C" {
 
-API_EXPORT(bool) LLVMPY_lld_main(int Argc, const char **Argv, const char **outstr) {
+API_EXPORT(bool)
+LLVMPY_lld_main(int Argc, const char **Argv, const char **outstr) {
     // InitLLVM X(Argc, Argv);
     std::string command_output;
     llvm::raw_string_ostream command_stream(command_output);
