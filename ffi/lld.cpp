@@ -11,7 +11,7 @@ LLVMPY_lld_main(int Argc, const char **Argv, const char **outstr) {
     llvm::raw_string_ostream command_stream(command_output);
     std::vector<const char *> Args(Argv, Argv + Argc);
 
-#ifdef __APPLE__ || __MACH__
+#ifdef defined(__APPLE__) || defined(__MACH__)
     bool linker_output =
         !lld::macho::link(Args, false, command_stream, command_stream);
 #else
