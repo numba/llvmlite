@@ -2022,6 +2022,7 @@ class TestLLD(BaseTest):
         target_machine = self.target_machine(jit=False)
         mod = self.module(test_ir)
         mod.verify()
+        print(target_machine.triple)
         with open(objfile, "wb") as o:
             print(target_machine.emit_object(mod))
             o.write(target_machine.emit_object(mod))
