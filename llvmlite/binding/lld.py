@@ -5,8 +5,8 @@ from typing import List
 from llvmlite.binding import ffi
 
 
-ffi.lib.lld_main.restype = c_bool
-ffi.lib.lld_main.argtypes = [c_int, POINTER(c_char_p), POINTER(c_char_p)]
+ffi.lib.LLVMPY_lld_main.restype = c_bool
+ffi.lib.LLVMPY_lld_main.argtypes = [c_int, POINTER(c_char_p), POINTER(c_char_p)]
 
 
 def lld_main(lld_args) -> str:
@@ -28,7 +28,7 @@ def lld_main(lld_args) -> str:
     for i, arg in enumerate(lld_args):
         args[i] = arg.encode()
     with ffi.OutputString() as outstr:
-        r = ffi.lib.lld_main(len(lld_args), args, outstr)
+        r = ffi.lib.LLVMPY_lld_main(len(lld_args), args, outstr)
         if r:
             raise Exception("lld_main() failed, error code: %d\
                             \nCommand Output: %s" % (r, str(outstr)))
