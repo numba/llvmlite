@@ -218,7 +218,8 @@ class Target(ffi.ObjectRef):
 
     def create_target_machine(self, cpu='', features='',
                               opt=2, reloc='default', codemodel='jitdefault',
-                              printmc=False, jit=False, abiname=''):
+                              printmc=False, jit=False, abiname='',
+                              force_elf=False):
         """
         Create a new TargetMachine for this target and the given options.
 
@@ -231,6 +232,9 @@ class Target(ffi.ObjectRef):
         The `jit` option should be set when the target-machine is to be used
         in a JIT engine.
 
+        The `force_elf` option will force the target object format to be ELF
+        instead of the target-machine's default.
+
         The `abiname` option specifies the ABI. RISC-V targets with hard-float
         needs to pass the ABI name to LLVM.
         """
@@ -241,7 +245,7 @@ class Target(ffi.ObjectRef):
         # MCJIT under Windows only supports ELF objects, see
         # http://lists.llvm.org/pipermail/llvm-dev/2013-December/068341.html
         # Note we still want to produce regular COFF files in AOT mode.
-        if os.name == 'nt' and codemodel == 'jitdefault':
+        if (os.name == 'nt' and codemodel == 'jitdefault') or force_elf:
             triple += '-elf'
         tm = ffi.lib.LLVMPY_CreateTargetMachine(self,
                                                 _encode_string(triple),

@@ -2007,6 +2007,10 @@ class TestLLVMLockCallbacks(BaseTest):
 
 
 class TestLLD(BaseTest):
+    def target_machine(self, *, jit):
+        target = llvm.Target.from_default_triple()
+        return target.create_target_machine(jit=jit, force_elf=True)
+
     def test_standalone_executable(self):
         test_ir = """
         ;ModuleID = <string>
@@ -2022,9 +2026,7 @@ class TestLLD(BaseTest):
         target_machine = self.target_machine(jit=False)
         mod = self.module(test_ir)
         mod.verify()
-        print(target_machine.triple)
         with open(objfile, "wb") as o:
-            print(target_machine.emit_object(mod))
             o.write(target_machine.emit_object(mod))
         print(llvm.lld.lld_auto(binfile, [objfile]))
         system = platform.system()

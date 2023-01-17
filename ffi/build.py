@@ -175,7 +175,7 @@ def main_posix(kind, library_ext):
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = \
-        '-llldCommon -llldCore -llldDriver -llldELF -llldMachO -llldReaderWriter -llldWasm -llldYAML ' + \
+        '-llldCommon -llldCore -llldDriver -llldELF -llldReaderWriter -llldWasm -llldYAML ' + \
         ' '.join(libs.split())
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
