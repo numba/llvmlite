@@ -53,12 +53,12 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
 # BROKEN: llvm_map_components_to_libnames(llvm_libs all)
 if ($ENV{LLVMLITE_SHARED})
     message("ENV LLVMLITE_SHARED")
-    set(llvm_libs lldCommon lldCore lldDriver lldELF lldReaderWriter lldWasm lldYAML LLVM)
+    set(llvm_libs lldCommon lldCore lldDriver lldELF lldMachO lldReaderWriter lldWasm lldYAML LLVM)
 else()
     message("NOT ENV LLVMLITE_SHARED")
     message(${LLVM_AVAILABLE_LIBS})
     message("------------------------")
-    set(llvm_libs ${LLVM_AVAILABLE_LIBS} lldCommon lldCore lldDriver lldELF lldReaderWriter lldWasm lldYAML)
+    set(llvm_libs ${LLVM_AVAILABLE_LIBS} lldCommon lldCore lldDriver lldELF lldMachO lldReaderWriter lldWasm lldYAML)
 endif()
 
 # Since LLVM 8 "OptRemarks" is built as a shared library only and also appears
