@@ -2023,6 +2023,7 @@ class TestLLD(BaseTest):
         mod = self.module(test_ir)
         mod.verify()
         with open(objfile, "wb") as o:
+            print(target_machine.emit_object(mod))
             o.write(target_machine.emit_object(mod))
         print(llvm.lld.lld_auto(binfile, [objfile]))
         system = platform.system()
