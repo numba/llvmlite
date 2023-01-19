@@ -50,8 +50,11 @@ class Module(object):
         e.g. an instruction.
 
         A self referential metadata entry has itself as the first
-        operand to ensure uniquencess. These references are never
-        cached.
+        operand to ensure uniqueness. These references are never
+        cached. If `self_ref` is set, create a self referential
+        metadata entry by first creating a new metadata value
+        and then add itself as first argument. `operands` are then
+        added as additional operands.
         """
         if not isinstance(operands, (list, tuple)):
             raise TypeError("expected a list or tuple of metadata values, "
