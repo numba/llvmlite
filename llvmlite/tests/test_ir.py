@@ -323,7 +323,7 @@ class TestIR(TestBase):
         self.assert_ir_line('!1 = !{ i32 789 }', mod)
         self.assert_ir_line('!2 = !{ i32 123, !0, !1, !0 }', mod)
 
-    def test_self_relf_metadata(self):
+    def test_self_ref_metadata(self):
         mod = self.module()
         value = mod.add_metadata((), self_ref=True)
         self.assert_ir_line('!0 = !{ !0 }', mod)
@@ -333,6 +333,8 @@ class TestIR(TestBase):
         value3 = mod.add_metadata((), self_ref=True)
         self.assert_ir_line('!2 = !{ !2 }', mod)
         assert value is not value3
+        value = mod.add_metadata([int32(123)], self_ref=True)
+        self.assert_ir_line('!3 = !{ !3, i32 123 }', mod)
 
     def test_metadata_string(self):
         # Escaping contents of a metadata string
