@@ -20,6 +20,7 @@ build_dir = os.path.join(here_dir, 'build')
 target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 
 is_64bit = sys.maxsize >= 2**32
+lld_libs = "-llldCommon -llldCore -llldELF -llldReaderWriter -llldWasm -llldYAML"
 
 
 def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
@@ -98,6 +99,7 @@ def main_windows():
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
     try_cmake(here_dir, build_dir, *generator)
+    os.environ['lld_libs'] = lld_libs.strip('-l')
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
 
@@ -108,6 +110,7 @@ def main_posix_cmake(kind, library_ext):
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
     try_cmake(here_dir, build_dir, generator)
+    os.environ['lld_libs'] = lld_libs.strip('-l')
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext), target_dir)
 
@@ -175,8 +178,7 @@ def main_posix(kind, library_ext):
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = \
-        '-llldCommon -llldCore -llldDriver -llldELF -llldReaderWriter -llldWasm -llldYAML ' + \
-        ' '.join(libs.split())
+        lld_libs + ' '.join(libs.split())
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
