@@ -98,8 +98,8 @@ def main_windows():
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
-    try_cmake(here_dir, build_dir, *generator)
     os.environ['lld_libs'] = lld_libs.strip('-l')
+    try_cmake(here_dir, build_dir, *generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
 
@@ -109,8 +109,8 @@ def main_posix_cmake(kind, library_ext):
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
-    try_cmake(here_dir, build_dir, generator)
     os.environ['lld_libs'] = lld_libs.strip('-l')
+    try_cmake(here_dir, build_dir, generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext), target_dir)
 
