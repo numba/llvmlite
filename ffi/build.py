@@ -178,7 +178,7 @@ def main_posix(kind, library_ext):
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = \
-        lld_libs + ' '.join(libs.split())
+        f'{lld_libs} ' + ' '.join(libs.split())
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
