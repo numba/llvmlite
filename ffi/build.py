@@ -33,7 +33,7 @@ def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     args.append(cmake_dir)
     try:
         os.chdir(build_dir)
-        os.environ['lld_libs'] = lld_libs.replace("-l", "")
+        os.environ['lld_libs'] = lld_libs.replace("-l", "").replace(' ',';')
         print('Running:', ' '.join(args))
         subprocess.check_call(args)
     finally:
