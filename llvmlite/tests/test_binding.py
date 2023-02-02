@@ -8,6 +8,7 @@ import platform
 import re
 import subprocess
 import sys
+import threading
 import unittest
 from contextlib import contextmanager
 from tempfile import mkstemp
@@ -15,7 +16,45 @@ from tempfile import mkstemp
 from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
+from llvmlite.utils import get_hello_pass_library
 from llvmlite.tests import TestCase
+
+
+@contextmanager
+def capture_stderr():
+    class StringBox:
+        def __init__(self):
+            self.data = []
+
+        def append(self, data):
+            self.data.append(data)
+
+        def as_str(self):
+            return b''.join(self.data).decode('utf8')
+
+    stderr_fileno = sys.stderr.fileno()
+    stderr_copy = os.dup(stderr_fileno)
+    stderr_pipe = os.pipe()
+    os.dup2(stderr_pipe[1], stderr_fileno)
+    os.close(stderr_pipe[1])
+
+    captured = StringBox()
+
+    def drain_pipe(captured):
+        while True:
+            data = os.read(stderr_pipe[0], 1024)
+            if not data:
+                break
+            captured.append(data)
+
+    t = threading.Thread(target=drain_pipe, args=[captured])
+    t.start()
+    yield captured
+    os.close(stderr_fileno)
+    t.join()
+    os.close(stderr_pipe[0])
+    os.dup2(stderr_copy, stderr_fileno)
+    os.close(stderr_copy)
 
 
 # arvm7l needs extra ABI symbols to link successfully
@@ -1528,6 +1567,35 @@ class TestModulePassManager(BaseTest, PassManagerTestMixin):
         self.assertTrue(status)
         self.assertIn("Passed", remarks)
         self.assertIn("inlineme", remarks)
+
+    def test_load_pass(self):
+        path = os.path.join(os.path.dirname(__file__),
+                            "../binding/", get_hello_pass_library())
+        pm = self.pm()
+        mod = self.module()
+        with self.assertRaises(ValueError):
+            pm.add_pass_by_arg("doesntexist")
+
+        llvm.load_pass_plugin(path)
+
+        pm.add_pass_by_arg("pyhello")
+        with capture_stderr() as captured:
+            pm.run(mod)
+        self.assertEqual(captured.as_str(), "Hello: sum\n")
+
+    def test_list_passes(self):
+        path = os.path.join(os.path.dirname(__file__),
+                            "../binding/", get_hello_pass_library())
+        pr = llvm.get_pass_registry()
+        passes = set(pr.list_registered_passes())
+        self.assertNotIn("pyhello", passes)
+        llvm.load_pass_plugin(path)
+        passes_after_load = set(pr.list_registered_passes())
+        new_info = passes_after_load - passes
+        self.assertEqual(len(new_info), 1)
+        hello_info = list(new_info)[0]
+        self.assertEqual(hello_info.arg, "pyhello")
+        self.assertEqual(hello_info.name, "Hello World Pass")
 
 
 class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
