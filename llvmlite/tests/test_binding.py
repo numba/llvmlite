@@ -6,7 +6,6 @@ import locale
 import os
 import platform
 import re
-import shutil
 import subprocess
 import sys
 import unittest
@@ -1938,7 +1937,6 @@ class TestObjectFile(BaseTest):
                 self.assertEqual(s.data().hex(), issue_632_text)
 
 
-
 class TestArchiveFile(BaseTest):
     mod_archive_asm = """
         ;ModuleID = <string>
@@ -1974,10 +1972,10 @@ class TestArchiveFile(BaseTest):
         jit.add_archive(static_library_name)
 
         mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
-        jit.get_function_address("__multiply_accumulate"))
+            jit.get_function_address("__multiply_accumulate"))
 
         msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
-        jit.get_function_address("__multiply_subtract"))
+            jit.get_function_address("__multiply_subtract"))
 
         self.assertEqual(mac_func(10, 10, 20), 120)
         self.assertEqual(msub_func(10, 10, 20), 80)
@@ -1985,6 +1983,7 @@ class TestArchiveFile(BaseTest):
         os.unlink(objects[0])
         os.unlink(objects[1])
         os.unlink(static_library_name)
+
 
 class TestTimePasses(BaseTest):
     def test_reporting(self):

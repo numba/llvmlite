@@ -162,7 +162,9 @@ class ExecutionEngine(ffi.ObjectRef):
         """
 
         with ffi.OutputString() as outerr:
-            if ffi.lib.LLVMPY_MCJITAddArchive(self, archive_file.encode(), outerr):
+            res = ffi.lib.LLVMPY_MCJITAddArchive(self, archive_file.encode(),
+                                                 outerr)
+            if res:
                 raise RuntimeError(str(outerr))
 
     def set_object_cache(self, notify_func=None, getbuffer_func=None):
