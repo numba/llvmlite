@@ -10,7 +10,9 @@
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Support/Memory.h"
-
+#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Object/Archive.h"
+#include "llvm/Support/Errc.h"
 #include <cstdio>
 #include <memory>
 
@@ -165,6 +167,40 @@ LLVMPY_MCJITAddObjectFile(LLVMExecutionEngineRef EE, LLVMObjectFileRef ObjF) {
 
     engine->addObjectFile(
         {std::move(binary_tuple.first), std::move(binary_tuple.second)});
+}
+
+API_EXPORT(int)
+LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
+                       const char **OutError) {
+    using namespace llvm;
+    using namespace llvm::object;
+    auto engine = unwrap(EE);
+
+    ErrorOr<std::unique_ptr<MemoryBuffer>> ArBufOrErr = MemoryBuffer::getFile(ArchiveName);
+
+    std::error_code EC = ArBufOrErr.getError();
+    if (EC){
+        *OutError = LLVMPY_CreateString(EC.message().c_str());
+        return 1;
+    }
+
+    Expected<std::unique_ptr<object::Archive>> ArchiveOrError =
+        object::Archive::create(ArBufOrErr.get()->getMemBufferRef());
+
+    if (!ArchiveOrError) {
+        auto takeErr = ArchiveOrError.takeError();
+        std::string archiveErrStr = "Unable to load archive: " + std::string(ArchiveName);
+        *OutError = LLVMPY_CreateString(archiveErrStr.c_str());
+        return 1;
+    }
+
+    std::unique_ptr<MemoryBuffer> &ArBuf = ArBufOrErr.get();
+    std::unique_ptr<object::Archive> &Ar = ArchiveOrError.get();
+    object::OwningBinary<object::Archive> owningBinaryArchive(std::move(Ar),
+                                                              std::move(ArBuf));
+    engine->addArchive(std::move(owningBinaryArchive));
+    *OutError = LLVMPY_CreateString("");
+    return 0;
 }
 
 //

@@ -79,6 +79,13 @@ The ExecutionEngine class
             or a object file instance. Object file instance is not usable after this
             call.
 
+   * .. method:: add_archive(archive_file)
+
+        Add the symbols from the specified static archive file to the execution
+        engine. It is a fatal error in LLVM if the *archive_file* does not exist.
+
+        * *archive* str: a path to the static object file
+
    * .. method:: set_object_cache(notify_func=None, getbuffer_func=None)
 
         Set the object cache callbacks for this engine.

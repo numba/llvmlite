@@ -6,6 +6,7 @@ import locale
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import unittest
@@ -16,6 +17,8 @@ from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
+import llvmlite.tests
+from distutils.ccompiler import new_compiler
 
 
 # arvm7l needs extra ABI symbols to link successfully
@@ -1934,6 +1937,54 @@ class TestObjectFile(BaseTest):
                 self.assertEqual(len(s.data()), 31)
                 self.assertEqual(s.data().hex(), issue_632_text)
 
+
+
+class TestArchiveFile(BaseTest):
+    mod_archive_asm = """
+        ;ModuleID = <string>
+        target triple = "{triple}"
+
+        declare i32 @__multiply_accumulate(i32 %0, i32 %1, i32 %2)
+        declare i32 @__multiply_subtract(i32 %0, i32 %1, i32 %2)
+    """
+
+    @unittest.skipUnless(sys.platform.startswith('linux'),
+                         "Linux-specific test")
+    def test_add_archive(self):
+        target_machine = self.target_machine(jit=False)
+
+        jit = llvm.create_mcjit_compiler(self.module(self.mod_archive_asm),
+                                         target_machine)
+
+        # Create compiler with default options
+        c = new_compiler()
+        workdir = os.path.dirname(llvmlite.tests.__file__) + "/"
+
+        # Compile into .o files
+        file1 = workdir + "a.c"
+        file2 = workdir + "b.c"
+
+        objects = c.compile([file1, file2])
+        library_name = "foo"
+        # Create static or shared library
+
+        c.create_static_lib(objects, library_name, output_dir=workdir)
+
+        static_library_name = workdir + "lib" + library_name + ".a"
+        jit.add_archive(static_library_name)
+
+        mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
+        jit.get_function_address("__multiply_accumulate"))
+
+        msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
+        jit.get_function_address("__multiply_subtract"))
+
+        self.assertEqual(mac_func(10, 10, 20), 120)
+        self.assertEqual(msub_func(10, 10, 20), 80)
+
+        os.unlink(objects[0])
+        os.unlink(objects[1])
+        os.unlink(static_library_name)
 
 class TestTimePasses(BaseTest):
     def test_reporting(self):
