@@ -10,7 +10,7 @@ import subprocess
 import sys
 import unittest
 from contextlib import contextmanager
-from tempfile import mkstemp
+from tempfile import mkstemp, TemporaryDirectory
 
 from llvmlite import ir
 from llvmlite import binding as llvm
@@ -1949,40 +1949,42 @@ class TestArchiveFile(BaseTest):
     @unittest.skipUnless(sys.platform.startswith('linux'),
                          "Linux-specific test")
     def test_add_archive(self):
-        target_machine = self.target_machine(jit=False)
+        tmpdir = TemporaryDirectory()
+        try:
+            target_machine = self.target_machine(jit=False)
 
-        jit = llvm.create_mcjit_compiler(self.module(self.mod_archive_asm),
-                                         target_machine)
+            jit = llvm.create_mcjit_compiler(self.module(self.mod_archive_asm),
+                                             target_machine)
 
-        # Create compiler with default options
-        c = new_compiler()
-        workdir = os.path.dirname(llvmlite.tests.__file__) + "/"
+            # Create compiler with default options
+            c = new_compiler()
+            workdir = tmpdir.name
+            srcdir = os.path.dirname(llvmlite.tests.__file__) + "/"
 
-        # Compile into .o files
-        file1 = workdir + "a.c"
-        file2 = workdir + "b.c"
+            # Compile into .o files
+            file1 = srcdir + "a.c"
+            file2 = srcdir + "b.c"
 
-        objects = c.compile([file1, file2])
-        library_name = "foo"
-        # Create static or shared library
+            objects = c.compile([file1, file2], output_dir=workdir)
+            library_name = "foo"
 
-        c.create_static_lib(objects, library_name, output_dir=workdir)
+            c.create_static_lib(objects, library_name, output_dir=workdir)
 
-        static_library_name = workdir + "lib" + library_name + ".a"
-        jit.add_archive(static_library_name)
+            static_library_name = workdir + "/" + "lib" + library_name + ".a"
+            jit.add_archive(static_library_name)
 
-        mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
-            jit.get_function_address("__multiply_accumulate"))
+            mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
+                jit.get_function_address("__multiply_accumulate"))
 
-        msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
-            jit.get_function_address("__multiply_subtract"))
+            msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
+                jit.get_function_address("__multiply_subtract"))
 
-        self.assertEqual(mac_func(10, 10, 20), 120)
-        self.assertEqual(msub_func(10, 10, 20), 80)
-
-        os.unlink(objects[0])
-        os.unlink(objects[1])
-        os.unlink(static_library_name)
+            self.assertEqual(mac_func(10, 10, 20), 120)
+            self.assertEqual(msub_func(10, 10, 20), 80)
+        finally:
+            # Manually invoke cleanup to remove tmpdir, objects
+            # and static library created during test
+            tmpdir.cleanup()
 
 
 class TestTimePasses(BaseTest):
