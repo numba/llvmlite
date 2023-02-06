@@ -1,0 +1,776 @@
+commit 8e0d52e9e3a983ab441ca59978b58d688732dcf2
+Author: David Spickett <david.spickett@linaro.org>
+Date:   Wed Jun 9 16:36:39 2021 +0000
+
+    [llvm][AArch64] Handle arrays of struct properly (from IR)
+    
+    This only applies to FastIsel. GlobalIsel seems to sidestep
+    the issue.
+    
+    This fixes https://bugs.llvm.org/show_bug.cgi?id=46996
+    
+    One of the things we do in llvm is decide if a type needs
+    consecutive registers. Previously, we just checked if it
+    was an array or not.
+    (plus an SVE specific check that is not changing here)
+    
+    This causes some confusion when you arbitrary IR like:
+    ```
+    %T1 = type { double, i1 };
+    define [ 1 x %T1 ] @foo() {
+    entry:
+      ret [ 1 x %T1 ] zeroinitializer
+    }
+    ```
+    
+    We see it is an array so we call CC_AArch64_Custom_Block
+    which bails out when it sees the i1, a type we don't want
+    to put into a block.
+    
+    This leaves the location of the double in some kind of
+    intermediate state and leads to odd codegen. Which then crashes
+    the backend because it doesn't know how to implement
+    what it's been asked for.
+    
+    You get this:
+    ```
+      renamable $d0 = FMOVD0
+      $w0 = COPY killed renamable $d0
+    ```
+    
+    Rather than this:
+    ```
+      $d0 = FMOVD0
+      $w0 = COPY $wzr
+    ```
+    
+    The backend knows how to copy 64 bit to 64 bit registers,
+    but not 64 to 32. It can certainly be taught how but the real
+    issue seems to be us even trying to assign a register block
+    in the first place.
+    
+    This change makes the logic of
+    AArch64TargetLowering::functionArgumentNeedsConsecutiveRegisters
+    a bit more in depth. If we find an array, also check that all the
+    nested aggregates in that array have a single member type.
+    
+    Then CC_AArch64_Custom_Block's assumption of a type that looks
+    like [ N x type ] will be valid and we get the expected codegen.
+    
+    New tests have been added to exercise these situations. Note that
+    some of the output is not ABI compliant. The aim of this change is
+    to simply handle these situations and not to make our processing
+    of arbitrary IR ABI compliant.
+    
+    Reviewed By: efriedma
+    
+    Differential Revision: https://reviews.llvm.org/D104123
+
+diff --git a/llvm/include/llvm/CodeGen/TargetLowering.h b/llvm/include/llvm/CodeGen/TargetLowering.h
+index 06f2b3ca38ea..f6b8ab1a8aef 100644
+--- a/llvm/include/llvm/CodeGen/TargetLowering.h
++++ b/llvm/include/llvm/CodeGen/TargetLowering.h
+@@ -3954,7 +3954,8 @@ public:
+   /// must be passed in a block of consecutive registers.
+   virtual bool
+   functionArgumentNeedsConsecutiveRegisters(Type *Ty, CallingConv::ID CallConv,
+-                                            bool isVarArg) const {
++                                            bool isVarArg,
++                                            const DataLayout &DL) const {
+     return false;
+   }
+ 
+diff --git a/llvm/lib/CodeGen/SelectionDAG/FastISel.cpp b/llvm/lib/CodeGen/SelectionDAG/FastISel.cpp
+index f5948d2a20dc..88053aaf6584 100644
+--- a/llvm/lib/CodeGen/SelectionDAG/FastISel.cpp
++++ b/llvm/lib/CodeGen/SelectionDAG/FastISel.cpp
+@@ -1192,7 +1192,7 @@ bool FastISel::lowerCallTo(CallLoweringInfo &CLI) {
+     if (Arg.IsByVal)
+       FinalType = cast<PointerType>(Arg.Ty)->getElementType();
+     bool NeedsRegBlock = TLI.functionArgumentNeedsConsecutiveRegisters(
+-        FinalType, CLI.CallConv, CLI.IsVarArg);
++        FinalType, CLI.CallConv, CLI.IsVarArg, DL);
+ 
+     ISD::ArgFlagsTy Flags;
+     if (Arg.IsZExt)
+diff --git a/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp b/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
+index d2930391f87a..e3d8e43b54d8 100644
+--- a/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
++++ b/llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
+@@ -1862,7 +1862,7 @@ void SelectionDAGBuilder::visitRet(const ReturnInst &I) {
+ 
+       bool NeedsRegBlock = TLI.functionArgumentNeedsConsecutiveRegisters(
+           I.getOperand(0)->getType(), F->getCallingConv(),
+-          /*IsVarArg*/ false);
++          /*IsVarArg*/ false, DL);
+ 
+       ISD::NodeType ExtendKind = ISD::ANY_EXTEND;
+       if (F->getAttributes().hasAttribute(AttributeList::ReturnIndex,
+@@ -9107,7 +9107,7 @@ TargetLowering::LowerCallTo(TargetLowering::CallLoweringInfo &CLI) const {
+     CLI.IsTailCall = false;
+   } else {
+     bool NeedsRegBlock = functionArgumentNeedsConsecutiveRegisters(
+-        CLI.RetTy, CLI.CallConv, CLI.IsVarArg);
++        CLI.RetTy, CLI.CallConv, CLI.IsVarArg, DL);
+     for (unsigned I = 0, E = RetTys.size(); I != E; ++I) {
+       ISD::ArgFlagsTy Flags;
+       if (NeedsRegBlock) {
+@@ -9167,7 +9167,7 @@ TargetLowering::LowerCallTo(TargetLowering::CallLoweringInfo &CLI) const {
+     if (Args[i].IsByVal)
+       FinalType = cast<PointerType>(Args[i].Ty)->getElementType();
+     bool NeedsRegBlock = functionArgumentNeedsConsecutiveRegisters(
+-        FinalType, CLI.CallConv, CLI.IsVarArg);
++        FinalType, CLI.CallConv, CLI.IsVarArg, DL);
+     for (unsigned Value = 0, NumValues = ValueVTs.size(); Value != NumValues;
+          ++Value) {
+       EVT VT = ValueVTs[Value];
+@@ -9683,7 +9683,7 @@ void SelectionDAGISel::LowerArguments(const Function &F) {
+     if (Arg.hasAttribute(Attribute::ByVal))
+       FinalType = Arg.getParamByValType();
+     bool NeedsRegBlock = TLI->functionArgumentNeedsConsecutiveRegisters(
+-        FinalType, F.getCallingConv(), F.isVarArg());
++        FinalType, F.getCallingConv(), F.isVarArg(), DL);
+     for (unsigned Value = 0, NumValues = ValueVTs.size();
+          Value != NumValues; ++Value) {
+       EVT VT = ValueVTs[Value];
+diff --git a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
+index 48ca9039b1bd..6070ef1de44f 100644
+--- a/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
++++ b/llvm/lib/Target/AArch64/AArch64ISelLowering.cpp
+@@ -31,6 +31,7 @@
+ #include "llvm/ADT/Triple.h"
+ #include "llvm/ADT/Twine.h"
+ #include "llvm/Analysis/VectorUtils.h"
++#include "llvm/CodeGen/Analysis.h"
+ #include "llvm/CodeGen/CallingConvLower.h"
+ #include "llvm/CodeGen/MachineBasicBlock.h"
+ #include "llvm/CodeGen/MachineFrameInfo.h"
+@@ -14709,15 +14710,17 @@ Value *AArch64TargetLowering::emitStoreConditional(IRBuilder<> &Builder,
+ }
+ 
+ bool AArch64TargetLowering::functionArgumentNeedsConsecutiveRegisters(
+-    Type *Ty, CallingConv::ID CallConv, bool isVarArg) const {
+-  if (Ty->isArrayTy())
+-    return true;
+-
+-  const TypeSize &TySize = Ty->getPrimitiveSizeInBits();
+-  if (TySize.isScalable() && TySize.getKnownMinSize() > 128)
+-    return true;
++    Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++    const DataLayout &DL) const {
++  if (!Ty->isArrayTy()) {
++    const TypeSize &TySize = Ty->getPrimitiveSizeInBits();
++    return TySize.isScalable() && TySize.getKnownMinSize() > 128;
++  }
+ 
+-  return false;
++  // All non aggregate members of the type must have the same type
++  SmallVector<EVT, 0> ValueVTs;
++  ComputeValueVTs(*this, DL, Ty, ValueVTs);
++  return is_splat(ValueVTs);
+ }
+ 
+ bool AArch64TargetLowering::shouldNormalizeToSelectSequence(LLVMContext &,
+diff --git a/llvm/lib/Target/AArch64/AArch64ISelLowering.h b/llvm/lib/Target/AArch64/AArch64ISelLowering.h
+index 4fe77481706b..425ba055926a 100644
+--- a/llvm/lib/Target/AArch64/AArch64ISelLowering.h
++++ b/llvm/lib/Target/AArch64/AArch64ISelLowering.h
+@@ -727,9 +727,10 @@ public:
+   MachineMemOperand::Flags getTargetMMOFlags(
+     const Instruction &I) const override;
+ 
+-  bool functionArgumentNeedsConsecutiveRegisters(Type *Ty,
+-                                                 CallingConv::ID CallConv,
+-                                                 bool isVarArg) const override;
++  bool functionArgumentNeedsConsecutiveRegisters(
++      Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++      const DataLayout &DL) const override;
++
+   /// Used for exception handling on Win64.
+   bool needsFixedCatchObjects() const override;
+ 
+diff --git a/llvm/lib/Target/AArch64/GISel/AArch64CallLowering.cpp b/llvm/lib/Target/AArch64/GISel/AArch64CallLowering.cpp
+index 4832ae8f415f..0daa930c3b26 100644
+--- a/llvm/lib/Target/AArch64/GISel/AArch64CallLowering.cpp
++++ b/llvm/lib/Target/AArch64/GISel/AArch64CallLowering.cpp
+@@ -261,7 +261,7 @@ void AArch64CallLowering::splitToValueTypes(
+   assert(OrigArg.Regs.size() == SplitVTs.size() && "Regs / types mismatch");
+ 
+   bool NeedsRegBlock = TLI.functionArgumentNeedsConsecutiveRegisters(
+-      OrigArg.Ty, CallConv, false);
++      OrigArg.Ty, CallConv, false, DL);
+   for (unsigned i = 0, e = SplitVTs.size(); i < e; ++i) {
+     Type *SplitTy = SplitVTs[i].getTypeForEVT(Ctx);
+     SplitArgs.emplace_back(OrigArg.Regs[i], SplitTy, OrigArg.Flags[0],
+diff --git a/llvm/lib/Target/ARM/ARMCallLowering.cpp b/llvm/lib/Target/ARM/ARMCallLowering.cpp
+index d860473011e7..c0f8b50cdc51 100644
+--- a/llvm/lib/Target/ARM/ARMCallLowering.cpp
++++ b/llvm/lib/Target/ARM/ARMCallLowering.cpp
+@@ -219,7 +219,7 @@ void ARMCallLowering::splitToValueTypes(const ArgInfo &OrigArg,
+ 
+     bool NeedsConsecutiveRegisters =
+         TLI.functionArgumentNeedsConsecutiveRegisters(
+-            SplitTy, F.getCallingConv(), F.isVarArg());
++            SplitTy, F.getCallingConv(), F.isVarArg(), DL);
+     if (NeedsConsecutiveRegisters) {
+       Flags.setInConsecutiveRegs();
+       if (i == e - 1)
+diff --git a/llvm/lib/Target/ARM/ARMISelLowering.cpp b/llvm/lib/Target/ARM/ARMISelLowering.cpp
+index 287e2e60e572..ac09439cc878 100644
+--- a/llvm/lib/Target/ARM/ARMISelLowering.cpp
++++ b/llvm/lib/Target/ARM/ARMISelLowering.cpp
+@@ -18852,7 +18852,8 @@ Align ARMTargetLowering::getABIAlignmentForCallingConv(Type *ArgTy,
+ /// [N x i32] or [N x i64]. This allows front-ends to skip emitting padding when
+ /// passing according to AAPCS rules.
+ bool ARMTargetLowering::functionArgumentNeedsConsecutiveRegisters(
+-    Type *Ty, CallingConv::ID CallConv, bool isVarArg) const {
++    Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++    const DataLayout &DL) const {
+   if (getEffectiveCallingConv(CallConv, isVarArg) !=
+       CallingConv::ARM_AAPCS_VFP)
+     return false;
+diff --git a/llvm/lib/Target/ARM/ARMISelLowering.h b/llvm/lib/Target/ARM/ARMISelLowering.h
+index 8b1f4183032e..f05a42db9c75 100644
+--- a/llvm/lib/Target/ARM/ARMISelLowering.h
++++ b/llvm/lib/Target/ARM/ARMISelLowering.h
+@@ -570,7 +570,8 @@ class VectorType;
+     /// Returns true if an argument of type Ty needs to be passed in a
+     /// contiguous block of registers in calling convention CallConv.
+     bool functionArgumentNeedsConsecutiveRegisters(
+-        Type *Ty, CallingConv::ID CallConv, bool isVarArg) const override;
++        Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++        const DataLayout &DL) const override;
+ 
+     /// If a physical register, this returns the register that receives the
+     /// exception address on entry to an EH pad.
+diff --git a/llvm/lib/Target/PowerPC/PPCISelLowering.h b/llvm/lib/Target/PowerPC/PPCISelLowering.h
+index 768eaa43e013..a3e53430c5b3 100644
+--- a/llvm/lib/Target/PowerPC/PPCISelLowering.h
++++ b/llvm/lib/Target/PowerPC/PPCISelLowering.h
+@@ -959,7 +959,8 @@ namespace llvm {
+     /// Returns true if an argument of type Ty needs to be passed in a
+     /// contiguous block of registers in calling convention CallConv.
+     bool functionArgumentNeedsConsecutiveRegisters(
+-      Type *Ty, CallingConv::ID CallConv, bool isVarArg) const override {
++        Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++        const DataLayout &DL) const override {
+       // We support any array type as "consecutive" block in the parameter
+       // save area.  The element type defines the alignment requirement and
+       // whether the argument should go in GPRs, FPRs, or VRs if available.
+diff --git a/llvm/test/CodeGen/AArch64/argument-blocks-array-of-struct.ll b/llvm/test/CodeGen/AArch64/argument-blocks-array-of-struct.ll
+new file mode 100644
+index 000000000000..47ebc394d739
+--- /dev/null
++++ b/llvm/test/CodeGen/AArch64/argument-blocks-array-of-struct.ll
+@@ -0,0 +1,511 @@
++; RUN: llc -mtriple=aarch64-none-linux-gnu -o - %s | FileCheck %s
++
++;; Check that the llvm aarch64 backend can handle arrays of
++;; structs and vice versa when passed from IR.
++;; (this layering is something clang would normally simplify)
++;;
++;; Some of these examples are not ABI compliant and they're not
++;; meant to be. For instance according to the ABI an aggregate
++;; with more than 4 members must go in memory. This restriction
++;; is applied earlier in the compilation process so here we do
++;; see 8 member types in registers.
++;;
++;; When we have more than 8 members we simply run out of registers
++;; and that's what produces the 8 limit here.
++
++;; Plain arrays
++
++define [ 0 x double ] @array_0() {
++; CHECK-LABEL: array_0:
++; CHECK:  ret
++  ret [ 0 x double ] zeroinitializer
++}
++
++define [ 1 x double ] @array_1() {
++; CHECK-LABEL: array_1:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  ret
++  ret [ 1 x double ] zeroinitializer
++}
++
++define [ 8 x double ] @array_8() {
++; CHECK-LABEL: array_8:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  fmov d2, xzr
++; CHECK-NEXT:  fmov d3, xzr
++; CHECK-NEXT:  fmov d4, xzr
++; CHECK-NEXT:  fmov d5, xzr
++; CHECK-NEXT:  fmov d6, xzr
++; CHECK-NEXT:  fmov d7, xzr
++; CHECK-NEXT:  ret
++  ret [ 8 x double ] zeroinitializer
++}
++
++;; > 8 items goes on the stack
++
++define [ 9 x double ] @array_9() {
++; CHECK-LABEL: array_9:
++; CHECK:      movi v0.2d, #0000000000000000
++; CHECK-NEXT: str xzr, [x8, #64]
++; CHECK-NEXT: stp q0, q0, [x8, #32]
++; CHECK-NEXT: stp q0, q0, [x8]
++; CHECK-NEXT:  ret
++  ret [ 9 x double ] zeroinitializer
++}
++
++;; Won't use any registers, just checking for assumptions.
++%T_STRUCT_0M = type { }
++
++define %T_STRUCT_0M @struct_zero_fields() {
++; CHECK-LABEL: struct_zero_fields:
++; CHECK:  ret
++  ret %T_STRUCT_0M zeroinitializer
++}
++
++define [ 1 x %T_STRUCT_0M ] @array_of_struct_zero_fields() {
++; CHECK-LABEL: array_of_struct_zero_fields:
++; CHECK:  ret
++  ret [ 1 x %T_STRUCT_0M ] zeroinitializer
++}
++
++define [ 2 x %T_STRUCT_0M ] @array_of_struct_zero_fields_in_struct() {
++; CHECK-LABEL: array_of_struct_zero_fields_in_struct:
++; CHECK:  ret
++  ret [ 2 x %T_STRUCT_0M ] zeroinitializer
++}
++
++%T_STRUCT_1M = type { i32 }
++
++define %T_STRUCT_1M @struct_one_field() {
++; CHECK-LABEL: struct_one_field:
++; CHECK:       w0, wzr
++; CHECK-NEXT:  ret
++  ret %T_STRUCT_1M zeroinitializer
++}
++
++define [ 1 x %T_STRUCT_1M ] @array_of_struct_one_field() {
++; CHECK-LABEL: array_of_struct_one_field:
++; CHECK:       w0, wzr
++; CHECK-NEXT:  ret
++  ret [ 1 x %T_STRUCT_1M ] zeroinitializer
++}
++
++;; This one will be a reg block
++define [ 2 x %T_STRUCT_1M ] @array_of_struct_one_field_2() {
++; CHECK-LABEL: array_of_struct_one_field_2:
++; CHECK:       w0, wzr
++; CHECK:       w1, wzr
++; CHECK-NEXT:  ret
++  ret [ 2 x %T_STRUCT_1M ] zeroinitializer
++}
++
++;; Different types for each field, will not be put in a reg block
++%T_STRUCT_DIFFM = type { double, i32 }
++
++define %T_STRUCT_DIFFM @struct_different_field_types() {
++; CHECK-LABEL: struct_different_field_types:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  w0, wzr
++; CHECK-NEXT:  ret
++  ret %T_STRUCT_DIFFM zeroinitializer
++}
++
++define [ 1 x %T_STRUCT_DIFFM ] @array_of_struct_different_field_types() {
++; CHECK-LABEL: array_of_struct_different_field_types:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  w0, wzr
++; CHECK-NEXT:  ret
++  ret [ 1 x %T_STRUCT_DIFFM ] zeroinitializer
++}
++
++define [ 2 x %T_STRUCT_DIFFM ] @array_of_struct_different_field_types_2() {
++; CHECK-LABEL: array_of_struct_different_field_types_2:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  w0, wzr
++; CHECK-NEXT:  w1, wzr
++; CHECK-NEXT:  ret
++  ret [ 2 x %T_STRUCT_DIFFM ] zeroinitializer
++}
++
++;; Each field is the same type, can be put in a reg block
++%T_STRUCT_SAMEM = type { double, double }
++
++;; Here isn't a block as such, we just allocate two consecutive registers
++define %T_STRUCT_SAMEM @struct_same_field_types() {
++; CHECK-LABEL: struct_same_field_types:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  ret
++  ret %T_STRUCT_SAMEM zeroinitializer
++}
++
++define [ 1 x %T_STRUCT_SAMEM ] @array_of_struct_same_field_types() {
++; CHECK-LABEL: array_of_struct_same_field_types:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  ret
++  ret [ 1 x %T_STRUCT_SAMEM ] zeroinitializer
++}
++
++define [ 2 x %T_STRUCT_SAMEM ] @array_of_struct_same_field_types_2() {
++; CHECK-LABEL: array_of_struct_same_field_types_2:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  fmov d2, xzr
++; CHECK-NEXT:  fmov d3, xzr
++; CHECK-NEXT:  ret
++  ret [ 2 x %T_STRUCT_SAMEM ] zeroinitializer
++}
++
++;; Same field type but integer this time. Put into x registers instead.
++%T_STRUCT_SAMEM_INT = type { i64, i64 }
++
++define %T_STRUCT_SAMEM_INT @struct_same_field_types_int() {
++; CHECK-LABEL: struct_same_field_types_int:
++; CHECK:       x0, xzr
++; CHECK-NEXT:  x1, xzr
++; CHECK-NEXT:  ret
++  ret %T_STRUCT_SAMEM_INT zeroinitializer
++}
++
++define [ 1 x %T_STRUCT_SAMEM_INT ] @array_of_struct_same_field_types_int() {
++; CHECK-LABEL: array_of_struct_same_field_types_int:
++; CHECK:       x0, xzr
++; CHECK-NEXT:  x1, xzr
++; CHECK-NEXT:  ret
++  ret [ 1 x %T_STRUCT_SAMEM_INT ] zeroinitializer
++}
++
++define [ 2 x %T_STRUCT_SAMEM_INT ] @array_of_struct_same_field_types_int_2() {
++; CHECK-LABEL: array_of_struct_same_field_types_int_2:
++; CHECK:       x0, xzr
++; CHECK-NEXT:  x1, xzr
++; CHECK-NEXT:  x2, xzr
++; CHECK-NEXT:  x3, xzr
++; CHECK-NEXT:  ret
++  ret [ 2 x %T_STRUCT_SAMEM_INT ] zeroinitializer
++}
++
++;; An aggregate of more than 8 items must go in memory.
++;; 4x2 struct fields = 8 items so it goes in a block.
++
++define [ 4 x %T_STRUCT_SAMEM ] @array_of_struct_8_fields() {
++; CHECK-LABEL: array_of_struct_8_fields:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  fmov d2, xzr
++; CHECK-NEXT:  fmov d3, xzr
++; CHECK-NEXT:  fmov d4, xzr
++; CHECK-NEXT:  fmov d5, xzr
++; CHECK-NEXT:  fmov d6, xzr
++; CHECK-NEXT:  fmov d7, xzr
++; CHECK-NEXT:  ret
++  ret [ 4 x %T_STRUCT_SAMEM ] zeroinitializer
++}
++
++;; 5x2 fields = 10 so it is returned in memory.
++
++define [ 5 x %T_STRUCT_SAMEM ] @array_of_struct_in_memory() {
++; CHECK-LABEL: array_of_struct_in_memory:
++; CHECK:       movi    v0.2d, #0000000000000000
++; CHECK-NEXT:  stp     q0, q0, [x8, #48]
++; CHECK-NEXT:  stp     q0, q0, [x8, #16]
++; CHECK-NEXT:  str     q0, [x8]
++; CHECK-NEXT:  ret
++  ret [ 5 x %T_STRUCT_SAMEM ] zeroinitializer
++}
++
++;; A struct whose field is an array.
++%T_STRUCT_ARRAYM = type { [ 2 x double ]};
++
++define %T_STRUCT_ARRAYM @struct_array_field() {
++; CHECK-LABEL: struct_array_field:
++; CHECK:       fmov    d0, xzr
++; CHECK-NEXT:  fmov    d1, xzr
++; CHECK-NEXT:  ret
++  ret %T_STRUCT_ARRAYM zeroinitializer
++}
++
++define [ 1 x %T_STRUCT_ARRAYM ] @array_of_struct_array_field() {
++; CHECK-LABEL: array_of_struct_array_field:
++; CHECK:       fmov    d0, xzr
++; CHECK-NEXT:  fmov    d1, xzr
++; CHECK-NEXT:  ret
++  ret [ 1 x %T_STRUCT_ARRAYM ] zeroinitializer
++}
++
++define [ 2 x %T_STRUCT_ARRAYM ] @array_of_struct_array_field_2() {
++; CHECK-LABEL: array_of_struct_array_field_2:
++; CHECK:       fmov    d0, xzr
++; CHECK-NEXT:  fmov    d1, xzr
++; CHECK-NEXT:  fmov    d2, xzr
++; CHECK-NEXT:  fmov    d3, xzr
++; CHECK-NEXT:  ret
++  ret [ 2 x %T_STRUCT_ARRAYM ] zeroinitializer
++}
++
++;; All non-aggregate fields must have the same type, all through the
++;; overall aggreagate. This is false here because of the i32.
++%T_NESTED_STRUCT_DIFFM = type {
++  [ 1 x { { double, double } } ],
++  [ 1 x { { double, i32 } } ]
++};
++
++define %T_NESTED_STRUCT_DIFFM @struct_nested_different_field_types() {
++; CHECK-LABEL: struct_nested_different_field_types:
++; CHECK:       fmov d0, xzr
++; CHECK:       fmov d1, xzr
++; CHECK:       fmov d2, xzr
++; CHECK-NEXT:  w0, wzr
++; CHECK-NEXT:  ret
++  ret %T_NESTED_STRUCT_DIFFM zeroinitializer
++}
++
++define [ 1 x %T_NESTED_STRUCT_DIFFM ] @array_of_struct_nested_different_field_types() {
++; CHECK-LABEL: array_of_struct_nested_different_field_types:
++; CHECK:       fmov d0, xzr
++; CHECK:       fmov d1, xzr
++; CHECK:       fmov d2, xzr
++; CHECK-NEXT:  w0, wzr
++; CHECK-NEXT:  ret
++  ret [ 1 x %T_NESTED_STRUCT_DIFFM ] zeroinitializer
++}
++
++define [ 2 x %T_NESTED_STRUCT_DIFFM ] @array_of_struct_nested_different_field_types_2() {
++; CHECK-LABEL: array_of_struct_nested_different_field_types_2:
++; CHECK:       fmov d0, xzr
++; CHECK:       fmov d1, xzr
++; CHECK:       fmov d2, xzr
++; CHECK-NEXT:  fmov d3, xzr
++; CHECK-NEXT:  fmov d4, xzr
++; CHECK-NEXT:  fmov d5, xzr
++; CHECK-NEXT:  w0, wzr
++; CHECK-NEXT:  w1, wzr
++; CHECK-NEXT:  ret
++  ret [ 2 x %T_NESTED_STRUCT_DIFFM ] zeroinitializer
++}
++
++;; All fields here are the same type, more nesting to stress the recursive walk.
++%T_NESTED_STRUCT_SAMEM = type {
++  { { double} },
++  { [ 2 x { double, double } ] }
++};
++
++define %T_NESTED_STRUCT_SAMEM @struct_nested_same_field_types() {
++; CHECK-LABEL: struct_nested_same_field_types:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  fmov d2, xzr
++; CHECK-NEXT:  fmov d3, xzr
++; CHECK-NEXT:  fmov d4, xzr
++; CHECK-NEXT:  ret
++  ret %T_NESTED_STRUCT_SAMEM zeroinitializer
++}
++
++define [ 1 x %T_NESTED_STRUCT_SAMEM ] @array_of_struct_nested_same_field_types() {
++; CHECK-LABEL: array_of_struct_nested_same_field_types:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  fmov d2, xzr
++; CHECK-NEXT:  fmov d3, xzr
++; CHECK-NEXT:  fmov d4, xzr
++; CHECK-NEXT:  ret
++  ret [ 1 x %T_NESTED_STRUCT_SAMEM ] zeroinitializer
++}
++
++;; 2 x (1 + (2 x 2)) = 10 so this is returned in memory
++define [ 2 x %T_NESTED_STRUCT_SAMEM ] @array_of_struct_nested_same_field_types_2() {
++; CHECK-LABEL: array_of_struct_nested_same_field_types_2:
++; CHECK:      movi    v0.2d, #0000000000000000
++; CHECK-NEXT: stp     q0, q0, [x8, #48]
++; CHECK-NEXT: stp     q0, q0, [x8, #16]
++; CHECK-NEXT: str     q0, [x8]
++; CHECK-NEXT: ret
++  ret [ 2 x %T_NESTED_STRUCT_SAMEM ] zeroinitializer
++}
++
++;; Check combinations of call, return and argument passing
++
++%T_IN_BLOCK = type [ 2 x { double, { double, double } } ]
++
++define %T_IN_BLOCK @return_in_block() {
++; CHECK-LABEL: return_in_block:
++; CHECK:      fmov d0, xzr
++; CHECK-NEXT: fmov d1, xzr
++; CHECK-NEXT: fmov d2, xzr
++; CHECK-NEXT: fmov d3, xzr
++; CHECK-NEXT: fmov d4, xzr
++; CHECK-NEXT: fmov d5, xzr
++; CHECK-NEXT: ret
++  ret %T_IN_BLOCK zeroinitializer
++}
++
++@in_block_store = dso_local global %T_IN_BLOCK zeroinitializer, align 8
++
++define void @caller_in_block() {
++; CHECK-LABEL: caller_in_block:
++; CHECK: bl   return_in_block
++; CHECK-NEXT: adrp x8, in_block_store
++; CHECK-NEXT: add x8, x8, :lo12:in_block_store
++; CHECK-NEXT: stp d0, d1, [x8]
++; CHECK-NEXT: stp d2, d3, [x8, #16]
++; CHECK-NEXT: stp d4, d5, [x8, #32]
++; CHECK-NEXT: ldr x30, [sp], #16
++; CHECK-NEXT: ret
++  %1 = call %T_IN_BLOCK @return_in_block()
++  store %T_IN_BLOCK %1, %T_IN_BLOCK* @in_block_store
++  ret void
++}
++
++define void @callee_in_block(%T_IN_BLOCK %a) {
++; CHECK-LABEL: callee_in_block:
++; CHECK:      adrp x8, in_block_store
++; CHECK-NEXT: add x8, x8, :lo12:in_block_store
++; CHECK-NEXT: stp d4, d5, [x8, #32]
++; CHECK-NEXT: stp d2, d3, [x8, #16]
++; CHECK-NEXT: stp d0, d1, [x8]
++; CHECK-NEXT: ret
++  store %T_IN_BLOCK %a, %T_IN_BLOCK* @in_block_store
++  ret void
++}
++
++define void @argument_in_block() {
++; CHECK-LABEL: argument_in_block:
++; CHECK:      adrp x8, in_block_store
++; CHECK-NEXT: add x8, x8, :lo12:in_block_store
++; CHECK-NEXT: ldp d4, d5, [x8, #32]
++; CHECK-NEXT: ldp d2, d3, [x8, #16]
++; CHECK-NEXT: ldp d0, d1, [x8]
++; CHECK-NEXT: bl callee_in_block
++  %1 = load %T_IN_BLOCK, %T_IN_BLOCK* @in_block_store
++  call void @callee_in_block(%T_IN_BLOCK %1)
++  ret void
++}
++
++%T_IN_MEMORY = type [ 3 x { double, { double, double } } ]
++
++define %T_IN_MEMORY @return_in_memory() {
++; CHECK-LABEL: return_in_memory:
++; CHECK:       movi v0.2d, #0000000000000000
++; CHECK-NEXT:  str xzr, [x8, #64]
++; CHECK-NEXT:  stp q0, q0, [x8, #32]
++; CHECK-NEXT:  stp q0, q0, [x8]
++; CHECK-NEXT:  ret
++  ret %T_IN_MEMORY zeroinitializer
++}
++
++@in_memory_store = dso_local global %T_IN_MEMORY zeroinitializer, align 8
++
++define void @caller_in_memory() {
++; CHECK-LABEL: caller_in_memory:
++; CHECK:      add     x8, sp, #8
++; CHECK-NEXT: bl      return_in_memory
++; CHECK-NEXT: ldr     d0, [sp, #72]
++; CHECK-NEXT: ldur    q1, [sp, #24]
++; CHECK-NEXT: ldur    q2, [sp, #8]
++; CHECK-NEXT: ldur    q3, [sp, #56]
++; CHECK-NEXT: ldur    q4, [sp, #40]
++; CHECK-NEXT: ldr     x30, [sp, #80]
++; CHECK-NEXT: adrp    x8, in_memory_store
++; CHECK-NEXT: add     x8, x8, :lo12:in_memory_store
++; CHECK-NEXT: stp     q2, q1, [x8]
++; CHECK-NEXT: stp     q4, q3, [x8, #32]
++; CHECK-NEXT: str     d0, [x8, #64]
++; CHECK-NEXT: add     sp, sp, #96
++; CHECK-NEXT: ret
++  %1 = call %T_IN_MEMORY @return_in_memory()
++  store %T_IN_MEMORY %1, %T_IN_MEMORY* @in_memory_store
++  ret void
++}
++
++define void @callee_in_memory(%T_IN_MEMORY %a) {
++; CHECK-LABEL: callee_in_memory:
++; CHECK:      ldp     q0, q1, [sp, #32]
++; CHECK-NEXT: ldr     d2, [sp, #64]
++; CHECK-NEXT: ldp     q3, q4, [sp]
++; CHECK-NEXT: adrp    x8, in_memory_store
++; CHECK-NEXT: add     x8, x8, :lo12:in_memory_store
++; CHECK-NEXT: str     d2, [x8, #64]
++; CHECK-NEXT: stp     q0, q1, [x8, #32]
++; CHECK-NEXT: stp     q3, q4, [x8]
++; CHECK-NEXT: ret
++  store %T_IN_MEMORY %a, %T_IN_MEMORY* @in_memory_store
++  ret void
++}
++
++define void @argument_in_memory() {
++; CHECK-LABEL: argument_in_memory:
++; CHECK:      adrp    x8, in_memory_store
++; CHECK-NEXT: add     x8, x8, :lo12:in_memory_store
++; CHECK-NEXT: ldp     q0, q1, [x8]
++; CHECK-NEXT: ldp     q2, q3, [x8, #32]
++; CHECK-NEXT: ldr     d4, [x8, #64]
++; CHECK-NEXT: stp     q0, q1, [sp]
++; CHECK-NEXT: stp     q2, q3, [sp, #32]
++; CHECK-NEXT: str     d4, [sp, #64]
++; CHECK-NEXT: bl      callee_in_memory
++  %1 = load %T_IN_MEMORY, %T_IN_MEMORY* @in_memory_store
++  call void @callee_in_memory(%T_IN_MEMORY %1)
++  ret void
++}
++
++%T_NO_BLOCK = type [ 2 x { double, { i32 } } ]
++
++define %T_NO_BLOCK @return_no_block() {
++; CHECK-LABEL: return_no_block:
++; CHECK:       fmov d0, xzr
++; CHECK-NEXT:  fmov d1, xzr
++; CHECK-NEXT:  mov w0, wzr
++; CHECK-NEXT:  mov w1, wzr
++; CHECK-NEXT:  ret
++  ret %T_NO_BLOCK zeroinitializer
++}
++
++@no_block_store = dso_local global %T_NO_BLOCK zeroinitializer, align 8
++
++define void @caller_no_block() {
++; CHECK-LABEL: caller_no_block:
++; CHECK:       bl return_no_block
++; CHECK-NEXT:  adrp x8, no_block_store
++; CHECK-NEXT:  add x8, x8, :lo12:no_block_store
++; CHECK-NEXT:  str d0, [x8]
++; CHECK-NEXT:  str w0, [x8, #8]
++; CHECK-NEXT:  str d1, [x8, #16]
++; CHECK-NEXT:  str w1, [x8, #24]
++; CHECK-NEXT:  ldr x30, [sp], #16
++; CHECK-NEXT:  ret
++  %1 = call %T_NO_BLOCK @return_no_block()
++  store %T_NO_BLOCK %1, %T_NO_BLOCK* @no_block_store
++  ret void
++}
++
++define void @callee_no_block(%T_NO_BLOCK %a) {
++; CHECK-LABEL: callee_no_block:
++; CHECK:       adrp x8, no_block_store
++; CHECK-NEXT:  add x8, x8, :lo12:no_block_store
++; CHECK-NEXT:  str w1, [x8, #24]
++; CHECK-NEXT:  str d1, [x8, #16]
++; CHECK-NEXT:  str w0, [x8, #8]
++; CHECK-NEXT:  str d0, [x8]
++; CHECK-NEXT:  ret
++  store %T_NO_BLOCK %a, %T_NO_BLOCK* @no_block_store
++  ret void
++}
++
++define void @argument_no_block() {
++; CHECK-LABEL: argument_no_block:
++; CHECK:       adrp x8, no_block_store
++; CHECK-NEXT:  add x8, x8, :lo12:no_block_store
++; CHECK-NEXT:  ldr w1, [x8, #24]
++; CHECK-NEXT:  ldr d1, [x8, #16]
++; CHECK-NEXT:  ldr w0, [x8, #8]
++; CHECK-NEXT:  ldr d0, [x8]
++; CHECK-NEXT:  bl callee_no_block
++; CHECK-NEXT:  ldr x30, [sp], #16
++; CHECK-NEXT:  ret
++  %1 = load %T_NO_BLOCK, %T_NO_BLOCK* @no_block_store
++  call void @callee_no_block(%T_NO_BLOCK %1)
++  ret void
++}

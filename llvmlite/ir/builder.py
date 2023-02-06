@@ -13,6 +13,19 @@ _CMP_MAP = {
 }
 
 
+def _unop(opname, cls=instructions.Instruction):
+    def wrap(fn):
+        @functools.wraps(fn)
+        def wrapped(self, arg, name='', flags=()):
+            instr = cls(self.block, arg.type, opname, [arg], name, flags)
+            self._insert(instr)
+            return instr
+
+        return wrapped
+
+    return wrap
+
+
 def _binop(opname, cls=instructions.Instruction):
     def wrap(fn):
         @functools.wraps(fn)
@@ -238,6 +251,15 @@ class IRBuilder(object):
         function.  The current block is not changed.  The new block is returned.
         """
         return self.function.append_basic_block(name)
+
+    def remove(self, instr):
+        """Remove the given instruction."""
+        idx = self._block.instructions.index(instr)
+        del self._block.instructions[idx]
+        if self._block.terminator == instr:
+            self._block.terminator = None
+        if self._anchor > idx:
+            self._anchor -= 1
 
     @contextlib.contextmanager
     def goto_block(self, block):
@@ -532,6 +554,13 @@ class IRBuilder(object):
         """
         return self.sub(values.Constant(value.type, 0), value, name=name)
 
+    @_unop('fneg')
+    def fneg(self, arg, name='', flags=()):
+        """
+        Floating-point negative:
+            name = -arg
+        """
+
     #
     # Comparison APIs
     #
@@ -565,7 +594,7 @@ class IRBuilder(object):
         """
         return self._icmp('u', cmpop, lhs, rhs, name)
 
-    def fcmp_ordered(self, cmpop, lhs, rhs, name='', flags=[]):
+    def fcmp_ordered(self, cmpop, lhs, rhs, name='', flags=()):
         """
         Floating-point ordered comparison:
             name = lhs <cmpop> rhs
@@ -581,7 +610,7 @@ class IRBuilder(object):
         self._insert(instr)
         return instr
 
-    def fcmp_unordered(self, cmpop, lhs, rhs, name='', flags=[]):
+    def fcmp_unordered(self, cmpop, lhs, rhs, name='', flags=()):
         """
         Floating-point unordered comparison:
             name = lhs <cmpop> rhs
@@ -597,12 +626,13 @@ class IRBuilder(object):
         self._insert(instr)
         return instr
 
-    def select(self, cond, lhs, rhs, name=''):
+    def select(self, cond, lhs, rhs, name='', flags=()):
         """
         Ternary select operator:
             name = cond ? lhs : rhs
         """
-        instr = instructions.SelectInstr(self.block, cond, lhs, rhs, name=name)
+        instr = instructions.SelectInstr(self.block, cond, lhs, rhs, name=name,
+                                         flags=flags)
         self._insert(instr)
         return instr
 
@@ -842,13 +872,15 @@ class IRBuilder(object):
 
     # Call APIs
 
-    def call(self, fn, args, name='', cconv=None, tail=False, fastmath=()):
+    def call(self, fn, args, name='', cconv=None, tail=False, fastmath=(),
+             attrs=(), arg_attrs=None):
         """
         Call function *fn* with *args*:
             name = fn(args...)
         """
         inst = instructions.CallInstr(self.block, fn, args, name=name,
-                                      cconv=cconv, tail=tail, fastmath=fastmath)
+                                      cconv=cconv, tail=tail, fastmath=fastmath,
+                                      attrs=attrs, arg_attrs=arg_attrs)
         self._insert(inst)
         return inst
 
@@ -877,9 +909,11 @@ class IRBuilder(object):
         return self.asm(ftype, "", "{%s}" % reg_name, [value], True, name)
 
     def invoke(self, fn, args, normal_to, unwind_to,
-               name='', cconv=None, tail=False):
+               name='', cconv=None, fastmath=(), attrs=(), arg_attrs=None):
         inst = instructions.InvokeInstr(self.block, fn, args, normal_to,
-                                        unwind_to, name=name, cconv=cconv)
+                                        unwind_to, name=name, cconv=cconv,
+                                        fastmath=fastmath, attrs=attrs,
+                                        arg_attrs=arg_attrs)
         self._set_terminator(inst)
         return inst
 
@@ -952,8 +986,8 @@ class IRBuilder(object):
 
     # PHI APIs
 
-    def phi(self, typ, name=''):
-        inst = instructions.PhiInstr(self.block, typ, name=name)
+    def phi(self, typ, name='', flags=()):
+        inst = instructions.PhiInstr(self.block, typ, name=name, flags=flags)
         self._insert(inst)
         return inst
 

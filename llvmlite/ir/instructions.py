@@ -5,7 +5,7 @@ Implementation of LLVM IR instructions.
 from llvmlite.ir import types
 from llvmlite.ir.values import (Block, Function, Value, NamedValue, Constant,
                                 MetaDataArgument, MetaDataString, AttributeSet,
-                                Undefined)
+                                Undefined, ArgumentAttributes)
 from llvmlite.ir._utils import _HasMetadata
 
 
@@ -52,7 +52,11 @@ class Instruction(NamedValue, _HasMetadata):
 
 
 class CallInstrAttributes(AttributeSet):
-    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone'])
+    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone',
+                        'noinline', 'alwaysinline'])
+
+
+TailMarkerOptions = frozenset(['tail', 'musttail', 'notail'])
 
 
 class FastMathFlags(AttributeSet):
@@ -61,14 +65,31 @@ class FastMathFlags(AttributeSet):
 
 
 class CallInstr(Instruction):
-    def __init__(self, parent, func, args, name='', cconv=None, tail=False,
-                 fastmath=()):
+    def __init__(self, parent, func, args, name='', cconv=None, tail=None,
+                 fastmath=(), attrs=(), arg_attrs=None):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
+
+        # For backwards compatibility with previous API of accepting a "truthy"
+        # value for a hint to the optimizer to potentially tail optimize.
+        if isinstance(tail, str) and tail in TailMarkerOptions:
+            pass
+        elif tail:
+            tail = "tail"
+        else:
+            tail = ""
+
         self.tail = tail
         self.fastmath = FastMathFlags(fastmath)
-        self.attributes = CallInstrAttributes()
+        self.attributes = CallInstrAttributes(attrs)
+        self.arg_attributes = {}
+        if arg_attrs:
+            for idx, attrs in arg_attrs.items():
+                if not (0 <= idx < len(args)):
+                    raise ValueError("Invalid argument index {}"
+                                     .format(idx))
+                self.arg_attributes[idx] = ArgumentAttributes(attrs)
 
         # Fix and validate arguments
         args = list(args)
@@ -106,12 +127,17 @@ class CallInstr(Instruction):
 
     @property
     def called_function(self):
-        """Alias for llvmpy"""
+        """The callee function"""
         return self.callee
 
     def _descr(self, buf, add_metadata):
-        args = ', '.join(['{0} {1}'.format(a.type, a.get_reference())
-                          for a in self.args])
+        def descr_arg(i, a):
+            if i in self.arg_attributes:
+                attrs = ' '.join(self.arg_attributes[i]._to_list()) + ' '
+            else:
+                attrs = ''
+            return '{0} {1}{2}'.format(a.type, attrs, a.get_reference())
+        args = ', '.join([descr_arg(i, a) for i, a in enumerate(self.args)])
 
         fnty = self.callee.function_type
         # Only print function type if variable-argument
@@ -124,8 +150,13 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(ty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
+
+        tail_marker = ""
+        if self.tail:
+            tail_marker = "{0} ".format(self.tail)
+
         buf.append("{tail}{op}{fastmath} {callee}({args}){attr}{meta}\n".format(
-            tail='tail ' if self.tail else '',
+            tail=tail_marker,
             op=self.opname,
             callee=callee_ref,
             fastmath=''.join([" " + attr for attr in self.fastmath]),
@@ -141,10 +172,12 @@ class CallInstr(Instruction):
 
 class InvokeInstr(CallInstr):
     def __init__(self, parent, func, args, normal_to, unwind_to, name='',
-                 cconv=None):
+                 cconv=None, fastmath=(), attrs=(), arg_attrs=None):
         assert isinstance(normal_to, Block)
         assert isinstance(unwind_to, Block)
-        super(InvokeInstr, self).__init__(parent, func, args, name, cconv)
+        super(InvokeInstr, self).__init__(parent, func, args, name, cconv,
+                                          tail=False, fastmath=fastmath,
+                                          attrs=attrs, arg_attrs=arg_attrs)
         self.opname = "invoke"
         self.normal_to = normal_to
         self.unwind_to = unwind_to
@@ -274,10 +307,11 @@ class Resume(Terminator):
 
 
 class SelectInstr(Instruction):
-    def __init__(self, parent, cond, lhs, rhs, name=''):
+    def __init__(self, parent, cond, lhs, rhs, name='', flags=()):
         assert lhs.type == rhs.type
         super(SelectInstr, self).__init__(parent, lhs.type, "select",
-                                          [cond, lhs, rhs], name=name)
+                                          [cond, lhs, rhs], name=name,
+                                          flags=flags)
 
     @property
     def cond(self):
@@ -292,7 +326,8 @@ class SelectInstr(Instruction):
         return self.operands[2]
 
     def descr(self, buf):
-        buf.append("select {0} {1}, {2} {3}, {4} {5} {6}\n".format(
+        buf.append("select {0} {1} {2}, {3} {4}, {5} {6} {7}\n".format(
+            ' '.join(self.flags),
             self.cond.type, self.cond.get_reference(),
             self.lhs.type, self.lhs.get_reference(),
             self.rhs.type, self.rhs.get_reference(),
@@ -526,15 +561,17 @@ class GEPInstr(Instruction):
 
 
 class PhiInstr(Instruction):
-    def __init__(self, parent, typ, name):
-        super(PhiInstr, self).__init__(parent, typ, "phi", (), name=name)
+    def __init__(self, parent, typ, name, flags=()):
+        super(PhiInstr, self).__init__(parent, typ, "phi", (), name=name,
+                                       flags=flags)
         self.incomings = []
 
     def descr(self, buf):
         incs = ', '.join('[{0}, {1}]'.format(v.get_reference(),
                                              b.get_reference())
                          for v, b in self.incomings)
-        buf.append("phi {0} {1} {2}\n".format(
+        buf.append("phi {0} {1} {2} {3}\n".format(
+                   ' '.join(self.flags),
                    self.type,
                    incs,
                    self._stringify_metadata(leading_comma=True),
@@ -571,8 +608,9 @@ class InsertElement(Instruction):
         if not isinstance(vector.type, types.VectorType):
             raise TypeError("vector needs to be of VectorType.")
         if not value.type == vector.type.element:
-            raise TypeError("value needs to be of type % not %."
-                            % (vector.type.element, value.type))
+            raise TypeError(
+                "value needs to be of type {} not {}.".format(
+                    vector.type.element, value.type))
         if not isinstance(index.type, types.IntType):
             raise TypeError("index needs to be of IntType.")
         typ = vector.type

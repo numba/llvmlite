@@ -77,7 +77,7 @@ release = llvmlite.__version__
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -311,5 +311,5 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'llvm': ('http://llvm.org/releases/8.0.0/docs', None),
+    'llvm': ('http://llvm.org/releases/11.0.0/docs', None),
     }

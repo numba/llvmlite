@@ -1,46 +1,29 @@
-{% if ppc64le %}
-
-# ppc64le has numerous problems in LLVM 8, so use 7.1
-{% set shortversion = "7.1" %}
-{% set version = "7.1.0" %}
-{% set sha256_llvm = "1bcc9b285074ded87b88faaedddb88e6b5d6c331dfcfb57d7f3393dd622b3764" %}
-{% set sha256_lld = "a10f274a0a09408eaf9c088dec6fb2254f7d641221437763c94546cbfe595867" %}
-{% set build_number = "0" %}
-
-{% else %}
-
-{% set shortversion = "8.0" %}
-{% set version = "8.0.0" %}
-{% set sha256_llvm = "8872be1b12c61450cacc82b3d153eab02be2546ef34fa3580ed14137bb26224c" %}
-{% set sha256_lld = "9caec8ec922e32ffa130f0fb08e4c5a242d7e68ce757631e425e9eba2e1a6e37" %}
-{% set build_number = "0" %}
-
-{% endif %}
+{% set shortversion = "11.1" %}
+{% set version = "11.1.0" %}
+{% set sha256_llvm = "ce8508e318a01a63d4e8b3090ab2ded3c598a50258cc49e2625b9120d4c03ea5" %}
+{% set sha256_lld = "017a788cbe1ecc4a949abf10755870519086d058a2e99f438829aef24f0c66ce" %}
+{% set build_number = "5" %}
 
 package:
   name: llvmdev
   version: {{ version }}
 
 source:
-  - url: http://llvm.org/releases/{{ version }}/llvm-{{ version }}.src.tar.xz
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz
     fn: llvm-{{ version }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
-    # http://lists.llvm.org/pipermail/llvm-dev/2016-January/094520.html
-    - ../llvm-lto-static.patch   # [win]
     - ../partial-testing.patch
-    # Intel SVML optimizations
-    # The second part of this patch was published as:
-    # https://reviews.llvm.org/D53035
-    # (the first, as mentioned in the patch itself, was:
-    # https://reviews.llvm.org/D47188)
-    # the patch in HEAD only applies on llvm 8
-    {{ '- ../D47188-svml-VF.patch' if shortversion == '8.0' else '' }}
-    # undefined behavior bug due to Twine usage, this is fixed in llvm 8
-    {{ '- ../twine_cfg_undefined_behavior.patch' if shortversion == '7.1' else '' }}
+    # Intel SVML optimizations (two patches)
+    - ../intel-D47188-svml-VF.patch
+    # Second patch from https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
+    - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     # Reverts a patch limiting non-GlobalValue name length
     - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
-  - url: http://llvm.org/releases/{{ version }}/lld-{{ version }}.src.tar.xz
+    # Fixes for aarch64 on LLVM 11 from https://reviews.llvm.org/D104123
+    - ../llvm_11_consecutive_registers.patch
+
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
     sha256: {{ sha256_lld }}
     folder: tools/lld
@@ -60,33 +43,24 @@ requirements:
     # at build.sh time
     # Windows needs to build using vs2015_runtime
     # irrespective of python version
-    - {{ compiler('c') }} # [unix and not (armv6l or armv7l or aarch64)]
-    - {{ compiler('cxx') }} # [unix and not (armv6l or armv7l or aarch64)]
-    - cmake # [not (armv6l or armv7l)]
+    - {{ compiler('c') }} # [unix and not (armv6l or armv7l)]
+    - {{ compiler('cxx') }} # [unix and not (armv6l or armv7l)]
+    - cmake
+    - make # [unix and not (armv6l or armv7l or aarch64)]
     # Needed to unpack the source tarball
-    - m2w64-xz  # [py27 and win]
-    # ninja not currently used, bld.bat needs an update
-    - ninja  # [win]
+    - m2w64-xz  # [win]
     # Needed to build LLVM
     - python >=3
-    # need vs2015_runtime to build, do not want it at run time
-    # as extensions for py27 need vs2008
-    - vs2015_runtime # [win]
-    - make # [unix and not (armv6l or armv7l or aarch64)]
   host:
     # needed for llc at runtime
     - zlib # [not win]
-    - xar # [osx]
+    - xar # [osx and x86_64]
     # llvm-lit testing needs *a* python
     - python # [not (armv6l or armv7l or aarch64 or win)]
 
 test:
-  requires:
-    - python
   files:
-    - cfg_test.ll
     - numba-3016.ll
-    - test_cfg_dot.py
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
     - $PREFIX/bin/llc -version                               # [not win]
@@ -98,9 +72,6 @@ test:
     - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
 
     - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
-    # Test for Twine bug
-    - $PREFIX/bin/opt -dot-cfg cfg_test.ll -o cfg.testme.tmp # [not win]
-    - python test_cfg_dot.py                                 # [not win]
 
     # LLD tests
     - ld.lld --version                                       # [unix]

@@ -28,7 +28,9 @@ _cmake_config+=(-DHAVE_TERMIOS_H=OFF)
 _cmake_config+=(-DCLANG_ENABLE_LIBXML=OFF)
 _cmake_config+=(-DLIBOMP_INSTALL_ALIASES=OFF)
 _cmake_config+=(-DLLVM_ENABLE_RTTI=OFF)
-_cmake_config+=(-DLLVM_TARGETS_TO_BUILD=host)
+# default is LLVM 11 default architectures + RISCV.  Can remove this entire option in LLVM 13
+_cmake_config+=(-DLLVM_TARGETS_TO_BUILD="host;AArch64;AMDGPU;ARM;BPF;Hexagon;Mips;MSP430;NVPTX;PowerPC;Sparc;SystemZ;X86;XCore;RISCV")
+_cmake_config+=(-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly)
 _cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
 # TODO :: It would be nice if we had a cross-ecosystem 'BUILD_TIME_LIMITED' env var we could use to
 #         disable these unnecessary but useful things.
@@ -79,5 +81,10 @@ fi
 # From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
 make install || exit $?
 
+# run the tests, skip some on linux-32
 cd ../test
-../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+if [[ $ARCH == 'i686' ]]; then
+    ../build/bin/llvm-lit -vv Transforms Analysis CodeGen/X86
+else
+    ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+fi

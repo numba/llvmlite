@@ -1,6 +1,6 @@
 import ctypes
-import os
 import threading
+import importlib.resources
 
 from llvmlite.binding.common import _decode_string, _is_shutting_down
 from llvmlite.utils import get_library_name
@@ -37,6 +37,46 @@ LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
 
 
+class _LLVMLock:
+    """A Lock to guarantee thread-safety for the LLVM C-API.
+
+    This class implements __enter__ and __exit__ for acquiring and releasing
+    the lock as a context manager.
+
+    Also, callbacks can be attached so that every time the lock is acquired
+    and released the corresponding callbacks will be invoked.
+    """
+    def __init__(self):
+        # The reentrant lock is needed for callbacks that re-enter
+        # the Python interpreter.
+        self._lock = threading.RLock()
+        self._cblist = []
+
+    def register(self, acq_fn, rel_fn):
+        """Register callbacks that are invoked immediately after the lock is
+        acquired (``acq_fn()``) and immediately before the lock is released
+        (``rel_fn()``).
+        """
+        self._cblist.append((acq_fn, rel_fn))
+
+    def unregister(self, acq_fn, rel_fn):
+        """Remove the registered callbacks.
+        """
+        self._cblist.remove((acq_fn, rel_fn))
+
+    def __enter__(self):
+        self._lock.acquire()
+        # Invoke all callbacks
+        for acq_fn, rel_fn in self._cblist:
+            acq_fn()
+
+    def __exit__(self, *exc_details):
+        # Invoke all callbacks
+        for acq_fn, rel_fn in self._cblist:
+            rel_fn()
+        self._lock.release()
+
+
 class _lib_wrapper(object):
     """Wrap libllvmlite with a lock such that only one thread may access it at
     a time.
@@ -48,9 +88,7 @@ class _lib_wrapper(object):
     def __init__(self, lib):
         self._lib = lib
         self._fntab = {}
-        # The reentrant lock is needed for callbacks that re-enter
-        # the Python interpreter.
-        self._lock = threading.RLock()
+        self._lock = _LLVMLock()
 
     def __getattr__(self, name):
         try:
@@ -113,47 +151,37 @@ class _lib_fn_wrapper(object):
             return self._cfn(*args, **kwargs)
 
 
-_lib_dir = os.path.dirname(__file__)
-
-if os.name == 'nt':
-    # Append DLL directory to PATH, to allow loading of bundled CRT libraries
-    # (Windows uses PATH for DLL loading, see http://msdn.microsoft.com/en-us/library/7d83bc18.aspx).  # noqa E501
-    os.environ['PATH'] += ';' + _lib_dir
-
-
 _lib_name = get_library_name()
 
 
-# Possible CDLL loading paths
-_lib_paths = [
-    os.path.join(_lib_dir, _lib_name),  # Absolute
-    _lib_name,  # In PATH
-    os.path.join('.', _lib_name),  # Current directory
-]
-
-# If pkg_resources is available, try to use it to load the shared object.
-# This allows direct import from egg files.
+pkgname = ".".join(__name__.split(".")[0:-1])
 try:
-    from pkg_resources import resource_filename
-except ImportError:
-    pass
-else:
-    _lib_paths.append(resource_filename(__name__, _lib_name))
-
-
-# Try to load from all of the different paths
-for _lib_path in _lib_paths:
-    try:
-        lib = ctypes.CDLL(_lib_path)
-    except OSError:
-        continue
-    else:
-        break
-else:
-    raise OSError("Could not load shared object file: {}".format(_lib_name))
+    _lib_handle = importlib.resources.path(pkgname, _lib_name)
+    lib = ctypes.CDLL(str(_lib_handle.__enter__()))
+    # on windows file handles to the dll file remain open after
+    # loading, therefore we can not exit the context manager
+    # which might delete the file
+except OSError as e:
+    msg = f"""Could not find/load shared object file: {_lib_name}
+ Error was: {e}"""
+    raise OSError(msg)
 
 
 lib = _lib_wrapper(lib)
+
+
+def register_lock_callback(acq_fn, rel_fn):
+    """Register callback functions for lock acquire and release.
+    *acq_fn* and *rel_fn* are callables that take no arguments.
+    """
+    lib._lock.register(acq_fn, rel_fn)
+
+
+def unregister_lock_callback(acq_fn, rel_fn):
+    """Remove the registered callback functions for lock acquire and release.
+    The arguments are the same as used in `register_lock_callback()`.
+    """
+    lib._lock.unregister(acq_fn, rel_fn)
 
 
 class _DeadPointer(object):

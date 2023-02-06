@@ -44,8 +44,9 @@ getelementptr
 An LLVM :ref:`instruction` that lets you get the address of a
 subelement of an aggregate data structure.
 
-See :llvm:ref:`i_getelementptr` in the official LLVM
-documentation.
+See `the getelementptr instruction
+<https://releases.llvm.org/10.0.0/docs/LangRef.html#i-getelementptr>`_ in the
+official LLVM documentation.
 
 
 .. _global value:

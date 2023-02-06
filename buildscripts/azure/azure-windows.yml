@@ -4,14 +4,18 @@ parameters:
 
 jobs:
 - job: ${{ parameters.name }}
-  pool: 
+  pool:
     vmImage: ${{ parameters.vmImage }}
   strategy:
     maxParallel: 11
     matrix:
-      py38:
-        PYTHON: '3.8'
-        CONDA_ENV: travisci
+      py39:
+        PYTHON: '3.9'
+        CONDA_ENV: cienv
+      py310:
+        PYTHON: '3.10'
+        CONDA_ENV: cienv
+
 
   steps:
 
@@ -27,7 +31,7 @@ jobs:
         call conda remove --all -q -y -n %CONDA_ENV%
         call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
         call activate %CONDA_ENV%
-        call conda install -y -q -c numba llvmdev="8.0*"
+        call conda install -y -q -c numba llvmdev="11.*"
       displayName: 'Before Install'
 
     - script: |

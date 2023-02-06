@@ -67,7 +67,7 @@ class TestBase(TestCase):
         module = module or self.module()
         fnty = ir.FunctionType(int32, (int32, int32, dbl,
                                        ir.PointerType(int32)))
-        return ir.Function(self.module(), fnty, name)
+        return ir.Function(module, fnty, name)
 
     def block(self, func=None, name=''):
         func = func or self.function()
@@ -161,7 +161,69 @@ class TestFunction(TestBase):
         func.set_metadata('dbg', module.add_metadata([]))
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         """declare i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4") !dbg !0"""  # noqa E501
+                         f'declare {self.proto} !dbg !0'
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_section(self):
+        # Test function with section
+        func = self.function()
+        func.section = "a_section"
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} section "a_section"'
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_section_meta(self):
+        # Test function with section and metadata
+        module = self.module()
+        func = self.function(module)
+        func.section = "a_section"
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} section "a_section" !dbg !0'
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_meta(self):
+        # Test function with attributes and metadata
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add("alwaysinline")
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} alwaysinline !dbg !0'
+                         )
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_section(self):
+        # Test function with attributes and section
+        func = self.function()
+        func.attributes.add("optsize")
+        func.section = "a_section"
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} optsize section "a_section"')
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
+    def test_function_attr_section_meta(self):
+        # Test function with attributes, section and metadata
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add("alwaysinline")
+        func.section = "a_section"
+        func.set_metadata('dbg', module.add_metadata([]))
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         f'declare {self.proto} alwaysinline section "a_section" !dbg !0'  # noqa E501
                          )
         # Check pickling
         self.assert_pickle_correctly(func)
@@ -208,6 +270,24 @@ class TestFunction(TestBase):
     def test_pickling(self):
         fn = self.function()
         self.assert_pickle_correctly(fn)
+
+    def test_alwaysinline_noinline_disallowed(self):
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add('alwaysinline')
+
+        msg = "Can't have alwaysinline and noinline"
+        with self.assertRaisesRegex(ValueError, msg):
+            func.attributes.add('noinline')
+
+    def test_noinline_alwaysinline_disallowed(self):
+        module = self.module()
+        func = self.function(module)
+        func.attributes.add('noinline')
+
+        msg = "Can't have alwaysinline and noinline"
+        with self.assertRaisesRegex(ValueError, msg):
+            func.attributes.add('alwaysinline')
 
 
 class TestIR(TestBase):
@@ -369,6 +449,83 @@ class TestIR(TestBase):
                             '"foo")', strmod)
         self.assert_valid_ir(mod)
 
+    def test_debug_info_gvar(self):
+        # This test defines a module with a global variable named 'gvar'.
+        # When the module is compiled and linked with a main function, gdb can
+        # be used to interpret and print the the value of 'gvar'.
+        mod = self.module()
+
+        gvar = ir.GlobalVariable(mod, ir.FloatType(), 'gvar')
+        gvar.initializer = ir.Constant(ir.FloatType(), 42)
+
+        di_float = mod.add_debug_info("DIBasicType", {
+            "name": "float",
+            "size": 32,
+            "encoding": ir.DIToken("DW_ATE_float")
+        })
+        di_gvar = mod.add_debug_info("DIGlobalVariableExpression", {
+            "expr": mod.add_debug_info("DIExpression", {}),
+            "var": mod.add_debug_info("DIGlobalVariable", {
+                "name": gvar.name,
+                "type": di_float,
+                "isDefinition": True
+            }, is_distinct=True)
+        })
+        gvar.set_metadata('dbg', di_gvar)
+
+        # Check output
+        strmod = str(mod)
+        self.assert_ir_line('!0 = !DIBasicType(encoding: DW_ATE_float, '
+                            'name: "float", size: 32)', strmod)
+        self.assert_ir_line('!1 = !DIExpression()', strmod)
+        self.assert_ir_line('!2 = distinct !DIGlobalVariable(isDefinition: '
+                            'true, name: "gvar", type: !0)', strmod)
+        self.assert_ir_line('!3 = !DIGlobalVariableExpression(expr: !1, '
+                            'var: !2)', strmod)
+        self.assert_ir_line('@"gvar" = global float 0x4045000000000000, '
+                            '!dbg !3', strmod)
+
+        # The remaining debug info is not part of the automated test, but
+        # can be used to produce an object file that can be loaded into a
+        # debugger to print the value of gvar. This can be done by printing the
+        # module then compiling it with clang and inspecting with gdb:
+        #
+        #     clang test_debug_info_gvar.ll -c
+        #     printf "file test_debug_info_gvar.o \n p gvar" | gdb
+        #
+        # Which should result in the output:
+        #
+        #     (gdb) $1 = 42
+
+        dver = [ir.IntType(32)(2), 'Dwarf Version', ir.IntType(32)(4)]
+        diver = [ir.IntType(32)(2), 'Debug Info Version', ir.IntType(32)(3)]
+        dver = mod.add_metadata(dver)
+        diver = mod.add_metadata(diver)
+        flags = mod.add_named_metadata('llvm.module.flags')
+        flags.add(dver)
+        flags.add(diver)
+
+        di_file = mod.add_debug_info("DIFile", {
+            "filename": "foo",
+            "directory": "bar",
+        })
+        di_cu = mod.add_debug_info("DICompileUnit", {
+            "language": ir.DIToken("DW_LANG_Python"),
+            "file": di_file,
+            'emissionKind': ir.DIToken('FullDebug'),
+            "globals": mod.add_metadata([di_gvar])
+        }, is_distinct=True)
+        mod.add_named_metadata('llvm.dbg.cu', di_cu)
+
+    def test_debug_info_unicode_string(self):
+        mod = self.module()
+        mod.add_debug_info("DILocalVariable", {"name": "a∆"})
+        # Check output
+        strmod = str(mod)
+        # The unicode character is utf8 encoded with \XX format, where XX is hex
+        name = ''.join(map(lambda x: f"\\{x:02x}", "∆".encode()))
+        self.assert_ir_line(f'!0 = !DILocalVariable(name: "a{name}")', strmod)
+
     def test_inline_assembly(self):
         mod = self.module()
         foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
@@ -463,6 +620,15 @@ class TestGlobalValues(TestBase):
         g.linkage = "internal"
         g.initializer = int32(123)
         g.align = 16
+        h = ir.GlobalVariable(mod, int32, 'h')
+        h.linkage = "internal"
+        h.initializer = int32(123)
+        h.section = "h_section"
+        i = ir.GlobalVariable(mod, int32, 'i')
+        i.linkage = "internal"
+        i.initializer = int32(456)
+        i.align = 8
+        i.section = "i_section"
         self.check_module_body(mod, """\
             @"a" = external global i8
             @"b" = external addrspace(42) global i8
@@ -471,6 +637,8 @@ class TestGlobalValues(TestBase):
             @"e" = internal global i32 undef
             @"f" = external unnamed_addr addrspace(456) global i32
             @"g" = internal global i32 123, align 16
+            @"h" = internal global i32 123, section "h_section"
+            @"i" = internal global i32 456, section "i_section", align 8
             """)
 
     def test_pickle(self):
@@ -645,14 +813,16 @@ my_block:
     def test_unary_ops(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
-        builder.neg(a, 'c')
-        builder.not_(b, 'd')
+        a, b, c = builder.function.args[:3]
+        builder.neg(a, 'd')
+        builder.not_(b, 'e')
+        builder.fneg(c, 'f')
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
-                %"c" = sub i32 0, %".1"
-                %"d" = xor i32 %".2", -1
+                %"d" = sub i32 0, %".1"
+                %"e" = xor i32 %".2", -1
+                %"f" = fneg double %".3"
             """)
 
     def test_replace_operand(self):
@@ -760,13 +930,13 @@ my_block:
         t = ir.Constant(int1, True)
         builder = ir.IRBuilder(block)
         a, b = builder.function.args[:2]
-        builder.select(t, a, b, 'c')
+        builder.select(t, a, b, 'c', flags=('arcp', 'nnan'))
         self.assertFalse(block.is_terminated)
         builder.unreachable()
         self.assertTrue(block.is_terminated)
         self.check_block(block, """\
             my_block:
-                %"c" = select i1 true, i32 %".1", i32 %".2"
+                %"c" = select arcp nnan i1 true, i32 %".1", i32 %".2"
                 unreachable
             """)
 
@@ -776,13 +946,13 @@ my_block:
         a, b = builder.function.args[:2]
         bb2 = builder.function.append_basic_block('b2')
         bb3 = builder.function.append_basic_block('b3')
-        phi = builder.phi(int32, 'my_phi')
+        phi = builder.phi(int32, 'my_phi', flags=('fast',))
         phi.add_incoming(a, bb2)
         phi.add_incoming(b, bb3)
         self.assertFalse(block.is_terminated)
         self.check_block(block, """\
             my_block:
-                %"my_phi" = phi i32 [%".1", %"b2"], [%".2", %"b3"]
+                %"my_phi" = phi fast i32 [%".1", %"b2"], [%".2", %"b3"]
             """)
 
     def test_mem_ops(self):
@@ -1141,6 +1311,10 @@ my_block:
         res_f_readonly.attributes.add('readonly')
         builder.call(f, (a, b), 'res_fast', fastmath='fast')
         builder.call(f, (a, b), 'res_nnan_ninf', fastmath=('nnan', 'ninf'))
+        builder.call(f, (a, b), 'res_noinline', attrs='noinline')
+        builder.call(f, (a, b), 'res_alwaysinline', attrs='alwaysinline')
+        builder.call(f, (a, b), 'res_noinline_ro', attrs=('noinline',
+                                                          'readonly'))
         self.check_block(block, """\
         my_block:
             %"res_f" = call float @"f"(i32 %".1", i32 %".2")
@@ -1150,7 +1324,10 @@ my_block:
             %"res_f_readonly" = call float @"f"(i32 %".1", i32 %".2") readonly
             %"res_fast" = call fast float @"f"(i32 %".1", i32 %".2")
             %"res_nnan_ninf" = call ninf nnan float @"f"(i32 %".1", i32 %".2")
-        """)
+            %"res_noinline" = call float @"f"(i32 %".1", i32 %".2") noinline
+            %"res_alwaysinline" = call float @"f"(i32 %".1", i32 %".2") alwaysinline
+            %"res_noinline_ro" = call float @"f"(i32 %".1", i32 %".2") noinline readonly
+        """) # noqa E501
 
     def test_call_metadata(self):
         """
@@ -1172,6 +1349,66 @@ my_block:
                 call void @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
             """)  # noqa E501
 
+    def test_call_attributes(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(
+            ir.VoidType(), (int32.as_pointer(), int32, int32.as_pointer()))
+        fun = ir.Function(builder.function.module, fun_ty, 'fun')
+        fun.args[0].add_attribute('sret')
+        retval = builder.alloca(int32, name='retval')
+        other = builder.alloca(int32, name='other')
+        builder.call(
+            fun,
+            (retval, ir.Constant(int32, 42), other),
+            arg_attrs={
+                0: ('sret', 'noalias'),
+                2: 'noalias'
+            }
+        )
+        self.check_block(block, """\
+        my_block:
+            %"retval" = alloca i32
+            %"other" = alloca i32
+            call void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other")
+        """)  # noqa E501
+
+    def test_call_tail(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(ir.VoidType(), ())
+        fun = ir.Function(builder.function.module, fun_ty, 'my_fun')
+
+        builder.call(fun, ())
+        builder.call(fun, (), tail=False)
+        builder.call(fun, (), tail=True)
+        builder.call(fun, (), tail='tail')
+        builder.call(fun, (), tail='notail')
+        builder.call(fun, (), tail='musttail')
+        builder.call(fun, (), tail=[])  # This is a falsy value
+        builder.call(fun, (), tail='not a marker')  # This is a truthy value
+
+        self.check_block(block, """\
+        my_block:
+            call void @"my_fun"()
+            call void @"my_fun"()
+            tail call void @"my_fun"()
+            tail call void @"my_fun"()
+            notail call void @"my_fun"()
+            musttail call void @"my_fun"()
+            call void @"my_fun"()
+            tail call void @"my_fun"()
+        """)  # noqa E501
+
+    def test_invalid_call_attributes(self):
+        block = self.block()
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(ir.VoidType(), ())
+        fun = ir.Function(builder.function.module, fun_ty, 'fun')
+        with self.assertRaises(ValueError):
+            # The function has no arguments, so this should fail.
+            builder.call(fun, (), arg_attrs={0: 'sret'})
+
     def test_invoke(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -1186,6 +1423,39 @@ my_block:
                 %"res_f" = invoke float @"f"(i32 %".1", i32 %".2")
                     to label %"normal" unwind label %"unwind"
             """)
+
+    def test_invoke_attributes(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        fun_ty = ir.FunctionType(
+            ir.VoidType(), (int32.as_pointer(), int32, int32.as_pointer()))
+        fun = ir.Function(builder.function.module, fun_ty, 'fun')
+        fun.calling_convention = "fastcc"
+        fun.args[0].add_attribute('sret')
+        retval = builder.alloca(int32, name='retval')
+        other = builder.alloca(int32, name='other')
+        bb_normal = builder.function.append_basic_block(name='normal')
+        bb_unwind = builder.function.append_basic_block(name='unwind')
+        builder.invoke(
+            fun,
+            (retval, ir.Constant(int32, 42), other),
+            bb_normal,
+            bb_unwind,
+            cconv='fastcc',
+            fastmath='fast',
+            attrs='noinline',
+            arg_attrs={
+                0: ('sret', 'noalias'),
+                2: 'noalias'
+            }
+        )
+        self.check_block(block, """\
+        my_block:
+            %"retval" = alloca i32
+            %"other" = alloca i32
+            invoke fast fastcc void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other") noinline
+                to label %"normal" unwind label %"unwind"
+        """)  # noqa E501
 
     def test_landingpad(self):
         block = self.block(name='my_block')
@@ -1770,6 +2040,29 @@ class TestBuilderMisc(TestBase):
             three:
             """)
 
+    def test_instruction_removal(self):
+        func = self.function()
+        builder = ir.IRBuilder()
+        blk = func.append_basic_block(name='entry')
+        builder.position_at_end(blk)
+        k = ir.Constant(int32, 1234)
+        a = builder.add(k, k, 'a')
+        retvoid = builder.ret_void()
+        self.assertTrue(blk.is_terminated)
+        builder.remove(retvoid)
+        self.assertFalse(blk.is_terminated)
+        b = builder.mul(a, a, 'b')
+        c = builder.add(b, b, 'c')
+        builder.remove(c)
+        builder.ret_void()
+        self.assertTrue(blk.is_terminated)
+        self.check_block(blk, """\
+            entry:
+                %"a" = add i32 1234, 1234
+                %"b" = mul i32 %"a", %"a"
+                ret void
+        """)
+
     def test_metadata(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -2041,6 +2334,10 @@ class TestConstant(TestBase):
             ', '.join(map('i32 {}'.format, vals)))
         self.assertEqual(str(vec), vec_repr)
 
+    def test_non_nullable_int(self):
+        constant = ir.Constant(ir.IntType(32), None).constant
+        self.assertEqual(constant, 0)
+
     def test_structs(self):
         st1 = ir.LiteralStructType((flt, int1))
         st2 = ir.LiteralStructType((int32, st1))
@@ -2165,15 +2462,154 @@ class TestConstant(TestBase):
                           'addrspace(4)* @"myconstant", i32 0, i32 1)'))
         self.assertEqual(c.type, ir.PointerType(int1, addrspace=addrspace))
 
+    def test_trunc(self):
+        c = ir.Constant(int64, 1).trunc(int32)
+        self.assertEqual(str(c), 'trunc (i64 1 to i32)')
+
+    def test_zext(self):
+        c = ir.Constant(int32, 1).zext(int64)
+        self.assertEqual(str(c), 'zext (i32 1 to i64)')
+
+    def test_sext(self):
+        c = ir.Constant(int32, -1).sext(int64)
+        self.assertEqual(str(c), 'sext (i32 -1 to i64)')
+
+    def test_fptrunc(self):
+        c = ir.Constant(flt, 1).fptrunc(hlf)
+        self.assertEqual(str(c), 'fptrunc (float 0x3ff0000000000000 to half)')
+
+    def test_fpext(self):
+        c = ir.Constant(flt, 1).fpext(dbl)
+        self.assertEqual(str(c), 'fpext (float 0x3ff0000000000000 to double)')
+
     def test_bitcast(self):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
         c = gv.bitcast(int64.as_pointer())
         self.assertEqual(str(c), 'bitcast (i32* @"myconstant" to i64*)')
 
+    def test_fptoui(self):
+        c = ir.Constant(flt, 1).fptoui(int32)
+        self.assertEqual(str(c), 'fptoui (float 0x3ff0000000000000 to i32)')
+
+    def test_uitofp(self):
+        c = ir.Constant(int32, 1).uitofp(flt)
+        self.assertEqual(str(c), 'uitofp (i32 1 to float)')
+
+    def test_fptosi(self):
+        c = ir.Constant(flt, 1).fptosi(int32)
+        self.assertEqual(str(c), 'fptosi (float 0x3ff0000000000000 to i32)')
+
+    def test_sitofp(self):
+        c = ir.Constant(int32, 1).sitofp(flt)
+        self.assertEqual(str(c), 'sitofp (i32 1 to float)')
+
+    def test_ptrtoint_1(self):
+        ptr = ir.Constant(int64.as_pointer(), None)
+        one = ir.Constant(int32, 1)
+        c = ptr.ptrtoint(int32)
+
+        self.assertRaises(TypeError, one.ptrtoint, int64)
+        self.assertRaises(TypeError, ptr.ptrtoint, flt)
+        self.assertEqual(str(c), 'ptrtoint (i64* null to i32)')
+
+    def test_ptrtoint_2(self):
+        m = self.module()
+        gv = ir.GlobalVariable(m, int32, "myconstant")
+        c = gv.ptrtoint(int64)
+        self.assertEqual(str(c), 'ptrtoint (i32* @"myconstant" to i64)')
+
+        self.assertRaisesRegex(
+            TypeError,
+            r"can only ptrtoint\(\) to integer type, not 'i64\*'",
+            gv.ptrtoint,
+            int64.as_pointer())
+
+        c2 = ir.Constant(int32, 0)
+        self.assertRaisesRegex(
+            TypeError,
+            r"can only call ptrtoint\(\) on pointer type, not 'i32'",
+            c2.ptrtoint,
+            int64)
+
     def test_inttoptr(self):
-        c = ir.Constant(int32, 0).inttoptr(int64.as_pointer())
-        self.assertEqual(str(c), 'inttoptr (i32 0 to i64*)')
+        one = ir.Constant(int32, 1)
+        pi = ir.Constant(flt, 3.14)
+        c = one.inttoptr(int64.as_pointer())
+
+        self.assertRaises(TypeError, one.inttoptr, int64)
+        self.assertRaises(TypeError, pi.inttoptr, int64.as_pointer())
+        self.assertEqual(str(c), 'inttoptr (i32 1 to i64*)')
+
+    def test_neg(self):
+        one = ir.Constant(int32, 1)
+        self.assertEqual(str(one.neg()), 'sub (i32 0, i32 1)')
+
+    def test_not(self):
+        one = ir.Constant(int32, 1)
+        self.assertEqual(str(one.not_()), 'xor (i32 1, i32 -1)')
+
+    def test_fneg(self):
+        one = ir.Constant(flt, 1)
+        self.assertEqual(str(one.fneg()), 'fneg (float 0x3ff0000000000000)')
+
+    def test_int_binops(self):
+        one = ir.Constant(int32, 1)
+        two = ir.Constant(int32, 2)
+
+        oracle = {one.shl:  'shl',  one.lshr: 'lshr', one.ashr: 'ashr',
+                  one.add:  'add',  one.sub:  'sub',  one.mul:  'mul',
+                  one.udiv: 'udiv', one.sdiv: 'sdiv', one.urem: 'urem',
+                  one.srem: 'srem', one.or_:  'or',   one.and_: 'and',
+                  one.xor:  'xor'}
+        for fn, irop in oracle.items():
+            self.assertEqual(str(fn(two)), irop + ' (i32 1, i32 2)')
+
+        # unsigned integer compare
+        oracle = {'==': 'eq', '!=': 'ne', '>':
+                  'ugt', '>=': 'uge', '<': 'ult', '<=': 'ule'}
+        for cop, cond in oracle.items():
+            actual = str(one.icmp_unsigned(cop, two))
+            expected = 'icmp ' + cond + ' (i32 1, i32 2)'
+            self.assertEqual(actual, expected)
+
+        # signed integer compare
+        oracle = {'==': 'eq', '!=': 'ne',
+                  '>': 'sgt', '>=': 'sge', '<': 'slt', '<=': 'sle'}
+        for cop, cond in oracle.items():
+            actual = str(one.icmp_signed(cop, two))
+            expected = 'icmp ' + cond + ' (i32 1, i32 2)'
+            self.assertEqual(actual, expected)
+
+    def test_flt_binops(self):
+        one = ir.Constant(flt, 1)
+        two = ir.Constant(flt, 2)
+
+        oracle = {one.fadd: 'fadd', one.fsub: 'fsub', one.fmul:  'fmul',
+                  one.fdiv: 'fdiv', one.frem: 'frem'}
+        for fn, irop in oracle.items():
+            actual = str(fn(two))
+            expected = irop + (' (float 0x3ff0000000000000,'
+                               ' float 0x4000000000000000)')
+            self.assertEqual(actual, expected)
+
+        # ordered float compare
+        oracle = {'==': 'oeq', '!=': 'one', '>': 'ogt', '>=': 'oge',
+                  '<': 'olt', '<=': 'ole'}
+        for cop, cond in oracle.items():
+            actual = str(one.fcmp_ordered(cop, two))
+            expected = 'fcmp ' + cond + (' (float 0x3ff0000000000000,'
+                                         ' float 0x4000000000000000)')
+            self.assertEqual(actual, expected)
+
+        # unordered float compare
+        oracle = {'==': 'ueq', '!=': 'une', '>': 'ugt', '>=': 'uge',
+                  '<': 'ult', '<=': 'ule'}
+        for cop, cond in oracle.items():
+            actual = str(one.fcmp_unordered(cop, two))
+            expected = 'fcmp ' + cond + (' (float 0x3ff0000000000000,'
+                                         ' float 0x4000000000000000)')
+            self.assertEqual(actual, expected)
 
 
 class TestTransforms(TestBase):

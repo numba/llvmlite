@@ -20,7 +20,29 @@ from distutils.dir_util import remove_tree
 from distutils.spawn import spawn
 import os
 import sys
-import shutil
+
+
+min_python_version = (3, 8)
+max_python_version = (3, 11)  # exclusive
+
+
+def _version_info_str(int_tuple):
+    return ".".join(map(str, int_tuple))
+
+
+def _guard_py_ver():
+    currrent_python_version = sys.version_info[:3]
+    min_py = _version_info_str(min_python_version)
+    max_py = _version_info_str(max_python_version)
+    cur_py = _version_info_str(currrent_python_version)
+
+    if not min_python_version <= currrent_python_version < max_python_version:
+        msg = ('Cannot install on Python version {}; only versions >={},<{} '
+               'are supported.')
+        raise RuntimeError(msg.format(cur_py, min_py, max_py))
+
+
+_guard_py_ver()
 
 if os.environ.get('READTHEDOCS', None) == 'True':
     sys.exit("setup.py disabled on readthedocs: called with %s"
@@ -42,9 +64,11 @@ build = cmdclass.get('build', build)
 build_ext = cmdclass.get('build_ext', build_ext)
 
 
-def build_library_files(dry_run, pic=False):
+def build_library_files(dry_run):
     cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
-    if pic:
+    # Turn on -fPIC for building on Linux, BSD, and OS X
+    plt = sys.platform
+    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt:
         os.environ['CXXFLAGS'] = os.environ.get('CXXFLAGS', '') + ' -fPIC'
     spawn(cmd, dry_run=dry_run)
 
@@ -96,6 +120,7 @@ class LlvmliteInstall(install):
         self.install_libbase = self.install_platlib
         self.install_lib = self.install_platlib
 
+
 class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
     def run(self):
@@ -120,7 +145,8 @@ class LlvmliteClean(clean):
                 remove_tree(path, dry_run=self.dry_run)
             else:
                 for fname in files:
-                    if fname.endswith('.pyc') or fname.endswith('.so'):
+                    if (fname.endswith('.pyc') or fname.endswith('.so')
+                            or fname.endswith('.o')):
                         fpath = os.path.join(path, fname)
                         os.remove(fpath)
                         log.info("removing '%s'", fpath)
@@ -131,9 +157,7 @@ if bdist_wheel:
         def run(self):
             # Ensure the binding file exist when running wheel build
             from llvmlite.utils import get_library_files
-            # Turn on -fPIC for wheel building on Linux
-            pic = sys.platform.startswith('linux')
-            build_library_files(self.dry_run, pic=pic)
+            build_library_files(self.dry_run)
             self.distribution.package_data.update({
                 "llvmlite.binding": get_library_files(),
             })
@@ -163,12 +187,8 @@ ext_stub = Extension(name="llvmlite.binding._stub",
 packages = ['llvmlite',
             'llvmlite.binding',
             'llvmlite.ir',
-            'llvmlite.llvmpy',
             'llvmlite.tests',
             ]
-
-install_requires = ['enum34; python_version < "3.4"']
-setup_requires = ['enum34; python_version < "3.4"']
 
 
 with open('README.rst') as f:
@@ -179,25 +199,25 @@ setup(name='llvmlite',
       description="lightweight wrapper around basic LLVM functionality",
       version=versioneer.get_version(),
       classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Topic :: Software Development :: Code Generators",
-        "Topic :: Software Development :: Compilers",
+          "Development Status :: 4 - Beta",
+          "Intended Audience :: Developers",
+          "Operating System :: OS Independent",
+          "Programming Language :: Python",
+          "Programming Language :: Python :: 3",
+          "Programming Language :: Python :: 3.8",
+          "Programming Language :: Python :: 3.9",
+          "Programming Language :: Python :: 3.10",
+          "Topic :: Software Development :: Code Generators",
+          "Topic :: Software Development :: Compilers",
       ],
       # Include the separately-compiled shared library
-      author="Continuum Analytics, Inc.",
-      author_email="numba-users@continuum.io",
-      url="http://llvmlite.pydata.org",
-      download_url="https://github.com/numba/llvmlite",
+      url="http://llvmlite.readthedocs.io",
+      project_urls={
+          "Source": "https://github.com/numba/llvmlite",
+      },
       packages=packages,
-      install_requires=install_requires,
-      setup_requires=setup_requires,
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,
+      python_requires=">={}".format(_version_info_str(min_python_version)),
       )
