@@ -124,7 +124,7 @@ class LlvmliteInstall(install):
 class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
     def run(self):
-        super(LlvmliteClean, self).run()
+        super().run()
         path = os.path.join(here_dir, 'llvmlite.egg-info')
         if os.path.isdir(path):
             remove_tree(path, dry_run=self.dry_run)
