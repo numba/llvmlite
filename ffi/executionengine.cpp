@@ -7,12 +7,12 @@
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/ExecutionEngine/ObjectCache.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Object/Archive.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/ObjectFile.h"
+#include "llvm/Support/Errc.h"
 #include "llvm/Support/Memory.h"
 #include "llvm/Support/MemoryBuffer.h"
-#include "llvm/Object/Archive.h"
-#include "llvm/Support/Errc.h"
 #include <cstdio>
 #include <memory>
 
@@ -176,10 +176,11 @@ LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
     using namespace llvm::object;
     auto engine = unwrap(EE);
 
-    ErrorOr<std::unique_ptr<MemoryBuffer>> ArBufOrErr = MemoryBuffer::getFile(ArchiveName);
+    ErrorOr<std::unique_ptr<MemoryBuffer>> ArBufOrErr =
+        MemoryBuffer::getFile(ArchiveName);
 
     std::error_code EC = ArBufOrErr.getError();
-    if (EC){
+    if (EC) {
         *OutError = LLVMPY_CreateString(EC.message().c_str());
         return 1;
     }
@@ -189,7 +190,8 @@ LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
 
     if (!ArchiveOrError) {
         auto takeErr = ArchiveOrError.takeError();
-        std::string archiveErrStr = "Unable to load archive: " + std::string(ArchiveName);
+        std::string archiveErrStr =
+            "Unable to load archive: " + std::string(ArchiveName);
         *OutError = LLVMPY_CreateString(archiveErrStr.c_str());
         return 1;
     }
