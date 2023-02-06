@@ -129,7 +129,7 @@ class LlvmliteClean(clean):
         if os.path.isdir(path):
             remove_tree(path, dry_run=self.dry_run)
         # remove ffi/build
-        path = os.path.join(here_dir, 'ffi/build')
+        path = os.path.join(here_dir, 'ffi', 'build')
         if os.path.isdir(path):
             remove_tree(path, dry_run=self.dry_run)
         # remove all __pycache__
