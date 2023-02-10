@@ -26,7 +26,7 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/PassRegistry.h"
-#include "llvm/PassSupport.h"
+#include "llvm/Pass.h"
 
 #include <llvm/IR/PassTimingInfo.h>
 
@@ -511,7 +511,7 @@ LLVMPY_GetPassRegistry() {
 API_EXPORT(void)
 LLVMPY_ListRegisteredPasses(LLVMPassRegistryRef PR, const char** out) {
     auto registry = unwrap(PR);
-    auto listener = llvm::make_unique<NameSavingPassRegListener>();
+    auto listener = std::make_unique<NameSavingPassRegListener>();
     registry->enumerateWith(listener.get());
     *out = LLVMPY_CreateString(listener->getNames());
 }
