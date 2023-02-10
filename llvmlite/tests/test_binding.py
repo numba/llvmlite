@@ -17,7 +17,8 @@ from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 import llvmlite.tests
-from distutils.ccompiler import new_compiler
+from setuptools._distutils.ccompiler import new_compiler
+from setuptools._distutils.sysconfig import customize_compiler
 
 
 # arvm7l needs extra ABI symbols to link successfully
@@ -1958,6 +1959,7 @@ class TestArchiveFile(BaseTest):
 
             # Create compiler with default options
             c = new_compiler()
+            customize_compiler(c)
             workdir = tmpdir.name
             srcdir = os.path.dirname(llvmlite.tests.__file__) + "/"
 
