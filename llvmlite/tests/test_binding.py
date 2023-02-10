@@ -10,7 +10,8 @@ import subprocess
 import sys
 import unittest
 from contextlib import contextmanager
-from tempfile import mkstemp, TemporaryDirectory
+from tempfile import mkstemp, TemporaryDirectory, mkdtemp
+from pathlib import Path
 
 from llvmlite import ir
 from llvmlite import binding as llvm
@@ -19,7 +20,47 @@ from llvmlite.tests import TestCase
 import llvmlite.tests
 from setuptools._distutils.ccompiler import new_compiler
 from setuptools._distutils.sysconfig import customize_compiler
+import functools
 
+@contextmanager
+def _gentmpfile(suffix):
+    # windows locks the tempfile so use a tempdir + file, see
+    # https://github.com/numba/numba/issues/3304
+    try:
+        tmpdir = mkdtemp()
+        ntf = open(os.path.join(tmpdir, "temp%s" % suffix), 'wt')
+        yield ntf
+    finally:
+        try:
+            ntf.close()
+            os.remove(ntf)
+        except:
+            pass
+        else:
+            os.rmdir(tmpdir)
+
+
+@functools.lru_cache(maxsize=1)
+def external_compiler_works():
+    """
+    Returns True if the "external compiler" bound in setuptools._distutil is present
+    and working, False otherwise.
+    """
+    compiler = new_compiler()
+    customize_compiler(compiler)
+    for suffix in ['.c', '.cxx']:
+        try:
+            with _gentmpfile(suffix) as ntf:
+                simple_c = "int main(void) { return 0; }"
+                ntf.write(simple_c)
+                ntf.flush()
+                ntf.close()
+                # *output_dir* is set to avoid the compiler putting temp files
+                # in the current directory.
+                compiler.compile([ntf.name], output_dir=Path(ntf.name).anchor)
+        except Exception: # likely CompileError or file system issue
+            return False
+    return True
 
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
@@ -1950,6 +1991,9 @@ class TestArchiveFile(BaseTest):
     @unittest.skipUnless(sys.platform.startswith('linux'),
                          "Linux-specific test")
     def test_add_archive(self):
+        if not external_compiler_works():
+            self.skipTest()
+
         tmpdir = TemporaryDirectory()
         try:
             target_machine = self.target_machine(jit=False)
