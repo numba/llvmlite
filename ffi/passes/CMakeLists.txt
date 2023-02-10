@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.2)
 
-# TODO(ludger): What is travis, and the outdated xcode doing everywhere??
+# TODO(ludger): What is travis, and the outdated xcode doing everywhere?? -> Speak to Graham about this!
 if (APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
-    set(MACOSX_DEPLOYMENT_TARGET "10.9")
-    set(CMAKE_OSX_SYSROOT "/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
-    LIST(APPEND CMAKE_MODULE_PATH "/Users/travis/miniconda3/envs/travisci/lib/cmake")
-    SET(CMAKE_INSTALL_PREFIX "/Users/travis/miniconda3/envs/travisci")
-    SET(LLVM_INSTALL_PREFIX "/Users/travis/miniconda3/envs/travisci")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.1" CACHE STRING "Minimum OS X deployment version")
+    set(MACOSX_DEPLOYMENT_TARGET "13.1")
+    set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+    LIST(APPEND CMAKE_MODULE_PATH "/opt/homebrew/lib/cmake")
+    SET(CMAKE_INSTALL_PREFIX "/Users/lpaehler/miniconda3/envs/llvmlite6")
+    SET(LLVM_INSTALL_PREFIX "/Users/lpaehler/miniconda3/envs/llvmlite6")
 endif()
 
 project(llvmpy-passes)
 
-find_package(LLVM REQUIRED CONFIG)
+#find_package(LLVM REQUIRED CONFIG)
 
 execute_process(
         COMMAND llvm-config --cxxflags ${LLVM_FIND_COMPONENTS}
