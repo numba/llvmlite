@@ -22,6 +22,7 @@ from setuptools._distutils.ccompiler import new_compiler
 from setuptools._distutils.sysconfig import customize_compiler
 import functools
 
+
 @contextmanager
 def _gentmpfile(suffix):
     # windows locks the tempfile so use a tempdir + file, see
@@ -34,7 +35,7 @@ def _gentmpfile(suffix):
         try:
             ntf.close()
             os.remove(ntf)
-        except:
+        except Exception:
             pass
         else:
             os.rmdir(tmpdir)
@@ -43,8 +44,8 @@ def _gentmpfile(suffix):
 @functools.lru_cache(maxsize=1)
 def external_compiler_works():
     """
-    Returns True if the "external compiler" bound in setuptools._distutil is present
-    and working, False otherwise.
+    Returns True if the "external compiler" bound in setuptools._distutil
+    is present and working, False otherwise.
     """
     compiler = new_compiler()
     customize_compiler(compiler)
@@ -61,6 +62,7 @@ def external_compiler_works():
         except Exception: # likely CompileError or file system issue
             return False
     return True
+
 
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
