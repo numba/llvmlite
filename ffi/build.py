@@ -236,17 +236,14 @@ def main_posix(kind, library_ext):
 def build_passes():
     with cwd(os.path.join(os.path.dirname(__file__), "passes")):
         if os.name == 'posix' and sys.platform == 'darwin':
-            # TODO(ludger): This Xcode is terribly outdated
             os.environ['CONDA_BUILD_SYSROOT'] = \
-                '/Applications/Xcode-9.4.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'
+                '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk'  # TODO: Is this a hack?
             os.environ['CC'] = 'clang'
             os.environ['CXX'] = 'clang++'
-            # TODO(ludger): What is travis doing here?
             cmake_exec = os.path.expandvars(
-                "$HOME/miniconda3/envs/travisci/bin/cmake")
-            # TODO(ludger): What is travis doing here?
+                "/opt/homebrew/bin/cmake")  # TODO: FIX TO BE REMOVED!
             shutil.rmtree(
-                "/Users/travis/build/numba/llvmlite/bootstrap/lib/cmake/llvm/")
+                "/Users/lpaehler/miniconda3/envs/llvmlite6/lib/cmake/llvm")  # TODO: FIX TO BE REMOVED!
         else:
             cmake_exec = 'cmake'
 
