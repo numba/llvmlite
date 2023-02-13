@@ -1,9 +1,8 @@
-from ctypes import c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref, cdll, POINTER, RTLD_LOCAL
+from ctypes import c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref, cdll, POINTER
 from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
 import os
-import sys
 from tempfile import mkstemp
 from llvmlite.binding.common import _encode_string
 
