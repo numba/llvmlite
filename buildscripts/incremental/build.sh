@@ -4,7 +4,7 @@ set -x
 
 source activate $CONDA_ENV
 
-# need to build with Anaconda compilers on osx, but they conflict with llvmdev... bootstrap
+# need to build with Anaconda compilers on osx, but they conflict with llvmdev... bootstap
 if [[ $(uname) == Darwin ]]; then
   # export LLVM_CONFIG explicitly as the one installed from llvmdev
   # in the build root env, the one in the bootstrap location needs to be ignored.
