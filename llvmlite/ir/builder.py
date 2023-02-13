@@ -119,8 +119,8 @@ def _uniop_intrinsic_with_flag(opname):
                 raise TypeError(
                     "expected an integer type, got %s" %
                     operand.type)
-            if not(isinstance(flag.type, types.IntType) and
-                   flag.type.width == 1):
+            if not (isinstance(flag.type, types.IntType) and
+                    flag.type.width == 1):
                 raise TypeError("expected an i1 type, got %s" % flag.type)
             fn = self.module.declare_intrinsic(
                 opname, [operand.type, flag.type])
