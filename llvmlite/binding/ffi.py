@@ -161,7 +161,7 @@ def _importlib_resources_path(package, resource):
     The `_common.normalize_path(resource)` call is skipped because it is an
     internal API and it is unnecessary for the use here. What it does is
     ensuring `resource` is a str and that it does not contain path separators.
-    """
+    """ # noqa E501
     return _impres.as_file(_impres.files(package) / resource)
 
 
