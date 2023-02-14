@@ -100,6 +100,7 @@ class LlvmliteBuildExt(build_ext):
         from llvmlite.utils import get_library_files
         self.distribution.package_data = {
             "llvmlite.binding": get_library_files(),
+            "llvmlite.tests": ["*.c"]
         }
 
 
@@ -110,6 +111,7 @@ class LlvmliteInstall(install):
         from llvmlite.utils import get_library_files
         self.distribution.package_data = {
             "llvmlite.binding": get_library_files(),
+            "llvmlite.tests": ["*.c"]
         }
         install.run(self)
 
