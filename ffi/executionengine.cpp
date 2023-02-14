@@ -186,22 +186,20 @@ LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
     }
 
     Expected<std::unique_ptr<object::Archive>> ArchiveOrError =
-        object::Archive::create(ArBufOrErr.get()->getMemBufferRef());
+        Archive::create(ArBufOrErr.get()->getMemBufferRef());
 
     if (!ArchiveOrError) {
         auto takeErr = ArchiveOrError.takeError();
-        std::string archiveErrStr =
-            "Unable to load archive: " + std::string(ArchiveName);
-        *OutError = LLVMPY_CreateString(archiveErrStr.c_str());
+        LLVMErrorRef errorRef = wrap(std::move(takeErr));
+        *OutError = LLVMPY_CreateString(LLVMGetErrorMessage(errorRef));
         return 1;
     }
 
     std::unique_ptr<MemoryBuffer> &ArBuf = ArBufOrErr.get();
     std::unique_ptr<object::Archive> &Ar = ArchiveOrError.get();
-    object::OwningBinary<object::Archive> owningBinaryArchive(std::move(Ar),
-                                                              std::move(ArBuf));
+    OwningBinary<object::Archive> owningBinaryArchive(std::move(Ar),
+                                                      std::move(ArBuf));
     engine->addArchive(std::move(owningBinaryArchive));
-    *OutError = LLVMPY_CreateString("");
     return 0;
 }
 

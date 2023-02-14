@@ -81,10 +81,10 @@ The ExecutionEngine class
 
    * .. method:: add_archive(archive_file)
 
-        Add the symbols from the specified static archive file to the execution
+        Add the symbols from the specified static library file to the execution
         engine. It is a fatal error in LLVM if the *archive_file* does not exist.
 
-        * *archive_file* str: a path to the static archive file
+        * *archive_file* str: a path to the static library file
 
    * .. method:: set_object_cache(notify_func=None, getbuffer_func=None)
 
