@@ -659,6 +659,12 @@ class TestMisc(BaseTest):
         # Changing the locale should not affect the LLVM IR
         self.assertEqual(expect, got)
 
+    def test_no_accidental_warnings(self):
+        code = "from llvmlite import binding"
+        flags = "-Werror"
+        cmdargs = [sys.executable, flags, "-c", code]
+        subprocess.check_call(cmdargs)
+
 
 class TestModuleRef(BaseTest):
 
@@ -1987,7 +1993,3 @@ class TestLLVMLockCallbacks(BaseTest):
         # Check: removing non-existent callbacks will trigger a ValueError
         with self.assertRaises(ValueError):
             llvm.ffi.unregister_lock_callback(acq, rel)
-
-
-if __name__ == "__main__":
-    unittest.main()
