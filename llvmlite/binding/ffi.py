@@ -1,3 +1,4 @@
+import sys
 import ctypes
 import threading
 import importlib.resources as _impres
@@ -151,7 +152,7 @@ class _lib_fn_wrapper(object):
             return self._cfn(*args, **kwargs)
 
 
-def _importlib_resources_path(package, resource):
+def _importlib_resources_path_repl(package, resource):
     """Replacement implementation of `import.resources.path` to avoid
     deprecation warning following code at importlib_resources/_legacy.py
     as suggested by https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
@@ -163,6 +164,11 @@ def _importlib_resources_path(package, resource):
     ensuring `resource` is a str and that it does not contain path separators.
     """ # noqa E501
     return _impres.as_file(_impres.files(package) / resource)
+
+
+_importlib_resources_path = (_importlib_resources_path_repl
+                             if sys.version_info[:2] >= (3, 9)
+                             else _impres.path)
 
 
 _lib_name = get_library_name()
