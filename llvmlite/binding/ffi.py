@@ -77,28 +77,67 @@ class _LLVMLock:
         self._lock.release()
 
 
+class _suppress_cleanup_errors:
+    def __init__(self, context):
+        self._context = context
+
+    def __enter__(self):
+        return self._context.__enter__()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            return self._context.__exit__(exc_type, exc_value, traceback)
+        except PermissionError:
+            pass  # Resource dylibs can't be deleted on Windows.
+
+
 class _lib_wrapper(object):
     """Wrap libllvmlite with a lock such that only one thread may access it at
     a time.
 
     This class duck-types a CDLL.
     """
-    __slots__ = ['_lib', '_fntab', '_lock']
+    __slots__ = ['_lib_handle', '_fntab', '_lock']
 
-    def __init__(self, lib):
-        self._lib = lib
+    def __init__(self):
+        self._lib_handle = None
         self._fntab = {}
         self._lock = _LLVMLock()
+
+    def _load_lib(self):
+        try:
+            with _suppress_cleanup_errors(importlib.resources.path(
+                    __name__.rpartition(".")[0], get_library_name())) as lib_path:
+                self._lib_handle = ctypes.CDLL(str(lib_path))
+                # Check that we can look up expected symbols.
+                _ = self._lib_handle.LLVMPY_GetVersionInfo()
+        except (OSError, AttributeError) as e:
+            # OSError may be raised if the file cannot be opened, or is not
+            # a shared library.
+            # AttributeError is raised if LLVMPY_GetVersionInfo does not
+            # exist.
+            raise OSError("Could not find/load shared object file") from e
+
+    @property
+    def _lib(self):
+        # Not threadsafe.
+        if not self._lib_handle:
+            self._load_lib()
+        return self._lib_handle
 
     def __getattr__(self, name):
         try:
             return self._fntab[name]
         except KeyError:
-            # Lazily wraps new functions as they are requested
-            cfn = getattr(self._lib, name)
-            wrapped = _lib_fn_wrapper(self._lock, cfn)
-            self._fntab[name] = wrapped
-            return wrapped
+            with self._lock:
+                # Double checking to avoid wrapper creation race.
+                try:
+                    return self._fntab[name]
+                except KeyError:
+                    cfn = getattr(self._lib, name)
+                    wrapped = _lib_fn_wrapper(self._lock, cfn)
+                    self._fntab[name] = wrapped
+                    return wrapped
 
     @property
     def _name(self):
@@ -151,23 +190,7 @@ class _lib_fn_wrapper(object):
             return self._cfn(*args, **kwargs)
 
 
-_lib_name = get_library_name()
-
-
-pkgname = ".".join(__name__.split(".")[0:-1])
-try:
-    _lib_handle = importlib.resources.path(pkgname, _lib_name)
-    lib = ctypes.CDLL(str(_lib_handle.__enter__()))
-    # on windows file handles to the dll file remain open after
-    # loading, therefore we can not exit the context manager
-    # which might delete the file
-except OSError as e:
-    msg = f"""Could not find/load shared object file: {_lib_name}
- Error was: {e}"""
-    raise OSError(msg)
-
-
-lib = _lib_wrapper(lib)
+lib = _lib_wrapper()
 
 
 def register_lock_callback(acq_fn, rel_fn):
