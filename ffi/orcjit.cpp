@@ -78,7 +78,9 @@ LLVMPY_AddIRModule(LLVMOrcLLJITRef JIT, LLVMModuleRef M) {
 
     LLVMOrcJITDylibRef JD = LLVMOrcLLJITGetMainJITDylib(JIT);
     LLVMOrcResourceTrackerRef RT = LLVMOrcJITDylibCreateResourceTracker(JD);
-    LLVMOrcLLJITAddLLVMIRModuleWithRT(JIT, RT, tsm);
+    LLVMErrorRef err = LLVMOrcLLJITAddLLVMIRModuleWithRT(JIT, RT, tsm);
+    if (err)
+      abort();
 
     LLVMOrcDisposeThreadSafeContext(llvm_ts_ctx);
 
