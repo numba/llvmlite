@@ -1,5 +1,6 @@
 import sys
 
+import multiprocessing
 import unittest
 from unittest import TestCase
 
@@ -53,5 +54,6 @@ def run_tests(suite=None, xmloutput=None, verbosity=1):
 
 
 def main():
+    multiprocessing.set_start_method('spawn')
     res = run_tests()
     sys.exit(0 if res.wasSuccessful() else 1)

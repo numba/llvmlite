@@ -14,3 +14,9 @@ from .value import *
 from .analysis import *
 from .object_file import *
 from .context import *
+
+
+def __getattr__(name):
+    if name == 'llvm_version_info':
+        return initfini._version_info()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
