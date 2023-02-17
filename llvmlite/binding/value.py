@@ -196,6 +196,13 @@ class ValueRef(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddFunctionAttr(self, attrval)
 
     @property
+    def global_value_type(self):
+        """
+        This value's LLVM type, if it is a global value.
+        """
+        return TypeRef(ffi.lib.LLVMPY_GlobalGetValueType(self))
+
+    @property
     def type(self):
         """
         This value's LLVM type.
@@ -417,6 +424,9 @@ ffi.lib.LLVMPY_GetValueName.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetValueName.restype = c_char_p
 
 ffi.lib.LLVMPY_SetValueName.argtypes = [ffi.LLVMValueRef, c_char_p]
+
+ffi.lib.LLVMPY_GlobalGetValueType.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GlobalGetValueType.restype = ffi.LLVMTypeRef
 
 ffi.lib.LLVMPY_TypeOf.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_TypeOf.restype = ffi.LLVMTypeRef

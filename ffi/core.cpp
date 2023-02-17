@@ -1,6 +1,7 @@
 #include "core.h"
 
 #include "llvm-c/Support.h"
+#include "llvm/IR/LLVMContext.h"
 
 extern "C" {
 
@@ -21,10 +22,31 @@ API_EXPORT(void)
 LLVMPY_DisposeString(const char *msg) { free(const_cast<char *>(msg)); }
 
 API_EXPORT(LLVMContextRef)
-LLVMPY_GetGlobalContext() { return LLVMGetGlobalContext(); }
+LLVMPY_GetGlobalContext(bool enable_opaque_pointers) {
+    LLVMContextRef ctx = LLVMGetGlobalContext();
+#if LLVM_VERSION_MAJOR >= 14
+    if (enable_opaque_pointers) llvm::unwrap(ctx)->enableOpaquePointers();
+#endif
+    return ctx;
+}
 
 API_EXPORT(LLVMContextRef)
-LLVMPY_ContextCreate() { return LLVMContextCreate(); }
+LLVMPY_ContextCreate(bool enable_opaque_pointers) {
+    LLVMContextRef ctx = LLVMContextCreate();
+#if LLVM_VERSION_MAJOR >= 14
+    if (enable_opaque_pointers) llvm::unwrap(ctx)->enableOpaquePointers();
+#endif
+    return ctx;
+}
+
+API_EXPORT(bool)
+LLVMPY_SupportsTypedPointers(LLVMContextRef ctx) {
+#if LLVM_VERSION_MAJOR >= 13
+    return llvm::unwrap(ctx)->supportsTypedPointers();
+#else
+    return true;
+#endif
+}
 
 API_EXPORT(void)
 LLVMPY_ContextDispose(LLVMContextRef context) {

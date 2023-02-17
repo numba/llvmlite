@@ -6,7 +6,11 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/Host.h"
+#if LLVM_VERSION_MAJOR < 14
 #include "llvm/Support/TargetRegistry.h"
+#else
+#include "llvm/MC/TargetRegistry.h"
+#endif
 #include "llvm/Target/TargetMachine.h"
 
 #include <cstdio>
@@ -99,6 +103,12 @@ LLVMPY_CopyStringRepOfTargetData(LLVMTargetDataRef TD, char **Out) {
 
 API_EXPORT(void)
 LLVMPY_DisposeTargetData(LLVMTargetDataRef TD) { LLVMDisposeTargetData(TD); }
+
+
+API_EXPORT(long long)
+LLVMPY_ABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
+    return (long long)LLVMABIAlignmentOfType(TD, Ty);
+}
 
 API_EXPORT(long long)
 LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
@@ -204,7 +214,9 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
         rm = Reloc::DynamicNoPIC;
 
     TargetOptions opt;
+#if LLVM_VERSION_MAJOR < 12
     opt.PrintMachineCode = PrintMC;
+#endif
     opt.MCOptions.ABIName = ABIName;
 
     bool jit = JIT;

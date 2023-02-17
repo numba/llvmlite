@@ -154,7 +154,11 @@ LLVMPY_ArgumentAttributesIter(LLVMValueRef A) {
     Argument *arg = unwrap<Argument>(A);
     unsigned argno = arg->getArgNo();
     AttributeSet attrs =
+#if LLVM_VERSION_MAJOR < 14
         arg->getParent()->getAttributes().getParamAttributes(argno);
+#else
+        arg->getParent()->getAttributes().getParamAttrs(argno);
+#endif
     return wrap(new AttributeSetIterator(attrs.begin(), attrs.end()));
 }
 
@@ -319,6 +323,16 @@ LLVMPY_SetValueName(LLVMValueRef Val, const char *Name) {
 
 API_EXPORT(LLVMModuleRef)
 LLVMPY_GetGlobalParent(LLVMValueRef Val) { return LLVMGetGlobalParent(Val); }
+
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GlobalGetValueType(LLVMValueRef Val) {
+  llvm::Value *unwrapped = llvm::unwrap(Val);
+  llvm::GlobalValue *gv = llvm::dyn_cast<llvm::GlobalValue>(unwrapped);
+  if (!gv) {
+    return nullptr;
+  }
+  return llvm::wrap(gv->getValueType());
+}
 
 API_EXPORT(LLVMTypeRef)
 LLVMPY_TypeOf(LLVMValueRef Val) { return LLVMTypeOf(Val); }

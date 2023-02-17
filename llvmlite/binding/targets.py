@@ -135,6 +135,12 @@ class TargetData(ffi.ObjectRef):
         """
         return ffi.lib.LLVMPY_ABISizeOfType(self, ty)
 
+    def get_abi_alignment(self, ty):
+        """
+        Get ABI size of LLVM type *ty*.
+        """
+        return ffi.lib.LLVMPY_ABIAlignmentOfType(self, ty)
+
     def get_element_offset(self, ty, position):
         """
         Get byte offset of type's ty element at the given position
@@ -362,6 +368,10 @@ ffi.lib.LLVMPY_CopyStringRepOfTargetData.argtypes = [
 ffi.lib.LLVMPY_DisposeTargetData.argtypes = [
     ffi.LLVMTargetDataRef,
 ]
+
+ffi.lib.LLVMPY_ABIAlignmentOfType.argtypes = [ffi.LLVMTargetDataRef,
+                                              ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ABIAlignmentOfType.restype = c_longlong
 
 ffi.lib.LLVMPY_ABISizeOfType.argtypes = [ffi.LLVMTargetDataRef,
                                          ffi.LLVMTypeRef]

@@ -210,7 +210,7 @@ define void @main(i8* %ptr) {
         mod, stats = self.check(self.per_bb_ir_2)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        self.assertIn("call void @NRT_incref(i8* %ptr)", str(mod))
+        self.assertRegex(str(mod), r"call void @NRT_incref\((ptr|i8\*) %ptr\)")
 
     per_bb_ir_3 = r"""
 define void @main(i8* %ptr, i8* %other) {
@@ -226,7 +226,8 @@ define void @main(i8* %ptr, i8* %other) {
         mod, stats = self.check(self.per_bb_ir_3)
         self.assertEqual(stats.basicblock, 2)
         # not pruned
-        self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertRegex(
+            str(mod), r"call void @NRT_decref\((ptr|i8\*) %other\)")
 
     per_bb_ir_4 = r"""
 ; reordered
@@ -244,7 +245,7 @@ define void @main(i8* %ptr, i8* %other) {
         mod, stats = self.check(self.per_bb_ir_4)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertRegex(str(mod), "call void @NRT_decref\((ptr|i8\*) %other\)")
 
 
 class TestDiamond(BaseTestByIR):

@@ -963,14 +963,30 @@ class JITTestMixin(object):
         for g in (gv_i32, gv_i8, gv_struct):
             self.assertEqual(td.get_abi_size(g.type), pointer_size)
 
-        self.assertEqual(td.get_pointee_abi_size(gv_i32.type), 4)
-        self.assertEqual(td.get_pointee_abi_alignment(gv_i32.type), 4)
+        if llvm.context.get_global_context().supports_typed_pointers():
+            with self.subTest('pointee_types'):
+                self.assertEqual(td.get_pointee_abi_size(gv_i32.type), 4)
+                self.assertEqual(td.get_pointee_abi_alignment(gv_i32.type), 4)
 
-        self.assertEqual(td.get_pointee_abi_size(gv_i8.type), 1)
-        self.assertIn(td.get_pointee_abi_alignment(gv_i8.type), (1, 2, 4))
+                self.assertEqual(td.get_pointee_abi_size(gv_i8.type), 1)
+                self.assertIn(td.get_pointee_abi_alignment(
+                    gv_i8.type), (1, 2, 4))
 
-        self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
-        self.assertIn(td.get_pointee_abi_alignment(gv_struct.type), (4, 8))
+                self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
+                self.assertIn(td.get_pointee_abi_alignment(
+                    gv_struct.type), (4, 8))
+
+        with self.subTest('global_value_types'):
+            self.assertEqual(td.get_abi_size(gv_i32.global_value_type), 4)
+            self.assertEqual(td.get_abi_alignment(gv_i32.global_value_type), 4)
+
+            self.assertEqual(td.get_abi_size(gv_i8.global_value_type), 1)
+            self.assertIn(td.get_abi_alignment(
+                gv_i8.global_value_type), (1, 2, 4))
+
+            self.assertEqual(td.get_abi_size(gv_struct.global_value_type), 24)
+            self.assertIn(td.get_abi_alignment(
+                gv_struct.global_value_type), (4, 8))
 
     def test_object_cache_notify(self):
         notifies = []
@@ -1157,28 +1173,33 @@ class TestValueRef(BaseTest):
         self.assertEqual(tp.name, "")
         st = mod.get_global_variable("glob_struct")
         self.assertIsNotNone(re.match(r"struct\.glob_type(\.[\d]+)?",
-                                      st.type.element_type.name))
+                                      st.global_value_type.name))
 
     def test_type_printing_variable(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
         tp = glob.type
-        self.assertEqual(str(tp), 'i32*')
+        if llvm.context.get_global_context().supports_typed_pointers():
+            self.assertEqual(str(tp), 'i32*')
+        else:
+            self.assertEqual(str(tp), 'ptr')
 
     def test_type_printing_function(self):
         mod = self.module()
         fn = mod.get_function("sum")
-        self.assertEqual(str(fn.type), "i32 (i32, i32)*")
+        self.assertRegex(str(fn.global_value_type), r"i32 \(i32, i32\)")
+        self.assertRegex(str(fn.type), r"(ptr|i32 \(i32, i32\)\*)")
 
     def test_type_printing_struct(self):
         mod = self.module()
         st = mod.get_global_variable("glob_struct")
         self.assertTrue(st.type.is_pointer)
-        self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
-                                      str(st.type)))
-        self.assertIsNotNone(re.match(
-            r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
-            str(st.type.element_type)))
+        self.assertRegex(
+            str(st.type),
+            r'(ptr|%struct\.glob_type(\.[\d]+)?\*)')
+        self.assertRegex(
+            str(st.global_value_type),
+            r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }")
 
     def test_close(self):
         glob = self.glob()
@@ -1325,6 +1346,20 @@ class TestTargetData(BaseTest):
         glob = self.glob()
         self.assertEqual(td.get_abi_size(glob.type), 8)
 
+    def test_get_global_value_abi_size(self):
+        td = self.target_data()
+
+        glob = self.glob()
+        self.assertIsNotNone(glob.global_value_type)
+        self.assertEqual(td.get_abi_size(glob.global_value_type), 4)
+
+        glob = self.glob("glob_struct")
+        self.assertIsNotNone(glob.global_value_type)
+        self.assertEqual(td.get_abi_size(glob.global_value_type), 24)
+
+    @unittest.skipUnless(
+        llvm.context.get_global_context().supports_typed_pointers(),
+        "No typed pointer support")
     def test_get_pointee_abi_size(self):
         td = self.target_data()
 
@@ -1341,7 +1376,7 @@ class TestTargetData(BaseTest):
         with self.assertRaises(ValueError):
             td.get_element_offset(glob.type, 0)
 
-        struct_type = glob.type.element_type
+        struct_type = glob.global_value_type
         self.assertEqual(td.get_element_offset(struct_type, 0), 0)
         self.assertEqual(td.get_element_offset(struct_type, 1), 8)
 
