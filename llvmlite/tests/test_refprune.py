@@ -245,7 +245,8 @@ define void @main(i8* %ptr, i8* %other) {
         mod, stats = self.check(self.per_bb_ir_4)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        self.assertRegex(str(mod), "call void @NRT_decref\((ptr|i8\*) %other\)")
+        self.assertRegex(
+            str(mod), r"call void @NRT_decref\((ptr|i8\*) %other\)")
 
 
 class TestDiamond(BaseTestByIR):
