@@ -25,7 +25,8 @@ API_EXPORT(LLVMContextRef)
 LLVMPY_GetGlobalContext(bool enable_opaque_pointers) {
     LLVMContextRef ctx = LLVMGetGlobalContext();
 #if LLVM_VERSION_MAJOR >= 14
-    if (enable_opaque_pointers) llvm::unwrap(ctx)->enableOpaquePointers();
+    if (enable_opaque_pointers)
+        llvm::unwrap(ctx)->enableOpaquePointers();
 #endif
     return ctx;
 }
@@ -34,7 +35,8 @@ API_EXPORT(LLVMContextRef)
 LLVMPY_ContextCreate(bool enable_opaque_pointers) {
     LLVMContextRef ctx = LLVMContextCreate();
 #if LLVM_VERSION_MAJOR >= 14
-    if (enable_opaque_pointers) llvm::unwrap(ctx)->enableOpaquePointers();
+    if (enable_opaque_pointers)
+        llvm::unwrap(ctx)->enableOpaquePointers();
 #endif
     return ctx;
 }
