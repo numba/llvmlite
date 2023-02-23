@@ -10,10 +10,12 @@ SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
 	  linker.cpp object_file.cpp custom_passes.cpp
 OUTPUT = libllvmlite.dylib
+BUILTINS_ARCHIVE = libclang_rt.builtins.a
 MACOSX_DEPLOYMENT_TARGET ?= 10.9
 
 all: $(SRC) $(INCLUDE)
 	MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET) $(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
+    cp $(LLVM_LIBDIR)/darwin/libclang_rt.builtins*.a $(BUILTINS_ARCHIVE)
 
 clean:
-	rm -rf test
+	rm -rf test $(BUILTINS_ARCHIVE)

@@ -4,6 +4,11 @@
 
 set -x
 
+ARCH=`uname -m`
+
+# default is LLVM 11 default architectures + RISCV.  Can remove this entire option in LLVM 13
+LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"host;AArch64;AMDGPU;ARM;BPF;Hexagon;Mips;MSP430;NVPTX;PowerPC;Sparc;SystemZ;X86;XCore;RISCV"}
+
 # This is the clang compiler prefix
 DARWIN_TARGET=x86_64-apple-darwin13.4.0
 
@@ -28,8 +33,7 @@ _cmake_config+=(-DHAVE_TERMIOS_H=OFF)
 _cmake_config+=(-DCLANG_ENABLE_LIBXML=OFF)
 _cmake_config+=(-DLIBOMP_INSTALL_ALIASES=OFF)
 _cmake_config+=(-DLLVM_ENABLE_RTTI=OFF)
-# default is LLVM 11 default architectures + RISCV.  Can remove this entire option in LLVM 13
-_cmake_config+=(-DLLVM_TARGETS_TO_BUILD="host;AArch64;AMDGPU;ARM;BPF;Hexagon;Mips;MSP430;NVPTX;PowerPC;Sparc;SystemZ;X86;XCore;RISCV")
+_cmake_config+=(-DLLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD})
 _cmake_config+=(-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly)
 _cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
 # TODO :: It would be nice if we had a cross-ecosystem 'BUILD_TIME_LIMITED' env var we could use to
@@ -64,14 +68,13 @@ fi
 # _cmake_config+=(--trace-expand)
 # CPU_COUNT=1
 
-mkdir build
-cd build
+mkdir llvm/build
+cd llvm/build
 
 cmake -G'Unix Makefiles'     \
       "${_cmake_config[@]}"  \
       ..
 
-ARCH=`uname -m`
 if [ $ARCH == 'armv7l' ]; then # RPi need thread count throttling
     make -j2 VERBOSE=1
 else
@@ -88,3 +91,36 @@ if [[ $ARCH == 'i686' ]]; then
 else
     ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
 fi
+
+# Next, build compiler-rt
+
+declare -a _compiler_rt_cmake_config
+_compiler_rt_cmake_config+=(-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX})
+_compiler_rt_cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_CRT:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_PROFILE:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_SANITIZERS:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_XRAY:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_ORC:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DLLVM_CONFIG_PATH=../../llvm/build/bin/llvm-config)
+
+cd ../../compiler-rt
+mkdir build
+cd build
+
+cmake -G'Unix Makefiles'     \
+      "${_compiler_rt_cmake_config[@]}"  \
+      ..
+
+if [ $ARCH == 'armv7l' ]; then # RPi need thread count throttling
+    make -j2 VERBOSE=1
+else
+    make -j${CPU_COUNT} VERBOSE=1
+fi
+
+make install

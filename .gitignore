@@ -2,8 +2,10 @@
 *.pyd
 *.o
 *.so
+*.a
 *.dylib
 *.dll
+*.lib
 build/
 dist/
 *.egg-info

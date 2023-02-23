@@ -2,7 +2,8 @@
 {% set version = "11.1.0" %}
 {% set sha256_llvm = "ce8508e318a01a63d4e8b3090ab2ded3c598a50258cc49e2625b9120d4c03ea5" %}
 {% set sha256_lld = "017a788cbe1ecc4a949abf10755870519086d058a2e99f438829aef24f0c66ce" %}
-{% set build_number = "5" %}
+{% set sha256_compiler_rt = "def1fc00c764cd3abbba925c712ac38860a756a43b696b291f46fee09e453274" %}
+{% set build_number = "6" %}
 
 package:
   name: llvmdev
@@ -12,6 +13,7 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz
     fn: llvm-{{ version }}.src.tar.xz
     sha256: {{ sha256_llvm }}
+    folder: llvm
     patches:
     - ../partial-testing.patch
     # Intel SVML optimizations (two patches)
@@ -26,7 +28,12 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
     sha256: {{ sha256_lld }}
-    folder: tools/lld
+    folder: llvm/tools/lld
+
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/compiler-rt-{{ version }}.src.tar.xz
+    fn: compiler-rt-{{ version }}.src.tar.xz
+    sha256: {{ sha256_compiler_rt }}
+    folder: compiler-rt
 
 build:
   number: {{ build_number }}
@@ -81,5 +88,5 @@ about:
   home: http://llvm.org/
   dev_url: https://github.com/llvm-mirror/llvm
   license: NCSA
-  license_file: LICENSE.TXT
+  license_file: llvm/LICENSE.TXT
   summary: Development headers and libraries for LLVM
