@@ -34,6 +34,8 @@ inline OwningBinary<ObjectFile> *unwrap(LLVMObjectFileRef OF) {
 
 extern "C" {
 
+std::vector<ThreadSafeModule> GlobalTSMs;
+
 API_EXPORT(LLVMOrcLLJITRef)
 LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, const char **OutError) {
     LLVMOrcLLJITRef jit;
@@ -61,6 +63,11 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, const char **OutError) {
     }
 
     auto error = LLVMOrcCreateLLJIT(&jit, builder);
+
+    unwrap(jit)->getIRCompileLayer().setNotifyCompiled([](MaterializationResponsibility &R, ThreadSafeModule TSM) {
+        // Move TSM to take ownership and preserve the module.
+        GlobalTSMs.push_back(std::move(TSM));
+    });
 
     if (error) {
         char *message = LLVMGetErrorMessage(error);
