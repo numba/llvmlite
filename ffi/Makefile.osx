@@ -15,7 +15,7 @@ MACOSX_DEPLOYMENT_TARGET ?= 10.9
 
 all: $(SRC) $(INCLUDE)
 	MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET) $(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
-    cp $(LLVM_LIBDIR)/darwin/libclang_rt.builtins*.a $(BUILTINS_ARCHIVE)
+	cp $(LLVM_LIBDIR)/darwin/libclang_rt.builtins*.a $(BUILTINS_ARCHIVE)
 
 clean:
 	rm -rf test $(BUILTINS_ARCHIVE)
