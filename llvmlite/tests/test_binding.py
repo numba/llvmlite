@@ -574,6 +574,7 @@ class TestMisc(BaseTest):
         gcontext2 = llvm.context.get_global_context()
         assert gcontext1 == gcontext2
 
+    # XXX: Is this an MCJIT test?
     def test_dylib_symbols(self):
         llvm.add_symbol("__xyzzy", 1234)
         llvm.add_symbol("__xyzzy", 5678)
@@ -1118,6 +1119,25 @@ class TestOrcLLJIT(BaseTest):
         lljit = llvm.create_lljit_compiler(target_machine)
         lljit.add_ir_module(mod)
         return lljit
+
+    # From test_dylib_symbols
+    def test_define_symbol(self):
+        lljit = llvm.create_lljit_compiler()
+        lljit.define_symbol("__xyzzy", 1234)
+        addr = lljit.lookup("__xyzzy")
+        self.assertEqual(addr, 1234)
+
+    def test_define_symbol_twice_fails(self):
+        lljit = llvm.create_lljit_compiler()
+        lljit.define_symbol("__xyzzy", 1234)
+        with self.assertRaisesRegex(RuntimeError, 'Duplicate definition'):
+            lljit.define_symbol("__xyzzy", 5678)
+
+    def test_lookup_undefined_symbol_fails(self):
+        lljit = llvm.create_lljit_compiler()
+        with self.assertRaisesRegex(RuntimeError,
+                                    'Symbols not found.*__foobar'):
+            addr = lljit.lookup("__foobar")
 
     def test_run_code(self):
         mod = self.module()

@@ -75,8 +75,12 @@ class LLJIT(ffi.ObjectRef):
         Register the *address* of global symbol *name*.  This will make
         it usable (e.g. callable) from LLVM-compiled functions.
         """
-        ffi.lib.LLVMPY_LLJITDefineSymbol(self, _encode_string(name),
-                                         c_void_p(address))
+        with ffi.OutputString() as outerr:
+            error = ffi.lib.LLVMPY_LLJITDefineSymbol(self,
+                                                     _encode_string(name),
+                                                     c_void_p(address), outerr)
+            if error:
+                raise RuntimeError(str(outerr))
 
     def add_current_process_search(self):
         """
@@ -201,7 +205,9 @@ ffi.lib.LLVMPY_LLJITDefineSymbol.argtypes = [
     ffi.LLVMOrcLLJITRef,
     c_char_p,
     c_void_p,
+    POINTER(c_char_p)
 ]
+ffi.lib.LLVMPY_LLJITDefineSymbol.restype = c_bool
 
 ffi.lib.LLVMPY_LLJITAddCurrentProcessSearch.argtypes = [
     ffi.LLVMOrcLLJITRef,
