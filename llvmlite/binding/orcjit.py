@@ -14,7 +14,10 @@ class LLJIT(ffi.ObjectRef):
     def add_ir_module(self, m):
         if m in self._resource_trackers:
             raise KeyError("module already added to this engine")
-        rt = ffi.lib.LLVMPY_AddIRModule(self, m)
+        with ffi.OutputString() as outerr:
+            rt = ffi.lib.LLVMPY_AddIRModule(self, m, outerr)
+            if not rt:
+                raise RuntimeError(str(outerr))
         m._owned = True
         self._resource_trackers[m] = rt
 
@@ -167,6 +170,7 @@ def create_lljit_compiler(target_machine=None):
 ffi.lib.LLVMPY_AddIRModule.argtypes = [
     ffi.LLVMOrcLLJITRef,
     ffi.LLVMModuleRef,
+    POINTER(c_char_p),
 ]
 
 
