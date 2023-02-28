@@ -514,7 +514,6 @@ common.ret:
     ret i32 %common.ret.op
 }
 
-!0 = !{i1 1}
 """
 
     def test_fanout_raise_5(self):
