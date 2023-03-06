@@ -13,15 +13,15 @@ source:
     fn: llvm-{{ version }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
-    - ../partial-testing.patch
+    - ../llvm11-partial-testing.patch
     # Intel SVML optimizations (two patches)
-    - ../intel-D47188-svml-VF.patch
+    - ../llvm11-intel-D47188-svml-VF.patch
     # Second patch from https://github.com/conda-forge/llvmdev-feedstock/blob/c706309/recipe/patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
-    - ../expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
+    - ../llvm11-expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch
     # Reverts a patch limiting non-GlobalValue name length
-    - ../0001-Revert-Limit-size-of-non-GlobalValue-name.patch
+    - ../llvm11-0001-Revert-Limit-size-of-non-GlobalValue-name.patch
     # Fixes for aarch64 on LLVM 11 from https://reviews.llvm.org/D104123
-    - ../llvm_11_consecutive_registers.patch
+    - ../llvm11-consecutive_registers.patch
 
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
@@ -35,6 +35,7 @@ build:
   ignore_run_exports:
     # Is static-linked
     - xar
+  script: bash ./build_llvm11.sh
 
 requirements:
   build:
