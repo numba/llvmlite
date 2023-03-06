@@ -28,6 +28,7 @@ source:
     sha256: {{ sha256_lld }}
     folder: tools/lld
 
+  - path: ./build_llvm11.sh
 build:
   number: {{ build_number }}
   script_env:

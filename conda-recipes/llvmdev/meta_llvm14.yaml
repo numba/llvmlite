@@ -25,6 +25,7 @@ source:
     sha256: {{ sha256_libunwind }}
     folder: unwind
 
+  - path: ./build_llvm14.sh
 build:
   number: {{ build_number }}
   script_env:
