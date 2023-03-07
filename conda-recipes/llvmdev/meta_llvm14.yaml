@@ -29,7 +29,7 @@ source:
 build:
   number: {{ build_number }}
   script_env:
-    - PY_VCRUNTIME_REDIST
+    - PY_VCRUNTIME_REDIST   # [win]
   ignore_run_exports:
     # Is static-linked
     - xar
