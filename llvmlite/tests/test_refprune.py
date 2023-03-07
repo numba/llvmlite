@@ -513,7 +513,7 @@ common.ret:
     %common.ret.op = phi i32 [ 0, %bb_B ], [ 1, %bb_C ]
     ret i32 %common.ret.op
 }
-
+!0 = !{i1 1}
 """
 
     def test_fanout_raise_5(self):
