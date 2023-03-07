@@ -457,8 +457,7 @@ bb_C:
 
     def test_fanout_raise_2(self):
         mod, stats = self.check(self.fanout_raise_2)
-        # Change in behaviour: ignore bad metadata
-        self.assertEqual(stats.fanout_raise, 2)
+        self.assertEqual(stats.fanout_raise, 0)
 
     fanout_raise_3 = r"""
 define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
