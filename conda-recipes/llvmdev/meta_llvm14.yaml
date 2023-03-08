@@ -30,10 +30,10 @@ build:
   number: {{ build_number }}
   script_env:
     - PY_VCRUNTIME_REDIST   # [win]
+    - LLVM_VERSION=14
   ignore_run_exports:
     # Is static-linked
     - xar
-  script: bash ./build_llvm14.sh
 
 requirements:
   build:
