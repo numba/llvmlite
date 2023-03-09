@@ -1,0 +1,12 @@
+diff -ur a/tools/lto/CMakeLists.txt b/tools/lto/CMakeLists.txt
+--- llvm-12.0.0.src-orig/tools/lto/CMakeLists.txt	2021-04-06 12:38:18.000000000 -0400
++++ llvm-12.0.0.src/tools/lto/CMakeLists.txt	2022-03-31 15:46:00.000000000 -0400
+@@ -21,7 +21,7 @@
+ 
+ set(LLVM_EXPORTED_SYMBOL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lto.exports)
+ 
+-add_llvm_library(LTO SHARED INSTALL_WITH_TOOLCHAIN ${SOURCES} DEPENDS
++add_llvm_library(LTO INSTALL_WITH_TOOLCHAIN ${SOURCES} DEPENDS
+     intrinsics_gen)
+ 
+ install(FILES ${LLVM_MAIN_INCLUDE_DIR}/llvm-c/lto.h
