@@ -448,7 +448,7 @@ bb_B:
     call void @NRT_decref(i8* %ptr)
     ret i32 0
 bb_C:
-    store i8* null, i8** %excinfo, !numba_excetion_output !0      ; bad metadata
+    store i8* null, i8** %excinfo, !numba_exception_typo !0      ; bad metadata
     ret i32 1
 }
 
@@ -456,6 +456,8 @@ bb_C:
 """
 
     def test_fanout_raise_2(self):
+        # This is ensuring that fanout_raise is not pruning when the metadata
+        # is incorrectly named.
         mod, stats = self.check(self.fanout_raise_2)
         self.assertEqual(stats.fanout_raise, 0)
 
