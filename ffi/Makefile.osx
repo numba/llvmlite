@@ -1,6 +1,6 @@
 
 CXX = clang++
-CXXFLAGS = $(LLVM_CXXFLAGS) -O3
+CXXFLAGS = $(LLVM_CXXFLAGS)
 # Only export the LLVMPY symbols we require and exclude everything else.
 EXPORT = "-Wl,-exported_symbol,_LLVMPY_*"
 LDFLAGS :=  $(LDFLAGS) $(EXPORT) $(LLVM_LDFLAGS)
