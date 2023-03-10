@@ -100,10 +100,7 @@ class RefPruneSubpasses(IntFlag):
     ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 
-# we maintain a global list of loaded libraries. On pypy,
-# garbage collection dlcloses loaded libraries which makes it
-# virtually impossible to handle pass registration properly
-# setdlopenflags also doesn't work properly on pypy
+# Maintain a global list of loaded libraries.
 _loaded_libraries = []
 
 def load_pass_plugin(path):

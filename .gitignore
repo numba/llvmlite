@@ -4,7 +4,6 @@
 *.so
 *.dylib
 *.dll
-.idea/
 build/
 dist/
 *.egg-info
