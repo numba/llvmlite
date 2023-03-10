@@ -1,0 +1,181 @@
+diff -ur a/include/llvm/CodeGen/TargetLowering.h b/include/llvm/CodeGen/TargetLowering.h
+--- a/include/llvm/CodeGen/TargetLowering.h	2021-04-06 12:38:18.000000000 -0400
++++ b/include/llvm/CodeGen/TargetLowering.h	2022-03-31 15:52:45.000000000 -0400
+@@ -3975,7 +3975,8 @@
+   /// must be passed in a block of consecutive registers.
+   virtual bool
+   functionArgumentNeedsConsecutiveRegisters(Type *Ty, CallingConv::ID CallConv,
+-                                            bool isVarArg) const {
++                                            bool isVarArg,
++                                            const DataLayout &DL) const {
+     return false;
+   }
+ 
+diff -ur a/lib/CodeGen/SelectionDAG/FastISel.cpp b/lib/CodeGen/SelectionDAG/FastISel.cpp
+--- a/lib/CodeGen/SelectionDAG/FastISel.cpp	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/CodeGen/SelectionDAG/FastISel.cpp	2022-03-31 15:52:45.000000000 -0400
+@@ -1087,7 +1087,7 @@
+     if (Arg.IsByVal)
+       FinalType = cast<PointerType>(Arg.Ty)->getElementType();
+     bool NeedsRegBlock = TLI.functionArgumentNeedsConsecutiveRegisters(
+-        FinalType, CLI.CallConv, CLI.IsVarArg);
++        FinalType, CLI.CallConv, CLI.IsVarArg, DL);
+ 
+     ISD::ArgFlagsTy Flags;
+     if (Arg.IsZExt)
+diff -ur a/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp b/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp
+--- a/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp	2022-03-31 15:52:45.000000000 -0400
+@@ -1851,7 +1851,7 @@
+ 
+       bool NeedsRegBlock = TLI.functionArgumentNeedsConsecutiveRegisters(
+           I.getOperand(0)->getType(), F->getCallingConv(),
+-          /*IsVarArg*/ false);
++          /*IsVarArg*/ false, DL);
+ 
+       ISD::NodeType ExtendKind = ISD::ANY_EXTEND;
+       if (F->getAttributes().hasAttribute(AttributeList::ReturnIndex,
+@@ -9229,7 +9229,7 @@
+     CLI.IsTailCall = false;
+   } else {
+     bool NeedsRegBlock = functionArgumentNeedsConsecutiveRegisters(
+-        CLI.RetTy, CLI.CallConv, CLI.IsVarArg);
++        CLI.RetTy, CLI.CallConv, CLI.IsVarArg, DL);
+     for (unsigned I = 0, E = RetTys.size(); I != E; ++I) {
+       ISD::ArgFlagsTy Flags;
+       if (NeedsRegBlock) {
+@@ -9289,7 +9289,7 @@
+     if (Args[i].IsByVal)
+       FinalType = cast<PointerType>(Args[i].Ty)->getElementType();
+     bool NeedsRegBlock = functionArgumentNeedsConsecutiveRegisters(
+-        FinalType, CLI.CallConv, CLI.IsVarArg);
++        FinalType, CLI.CallConv, CLI.IsVarArg, DL);
+     for (unsigned Value = 0, NumValues = ValueVTs.size(); Value != NumValues;
+          ++Value) {
+       EVT VT = ValueVTs[Value];
+@@ -9830,7 +9830,7 @@
+     if (Arg.hasAttribute(Attribute::ByVal))
+       FinalType = Arg.getParamByValType();
+     bool NeedsRegBlock = TLI->functionArgumentNeedsConsecutiveRegisters(
+-        FinalType, F.getCallingConv(), F.isVarArg());
++        FinalType, F.getCallingConv(), F.isVarArg(), DL);
+     for (unsigned Value = 0, NumValues = ValueVTs.size();
+          Value != NumValues; ++Value) {
+       EVT VT = ValueVTs[Value];
+diff -ur a/lib/Target/AArch64/AArch64ISelLowering.cpp b/lib/Target/AArch64/AArch64ISelLowering.cpp
+--- a/lib/Target/AArch64/AArch64ISelLowering.cpp	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/Target/AArch64/AArch64ISelLowering.cpp	2022-03-31 15:52:45.000000000 -0400
+@@ -30,6 +30,7 @@
+ #include "llvm/ADT/Triple.h"
+ #include "llvm/ADT/Twine.h"
+ #include "llvm/Analysis/VectorUtils.h"
++#include "llvm/CodeGen/Analysis.h"
+ #include "llvm/CodeGen/CallingConvLower.h"
+ #include "llvm/CodeGen/MachineBasicBlock.h"
+ #include "llvm/CodeGen/MachineFrameInfo.h"
+@@ -16455,15 +16456,17 @@
+ }
+ 
+ bool AArch64TargetLowering::functionArgumentNeedsConsecutiveRegisters(
+-    Type *Ty, CallingConv::ID CallConv, bool isVarArg) const {
+-  if (Ty->isArrayTy())
+-    return true;
+-
+-  const TypeSize &TySize = Ty->getPrimitiveSizeInBits();
+-  if (TySize.isScalable() && TySize.getKnownMinSize() > 128)
+-    return true;
++    Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++    const DataLayout &DL) const {
++  if (!Ty->isArrayTy()) {
++    const TypeSize &TySize = Ty->getPrimitiveSizeInBits();
++    return TySize.isScalable() && TySize.getKnownMinSize() > 128;
++  }
+ 
+-  return false;
++  // All non aggregate members of the type must have the same type
++  SmallVector<EVT, 0> ValueVTs;
++  ComputeValueVTs(*this, DL, Ty, ValueVTs);
++  return is_splat(ValueVTs);
+ }
+ 
+ bool AArch64TargetLowering::shouldNormalizeToSelectSequence(LLVMContext &,
+diff -ur a/lib/Target/AArch64/AArch64ISelLowering.h b/lib/Target/AArch64/AArch64ISelLowering.h
+--- a/lib/Target/AArch64/AArch64ISelLowering.h	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/Target/AArch64/AArch64ISelLowering.h	2022-03-31 15:52:45.000000000 -0400
+@@ -770,9 +770,10 @@
+   MachineMemOperand::Flags getTargetMMOFlags(
+     const Instruction &I) const override;
+ 
+-  bool functionArgumentNeedsConsecutiveRegisters(Type *Ty,
+-                                                 CallingConv::ID CallConv,
+-                                                 bool isVarArg) const override;
++  bool functionArgumentNeedsConsecutiveRegisters(
++      Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++      const DataLayout &DL) const override;
++
+   /// Used for exception handling on Win64.
+   bool needsFixedCatchObjects() const override;
+ 
+diff -ur a/lib/Target/AArch64/GISel/AArch64CallLowering.cpp b/lib/Target/AArch64/GISel/AArch64CallLowering.cpp
+--- a/lib/Target/AArch64/GISel/AArch64CallLowering.cpp	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/Target/AArch64/GISel/AArch64CallLowering.cpp	2022-03-31 15:52:45.000000000 -0400
+@@ -259,7 +259,7 @@
+   assert(OrigArg.Regs.size() == SplitVTs.size() && "Regs / types mismatch");
+ 
+   bool NeedsRegBlock = TLI.functionArgumentNeedsConsecutiveRegisters(
+-      OrigArg.Ty, CallConv, false);
++      OrigArg.Ty, CallConv, false, DL);
+   for (unsigned i = 0, e = SplitVTs.size(); i < e; ++i) {
+     Type *SplitTy = SplitVTs[i].getTypeForEVT(Ctx);
+     SplitArgs.emplace_back(OrigArg.Regs[i], SplitTy, OrigArg.Flags[0],
+diff -ur a/lib/Target/ARM/ARMCallLowering.cpp b/lib/Target/ARM/ARMCallLowering.cpp
+--- a/lib/Target/ARM/ARMCallLowering.cpp	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/Target/ARM/ARMCallLowering.cpp	2022-03-31 15:52:45.000000000 -0400
+@@ -218,7 +218,7 @@
+ 
+     bool NeedsConsecutiveRegisters =
+         TLI.functionArgumentNeedsConsecutiveRegisters(
+-            SplitTy, F.getCallingConv(), F.isVarArg());
++            SplitTy, F.getCallingConv(), F.isVarArg(), DL);
+     if (NeedsConsecutiveRegisters) {
+       Flags.setInConsecutiveRegs();
+       if (i == e - 1)
+diff -ur a/lib/Target/ARM/ARMISelLowering.cpp b/lib/Target/ARM/ARMISelLowering.cpp
+--- a/lib/Target/ARM/ARMISelLowering.cpp	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/Target/ARM/ARMISelLowering.cpp	2022-03-31 15:52:45.000000000 -0400
+@@ -19269,7 +19269,8 @@
+ /// [N x i32] or [N x i64]. This allows front-ends to skip emitting padding when
+ /// passing according to AAPCS rules.
+ bool ARMTargetLowering::functionArgumentNeedsConsecutiveRegisters(
+-    Type *Ty, CallingConv::ID CallConv, bool isVarArg) const {
++    Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++    const DataLayout &DL) const {
+   if (getEffectiveCallingConv(CallConv, isVarArg) !=
+       CallingConv::ARM_AAPCS_VFP)
+     return false;
+diff -ur a/lib/Target/ARM/ARMISelLowering.h b/lib/Target/ARM/ARMISelLowering.h
+--- a/lib/Target/ARM/ARMISelLowering.h	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/Target/ARM/ARMISelLowering.h	2022-03-31 15:52:45.000000000 -0400
+@@ -578,7 +578,8 @@
+     /// Returns true if an argument of type Ty needs to be passed in a
+     /// contiguous block of registers in calling convention CallConv.
+     bool functionArgumentNeedsConsecutiveRegisters(
+-        Type *Ty, CallingConv::ID CallConv, bool isVarArg) const override;
++        Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++        const DataLayout &DL) const override;
+ 
+     /// If a physical register, this returns the register that receives the
+     /// exception address on entry to an EH pad.
+diff -ur a/lib/Target/PowerPC/PPCISelLowering.h b/lib/Target/PowerPC/PPCISelLowering.h
+--- a/lib/Target/PowerPC/PPCISelLowering.h	2021-04-06 12:38:18.000000000 -0400
++++ b/lib/Target/PowerPC/PPCISelLowering.h	2022-03-31 15:52:45.000000000 -0400
+@@ -998,7 +998,8 @@
+     /// Returns true if an argument of type Ty needs to be passed in a
+     /// contiguous block of registers in calling convention CallConv.
+     bool functionArgumentNeedsConsecutiveRegisters(
+-      Type *Ty, CallingConv::ID CallConv, bool isVarArg) const override {
++        Type *Ty, CallingConv::ID CallConv, bool isVarArg,
++        const DataLayout &DL) const override {
+       // We support any array type as "consecutive" block in the parameter
+       // save area.  The element type defines the alignment requirement and
+       // whether the argument should go in GPRs, FPRs, or VRs if available.

@@ -1,5 +1,5 @@
 
-CXX = clang++ -std=c++11 -stdlib=libc++
+CXX = clang++
 CXXFLAGS = $(LLVM_CXXFLAGS)
 # Only export the LLVMPY symbols we require and exclude everything else.
 EXPORT = "-Wl,-exported_symbol,_LLVMPY_*"

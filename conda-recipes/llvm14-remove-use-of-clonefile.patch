@@ -1,0 +1,54 @@
+diff -ur a/llvm-14.0.6.src/lib/Support/Unix/Path.inc b/llvm-14.0.6.src/lib/Support/Unix/Path.inc
+--- a/llvm-14.0.6.src/lib/Support/Unix/Path.inc	2022-03-14 05:44:55.000000000 -0400
++++ b/llvm-14.0.6.src/lib/Support/Unix/Path.inc	2022-09-19 11:30:59.000000000 -0400
+@@ -1462,6 +1462,7 @@
+ std::error_code copy_file(const Twine &From, const Twine &To) {
+   std::string FromS = From.str();
+   std::string ToS = To.str();
++  /*
+ #if __has_builtin(__builtin_available)
+   if (__builtin_available(macos 10.12, *)) {
+     // Optimistically try to use clonefile() and handle errors, rather than
+@@ -1490,6 +1491,7 @@
+     // cheaper.
+   }
+ #endif
++  */
+   if (!copyfile(FromS.c_str(), ToS.c_str(), /*State=*/NULL, COPYFILE_DATA))
+     return std::error_code();
+   return std::error_code(errno, std::generic_category());
+diff -ur a/llvm-14.0.6.src/unittests/Support/Path.cpp b/llvm-14.0.6.src/unittests/Support/Path.cpp
+--- a/llvm-14.0.6.src/unittests/Support/Path.cpp	2022-03-14 05:44:55.000000000 -0400
++++ b/llvm-14.0.6.src/unittests/Support/Path.cpp	2022-09-19 11:33:07.000000000 -0400
+@@ -2267,15 +2267,15 @@
+ 
+   EXPECT_EQ(fs::setPermissions(TempPath, fs::set_uid_on_exe), NoError);
+   EXPECT_TRUE(CheckPermissions(fs::set_uid_on_exe));
+-
++#if !defined(__APPLE__)
+   EXPECT_EQ(fs::setPermissions(TempPath, fs::set_gid_on_exe), NoError);
+   EXPECT_TRUE(CheckPermissions(fs::set_gid_on_exe));
+-
++#endif
+   // Modern BSDs require root to set the sticky bit on files.
+   // AIX and Solaris without root will mask off (i.e., lose) the sticky bit
+   // on files.
+ #if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) &&  \
+-    !defined(_AIX) && !(defined(__sun__) && defined(__svr4__))
++    !defined(_AIX) && !(defined(__sun__) && defined(__svr4__)) && !defined(__APPLE__)
+   EXPECT_EQ(fs::setPermissions(TempPath, fs::sticky_bit), NoError);
+   EXPECT_TRUE(CheckPermissions(fs::sticky_bit));
+ 
+@@ -2297,10 +2297,12 @@
+   EXPECT_TRUE(CheckPermissions(fs::all_perms));
+ #endif // !FreeBSD && !NetBSD && !OpenBSD && !AIX
+ 
++#if !defined(__APPLE__)
+   EXPECT_EQ(fs::setPermissions(TempPath, fs::all_perms & ~fs::sticky_bit),
+                                NoError);
+   EXPECT_TRUE(CheckPermissions(fs::all_perms & ~fs::sticky_bit));
+ #endif
++#endif
+ }
+ 
+ #ifdef _WIN32
