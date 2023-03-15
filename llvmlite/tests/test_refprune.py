@@ -371,7 +371,7 @@ bb_C:
         self.assertEqual(stats.fanout, 3)
 
     fanout_2 = r"""
-define void @main(i8* %ptr, i1 %cond) {
+define void @main(i8* %ptr, i1 %cond, i8** %excinfo) {
 bb_A:
     call void @NRT_incref(i8* %ptr)
     br i1 %cond, label %bb_B, label %bb_C
@@ -421,7 +421,7 @@ class TestFanoutRaise(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.FANOUT_RAISE
 
     fanout_raise_1 = r"""
-define i32 @main(i8* %ptr, i1 %cond) {
+define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
 bb_A:
     call void @NRT_incref(i8* %ptr)
     br i1 %cond, label %bb_B, label %bb_C
@@ -429,9 +429,9 @@ bb_B:
     call void @NRT_decref(i8* %ptr)
     ret i32 0
 bb_C:
-    ret i32 1, !ret_is_raise !0
+    store i8* null, i8** %excinfo, !numba_exception_output !0
+    ret i32 1
 }
-
 !0 = !{i1 true}
 """
 
@@ -440,7 +440,7 @@ bb_C:
         self.assertEqual(stats.fanout_raise, 2)
 
     fanout_raise_2 = r"""
-define i32 @main(i8* %ptr, i1 %cond) {
+define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
 bb_A:
     call void @NRT_incref(i8* %ptr)
     br i1 %cond, label %bb_B, label %bb_C
@@ -448,18 +448,21 @@ bb_B:
     call void @NRT_decref(i8* %ptr)
     ret i32 0
 bb_C:
-    ret i32 1, !ret_is_a_raise !0           ; bad metadata
+    store i8* null, i8** %excinfo, !numba_exception_typo !0      ; bad metadata
+    ret i32 1
 }
 
 !0 = !{i1 true}
 """
 
     def test_fanout_raise_2(self):
+        # This is ensuring that fanout_raise is not pruning when the metadata
+        # is incorrectly named.
         mod, stats = self.check(self.fanout_raise_2)
         self.assertEqual(stats.fanout_raise, 0)
 
     fanout_raise_3 = r"""
-define i32 @main(i8* %ptr, i1 %cond) {
+define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
 bb_A:
     call void @NRT_incref(i8* %ptr)
     br i1 %cond, label %bb_B, label %bb_C
@@ -467,7 +470,8 @@ bb_B:
     call void @NRT_decref(i8* %ptr)
     ret i32 0
 bb_C:
-    ret i32 1, !ret_is_raise !0
+    store i8* null, i8** %excinfo, !numba_exception_output !0
+    ret i32 1
 }
 
 !0 = !{i32 1}       ; ok; use i32
@@ -478,22 +482,44 @@ bb_C:
         self.assertEqual(stats.fanout_raise, 2)
 
     fanout_raise_4 = r"""
-define i32 @main(i8* %ptr, i1 %cond) {
+define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
 bb_A:
     call void @NRT_incref(i8* %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    ret i32 1, !ret_is_raise !0    ; BAD; all tails are raising without decref
+    ret i32 1    ; BAD; all tails are raising without decref
 bb_C:
-    ret i32 1, !ret_is_raise !0    ; BAD; all tails are raising without decref
+    ret i32 1    ; BAD; all tails are raising without decref
 }
 
-!0 = !{i32 1}
+!0 = !{i1 1}
 """
 
     def test_fanout_raise_4(self):
         mod, stats = self.check(self.fanout_raise_4)
         self.assertEqual(stats.fanout_raise, 0)
+
+    fanout_raise_5 = r"""
+define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
+bb_A:
+    call void @NRT_incref(i8* %ptr)
+    br i1 %cond, label %bb_B, label %bb_C
+bb_B:
+    call void @NRT_decref(i8* %ptr)
+    br label %common.ret
+bb_C:
+    store i8* null, i8** %excinfo, !numba_exception_output !0
+    br label %common.ret
+common.ret:
+    %common.ret.op = phi i32 [ 0, %bb_B ], [ 1, %bb_C ]
+    ret i32 %common.ret.op
+}
+!0 = !{i1 1}
+"""
+
+    def test_fanout_raise_5(self):
+        mod, stats = self.check(self.fanout_raise_5)
+        self.assertEqual(stats.fanout_raise, 2)
 
 
 if __name__ == '__main__':
