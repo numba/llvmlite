@@ -35,7 +35,9 @@ else
 fi
 
 # Install llvmdev (separate channel, for now)
-#$CONDA_INSTALL -c numba llvmdev="11.*"
+# NOTE: Commented out until llvmdev with compiler-rt
+# available
+#$CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh

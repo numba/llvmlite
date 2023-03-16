@@ -23,5 +23,5 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 %CONDA_INSTALL% -c mcollison llvmdev="14.*"
 
 @rem Install llvmdev
-@%CONDA_INSTALL% -c numba llvmdev="11.*"
+@%CONDA_INSTALL% -c numba/label/dev llvmdev="14.*"
 if %errorlevel% neq 0 exit /b %errorlevel%
