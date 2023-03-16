@@ -13,9 +13,15 @@ OUTPUT = libllvmlite.dylib
 BUILTINS_ARCHIVE = libclang_rt.builtins.a
 MACOSX_DEPLOYMENT_TARGET ?= 10.9
 
-all: $(SRC) $(INCLUDE)
+all: $(SRC) $(INCLUDE) $(BUILTINS_ARCHIVE)
 	MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET) $(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
-	cp $(LLVM_LIBDIR)/darwin/libclang_rt.builtins*.a $(BUILTINS_ARCHIVE)
+
+$(BUILTINS_ARCHIVE):
+	if [ -d "$(LLVM_LIBDIR)/clang" ]; then \
+		cp $(LLVM_LIBDIR)/clang/*/lib/darwin/libclang_rt.builtins*.a $(BUILTINS_ARCHIVE); \
+	else \
+		cp $(LLVM_LIBDIR)/darwin/libclang_rt.builtins*.a $(BUILTINS_ARCHIVE); \
+	fi
 
 clean:
 	rm -rf test $(BUILTINS_ARCHIVE)

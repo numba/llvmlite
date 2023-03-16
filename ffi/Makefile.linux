@@ -29,7 +29,11 @@ $(OUTPUT): $(OBJ)
 	$(CXX) $(CXX_STATIC_LINK) -shared $(CXXFLAGS) $(OBJ) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
 
 $(BUILTINS_ARCHIVE):
-	cp $(LLVM_LIBDIR)/linux/libclang_rt.builtins-$(ARCH).a $(BUILTINS_ARCHIVE)
+	if [ -d "$(LLVM_LIBDIR)/clang" ]; then \
+		cp $(LLVM_LIBDIR)/clang/*/lib/linux/libclang_rt.builtins-$(ARCH).a $(BUILTINS_ARCHIVE); \
+	else \
+		cp $(LLVM_LIBDIR)/linux/libclang_rt.builtins-$(ARCH).a $(BUILTINS_ARCHIVE); \
+	fi
 
 clean:
 	rm -rf test $(OUTPUT) $(OBJ) $(BUILTINS_ARCHIVE)

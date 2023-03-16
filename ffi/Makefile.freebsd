@@ -22,7 +22,11 @@ $(OUTPUT): $(SRC) $(INCLUDE)
 	$(CXX) -shared $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
 
 $(BUILTINS_ARCHIVE):
-	cp $(LLVM_LIBDIR)/freebsd/libclang_rt.builtins-$(ARCH).a $(BUILTINS_ARCHIVE)
+    if [ -d "$(LLVM_LIBDIR)/clang" ]; then \
+		cp $(LLVM_LIBDIR)/clang/*/lib/freebsd/libclang_rt.builtins-$(ARCH).a $(BUILTINS_ARCHIVE); \
+	else \
+		cp $(LLVM_LIBDIR)/freebsd/libclang_rt.builtins-$(ARCH).a $(BUILTINS_ARCHIVE); \
+	fi
 
 clean:
 	rm -rf test $(BUILTINS_ARCHIVE)

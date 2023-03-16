@@ -3,6 +3,8 @@ FOR /D %%d IN (llvm-*.src) DO (MKLINK /J llvm %%d
 if !errorlevel! neq 0 exit /b %errorlevel%)
 FOR /D %%d IN (lld-*.src) DO (MKLINK /J lld %%d
 if !errorlevel! neq 0 exit /b %errorlevel%)
+FOR /D %%d IN (rt\compiler-rt-*.src) DO (MKLINK /J compiler-rt %%d
+if !errorlevel! neq 0 exit /b %errorlevel%)
 FOR /D %%d IN (unwind\libunwind-*.src) DO (MKLINK /J libunwind %%d
 if !errorlevel! neq 0 exit /b %errorlevel%)
 
@@ -58,10 +60,6 @@ set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD="%LLVM_TARGETS_TO_BUILD%" ^
     -DLLVM_ENABLE_DIA_SDK=OFF ^
     -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly
 
-cd "%SRC_DIR%\llvm"
-mkdir build
-cd build
-
 REM try all compatible visual studio toolsets to find one that is installed
 setlocal enabledelayedexpansion
 for /l %%n in (0,1,%MAX_INDEX_CMAKE_GENERATOR%) do (
@@ -101,7 +99,9 @@ REM "%PYTHON%" "..\build\%BUILD_CONFIG%\bin\llvm-lit.py" -vv Transforms Executio
 REM if errorlevel 1 exit 1
 
 
-REM Build compiler-rt
+REM Build compiler-rt separately, because it fails on Windows with LLVM 14.0.6
+REM if built as an LLVM project.
+REM See also: https://stackoverflow.com/questions/46108390/building-llvm-with-cmake-and-visual-stuidio-fails-to-install
 
 cd "%SRC_DIR%\compiler-rt"
 mkdir build
@@ -117,7 +117,7 @@ set CMAKE_CUSTOM=-DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON ^
     -DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF ^
     -DCOMPILER_RT_BUILD_ORC:BOOL=OFF ^
     -DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF ^
-    -DLLVM_CONFIG_PATH="%SRC_DIR%\llvm\build\Release\bin\llvm-config.exe"
+    -DLLVM_CONFIG_PATH="%SRC_DIR%\build\%BUILD_CONFIG%\bin\llvm-config.exe"
 
 REM try all compatible visual studio toolsets to find one that is installed
 setlocal enabledelayedexpansion

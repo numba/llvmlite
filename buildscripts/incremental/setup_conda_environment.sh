@@ -28,7 +28,11 @@ set -v
 
 #Install llvmdev from mcollison channel
 #until it can be upload to Anaconda
-$CONDA_INSTALL -c mcollison llvmdev="11.*"
+if [ "$(uname -sm)" = "Linux aarch64" ]; then
+    $CONDA_INSTALL -c mcollison llvmdev="11.*"
+else
+    $CONDA_INSTALL -c mcollison llvmdev="14.*"
+fi
 
 # Install llvmdev (separate channel, for now)
 #$CONDA_INSTALL -c numba llvmdev="11.*"

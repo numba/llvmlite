@@ -17,12 +17,14 @@ fi
 
 mv llvm-*.src llvm
 mv lld-*.src lld
+mv rt/compiler-rt-*.src compiler-rt
 mv unwind/libunwind-*.src libunwind
+
 
 declare -a _cmake_config
 _cmake_config+=(-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX})
 _cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
-_cmake_config+=(-DLLVM_ENABLE_PROJECTS:STRING="lld")
+_cmake_config+=(-DLLVM_ENABLE_PROJECTS:STRING="lld;compiler-rt")
 # The bootstrap clang I use was built with a static libLLVMObject.a and I trying to get the same here
 # _cmake_config+=(-DBUILD_SHARED_LIBS:BOOL=ON)
 _cmake_config+=(-DLLVM_ENABLE_ASSERTIONS:BOOL=ON)
@@ -44,6 +46,16 @@ _cmake_config+=(-DLLVM_ENABLE_RTTI=OFF)
 _cmake_config+=(-DLLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD})
 _cmake_config+=(-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly)
 _cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
+_cmake_config+=(-DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON)
+_cmake_config+=(-DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_CRT:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_PROFILE:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_SANITIZERS:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_XRAY:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_ORC:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF)
 _cmake_config+=(-DLLVM_INCLUDE_BENCHMARKS:BOOL=OFF) # doesn't build without the rest of LLVM project
 # TODO :: It would be nice if we had a cross-ecosystem 'BUILD_TIME_LIMITED' env var we could use to
 #         disable these unnecessary but useful things.

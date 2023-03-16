@@ -31,7 +31,7 @@ jobs:
         call conda remove --all -q -y -n %CONDA_ENV%
         call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
         call activate %CONDA_ENV%
-        call conda install -y -q --override-channels -c mcollison llvmdev="11.*"
+        call conda install -y -q --override-channels -c mcollison llvmdev="14.*"
       displayName: 'Before Install'
 
     - script: |
