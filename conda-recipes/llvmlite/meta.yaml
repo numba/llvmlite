@@ -23,19 +23,20 @@ requirements:
     # build.sh deals with it!
     - {{ compiler('c') }}    # [not (osx or armv6l or armv7l or win)]
     - {{ compiler('cxx') }}  # [not (osx or armv6l or armv7l or win)]
-    - vs2017_{{ target_platform  }}    # [win]
+    - vs2015_{{ target_platform  }}    # [win]
     # The DLL build uses cmake on Windows
     - cmake          # [win]
     - make           # [unix and not (armv6l or armv7l or aarch64)]
   host:
     - python
     # On channel https://anaconda.org/numba/
-    - llvmdev 11.1.0 *5 # [(osx and arm64)]
-    - llvmdev 11.1.0 *4 # [not ((osx and arm64) or win)]
-    - llvmdev 11.1.0 4 # [win]
+    - llvmdev 11 # [unix and aarch64]
+    - llvmdev 14 # [not (unix and aarch64)]
     - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
     - zlib           # [unix and not (armv6l or armv7l)]
+    # requires libxml2
+    - libxml2        # [win]
   run:
     - python >=3.8,<3.10
     - vs2015_runtime # [win]

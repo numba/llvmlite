@@ -6,10 +6,10 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/Host.h"
-#if LLVM_VERSION_MAJOR < 14
-#include "llvm/Support/TargetRegistry.h"
-#else
+#if LLVM_VERSION_MAJOR > 13
 #include "llvm/MC/TargetRegistry.h"
+#else
+#include "llvm/Support/TargetRegistry.h"
 #endif
 #include "llvm/Target/TargetMachine.h"
 
@@ -215,6 +215,8 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
     TargetOptions opt;
 #if LLVM_VERSION_MAJOR < 12
     opt.PrintMachineCode = PrintMC;
+#else
+    opt.MCOptions.ShowMCInst = PrintMC;
 #endif
     opt.MCOptions.ABIName = ABIName;
 
