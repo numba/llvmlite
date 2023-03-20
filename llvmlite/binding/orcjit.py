@@ -1,6 +1,6 @@
 from ctypes import POINTER, c_bool, c_char_p, c_void_p, c_uint64, string_at
 
-from llvmlite.binding import ffi, targets
+from llvmlite.binding import ffi, targets, object_file
 from llvmlite.binding.common import _encode_string
 from llvmlite.binding.executionengine import _ObjectCacheRef
 
@@ -66,7 +66,7 @@ class LLJIT(ffi.ObjectRef):
         :class:ObjectFile or a string representing file system path.
         """
         if isinstance(obj_file, str):
-            obj_file = obj_file.ObjectFileRef.from_path(obj_file)
+            obj_file = object_file.ObjectFileRef.from_path(obj_file)
 
         with ffi.OutputString() as outerr:
             error = ffi.lib.LLVMPY_LLJITAddObjectFile(self, obj_file, outerr)

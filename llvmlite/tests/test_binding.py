@@ -2112,7 +2112,7 @@ class TestObjectFile(BaseTest):
 
         self.assertEqual(sum_twice(2, 3), 10)
 
-    def _test_add_object_file_from_filesystem(self, jit_add_fn):
+    def test_mcjit_add_object_file_from_filesystem(self):
         target_machine = self.target_machine(jit=False)
         mod = self.module()
         obj_bin = target_machine.emit_object(mod)
@@ -2126,34 +2126,43 @@ class TestObjectFile(BaseTest):
             finally:
                 f.close()
 
-            sum_twice = jit_add_fn(temp_path)
-        finally:
-            os.unlink(temp_path)
-
-        self.assertEqual(sum_twice(2, 3), 10)
-
-    def test_mcjit_add_object_file_from_filesystem(self):
-        def mcjit_add_fn(path):
-            target_machine = self.target_machine(jit=False)
             jit = llvm.create_mcjit_compiler(self.module(self.mod_asm),
                                              target_machine)
 
-            jit.add_object_file(path)
-            return CFUNCTYPE(c_int, c_int, c_int)(
-                jit.get_function_address("sum_twice"))
+            jit.add_object_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
-            self._test_add_object_file_from_filesystem(mcjit_add_fn)
+        sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
+            jit.get_function_address("sum_twice"))
+
+        self.assertEqual(sum_twice(2, 3), 10)
 
     def test_lljit_add_object_file_from_filesystem(self):
-        def lljit_add_fn(path):
-            target_machine = self.target_machine(jit=False)
+        target_machine = self.target_machine(jit=False)
+        mod = self.module()
+        obj_bin = target_machine.emit_object(mod)
+        temp_desc, temp_path = mkstemp()
+
+        try:
+            try:
+                f = os.fdopen(temp_desc, "wb")
+                f.write(obj_bin)
+                f.flush()
+            finally:
+                f.close()
+
             lljit = llvm.create_lljit_compiler(target_machine)
             lljit.add_ir_module(self.module(self.mod_asm))
-            lljit.add_object_file(path)
-            return CFUNCTYPE(c_int, c_int, c_int)(
-                lljit.lookup("sum_twice"))
 
-            self._test_add_object_file_from_filesystem(lljit_add_fn)
+            lljit.add_object_file(temp_path)
+        finally:
+            os.unlink(temp_path)
+
+        sum_twice = CFUNCTYPE(c_int, c_int, c_int)(
+            lljit.lookup("sum_twice"))
+
+        self.assertEqual(sum_twice(2, 3), 10)
 
     def test_get_section_content(self):
         # See Issue #632 - section contents were getting truncated at null
