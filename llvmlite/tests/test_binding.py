@@ -672,6 +672,12 @@ class TestMisc(BaseTest):
         # Changing the locale should not affect the LLVM IR
         self.assertEqual(expect, got)
 
+    def test_no_accidental_warnings(self):
+        code = "from llvmlite import binding"
+        flags = "-Werror"
+        cmdargs = [sys.executable, flags, "-c", code]
+        subprocess.check_call(cmdargs)
+
 
 class TestModuleRef(BaseTest):
 

@@ -23,7 +23,7 @@ import sys
 
 
 min_python_version = (3, 8)
-max_python_version = (3, 11)  # exclusive
+max_python_version = (3, 12)  # exclusive
 
 
 def _version_info_str(int_tuple):
@@ -202,6 +202,7 @@ setup(name='llvmlite',
           "Programming Language :: Python :: 3.8",
           "Programming Language :: Python :: 3.9",
           "Programming Language :: Python :: 3.10",
+          "Programming Language :: Python :: 3.11",
           "Topic :: Software Development :: Code Generators",
           "Topic :: Software Development :: Compilers",
       ],
