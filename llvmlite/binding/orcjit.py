@@ -66,7 +66,7 @@ class LLJIT(ffi.ObjectRef):
         :class:ObjectFile or a string representing file system path.
         """
         if isinstance(obj_file, str):
-            obj_file = object_file.ObjectFileRef.from_path(obj_file)
+            obj_file = obj_file.ObjectFileRef.from_path(obj_file)
 
         with ffi.OutputString() as outerr:
             error = ffi.lib.LLVMPY_LLJITAddObjectFile(self, obj_file, outerr)

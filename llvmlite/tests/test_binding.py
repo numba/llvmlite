@@ -1137,7 +1137,7 @@ class TestOrcLLJIT(BaseTest):
         lljit = llvm.create_lljit_compiler()
         with self.assertRaisesRegex(RuntimeError,
                                     'Symbols not found.*__foobar'):
-            addr = lljit.lookup("__foobar")
+            lljit.lookup("__foobar")
 
     def test_run_code(self):
         mod = self.module()
@@ -1980,7 +1980,6 @@ class TestTypeParsing(BaseTest):
             gv.initializer = ir.Constant(typ, [1])
 
 
-
 class TestGlobalVariables(BaseTest):
     def check_global_variable_linkage(self, linkage, has_undef=True):
         # This test default initializer on global variables with different
@@ -2150,9 +2149,9 @@ class TestObjectFile(BaseTest):
             target_machine = self.target_machine(jit=False)
             lljit = llvm.create_lljit_compiler(target_machine)
             lljit.add_ir_module(self.module(self.mod_asm))
-            jit.add_object_file(path)
+            lljit.add_object_file(path)
             return CFUNCTYPE(c_int, c_int, c_int)(
-                jit.lookup("sum_twice"))
+                lljit.lookup("sum_twice"))
 
             self._test_add_object_file_from_filesystem(lljit_add_fn)
 
