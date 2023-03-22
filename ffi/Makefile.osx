@@ -18,9 +18,9 @@ all: $(SRC) $(INCLUDE) $(BUILTINS_ARCHIVE)
 
 $(BUILTINS_ARCHIVE):
 	if [ -d "$(LLVM_LIBDIR)/clang" ]; then \
-		cp $(LLVM_LIBDIR)/clang/*/lib/darwin/libclang_rt.builtins*.a $(BUILTINS_ARCHIVE); \
+		cp $(LLVM_LIBDIR)/clang/*/lib/darwin/libclang_rt.osx.a $(BUILTINS_ARCHIVE); \
 	else \
-		cp $(LLVM_LIBDIR)/darwin/libclang_rt.builtins*.a $(BUILTINS_ARCHIVE); \
+		cp $(LLVM_LIBDIR)/darwin/libclang_rt.osx.a $(BUILTINS_ARCHIVE); \
 	fi
 
 clean:
