@@ -1,3 +1,54 @@
+v0.40.0rc1 (March 30, 2023)
+---------------------------
+
+This release predominantly upgrades to LLVM 14 and Python 3.11.
+Minimum supported python version is bumped to Python 3.8.
+
+Note: We discovered a bug in LLVM RuntimeDyldELF Aarch64 platform that 
+can cause segfaults when cross module symbols are linked. It is necessary
+for JIT users to build LLVM with the patch added in `PR#926 <https://github.com/numba/llvmlite/pull/926>`_.
+
+Pull-Requests:
+
+* PR `#752 <https://github.com/numba/llvmlite/pull/752>`_: Skip test if libm is not found. (`jakirkham <https://github.com/jakirkham>`_ `sklam <https://github.com/sklam>`_)
+* PR `#827 <https://github.com/numba/llvmlite/pull/827>`_: Add more LLVM pass bindings (`apmasell <https://github.com/apmasell>`_)
+* PR `#830 <https://github.com/numba/llvmlite/pull/830>`_: Add LLVM 14 support (`apmasell <https://github.com/apmasell>`_)
+* PR `#860 <https://github.com/numba/llvmlite/pull/860>`_: the git tag for the RC needs an rc1 suffix (`esc <https://github.com/esc>`_)
+* PR `#863 <https://github.com/numba/llvmlite/pull/863>`_: Update changelog for 0.39.0 release (`sklam <https://github.com/sklam>`_)
+* PR `#864 <https://github.com/numba/llvmlite/pull/864>`_: Update release date for 0.39.0 release. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#865 <https://github.com/numba/llvmlite/pull/865>`_: Move Azure to use macos-11. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#867 <https://github.com/numba/llvmlite/pull/867>`_: Update CHANGE_LOG 0.39.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#869 <https://github.com/numba/llvmlite/pull/869>`_: bump max Python version to 3.11 (`esc <https://github.com/esc>`_ `sklam <https://github.com/sklam>`_)
+* PR `#874 <https://github.com/numba/llvmlite/pull/874>`_: Adding zlib as dependency for aarch64 (`esc <https://github.com/esc>`_)
+* PR `#876 <https://github.com/numba/llvmlite/pull/876>`_: Remove `llvmlite.llvmpy` after deprecation (`apmasell <https://github.com/apmasell>`_)
+* PR `#878 <https://github.com/numba/llvmlite/pull/878>`_: Update change log for 0.39.1 (`apmasell <https://github.com/apmasell>`_)
+* PR `#883 <https://github.com/numba/llvmlite/pull/883>`_: Adds support for calling functions with 'tail', 'notail', or 'musttail' markers. (`bslatkin <https://github.com/bslatkin>`_)
+* PR `#886 <https://github.com/numba/llvmlite/pull/886>`_: Simplify setup.py Python version guard (`mbargull <https://github.com/mbargull>`_)
+* PR `#892 <https://github.com/numba/llvmlite/pull/892>`_: Bump minimum supported Python version to 3.8 (`jamesobutler <https://github.com/jamesobutler>`_)
+* PR `#893 <https://github.com/numba/llvmlite/pull/893>`_: Upgrade to ubuntu-20.04 for azure pipeline CI (`jamesobutler <https://github.com/jamesobutler>`_)
+* PR `#899 <https://github.com/numba/llvmlite/pull/899>`_: Run Minconda install with bash (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#903 <https://github.com/numba/llvmlite/pull/903>`_: Fix flake8 config and style for flake8 6 (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#905 <https://github.com/numba/llvmlite/pull/905>`_: Add YouCompleteMe configuration file and ignore vim swap files (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#906 <https://github.com/numba/llvmlite/pull/906>`_: Replace importlib-resources legacy API use (`sklam <https://github.com/sklam>`_)
+* PR `#910 <https://github.com/numba/llvmlite/pull/910>`_: Aarch64 split build for LLVM14 (`sklam <https://github.com/sklam>`_)
+* PR `#921 <https://github.com/numba/llvmlite/pull/921>`_: Setup AzureCI to use py311 and llvm14  (`sklam <https://github.com/sklam>`_)
+* PR `#922 <https://github.com/numba/llvmlite/pull/922>`_: Fix AzureCI not using llvm14 on windows (`sklam <https://github.com/sklam>`_)
+* PR `#926 <https://github.com/numba/llvmlite/pull/926>`_: llvmdev recipe: Add patch that clears GOTOffsetMap (`apmasell <https://github.com/apmasell>`_ `gmarkall <https://github.com/gmarkall>`_ `sklam <https://github.com/sklam>`_)
+
+Authors:
+
+* `apmasell <https://github.com/apmasell>`_
+* `bslatkin <https://github.com/bslatkin>`_
+* `esc <https://github.com/esc>`_
+* `gmarkall <https://github.com/gmarkall>`_
+* `jakirkham <https://github.com/jakirkham>`_
+* `jamesobutler <https://github.com/jamesobutler>`_
+* `mbargull <https://github.com/mbargull>`_
+* `sklam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+
+
+
 v0.39.1 (September 1, 2022)
 ---------------------------
 
