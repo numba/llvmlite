@@ -1,21 +1,24 @@
 
 #include "core.h"
+#include "llvmlite-bridge.hpp"
 
+#include "llvm/ADT/SmallSet.h"
+#include "llvm/Analysis/Passes.h"
+#include "llvm/Analysis/PostDominators.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/Pass.h"
-
-#include "llvm/ADT/SmallSet.h"
-
-#include "llvm/Analysis/Passes.h"
-#include "llvm/Analysis/PostDominators.h"
-#include "llvm/Support/raw_ostream.h"
-
 #include "llvm/IR/LegacyPassManager.h"
-
+#include "llvm/IRReader/IRReader.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/LinkAllPasses.h"
+#include "llvm/Pass.h"
+#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/SourceMgr.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Scalar/LoopUnrollPass.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 
 #include <iostream>
 #include <vector>
@@ -1197,3 +1200,111 @@ LLVMPY_DumpRefPruneStats(PRUNESTATS *buf, bool do_print) {
 }
 
 } // extern "C"
+
+class BridgedPassManager : public ModulePass {
+    static char ID;
+
+  private:
+    const llvmlite::BridgedPassManagerCallbacks callbacks;
+    void *context;
+
+  public:
+    BridgedPassManager(const llvmlite::BridgedPassManagerCallbacks *callbacks_)
+        : ModulePass(ID), callbacks(*callbacks_), context(callbacks_->ctor()) {}
+    ~BridgedPassManager() { callbacks.dtor(this->context); }
+    bool runOnModule(Module &);
+};
+char BridgedPassManager::ID = 0;
+bool BridgedPassManager::runOnModule(Module &m) {
+
+    std::string buf;
+    raw_string_ostream os(buf);
+
+    m.print(os, nullptr);
+    os.flush();
+    size_t result_len = 0;
+    auto result = callbacks.process_module(context, buf.c_str(), buf.length(),
+                                           &result_len);
+    if (result) {
+        SMDiagnostic error;
+        auto module =
+            parseIR(*MemoryBuffer::getMemBuffer(StringRef(result, result_len),
+                                                "bridge-host-rx", false),
+                    error, m.getContext());
+        if (!module) {
+            return false;
+        }
+
+        for (auto &output_fn : module->functions()) {
+            auto f = m.getFunction(output_fn.getName());
+            if (f) {
+                f->deleteBody();
+            } else {
+                f = dyn_cast<llvm::Function>(
+                    module
+                        ->getOrInsertFunction(output_fn.getName(),
+                                              output_fn.getFunctionType(),
+                                              output_fn.getAttributes())
+                        .getCallee());
+            }
+            llvm::ValueToValueMapTy vmap;
+            auto origArg = f->arg_begin();
+            for (auto &newArg : output_fn.args()) {
+                f->setName(newArg.getName());
+                vmap[&newArg] = origArg++;
+            }
+            SmallVector<ReturnInst *, 8> returns;
+            CloneFunctionInto(f, &output_fn, vmap,
+                              llvm::CloneFunctionChangeType::DifferentModule,
+                              returns);
+            for (auto &BB : *f) {
+                for (llvm::BasicBlock::iterator bbi = BB.begin();
+                     bbi != BB.end();) {
+                    llvm::Instruction *inst = &*bbi++;
+                    if (auto *call = llvm::dyn_cast<llvm::CallInst>(&*inst)) {
+                        auto local_callee = f->getParent()->getFunction(
+                            call->getCalledFunction()->getName());
+                        auto new_call = llvm::CallInst::Create(local_callee,
+                                                               call->getName());
+
+                        llvm::ReplaceInstWithInst(call, new_call);
+                    }
+                }
+            }
+            output_fn.deleteBody();
+        }
+        free(result);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+extern "C" {
+
+API_EXPORT(void)
+LLVMPY_AddBridgedPassManager(
+    LLVMPassManagerRef PM,
+    const llvmlite::BridgedPassManagerCallbacks *callbacks) {
+
+    unwrap(PM)->add(new BridgedPassManager(callbacks));
+}
+static llvm::OptimizationLevel
+init_bridge_test(llvm::PassBuilder &pass_builder) {
+    pass_builder.registerPeepholeEPCallback(
+        [](llvm::FunctionPassManager &fpm, llvm::OptimizationLevel opt) {
+            fpm.addPass(LoopUnrollPass());
+        });
+    return llvm::OptimizationLevel::O0;
+}
+
+llvmlite::BridgedPassManagerCallbacks bridge_test =
+    llvmlite::BridgedPassGuest<init_bridge_test>::bridge();
+
+API_EXPORT(llvmlite::BridgedPassManagerCallbacks *)
+LLVMPY_TestBridgedPassManager() {
+    // The choice of pass here is pretty arbitrary. We just want something we
+    // can detect
+    return &bridge_test;
+}
+}

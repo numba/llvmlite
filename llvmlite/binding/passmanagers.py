@@ -1,5 +1,5 @@
-from ctypes import (c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref,
-                    POINTER)
+from ctypes import (c_bool, c_char_p, c_int, c_size_t, c_uint, c_void_p,
+                    Structure, byref, CFUNCTYPE, POINTER)
 from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
@@ -9,6 +9,17 @@ from llvmlite.binding.common import _encode_string
 
 _prunestats = namedtuple('PruneStats',
                          ('basicblock diamond fanout fanout_raise'))
+
+
+class BridgedPassManager(Structure):
+    _fields_ = [
+        ("process_function",
+         CFUNCTYPE(c_char_p,  # Returns a string
+                   c_void_p,  # Takes instance pointer
+                   c_char_p, c_size_t,  # Takes IR string
+                   POINTER(c_size_t))),  # Out for returned string size
+        ("dtor", CFUNCTYPE(None, c_void_p)),
+        ("ctor", CFUNCTYPE(c_void_p))]
 
 
 class PruneStats(_prunestats):
@@ -658,6 +669,14 @@ class PassManager(ffi.ObjectRef):
         iflags = RefPruneSubpasses(subpasses_flags)
         ffi.lib.LLVMPY_AddRefPrunePass(self, iflags, subgraph_limit)
 
+    def add_bridged_pass(self, bridge: POINTER(BridgedPassManager)):
+        """
+        Adds an LLVM pass using the bridge interface.
+
+        See the ``llvmlite-bridge.hpp`` for details on using this interface
+        """
+        ffi.lib.LLVMPY_AddBridgedPassManager(self, bridge)
+
 
 class ModulePassManager(PassManager):
 
@@ -802,6 +821,14 @@ class FunctionPassManager(PassManager):
             os.unlink(remarkfile)
 
 
+def _get_test_bridge():
+    """Gets a bridged pass for testing
+
+    You never want to use this. It exists purely for testing.
+    """
+    return ffi.lib.LLVMPY_TestBridgedPassManager()
+
+
 # ============================================================================
 # FFI
 
@@ -922,3 +949,8 @@ ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
                                            c_size_t]
 
 ffi.lib.LLVMPY_DumpRefPruneStats.argtypes = [POINTER(_c_PruneStats), c_bool]
+
+ffi.lib.LLVMPY_AddBridgedPassManager.argtypes = [ffi.LLVMPassManagerRef,
+                                                 POINTER(BridgedPassManager)]
+ffi.lib.LLVMPY_TestBridgedPassManager.restype = POINTER(BridgedPassManager)
+ffi.lib.LLVMPY_TestBridgedPassManager.argtypes = []

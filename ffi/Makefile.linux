@@ -10,7 +10,7 @@ CXX_FPIC_FLAGS ?= -fPIC
 CXXFLAGS := $(CPPFLAGS) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CXX_FLTO_FLAGS) $(CXX_FPIC_FLAGS)
 LDFLAGS := $(LDFLAGS) $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
 LIBS = $(LLVM_LIBS)
-INCLUDE = core.h
+INCLUDE = core.h llvmlite-bridge.hpp
 OBJ = assembly.o bitcode.o core.o initfini.o module.o value.o \
 	  executionengine.o transforms.o passmanagers.o targets.o dylib.o \
 	  linker.o object_file.o custom_passes.o orcjit.o

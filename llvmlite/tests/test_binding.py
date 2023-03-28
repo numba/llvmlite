@@ -16,6 +16,7 @@ from tempfile import mkstemp
 from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
+from llvmlite.binding.passmanagers import _get_test_bridge
 from llvmlite.tests import TestCase
 
 
@@ -1978,6 +1979,18 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         mod = run(use_tli=False)
         self.assertNotIn("call float @llvm.exp2.f32", str(mod))
         self.assertIn("call float @ldexpf", str(mod))
+
+    def test_bridged(self):
+        mod = llvm.parse_assembly(
+            asm_sum.format(triple=llvm.get_process_triple()))
+        target = llvm.Target.from_triple(mod.triple)
+        pm = llvm.ModulePassManager()
+        pm.add_bridged_pass(_get_test_bridge())
+        # We want a pass after our bridged pass because we're going to wreck
+        # the analysis and it should die from that.
+        pm.add_instruction_combining_pass()
+        pm.run(mod)
+        return mod
 
 
 class TestDylib(BaseTest):
