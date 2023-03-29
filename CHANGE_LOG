@@ -10,18 +10,12 @@ for JIT users to build LLVM with the patch added in `PR#926 <https://github.com/
 
 Pull-Requests:
 
-* PR `#752 <https://github.com/numba/llvmlite/pull/752>`_: Skip test if libm is not found. (`jakirkham <https://github.com/jakirkham>`_ `sklam <https://github.com/sklam>`_)
 * PR `#827 <https://github.com/numba/llvmlite/pull/827>`_: Add more LLVM pass bindings (`apmasell <https://github.com/apmasell>`_)
 * PR `#830 <https://github.com/numba/llvmlite/pull/830>`_: Add LLVM 14 support (`apmasell <https://github.com/apmasell>`_)
 * PR `#860 <https://github.com/numba/llvmlite/pull/860>`_: the git tag for the RC needs an rc1 suffix (`esc <https://github.com/esc>`_)
-* PR `#863 <https://github.com/numba/llvmlite/pull/863>`_: Update changelog for 0.39.0 release (`sklam <https://github.com/sklam>`_)
-* PR `#864 <https://github.com/numba/llvmlite/pull/864>`_: Update release date for 0.39.0 release. (`stuartarchibald <https://github.com/stuartarchibald>`_)
-* PR `#865 <https://github.com/numba/llvmlite/pull/865>`_: Move Azure to use macos-11. (`stuartarchibald <https://github.com/stuartarchibald>`_)
-* PR `#867 <https://github.com/numba/llvmlite/pull/867>`_: Update CHANGE_LOG 0.39.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
 * PR `#869 <https://github.com/numba/llvmlite/pull/869>`_: bump max Python version to 3.11 (`esc <https://github.com/esc>`_ `sklam <https://github.com/sklam>`_)
-* PR `#874 <https://github.com/numba/llvmlite/pull/874>`_: Adding zlib as dependency for aarch64 (`esc <https://github.com/esc>`_)
+
 * PR `#876 <https://github.com/numba/llvmlite/pull/876>`_: Remove `llvmlite.llvmpy` after deprecation (`apmasell <https://github.com/apmasell>`_)
-* PR `#878 <https://github.com/numba/llvmlite/pull/878>`_: Update change log for 0.39.1 (`apmasell <https://github.com/apmasell>`_)
 * PR `#883 <https://github.com/numba/llvmlite/pull/883>`_: Adds support for calling functions with 'tail', 'notail', or 'musttail' markers. (`bslatkin <https://github.com/bslatkin>`_)
 * PR `#886 <https://github.com/numba/llvmlite/pull/886>`_: Simplify setup.py Python version guard (`mbargull <https://github.com/mbargull>`_)
 * PR `#892 <https://github.com/numba/llvmlite/pull/892>`_: Bump minimum supported Python version to 3.8 (`jamesobutler <https://github.com/jamesobutler>`_)
