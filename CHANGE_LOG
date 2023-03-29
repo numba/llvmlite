@@ -6,7 +6,8 @@ The minimum supported python version is now Python 3.8.
 
 Note: A bug was discovered in LLVM's RuntimeDyldELF on the Aarch64 platform that
 can cause segfaults when cross module symbols are linked. It is necessary
-for JIT users to build LLVM with the patch added in `PR#926 <https://github.com/numba/llvmlite/pull/926>`_.
+for JIT users to build LLVM with the patch added in 
+`PR#926 <https://github.com/numba/llvmlite/pull/926>`_.
 
 Pull-Requests:
 
