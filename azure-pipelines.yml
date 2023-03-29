@@ -35,11 +35,11 @@ jobs:
         PYTHON: '3.10'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
-        RUN_CLANG_FORMAT: yes
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
+        RUN_CLANG_FORMAT: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
