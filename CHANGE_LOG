@@ -2,6 +2,7 @@ v0.40.0rc1 (March 30, 2023)
 ---------------------------
 
 This release predominantly upgrades to LLVM 14 and Python 3.11.
+Bindings to a large number of passes are added.
 The minimum supported python version is now Python 3.8.
 
 Note: A bug was discovered in LLVM's RuntimeDyldELF on the Aarch64 platform that
