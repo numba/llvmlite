@@ -17,7 +17,7 @@ Pull-Requests:
 * PR `#860 <https://github.com/numba/llvmlite/pull/860>`_: the git tag for the RC needs an rc1 suffix (`esc <https://github.com/esc>`_)
 * PR `#869 <https://github.com/numba/llvmlite/pull/869>`_: bump max Python version to 3.11 (`esc <https://github.com/esc>`_ `sklam <https://github.com/sklam>`_)
 
-* PR `#876 <https://github.com/numba/llvmlite/pull/876>`_: Remove `llvmlite.llvmpy` after deprecation (`apmasell <https://github.com/apmasell>`_)
+* PR `#876 <https://github.com/numba/llvmlite/pull/876>`_: Remove ``llvmlite.llvmpy`` after deprecation (`apmasell <https://github.com/apmasell>`_)
 * PR `#883 <https://github.com/numba/llvmlite/pull/883>`_: Adds support for calling functions with 'tail', 'notail', or 'musttail' markers. (`bslatkin <https://github.com/bslatkin>`_)
 * PR `#886 <https://github.com/numba/llvmlite/pull/886>`_: Simplify setup.py Python version guard (`mbargull <https://github.com/mbargull>`_)
 * PR `#892 <https://github.com/numba/llvmlite/pull/892>`_: Bump minimum supported Python version to 3.8 (`jamesobutler <https://github.com/jamesobutler>`_)
@@ -30,6 +30,8 @@ Pull-Requests:
 * PR `#921 <https://github.com/numba/llvmlite/pull/921>`_: Setup AzureCI to use py311 and llvm14  (`sklam <https://github.com/sklam>`_)
 * PR `#922 <https://github.com/numba/llvmlite/pull/922>`_: Fix AzureCI not using llvm14 on windows (`sklam <https://github.com/sklam>`_)
 * PR `#926 <https://github.com/numba/llvmlite/pull/926>`_: llvmdev recipe: Add patch that clears GOTOffsetMap (`apmasell <https://github.com/apmasell>`_ `gmarkall <https://github.com/gmarkall>`_ `sklam <https://github.com/sklam>`_)
+* PR `#931 <https://github.com/numba/llvmlite/pull/931>`_: Remove maximum Python version limit (`sklam <https://github.com/sklam>`_ `apmasell <https://github.com/apmasell>`_)
+* PR `#932 <https://github.com/numba/llvmlite/pull/932>`_: Fix wheel builds (`sklam <https://github.com/sklam>`_)
 
 Authors:
 
@@ -40,8 +42,6 @@ Authors:
 * `jamesobutler <https://github.com/jamesobutler>`_
 * `mbargull <https://github.com/mbargull>`_
 * `sklam <https://github.com/sklam>`_
-
-
 
 v0.39.1 (September 1, 2022)
 ---------------------------
