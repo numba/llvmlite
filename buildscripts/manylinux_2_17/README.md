@@ -7,7 +7,7 @@ Run the script below to start docker off building `llvmdev` base from the curren
 
 - 32-bit linux: `./buildscripts/manylinux_2_17/docker_run_x32.sh build_llvmdev.sh`
 - 64-bit linux: `./buildscripts/manylinux_2_17/docker_run_x64.sh build_llvmdev.sh`
-- aarch64 linux: `./buildscripts/manylinux_2_17/docker_run_aarch64.sh build_llvmdev.sh`
+- aarch64 linux: `./buildscripts/manylinux_2_17/docker_run_aaarch64.sh build_llvmdev.sh`
 
 The conda packages will be stored into `<llvmlite_source_root>/docker_output`
 
