@@ -1,0 +1,12 @@
+diff -ur llvm-13.0.0.src-orig/tools/lto/CMakeLists.txt llvm-13.0.0.src/tools/lto/CMakeLists.txt
+--- llvm-13.0.0.src-orig/tools/lto/CMakeLists.txt	2021-09-24 12:18:10.000000000 -0400
++++ llvm-13.0.0.src/tools/lto/CMakeLists.txt	2022-03-31 17:07:07.000000000 -0400
+@@ -25,7 +25,7 @@
+     set(LTO_LIBRARY_TYPE MODULE)
+     set(LTO_LIBRARY_NAME libLTO)
+   else()
+-    set(LTO_LIBRARY_TYPE SHARED)
++    set(LTO_LIBRARY_TYPE STATIC)
+     set(LTO_LIBRARY_NAME LTO)
+ endif()
+ 

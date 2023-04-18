@@ -686,7 +686,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = [(11,)]
+        valid = [(11,), (12, ), (13, ), (14, )]
         self.assertIn((major,), valid)
         self.assertIn(patch, range(10))
 
@@ -704,6 +704,12 @@ class TestMisc(BaseTest):
         got = str(m)
         # Changing the locale should not affect the LLVM IR
         self.assertEqual(expect, got)
+
+    def test_no_accidental_warnings(self):
+        code = "from llvmlite import binding"
+        flags = "-Werror"
+        cmdargs = [sys.executable, flags, "-c", code]
+        subprocess.check_call(cmdargs)
 
 
 class TestModuleRef(BaseTest):

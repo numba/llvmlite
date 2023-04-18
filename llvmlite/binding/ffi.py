@@ -1,6 +1,7 @@
+import sys
 import ctypes
 import threading
-import importlib.resources
+import importlib.resources as _impres
 
 from llvmlite.binding.common import _decode_string, _is_shutting_down
 from llvmlite.utils import get_library_name
@@ -151,12 +152,31 @@ class _lib_fn_wrapper(object):
             return self._cfn(*args, **kwargs)
 
 
+def _importlib_resources_path_repl(package, resource):
+    """Replacement implementation of `import.resources.path` to avoid
+    deprecation warning following code at importlib_resources/_legacy.py
+    as suggested by https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
+
+    Notes on differences from importlib.resources implementation:
+
+    The `_common.normalize_path(resource)` call is skipped because it is an
+    internal API and it is unnecessary for the use here. What it does is
+    ensuring `resource` is a str and that it does not contain path separators.
+    """ # noqa E501
+    return _impres.as_file(_impres.files(package) / resource)
+
+
+_importlib_resources_path = (_importlib_resources_path_repl
+                             if sys.version_info[:2] >= (3, 9)
+                             else _impres.path)
+
+
 _lib_name = get_library_name()
 
 
 pkgname = ".".join(__name__.split(".")[0:-1])
 try:
-    _lib_handle = importlib.resources.path(pkgname, _lib_name)
+    _lib_handle = _importlib_resources_path(pkgname, _lib_name)
     lib = ctypes.CDLL(str(_lib_handle.__enter__()))
     # on windows file handles to the dll file remain open after
     # loading, therefore we can not exit the context manager

@@ -1,0 +1,31 @@
+From 322c79fff224389b4df9f24ac22965867007c2fa Mon Sep 17 00:00:00 2001
+From: Graham Markall <gmarkall@nvidia.com>
+Date: Mon, 13 Mar 2023 21:35:11 +0000
+Subject: [PATCH] RuntimeDyldELF: Clear the GOTOffsetMap when finalizing the
+ load
+
+This needs resetting so that stale entries are not left behind when the
+GOT section and index are reset.
+
+See llvm/llvm#61402: RuntimeDyldELF doesn't clear GOTOffsetMap in
+finalizeLoad(), leading to invalid GOT relocations on AArch64 -
+https://github.com/llvm/llvm-project/issues/61402.
+---
+ llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/llvm-14.0.6.src/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp b/llvm-14.0.6.src/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
+index f92618afdff6..eb3c27a9406a 100644
+--- a/llvm-14.0.6.src/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
++++ b/llvm-14.0.6.src/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
+@@ -2345,6 +2345,7 @@ Error RuntimeDyldELF::finalizeLoad(const ObjectFile &Obj,
+     }
+   }
+ 
++  GOTOffsetMap.clear();
+   GOTSectionID = 0;
+   CurrentGOTIndex = 0;
+ 
+-- 
+2.34.1
+

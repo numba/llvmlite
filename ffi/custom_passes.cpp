@@ -905,9 +905,8 @@ struct RefPrunePass : public FunctionPass {
     }
 
     /**
-     * Check if a basic block is a block which raises, this relies on a
-     * metadata "ret_is_raise" being present the terminator and the
-     * terminator opcode being Instruction::Ret.
+     * Check if a basic block is a block which raises, based on writing to the
+     * `%excinfo`.
      *
      * Parameters:
      *  - bb a basic block
@@ -917,30 +916,18 @@ struct RefPrunePass : public FunctionPass {
      *    false otherwise
      */
     bool isRaising(const BasicBlock *bb) {
-
-        // Get the terminator
-        auto term = bb->getTerminator();
-        // Get the opcode of the terminator, if it's not a Ret then return false
-        if (term->getOpcode() != Instruction::Ret)
-            return false;
-        // Get the metadata on the terminator node
-        auto md = term->getMetadata("ret_is_raise");
-        // If there's no metadata return false (normal or unmarked Ret)
-        if (!md)
-            return false;
-        // If the number of operands on the metadata is not 1 then return false
-        if (md->getNumOperands() != 1)
-            return false;
-        // Fetch the ref to the metadata operand at location 0
-        auto &operand = md->getOperand(0);
-        // and then cast the const as Metadata (Numba sets this as literal 1)
-        auto data = dyn_cast<ConstantAsMetadata>(operand.get());
-        // If dyn_cast failed type check then return false
-        if (!data)
-            return false;
-        // get the value of the casted metadata and then return bool on whether
-        // it is the number one.
-        return data->getValue()->isOneValue();
+        for (auto &instruction : *bb) {
+            if (instruction.getOpcode() == Instruction::Store) {
+                auto name = dyn_cast<StoreInst>(&instruction)
+                                ->getPointerOperand()
+                                ->getName();
+                if (name.equals("excinfo") &&
+                    instruction.hasMetadata("numba_exception_output")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
