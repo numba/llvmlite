@@ -192,8 +192,8 @@ LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
         return 1;
     }
 
-    auto owningBinaryArchive(std::move(*ArchiveOrError),
-                             std::move(*ArBufOrErr));
+    OwningBinary<object::Archive> owningBinaryArchive(
+        std::move(*ArchiveOrError), std::move(*ArBufOrErr));
     engine->addArchive(std::move(owningBinaryArchive));
     return 0;
 }
