@@ -176,29 +176,25 @@ LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
     using namespace llvm::object;
     auto engine = unwrap(EE);
 
-    ErrorOr<std::unique_ptr<MemoryBuffer>> ArBufOrErr =
-        MemoryBuffer::getFile(ArchiveName);
+    auto ArBufOrErr = MemoryBuffer::getFile(ArchiveName);
 
-    std::error_code EC = ArBufOrErr.getError();
-    if (EC) {
+    if (!ArBufOrErr) {
+        std::error_code EC = ArBufOrErr.getError();
         *OutError = LLVMPY_CreateString(EC.message().c_str());
         return 1;
     }
 
-    Expected<std::unique_ptr<object::Archive>> ArchiveOrError =
+    auto ArchiveOrError =
         Archive::create(ArBufOrErr.get()->getMemBufferRef());
 
     if (!ArchiveOrError) {
-        auto takeErr = ArchiveOrError.takeError();
-        LLVMErrorRef errorRef = wrap(std::move(takeErr));
+        LLVMErrorRef errorRef = wrap(ArchiveOrError.takeError());
         *OutError = LLVMPY_CreateString(LLVMGetErrorMessage(errorRef));
         return 1;
     }
 
-    std::unique_ptr<MemoryBuffer> &ArBuf = ArBufOrErr.get();
-    std::unique_ptr<object::Archive> &Ar = ArchiveOrError.get();
-    OwningBinary<object::Archive> owningBinaryArchive(std::move(Ar),
-                                                      std::move(ArBuf));
+    OwningBinary<object::Archive> owningBinaryArchive(std::move(*ArchiveOrError),
+                                                      std::move(*ArBufOrErr));
     engine->addArchive(std::move(owningBinaryArchive));
     return 0;
 }
