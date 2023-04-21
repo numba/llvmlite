@@ -2013,18 +2013,37 @@ class TestArchiveFile(BaseTest):
             c = new_compiler()
             customize_compiler(c)
             workdir = tmpdir.name
-            srcdir = os.path.dirname(llvmlite.tests.__file__) + "/"
+            print("Temp dir = ", workdir)
+
+            code1 = """
+            int __multiply_accumulate(int a, int b, int c)
+            {return (a * b) + c;}
+            """
+
+            code2 = """
+            int __multiply_subtract(int a, int b, int c)
+            {return (a * b) - c;}
+            """
+
+            f1 = open(os.path.join(workdir, "a.c"), 'wt')
+            f2 = open(os.path.join(workdir, "b.c"), 'wt')
+
+            f1.write(code1)
+            f1.flush()
+            f1.close()
+
+            f2.write(code2)
+            f2.flush()
+            f2.close()
 
             # Compile into .o files
-            file1 = srcdir + "a.c"
-            file2 = srcdir + "b.c"
 
-            objects = c.compile([file1, file2], output_dir=workdir)
+            objects = c.compile([f1.name, f2.name], output_dir=workdir)
             library_name = "foo"
 
             c.create_static_lib(objects, library_name, output_dir=workdir)
 
-            static_library_name = workdir + "/" + "lib" + library_name + ".a"
+            static_library_name = os.path.join(workdir, f"lib{library_name}.a")
             jit.add_archive(static_library_name)
 
             mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
