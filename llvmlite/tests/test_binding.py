@@ -17,7 +17,6 @@ from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
-import llvmlite.tests
 from setuptools._distutils.ccompiler import new_compiler
 from setuptools._distutils.sysconfig import customize_compiler
 import functools
@@ -2002,62 +2001,43 @@ class TestArchiveFile(BaseTest):
         if not external_compiler_works():
             self.skipTest()
 
-        tmpdir = TemporaryDirectory()
-        try:
+        with TemporaryDirectory() as tmpdir:
             target_machine = self.target_machine(jit=False)
 
-            jit = llvm.create_mcjit_compiler(self.module(self.mod_archive_asm),
-                                             target_machine)
+            jit = llvm.create_mcjit_compiler(
+                self.module(self.mod_archive_asm),
+                target_machine
+            )
 
-            # Create compiler with default options
             c = new_compiler()
             customize_compiler(c)
-            workdir = tmpdir.name
-            print("Temp dir = ", workdir)
 
-            code1 = """
-            int __multiply_accumulate(int a, int b, int c)
-            {return (a * b) + c;}
-            """
+            code1 = "int __multiply_accumulate(int a, int b, int c) " \
+                    "{return (a * b) + c;}"
+            code2 = "int __multiply_subtract(int a, int b, int c) " \
+                    "{return (a * b) - c;}"
 
-            code2 = """
-            int __multiply_subtract(int a, int b, int c)
-            {return (a * b) - c;}
-            """
+            with open(os.path.join(tmpdir, "a.c"), "wt") as f1,\
+                    open(os.path.join(tmpdir, "b.c"), "wt") as f2:
+                f1.write(code1)
+                f2.write(code2)
 
-            f1 = open(os.path.join(workdir, "a.c"), 'wt')
-            f2 = open(os.path.join(workdir, "b.c"), 'wt')
-
-            f1.write(code1)
-            f1.flush()
-            f1.close()
-
-            f2.write(code2)
-            f2.flush()
-            f2.close()
-
-            # Compile into .o files
-
-            objects = c.compile([f1.name, f2.name], output_dir=workdir)
+            objects = c.compile([f1.name, f2.name], output_dir=tmpdir)
             library_name = "foo"
+            c.create_static_lib(objects, library_name, output_dir=tmpdir)
 
-            c.create_static_lib(objects, library_name, output_dir=workdir)
-
-            static_library_name = os.path.join(workdir, f"lib{library_name}.a")
+            static_library_name = os.path.join(tmpdir, f"lib{library_name}.a")
             jit.add_archive(static_library_name)
 
             mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
-                jit.get_function_address("__multiply_accumulate"))
-
+                jit.get_function_address("__multiply_accumulate")
+            )
             msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
-                jit.get_function_address("__multiply_subtract"))
+                jit.get_function_address("__multiply_subtract")
+            )
 
             self.assertEqual(mac_func(10, 10, 20), 120)
             self.assertEqual(msub_func(10, 10, 20), 80)
-        finally:
-            # Manually invoke cleanup to remove tmpdir, objects
-            # and static library created during test
-            tmpdir.cleanup()
 
 
 class TestTimePasses(BaseTest):
