@@ -184,8 +184,7 @@ LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
         return 1;
     }
 
-    auto ArchiveOrError =
-        Archive::create(ArBufOrErr.get()->getMemBufferRef());
+    auto ArchiveOrError = Archive::create(ArBufOrErr.get()->getMemBufferRef());
 
     if (!ArchiveOrError) {
         LLVMErrorRef errorRef = wrap(ArchiveOrError.takeError());
@@ -193,8 +192,8 @@ LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
         return 1;
     }
 
-    OwningBinary<object::Archive> owningBinaryArchive(std::move(*ArchiveOrError),
-                                                      std::move(*ArBufOrErr));
+    auto owningBinaryArchive(std::move(*ArchiveOrError),
+                             std::move(*ArBufOrErr));
     engine->addArchive(std::move(owningBinaryArchive));
     return 0;
 }
