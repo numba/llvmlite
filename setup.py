@@ -153,7 +153,6 @@ if bdist_wheel:
             build_library_files(self.dry_run)
             self.distribution.package_data.update({
                 "llvmlite.binding": get_library_files(),
-                "llvmlite.tests": ["*.c"]
             })
             # Run wheel build command
             bdist_wheel.run(self)
