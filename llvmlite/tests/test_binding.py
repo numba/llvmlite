@@ -1995,8 +1995,6 @@ class TestArchiveFile(BaseTest):
         declare i32 @__multiply_subtract(i32 %0, i32 %1, i32 %2)
     """
 
-    @unittest.skipUnless(sys.platform.startswith('linux'),
-                         "Linux-specific test")
     def test_add_archive(self):
         if not external_compiler_works():
             self.skipTest()
@@ -2026,7 +2024,10 @@ class TestArchiveFile(BaseTest):
             library_name = "foo"
             c.create_static_lib(objects, library_name, output_dir=tmpdir)
 
-            static_library_name = os.path.join(tmpdir, f"lib{library_name}.a")
+            ext = '.lib' if sys.platform.startswith('win') else '.a'
+            static_library_name = os.path.join(tmpdir,
+                                               f"lib{library_name}{ext}")
+
             jit.add_archive(static_library_name)
 
             mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
