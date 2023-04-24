@@ -2028,6 +2028,7 @@ class TestArchiveFile(BaseTest):
             static_library_name = os.path.join(tmpdir,
                                                f"lib{library_name}{ext}")
 
+            print("Static library name = ", static_library_name)
             jit.add_archive(static_library_name)
 
             mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
