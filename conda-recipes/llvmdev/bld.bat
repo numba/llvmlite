@@ -46,6 +46,7 @@ REM Reduce build times and package size by removing unused stuff
 REM BENCHMARKS (new for llvm8) don't build under Visual Studio 14 2015
 set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD="%LLVM_TARGETS_TO_BUILD%" ^
     -DLLVM_ENABLE_PROJECTS:STRING=lld ^
+    -DLLVM_ENABLE_ZLIB=OFF ^
     -DLLVM_INCLUDE_UTILS=ON ^
     -DLLVM_INCLUDE_DOCS=OFF ^
     -DLLVM_INCLUDE_EXAMPLES=OFF ^
