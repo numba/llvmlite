@@ -384,6 +384,23 @@ issue_632_text = \
     "48c1e2204809c24889d048c1c03d4831d048b90120000480001070480fafc8"
 
 
+asm_tli_exp2 = r"""
+; ModuleID = '<lambda>'
+source_filename = "<string>"
+target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-pc-windows-msvc"
+
+declare float @llvm.exp2.f32(float %casted)
+
+define float @foo(i16 %arg) {
+entry:
+  %casted = sitofp i16 %arg to float
+  %ret = call float @llvm.exp2.f32(float %casted)
+  ret float %ret
+}
+"""
+
+
 class BaseTest(TestCase):
 
     def setUp(self):
@@ -1614,6 +1631,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
 
     def test_populate(self):
         pm = self.pm()
+        pm.add_target_library_info("") # unspecified target triple
         pm.add_constant_merge_pass()
         pm.add_dead_arg_elimination_pass()
         pm.add_function_attrs_pass()
@@ -1681,6 +1699,31 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_lint_pass()
         pm.add_module_debug_info_pass()
         pm.add_refprune_pass()
+
+    def test_target_library_info_behavior(self):
+        """Test a specific situation that demonstrate TLI is affecting
+        optimization. See https://github.com/numba/numba/issues/8898.
+        """
+        def run(use_tli):
+            mod = llvm.parse_assembly(asm_tli_exp2)
+            target = llvm.Target.from_triple(mod.triple)
+            tm = target.create_target_machine()
+            pm = llvm.ModulePassManager()
+            tm.add_analysis_passes(pm)
+            if use_tli:
+                pm.add_target_library_info(mod.triple)
+            pm.add_instruction_combining_pass()
+            pm.run(mod)
+            return mod
+
+        # Run with TLI should suppress transformation of exp2 -> ldexpf
+        mod = run(use_tli=True)
+        self.assertIn("call float @llvm.exp2.f32", str(mod))
+
+        # Run without TLI will enable the transformation
+        mod = run(use_tli=False)
+        self.assertNotIn("call float @llvm.exp2.f32", str(mod))
+        self.assertIn("call float @ldexpf", str(mod))
 
 
 class TestDylib(BaseTest):
