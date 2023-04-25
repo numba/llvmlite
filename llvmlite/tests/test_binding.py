@@ -2024,11 +2024,9 @@ class TestArchiveFile(BaseTest):
             library_name = "foo"
             c.create_static_lib(objects, library_name, output_dir=tmpdir)
 
-            ext = '.lib' if sys.platform.startswith('win') else '.a'
-            static_library_name = os.path.join(tmpdir,
-                                               f"lib{library_name}{ext}")
+            platform_library_name = c.library_filename(library_name)
+            static_library_name = os.path.join(tmpdir, platform_library_name)
 
-            print("Static library name = ", static_library_name)
             jit.add_archive(static_library_name)
 
             mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
