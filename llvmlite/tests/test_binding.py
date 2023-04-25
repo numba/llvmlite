@@ -2010,9 +2010,11 @@ class TestArchiveFile(BaseTest):
             c = new_compiler()
             customize_compiler(c)
 
-            code1 = "extern \"C\" {int __multiply_accumulate(int a, int b, int c) " \
+            code1 = "extern \"C\" {" \
+                    "int __multiply_accumulate(int a, int b, int c) " \
                     "{return (a * b) + c;}}"
-            code2 = "extern \"C\" {int __multiply_subtract(int a, int b, int c) " \
+            code2 = "extern \"C\" {" \
+                    "int __multiply_subtract(int a, int b, int c) " \
                     "{return (a * b) - c;}}"
 
             with open(os.path.join(tmpdir, "a.cc"), "wt") as f1,\
