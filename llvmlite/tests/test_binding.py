@@ -19,6 +19,7 @@ from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 from setuptools._distutils.ccompiler import new_compiler
 from setuptools._distutils.sysconfig import customize_compiler
+from setuptools._distutils import unixccompiler
 import functools
 
 
@@ -2007,7 +2008,7 @@ class TestArchiveFile(BaseTest):
                 target_machine
             )
 
-            c = new_compiler()
+            c = new_compiler(compiler="unix")
             customize_compiler(c)
 
             code1 = "int __multiply_accumulate(int a, int b, int c) " \
@@ -2029,9 +2030,10 @@ class TestArchiveFile(BaseTest):
 
             jit.add_archive(static_library_name)
 
-            mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
-                jit.get_function_address("__multiply_accumulate")
-            )
+            mac_func_addr = jit.get_function_address("__multiply_accumulate")
+            self.assertTrue(mac_func_addr)
+
+            mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(mac_func_addr)
             msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
                 jit.get_function_address("__multiply_subtract")
             )
