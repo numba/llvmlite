@@ -19,7 +19,6 @@ from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 from setuptools._distutils.ccompiler import new_compiler
 from setuptools._distutils.sysconfig import customize_compiler
-from setuptools._distutils import unixccompiler
 import functools
 
 
@@ -2008,22 +2007,23 @@ class TestArchiveFile(BaseTest):
                 target_machine
             )
 
-            c = new_compiler(compiler="unix")
+            c = new_compiler()
             customize_compiler(c)
 
-            code1 = "int __multiply_accumulate(int a, int b, int c) " \
-                    "{return (a * b) + c;}"
-            code2 = "int __multiply_subtract(int a, int b, int c) " \
-                    "{return (a * b) - c;}"
+            code1 = "extern \"C\" {int __multiply_accumulate(int a, int b, int c) " \
+                    "{return (a * b) + c;}}"
+            code2 = "extern \"C\" {int __multiply_subtract(int a, int b, int c) " \
+                    "{return (a * b) - c;}}"
 
-            with open(os.path.join(tmpdir, "a.c"), "wt") as f1,\
-                    open(os.path.join(tmpdir, "b.c"), "wt") as f2:
+            with open(os.path.join(tmpdir, "a.cc"), "wt") as f1,\
+                    open(os.path.join(tmpdir, "b.cc"), "wt") as f2:
                 f1.write(code1)
                 f2.write(code2)
 
             objects = c.compile([f1.name, f2.name], output_dir=tmpdir)
             library_name = "foo"
-            c.create_static_lib(objects, library_name, output_dir=tmpdir)
+            c.create_static_lib(objects, library_name, output_dir=tmpdir,
+                                target_lang="c")
 
             platform_library_name = c.library_filename(library_name)
             static_library_name = os.path.join(tmpdir, platform_library_name)
