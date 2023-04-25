@@ -398,7 +398,7 @@ entry:
   %ret = call float @llvm.exp2.f32(float %casted)
   ret float %ret
 }
-"""
+"""  # noqa E501
 
 
 class BaseTest(TestCase):
