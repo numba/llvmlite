@@ -309,11 +309,11 @@ LLVMPY_DisposeOperandsIter(LLVMOperandsIteratorRef GI) {
     delete llvm::unwrap(GI);
 }
 
-API_EXPORT(LLVMBool)
+API_EXPORT(bool)
 LLVMPY_IsConstant(LLVMValueRef Val) { return LLVMIsConstant(Val); }
 
 API_EXPORT(const uint64_t *)
-LLVMPY_GetConstantIntRawValue(LLVMValueRef Val, LLVMBool* littleEndian) {
+LLVMPY_GetConstantIntRawValue(LLVMValueRef Val, bool *littleEndian) {
     if (littleEndian) {
         *littleEndian = llvm::sys::IsLittleEndianHost;
     }
@@ -332,7 +332,14 @@ LLVMPY_GetConstantIntNumWords(LLVMValueRef Val) {
 }
 
 API_EXPORT(double)
-LLVMPY_GetConstantFPValue(LLVMValueRef Val, LLVMBool *losesInfo) { return LLVMConstRealGetDouble(Val, losesInfo); }
+LLVMPY_GetConstantFPValue(LLVMValueRef Val, bool *losesInfo) {
+    LLVMBool losesInfo_internal;
+    double result = LLVMConstRealGetDouble(Val, &losesInfo_internal);
+    if (losesInfo) {
+        *losesInfo = losesInfo_internal;
+    }
+    return result;
+}
 
 API_EXPORT(int)
 LLVMPY_GetValueKind(LLVMValueRef Val) { return (int)LLVMGetValueKind(Val); }
