@@ -1,4 +1,5 @@
-from ctypes import POINTER, byref, cast, c_char_p, c_double, c_int, c_size_t, c_uint, c_uint64, c_bool, c_void_p
+from ctypes import (POINTER, byref, cast, c_char_p, c_double, c_int, c_size_t,
+                    c_uint, c_uint64, c_bool, c_void_p)
 import enum
 import warnings
 
@@ -356,7 +357,8 @@ class ValueRef(ffi.ObjectRef):
             # Python integers are also arbitrary-precision
             little_endian = c_bool(False)
             words = ffi.lib.LLVMPY_GetConstantIntNumWords(self)
-            ptr = ffi.lib.LLVMPY_GetConstantIntRawValue(self, byref(little_endian))
+            ptr = ffi.lib.LLVMPY_GetConstantIntRawValue(
+                self, byref(little_endian))
             asbytes = bytes(cast(ptr, POINTER(c_uint64 * words)).contents)
             return int.from_bytes(
                 asbytes,
@@ -603,11 +605,13 @@ ffi.lib.LLVMPY_IsConstant.restype = c_bool
 ffi.lib.LLVMPY_GetValueKind.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetValueKind.restype = c_int
 
-ffi.lib.LLVMPY_GetConstantIntRawValue.argtypes = [ffi.LLVMValueRef, POINTER(c_bool)]
+ffi.lib.LLVMPY_GetConstantIntRawValue.argtypes = [ffi.LLVMValueRef,
+                                                  POINTER(c_bool)]
 ffi.lib.LLVMPY_GetConstantIntRawValue.restype = POINTER(c_uint64)
 
 ffi.lib.LLVMPY_GetConstantIntNumWords.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetConstantIntNumWords.restype = c_uint
 
-ffi.lib.LLVMPY_GetConstantFPValue.argtypes = [ffi.LLVMValueRef, POINTER(c_bool)]
+ffi.lib.LLVMPY_GetConstantFPValue.argtypes = [ffi.LLVMValueRef,
+                                              POINTER(c_bool)]
 ffi.lib.LLVMPY_GetConstantFPValue.restype = c_double
