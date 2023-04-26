@@ -2021,6 +2021,10 @@ class TestArchiveFile(BaseTest):
                     open(os.path.join(tmpdir, "b.cc"), "wt") as f2:
                 f1.write(code1)
                 f2.write(code2)
+                f1.flush()
+                f1.close()
+                f2.flush()
+                f2.close()
 
             objects = c.compile([f1.name, f2.name], output_dir=tmpdir)
             library_name = "foo"
@@ -2036,9 +2040,11 @@ class TestArchiveFile(BaseTest):
             self.assertTrue(mac_func_addr)
 
             mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(mac_func_addr)
-            msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(
-                jit.get_function_address("__multiply_subtract")
-            )
+
+            msub_func_addr = jit.get_function_address("__multiply_subtract")
+            self.assertTrue(msub_func_addr)
+
+            msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(msub_func_addr)
 
             self.assertEqual(mac_func(10, 10, 20), 120)
             self.assertEqual(msub_func(10, 10, 20), 80)
