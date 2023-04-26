@@ -317,7 +317,8 @@ LLVMPY_GetConstantIntRawValue(LLVMValueRef Val, bool *littleEndian) {
     if (littleEndian) {
         *littleEndian = llvm::sys::IsLittleEndianHost;
     }
-    if (llvm::ConstantInt* CI = llvm::dyn_cast<llvm::ConstantInt>((llvm::Value *)Val)) {
+    if (llvm::ConstantInt *CI =
+            llvm::dyn_cast<llvm::ConstantInt>((llvm::Value *)Val)) {
         return CI->getValue().getRawData();
     }
     return nullptr;
@@ -325,7 +326,8 @@ LLVMPY_GetConstantIntRawValue(LLVMValueRef Val, bool *littleEndian) {
 
 API_EXPORT(unsigned)
 LLVMPY_GetConstantIntNumWords(LLVMValueRef Val) {
-    if (llvm::ConstantInt* CI = llvm::dyn_cast<llvm::ConstantInt>((llvm::Value *)Val)) {
+    if (llvm::ConstantInt *CI =
+            llvm::dyn_cast<llvm::ConstantInt>((llvm::Value *)Val)) {
         return CI->getValue().getNumWords();
     }
     return 0;
