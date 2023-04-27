@@ -378,7 +378,7 @@ class ValueRef(ffi.ObjectRef):
             if accuracy_loss.value:
                 warnings.warn(
                     'Accuracy loss encountered in conversion of constant '
-                    f'value {str(self)}'
+                    f'value {str(self)}', BytesWarning
                 )
 
             return value

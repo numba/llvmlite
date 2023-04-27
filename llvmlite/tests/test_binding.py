@@ -115,6 +115,15 @@ asm_sum_declare = r"""
     declare i32 @sum(i32 %.1, i32 %.2)
     """
 
+asm_double_inaccurate = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @foo() {{
+      %const = fadd double 5.123456e-324, 0x432ff973cafa8000
+      ret void
+    }}
+    """
 
 asm_double_locale = r"""
     ; ModuleID = '<string>'
@@ -307,6 +316,21 @@ define i32 @"foo"()
   ret i32 12345
 }
 """  # noqa W291 # trailing space needed for match later
+
+
+asm_null_constant = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @foo(i64* %.1) {{
+      ret void
+    }}
+
+    define void @bar() {{
+      call void @foo(i64* null)
+      ret void
+    }}
+"""
 
 
 riscv_asm_ilp32 = [
@@ -1365,6 +1389,21 @@ class TestValueRef(BaseTest):
         self.assertAlmostEqual(operands[0].get_constant_value(), 0.0)
         self.assertTrue(operands[1].is_constant)
         self.assertAlmostEqual(operands[1].get_constant_value(), 3.14)
+
+        mod = self.module(asm_double_inaccurate)
+        func = mod.get_function('foo')
+        inst = list(list(func.blocks)[0].instructions)[0]
+        operands = list(inst.operands)
+        self.assertAlmostEqual(operands[0].get_constant_value(), 0.0)
+        self.assertAlmostEqual(operands[1].get_constant_value(), 4.5e15)
+
+    def test_constant_as_string(self):
+        mod = self.module(asm_null_constant)
+        func = mod.get_function('bar')
+        inst = list(list(func.blocks)[0].instructions)[0]
+        arg = list(inst.operands)[0]
+        self.assertTrue(arg.is_constant)
+        self.assertEqual(arg.get_constant_value(), 'i64* null')
 
 
 class TestTarget(BaseTest):
