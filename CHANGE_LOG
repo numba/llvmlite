@@ -1,5 +1,5 @@
-v0.40.0rc1 (April 5, 2023)
---------------------------
+v0.40.0 (May 1, 2023)
+---------------------
 
 This release predominantly upgrades to LLVM 14 and Python 3.11.
 Bindings to a large number of passes are added.
@@ -30,8 +30,12 @@ Pull-Requests:
 * PR `#921 <https://github.com/numba/llvmlite/pull/921>`_: Setup AzureCI to use py311 and llvm14  (`sklam <https://github.com/sklam>`_)
 * PR `#922 <https://github.com/numba/llvmlite/pull/922>`_: Fix AzureCI not using llvm14 on windows (`sklam <https://github.com/sklam>`_)
 * PR `#926 <https://github.com/numba/llvmlite/pull/926>`_: llvmdev recipe: Add patch that clears GOTOffsetMap (`apmasell <https://github.com/apmasell>`_ `gmarkall <https://github.com/gmarkall>`_ `sklam <https://github.com/sklam>`_)
+* PR `#930 <https://github.com/numba/llvmlite/pull/930>`_: Update changelog for 0.40.0rc1  (`sklam <https://github.com/sklam>`_ `stuartarchibald <https://github.com/stuartarchibald>`_)
 * PR `#931 <https://github.com/numba/llvmlite/pull/931>`_: Remove maximum Python version limit (`sklam <https://github.com/sklam>`_ `apmasell <https://github.com/apmasell>`_)
 * PR `#932 <https://github.com/numba/llvmlite/pull/932>`_: Fix wheel builds (`sklam <https://github.com/sklam>`_)
+* PR `#935 <https://github.com/numba/llvmlite/pull/935>`_: Disable zlib for LLVM on Windows (`apmasell <https://github.com/apmasell>`_)
+* PR `#939 <https://github.com/numba/llvmlite/pull/939>`_: Bump llvmdev build number to include the nozlib change for windows (`sklam <https://github.com/sklam>`_)
+* PR `#940 <https://github.com/numba/llvmlite/pull/940>`_: Update CHANGE_LOG for 0.40.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
 
 Authors:
 
@@ -42,6 +46,7 @@ Authors:
 * `jamesobutler <https://github.com/jamesobutler>`_
 * `mbargull <https://github.com/mbargull>`_
 * `sklam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
 
 v0.39.1 (September 1, 2022)
 ---------------------------
