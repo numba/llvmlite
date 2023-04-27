@@ -344,10 +344,15 @@ class ValueRef(ffi.ObjectRef):
                              % (self._kind,))
         return ffi.ret_string(ffi.lib.LLVMPY_GetOpcodeName(self))
 
-    def get_constant_value(self):
+    def get_constant_value(self, signed=False):
         """
         Return the constant value, either as a literal (when supported)
         or as a string.
+
+        Parameters
+        -----------
+        signed : bool
+            if True and the constant is an integer, returns a signed version
         """
         if not self.is_constant:
             raise ValueError('expected constant value, got %s'
@@ -363,7 +368,7 @@ class ValueRef(ffi.ObjectRef):
             return int.from_bytes(
                 asbytes,
                 ('little' if little_endian.value else 'big'),
-                signed=False,
+                signed=signed,
             )
         elif self.value_kind == ValueKind.constant_fp:
             # Convert floating-point values to double (Python float)
