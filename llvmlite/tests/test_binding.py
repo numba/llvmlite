@@ -1999,7 +1999,8 @@ class TestArchiveFile(BaseTest):
         if not external_compiler_works():
             self.skipTest()
 
-        with TemporaryDirectory() as tmpdir:
+        tmpdir = TemporaryDirectory()
+        try:
             target_machine = self.target_machine(jit=False)
 
             jit = llvm.create_mcjit_compiler(
@@ -2017,8 +2018,8 @@ class TestArchiveFile(BaseTest):
                     "int __multiply_subtract(int a, int b, int c) " \
                     "{return (a * b) - c;}}"
 
-            with open(os.path.join(tmpdir, "a.cc"), "wt") as f1,\
-                    open(os.path.join(tmpdir, "b.cc"), "wt") as f2:
+            with open(os.path.join(tmpdir.name, "a.cc"), "wt") as f1,\
+                    open(os.path.join(tmpdir.name, "b.cc"), "wt") as f2:
                 f1.write(code1)
                 f2.write(code2)
                 f1.flush()
@@ -2026,13 +2027,14 @@ class TestArchiveFile(BaseTest):
                 f2.flush()
                 f2.close()
 
-            objects = c.compile([f1.name, f2.name], output_dir=tmpdir)
+            objects = c.compile([f1.name, f2.name], output_dir=tmpdir.name)
             library_name = "foo"
-            c.create_static_lib(objects, library_name, output_dir=tmpdir,
+            c.create_static_lib(objects, library_name, output_dir=tmpdir.name,
                                 target_lang="c")
 
             platform_library_name = c.library_filename(library_name)
-            static_library_name = os.path.join(tmpdir, platform_library_name)
+            static_library_name = os.path.join(tmpdir.name,
+                                               platform_library_name)
 
             jit.add_archive(static_library_name)
 
@@ -2048,6 +2050,10 @@ class TestArchiveFile(BaseTest):
 
             self.assertEqual(mac_func(10, 10, 20), 120)
             self.assertEqual(msub_func(10, 10, 20), 80)
+        finally:
+            # Manually invoke cleanup to remove tmpdir, objects
+            # and static library created during test
+            tmpdir.cleanup()
 
 
 class TestTimePasses(BaseTest):
