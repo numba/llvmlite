@@ -1,4 +1,4 @@
-from ctypes import c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref
+from ctypes import c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref, cdll, POINTER
 from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
@@ -100,9 +100,38 @@ class RefPruneSubpasses(IntFlag):
     ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 
+# Maintain a global list of loaded libraries.
+_loaded_libraries = []
+
+def load_pass_plugin(path):
+    """Load shared library containing a pass"""
+    pass_lib = cdll.LoadLibrary(path)
+    pass_lib.LLVMPY_RegisterPass(get_pass_registry())
+    _loaded_libraries.append(pass_lib)
+
+class PassRegistry(ffi.ObjectRef):
+    """
+        Return the names of the registered passes as a list
+        of tuples (<pass arg>, <pass name>)
+    """
+    def list_registered_passes(self):
+        PassInfo = namedtuple("PassInfo", ["arg", "name"])
+        with ffi.OutputString() as out:
+            ffi.lib.LLVMPY_ListRegisteredPasses(self, out)
+            passes = [PassInfo(*pass_info.split(":", 1)) \
+                      for pass_info in str(out).split(',')]
+            return passes
+
+def get_pass_registry():
+    return PassRegistry(ffi.lib.LLVMPY_GetPassRegistry())
+
+
 class PassManager(ffi.ObjectRef):
     """PassManager
     """
+
+    def __init__(self, ptr):
+        super(PassManager, self).__init__(ptr)
 
     def _dispose(self):
         self._capi.LLVMPY_DisposePassManager(self)
@@ -130,6 +159,11 @@ class PassManager(ffi.ObjectRef):
         LLVM 11+: `LLVMAddConstantMergePass`
         """  # noqa E501
         ffi.lib.LLVMPY_AddConstantMergePass(self)
+
+    def add_pass_by_arg(self, pass_arg):
+        """Add a pass using its registered name"""
+        if not ffi.lib.LLVMPY_AddPassByArg(self, pass_arg.encode("utf8")):
+            raise ValueError("Could not add pass '{}'".format(pass_arg))
 
     def add_dead_arg_elimination_pass(self):
         """
@@ -914,3 +948,9 @@ ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 
 ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
                                            c_size_t]
+
+ffi.lib.LLVMPY_GetPassRegistry.argtypes = []
+ffi.lib.LLVMPY_GetPassRegistry.restype = ffi.LLVMPassRegistryRef
+ffi.lib.LLVMPY_ListRegisteredPasses.argtypes = [ffi.LLVMPassRegistryRef, POINTER(c_char_p)]
+ffi.lib.LLVMPY_AddPassByArg.argtypes = [ffi.LLVMPassManagerRef, c_char_p]
+ffi.lib.LLVMPY_AddPassByArg.restype = c_bool

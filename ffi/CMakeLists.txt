@@ -27,6 +27,10 @@ add_definitions(${LLVM_DEFINITIONS})
 # Look for SVML
 set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS})
 
+if (NOT WIN32)
+    add_compile_options("-fno-rtti")
+endif()
+
 CHECK_INCLUDE_FILES("llvm/IR/SVML.inc" HAVE_SVML)
 if(HAVE_SVML)
     message(STATUS "SVML found")

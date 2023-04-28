@@ -1,9 +1,9 @@
 # Using g++ is recommended for linking
 CXX ?= g++
 
-# -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
+# -flto allows us to remove those parts of LLVM we don't use
 CXX_FLTO_FLAGS ?= -flto
-LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
+LD_FLTO_FLAGS ?= -flto
 # -fPIC is required when compiling objects for a shared library
 CXX_FPIC_FLAGS ?= -fPIC
 
