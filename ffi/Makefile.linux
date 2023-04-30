@@ -13,7 +13,7 @@ LIBS = $(LLVM_LIBS)
 INCLUDE = core.h
 OBJ = assembly.o bitcode.o core.o initfini.o module.o value.o \
 	  executionengine.o transforms.o passmanagers.o targets.o dylib.o \
-	  linker.o object_file.o custom_passes.o
+	  linker.o object_file.o custom_passes.o orcjit.o
 OUTPUT = libllvmlite.so
 
 all: $(OUTPUT)
