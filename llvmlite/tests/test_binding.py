@@ -2042,7 +2042,7 @@ class TestArchiveFile(BaseTest):
             f1.flush()
             f2.flush()
 
-            outdir_path = os.path.dirname(Path(f1.name))
+            outdir_path = os.path.dirname(f1.name)
             objects = c.compile([f1.name, f2.name], output_dir=outdir_path)
             library_name = "foo"
             c.create_static_lib(objects, library_name, output_dir=outdir_path,
