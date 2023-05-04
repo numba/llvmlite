@@ -6,11 +6,12 @@ import locale
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import unittest
 from contextlib import contextmanager
-from tempfile import mkstemp, TemporaryDirectory, mkdtemp
+from tempfile import mkstemp, mkdtemp
 from pathlib import Path
 
 from llvmlite import ir
@@ -38,6 +39,25 @@ def _gentmpfile(suffix):
             pass
         else:
             os.rmdir(tmpdir)
+
+
+@contextmanager
+def _gentmpfiles2(suffix):
+    try:
+        tmpdir = mkdtemp()
+        ntf1 = open(os.path.join(tmpdir, "temp1%s" % suffix), 'wt')
+        ntf2 = open(os.path.join(tmpdir, "temp2%s" % suffix), 'wt')
+        yield ntf1, ntf2
+    finally:
+        try:
+            ntf1.close()
+            ntf2.close()
+            os.remove(ntf1.name)
+            os.remove(ntf2.name)
+        except Exception:
+            pass
+        else:
+            shutil.rmtree(tmpdir)
 
 
 @functools.lru_cache(maxsize=1)
@@ -1999,8 +2019,7 @@ class TestArchiveFile(BaseTest):
         if not external_compiler_works():
             self.skipTest()
 
-        tmpdir = TemporaryDirectory()
-        try:
+        with _gentmpfiles2(".cc") as (f1, f2):
             target_machine = self.target_machine(jit=False)
 
             jit = llvm.create_mcjit_compiler(
@@ -2018,22 +2037,19 @@ class TestArchiveFile(BaseTest):
                     "int __multiply_subtract(int a, int b, int c) " \
                     "{return (a * b) - c;}}"
 
-            with open(os.path.join(tmpdir.name, "a.cc"), "wt") as f1,\
-                    open(os.path.join(tmpdir.name, "b.cc"), "wt") as f2:
-                f1.write(code1)
-                f2.write(code2)
-                f1.flush()
-                f1.close()
-                f2.flush()
-                f2.close()
+            f1.write(code1)
+            f2.write(code2)
+            f1.flush()
+            f2.flush()
 
-            objects = c.compile([f1.name, f2.name], output_dir=tmpdir.name)
+            outdir_path = os.path.dirname(Path(f1.name))
+            objects = c.compile([f1.name, f2.name], output_dir=outdir_path)
             library_name = "foo"
-            c.create_static_lib(objects, library_name, output_dir=tmpdir.name,
+            c.create_static_lib(objects, library_name, output_dir=outdir_path,
                                 target_lang="c")
 
             platform_library_name = c.library_filename(library_name)
-            static_library_name = os.path.join(tmpdir.name,
+            static_library_name = os.path.join(outdir_path,
                                                platform_library_name)
 
             jit.add_archive(static_library_name)
@@ -2050,11 +2066,11 @@ class TestArchiveFile(BaseTest):
 
             self.assertEqual(mac_func(10, 10, 20), 120)
             self.assertEqual(msub_func(10, 10, 20), 80)
+
             del jit
-        finally:
-            # Manually invoke cleanup to remove tmpdir, objects
-            # and static library created during test
-            tmpdir.cleanup()
+            os.remove(static_library_name)
+            for file in objects:
+                os.remove(Path(file))
 
 
 class TestTimePasses(BaseTest):
