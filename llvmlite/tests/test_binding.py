@@ -2050,6 +2050,7 @@ class TestArchiveFile(BaseTest):
 
             self.assertEqual(mac_func(10, 10, 20), 120)
             self.assertEqual(msub_func(10, 10, 20), 80)
+            del jit
         finally:
             # Manually invoke cleanup to remove tmpdir, objects
             # and static library created during test
