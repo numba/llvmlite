@@ -47,7 +47,7 @@ def _gentmpfiles2(suffix):
         tmpdir = mkdtemp()
         ntf1 = open(os.path.join(tmpdir, "temp1%s" % suffix), 'wt')
         ntf2 = open(os.path.join(tmpdir, "temp2%s" % suffix), 'wt')
-        yield ntf1, ntf2
+        yield ntf1, ntf2, tmpdir
     finally:
         try:
             ntf1.close()
@@ -2019,7 +2019,7 @@ class TestArchiveFile(BaseTest):
         if not external_compiler_works():
             self.skipTest()
 
-        with _gentmpfiles2(".cc") as (f1, f2):
+        with _gentmpfiles2(".cc") as (f1, f2, temp_dir):
             target_machine = self.target_machine(jit=False)
 
             jit = llvm.create_mcjit_compiler(
@@ -2042,14 +2042,13 @@ class TestArchiveFile(BaseTest):
             f1.flush()
             f2.flush()
 
-            outdir_path = os.path.dirname(f1.name)
-            objects = c.compile([f1.name, f2.name], output_dir=outdir_path)
+            objects = c.compile([f1.name, f2.name], output_dir=temp_dir)
             library_name = "foo"
-            c.create_static_lib(objects, library_name, output_dir=outdir_path,
+            c.create_static_lib(objects, library_name, output_dir=temp_dir,
                                 target_lang="c")
 
             platform_library_name = c.library_filename(library_name)
-            static_library_name = os.path.join(outdir_path,
+            static_library_name = os.path.join(temp_dir,
                                                platform_library_name)
 
             jit.add_archive(static_library_name)
