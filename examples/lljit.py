@@ -5,7 +5,7 @@
 # Additionally this example also demonstrates that typed pointers still work in
 # LLVM 14 (and 15, if built against that).
 
-from ctypes import CFUNCTYPE, c_double, c_int, c_uint64
+from ctypes import CFUNCTYPE, POINTER, c_double
 
 import llvmlite.binding as llvm
 import numpy as np
@@ -30,14 +30,15 @@ llvm_ir = """
    """
 
 lljit = llvm.create_lljit_compiler()
-rt = llvm.JITLibraryBuilder().add_ir(llvm_ir).export_symbol('fpadd').link(lljit, 'fpadd')
+rt = llvm.JITLibraryBuilder().add_ir(llvm_ir).export_symbol('fpadd')\
+    .link(lljit, 'fpadd')
 
-cfunc = CFUNCTYPE(c_double, c_double, c_double, c_uint64)(rt['fpadd'])
+cfunc = CFUNCTYPE(c_double, c_double, c_double, POINTER(c_double))(rt['fpadd'])
 
 # Create some floating point data and get a pointer to it that we can pass in
 # to the jitted function
 x = np.asarray([7.2])
-data_ptr = x.__array_interface__['data'][0]
+data_ptr = x.ctypes.data_as(POINTER(c_double))
 
 
 args = (1.0, 3.5, data_ptr)

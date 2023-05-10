@@ -164,11 +164,11 @@ class JITLibraryBuilder:
             tracker = lljit._capi.LLVMPY_LLJIT_Link(
                 lljit._ptr,
                 library_name,
-                ctypes.cast(elements,POINTER(_LinkElement)),
+                elements,
                 len(self.__entries),
-                ctypes.cast(imports, POINTER(_SymbolAddress)),
+                imports,
                 len(self.__imports),
-                ctypes.cast(exports, POINTER(_SymbolAddress)),
+                exports,
                 len(self.__exports),
                 outerr)
             if not tracker:
@@ -189,8 +189,8 @@ class ResourceTracker(ffi.ObjectRef):
     dropped, this will trigger LLVM to unload the library and destroy any
     functions.
 
-    Failure to keep resource trackers while holding on to function can result in
-    crashes or memory corruption.
+    Failure to keep resource trackers while calling a function or accessing a
+    symbol can result in crashes or memory corruption.
 
     LLVM internally tracks references between different libraries, so only
     "leaf" libraries need to be tracked.
