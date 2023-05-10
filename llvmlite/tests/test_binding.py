@@ -2006,13 +2006,32 @@ class TestObjectFile(BaseTest):
                 self.assertEqual(s.data().hex(), issue_632_text)
 
 
+# Skip this test on Windows due to the fact that
+# the /GL cross-module optimization has the side-effect
+# of removing external symbols in this test case.
+#
+# The /GL option is used when compiling and 'debug=0' (default)
+# is provided on the the c.compile method invocation.
+#
+# Setting 'debug=1' preserves the debug information but
+# the jit.add_archive command fails because the llvm
+# libraries do not recognize the library object file format
+# and generate the error:
+#
+# LLVM ERROR: Incompatible object format
+#
+# Although the llvm libraries does not recognize the library
+# format, it  is recognized by the Windows dumpbin command.
+# so this appears to be a bug in the llvm libraries
+@unittest.skipIf(sys.platform.startswith('win32'),
+                 "Windows and LLVM static library issues")
 class TestArchiveFile(BaseTest):
     mod_archive_asm = """
         ;ModuleID = <string>
         target triple = "{triple}"
 
-        declare i32 @__multiply_accumulate(i32 %0, i32 %1, i32 %2)
-        declare i32 @__multiply_subtract(i32 %0, i32 %1, i32 %2)
+        declare i32 @multiply_accumulate(i32 %0, i32 %1, i32 %2)
+        declare i32 @multiply_subtract(i32 %0, i32 %1, i32 %2)
     """
 
     def test_add_archive(self):
@@ -2031,10 +2050,10 @@ class TestArchiveFile(BaseTest):
             customize_compiler(c)
 
             code1 = "extern \"C\" {" \
-                    "int __multiply_accumulate(int a, int b, int c) " \
+                    "int multiply_accumulate(int a, int b, int c) " \
                     "{return (a * b) + c;}}"
             code2 = "extern \"C\" {" \
-                    "int __multiply_subtract(int a, int b, int c) " \
+                    "int multiply_subtract(int a, int b, int c) " \
                     "{return (a * b) - c;}}"
 
             f1.write(code1)
@@ -2055,12 +2074,12 @@ class TestArchiveFile(BaseTest):
 
             jit.add_archive(static_library_name)
 
-            mac_func_addr = jit.get_function_address("__multiply_accumulate")
+            mac_func_addr = jit.get_function_address("multiply_accumulate")
             self.assertTrue(mac_func_addr)
 
             mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(mac_func_addr)
 
-            msub_func_addr = jit.get_function_address("__multiply_subtract")
+            msub_func_addr = jit.get_function_address("multiply_subtract")
             self.assertTrue(msub_func_addr)
 
             msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(msub_func_addr)
