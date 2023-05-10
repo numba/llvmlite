@@ -1145,8 +1145,9 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
 class TestOrcLLJIT(BaseTest):
 
     def jit(self, asm=asm_sum, func_name="sum", target_machine=None,
-            add_process=False, func_type=CFUNCTYPE(c_int, c_int, c_int)):
-        lljit = llvm.create_lljit_compiler(target_machine)
+            add_process=False, func_type=CFUNCTYPE(c_int, c_int, c_int),
+            suppress_errors=False):
+        lljit = llvm.create_lljit_compiler(target_machine, suppress_errors)
         builder = llvm.JITLibraryBuilder()
         if add_process:
             builder.add_current_process()
@@ -1264,7 +1265,7 @@ class TestOrcLLJIT(BaseTest):
         # enabled searching the current process for symbols.
         msg = 'Failed to materialize symbols:.*getversion'
         with self.assertRaisesRegex(RuntimeError, msg):
-            self.jit(asm_getversion, "getversion")
+            self.jit(asm_getversion, "getversion", suppress_errors=True)
 
     def test_lookup_current_process_symbol(self):
         self.jit(asm_getversion, "getversion", None, True)

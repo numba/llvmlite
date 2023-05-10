@@ -25,6 +25,11 @@ inline LLVMOrcJITTargetMachineBuilderRef wrap(JITTargetMachineBuilder *JTMB) {
     return reinterpret_cast<LLVMOrcJITTargetMachineBuilderRef>(JTMB);
 }
 
+static void destroyError(Error e) {
+    /* LLVM's Error type will abort if you don't read it. */
+    LLVMDisposeErrorMessage(LLVMGetErrorMessage(wrap(std::move(e))));
+}
+
 class JITDylibTracker {
   public:
     std::shared_ptr<LLJIT> lljit;
@@ -47,7 +52,8 @@ typedef struct {
 extern "C" {
 
 API_EXPORT(std::shared_ptr<LLJIT> *)
-LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, const char **OutError) {
+LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
+                           const char **OutError) {
     LLJITBuilder builder;
 
     if (tm) {
@@ -93,7 +99,9 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, const char **OutError) {
         LLVMDisposeErrorMessage(message);
         return nullptr;
     }
-
+    if (suppressErrors) {
+        (*jit)->getExecutionSession().setErrorReporter(destroyError);
+    }
     return new std::shared_ptr<LLJIT>(std::move(*jit));
 }
 
@@ -318,9 +326,7 @@ LLVMPY_LLJIT_Dylib_Tracker_Dispose(JITDylibTracker *tracker,
             result = true;
         }
     } else {
-        /* LLVM's Expected type will abort if you don't read it. */
-        LLVMDisposeErrorMessage(
-            LLVMGetErrorMessage(wrap(std::move(lookup.takeError()))));
+        destroyError(std::move(lookup.takeError()));
     }
     auto error = tracker->dylib.clear();
     if (error && !result) {

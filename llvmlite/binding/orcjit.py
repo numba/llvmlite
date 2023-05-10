@@ -272,12 +272,14 @@ class LLJIT(ffi.ObjectRef):
         self._capi.LLVMPY_LLJITDispose(self)
 
 
-def create_lljit_compiler(target_machine=None):
+def create_lljit_compiler(target_machine=None, suppress_errors=False):
     """
     Create an LLJIT instance
     """
     with ffi.OutputString() as outerr:
-        lljit = ffi.lib.LLVMPY_CreateLLJITCompiler(target_machine, outerr)
+        lljit = ffi.lib.LLVMPY_CreateLLJITCompiler(target_machine,
+                                                   suppress_errors,
+                                                   outerr)
         if not lljit:
             raise RuntimeError(str(outerr))
 
@@ -300,6 +302,7 @@ ffi.lib.LLVMPY_LLJITGetDataLayout.restype = ffi.LLVMTargetDataRef
 
 ffi.lib.LLVMPY_CreateLLJITCompiler.argtypes = [
     ffi.LLVMTargetMachineRef,
+    c_bool,
     POINTER(c_char_p),
 ]
 ffi.lib.LLVMPY_CreateLLJITCompiler.restype = ffi.LLVMOrcLLJITRef
