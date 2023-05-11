@@ -272,7 +272,7 @@ class LLJIT(ffi.ObjectRef):
         self._capi.LLVMPY_LLJITDispose(self)
 
 
-def create_lljit_compiler(target_machine=None,
+def create_lljit_compiler(target_machine=None, *,
                           use_jit_link=False,
                           suppress_errors=False):
     """

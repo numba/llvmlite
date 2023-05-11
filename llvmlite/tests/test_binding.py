@@ -1147,8 +1147,9 @@ class TestOrcLLJIT(BaseTest):
     def jit(self, asm=asm_sum, func_name="sum", target_machine=None,
             add_process=False, func_type=CFUNCTYPE(c_int, c_int, c_int),
             suppress_errors=False):
-        lljit = llvm.create_lljit_compiler(target_machine, False,
-                                           suppress_errors)
+        lljit = llvm.create_lljit_compiler(target_machine,
+                                           use_jit_link=False,
+                                           suppress_errors=suppress_errors)
         builder = llvm.JITLibraryBuilder()
         if add_process:
             builder.add_current_process()
