@@ -5,13 +5,17 @@
 
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/ExecutionEngine/Orc/Core.h"
+#include "llvm/ExecutionEngine/Orc/DebuggerSupportPlugin.h"
 #include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
+#include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
+#include "llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderGDB.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SourceMgr.h"
+
 using namespace llvm;
 using namespace llvm::orc;
 
@@ -53,9 +57,15 @@ extern "C" {
 
 API_EXPORT(std::shared_ptr<LLJIT> *)
 LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
-                           const char **OutError) {
+                           bool useJitLink, const char **OutError) {
     LLJITBuilder builder;
-
+#ifdef _WIN32
+    if (useJitLink) {
+        *OutError = LLVMPY_CreateString(
+            "JITLink is not currently available on Windows");
+        return nullptr;
+    }
+#endif
     if (tm) {
         // The following is based on
         // LLVMOrcJITTargetMachineBuilderCreateFromTargetMachine. However,
@@ -73,9 +83,32 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
                 .setFeatures(template_tm->getTargetFeatureString())
                 .setOptions(template_tm->Options));
     }
-    builder.setObjectLinkingLayerCreator(
-        [&](llvm::orc::ExecutionSession &session, const llvm::Triple &triple)
-            -> std::unique_ptr<llvm::orc::ObjectLayer> {
+    builder.setObjectLinkingLayerCreator([=](llvm::orc::ExecutionSession
+                                                 &session,
+                                             const llvm::Triple &triple)
+                                             -> std::unique_ptr<
+                                                 llvm::orc::ObjectLayer> {
+        if (useJitLink) {
+            auto linkingLayer =
+                std::make_unique<llvm::orc::ObjectLinkingLayer>(session);
+
+            /* TODO(LLVM16): In newer LLVM versions, there is a simple
+             * EnableDebugSupport flag on the builder and we don't need to do
+             * any of this. */
+            if (triple.getObjectFormat() == Triple::ELF ||
+                triple.getObjectFormat() == Triple::MachO) {
+                linkingLayer->addPlugin(
+                    std::make_unique<orc::GDBJITDebugInfoRegistrationPlugin>(
+                        ExecutorAddr::fromPtr(
+                            &llvm_orc_registerJITLoaderGDBWrapper)));
+            }
+            if (triple.isOSBinFormatCOFF()) {
+                linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
+                    true);
+                linkingLayer->setAutoClaimResponsibilityForObjectSymbols(true);
+            }
+            return linkingLayer;
+        } else {
             auto linkingLayer =
                 std::make_unique<llvm::orc::RTDyldObjectLinkingLayer>(
                     session, []() {
@@ -86,10 +119,9 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
                     true);
                 linkingLayer->setAutoClaimResponsibilityForObjectSymbols(true);
             }
-            linkingLayer->registerJITEventListener(
-                *llvm::JITEventListener::createGDBRegistrationListener());
             return linkingLayer;
-        });
+        }
+    });
 
     auto jit = builder.create();
 

@@ -1147,7 +1147,8 @@ class TestOrcLLJIT(BaseTest):
     def jit(self, asm=asm_sum, func_name="sum", target_machine=None,
             add_process=False, func_type=CFUNCTYPE(c_int, c_int, c_int),
             suppress_errors=False):
-        lljit = llvm.create_lljit_compiler(target_machine, suppress_errors)
+        lljit = llvm.create_lljit_compiler(target_machine, False,
+                                           suppress_errors)
         builder = llvm.JITLibraryBuilder()
         if add_process:
             builder.add_current_process()
@@ -1176,6 +1177,14 @@ class TestOrcLLJIT(BaseTest):
         with self.assertRaisesRegex(RuntimeError,
                                     'Symbols not found.*__foobar'):
             lljit.lookup("foo", "__foobar")
+
+    def test_jit_link(self):
+        if sys.platform == "win32":
+            with self.assertRaisesRegex(RuntimeError,
+                                        'JITLink .* Windows'):
+                llvm.create_lljit_compiler(use_jit_link=True)
+        else:
+            self.assertIsNotNone(llvm.create_lljit_compiler(use_jit_link=True))
 
     def test_run_code(self):
         (lljit, rt, cfunc) = self.jit()
