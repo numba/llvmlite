@@ -119,6 +119,9 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
                     true);
                 linkingLayer->setAutoClaimResponsibilityForObjectSymbols(true);
             }
+            linkingLayer->registerJITEventListener(
+                *llvm::JITEventListener::createGDBRegistrationListener());
+
             return linkingLayer;
         }
     });
