@@ -2035,6 +2035,13 @@ class TestArchiveFile(BaseTest):
     """
 
     def test_add_archive(self):
+        # macOS and Python 3.9 on the Anaconda CI has been configured
+        # incorrectly and has an issue with ocating llvm-ar
+        # which is used to create the static library.
+        if sys.platform.startswith('darwin') and sys.version_info.major == 3 \
+                and sys.version_info.minor == 9:
+            self.skipTest()
+
         if not external_compiler_works():
             self.skipTest()
 
