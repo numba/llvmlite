@@ -2040,10 +2040,10 @@ class TestArchiveFile(BaseTest):
         # which is used to create the static library.
         if sys.platform.startswith('darwin') and sys.version_info.major == 3 \
                 and sys.version_info.minor == 9:
-            self.skipTest()
+            self.skipTest("Test fails in bad macOS/python 3.9 environment")
 
         if not external_compiler_works():
-            self.skipTest()
+            self.skipTest("External compiler does not work")
 
         with _gentmpfiles2(".cc") as (f1, f2, temp_dir):
             target_machine = self.target_machine(jit=False)
