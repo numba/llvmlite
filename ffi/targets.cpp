@@ -70,7 +70,8 @@ LLVMPY_GetHostCPUFeatures(const char **Out) {
 
 API_EXPORT(void)
 LLVMPY_GetDefaultTargetTriple(const char **Out) {
-    *Out = LLVMPY_CreateString(llvm::sys::getDefaultTargetTriple().c_str());
+    *Out = LLVMPY_CreateString(
+        llvm::Triple::normalize(llvm::sys::getDefaultTargetTriple()).c_str());
 }
 
 API_EXPORT(void)
