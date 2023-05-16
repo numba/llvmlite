@@ -1,4 +1,5 @@
-from ctypes import c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref
+from ctypes import (c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref,
+                    POINTER)
 from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
@@ -914,3 +915,5 @@ ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 
 ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
                                            c_size_t]
+
+ffi.lib.LLVMPY_DumpRefPruneStats.argtypes = [POINTER(_c_PruneStats), c_bool]
