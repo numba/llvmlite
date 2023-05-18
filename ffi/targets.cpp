@@ -273,7 +273,7 @@ LLVMPY_HasSVMLSupport(void) {
 }
 
 API_EXPORT(void)
-LLVMPY_AddTargetLibraryInfoImpl(const char *TripleStr, LLVMPassManagerRef PM) {
+LLVMPY_AddTargetLibraryInfoPass(LLVMPassManagerRef PM, const char *TripleStr) {
     using namespace llvm;
     unwrap(PM)->add(new TargetLibraryInfoWrapperPass(Triple(TripleStr)));
 }
