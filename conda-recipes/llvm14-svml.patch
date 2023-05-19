@@ -1,3 +1,8 @@
+From 9de32f5474f1f78990b399214bdbb6c21f8f098e Mon Sep 17 00:00:00 2001
+From: Ivan Butygin <ivan.butygin@gmail.com>
+Date: Sun, 24 Jul 2022 20:31:29 +0200
+Subject: [PATCH] Fixes vectorizer and extends SVML support
+
 Fixes vectorizer and extends SVML support
 Patch was updated to fix SVML calling convention issues uncovered by llvm 10.
 In previous versions of patch SVML calling convention was selected based on
