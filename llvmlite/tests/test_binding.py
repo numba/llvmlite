@@ -1946,6 +1946,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_module_debug_info_pass()
         pm.add_refprune_pass()
 
+    @unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
     def test_target_library_info_behavior(self):
         """Test a specific situation that demonstrate TLI is affecting
         optimization. See https://github.com/numba/numba/issues/8898.
