@@ -156,7 +156,8 @@ class CallInstr(Instruction):
         if self.tail:
             tail_marker = "{0} ".format(self.tail)
 
-        buf.append("{tail}{op}{fastmath} {callee}({args}){attr}{tags}{meta}\n".format(
+        msg = "{tail}{op}{fastmath} {callee}({args}){attr}{tags}{meta}\n"
+        buf.append(msg.format(
             tail=tail_marker,
             op=self.opname,
             fastmath=''.join([" " + attr for attr in self.fastmath]),
@@ -526,6 +527,7 @@ class AllocaInstr(Instruction):
 
     def get_decl(self):
         return '{0} %"{1}"'.format(self.type, self._get_name())
+
 
 class GEPInstr(Instruction):
     def __init__(self, parent, ptr, indices, inbounds, name):
