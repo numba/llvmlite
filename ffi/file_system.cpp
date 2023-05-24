@@ -11,19 +11,17 @@
 extern "C" {
 
 API_EXPORT(uint64_t)
-LLVMPY_GetDeviceForFile(const char *path)
-{
-  llvm::sys::fs::UniqueID ID;
-  llvm::sys::fs::getUniqueID(path, ID);
-  return ID.getDevice();
+LLVMPY_GetDeviceForFile(const char *path) {
+    llvm::sys::fs::UniqueID ID;
+    llvm::sys::fs::getUniqueID(path, ID);
+    return ID.getDevice();
 }
 
 API_EXPORT(uint64_t)
-LLVMPY_GetFileIdForFile(const char *path)
-{
-  llvm::sys::fs::UniqueID ID;
-  llvm::sys::fs::getUniqueID(path, ID);
-  return ID.getFile();
+LLVMPY_GetFileIdForFile(const char *path) {
+    llvm::sys::fs::UniqueID ID;
+    llvm::sys::fs::getUniqueID(path, ID);
+    return ID.getFile();
 }
 
 } // end extern C
