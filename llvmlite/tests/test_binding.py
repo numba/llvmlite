@@ -2023,8 +2023,8 @@ class TestObjectFile(BaseTest):
 # Although the llvm libraries does not recognize the library
 # format, it  is recognized by the Windows dumpbin command.
 # so this appears to be a bug in the llvm libraries
-@unittest.skipIf(sys.platform.startswith('win32'),
-                 "Windows and LLVM static library issues")
+#@unittest.skipIf(sys.platform.startswith('win32'),
+#                 "Windows and LLVM static library issues")
 class TestArchiveFile(BaseTest):
     mod_archive_asm = """
         ;ModuleID = <string>
