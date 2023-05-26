@@ -1020,18 +1020,30 @@ class Function(GlobalValue):
 
 
 class ArgumentAttributes(AttributeSet):
-    _known = MappingProxyType({'byval': True,
-                               'inalloca': False,
-                               'inreg': False,
-                               'nest': False,
-                               'noalias': False,
-                               'nocapture': False,
-                               'nonnull': False,
-                               'returned': False,
-                               'signext': False,
-                               'sret': True,
-                               'zeroext': False
-                               })
+    # List from
+    # https://releases.llvm.org/14.0.0/docs/LangRef.html#parameter-attributes
+    _known = MappingProxyType({
+        'byref': True,
+        'byval': True,
+        'elementtype': True,
+        'immarg': False,
+        'inalloca': True,
+        'inreg': False,
+        'nest': False,
+        'noalias': False,
+        'nocapture': False,
+        'nofree': False,
+        'nonnull': False,
+        'noundef': False,
+        'preallocated': True,
+        'returned': False,
+        'signext': False,
+        'sret': True,
+        'swiftasync': False,
+        'swifterror': False,
+        'swiftself': False,
+        'zeroext': False,
+    })
 
     def __init__(self, args=()):
         self._align = 0

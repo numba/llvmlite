@@ -1787,7 +1787,7 @@ insert_block:
             str(raises.exception))
 
     def test_arg_attributes(self):
-        def gen_code():
+        def gen_code(attr_name):
             fnty = ir.FunctionType(ir.IntType(32), [ir.IntType(32).as_pointer(),
                                                     ir.IntType(32)])
             module = ir.Module()
@@ -1809,7 +1809,7 @@ insert_block:
             accum = builder.phi(ir.IntType(32))
             accum.add_incoming(ir.Constant(accum.type, 0), bb_entry)
 
-            func.args[0].add_attribute('byval')
+            func.args[0].add_attribute(attr_name)
             ptr = builder.gep(func.args[0], [index])
             value = builder.load(ptr)
 
@@ -1827,8 +1827,30 @@ insert_block:
 
             return str(module)
 
-        # If this parses, we emitted the right byval attribute format
-        llvm.parse_assembly(gen_code())
+        for attr_name in (
+            'byref',
+            'byval',
+            'elementtype',
+            'immarg',
+            'inalloca',
+            'inreg',
+            'nest',
+            'noalias',
+            'nocapture',
+            'nofree',
+            'nonnull',
+            'noundef',
+            'preallocated',
+            'returned',
+            'signext',
+            'swiftasync',
+            'swifterror',
+            'swiftself',
+            'zeroext',
+        ):
+            # If this parses, we emitted the right byval attribute format
+            llvm.parse_assembly(gen_code(attr_name))
+        # sret doesn't fit this pattern and is tested in test_call_attributes
 
 
 class TestBuilderMisc(TestBase):
