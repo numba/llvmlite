@@ -124,6 +124,7 @@ class CallInstr(Instruction):
         if newfunc.function_type != self.callee.function_type:
             raise TypeError("New function has incompatible type")
         self.callee = newfunc
+        self._clear_string_cache()
 
     @property
     def called_function(self):

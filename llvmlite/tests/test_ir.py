@@ -2621,8 +2621,10 @@ class TestTransforms(TestBase):
         builder.position_at_end(foo.append_basic_block())
         call = builder.call(foo, ())
         self.assertEqual(call.callee, foo)
+        self.assertIn("call void @\"foo\"()", str(mod))
         modified = ir.replace_all_calls(mod, foo, bar)
         self.assertIn(call, modified)
+        self.assertNotIn("call void @\"foo\"()", str(mod))
         self.assertNotEqual(call.callee, foo)
         self.assertEqual(call.callee, bar)
 
