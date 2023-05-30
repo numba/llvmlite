@@ -1225,6 +1225,7 @@ my_block:
         builder = ir.IRBuilder(block)
         bb_1 = builder.function.append_basic_block(name='b_1')
         bb_2 = builder.function.append_basic_block(name='b_2')
+        bb_3 = builder.function.append_basic_block(name='b_3')
         indirectbr = builder.branch_indirect(
             ir.BlockAddress(builder.function, bb_1))
         indirectbr.add_destination(bb_1)
@@ -1233,6 +1234,11 @@ my_block:
         self.check_block(block, """\
             my_block:
                 indirectbr i8* blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2"]
+            """)  # noqa E501
+        indirectbr.add_destination(bb_3)
+        self.check_block(block, """\
+            my_block:
+                indirectbr i8* blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2", label %"b_3"]
             """)  # noqa E501
 
     def test_returns(self):

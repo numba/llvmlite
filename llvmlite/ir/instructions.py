@@ -262,6 +262,7 @@ class IndirectBranch(PredictableInstr, Terminator):
     def add_destination(self, block):
         assert isinstance(block, Block)
         self.destinations.append(block)
+        self._clear_string_cache()
 
     def descr(self, buf):
         destinations = ["label {0}".format(blk.get_reference())
