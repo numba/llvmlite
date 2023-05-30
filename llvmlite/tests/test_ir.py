@@ -1288,6 +1288,7 @@ my_block:
         bb_onzero = builder.function.append_basic_block(name='onzero')
         bb_onone = builder.function.append_basic_block(name='onone')
         bb_ontwo = builder.function.append_basic_block(name='ontwo')
+        bb_onfour = builder.function.append_basic_block(name='onfour')
         bb_else = builder.function.append_basic_block(name='otherwise')
         sw = builder.switch(a, bb_else)
         sw.add_case(ir.Constant(int32, 0), bb_onzero)
@@ -1298,6 +1299,11 @@ my_block:
         self.check_block(block, """\
             my_block:
                 switch i32 %".1", label %"otherwise" [i32 0, label %"onzero" i32 1, label %"onone" i32 2, label %"ontwo"]
+            """)  # noqa E501
+        sw.add_case(ir.Constant(int32, 4), bb_onfour)
+        self.check_block(block, """\
+            my_block:
+                switch i32 %".1", label %"otherwise" [i32 0, label %"onzero" i32 1, label %"onone" i32 2, label %"ontwo" i32 4, label %"onfour"]
             """)  # noqa E501
 
     def test_call(self):

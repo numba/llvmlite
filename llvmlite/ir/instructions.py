@@ -291,6 +291,7 @@ class SwitchInstr(PredictableInstr, Terminator):
         if not isinstance(val, Value):
             val = Constant(self.value.type, val)
         self.cases.append((val, block))
+        self._clear_string_cache()
 
     def descr(self, buf):
         cases = ["{0} {1}, label {2}".format(val.type, val.get_reference(),
