@@ -1209,6 +1209,7 @@ my_block:
         bb_true = builder.function.append_basic_block(name='b_true')
         bb_false = builder.function.append_basic_block(name='b_false')
         br = builder.cbranch(ir.Constant(int1, False), bb_true, bb_false)
+        self.assertNotIn('branch_weights', str(br))
         br.set_weights([5, 42])
         self.assertTrue(block.is_terminated)
         self.check_block(block, """\

@@ -215,6 +215,7 @@ class PredictableInstr(Instruction):
             operands.append(Constant(types.IntType(32), w))
         md = self.module.add_metadata(operands)
         self.set_metadata("prof", md)
+        self._clear_string_cache()
 
 
 class Ret(Terminator):
