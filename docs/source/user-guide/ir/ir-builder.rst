@@ -517,7 +517,7 @@ Function call
 ---------------
 
 .. method:: IRBuilder.call(fn, args, name='', cconv=None, tail=None, \
-   fastmath=(), attrs=(), arg_attrs=None)
+   fastmath=(), attrs=(), arg_attrs=None, tags=None)
 
    Call function *fn* with arguments *args*, a sequence of values.
 
@@ -548,6 +548,10 @@ Function call
      the attributes to attach to the respective argument at this call site.
      If an index is not present in the dictionary, or *arg_attrs* is missing
      entirely, no attributes are emitted for the given argument.
+   * *tags* is a string containing an LLVM operand bundle to
+     associate with this call.
+     For more information about operand bundles, see the
+     `official LLVM documentation <http://llvm.org/docs/LangRef.html#operand-bundles>`_.
 
      If some attributes, such as ``sret``, are specified at the function
      declaration, they must also be specified at each call site for
