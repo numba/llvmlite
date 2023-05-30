@@ -943,9 +943,10 @@ my_block:
     def test_phi(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
+        a, b, c = builder.function.args[:3]
         bb2 = builder.function.append_basic_block('b2')
         bb3 = builder.function.append_basic_block('b3')
+        bb4 = builder.function.append_basic_block('b4')
         phi = builder.phi(int32, 'my_phi', flags=('fast',))
         phi.add_incoming(a, bb2)
         phi.add_incoming(b, bb3)
@@ -953,6 +954,16 @@ my_block:
         self.check_block(block, """\
             my_block:
                 %"my_phi" = phi fast i32 [%".1", %"b2"], [%".2", %"b3"]
+            """)
+        phi.add_incoming(a, bb4)
+        self.check_block(block, """\
+            my_block:
+                %"my_phi" = phi fast i32 [%".1", %"b2"], [%".2", %"b3"], [%".1", %"b4"]
+            """)
+        phi.replace_usage(a, c)
+        self.check_block(block, """\
+            my_block:
+                %"my_phi" = phi fast i32 [%".3", %"b2"], [%".2", %"b3"], [%".3", %"b4"]
             """)
 
     def test_mem_ops(self):
