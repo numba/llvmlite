@@ -959,12 +959,12 @@ my_block:
         self.check_block(block, """\
             my_block:
                 %"my_phi" = phi fast i32 [%".1", %"b2"], [%".2", %"b3"], [%".1", %"b4"]
-            """)
+            """)  # noqa E501
         phi.replace_usage(a, c)
         self.check_block(block, """\
             my_block:
                 %"my_phi" = phi fast i32 [%".3", %"b2"], [%".2", %"b3"], [%".3", %"b4"]
-            """)
+            """)  # noqa E501
 
     def test_mem_ops(self):
         block = self.block(name='my_block')
@@ -1485,11 +1485,11 @@ my_block:
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         lp = builder.landingpad(ir.LiteralStructType([int32,
-                                                      int8.as_pointer()]), 
-                                                      cleanup=True,
-                                                      name= 'lp')
+                                                      int8.as_pointer()]),
+                                cleanup=True, name='lp')
         int_typeinfo = ir.GlobalVariable(builder.function.module,
-                                         int8.as_pointer(), "_ZTIi")
+                                         int8.as_pointer(),
+                                         "_ZTIi")
         int_typeinfo.global_constant = True
         lp.add_clause(ir.CatchClause(int_typeinfo))
         lp.add_clause(ir.FilterClause(ir.Constant(ir.ArrayType(
@@ -1503,7 +1503,7 @@ my_block:
                 resume {i32, i8*} %"lp"
             """)
         d_typeinfo = ir.GlobalVariable(builder.function.module,
-                                         int8.as_pointer(), "_ZTId")
+                                       int8.as_pointer(), "_ZTId")
         d_typeinfo.global_constant = True
         lp.add_clause(ir.CatchClause(d_typeinfo))
         self.check_block(block, """\
@@ -1514,7 +1514,6 @@ my_block:
                     catch i8** @"_ZTId"
                 resume {i32, i8*} %"lp"
             """)
-        
 
     def test_assume(self):
         block = self.block(name='my_block')
