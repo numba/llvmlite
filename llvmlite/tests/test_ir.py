@@ -1485,7 +1485,9 @@ my_block:
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         lp = builder.landingpad(ir.LiteralStructType([int32,
-                                                      int8.as_pointer()]), 'lp')
+                                                      int8.as_pointer()]), 
+                                                      cleanup=True,
+                                                      name= 'lp')
         int_typeinfo = ir.GlobalVariable(builder.function.module,
                                          int8.as_pointer(), "_ZTIi")
         int_typeinfo.global_constant = True
@@ -1495,11 +1497,24 @@ my_block:
         builder.resume(lp)
         self.check_block(block, """\
             my_block:
-                %"lp" = landingpad {i32, i8*}
+                %"lp" = landingpad {i32, i8*} cleanup
                     catch i8** @"_ZTIi"
                     filter [1 x i8**] [i8** @"_ZTIi"]
                 resume {i32, i8*} %"lp"
             """)
+        d_typeinfo = ir.GlobalVariable(builder.function.module,
+                                         int8.as_pointer(), "_ZTId")
+        d_typeinfo.global_constant = True
+        lp.add_clause(ir.CatchClause(d_typeinfo))
+        self.check_block(block, """\
+            my_block:
+                %"lp" = landingpad {i32, i8*} cleanup
+                    catch i8** @"_ZTIi"
+                    filter [1 x i8**] [i8** @"_ZTIi"]
+                    catch i8** @"_ZTId"
+                resume {i32, i8*} %"lp"
+            """)
+        
 
     def test_assume(self):
         block = self.block(name='my_block')

@@ -835,6 +835,7 @@ class LandingPadInstr(Instruction):
     def add_clause(self, clause):
         assert isinstance(clause, _LandingPadClause)
         self.clauses.append(clause)
+        self._clear_string_cache()
 
     def descr(self, buf):
         fmt = "landingpad {type}{cleanup}{clauses}\n"
