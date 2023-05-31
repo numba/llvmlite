@@ -198,3 +198,17 @@ Other types
 
    NOTE: This class was previously called "MetaData," but it was
    renamed for clarity.
+
+
+.. class:: TokenType
+
+   The type for tokens which, from the LLVM language reference, are used
+   when a value is associated with an instruction but all uses of the
+   value must not attempt to introspect or obscure it.  One use of this
+   is to associate matching pseudo-calls that demarcate a region of code.
+
+   EXAMPLE::
+
+      token_type = ir.TokenType()
+      start_region_fnty = ir.FunctionType(token_type, (...))
+      end_region_fnty = ir.FunctionType(ir.Type.void(), (token_type,))

@@ -162,6 +162,26 @@ class VoidType(Type):
         return hash(VoidType)
 
 
+class TokenType(Type):
+    """
+    The type for tokens.  From the LLVM Language Reference.
+
+      'The token type is used when a value is associated with an
+       instruction but all uses of the value must not attempt to
+       introspect or obscure it. As such, it is not appropriate
+       to have a phi or select of type token.'
+    """
+
+    def _to_string(self):
+        return 'token'
+
+    def __eq__(self, other):
+        return isinstance(other, TokenType)
+
+    def __hash__(self):
+        return hash(TokenType)
+
+
 class FunctionType(Type):
     """
     The type for functions.
