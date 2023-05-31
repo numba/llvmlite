@@ -872,7 +872,7 @@ class AttributeSet(set):
         return super(AttributeSet, self).add(name)
 
     def _to_list(self, typ):
-        return list(map(lambda a: self._expand(a, typ), iter(sorted(self))))
+        return [self._expand(i, typ) for i in sorted(self)]
 
 
 class FunctionAttributes(AttributeSet):
