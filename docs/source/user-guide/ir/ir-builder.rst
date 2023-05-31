@@ -686,7 +686,7 @@ Inline assembler
      * *name* is the optional name of the returned LLVM value.
 
      For more information about these parameters, see the
-     `official LLVM documentation <http://llvm.org/docs/LangRef.html#inline-asm-constraint-string>`_.
+     `LLVM operand bundle documentation <http://llvm.org/docs/LangRef.html#inline-asm-constraint-string>`_.
 
      EXAMPLE: Adding 2 64-bit values on x86::
 
