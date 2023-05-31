@@ -720,6 +720,11 @@ class TestMisc(BaseTest):
         cmdargs = [sys.executable, flags, "-c", code]
         subprocess.check_call(cmdargs)
 
+    def test_getDeviceForFile(self):
+        self.assertTrue(llvm.getDeviceForFile(__file__) != 0)
+
+    def test_getFileIdForFile(self):
+        self.assertTrue(llvm.getFileIdForFile(__file__) != 0)
 
 class TestModuleRef(BaseTest):
 
