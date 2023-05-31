@@ -726,6 +726,7 @@ class TestMisc(BaseTest):
     def test_getFileIdForFile(self):
         self.assertTrue(llvm.getFileIdForFile(__file__) != 0)
 
+
 class TestModuleRef(BaseTest):
 
     def test_str(self):
