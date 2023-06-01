@@ -1827,10 +1827,14 @@ insert_block:
 
             return str(module)
 
+        llvm_major = llvm.llvm_version_info[0]
+        if llvm_major >= 14:
+            supplemental = ('byref', 'swiftasync', 'elementtype')
+        else:
+            supplemental = ()
+
         for attr_name in (
-            'byref',
             'byval',
-            'elementtype',
             'immarg',
             'inalloca',
             'inreg',
@@ -1843,11 +1847,10 @@ insert_block:
             'preallocated',
             'returned',
             'signext',
-            'swiftasync',
             'swifterror',
             'swiftself',
             'zeroext',
-        ):
+        ) + supplemental:
             # If this parses, we emitted the right byval attribute format
             llvm.parse_assembly(gen_code(attr_name))
         # sret doesn't fit this pattern and is tested in test_call_attributes

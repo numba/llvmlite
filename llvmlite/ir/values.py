@@ -858,6 +858,7 @@ class AttributeSet(set):
     _known = ()
 
     def __init__(self, args=()):
+        super().__init__()
         if isinstance(args, str):
             args = [args]
         for name in args:
@@ -869,7 +870,11 @@ class AttributeSet(set):
     def add(self, name):
         if name not in self._known:
             raise ValueError('unknown attr {!r} for {}'.format(name, self))
+        self._validate_add(name)
         return super(AttributeSet, self).add(name)
+
+    def _validate_add(self, name):
+        pass
 
     def _to_list(self, typ):
         return [self._expand(i, typ) for i in sorted(self)]
@@ -1023,26 +1028,30 @@ class ArgumentAttributes(AttributeSet):
     # List from
     # https://releases.llvm.org/14.0.0/docs/LangRef.html#parameter-attributes
     _known = MappingProxyType({
-        'byref': True,
-        'byval': True,
-        'elementtype': True,
-        'immarg': False,
-        'inalloca': True,
-        'inreg': False,
-        'nest': False,
-        'noalias': False,
-        'nocapture': False,
-        'nofree': False,
-        'nonnull': False,
-        'noundef': False,
-        'preallocated': True,
-        'returned': False,
-        'signext': False,
-        'sret': True,
-        'swiftasync': False,
-        'swifterror': False,
-        'swiftself': False,
-        'zeroext': False,
+        # Each tuple is LLVM 11 vs 14 behaviour:
+        # None (unsupported),
+        # True (emit type),
+        # False (emit name only)
+        'byref': (None, True),
+        'byval': (True, True),
+        'elementtype': (None, True),
+        'immarg': (False, False),
+        'inalloca': (False, True),
+        'inreg': (False, False),
+        'nest': (False, False),
+        'noalias': (False, False),
+        'nocapture': (False, False),
+        'nofree': (False, False),
+        'nonnull': (False, False),
+        'noundef': (False, False),
+        'preallocated': (True, True),
+        'returned': (False, False),
+        'signext': (False, False),
+        'sret': (False, True),
+        'swiftasync': (None, False),
+        'swifterror': (False, False),
+        'swiftself': (False, False),
+        'zeroext': (False, False),
     })
 
     def __init__(self, args=()):
@@ -1051,10 +1060,19 @@ class ArgumentAttributes(AttributeSet):
         self._dereferenceable_or_null = 0
         super(ArgumentAttributes, self).__init__(args)
 
+    def _validate_add(self, name):
+        import llvmlite.binding
+        llvm_major = llvmlite.binding.llvm_version_info[0]
+        requires_type = self._known.get(name)[llvm_major >= 14]
+        if requires_type is None:
+            raise ValueError(
+                f"Attribute {name} is not supported on current LLVM version")
+
     def _expand(self, name, typ):
         import llvmlite.binding
-        if (llvmlite.binding.llvm_version_info[0] >= 14 and
-                self._known.get(name)):
+        llvm_major = llvmlite.binding.llvm_version_info[0]
+        requires_type = self._known.get(name)[llvm_major >= 14]
+        if requires_type:
             return f"{name}({typ.pointee})"
         else:
             return name
