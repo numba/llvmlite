@@ -2078,7 +2078,7 @@ class TestArchiveFile(BaseTest):
         if not external_compiler_works():
             self.skipTest("External compiler does not work")
 
-        with _gentmpfiles2(".cc") as (f1, f2, temp_dir):
+        with _gentmpfiles2(".c") as (f1, f2, temp_dir):
             target_machine = self.target_machine(jit=False)
 
             jit = llvm.create_mcjit_compiler(
@@ -2089,12 +2089,10 @@ class TestArchiveFile(BaseTest):
             c = new_compiler()
             customize_compiler(c)
 
-            code1 = "extern \"C\" {" \
-                    "int multiply_accumulate(int a, int b, int c) " \
-                    "{return (a * b) + c;}}"
-            code2 = "extern \"C\" {" \
-                    "int multiply_subtract(int a, int b, int c) " \
-                    "{return (a * b) - c;}}"
+            code1 = "int multiply_accumulate(int a, int b, int c) " \
+                    "{return (a * b) + c;}"
+            code2 = "int multiply_subtract(int a, int b, int c) " \
+                    "{return (a * b) - c;}"
 
             f1.write(code1)
             f2.write(code2)
@@ -2103,14 +2101,10 @@ class TestArchiveFile(BaseTest):
             f1.close()
             f2.close()
 
-            if sys.platform.startswith('win32'):
-                objects = self.windows_compile([f1.name, f2.name], temp_dir)
-            else:
-                objects = c.compile([f1.name, f2.name], output_dir=temp_dir)
+            objects = c.compile([f1.name, f2.name], output_dir=temp_dir)
 
             library_name = "foo"
-            c.create_static_lib(objects, library_name, output_dir=temp_dir,
-                                target_lang="c++")
+            c.create_static_lib(objects, library_name, output_dir=temp_dir)
 
             platform_library_name = c.library_filename(library_name)
             static_library_name = os.path.join(temp_dir,
@@ -2118,19 +2112,12 @@ class TestArchiveFile(BaseTest):
 
             jit.add_archive(static_library_name)
 
-            if sys.platform.startswith('win32'):
-                prefix = '_'
-            else:
-                prefix = ''
-
-            mac_func_name = prefix + 'multiply_accumulate'
-            msub_func_name = prefix + 'multiply_subtract'
-            mac_func_addr = jit.get_function_address(mac_func_name)
+            mac_func_addr = jit.get_function_address('multiply_accumulate')
             self.assertTrue(mac_func_addr)
 
             mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(mac_func_addr)
 
-            msub_func_addr = jit.get_function_address(msub_func_name)
+            msub_func_addr = jit.get_function_address('multiply_subtract')
             self.assertTrue(msub_func_addr)
 
             msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(msub_func_addr)
