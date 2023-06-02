@@ -2034,39 +2034,6 @@ class TestArchiveFile(BaseTest):
         declare i32 @multiply_subtract(i32 %0, i32 %1, i32 %2)
     """
 
-    def windows_compile(self, source_files_paths, output_dir):
-        # Initialize an empty list to hold object files
-        obj_files = []
-
-        for source_file_path in source_files_paths:
-            # Define the name of the output
-            basename = os.path.basename(source_file_path)
-            output_file_name = os.path.join(output_dir,
-                                            basename.replace('.cc', '.obj'))
-
-            # Define the command as a string
-            command = (
-                f'cl /c /O2 /W3 /MD /DNDEBUG '
-                f'/Fo:{output_file_name} '
-                f'{source_file_path}'
-            )
-
-            # Use subprocess to execute the command
-            try:
-                output = subprocess.check_output(command,
-                                                 stderr=subprocess.STDOUT,
-                                                 shell=True)
-                print(f'Success: {output.decode()}')
-            except subprocess.CalledProcessError as e:
-                print(f'Error occurred: {e.output.decode()}')
-
-            # Add the output file to the list if it was created
-            if os.path.exists(output_file_name):
-                obj_files.append(output_file_name)
-
-        # Return the list of object files
-        return obj_files
-
     def test_add_archive(self):
         # macOS and Python 3.9 on the Anaconda CI has been configured
         # incorrectly and has an issue with ocating llvm-ar
@@ -2101,7 +2068,8 @@ class TestArchiveFile(BaseTest):
             f1.close()
             f2.close()
 
-            objects = c.compile([f1.name, f2.name], output_dir=temp_dir, debug=True)
+            objects = c.compile([f1.name, f2.name], output_dir=temp_dir,
+                                debug=True)
 
             library_name = "foo"
             c.create_static_lib(objects, library_name, output_dir=temp_dir)
