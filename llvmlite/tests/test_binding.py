@@ -2101,7 +2101,7 @@ class TestArchiveFile(BaseTest):
             f1.close()
             f2.close()
 
-            objects = c.compile([f1.name, f2.name], output_dir=temp_dir)
+            objects = c.compile([f1.name, f2.name], output_dir=temp_dir, debug=True)
 
             library_name = "foo"
             c.create_static_lib(objects, library_name, output_dir=temp_dir)
