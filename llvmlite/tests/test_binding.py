@@ -576,15 +576,22 @@ class TestMisc(BaseTest):
         self.assertTrue(triple)
 
     def test_get_process_triple(self):
+        # Sometimes we get synonyms for PPC
+        def normalize_ppc(arch):
+            if arch == 'powerpc64le':
+                return 'ppc64le'
+            else:
+                return arch
+
         triple = llvm.get_process_triple()
         default = llvm.get_default_triple()
         self.assertIsInstance(triple, str)
         self.assertTrue(triple)
 
-        default_parts = default.split('-')
-        triple_parts = triple.split('-')
+        default_arch = normalize_ppc(default.split('-')[0])
+        triple_arch = normalize_ppc(triple.split('-')[0])
         # Arch must be equal
-        self.assertEqual(default_parts[0], triple_parts[0])
+        self.assertEqual(default_arch, triple_arch)
 
     def test_get_host_cpu_features(self):
         features = llvm.get_host_cpu_features()
