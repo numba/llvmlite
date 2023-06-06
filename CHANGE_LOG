@@ -1,3 +1,18 @@
+v0.40.1 (June 8, 2023)
+----------------------
+
+Pull-Requests:
+
+* PR `#945 <https://github.com/numba/llvmlite/pull/945>`_: Fix #944. Add `.argtypes` to prevent errors in pypy. (`Siu Kwan Lam <https://github.com/sklam>`_)
+* PR `#947 <https://github.com/numba/llvmlite/pull/947>`_: Update SVML patch for LLVM 14 (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#949 <https://github.com/numba/llvmlite/pull/949>`_: Handle PowerPC synonyms (`Andre Masella <https://github.com/apmasell>`_)
+* PR `#950 <https://github.com/numba/llvmlite/pull/950>`_: Fix incorrect `byval` and other attributes on LLVM 14 (`Andre Masella <https://github.com/apmasell>`_)
+
+Authors:
+
+* `Andre Masella <https://github.com/apmasell>`_
+* `Siu Kwan Lam <https://github.com/sklam>`_
+
 v0.40.0 (May 1, 2023)
 ---------------------
 
