@@ -5,12 +5,8 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Type.h"
-#include "llvm/Support/Host.h"
-#if LLVM_VERSION_MAJOR > 13
 #include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
+#include "llvm/Support/Host.h"
 #include "llvm/Target/TargetMachine.h"
 
 #include <cstdio>
@@ -192,11 +188,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
         rm = Reloc::DynamicNoPIC;
 
     TargetOptions opt;
-#if LLVM_VERSION_MAJOR < 12
-    opt.PrintMachineCode = PrintMC;
-#else
     opt.MCOptions.ShowMCInst = PrintMC;
-#endif
     opt.MCOptions.ABIName = ABIName;
 
     bool jit = JIT;

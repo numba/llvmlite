@@ -16,9 +16,8 @@ set BUILD_CONFIG=Release
 REM === Configure step ===
 
 REM allow setting the targets to build as an environment variable
-REM default is LLVM 11 default architectures + RISCV.  Can remove this entire option in LLVM 13
 if "%LLVM_TARGETS_TO_BUILD%"=="" (
-    set "LLVM_TARGETS_TO_BUILD=host;AArch64;AMDGPU;ARM;BPF;Hexagon;Mips;MSP430;NVPTX;PowerPC;Sparc;SystemZ;X86;XCore;RISCV"
+    set "LLVM_TARGETS_TO_BUILD=all"
 )
 if "%ARCH%"=="32" (
     set "ARCH_POSTFIX="

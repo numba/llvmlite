@@ -217,11 +217,7 @@ LLVMPY_AddLazyValueInfoPass(LLVMPassManagerRef PM) {
 }
 API_EXPORT(void)
 LLVMPY_AddLintPass(LLVMPassManagerRef PM) {
-#if LLVM_VERSION_MAJOR < 12
-    unwrap(PM)->add(llvm::createLintPass());
-#else
     unwrap(PM)->add(llvm::createLintLegacyPassPass());
-#endif
 }
 API_EXPORT(void)
 LLVMPY_AddModuleDebugInfoPrinterPass(LLVMPassManagerRef PM) {
