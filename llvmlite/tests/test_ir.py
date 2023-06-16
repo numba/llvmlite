@@ -1604,6 +1604,19 @@ insert_block:
                 ret void
             """)
 
+    def test_comment(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        with self.assertRaises(AssertionError):
+            builder.comment("so\nmany\nlines")
+        builder.comment("yo!")
+        builder.ret_void()
+        self.check_block(block, """\
+            my_block:
+                ; yo!
+                ret void
+            """)
+
     def test_bswap(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)

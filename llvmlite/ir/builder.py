@@ -1045,6 +1045,14 @@ class IRBuilder(object):
         self._insert(inst)
         return inst
 
+    def comment(self, text):
+        """
+        Adds a comment to the source file.
+        """
+        inst = instructions.Comment(self.block, text)
+        self._insert(inst)
+        return inst
+
     @_uniop_intrinsic_int("llvm.bswap")
     def bswap(self, cond):
         """

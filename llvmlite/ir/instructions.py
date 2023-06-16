@@ -876,3 +876,18 @@ class Fence(Instruction):
         buf.append(fmt.format(syncscope=syncscope,
                               ordering=self.ordering,
                               ))
+
+
+class Comment(Instruction):
+    """
+    A line comment.
+    """
+
+    def __init__(self, parent, text):
+        super(Comment, self).__init__(parent, types.VoidType(), ";", (),
+                                      name='')
+        assert "\n" not in text, "Comment cannot contain new line"
+        self.text = text
+
+    def descr(self, buf):
+        buf.append(f"; {self.text}")
