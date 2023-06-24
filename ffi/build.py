@@ -213,7 +213,8 @@ def main_posix(kind, library_ext):
 def main():
     if sys.platform == 'win32':
         main_windows()
-    elif sys.platform.startswith('linux'):
+    elif sys.platform.startswith(('linux', 'gnu')):
+        # Linux and GNU-based OSes (e.g. GNU/Hurd), using the same Makefile
         main_posix('linux', '.so')
     elif sys.platform.startswith(('freebsd','openbsd')):
         main_posix('freebsd', '.so')
