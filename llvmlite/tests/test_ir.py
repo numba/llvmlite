@@ -1608,12 +1608,12 @@ insert_block:
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         with self.assertRaises(AssertionError):
-            builder.comment("so\nmany\nlines")
-        builder.comment("yo!")
+            builder.comment("so\nmany lines")
+        builder.comment("my comment")
         builder.ret_void()
         self.check_block(block, """\
             my_block:
-                ; yo!
+                ; my comment
                 ret void
             """)
 
