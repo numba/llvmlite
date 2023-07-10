@@ -20,7 +20,7 @@ build_dir = os.path.join(here_dir, 'build')
 target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 
 is_64bit = sys.maxsize >= 2**32
-lld_libs = "-llldCommon -llldCore -llldELF -llldReaderWriter -llldWasm -llldYAML"
+lld_libs = "-llldCommon -llldELF -llldWasm"
 
 
 def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
