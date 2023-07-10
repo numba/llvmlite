@@ -10,10 +10,13 @@ labels: task
 ## llvmlite X.Y.Z
 
 * [ ] Merge to `main`.
-    - [ ] "remaining Pull-Requests from milestone".
-* [ ] Merge change log changes.
-    - [ ] "PR with changelog entries".
+    * [ ] "remaining Pull-Requests from milestone".
 * [ ] Create X.Y release branch `releaseX.Y`
+    * [ ] Update `CHANGE_LOG` in a PR targeting the release branch.
+* [ ] Get the change-log-PR reviewed and merged.
+* [ ] Test `HEAD` of release branch on buildfarm (pre-tag testing):
+    * [ ] conda package build and test.
+    * [ ] wheel build.
 * [ ] Annotated tag `vX.Y.Zrc1` on release branch (`llvmlite` tags DO have a `v` prefix).
 * [ ] Build and upload conda packages on buildfarm (check "upload").
 * [ ] Build wheels and sdist on the buildfarm (check "upload").
@@ -22,11 +25,12 @@ labels: task
 * [ ] Verify wheels for all platforms arrived on PyPi.
 * [ ] Initialize and verify ReadTheDocs build.
 * [ ] Send RC announcement email / post announcement to discourse group.
-* [ ] Post link to Twitter.
+* [ ] Post link to Twitter and Mastodon and anywhere else that is appropriate.
 
 ### Post Release:
 
-* [ ] Clean up `ci_artifacts`.
+* [ ] Cherry-pick changes to the `CHANGE_LOG` to `main`
+* [ ] Clean up `ci_artifacts` by moving files to subdirectories
 * [ ] Tag X.Y+1.0dev0 to start new development cycle on `main`.
 * [ ] Update release checklist template with any additional bullet points that
       may have arisen during the release.

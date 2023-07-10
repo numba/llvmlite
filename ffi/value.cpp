@@ -153,8 +153,8 @@ LLVMPY_ArgumentAttributesIter(LLVMValueRef A) {
     using namespace llvm;
     Argument *arg = unwrap<Argument>(A);
     unsigned argno = arg->getArgNo();
-    AttributeSet attrs =
-        arg->getParent()->getAttributes().getParamAttributes(argno);
+    const AttributeSet attrs =
+        arg->getParent()->getAttributes().getParamAttrs(argno);
     return wrap(new AttributeSetIterator(attrs.begin(), attrs.end()));
 }
 
@@ -353,7 +353,7 @@ LLVMPY_GetElementType(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
     llvm::PointerType *ty = llvm::dyn_cast<llvm::PointerType>(unwrapped);
     if (ty != nullptr) {
-        return llvm::wrap(ty->getElementType());
+        return llvm::wrap(ty->getPointerElementType());
     }
     return nullptr;
 }

@@ -15,6 +15,9 @@ jobs:
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
+      py311:
+        PYTHON: '3.11'
+        CONDA_ENV: cienv
 
 
   steps:
@@ -31,7 +34,7 @@ jobs:
         call conda remove --all -q -y -n %CONDA_ENV%
         call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
         call activate %CONDA_ENV%
-        call conda install -y -q -c numba llvmdev="11.*"
+        call conda install -y -q -c numba/label/dev llvmdev="14.*" libxml2
       displayName: 'Before Install'
 
     - script: |

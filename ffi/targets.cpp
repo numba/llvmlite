@@ -5,8 +5,8 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Type.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/Host.h"
-#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetMachine.h"
 
 #include <cstdio>
@@ -14,14 +14,6 @@
 #include <sstream>
 
 namespace llvm {
-
-inline LLVMTargetLibraryInfoRef wrap(TargetLibraryInfo *TLI) {
-    return reinterpret_cast<LLVMTargetLibraryInfoRef>(TLI);
-}
-
-inline TargetLibraryInfo *unwrap(LLVMTargetLibraryInfoRef TLI) {
-    return reinterpret_cast<TargetLibraryInfo *>(TLI);
-}
 
 inline Target *unwrap(LLVMTargetRef T) { return reinterpret_cast<Target *>(T); }
 
@@ -83,14 +75,6 @@ API_EXPORT(LLVMTargetDataRef)
 LLVMPY_CreateTargetData(const char *StringRep) {
     return LLVMCreateTargetData(StringRep);
 }
-
-//// Nothing is creating a TargetLibraryInfo
-//    void
-//    LLVMPY_AddTargetLibraryInfo(LLVMTargetLibraryInfoRef TLI,
-//                                LLVMPassManagerRef PM)
-//    {
-//        LLVMAddTargetLibraryInfo(TLI, PM);
-//    }
 
 API_EXPORT(void)
 LLVMPY_CopyStringRepOfTargetData(LLVMTargetDataRef TD, char **Out) {
@@ -204,7 +188,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
         rm = Reloc::DynamicNoPIC;
 
     TargetOptions opt;
-    opt.PrintMachineCode = PrintMC;
+    opt.MCOptions.ShowMCInst = PrintMC;
     opt.MCOptions.ABIName = ABIName;
 
     bool jit = JIT;
@@ -280,16 +264,10 @@ LLVMPY_HasSVMLSupport(void) {
 #endif
 }
 
-/*
-
-If needed:
-
-explicit TargetLibraryInfoWrapperPass(const Triple &T);
-
-void LLVMAddTargetLibraryInfo(LLVMTargetLibraryInfoRef TLI,
-                              LLVMPassManagerRef PM) {
-  unwrap(PM)->add(new TargetLibraryInfoWrapperPass(*unwrap(TLI)));
+API_EXPORT(void)
+LLVMPY_AddTargetLibraryInfoPass(LLVMPassManagerRef PM, const char *TripleStr) {
+    using namespace llvm;
+    unwrap(PM)->add(new TargetLibraryInfoWrapperPass(Triple(TripleStr)));
 }
-*/
 
 } // end extern "C"

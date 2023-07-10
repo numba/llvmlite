@@ -14,4 +14,5 @@ from .value import *
 from .analysis import *
 from .object_file import *
 from .context import *
+from .orcjit import *
 from .lld import *

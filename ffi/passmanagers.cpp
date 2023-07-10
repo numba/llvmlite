@@ -16,11 +16,8 @@
 
 #include "llvm-c/Transforms/IPO.h"
 #include "llvm-c/Transforms/Scalar.h"
-#include "llvm/IR/LegacyPassManager.h"
-#if LLVM_VERSION_MAJOR > 11
-#include "llvm/IR/RemarkStreamer.h"
-#endif
 #include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Remarks/RemarkStreamer.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/Scalar.h"
@@ -220,7 +217,7 @@ LLVMPY_AddLazyValueInfoPass(LLVMPassManagerRef PM) {
 }
 API_EXPORT(void)
 LLVMPY_AddLintPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createLintPass());
+    unwrap(PM)->add(llvm::createLintLegacyPassPass());
 }
 API_EXPORT(void)
 LLVMPY_AddModuleDebugInfoPrinterPass(LLVMPassManagerRef PM) {

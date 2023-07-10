@@ -23,7 +23,6 @@ import sys
 
 
 min_python_version = (3, 8)
-max_python_version = (3, 11)  # exclusive
 
 
 def _version_info_str(int_tuple):
@@ -31,15 +30,14 @@ def _version_info_str(int_tuple):
 
 
 def _guard_py_ver():
-    currrent_python_version = sys.version_info[:3]
+    current_python_version = sys.version_info[:3]
     min_py = _version_info_str(min_python_version)
-    max_py = _version_info_str(max_python_version)
-    cur_py = _version_info_str(currrent_python_version)
+    cur_py = _version_info_str(current_python_version)
 
-    if not min_python_version <= currrent_python_version < max_python_version:
-        msg = ('Cannot install on Python version {}; only versions >={},<{} '
+    if not min_python_version <= current_python_version:
+        msg = ('Cannot install on Python version {}; only versions >={} '
                'are supported.')
-        raise RuntimeError(msg.format(cur_py, min_py, max_py))
+        raise RuntimeError(msg.format(cur_py, min_py))
 
 
 _guard_py_ver()
@@ -66,9 +64,9 @@ build_ext = cmdclass.get('build_ext', build_ext)
 
 def build_library_files(dry_run):
     cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
-    # Turn on -fPIC for building on Linux, BSD, and OS X
+    # Turn on -fPIC for building on Linux, BSD, OS X, and GNU platforms
     plt = sys.platform
-    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt:
+    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt or 'gnu' in plt:
         os.environ['CXXFLAGS'] = os.environ.get('CXXFLAGS', '') + ' -fPIC'
     spawn(cmd, dry_run=dry_run)
 
@@ -202,6 +200,7 @@ setup(name='llvmlite',
           "Programming Language :: Python :: 3.8",
           "Programming Language :: Python :: 3.9",
           "Programming Language :: Python :: 3.10",
+          "Programming Language :: Python :: 3.11",
           "Topic :: Software Development :: Code Generators",
           "Topic :: Software Development :: Compilers",
       ],

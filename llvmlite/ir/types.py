@@ -201,6 +201,7 @@ class IntType(Type):
     """
     null = '0'
     _instance_cache = {}
+    width: int
 
     def __new__(cls, bits):
         # Cache all common integer types

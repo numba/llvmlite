@@ -1,5 +1,5 @@
 
-CXX = clang++ -std=c++11 -stdlib=libc++
+CXX = clang++ -stdlib=libc++
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
 CXX_FLTO_FLAGS ?= -flto
