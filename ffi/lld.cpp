@@ -12,7 +12,7 @@ LLVMPY_lld_main(int Argc, const char **Argv, const char **outstr) {
     std::vector<const char *> Args(Argv, Argv + Argc);
 
     bool linker_output =
-        !lld::elf::link(Args, false, command_stream, command_stream);
+        !lld::elf::link(Args, command_stream, command_stream, false, false);
 
     *outstr = LLVMPY_CreateString(command_output.c_str());
     return linker_output;
