@@ -720,3 +720,12 @@ Miscellaneous
 * .. method:: IRBuilder.unreachable()
 
      Mark an unreachable point in the code.
+
+* .. method:: IRBuilder.comment(text)
+
+     Puts a single-line comment into the generated IR. This will be ignored by
+     LLVM, but can be useful for debugging the output of a compiler.
+
+     Arguments:
+
+     * *text* is a string that does not contain new line characters.
