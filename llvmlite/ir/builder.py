@@ -1047,7 +1047,11 @@ class IRBuilder(object):
 
     def comment(self, text):
         """
-        Adds a comment to the source file.
+	Puts a single-line comment into the generated IR. This will be ignored
+	by LLVM, but can be useful for debugging the output of a compiler. Adds
+	a comment to the source file.
+
+        * *text* is a string that does not contain new line characters.
         """
         inst = instructions.Comment(self.block, text)
         self._insert(inst)
