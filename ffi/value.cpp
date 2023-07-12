@@ -341,6 +341,9 @@ LLVMPY_GetConstantFPValue(LLVMValueRef Val, bool *losesInfo) {
 API_EXPORT(int)
 LLVMPY_GetValueKind(LLVMValueRef Val) { return (int)LLVMGetValueKind(Val); }
 
+API_EXPORT(int)
+LLVMPY_GetTypeKind(LLVMTypeRef Val) { return (int)LLVMGetTypeKind(Val); }
+
 API_EXPORT(void)
 LLVMPY_PrintValueToString(LLVMValueRef Val, const char **outstr) {
     *outstr = LLVMPrintValueToString(Val);
