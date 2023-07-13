@@ -4,30 +4,29 @@
 
 #include <iostream>
 
-#include "llvm/IR/Type.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Type.h"
 
 struct ElementIterator {
-  typedef llvm::ArrayRef<llvm::Type *>::iterator subtype_iterator;
-  subtype_iterator cur;
-  subtype_iterator end;
-  ElementIterator(subtype_iterator cur, subtype_iterator end)
-        : cur(cur), end(end) {
-        }
+    typedef llvm::ArrayRef<llvm::Type *>::iterator subtype_iterator;
+    subtype_iterator cur;
+    subtype_iterator end;
+    ElementIterator(subtype_iterator cur, subtype_iterator end)
+        : cur(cur), end(end) {}
 };
 
 struct OpaqueElementIterator;
 typedef OpaqueElementIterator *LLVMElementIteratorRef;
 
 namespace llvm {
-  static LLVMElementIteratorRef wrap(ElementIterator *GI){
+static LLVMElementIteratorRef wrap(ElementIterator *GI) {
     return reinterpret_cast<LLVMElementIteratorRef>(GI);
-  }
-
-  static ElementIterator *unwrap(LLVMElementIteratorRef GI){
-    return reinterpret_cast<ElementIterator *>(GI);
-  }
 }
+
+static ElementIterator *unwrap(LLVMElementIteratorRef GI) {
+    return reinterpret_cast<ElementIterator *>(GI);
+}
+} // namespace llvm
 
 extern "C" {
 
@@ -36,7 +35,7 @@ LLVMPY_ElementIter(LLVMTypeRef Val) {
     using namespace llvm;
     llvm::Type *ty = llvm::unwrap(Val);
     auto elements = ty->subtypes();
-    return wrap(new ElementIterator(elements.begin(), elements.end())); 
+    return wrap(new ElementIterator(elements.begin(), elements.end()));
 }
 
 API_EXPORT(LLVMTypeRef)
@@ -46,14 +45,16 @@ LLVMPY_ElementIterNext(LLVMElementIteratorRef GI) {
     if (iter->cur != iter->end) {
         const Type *ty = *(iter->cur);
         iter->cur++;
-        return wrap(static_cast<const Type*>(ty));
+        return wrap(static_cast<const Type *>(ty));
     } else {
         return NULL;
     }
 }
 
 API_EXPORT(void)
-LLVMPY_DisposeElementIter(LLVMElementIteratorRef  GI) { delete llvm::unwrap(GI); }
+LLVMPY_DisposeElementIter(LLVMElementIteratorRef GI) {
+    delete llvm::unwrap(GI);
+}
 
 API_EXPORT(int)
 LLVMPY_GetTypeKind(LLVMTypeRef Val) { return (int)LLVMGetTypeKind(Val); }
@@ -86,6 +87,39 @@ LLVMPY_TypeIsPointer(LLVMTypeRef type) {
     return llvm::unwrap(type)->isPointerTy();
 }
 
+API_EXPORT(bool)
+LLVMPY_TypeIsArray(LLVMTypeRef type) { return llvm::unwrap(type)->isArrayTy(); }
+
+API_EXPORT(bool)
+LLVMPY_TypeIsVector(LLVMTypeRef type) {
+    return llvm::unwrap(type)->isVectorTy();
+}
+
+API_EXPORT(int)
+LLVMPY_GetTypeElementCount(LLVMTypeRef type) {
+    llvm::Type *unwrapped = llvm::unwrap(type);
+    if (unwrapped->isArrayTy()) {
+        return unwrapped->getArrayNumElements();
+    }
+    if (unwrapped->isVectorTy()) {
+        // Fixed vector: get exact number of elements
+        llvm::FixedVectorType *fixedvec =
+            llvm::dyn_cast<llvm::FixedVectorType>(unwrapped);
+        if (fixedvec != nullptr) {
+            return fixedvec->getNumElements();
+        }
+
+        // Scalable vector: get minimum elements
+        llvm::ScalableVectorType *scalablevec =
+            llvm::dyn_cast<llvm::ScalableVectorType>(unwrapped);
+        if (scalablevec != nullptr) {
+            return scalablevec->getMinNumElements();
+        }
+    }
+    // Not an array nor vector
+    return -1;
+}
+
 API_EXPORT(LLVMTypeRef)
 LLVMPY_GetElementType(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
@@ -99,5 +133,4 @@ LLVMPY_GetElementType(LLVMTypeRef type) {
     }
     return nullptr;
 }
-
 }

@@ -3,6 +3,7 @@ import enum
 
 from llvmlite.binding import ffi
 
+
 class TypeKind(enum.IntEnum):
     # The LLVMTypeKind enum from llvm-c/Core.h
 
@@ -46,11 +47,25 @@ class TypeRef(ffi.ObjectRef):
         return ffi.lib.LLVMPY_TypeIsPointer(self)
 
     @property
+    def is_array(self):
+        """
+        Returns true is the type is an array type.
+        """
+        return ffi.lib.LLVMPY_TypeIsArray(self)
+
+    @property
+    def is_vector(self):
+        """
+        Returns true is the type is a vector type.
+        """
+        return ffi.lib.LLVMPY_TypeIsVector(self)
+
+    @property
     def elements(self):
         """
         Returns iterator over enclosing types
         """
-        return  _TypeListIterator(ffi.lib.LLVMPY_ElementIter(self))
+        return _TypeListIterator(ffi.lib.LLVMPY_ElementIter(self))
 
     @property
     def element_type(self):
@@ -61,6 +76,17 @@ class TypeRef(ffi.ObjectRef):
         if not self.is_pointer:
             raise ValueError("Type {} is not a pointer".format(self))
         return TypeRef(ffi.lib.LLVMPY_GetElementType(self))
+
+    @property
+    def element_count(self):
+        """
+        Returns the number of elements in an array or a vector. For scalable
+        vectors, returns minimum number of elements. When the type is neither
+        an array nor a vector, raises exception.
+        """
+        if not self.is_array and not self.is_vector:
+            raise ValueError("Type {} is not an array nor vector".format(self))
+        return ffi.lib.LLVMPY_GetTypeElementCount(self)
 
     @property
     def type_kind(self):
@@ -108,14 +134,22 @@ ffi.lib.LLVMPY_GetElementType.restype = ffi.LLVMTypeRef
 ffi.lib.LLVMPY_TypeIsPointer.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_TypeIsPointer.restype = c_bool
 
+ffi.lib.LLVMPY_TypeIsArray.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_TypeIsArray.restype = c_bool
+
+ffi.lib.LLVMPY_TypeIsVector.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_TypeIsVector.restype = c_bool
+
 ffi.lib.LLVMPY_GetTypeKind.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetTypeKind.restype = c_int
+
+ffi.lib.LLVMPY_GetTypeElementCount.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_GetTypeElementCount.restype = c_int
 
 ffi.lib.LLVMPY_ElementIter.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_ElementIter.restype = ffi.LLVMElementIterator
 
 ffi.lib.LLVMPY_ElementIterNext.argtypes = [ffi.LLVMElementIterator]
 ffi.lib.LLVMPY_ElementIterNext.restype = ffi.LLVMTypeRef
-
 
 ffi.lib.LLVMPY_DisposeElementIter.argtypes = [ffi.LLVMElementIterator]
