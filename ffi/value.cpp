@@ -341,9 +341,6 @@ LLVMPY_GetConstantFPValue(LLVMValueRef Val, bool *losesInfo) {
 API_EXPORT(int)
 LLVMPY_GetValueKind(LLVMValueRef Val) { return (int)LLVMGetValueKind(Val); }
 
-API_EXPORT(int)
-LLVMPY_GetTypeKind(LLVMTypeRef Val) { return (int)LLVMGetTypeKind(Val); }
-
 API_EXPORT(void)
 LLVMPY_PrintValueToString(LLVMValueRef Val, const char **outstr) {
     *outstr = LLVMPrintValueToString(Val);
@@ -359,44 +356,6 @@ LLVMPY_SetValueName(LLVMValueRef Val, const char *Name) {
 
 API_EXPORT(LLVMModuleRef)
 LLVMPY_GetGlobalParent(LLVMValueRef Val) { return LLVMGetGlobalParent(Val); }
-
-API_EXPORT(LLVMTypeRef)
-LLVMPY_TypeOf(LLVMValueRef Val) { return LLVMTypeOf(Val); }
-
-API_EXPORT(const char *)
-LLVMPY_PrintType(LLVMTypeRef type) {
-    char *str = LLVMPrintTypeToString(type);
-    const char *out = LLVMPY_CreateString(str);
-    LLVMDisposeMessage(str);
-    return out;
-}
-
-API_EXPORT(const char *)
-LLVMPY_GetTypeName(LLVMTypeRef type) {
-    // try to convert to a struct type, works for other derived
-    // types too
-    llvm::Type *unwrapped = llvm::unwrap(type);
-    llvm::StructType *ty = llvm::dyn_cast<llvm::StructType>(unwrapped);
-    if (ty && !ty->isLiteral()) {
-        return LLVMPY_CreateString(ty->getStructName().str().c_str());
-    }
-    return LLVMPY_CreateString("");
-}
-
-API_EXPORT(bool)
-LLVMPY_TypeIsPointer(LLVMTypeRef type) {
-    return llvm::unwrap(type)->isPointerTy();
-}
-
-API_EXPORT(LLVMTypeRef)
-LLVMPY_GetElementType(LLVMTypeRef type) {
-    llvm::Type *unwrapped = llvm::unwrap(type);
-    llvm::PointerType *ty = llvm::dyn_cast<llvm::PointerType>(unwrapped);
-    if (ty != nullptr) {
-        return llvm::wrap(ty->getPointerElementType());
-    }
-    return nullptr;
-}
 
 API_EXPORT(void)
 LLVMPY_SetLinkage(LLVMValueRef Val, int Linkage) {

@@ -46,6 +46,13 @@ class TypeRef(ffi.ObjectRef):
         return ffi.lib.LLVMPY_TypeIsPointer(self)
 
     @property
+    def elements(self):
+        """
+        Returns iterator over enclosing types
+        """
+        return  _TypeListIterator(ffi.lib.LLVMPY_ElementIter(self))
+
+    @property
     def element_type(self):
         """
         Returns the pointed-to type. When the type is not a pointer,
@@ -66,6 +73,30 @@ class TypeRef(ffi.ObjectRef):
         return ffi.ret_string(ffi.lib.LLVMPY_PrintType(self))
 
 
+class _TypeIterator(ffi.ObjectRef):
+
+    def __next__(self):
+        vp = self._next()
+        if vp:
+            return TypeRef(vp)
+        else:
+            raise StopIteration
+
+    next = __next__
+
+    def __iter__(self):
+        return self
+
+
+class _TypeListIterator(_TypeIterator):
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeElementIter(self)
+
+    def _next(self):
+        return ffi.lib.LLVMPY_ElementIterNext(self)
+
+
 # FFI
 
 ffi.lib.LLVMPY_PrintType.argtypes = [ffi.LLVMTypeRef]
@@ -79,3 +110,12 @@ ffi.lib.LLVMPY_TypeIsPointer.restype = c_bool
 
 ffi.lib.LLVMPY_GetTypeKind.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetTypeKind.restype = c_int
+
+ffi.lib.LLVMPY_ElementIter.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ElementIter.restype = ffi.LLVMElementIterator
+
+ffi.lib.LLVMPY_ElementIterNext.argtypes = [ffi.LLVMElementIterator]
+ffi.lib.LLVMPY_ElementIterNext.restype = ffi.LLVMTypeRef
+
+
+ffi.lib.LLVMPY_DisposeElementIter.argtypes = [ffi.LLVMElementIterator]
