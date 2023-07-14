@@ -95,6 +95,11 @@ LLVMPY_TypeIsVector(LLVMTypeRef type) {
     return llvm::unwrap(type)->isVectorTy();
 }
 
+API_EXPORT(bool)
+LLVMPY_TypeIsStruct(LLVMTypeRef type) {
+    return llvm::unwrap(type)->isStructTy();
+}
+
 API_EXPORT(int)
 LLVMPY_GetTypeElementCount(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
@@ -118,6 +123,13 @@ LLVMPY_GetTypeElementCount(LLVMTypeRef type) {
     }
     // Not an array nor vector
     return -1;
+}
+
+API_EXPORT(uint64_t)
+LLVMPY_GetTypeBitWidth(LLVMTypeRef type){
+    llvm::Type *unwrapped = llvm::unwrap(type);
+    auto size = unwrapped->getPrimitiveSizeInBits();
+    return size.getFixedSize();
 }
 
 API_EXPORT(LLVMTypeRef)
