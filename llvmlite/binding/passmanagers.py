@@ -1,4 +1,5 @@
-from ctypes import c_bool, c_char_p, c_int, c_size_t, Structure, byref
+from ctypes import (c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref,
+                    POINTER)
 from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
@@ -107,74 +108,535 @@ class PassManager(ffi.ObjectRef):
     def _dispose(self):
         self._capi.LLVMPY_DisposePassManager(self)
 
+    def add_aa_eval_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#aa-eval-exhaustive-alias-analysis-precision-evaluator
+
+        LLVM 14: `llvm::createAAEvalPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddAAEvalPass(self)
+
+    def add_basic_aa_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#basic-aa-basic-alias-analysis-stateless-aa-impl
+
+        LLVM 14: `llvm::createBasicAAWrapperPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddBasicAAWrapperPass(self)
+
     def add_constant_merge_pass(self):
-        """See http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#constmerge-merge-duplicate-global-constants
+
+        LLVM 14: `LLVMAddConstantMergePass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddConstantMergePass(self)
 
     def add_dead_arg_elimination_pass(self):
-        """See http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#deadargelim-dead-argument-elimination
+
+        LLVM 14: `LLVMAddDeadArgEliminationPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddDeadArgEliminationPass(self)
 
+    def add_dependence_analysis_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#da-dependence-analysis
+
+        LLVM 14: `llvm::createDependenceAnalysisWrapperPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddDependenceAnalysisPass(self)
+
+    def add_dot_call_graph_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#dot-callgraph-print-call-graph-to-dot-file
+
+        LLVM 14: `llvm::createCallGraphDOTPrinterPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddCallGraphDOTPrinterPass(self)
+
+    def add_dot_cfg_printer_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#dot-cfg-print-cfg-of-function-to-dot-file
+
+        LLVM 14: `llvm::createCFGPrinterLegacyPassPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddCFGPrinterPass(self)
+
+    def add_dot_dom_printer_pass(self, show_body=False):
+        """
+        See https://llvm.org/docs/Passes.html#dot-dom-print-dominance-tree-of-function-to-dot-file
+
+        LLVM 14: `llvm::createDomPrinterPass` and `llvm::createDomOnlyPrinterPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddDotDomPrinterPass(self, show_body)
+
+    def add_dot_postdom_printer_pass(self, show_body=False):
+        """
+        See https://llvm.org/docs/Passes.html#dot-postdom-print-postdominance-tree-of-function-to-dot-file
+
+        LLVM 14: `llvm::createPostDomPrinterPass` and `llvm::createPostDomOnlyPrinterPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddDotPostDomPrinterPass(self, show_body)
+
+    def add_globals_mod_ref_aa_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#globalsmodref-aa-simple-mod-ref-analysis-for-globals
+
+        LLVM 14: `llvm::createGlobalsAAWrapperPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddGlobalsModRefAAPass(self)
+
+    def add_iv_users_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#iv-users-induction-variable-users
+
+        LLVM 14: `llvm::createIVUsersPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddIVUsersPass(self)
+
+    def add_lint_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#lint-statically-lint-checks-llvm-ir
+
+        LLVM 14: `llvm::createLintLegacyPassPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLintPass(self)
+
+    def add_lazy_value_info_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#lazy-value-info-lazy-value-information-analysis
+
+        LLVM 14: `llvm::createLazyValueInfoPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLazyValueInfoPass(self)
+
+    def add_module_debug_info_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#module-debuginfo-decodes-module-level-debug-info
+
+        LLVM 14: `llvm::createModuleDebugInfoPrinterPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddModuleDebugInfoPrinterPass(self)
+
+    def add_region_info_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#regions-detect-single-entry-single-exit-regions
+
+        LLVM 14: `llvm::createRegionInfoPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddRegionInfoPass(self)
+
+    def add_scalar_evolution_aa_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#scev-aa-scalarevolution-based-alias-analysis
+
+        LLVM 14: `llvm::createSCEVAAWrapperPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddScalarEvolutionAAPass(self)
+
+    def add_aggressive_dead_code_elimination_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#adce-aggressive-dead-code-elimination
+
+        LLVM 14: `llvm::createAggressiveDCEPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddAggressiveDCEPass(self)
+
+    def add_always_inliner_pass(self, insert_lifetime=True):
+        """
+        See https://llvm.org/docs/Passes.html#always-inline-inliner-for-always-inline-functions
+
+        LLVM 14: `llvm::createAlwaysInlinerLegacyPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddAlwaysInlinerPass(self, insert_lifetime)
+
+    def add_arg_promotion_pass(self, max_elements=3):
+        """
+        See https://llvm.org/docs/Passes.html#argpromotion-promote-by-reference-arguments-to-scalars
+
+        LLVM 14: `llvm::createArgumentPromotionPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddArgPromotionPass(self, max_elements)
+
+    def add_break_critical_edges_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#break-crit-edges-break-critical-edges-in-cfg
+
+        LLVM 14: `llvm::createBreakCriticalEdgesPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddBreakCriticalEdgesPass(self)
+
+    def add_dead_store_elimination_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#dse-dead-store-elimination
+
+        LLVM 14: `llvm::createDeadStoreEliminationPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddDeadStoreEliminationPass(self)
+
+    def add_reverse_post_order_function_attrs_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#function-attrs-deduce-function-attributes
+
+        LLVM 14: `llvm::createReversePostOrderFunctionAttrsPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddReversePostOrderFunctionAttrsPass(self)
+
     def add_function_attrs_pass(self):
-        """See http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#functionattrs-deduce-function-attributes
+
+        LLVM 14: `LLVMAddFunctionAttrsPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddFunctionAttrsPass(self)
 
     def add_function_inlining_pass(self, threshold):
-        """See http://llvm.org/docs/Passes.html#inline-function-integration-inlining."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#inline-function-integration-inlining
+
+        LLVM 14: `createFunctionInliningPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddFunctionInliningPass(self, threshold)
 
     def add_global_dce_pass(self):
-        """See http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#globaldce-dead-global-elimination
+
+        LLVM 14: `LLVMAddGlobalDCEPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddGlobalDCEPass(self)
 
     def add_global_optimizer_pass(self):
-        """See http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#globalopt-global-variable-optimizer
+
+        LLVM 14: `LLVMAddGlobalOptimizerPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddGlobalOptimizerPass(self)
 
     def add_ipsccp_pass(self):
-        """See http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#ipsccp-interprocedural-sparse-conditional-constant-propagation
+
+        LLVM 14: `LLVMAddIPSCCPPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddIPSCCPPass(self)
 
     def add_dead_code_elimination_pass(self):
-        """See http://llvm.org/docs/Passes.html#dce-dead-code-elimination."""
+        """
+        See http://llvm.org/docs/Passes.html#dce-dead-code-elimination
+        LLVM 14: `llvm::createDeadCodeEliminationPass`
+        """
         ffi.lib.LLVMPY_AddDeadCodeEliminationPass(self)
 
+    def add_aggressive_instruction_combining_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#aggressive-instcombine-combine-expression-patterns
+
+        LLVM 14: `llvm::createAggressiveInstCombinerPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddAggressiveInstructionCombiningPass(self)
+
+    def add_internalize_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#internalize-internalize-global-symbols
+
+        LLVM 14: `llvm::createInternalizePass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddInternalizePass(self)
+
     def add_cfg_simplification_pass(self):
-        """See http://llvm.org/docs/Passes.html#simplifycfg-simplify-the-cfg."""
+        """
+        See http://llvm.org/docs/Passes.html#simplifycfg-simplify-the-cfg
+
+        LLVM 14: `LLVMAddCFGSimplificationPass`
+        """
         ffi.lib.LLVMPY_AddCFGSimplificationPass(self)
 
+    def add_jump_threading_pass(self, threshold=-1):
+        """
+        See https://llvm.org/docs/Passes.html#jump-threading-jump-threading
+
+        LLVM 14: `llvm::createJumpThreadingPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddJumpThreadingPass(self, threshold)
+
+    def add_lcssa_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#lcssa-loop-closed-ssa-form-pass
+
+        LLVM 14: `llvm::createLCSSAPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLCSSAPass(self)
+
     def add_gvn_pass(self):
-        """See http://llvm.org/docs/Passes.html#gvn-global-value-numbering."""
+        """
+        See http://llvm.org/docs/Passes.html#gvn-global-value-numbering
+
+        LLVM 14: `LLVMAddGVNPass`
+        """
         ffi.lib.LLVMPY_AddGVNPass(self)
 
     def add_instruction_combining_pass(self):
-        """See http://llvm.org/docs/Passes.html#passes-instcombine."""
+        """
+        See http://llvm.org/docs/Passes.html#passes-instcombine
+
+        LLVM 14: `LLVMAddInstructionCombiningPass`
+        """
         ffi.lib.LLVMPY_AddInstructionCombiningPass(self)
 
     def add_licm_pass(self):
-        """See http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion
+
+        LLVM 14: `LLVMAddLICMPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddLICMPass(self)
 
+    def add_loop_deletion_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#loop-deletion-delete-dead-loops
+
+        LLVM 14: `llvm::createLoopDeletionPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLoopDeletionPass(self)
+
+    def add_loop_extractor_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#loop-extract-extract-loops-into-new-functions
+
+        LLVM 14: `llvm::createLoopExtractorPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLoopExtractorPass(self)
+
+    def add_single_loop_extractor_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#loop-extract-single-extract-at-most-one-loop-into-a-new-function
+
+        LLVM 14: `llvm::createSingleLoopExtractorPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddSingleLoopExtractorPass(self)
+
     def add_sccp_pass(self):
-        """See http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation."""  # noqa E501
+        """
+        See http://llvm.org/docs/Passes.html#sccp-sparse-conditional-constant-propagation
+
+        LLVM 14: `LLVMAddSCCPPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddSCCPPass(self)
 
+    def add_loop_strength_reduce_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#loop-reduce-loop-strength-reduction
+
+        LLVM 14: `llvm::createLoopStrengthReducePass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLoopStrengthReducePass(self)
+
+    def add_loop_simplification_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#loop-simplify-canonicalize-natural-loops
+
+        LLVM 14: `llvm::createLoopSimplifyPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLoopSimplificationPass(self)
+
+    def add_loop_unroll_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#loop-unroll-unroll-loops
+
+        LLVM 14: `LLVMAddLoopUnrollPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLoopUnrollPass(self)
+
+    def add_loop_unroll_and_jam_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#loop-unroll-and-jam-unroll-and-jam-loops
+
+        LLVM 14: `LLVMAddLoopUnrollAndJamPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLoopUnrollAndJamPass(self)
+
+    def add_loop_unswitch_pass(self,
+                               optimize_for_size=False,
+                               has_branch_divergence=False):
+        """
+        See https://llvm.org/docs/Passes.html#loop-unswitch-unswitch-loops
+
+        LLVM 14: `llvm::createLoopUnswitchPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLoopUnswitchPass(self,
+                                           optimize_for_size,
+                                           has_branch_divergence)
+
+    def add_lower_atomic_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#loweratomic-lower-atomic-intrinsics-to-non-atomic-form
+
+        LLVM 14: `llvm::createLowerAtomicPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLowerAtomicPass(self)
+
+    def add_lower_invoke_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#lowerinvoke-lower-invokes-to-calls-for-unwindless-code-generators
+
+        LLVM 14: `llvm::createLowerInvokePass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLowerInvokePass(self)
+
+    def add_lower_switch_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#lowerswitch-lower-switchinsts-to-branches
+
+        LLVM 14: `llvm::createLowerSwitchPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddLowerSwitchPass(self)
+
+    def add_memcpy_optimization_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#memcpyopt-memcpy-optimization
+
+        LLVM 14: `llvm::createMemCpyOptPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddMemCpyOptimizationPass(self)
+
+    def add_merge_functions_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#mergefunc-merge-functions
+
+        LLVM 14: `llvm::createMergeFunctionsPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddMergeFunctionsPass(self)
+
+    def add_merge_returns_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#mergereturn-unify-function-exit-nodes
+
+        LLVM 14: `llvm::createUnifyFunctionExitNodesPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddMergeReturnsPass(self)
+
+    def add_partial_inlining_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#partial-inliner-partial-inliner
+
+        LLVM 14: `llvm::createPartialInliningPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddPartialInliningPass(self)
+
+    def add_prune_exception_handling_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#prune-eh-remove-unused-exception-handling-info
+
+        LLVM 14: `llvm::createPruneEHPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddPruneExceptionHandlingPass(self)
+
+    def add_reassociate_expressions_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#reassociate-reassociate-expressions
+
+        LLVM 14: `llvm::createReassociatePass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddReassociatePass(self)
+
+    def add_demote_register_to_memory_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#rel-lookup-table-converter-relative-lookup-table-converter
+
+        LLVM 14: `llvm::createDemoteRegisterToMemoryPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddDemoteRegisterToMemoryPass(self)
+
     def add_sroa_pass(self):
-        """See http://llvm.org/docs/Passes.html#scalarrepl-scalar-replacement-of-aggregates-dt.
+        """
+        See http://llvm.org/docs/Passes.html#scalarrepl-scalar-replacement-of-aggregates-dt
         Note that this pass corresponds to the ``opt -sroa`` command-line option,
-        despite the link above."""  # noqa E501
+        despite the link above.
+
+        LLVM 14: `llvm::createSROAPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddSROAPass(self)
 
+    def add_sink_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#sink-code-sinking
+
+        LLVM 14: `llvm::createSinkingPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddSinkPass(self)
+
+    def add_strip_symbols_pass(self, only_debug=False):
+        """
+        See https://llvm.org/docs/Passes.html#strip-strip-all-symbols-from-a-module
+
+        LLVM 14: `llvm::createStripSymbolsPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddStripSymbolsPass(self, only_debug)
+
+    def add_strip_dead_debug_info_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#strip-dead-debug-info-strip-debug-info-for-unused-symbols
+
+        LLVM 14: `llvm::createStripDeadDebugInfoPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddStripDeadDebugInfoPass(self)
+
+    def add_strip_dead_prototypes_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#strip-dead-prototypes-strip-unused-function-prototypes
+
+        LLVM 14: `llvm::createStripDeadPrototypesPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddStripDeadPrototypesPass(self)
+
+    def add_strip_debug_declare_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#strip-debug-declare-strip-all-llvm-dbg-declare-intrinsics
+
+        LLVM 14: `llvm::createStripDebugDeclarePass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddStripDebugDeclarePrototypesPass(self)
+
+    def add_strip_nondebug_symbols_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#strip-nondebug-strip-all-symbols-except-dbg-symbols-from-a-module
+
+        LLVM 14: `llvm::createStripNonDebugSymbolsPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddStripNondebugSymbolsPass(self)
+
+    def add_tail_call_elimination_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#tailcallelim-tail-call-elimination
+
+        LLVM 14: `llvm::createTailCallEliminationPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddTailCallEliminationPass(self)
+
     def add_type_based_alias_analysis_pass(self):
+        """
+        LLVM 14: `LLVMAddTypeBasedAliasAnalysisPass`
+        """  # noqa E501
         ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass(self)
 
     def add_basic_alias_analysis_pass(self):
-        """See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass."""
+        """
+        See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass
+
+        LLVM 14: `LLVMAddBasicAliasAnalysisPass`
+        """
         ffi.lib.LLVMPY_AddBasicAliasAnalysisPass(self)
 
     def add_loop_rotate_pass(self):
         """http://llvm.org/docs/Passes.html#loop-rotate-rotate-loops."""
         ffi.lib.LLVMPY_LLVMAddLoopRotatePass(self)
+
+    def add_target_library_info(self, triple):
+        ffi.lib.LLVMPY_AddTargetLibraryInfoPass(self, _encode_string(triple))
 
     # Non-standard LLVM passes
 
@@ -375,8 +837,67 @@ ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks.argtypes = [
 ]
 ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks.restype = c_int
 
+ffi.lib.LLVMPY_AddAAEvalPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddBasicAAWrapperPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddConstantMergePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadArgEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddDependenceAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddCallGraphDOTPrinterPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddCFGPrinterPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddDotDomPrinterPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
+ffi.lib.LLVMPY_AddDotPostDomPrinterPass.argtypes = [
+    ffi.LLVMPassManagerRef,
+    c_bool]
+ffi.lib.LLVMPY_AddGlobalsModRefAAPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddInstructionCountPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddIVUsersPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLazyValueInfoPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLintPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddModuleDebugInfoPrinterPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddRegionInfoPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddScalarEvolutionAAPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddAggressiveDCEPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddAlwaysInlinerPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
+ffi.lib.LLVMPY_AddArgPromotionPass.argtypes = [ffi.LLVMPassManagerRef, c_uint]
+ffi.lib.LLVMPY_AddBreakCriticalEdgesPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddDeadStoreEliminationPass.argtypes = [
+    ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddReversePostOrderFunctionAttrsPass.argtypes = [
+    ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddAggressiveInstructionCombiningPass.argtypes = [
+    ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddInternalizePass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLCSSAPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLoopDeletionPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLoopExtractorPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddSingleLoopExtractorPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLoopStrengthReducePass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLoopSimplificationPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLoopUnrollPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLoopUnrollAndJamPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLoopUnswitchPass.argtypes = [
+    ffi.LLVMPassManagerRef,
+    c_bool,
+    c_bool]
+ffi.lib.LLVMPY_AddLowerAtomicPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLowerInvokePass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddLowerSwitchPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddMemCpyOptimizationPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddMergeFunctionsPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddMergeReturnsPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddPartialInliningPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddPruneExceptionHandlingPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddReassociatePass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddDemoteRegisterToMemoryPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddSinkPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddStripSymbolsPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
+ffi.lib.LLVMPY_AddStripDeadDebugInfoPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddStripDeadPrototypesPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddStripDebugDeclarePrototypesPass.argtypes = [
+    ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddStripNondebugSymbolsPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddTailCallEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddJumpThreadingPass.argtypes = [ffi.LLVMPassManagerRef, c_int]
 ffi.lib.LLVMPY_AddFunctionAttrsPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddFunctionInliningPass.argtypes = [
     ffi.LLVMPassManagerRef, c_int]
@@ -393,6 +914,10 @@ ffi.lib.LLVMPY_AddSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddTargetLibraryInfoPass.argtypes = [ffi.LLVMPassManagerRef,
+                                                    c_char_p]
 
 ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
                                            c_size_t]
+
+ffi.lib.LLVMPY_DumpRefPruneStats.argtypes = [POINTER(_c_PruneStats), c_bool]

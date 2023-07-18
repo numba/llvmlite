@@ -1,6 +1,7 @@
+import sys
 import ctypes
 import threading
-import importlib.resources
+import importlib.resources as _impres
 
 from llvmlite.binding.common import _decode_string, _is_shutting_down
 from llvmlite.utils import get_library_name
@@ -35,6 +36,8 @@ LLVMTypesIterator = _make_opaque_ref("LLVMTypesIterator")
 LLVMObjectCacheRef = _make_opaque_ref("LLVMObjectCache")
 LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
+LLVMOrcLLJITRef = _make_opaque_ref("LLVMOrcLLJITRef")
+LLVMOrcDylibTrackerRef = _make_opaque_ref("LLVMOrcDylibTrackerRef")
 
 
 class _LLVMLock:
@@ -106,7 +109,7 @@ class _lib_wrapper(object):
 
     def _load_lib(self):
         try:
-            with _suppress_cleanup_errors(importlib.resources.path(
+            with _suppress_cleanup_errors(_importlib_resources_path(
                     __name__.rpartition(".")[0],
                     get_library_name())) as lib_path:
                 self._lib_handle = ctypes.CDLL(str(lib_path))
@@ -185,6 +188,25 @@ class _lib_fn_wrapper(object):
     def __call__(self, *args, **kwargs):
         with self._lock:
             return self._cfn(*args, **kwargs)
+
+
+def _importlib_resources_path_repl(package, resource):
+    """Replacement implementation of `import.resources.path` to avoid
+    deprecation warning following code at importlib_resources/_legacy.py
+    as suggested by https://importlib-resources.readthedocs.io/en/latest/using.html#migrating-from-legacy
+
+    Notes on differences from importlib.resources implementation:
+
+    The `_common.normalize_path(resource)` call is skipped because it is an
+    internal API and it is unnecessary for the use here. What it does is
+    ensuring `resource` is a str and that it does not contain path separators.
+    """ # noqa E501
+    return _impres.as_file(_impres.files(package) / resource)
+
+
+_importlib_resources_path = (_importlib_resources_path_repl
+                             if sys.version_info[:2] >= (3, 9)
+                             else _impres.path)
 
 
 lib = _lib_wrapper()

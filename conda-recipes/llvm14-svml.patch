@@ -1,8 +1,9 @@
-From 8dafb9d1d333b856f820ce39c803d50ff7afb159 Mon Sep 17 00:00:00 2001
-From: Butygin <ivan.butygin@intel.com>
-Date: Thu, 6 May 2021 11:19:31 +0300
-Subject: [PATCH 1/1] [PATCH] Fixes vectorizer and extends SVML support
+From 9de32f5474f1f78990b399214bdbb6c21f8f098e Mon Sep 17 00:00:00 2001
+From: Ivan Butygin <ivan.butygin@gmail.com>
+Date: Sun, 24 Jul 2022 20:31:29 +0200
+Subject: [PATCH] Fixes vectorizer and extends SVML support
 
+Fixes vectorizer and extends SVML support
 Patch was updated to fix SVML calling convention issues uncovered by llvm 10.
 In previous versions of patch SVML calling convention was selected based on
 compilation settings. So if you try to call 256bit vector function from avx512
@@ -30,44 +31,10 @@ replaces the illegal SVML call with corresponding legalized instructions.
 (RFC: http://lists.llvm.org/pipermail/llvm-dev/2018-June/124357.html)
 Author: Karthik Senthil
 
-3. Functional merge of the patches above, which fixes calling convention
----
- include/llvm/Analysis/TargetLibraryInfo.h          |  21 +-
- include/llvm/IR/CMakeLists.txt                     |   4 +
- include/llvm/IR/CallingConv.h                      |   5 +
- include/llvm/IR/SVML.td                            |  62 +++
- lib/Analysis/CMakeLists.txt                        |   1 +
- lib/Analysis/TargetLibraryInfo.cpp                 |  54 ++-
- lib/AsmParser/LLLexer.cpp                          |   3 +
- lib/AsmParser/LLParser.cpp                         |   6 +
- lib/AsmParser/LLToken.h                            |   3 +
- lib/IR/AsmWriter.cpp                               |   3 +
- lib/IR/Verifier.cpp                                |   3 +
- lib/Target/X86/X86CallingConv.td                   |  71 ++-
- lib/Target/X86/X86ISelLowering.cpp                 |   3 +-
- lib/Target/X86/X86RegisterInfo.cpp                 |  46 ++
- lib/Target/X86/X86Subtarget.h                      |   3 +
- lib/Transforms/Utils/InjectTLIMappings.cpp         |   3 +-
- lib/Transforms/Vectorize/LoopVectorize.cpp         | 273 ++++++++++-
- .../LoopVectorize/X86/svml-calls-finite.ll         |  15 +-
- test/Transforms/LoopVectorize/X86/svml-calls.ll    |  88 +++-
- .../LoopVectorize/X86/svml-legal-calls.ll          | 513 +++++++++++++++++++++
- .../LoopVectorize/X86/svml-legal-codegen.ll        |  61 +++
- utils/TableGen/CMakeLists.txt                      |   1 +
- utils/TableGen/SVMLEmitter.cpp                     | 110 +++++
- utils/TableGen/TableGen.cpp                        |   8 +-
- utils/TableGen/TableGenBackends.h                  |   1 +
- utils/vim/syntax/llvm.vim                          |   1 +
- 26 files changed, 1314 insertions(+), 48 deletions(-)
- create mode 100644 llvm/include/llvm/IR/SVML.td
- create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
- create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
- create mode 100644 llvm/utils/TableGen/SVMLEmitter.cpp
-
-diff --git a/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
-index 3a7c26e..4d37b34 100644
---- a/include/llvm/Analysis/TargetLibraryInfo.h
-+++ b/include/llvm/Analysis/TargetLibraryInfo.h
+diff --git a/llvm-14.0.6.src/include/llvm/Analysis/TargetLibraryInfo.h b/llvm-14.0.6.src/include/llvm/Analysis/TargetLibraryInfo.h
+index 17d1e3f770c14..110ff08189867 100644
+--- a/llvm-14.0.6.src/include/llvm/Analysis/TargetLibraryInfo.h
++++ b/llvm-14.0.6.src/include/llvm/Analysis/TargetLibraryInfo.h
 @@ -39,6 +39,12 @@ struct VecDesc {
      NotLibFunc
    };
@@ -81,75 +48,90 @@ index 3a7c26e..4d37b34 100644
  /// Implementation of the target library information.
  ///
  /// This class constructs tables that hold the target library information and
-@@ -152,7 +158,7 @@ public:
+@@ -157,7 +163,7 @@ class TargetLibraryInfoImpl {
    /// Return true if the function F has a vector equivalent with vectorization
    /// factor VF.
-   bool isFunctionVectorizable(StringRef F, unsigned VF) const {
+   bool isFunctionVectorizable(StringRef F, const ElementCount &VF) const {
 -    return !getVectorizedFunction(F, VF).empty();
-+     return !getVectorizedFunction(F, VF, false).empty();
++    return !getVectorizedFunction(F, VF, false).empty();
    }
  
    /// Return true if the function F has a vector equivalent with any
-@@ -161,7 +167,10 @@ public:
+@@ -166,7 +172,10 @@ class TargetLibraryInfoImpl {
  
    /// Return the name of the equivalent of F, vectorized with factor VF. If no
    /// such mapping exists, return the empty string.
--  StringRef getVectorizedFunction(StringRef F, unsigned VF) const;
-+  std::string getVectorizedFunction(StringRef F, unsigned VF, bool IsFast) const;
+-  StringRef getVectorizedFunction(StringRef F, const ElementCount &VF) const;
++  std::string getVectorizedFunction(StringRef F, const ElementCount &VF, bool IsFast) const;
 +
 +  Optional<CallingConv::ID> getVectorizedFunctionCallingConv(
 +    StringRef F, const FunctionType &FTy, const DataLayout &DL) const;
  
-   /// Return true if the function F has a scalar equivalent, and set VF to be
-   /// the vectorization factor.
-@@ -322,8 +331,12 @@ public:
+   /// Set to true iff i32 parameters to library functions should have signext
+   /// or zeroext attributes if they correspond to C-level int or unsigned int,
+@@ -326,8 +335,13 @@ class TargetLibraryInfo {
    bool isFunctionVectorizable(StringRef F) const {
      return Impl->isFunctionVectorizable(F);
    }
--  StringRef getVectorizedFunction(StringRef F, unsigned VF) const {
+-  StringRef getVectorizedFunction(StringRef F, const ElementCount &VF) const {
 -    return Impl->getVectorizedFunction(F, VF);
-+  std::string getVectorizedFunction(StringRef F, unsigned VF, bool IsFast) const {
++  std::string getVectorizedFunction(StringRef F, const ElementCount &VF, bool IsFast) const {
 +    return Impl->getVectorizedFunction(F, VF, IsFast);
 +  }
++
 +  Optional<CallingConv::ID> getVectorizedFunctionCallingConv(
 +    StringRef F, const FunctionType &FTy, const DataLayout &DL) const {
 +    return Impl->getVectorizedFunctionCallingConv(F, FTy, DL);
    }
  
    /// Tests if the function is both available and a candidate for optimized code
-diff --git a/include/llvm/IR/CMakeLists.txt b/include/llvm/IR/CMakeLists.txt
-index c8edc29..e532ce0 100644
---- a/include/llvm/IR/CMakeLists.txt
-+++ b/include/llvm/IR/CMakeLists.txt
-@@ -19,3 +19,7 @@ tablegen(LLVM IntrinsicsWebAssembly.h -gen-intrinsic-enums -intrinsic-prefix=was
- tablegen(LLVM IntrinsicsX86.h -gen-intrinsic-enums -intrinsic-prefix=x86)
+diff --git a/llvm-14.0.6.src/include/llvm/AsmParser/LLToken.h b/llvm-14.0.6.src/include/llvm/AsmParser/LLToken.h
+index 78ebb35e0ea4d..3ffb57db8b18b 100644
+--- a/llvm-14.0.6.src/include/llvm/AsmParser/LLToken.h
++++ b/llvm-14.0.6.src/include/llvm/AsmParser/LLToken.h
+@@ -133,6 +133,9 @@ enum Kind {
+   kw_fastcc,
+   kw_coldcc,
+   kw_intel_ocl_bicc,
++  kw_intel_svmlcc128,
++  kw_intel_svmlcc256,
++  kw_intel_svmlcc512,
+   kw_cfguard_checkcc,
+   kw_x86_stdcallcc,
+   kw_x86_fastcallcc,
+diff --git a/llvm-14.0.6.src/include/llvm/IR/CMakeLists.txt b/llvm-14.0.6.src/include/llvm/IR/CMakeLists.txt
+index 0498fc269b634..23bb3de41bc1a 100644
+--- a/llvm-14.0.6.src/include/llvm/IR/CMakeLists.txt
++++ b/llvm-14.0.6.src/include/llvm/IR/CMakeLists.txt
+@@ -20,3 +20,7 @@ tablegen(LLVM IntrinsicsX86.h -gen-intrinsic-enums -intrinsic-prefix=x86)
  tablegen(LLVM IntrinsicsXCore.h -gen-intrinsic-enums -intrinsic-prefix=xcore)
+ tablegen(LLVM IntrinsicsVE.h -gen-intrinsic-enums -intrinsic-prefix=ve)
  add_public_tablegen_target(intrinsics_gen)
 +
 +set(LLVM_TARGET_DEFINITIONS SVML.td)
 +tablegen(LLVM SVML.inc -gen-svml)
 +add_public_tablegen_target(svml_gen)
-diff --git a/include/llvm/IR/CallingConv.h b/include/llvm/IR/CallingConv.h
-index d0906de3..ab1e07f 100644
---- a/include/llvm/IR/CallingConv.h
-+++ b/include/llvm/IR/CallingConv.h
-@@ -241,6 +241,11 @@ namespace CallingConv {
-     /// The remainder matches the regular calling convention.
-     WASM_EmscriptenInvoke = 99,
+diff --git a/llvm-14.0.6.src/include/llvm/IR/CallingConv.h b/llvm-14.0.6.src/include/llvm/IR/CallingConv.h
+index fd28542465225..096eea1a8e19b 100644
+--- a/llvm-14.0.6.src/include/llvm/IR/CallingConv.h
++++ b/llvm-14.0.6.src/include/llvm/IR/CallingConv.h
+@@ -252,6 +252,11 @@ namespace CallingConv {
+     /// M68k_INTR - Calling convention used for M68k interrupt routines.
+     M68k_INTR = 101,
  
 +    /// Intel_SVML - Calling conventions for Intel Short Math Vector Library
-+    Intel_SVML128 = 100,
-+    Intel_SVML256 = 101,
-+    Intel_SVML512 = 102,
++    Intel_SVML128 = 102,
++    Intel_SVML256 = 103,
++    Intel_SVML512 = 104,
 +
      /// The highest possible calling convention ID. Must be some 2^k - 1.
      MaxID = 1023
    };
-diff --git a/include/llvm/IR/SVML.td b/include/llvm/IR/SVML.td
+diff --git a/llvm-14.0.6.src/include/llvm/IR/SVML.td b/llvm-14.0.6.src/include/llvm/IR/SVML.td
 new file mode 100644
-index 0000000..5af7104
+index 0000000000000..5af710404c9d9
 --- /dev/null
-+++ b/include/llvm/IR/SVML.td
++++ b/llvm-14.0.6.src/include/llvm/IR/SVML.td
 @@ -0,0 +1,62 @@
 +//===-- Intel_SVML.td - Defines SVML call variants ---------*- tablegen -*-===//
 +//
@@ -213,27 +195,27 @@ index 0000000..5af7104
 +// def trunc      : SvmlVariant;
 +// def rint       : SvmlVariant;
 +// def round      : SvmlVariant;
-diff --git a/lib/Analysis/CMakeLists.txt b/lib/Analysis/CMakeLists.txt
-index 7036233..015e350 100644
---- a/lib/Analysis/CMakeLists.txt
-+++ b/lib/Analysis/CMakeLists.txt
-@@ -143,6 +143,7 @@ add_llvm_component_library(LLVMAnalysis
- 
+diff --git a/llvm-14.0.6.src/lib/Analysis/CMakeLists.txt b/llvm-14.0.6.src/lib/Analysis/CMakeLists.txt
+index aec84124129f4..98286e166fbe2 100644
+--- a/llvm-14.0.6.src/lib/Analysis/CMakeLists.txt
++++ b/llvm-14.0.6.src/lib/Analysis/CMakeLists.txt
+@@ -150,6 +150,7 @@ add_llvm_component_library(LLVMAnalysis
    DEPENDS
    intrinsics_gen
+   ${MLDeps}
 +  svml_gen
  
    LINK_LIBS
    ${MLLinkDeps}
-diff --git a/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
-index 60cfb04..fa86e99 100644
---- a/lib/Analysis/TargetLibraryInfo.cpp
-+++ b/lib/Analysis/TargetLibraryInfo.cpp
-@@ -63,6 +63,11 @@ static bool hasBcmp(const Triple &TT) {
-   return TT.isOSFreeBSD() || TT.isOSSolaris();
+diff --git a/llvm-14.0.6.src/lib/Analysis/TargetLibraryInfo.cpp b/llvm-14.0.6.src/lib/Analysis/TargetLibraryInfo.cpp
+index 02923c2c7eb14..83abde28a62a4 100644
+--- a/llvm-14.0.6.src/lib/Analysis/TargetLibraryInfo.cpp
++++ b/llvm-14.0.6.src/lib/Analysis/TargetLibraryInfo.cpp
+@@ -110,6 +110,11 @@ bool TargetLibraryInfoImpl::isCallingConvCCompatible(Function *F) {
+                                     F->getFunctionType());
  }
  
-+std::string svmlMangle(StringRef FnName, const bool IsFast) {
++static std::string svmlMangle(StringRef FnName, const bool IsFast) {
 +  std::string FullName = FnName.str();
 +  return IsFast ? FullName : FullName + "_ha";
 +}
@@ -241,7 +223,7 @@ index 60cfb04..fa86e99 100644
  /// Initialize the set of available library functions based on the specified
  /// target triple. This should be carefully written so that a missing target
  /// triple gets a sane set of defaults.
-@@ -1559,8 +1564,9 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
+@@ -1876,8 +1881,9 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
    }
    case SVML: {
      const VecDesc VecFuncs[] = {
@@ -253,14 +235,15 @@ index 60cfb04..fa86e99 100644
      };
      addVectorizableFunctions(VecFuncs);
      break;
-@@ -1580,19 +1586,51 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
+@@ -1897,20 +1903,51 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
    return I != VectorDescs.end() && StringRef(I->ScalarFnName) == funcName;
  }
  
--StringRef TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
--                                                       unsigned VF) const {
+-StringRef
+-TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
+-                                             const ElementCount &VF) const {
 +std::string TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
-+                                                         unsigned VF,
++                                                         const ElementCount &VF,
 +                                                         bool IsFast) const {
 +  bool FromSVML = ClVectorLibrary == SVML;
    F = sanitizeFunctionName(F);
@@ -310,11 +293,11 @@ index 60cfb04..fa86e99 100644
 +  return {};
  }
  
- StringRef TargetLibraryInfoImpl::getScalarizedFunction(StringRef F,
-diff --git a/lib/AsmParser/LLLexer.cpp b/lib/AsmParser/LLLexer.cpp
-index 777ce3a..9a92418 100644
---- a/lib/AsmParser/LLLexer.cpp
-+++ b/lib/AsmParser/LLLexer.cpp
+ TargetLibraryInfo TargetLibraryAnalysis::run(const Function &F,
+diff --git a/llvm-14.0.6.src/lib/AsmParser/LLLexer.cpp b/llvm-14.0.6.src/lib/AsmParser/LLLexer.cpp
+index e3bf41c9721b6..4f9dccd4e0724 100644
+--- a/llvm-14.0.6.src/lib/AsmParser/LLLexer.cpp
++++ b/llvm-14.0.6.src/lib/AsmParser/LLLexer.cpp
 @@ -603,6 +603,9 @@ lltok::Kind LLLexer::LexIdentifier() {
    KEYWORD(spir_kernel);
    KEYWORD(spir_func);
@@ -325,11 +308,11 @@ index 777ce3a..9a92418 100644
    KEYWORD(x86_64_sysvcc);
    KEYWORD(win64cc);
    KEYWORD(x86_regcallcc);
-diff --git a/lib/AsmParser/LLParser.cpp b/lib/AsmParser/LLParser.cpp
-index c9f21ee..6dac503 100644
---- a/lib/AsmParser/LLParser.cpp
-+++ b/lib/AsmParser/LLParser.cpp
-@@ -1978,6 +1978,9 @@ void LLParser::ParseOptionalDLLStorageClass(unsigned &Res) {
+diff --git a/llvm-14.0.6.src/lib/AsmParser/LLParser.cpp b/llvm-14.0.6.src/lib/AsmParser/LLParser.cpp
+index 432ec151cf8ae..3bd6ee61024b8 100644
+--- a/llvm-14.0.6.src/lib/AsmParser/LLParser.cpp
++++ b/llvm-14.0.6.src/lib/AsmParser/LLParser.cpp
+@@ -1781,6 +1781,9 @@ void LLParser::parseOptionalDLLStorageClass(unsigned &Res) {
  ///   ::= 'ccc'
  ///   ::= 'fastcc'
  ///   ::= 'intel_ocl_bicc'
@@ -339,7 +322,7 @@ index c9f21ee..6dac503 100644
  ///   ::= 'coldcc'
  ///   ::= 'cfguard_checkcc'
  ///   ::= 'x86_stdcallcc'
-@@ -2046,6 +2049,9 @@ bool LLParser::ParseOptionalCallingConv(unsigned &CC) {
+@@ -1850,6 +1853,9 @@ bool LLParser::parseOptionalCallingConv(unsigned &CC) {
    case lltok::kw_spir_kernel:    CC = CallingConv::SPIR_KERNEL; break;
    case lltok::kw_spir_func:      CC = CallingConv::SPIR_FUNC; break;
    case lltok::kw_intel_ocl_bicc: CC = CallingConv::Intel_OCL_BI; break;
@@ -349,25 +332,24 @@ index c9f21ee..6dac503 100644
    case lltok::kw_x86_64_sysvcc:  CC = CallingConv::X86_64_SysV; break;
    case lltok::kw_win64cc:        CC = CallingConv::Win64; break;
    case lltok::kw_webkit_jscc:    CC = CallingConv::WebKit_JS; break;
-diff --git a/lib/AsmParser/LLToken.h b/lib/AsmParser/LLToken.h
-index 0fb3bae..b2dabda 100644
---- a/lib/AsmParser/LLToken.h
-+++ b/lib/AsmParser/LLToken.h
-@@ -132,6 +132,9 @@ enum Kind {
-   kw_fastcc,
-   kw_coldcc,
-   kw_intel_ocl_bicc,
-+  kw_intel_svmlcc128,
-+  kw_intel_svmlcc256,
-+  kw_intel_svmlcc512,
-   kw_cfguard_checkcc,
-   kw_x86_stdcallcc,
-   kw_x86_fastcallcc,
-diff --git a/lib/IR/AsmWriter.cpp b/lib/IR/AsmWriter.cpp
-index fd08310..f1afb8e 100644
---- a/lib/IR/AsmWriter.cpp
-+++ b/lib/IR/AsmWriter.cpp
-@@ -360,6 +360,9 @@ static void PrintCallingConv(unsigned cc, raw_ostream &Out) {
+diff --git a/llvm-14.0.6.src/lib/CodeGen/ReplaceWithVeclib.cpp b/llvm-14.0.6.src/lib/CodeGen/ReplaceWithVeclib.cpp
+index 0ff045fa787e8..175651949ef85 100644
+--- a/llvm-14.0.6.src/lib/CodeGen/ReplaceWithVeclib.cpp
++++ b/llvm-14.0.6.src/lib/CodeGen/ReplaceWithVeclib.cpp
+@@ -157,7 +157,7 @@ static bool replaceWithCallToVeclib(const TargetLibraryInfo &TLI,
+   // and the exact vector width of the call operands in the
+   // TargetLibraryInfo.
+   const std::string TLIName =
+-      std::string(TLI.getVectorizedFunction(ScalarName, VF));
++      std::string(TLI.getVectorizedFunction(ScalarName, VF, CI.getFastMathFlags().isFast()));
+ 
+   LLVM_DEBUG(dbgs() << DEBUG_TYPE << ": Looking up TLI mapping for `"
+                     << ScalarName << "` and vector width " << VF << ".\n");
+diff --git a/llvm-14.0.6.src/lib/IR/AsmWriter.cpp b/llvm-14.0.6.src/lib/IR/AsmWriter.cpp
+index 179754e275b03..c4e95752c97e8 100644
+--- a/llvm-14.0.6.src/lib/IR/AsmWriter.cpp
++++ b/llvm-14.0.6.src/lib/IR/AsmWriter.cpp
+@@ -306,6 +306,9 @@ static void PrintCallingConv(unsigned cc, raw_ostream &Out) {
    case CallingConv::X86_RegCall:   Out << "x86_regcallcc"; break;
    case CallingConv::X86_VectorCall:Out << "x86_vectorcallcc"; break;
    case CallingConv::Intel_OCL_BI:  Out << "intel_ocl_bicc"; break;
@@ -377,11 +359,11 @@ index fd08310..f1afb8e 100644
    case CallingConv::ARM_APCS:      Out << "arm_apcscc"; break;
    case CallingConv::ARM_AAPCS:     Out << "arm_aapcscc"; break;
    case CallingConv::ARM_AAPCS_VFP: Out << "arm_aapcs_vfpcc"; break;
-diff --git a/lib/IR/Verifier.cpp b/lib/IR/Verifier.cpp
-index c518ae8..c4bb0fb 100644
---- a/lib/IR/Verifier.cpp
-+++ b/lib/IR/Verifier.cpp
-@@ -2296,6 +2296,9 @@ void Verifier::visitFunction(const Function &F) {
+diff --git a/llvm-14.0.6.src/lib/IR/Verifier.cpp b/llvm-14.0.6.src/lib/IR/Verifier.cpp
+index 989d01e2e3950..bae7382a36e13 100644
+--- a/llvm-14.0.6.src/lib/IR/Verifier.cpp
++++ b/llvm-14.0.6.src/lib/IR/Verifier.cpp
+@@ -2457,6 +2457,9 @@ void Verifier::visitFunction(const Function &F) {
    case CallingConv::Fast:
    case CallingConv::Cold:
    case CallingConv::Intel_OCL_BI:
@@ -391,11 +373,11 @@ index c518ae8..c4bb0fb 100644
    case CallingConv::PTX_Kernel:
    case CallingConv::PTX_Device:
      Assert(!F.isVarArg(), "Calling convention does not support varargs or "
-diff --git a/lib/Target/X86/X86CallingConv.td b/lib/Target/X86/X86CallingConv.td
-index 802e694..2b8855e 100644
---- a/lib/Target/X86/X86CallingConv.td
-+++ b/lib/Target/X86/X86CallingConv.td
-@@ -482,6 +482,21 @@ def RetCC_X86_64 : CallingConv<[
+diff --git a/llvm-14.0.6.src/lib/Target/X86/X86CallingConv.td b/llvm-14.0.6.src/lib/Target/X86/X86CallingConv.td
+index 4dd8a6cdd8982..12e65521215e4 100644
+--- a/llvm-14.0.6.src/lib/Target/X86/X86CallingConv.td
++++ b/llvm-14.0.6.src/lib/Target/X86/X86CallingConv.td
+@@ -498,6 +498,21 @@ def RetCC_X86_64 : CallingConv<[
    CCDelegateTo<RetCC_X86_64_C>
  ]>;
  
@@ -417,7 +399,7 @@ index 802e694..2b8855e 100644
  // This is the return-value convention used for the entire X86 backend.
  let Entry = 1 in
  def RetCC_X86 : CallingConv<[
-@@ -489,6 +504,10 @@ def RetCC_X86 : CallingConv<[
+@@ -505,6 +520,10 @@ def RetCC_X86 : CallingConv<[
    // Check if this is the Intel OpenCL built-ins calling convention
    CCIfCC<"CallingConv::Intel_OCL_BI", CCDelegateTo<RetCC_Intel_OCL_BI>>,
  
@@ -428,7 +410,7 @@ index 802e694..2b8855e 100644
    CCIfSubtarget<"is64Bit()", CCDelegateTo<RetCC_X86_64>>,
    CCDelegateTo<RetCC_X86_32>
  ]>;
-@@ -1006,6 +1025,30 @@ def CC_Intel_OCL_BI : CallingConv<[
+@@ -1064,6 +1083,30 @@ def CC_Intel_OCL_BI : CallingConv<[
    CCDelegateTo<CC_X86_32_C>
  ]>;
  
@@ -459,7 +441,7 @@ index 802e694..2b8855e 100644
  //===----------------------------------------------------------------------===//
  // X86 Root Argument Calling Conventions
  //===----------------------------------------------------------------------===//
-@@ -1057,6 +1100,9 @@ def CC_X86_64 : CallingConv<[
+@@ -1115,6 +1158,9 @@ def CC_X86_64 : CallingConv<[
  let Entry = 1 in
  def CC_X86 : CallingConv<[
    CCIfCC<"CallingConv::Intel_OCL_BI", CCDelegateTo<CC_Intel_OCL_BI>>,
@@ -469,11 +451,10 @@ index 802e694..2b8855e 100644
    CCIfSubtarget<"is64Bit()", CCDelegateTo<CC_X86_64>>,
    CCDelegateTo<CC_X86_32>
  ]>;
-@@ -1167,4 +1213,27 @@ def CSR_SysV64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP, RSP,
+@@ -1227,3 +1273,27 @@ def CSR_SysV64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP,
                                                 (sequence "R%u", 12, 15))>;
  def CSR_SysV64_RegCall       : CalleeSavedRegs<(add CSR_SysV64_RegCall_NoSSE,               
                                                 (sequence "XMM%u", 8, 15))>;
--                                               
 +
 +// SVML calling convention
 +def CSR_32_Intel_SVML        : CalleeSavedRegs<(add CSR_32_RegCall_NoSSE)>;
@@ -498,11 +479,11 @@ index 802e694..2b8855e 100644
 +def CSR_Win64_Intel_SVML_AVX512  : CalleeSavedRegs<(add CSR_64_Intel_SVML_NoSSE,
 +                                                    (sequence "ZMM%u", 6, 21),
 +                                                    K4, K5, K6, K7)>;
-diff --git a/lib/Target/X86/X86ISelLowering.cpp b/lib/Target/X86/X86ISelLowering.cpp
-index 56690c3..c5c5127 100644
---- a/lib/Target/X86/X86ISelLowering.cpp
-+++ b/lib/Target/X86/X86ISelLowering.cpp
-@@ -3496,7 +3496,8 @@ void VarArgsLoweringHelper::forwardMustTailParameters(SDValue &Chain) {
+diff --git a/llvm-14.0.6.src/lib/Target/X86/X86ISelLowering.cpp b/llvm-14.0.6.src/lib/Target/X86/X86ISelLowering.cpp
+index 8bb7e81e19bbd..1780ce3fc6467 100644
+--- a/llvm-14.0.6.src/lib/Target/X86/X86ISelLowering.cpp
++++ b/llvm-14.0.6.src/lib/Target/X86/X86ISelLowering.cpp
+@@ -3788,7 +3788,8 @@ void VarArgsLoweringHelper::forwardMustTailParameters(SDValue &Chain) {
    // FIXME: Only some x86_32 calling conventions support AVX512.
    if (Subtarget.useAVX512Regs() &&
        (is64Bit() || (CallConv == CallingConv::X86_VectorCall ||
@@ -512,11 +493,11 @@ index 56690c3..c5c5127 100644
      VecVT = MVT::v16f32;
    else if (Subtarget.hasAVX())
      VecVT = MVT::v8f32;
-diff --git a/lib/Target/X86/X86RegisterInfo.cpp b/lib/Target/X86/X86RegisterInfo.cpp
-index f456728..48e3ae6 100644
---- a/lib/Target/X86/X86RegisterInfo.cpp
-+++ b/lib/Target/X86/X86RegisterInfo.cpp
-@@ -270,6 +270,42 @@ X86RegisterInfo::getRegPressureLimit(const TargetRegisterClass *RC,
+diff --git a/llvm-14.0.6.src/lib/Target/X86/X86RegisterInfo.cpp b/llvm-14.0.6.src/lib/Target/X86/X86RegisterInfo.cpp
+index 130cb61cdde24..9eec3b25ca9f2 100644
+--- a/llvm-14.0.6.src/lib/Target/X86/X86RegisterInfo.cpp
++++ b/llvm-14.0.6.src/lib/Target/X86/X86RegisterInfo.cpp
+@@ -272,6 +272,42 @@ X86RegisterInfo::getRegPressureLimit(const TargetRegisterClass *RC,
    }
  }
  
@@ -559,7 +540,7 @@ index f456728..48e3ae6 100644
  const MCPhysReg *
  X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
    assert(MF && "MachineFunction required");
-@@ -320,6 +356,11 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
+@@ -327,6 +363,11 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
        return CSR_64_Intel_OCL_BI_SaveList;
      break;
    }
@@ -571,7 +552,7 @@ index f456728..48e3ae6 100644
    case CallingConv::HHVM:
      return CSR_64_HHVM_SaveList;
    case CallingConv::X86_RegCall:
-@@ -438,6 +479,11 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
+@@ -449,6 +490,11 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
        return CSR_64_Intel_OCL_BI_RegMask;
      break;
    }
@@ -583,11 +564,11 @@ index f456728..48e3ae6 100644
    case CallingConv::HHVM:
      return CSR_64_HHVM_RegMask;
    case CallingConv::X86_RegCall:
-diff --git a/lib/Target/X86/X86Subtarget.h b/lib/Target/X86/X86Subtarget.h
-index de45d35..6acc768 100644
---- a/lib/Target/X86/X86Subtarget.h
-+++ b/lib/Target/X86/X86Subtarget.h
-@@ -876,6 +876,9 @@ public:
+diff --git a/llvm-14.0.6.src/lib/Target/X86/X86Subtarget.h b/llvm-14.0.6.src/lib/Target/X86/X86Subtarget.h
+index 5d773f0c57dfb..6bdf5bc6f3fe9 100644
+--- a/llvm-14.0.6.src/lib/Target/X86/X86Subtarget.h
++++ b/llvm-14.0.6.src/lib/Target/X86/X86Subtarget.h
+@@ -916,6 +916,9 @@ class X86Subtarget final : public X86GenSubtargetInfo {
      case CallingConv::X86_ThisCall:
      case CallingConv::X86_VectorCall:
      case CallingConv::Intel_OCL_BI:
@@ -597,27 +578,26 @@ index de45d35..6acc768 100644
        return isTargetWin64();
      // This convention allows using the Win64 convention on other targets.
      case CallingConv::Win64:
-diff --git a/lib/Transforms/Utils/InjectTLIMappings.cpp b/lib/Transforms/Utils/InjectTLIMappings.cpp
-index 9d8f59d..87cf764 100644
---- a/lib/Transforms/Utils/InjectTLIMappings.cpp
-+++ b/lib/Transforms/Utils/InjectTLIMappings.cpp
-@@ -90,8 +90,7 @@ static void addMappingsFromTLI(const TargetLibraryInfo &TLI, CallInst &CI) {
-   //  All VFs in the TLI are powers of 2.
-   for (unsigned VF = 2, WidestVF = TLI.getWidestVF(ScalarName); VF <= WidestVF;
-        VF *= 2) {
--    const std::string TLIName =
+diff --git a/llvm-14.0.6.src/lib/Transforms/Utils/InjectTLIMappings.cpp b/llvm-14.0.6.src/lib/Transforms/Utils/InjectTLIMappings.cpp
+index 047bf5569ded3..59897785f156c 100644
+--- a/llvm-14.0.6.src/lib/Transforms/Utils/InjectTLIMappings.cpp
++++ b/llvm-14.0.6.src/lib/Transforms/Utils/InjectTLIMappings.cpp
+@@ -92,7 +92,7 @@ static void addMappingsFromTLI(const TargetLibraryInfo &TLI, CallInst &CI) {
+ 
+   auto AddVariantDecl = [&](const ElementCount &VF) {
+     const std::string TLIName =
 -        std::string(TLI.getVectorizedFunction(ScalarName, VF));
-+    const std::string TLIName = TLI.getVectorizedFunction(ScalarName, VF, CI.getFastMathFlags().isFast());
++        std::string(TLI.getVectorizedFunction(ScalarName, VF, CI.getFastMathFlags().isFast()));
      if (!TLIName.empty()) {
-       std::string MangledName = VFABI::mangleTLIVectorName(
-           TLIName, ScalarName, CI.getNumArgOperands(), VF);
-diff --git a/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
-index 35af8e4..d4305fe 100644
---- a/lib/Transforms/Vectorize/LoopVectorize.cpp
-+++ b/lib/Transforms/Vectorize/LoopVectorize.cpp
-@@ -672,6 +672,27 @@ protected:
-   /// vector of instructions.
-   void addMetadata(ArrayRef<Value *> To, Instruction *From);
+       std::string MangledName =
+           VFABI::mangleTLIVectorName(TLIName, ScalarName, CI.arg_size(), VF);
+diff --git a/llvm-14.0.6.src/lib/Transforms/Vectorize/LoopVectorize.cpp b/llvm-14.0.6.src/lib/Transforms/Vectorize/LoopVectorize.cpp
+index 46ff0994e04e7..f472af5e1a835 100644
+--- a/llvm-14.0.6.src/lib/Transforms/Vectorize/LoopVectorize.cpp
++++ b/llvm-14.0.6.src/lib/Transforms/Vectorize/LoopVectorize.cpp
+@@ -712,6 +712,27 @@ class InnerLoopVectorizer {
+   virtual void printDebugTracesAtStart(){};
+   virtual void printDebugTracesAtEnd(){};
  
 +  /// Check legality of given SVML call instruction \p VecCall generated for
 +  /// scalar call \p Call. If illegal then the appropriate legal instruction
@@ -626,7 +606,7 @@ index 35af8e4..d4305fe 100644
 +
 +  /// Returns the legal VF for a call instruction \p CI using TTI information
 +  /// and vector type.
-+  unsigned getLegalVFForCall(CallInst *CI);
++  ElementCount getLegalVFForCall(CallInst *CI);
 +
 +  /// Partially vectorize a given call \p Call by breaking it down into multiple
 +  /// calls of \p LegalCall, decided by the variant VF \p LegalVF.
@@ -643,8 +623,8 @@ index 35af8e4..d4305fe 100644
    /// The original loop.
    Loop *OrigLoop;
  
-@@ -4362,6 +4383,17 @@ void InnerLoopVectorizer::widenInstruction(Instruction &I, VPUser &User,
-   } // end of switch.
+@@ -4596,6 +4617,17 @@ static bool mayDivideByZero(Instruction &I) {
+   return !CInt || CInt->isZero();
  }
  
 +static void setVectorFunctionCallingConv(CallInst &CI, const DataLayout &DL,
@@ -658,40 +638,34 @@ index 35af8e4..d4305fe 100644
 +  }
 +}
 +
- void InnerLoopVectorizer::widenCallInstruction(CallInst &I, VPUser &ArgOperands,
+ void InnerLoopVectorizer::widenCallInstruction(CallInst &I, VPValue *Def,
+                                                VPUser &ArgOperands,
                                                 VPTransformState &State) {
-   assert(!isa<DbgInfoIntrinsic>(I) &&
-@@ -4426,8 +4458,24 @@ void InnerLoopVectorizer::widenCallInstruction(CallInst &I, VPUser &ArgOperands,
+@@ -4664,9 +4696,246 @@ void InnerLoopVectorizer::widenCallInstruction(CallInst &I, VPValue *Def,
        if (isa<FPMathOperator>(V))
          V->copyFastMathFlags(CI);
  
--      VectorLoopValueMap.setVectorValue(&I, Part, V);
--      addMetadata(V, &I);
-+      const DataLayout &DL = V->getModule()->getDataLayout();
-+      setVectorFunctionCallingConv(*V, DL, *TLI);
++    const DataLayout &DL = V->getModule()->getDataLayout();
++    setVectorFunctionCallingConv(*V, DL, *TLI);
 +
-+      // Perform legalization of SVML call instruction only if original call
-+      // was not Intrinsic
-+      if (!UseVectorIntrinsic &&
-+          (V->getCalledFunction()->getName()).startswith("__svml")) {
-+        // assert((V->getCalledFunction()->getName()).startswith("__svml"));
-+        LLVM_DEBUG(dbgs() << "LV(SVML): Vector call inst:"; V->dump());
-+        auto *LegalV = cast<Instruction>(legalizeSVMLCall(V, CI));
-+        LLVM_DEBUG(dbgs() << "LV: Completed SVML legalization.\n LegalV: ";
-+                   LegalV->dump());
-+        VectorLoopValueMap.setVectorValue(&I, Part, LegalV);
-+        addMetadata(LegalV, &I);
-+      } else {
-+        VectorLoopValueMap.setVectorValue(&I, Part, V);
-+        addMetadata(V, &I);
-+      }
-   }
- }
- 
-@@ -4455,6 +4503,227 @@ void InnerLoopVectorizer::widenSelectInstruction(SelectInst &I,
-   }
- }
- 
++    // Perform legalization of SVML call instruction only if original call
++    // was not Intrinsic
++    if (!UseVectorIntrinsic &&
++        (V->getCalledFunction()->getName()).startswith("__svml")) {
++      // assert((V->getCalledFunction()->getName()).startswith("__svml"));
++      LLVM_DEBUG(dbgs() << "LV(SVML): Vector call inst:"; V->dump());
++      auto *LegalV = cast<Instruction>(legalizeSVMLCall(V, CI));
++      LLVM_DEBUG(dbgs() << "LV: Completed SVML legalization.\n LegalV: ";
++                 LegalV->dump());
++      State.set(Def, LegalV, Part);
++      addMetadata(LegalV, &I);
++    } else {
+       State.set(Def, V, Part);
+       addMetadata(V, &I);
++    }
++  }
++}
++
 +//===----------------------------------------------------------------------===//
 +// Implementation of functions for SVML vector call legalization.
 +//===----------------------------------------------------------------------===//
@@ -736,14 +710,14 @@ index 35af8e4..d4305fe 100644
 +
 +Value *InnerLoopVectorizer::legalizeSVMLCall(CallInst *VecCall,
 +                                             CallInst *Call) {
-+  unsigned LegalVF = getLegalVFForCall(VecCall);
++  ElementCount LegalVF = getLegalVFForCall(VecCall);
 +
-+  assert(LegalVF > 1 &&
++  assert(LegalVF.getKnownMinValue() > 1 &&
 +         "Legal VF for SVML call must be greater than 1 to vectorize");
 +
 +  if (LegalVF == VF)
 +    return VecCall;
-+  else if (LegalVF > VF)
++  else if (LegalVF.getKnownMinValue() > VF.getKnownMinValue())
 +    // TODO: handle case when we are underfilling vectors
 +    return VecCall;
 +
@@ -754,15 +728,15 @@ index 35af8e4..d4305fe 100644
 +  SmallVector<Type *, 4> NewTys;
 +  SmallVector<Value *, 4> NewArgs;
 +
-+  for (Value *ArgOperand : Call->arg_operands()) {
++  for (Value *ArgOperand : Call->args()) {
 +    Type *Ty = ToVectorTy(ArgOperand->getType(), LegalVF);
 +    NewTys.push_back(Ty);
 +    NewArgs.push_back(UndefValue::get(Ty));
-+  }
+   }
 +
 +  // Construct legal vector function
 +  const VFShape Shape =
-+    VFShape::get(*Call, {LegalVF, false} /*EC*/, false /*HasGlobalPred*/);
++    VFShape::get(*Call, LegalVF /*EC*/, false /*HasGlobalPred*/);
 +  Function *LegalVectorF = VFDatabase(*Call).getVectorizedFunction(Shape);
 +  assert(LegalVectorF != nullptr && "Can't create legal vector function.");
 +
@@ -781,7 +755,7 @@ index 35af8e4..d4305fe 100644
 +
 +  LLVM_DEBUG(dbgs() << "LV(SVML): LegalV: "; LegalV->dump());
 +
-+  Value *LegalizedCall = partialVectorizeCall(VecCall, LegalV.get(), LegalVF);
++  Value *LegalizedCall = partialVectorizeCall(VecCall, LegalV.get(), LegalVF.getKnownMinValue());
 +
 +  LLVM_DEBUG(dbgs() << "LV(SVML): LegalizedCall: "; LegalizedCall->dump());
 +
@@ -791,7 +765,7 @@ index 35af8e4..d4305fe 100644
 +  return LegalizedCall;
 +}
 +
-+unsigned InnerLoopVectorizer::getLegalVFForCall(CallInst *CI) {
++ElementCount InnerLoopVectorizer::getLegalVFForCall(CallInst *CI) {
 +  const DataLayout DL = CI->getModule()->getDataLayout();
 +  FunctionType *CallFT = CI->getFunctionType();
 +  // All functions that need legalization should have a vector return type.
@@ -802,7 +776,7 @@ index 35af8e4..d4305fe 100644
 +  Type *ElemType = VecCallRetType->getElementType();
 +
 +  unsigned TypeBitWidth = DL.getTypeSizeInBits(ElemType);
-+  unsigned VectorBitWidth = TTI->getRegisterBitWidth(true);
++  unsigned VectorBitWidth = TTI->getRegisterBitWidth(TargetTransformInfo::RGK_FixedWidthVector);
 +  unsigned LegalVF = VectorBitWidth / TypeBitWidth;
 +
 +  LLVM_DEBUG(dbgs() << "LV(SVML): Type Bit Width: " << TypeBitWidth << "\n");
@@ -811,7 +785,7 @@ index 35af8e4..d4305fe 100644
 +                    << "\n");
 +  LLVM_DEBUG(dbgs() << "LV(SVML): Legal Target VL: " << LegalVF << "\n");
 +
-+  return LegalVF;
++  return ElementCount::getFixed(LegalVF);
 +}
 +
 +// Partial vectorization of a call instruction is achieved by making clones of
@@ -820,7 +794,7 @@ index 35af8e4..d4305fe 100644
 +Value *InnerLoopVectorizer::partialVectorizeCall(CallInst *Call,
 +                                                 CallInst *LegalCall,
 +                                                 unsigned LegalVF) {
-+  unsigned NumParts = VF / LegalVF;
++  unsigned NumParts = VF.getKnownMinValue() / LegalVF;
 +  LLVM_DEBUG(dbgs() << "LV(SVML): NumParts: " << NumParts << "\n");
 +  SmallVector<Value *, 8> CallResults;
 +
@@ -828,7 +802,7 @@ index 35af8e4..d4305fe 100644
 +    auto *ClonedCall = cast<CallInst>(LegalCall->clone());
 +
 +    // Update the arg operand of cloned call to shufflevector
-+    for (unsigned i = 0, ie = Call->getNumArgOperands(); i != ie; ++i) {
++    for (unsigned i = 0, ie = Call->arg_size(); i != ie; ++i) {
 +      auto *NewOp = generateShuffleValue(Call->getArgOperand(i), LegalVF, Part);
 +      ClonedCall->setArgOperand(i, NewOp);
 +    }
@@ -882,7 +856,7 @@ index 35af8e4..d4305fe 100644
 +  auto *CallType = cast<VectorType>(CallResults[0]->getType());
 +
 +  Value *CombinedShuffle;
-+  unsigned NumElems = CallType->getNumElements() * 2;
++  unsigned NumElems = CallType->getElementCount().getKnownMinValue() * 2;
 +  unsigned NumRegs = CallResults.size();
 +
 +  assert(NumRegs >= 2 && isPowerOf2_32(NumRegs) &&
@@ -911,15 +885,71 @@ index 35af8e4..d4305fe 100644
 +  }
 +
 +  return CombinedShuffle;
+ }
+ 
+ void LoopVectorizationCostModel::collectLoopScalars(ElementCount VF) {
+diff --git a/llvm-14.0.6.src/lib/Transforms/Vectorize/SLPVectorizer.cpp b/llvm-14.0.6.src/lib/Transforms/Vectorize/SLPVectorizer.cpp
+index 644372483edde..342f018b92184 100644
+--- a/llvm-14.0.6.src/lib/Transforms/Vectorize/SLPVectorizer.cpp
++++ b/llvm-14.0.6.src/lib/Transforms/Vectorize/SLPVectorizer.cpp
+@@ -6322,6 +6322,17 @@ Value *BoUpSLP::vectorizeTree(ArrayRef<Value *> VL) {
+   return Vec;
+ }
+ 
++static void setVectorFunctionCallingConv(CallInst &CI, const DataLayout &DL,
++                                         const TargetLibraryInfo &TLI) {
++  Function *VectorF = CI.getCalledFunction();
++  FunctionType *FTy = VectorF->getFunctionType();
++  StringRef VFName = VectorF->getName();
++  auto CC = TLI.getVectorizedFunctionCallingConv(VFName, *FTy, DL);
++  if (CC) {
++    CI.setCallingConv(*CC);
++  }
 +}
 +
- void LoopVectorizationCostModel::collectLoopScalars(unsigned VF) {
-   // We should not collect Scalars more than once per VF. Right now, this
-   // function is called from collectUniformsAndScalars(), which already does
-diff --git a/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll b/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
-index 1e55e7d..5cf1f9d 100644
---- a/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
-+++ b/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
+ Value *BoUpSLP::vectorizeTree(TreeEntry *E) {
+   IRBuilder<>::InsertPointGuard Guard(Builder);
+ 
+@@ -6794,7 +6805,12 @@ Value *BoUpSLP::vectorizeTree(TreeEntry *E) {
+ 
+       SmallVector<OperandBundleDef, 1> OpBundles;
+       CI->getOperandBundlesAsDefs(OpBundles);
+-      Value *V = Builder.CreateCall(CF, OpVecs, OpBundles);
++
++      CallInst *NewCall = Builder.CreateCall(CF, OpVecs, OpBundles);
++      const DataLayout &DL = NewCall->getModule()->getDataLayout();
++      setVectorFunctionCallingConv(*NewCall, DL, *TLI);
++
++      Value *V = NewCall;
+ 
+       // The scalar argument uses an in-tree scalar so we add the new vectorized
+       // call to ExternalUses list to make sure that an extract will be
+diff --git a/llvm-14.0.6.src/test/CodeGen/Generic/replace-intrinsics-with-veclib.ll b/llvm-14.0.6.src/test/CodeGen/Generic/replace-intrinsics-with-veclib.ll
+index df8b7c498bd00..63a36549f18fd 100644
+--- a/llvm-14.0.6.src/test/CodeGen/Generic/replace-intrinsics-with-veclib.ll
++++ b/llvm-14.0.6.src/test/CodeGen/Generic/replace-intrinsics-with-veclib.ll
+@@ -10,7 +10,7 @@ target triple = "x86_64-unknown-linux-gnu"
+ define <4 x double> @exp_v4(<4 x double> %in) {
+ ; SVML-LABEL: define {{[^@]+}}@exp_v4
+ ; SVML-SAME: (<4 x double> [[IN:%.*]]) {
+-; SVML-NEXT:    [[TMP1:%.*]] = call <4 x double> @__svml_exp4(<4 x double> [[IN]])
++; SVML-NEXT:    [[TMP1:%.*]] = call <4 x double> @__svml_exp4_ha(<4 x double> [[IN]])
+ ; SVML-NEXT:    ret <4 x double> [[TMP1]]
+ ;
+ ; LIBMVEC-X86-LABEL: define {{[^@]+}}@exp_v4
+@@ -37,7 +37,7 @@ declare <4 x double> @llvm.exp.v4f64(<4 x double>) #0
+ define <4 x float> @exp_f32(<4 x float> %in) {
+ ; SVML-LABEL: define {{[^@]+}}@exp_f32
+ ; SVML-SAME: (<4 x float> [[IN:%.*]]) {
+-; SVML-NEXT:    [[TMP1:%.*]] = call <4 x float> @__svml_expf4(<4 x float> [[IN]])
++; SVML-NEXT:    [[TMP1:%.*]] = call <4 x float> @__svml_expf4_ha(<4 x float> [[IN]])
+ ; SVML-NEXT:    ret <4 x float> [[TMP1]]
+ ;
+ ; LIBMVEC-X86-LABEL: define {{[^@]+}}@exp_f32
+diff --git a/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll b/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
+index a6e191c3d6923..d6e2e11106949 100644
+--- a/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
++++ b/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-calls-finite.ll
 @@ -39,7 +39,8 @@ for.end:                                          ; preds = %for.body
  declare double @__exp_finite(double) #0
  
@@ -970,11 +1000,41 @@ index 1e55e7d..5cf1f9d 100644
  ; CHECK:    ret void
  ;
  entry:
-diff --git a/test/Transforms/LoopVectorize/X86/svml-calls.ll b/test/Transforms/LoopVectorize/X86/svml-calls.ll
-index 1f2b71f..e84d9ae 100644
---- a/test/Transforms/LoopVectorize/X86/svml-calls.ll
-+++ b/test/Transforms/LoopVectorize/X86/svml-calls.ll
-@@ -35,7 +35,7 @@ declare float @llvm.exp2.f32(float) #0
+@@ -276,7 +281,8 @@ for.end:                                          ; preds = %for.body
+ declare double @__log2_finite(double) #0
+ 
+ ; CHECK-LABEL: @log2_f64
+-; CHECK: <4 x double> @__svml_log24
++; CHECK: <2 x double> @__svml_log22
++; CHECK: <2 x double> @__svml_log22
+ ; CHECK: ret
+ define void @log2_f64(double* nocapture %varray) {
+ entry:
+@@ -333,7 +339,8 @@ for.end:                                          ; preds = %for.body
+ declare double @__log10_finite(double) #0
+ 
+ ; CHECK-LABEL: @log10_f64
+-; CHECK: <4 x double> @__svml_log104
++; CHECK: <2 x double> @__svml_log102
++; CHECK: <2 x double> @__svml_log102
+ ; CHECK: ret
+ define void @log10_f64(double* nocapture %varray) {
+ entry:
+@@ -390,7 +397,8 @@ for.end:                                          ; preds = %for.body
+ declare double @__sqrt_finite(double) #0
+ 
+ ; CHECK-LABEL: @sqrt_f64
+-; CHECK: <4 x double> @__svml_sqrt4
++; CHECK: <2 x double> @__svml_sqrt2
++; CHECK: <2 x double> @__svml_sqrt2
+ ; CHECK: ret
+ define void @sqrt_f64(double* nocapture %varray) {
+ entry:
+diff --git a/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-calls.ll b/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-calls.ll
+index 42c280df6ad02..088bbdcf1aa4a 100644
+--- a/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-calls.ll
++++ b/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-calls.ll
+@@ -48,7 +48,7 @@ declare float @llvm.exp2.f32(float) #0
  
  define void @sin_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @sin_f64(
@@ -983,7 +1043,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -58,7 +58,7 @@ for.end:
+@@ -71,7 +71,7 @@ for.end:
  
  define void @sin_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @sin_f32(
@@ -992,7 +1052,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -81,7 +81,7 @@ for.end:
+@@ -94,7 +94,7 @@ for.end:
  
  define void @sin_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @sin_f64_intrinsic(
@@ -1001,7 +1061,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -104,7 +104,7 @@ for.end:
+@@ -117,7 +117,7 @@ for.end:
  
  define void @sin_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @sin_f32_intrinsic(
@@ -1010,7 +1070,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -127,7 +127,7 @@ for.end:
+@@ -140,7 +140,7 @@ for.end:
  
  define void @cos_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @cos_f64(
@@ -1019,7 +1079,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -150,7 +150,7 @@ for.end:
+@@ -163,7 +163,7 @@ for.end:
  
  define void @cos_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @cos_f32(
@@ -1028,7 +1088,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -173,7 +173,7 @@ for.end:
+@@ -186,7 +186,7 @@ for.end:
  
  define void @cos_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @cos_f64_intrinsic(
@@ -1037,7 +1097,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -196,7 +196,7 @@ for.end:
+@@ -209,7 +209,7 @@ for.end:
  
  define void @cos_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @cos_f32_intrinsic(
@@ -1046,7 +1106,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -219,7 +219,7 @@ for.end:
+@@ -232,7 +232,7 @@ for.end:
  
  define void @pow_f64(double* nocapture %varray, double* nocapture readonly %exp) {
  ; CHECK-LABEL: @pow_f64(
@@ -1055,7 +1115,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -244,7 +244,7 @@ for.end:
+@@ -257,7 +257,7 @@ for.end:
  
  define void @pow_f64_intrinsic(double* nocapture %varray, double* nocapture readonly %exp) {
  ; CHECK-LABEL: @pow_f64_intrinsic(
@@ -1064,7 +1124,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -269,7 +269,7 @@ for.end:
+@@ -282,7 +282,7 @@ for.end:
  
  define void @pow_f32(float* nocapture %varray, float* nocapture readonly %exp) {
  ; CHECK-LABEL: @pow_f32(
@@ -1073,7 +1133,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -294,7 +294,7 @@ for.end:
+@@ -307,7 +307,7 @@ for.end:
  
  define void @pow_f32_intrinsic(float* nocapture %varray, float* nocapture readonly %exp) {
  ; CHECK-LABEL: @pow_f32_intrinsic(
@@ -1082,7 +1142,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -319,7 +319,7 @@ for.end:
+@@ -332,7 +332,7 @@ for.end:
  
  define void @exp_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @exp_f64(
@@ -1091,7 +1151,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -342,7 +342,7 @@ for.end:
+@@ -355,7 +355,7 @@ for.end:
  
  define void @exp_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @exp_f32(
@@ -1100,7 +1160,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -365,7 +365,7 @@ for.end:
+@@ -378,7 +378,7 @@ for.end:
  
  define void @exp_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @exp_f64_intrinsic(
@@ -1109,7 +1169,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -388,7 +388,7 @@ for.end:
+@@ -401,7 +401,7 @@ for.end:
  
  define void @exp_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @exp_f32_intrinsic(
@@ -1118,7 +1178,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -411,7 +411,7 @@ for.end:
+@@ -424,7 +424,7 @@ for.end:
  
  define void @log_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @log_f64(
@@ -1127,7 +1187,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -434,7 +434,7 @@ for.end:
+@@ -447,7 +447,7 @@ for.end:
  
  define void @log_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @log_f32(
@@ -1136,7 +1196,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -457,7 +457,7 @@ for.end:
+@@ -470,7 +470,7 @@ for.end:
  
  define void @log_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @log_f64_intrinsic(
@@ -1145,7 +1205,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -480,7 +480,7 @@ for.end:
+@@ -493,7 +493,7 @@ for.end:
  
  define void @log_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @log_f32_intrinsic(
@@ -1154,7 +1214,97 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -503,7 +503,7 @@ for.end:
+@@ -516,7 +516,7 @@ for.end:
+ 
+ define void @log2_f64(double* nocapture %varray) {
+ ; CHECK-LABEL: @log2_f64(
+-; CHECK:    [[TMP5:%.*]] = call <4 x double> @__svml_log24(<4 x double> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc256 <4 x double> @__svml_log24_ha(<4 x double> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -539,7 +539,7 @@ for.end:
+ 
+ define void @log2_f32(float* nocapture %varray) {
+ ; CHECK-LABEL: @log2_f32(
+-; CHECK:    [[TMP5:%.*]] = call <4 x float> @__svml_log2f4(<4 x float> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc128 <4 x float> @__svml_log2f4_ha(<4 x float> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -562,7 +562,7 @@ for.end:
+ 
+ define void @log2_f64_intrinsic(double* nocapture %varray) {
+ ; CHECK-LABEL: @log2_f64_intrinsic(
+-; CHECK:    [[TMP5:%.*]] = call <4 x double> @__svml_log24(<4 x double> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc256 <4 x double> @__svml_log24_ha(<4 x double> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -585,7 +585,7 @@ for.end:
+ 
+ define void @log2_f32_intrinsic(float* nocapture %varray) {
+ ; CHECK-LABEL: @log2_f32_intrinsic(
+-; CHECK:    [[TMP5:%.*]] = call <4 x float> @__svml_log2f4(<4 x float> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc128 <4 x float> @__svml_log2f4_ha(<4 x float> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -608,7 +608,7 @@ for.end:
+ 
+ define void @log10_f64(double* nocapture %varray) {
+ ; CHECK-LABEL: @log10_f64(
+-; CHECK:    [[TMP5:%.*]] = call <4 x double> @__svml_log104(<4 x double> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc256 <4 x double> @__svml_log104_ha(<4 x double> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -631,7 +631,7 @@ for.end:
+ 
+ define void @log10_f32(float* nocapture %varray) {
+ ; CHECK-LABEL: @log10_f32(
+-; CHECK:    [[TMP5:%.*]] = call <4 x float> @__svml_log10f4(<4 x float> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc128 <4 x float> @__svml_log10f4_ha(<4 x float> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -654,7 +654,7 @@ for.end:
+ 
+ define void @log10_f64_intrinsic(double* nocapture %varray) {
+ ; CHECK-LABEL: @log10_f64_intrinsic(
+-; CHECK:    [[TMP5:%.*]] = call <4 x double> @__svml_log104(<4 x double> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc256 <4 x double> @__svml_log104_ha(<4 x double> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -677,7 +677,7 @@ for.end:
+ 
+ define void @log10_f32_intrinsic(float* nocapture %varray) {
+ ; CHECK-LABEL: @log10_f32_intrinsic(
+-; CHECK:    [[TMP5:%.*]] = call <4 x float> @__svml_log10f4(<4 x float> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc128 <4 x float> @__svml_log10f4_ha(<4 x float> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -700,7 +700,7 @@ for.end:
+ 
+ define void @sqrt_f64(double* nocapture %varray) {
+ ; CHECK-LABEL: @sqrt_f64(
+-; CHECK:    [[TMP5:%.*]] = call <4 x double> @__svml_sqrt4(<4 x double> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc256 <4 x double> @__svml_sqrt4_ha(<4 x double> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -723,7 +723,7 @@ for.end:
+ 
+ define void @sqrt_f32(float* nocapture %varray) {
+ ; CHECK-LABEL: @sqrt_f32(
+-; CHECK:    [[TMP5:%.*]] = call <4 x float> @__svml_sqrtf4(<4 x float> [[TMP4:%.*]])
++; CHECK:    [[TMP5:%.*]] = call intel_svmlcc128 <4 x float> @__svml_sqrtf4_ha(<4 x float> [[TMP4:%.*]])
+ ; CHECK:    ret void
+ ;
+ entry:
+@@ -746,7 +746,7 @@ for.end:
  
  define void @exp2_f64(double* nocapture %varray) {
  ; CHECK-LABEL: @exp2_f64(
@@ -1163,7 +1313,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -526,7 +526,7 @@ for.end:
+@@ -769,7 +769,7 @@ for.end:
  
  define void @exp2_f32(float* nocapture %varray) {
  ; CHECK-LABEL: @exp2_f32(
@@ -1172,7 +1322,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -549,7 +549,7 @@ for.end:
+@@ -792,7 +792,7 @@ for.end:
  
  define void @exp2_f64_intrinsic(double* nocapture %varray) {
  ; CHECK-LABEL: @exp2_f64_intrinsic(
@@ -1181,7 +1331,7 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -572,7 +572,7 @@ for.end:
+@@ -815,7 +815,7 @@ for.end:
  
  define void @exp2_f32_intrinsic(float* nocapture %varray) {
  ; CHECK-LABEL: @exp2_f32_intrinsic(
@@ -1190,13 +1340,13 @@ index 1f2b71f..e84d9ae 100644
  ; CHECK:    ret void
  ;
  entry:
-@@ -593,4 +593,44 @@ for.end:
+@@ -836,4 +836,44 @@ for.end:
    ret void
  }
  
 +; CHECK-LABEL: @atan2_finite
-+; CHECK: intel_svmlcc256 <4 x double> @__svml_atan24
-+; CHECK: intel_svmlcc256 <4 x double> @__svml_atan24
++; CHECK: intel_svmlcc256 <4 x double> @__svml_atan24(
++; CHECK: intel_svmlcc256 <4 x double> @__svml_atan24(
 +; CHECK: ret
 +
 +declare double @__atan2_finite(double, double) local_unnamed_addr #0
@@ -1235,15 +1385,15 @@ index 1f2b71f..e84d9ae 100644
 +!5 = distinct !{!5, !6, !7}
 +!6 = !{!"llvm.loop.vectorize.width", i32 8}
 +!7 = !{!"llvm.loop.vectorize.enable", i1 true}
-diff --git a/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll b/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
+diff --git a/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll b/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
 new file mode 100644
-index 0000000..6e4267c
+index 0000000000000..326c763994343
 --- /dev/null
-+++ b/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
++++ b/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
 @@ -0,0 +1,513 @@
 +; Check legalization of SVML calls, including intrinsic versions (like @llvm.<fn_name>.<type>).
 +
-+; RUN: opt -vector-library=SVML -loop-vectorize -force-vector-width=8 -force-vector-interleave=1 -mattr=avx -S < %s | FileCheck %s
++; RUN: opt -vector-library=SVML -inject-tli-mappings -loop-vectorize -force-vector-width=8 -force-vector-interleave=1 -mattr=avx -S < %s | FileCheck %s
 +
 +target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 +target triple = "x86_64-unknown-linux-gnu"
@@ -1754,11 +1904,11 @@ index 0000000..6e4267c
 +
 +attributes #0 = { nounwind readnone }
 +
-diff --git a/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll b/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
+diff --git a/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll b/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
 new file mode 100644
-index 0000000..f9e9170
+index 0000000000000..9422653445dc2
 --- /dev/null
-+++ b/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
++++ b/llvm-14.0.6.src/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
 @@ -0,0 +1,61 @@
 +; Check that vector codegen splits illegal sin8 call to two sin4 calls on AVX for double datatype.
 +; The C code used to generate this test:
@@ -1773,7 +1923,7 @@ index 0000000..f9e9170
 +;   }
 +; }
 +
-+; RUN: opt -O2 -vector-library=SVML -loop-vectorize -force-vector-width=8 -mattr=avx -S < %s | FileCheck %s
++; RUN: opt -vector-library=SVML -inject-tli-mappings -loop-vectorize -force-vector-width=8 -mattr=avx -S < %s | FileCheck %s
 +
 +; CHECK: [[I1:%.*]] = sitofp <8 x i32> [[I0:%.*]] to <8 x double>
 +; CHECK-NEXT: [[S1:%shuffle.*]] = shufflevector <8 x double> [[I1]], <8 x double> undef, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
@@ -1821,11 +1971,47 @@ index 0000000..f9e9170
 +!5 = !{!"Simple C/C++ TBAA"}
 +!6 = distinct !{!6, !7}
 +!7 = !{!"llvm.loop.vectorize.width", i32 8}
-diff --git a/utils/TableGen/CMakeLists.txt b/utils/TableGen/CMakeLists.txt
-index 8673a25..dcf2430 100644
---- a/utils/TableGen/CMakeLists.txt
-+++ b/utils/TableGen/CMakeLists.txt
-@@ -46,6 +46,7 @@ add_tablegen(llvm-tblgen LLVM
+diff --git a/llvm-14.0.6.src/test/Transforms/Util/add-TLI-mappings.ll b/llvm-14.0.6.src/test/Transforms/Util/add-TLI-mappings.ll
+index e8c83c4d9bd1f..615fdc29176a2 100644
+--- a/llvm-14.0.6.src/test/Transforms/Util/add-TLI-mappings.ll
++++ b/llvm-14.0.6.src/test/Transforms/Util/add-TLI-mappings.ll
+@@ -12,12 +12,12 @@ target triple = "x86_64-unknown-linux-gnu"
+ 
+ ; COMMON-LABEL: @llvm.compiler.used = appending global
+ ; SVML-SAME:        [6 x i8*] [
+-; SVML-SAME:          i8* bitcast (<2 x double> (<2 x double>)* @__svml_sin2 to i8*),
+-; SVML-SAME:          i8* bitcast (<4 x double> (<4 x double>)* @__svml_sin4 to i8*),
+-; SVML-SAME:          i8* bitcast (<8 x double> (<8 x double>)* @__svml_sin8 to i8*),
+-; SVML-SAME:          i8* bitcast (<4 x float> (<4 x float>)* @__svml_log10f4 to i8*),
+-; SVML-SAME:          i8* bitcast (<8 x float> (<8 x float>)* @__svml_log10f8 to i8*),
+-; SVML-SAME:          i8* bitcast (<16 x float> (<16 x float>)* @__svml_log10f16 to i8*)
++; SVML-SAME:          i8* bitcast (<2 x double> (<2 x double>)* @__svml_sin2_ha to i8*),
++; SVML-SAME:          i8* bitcast (<4 x double> (<4 x double>)* @__svml_sin4_ha to i8*),
++; SVML-SAME:          i8* bitcast (<8 x double> (<8 x double>)* @__svml_sin8_ha to i8*),
++; SVML-SAME:          i8* bitcast (<4 x float> (<4 x float>)* @__svml_log10f4_ha to i8*),
++; SVML-SAME:          i8* bitcast (<8 x float> (<8 x float>)* @__svml_log10f8_ha to i8*),
++; SVML-SAME:          i8* bitcast (<16 x float> (<16 x float>)* @__svml_log10f16_ha to i8*)
+ ; MASSV-SAME:       [2 x i8*] [
+ ; MASSV-SAME:         i8* bitcast (<2 x double> (<2 x double>)* @__sind2 to i8*),
+ ; MASSV-SAME:         i8* bitcast (<4 x float> (<4 x float>)* @__log10f4 to i8*)
+@@ -59,9 +59,9 @@ declare float @llvm.log10.f32(float) #0
+ attributes #0 = { nounwind readnone }
+ 
+ ; SVML:      attributes #[[SIN]] = { "vector-function-abi-variant"=
+-; SVML-SAME:   "_ZGV_LLVM_N2v_sin(__svml_sin2),
+-; SVML-SAME:   _ZGV_LLVM_N4v_sin(__svml_sin4),
+-; SVML-SAME:   _ZGV_LLVM_N8v_sin(__svml_sin8)" }
++; SVML-SAME:   "_ZGV_LLVM_N2v_sin(__svml_sin2_ha),
++; SVML-SAME:   _ZGV_LLVM_N4v_sin(__svml_sin4_ha),
++; SVML-SAME:   _ZGV_LLVM_N8v_sin(__svml_sin8_ha)" }
+ 
+ ; MASSV:      attributes #[[SIN]] = { "vector-function-abi-variant"=
+ ; MASSV-SAME:   "_ZGV_LLVM_N2v_sin(__sind2)" }
+diff --git a/llvm-14.0.6.src/utils/TableGen/CMakeLists.txt b/llvm-14.0.6.src/utils/TableGen/CMakeLists.txt
+index 97df6a55d1b59..199e0285c9e5d 100644
+--- a/llvm-14.0.6.src/utils/TableGen/CMakeLists.txt
++++ b/llvm-14.0.6.src/utils/TableGen/CMakeLists.txt
+@@ -47,6 +47,7 @@ add_tablegen(llvm-tblgen LLVM
    SearchableTableEmitter.cpp
    SubtargetEmitter.cpp
    SubtargetFeatureInfo.cpp
@@ -1833,11 +2019,11 @@ index 8673a25..dcf2430 100644
    TableGen.cpp
    Types.cpp
    X86DisassemblerTables.cpp
-diff --git a/utils/TableGen/SVMLEmitter.cpp b/utils/TableGen/SVMLEmitter.cpp
+diff --git a/llvm-14.0.6.src/utils/TableGen/SVMLEmitter.cpp b/llvm-14.0.6.src/utils/TableGen/SVMLEmitter.cpp
 new file mode 100644
-index 0000000..8800ca8
+index 0000000000000..a5aeea48db28b
 --- /dev/null
-+++ b/utils/TableGen/SVMLEmitter.cpp
++++ b/llvm-14.0.6.src/utils/TableGen/SVMLEmitter.cpp
 @@ -0,0 +1,110 @@
 +//===------ SVMLEmitter.cpp - Generate SVML function variants -------------===//
 +//
@@ -1903,35 +2089,35 @@ index 0000000..8800ca8
 +      // Emit the scalar math library function to svml function entry.
 +      OS << "{\"" << SvmlVariantNameStr << "f" << "\", ";
 +      OS << "\"" << "__svml_" << SvmlVariantNameStr << "f" << VL << "\", "
-+         << VL << "},\n";
++         << "ElementCount::getFixed(" << VL << ")},\n";
 +
 +      // Emit the scalar intrinsic to svml function entry.
 +      OS << "{\"" << "llvm." << SvmlVariantNameStr << ".f32" << "\", ";
 +      OS << "\"" << "__svml_" << SvmlVariantNameStr << "f" << VL << "\", "
-+         << VL << "},\n";
++         << "ElementCount::getFixed(" << VL << ")},\n";
 +
 +      // Emit the finite math library function to svml function entry.
 +      OS << "{\"__" << SvmlVariantNameStr << "f_finite" << "\", ";
 +      OS << "\"" << "__svml_" << SvmlVariantNameStr << "f" << VL << "\", "
-+         << VL << "},\n";
++         << "ElementCount::getFixed(" << VL << ")},\n";
 +    }
 +
 +    // Double Precision SVML
 +    for (unsigned VL = MinDoublePrecVL; VL <= MaxDoublePrecVL; VL *= 2) {
 +      // Emit the scalar math library function to svml function entry.
 +      OS << "{\"" << SvmlVariantNameStr << "\", ";
-+      OS << "\"" << "__svml_" << SvmlVariantNameStr << VL << "\", " << VL
-+         << "},\n";
++      OS << "\"" << "__svml_" << SvmlVariantNameStr << VL << "\", " << "ElementCount::getFixed(" << VL
++         << ")},\n";
 +
 +      // Emit the scalar intrinsic to svml function entry.
 +      OS << "{\"" << "llvm." << SvmlVariantNameStr << ".f64" << "\", ";
-+      OS << "\"" << "__svml_" << SvmlVariantNameStr << VL << "\", " << VL
-+         << "},\n";
++      OS << "\"" << "__svml_" << SvmlVariantNameStr << VL << "\", " << "ElementCount::getFixed(" << VL
++         << ")},\n";
 +
 +      // Emit the finite math library function to svml function entry.
 +      OS << "{\"__" << SvmlVariantNameStr << "_finite" << "\", ";
 +      OS << "\"" << "__svml_" << SvmlVariantNameStr << VL << "\", "
-+         << VL << "},\n";
++         << "ElementCount::getFixed(" << VL << ")},\n";
 +    }
 +  }
 +
@@ -1949,32 +2135,32 @@ index 0000000..8800ca8
 +}
 +
 +} // End llvm namespace
-diff --git a/utils/TableGen/TableGen.cpp b/utils/TableGen/TableGen.cpp
-index 8015a58..a61a7b3 100644
---- a/utils/TableGen/TableGen.cpp
-+++ b/utils/TableGen/TableGen.cpp
+diff --git a/llvm-14.0.6.src/utils/TableGen/TableGen.cpp b/llvm-14.0.6.src/utils/TableGen/TableGen.cpp
+index 2d4a45f889be6..603d0c223b33a 100644
+--- a/llvm-14.0.6.src/utils/TableGen/TableGen.cpp
++++ b/llvm-14.0.6.src/utils/TableGen/TableGen.cpp
 @@ -57,6 +57,7 @@ enum ActionType {
+   GenAutomata,
    GenDirectivesEnumDecl,
    GenDirectivesEnumImpl,
-   GenDirectivesEnumGen,
 +  GenSVMLVariants,
  };
  
  namespace llvm {
-@@ -137,7 +138,9 @@ cl::opt<ActionType> Action(
+@@ -138,7 +139,9 @@ cl::opt<ActionType> Action(
+         clEnumValN(GenDirectivesEnumDecl, "gen-directive-decl",
+                    "Generate directive related declaration code (header file)"),
          clEnumValN(GenDirectivesEnumImpl, "gen-directive-impl",
-                    "Generate directive related implementation code"),
-         clEnumValN(GenDirectivesEnumGen, "gen-directive-gen",
--                   "Generate directive related implementation code part")));
-+                   "Generate directive related implementation code part"),
+-                   "Generate directive related implementation code")));
++                   "Generate directive related implementation code"),
 +        clEnumValN(GenSVMLVariants, "gen-svml",
 +                   "Generate SVML variant function names")));
  
  cl::OptionCategory PrintEnumsCat("Options for -print-enums");
  cl::opt<std::string> Class("class", cl::desc("Print Enum list for this class"),
-@@ -271,6 +274,9 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
-   case GenDirectivesEnumGen:
-     EmitDirectivesGen(Records, OS);
+@@ -272,6 +275,9 @@ bool LLVMTableGenMain(raw_ostream &OS, RecordKeeper &Records) {
+   case GenDirectivesEnumImpl:
+     EmitDirectivesImpl(Records, OS);
      break;
 +  case GenSVMLVariants:
 +    EmitSVMLVariants(Records, OS);
@@ -1982,30 +2168,27 @@ index 8015a58..a61a7b3 100644
    }
  
    return false;
-diff --git a/utils/TableGen/TableGenBackends.h b/utils/TableGen/TableGenBackends.h
-index 92204f3..c1bcadc 100644
---- a/utils/TableGen/TableGenBackends.h
-+++ b/utils/TableGen/TableGenBackends.h
-@@ -93,6 +93,7 @@ void EmitAutomata(RecordKeeper &RK, raw_ostream &OS);
+diff --git a/llvm-14.0.6.src/utils/TableGen/TableGenBackends.h b/llvm-14.0.6.src/utils/TableGen/TableGenBackends.h
+index 71db8dc77b052..86c3a3068c2dc 100644
+--- a/llvm-14.0.6.src/utils/TableGen/TableGenBackends.h
++++ b/llvm-14.0.6.src/utils/TableGen/TableGenBackends.h
+@@ -93,6 +93,7 @@ void EmitExegesis(RecordKeeper &RK, raw_ostream &OS);
+ void EmitAutomata(RecordKeeper &RK, raw_ostream &OS);
  void EmitDirectivesDecl(RecordKeeper &RK, raw_ostream &OS);
  void EmitDirectivesImpl(RecordKeeper &RK, raw_ostream &OS);
- void EmitDirectivesGen(RecordKeeper &RK, raw_ostream &OS);
 +void EmitSVMLVariants(RecordKeeper &RK, raw_ostream &OS);
  
  } // End llvm namespace
  
-diff --git a/utils/vim/syntax/llvm.vim b/utils/vim/syntax/llvm.vim
-index ce36b76..da3a4a9 100644
---- a/utils/vim/syntax/llvm.vim
-+++ b/utils/vim/syntax/llvm.vim
-@@ -96,6 +96,7 @@ syn keyword llvmKeyword
+diff --git a/llvm-14.0.6.src/utils/vim/syntax/llvm.vim b/llvm-14.0.6.src/utils/vim/syntax/llvm.vim
+index 205db16b7d8cd..2572ab5a59e1b 100644
+--- a/llvm-14.0.6.src/utils/vim/syntax/llvm.vim
++++ b/llvm-14.0.6.src/utils/vim/syntax/llvm.vim
+@@ -104,6 +104,7 @@ syn keyword llvmKeyword
        \ inreg
-       \ inteldialect
        \ intel_ocl_bicc
+       \ inteldialect
 +      \ intel_svmlcc
        \ internal
+       \ jumptable
        \ linkonce
-       \ linkonce_odr
--- 
-2.9.2.windows.1
-

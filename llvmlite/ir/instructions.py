@@ -56,17 +56,30 @@ class CallInstrAttributes(AttributeSet):
                         'noinline', 'alwaysinline'])
 
 
+TailMarkerOptions = frozenset(['tail', 'musttail', 'notail'])
+
+
 class FastMathFlags(AttributeSet):
     _known = frozenset(['fast', 'nnan', 'ninf', 'nsz', 'arcp', 'contract',
                         'afn', 'reassoc'])
 
 
 class CallInstr(Instruction):
-    def __init__(self, parent, func, args, name='', cconv=None, tail=False,
+    def __init__(self, parent, func, args, name='', cconv=None, tail=None,
                  fastmath=(), attrs=(), arg_attrs=None):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
+
+        # For backwards compatibility with previous API of accepting a "truthy"
+        # value for a hint to the optimizer to potentially tail optimize.
+        if isinstance(tail, str) and tail in TailMarkerOptions:
+            pass
+        elif tail:
+            tail = "tail"
+        else:
+            tail = ""
+
         self.tail = tail
         self.fastmath = FastMathFlags(fastmath)
         self.attributes = CallInstrAttributes(attrs)
@@ -114,13 +127,13 @@ class CallInstr(Instruction):
 
     @property
     def called_function(self):
-        """Alias for llvmpy"""
+        """The callee function"""
         return self.callee
 
     def _descr(self, buf, add_metadata):
         def descr_arg(i, a):
             if i in self.arg_attributes:
-                attrs = ' '.join(self.arg_attributes[i]._to_list()) + ' '
+                attrs = ' '.join(self.arg_attributes[i]._to_list(a.type)) + ' '
             else:
                 attrs = ''
             return '{0} {1}{2}'.format(a.type, attrs, a.get_reference())
@@ -137,13 +150,24 @@ class CallInstr(Instruction):
         callee_ref = "{0} {1}".format(ty, self.callee.get_reference())
         if self.cconv:
             callee_ref = "{0} {1}".format(self.cconv, callee_ref)
+
+        tail_marker = ""
+        if self.tail:
+            tail_marker = "{0} ".format(self.tail)
+
+        fn_attrs = ' ' + ' '.join(self.attributes._to_list(fnty.return_type))\
+            if self.attributes else ''
+
+        fm_attrs = ' ' + ' '.join(self.fastmath._to_list(fnty.return_type))\
+            if self.fastmath else ''
+
         buf.append("{tail}{op}{fastmath} {callee}({args}){attr}{meta}\n".format(
-            tail='tail ' if self.tail else '',
+            tail=tail_marker,
             op=self.opname,
             callee=callee_ref,
-            fastmath=''.join([" " + attr for attr in self.fastmath]),
+            fastmath=fm_attrs,
             args=args,
-            attr=''.join([" " + attr for attr in self.attributes]),
+            attr=fn_attrs,
             meta=(self._stringify_metadata(leading_comma=True)
                   if add_metadata else ""),
         ))
@@ -852,3 +876,18 @@ class Fence(Instruction):
         buf.append(fmt.format(syncscope=syncscope,
                               ordering=self.ordering,
                               ))
+
+
+class Comment(Instruction):
+    """
+    A line comment.
+    """
+
+    def __init__(self, parent, text):
+        super(Comment, self).__init__(parent, types.VoidType(), ";", (),
+                                      name='')
+        assert "\n" not in text, "Comment cannot contain new line"
+        self.text = text
+
+    def descr(self, buf):
+        buf.append(f"; {self.text}")

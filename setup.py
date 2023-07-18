@@ -22,34 +22,22 @@ import os
 import sys
 
 
-_version_module = None
-try:
-    from packaging import version as _version_module
-except ImportError:
-    try:
-        from setuptools._vendor.packaging import version as _version_module
-    except ImportError:
-        pass
+min_python_version = (3, 8)
 
 
-min_python_version = "3.7"
-max_python_version = "3.11"  # exclusive
+def _version_info_str(int_tuple):
+    return ".".join(map(str, int_tuple))
 
 
 def _guard_py_ver():
-    if _version_module is None:
-        return
+    current_python_version = sys.version_info[:3]
+    min_py = _version_info_str(min_python_version)
+    cur_py = _version_info_str(current_python_version)
 
-    parse = _version_module.parse
-
-    min_py = parse(min_python_version)
-    max_py = parse(max_python_version)
-    cur_py = parse('.'.join(map(str, sys.version_info[:3])))
-
-    if not min_py <= cur_py < max_py:
-        msg = ('Cannot install on Python version {}; only versions >={},<{} '
+    if not min_python_version <= current_python_version:
+        msg = ('Cannot install on Python version {}; only versions >={} '
                'are supported.')
-        raise RuntimeError(msg.format(cur_py, min_py, max_py))
+        raise RuntimeError(msg.format(cur_py, min_py))
 
 
 _guard_py_ver()
@@ -76,9 +64,9 @@ build_ext = cmdclass.get('build_ext', build_ext)
 
 def build_library_files(dry_run):
     cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
-    # Turn on -fPIC for building on Linux, BSD, and OS X
+    # Turn on -fPIC for building on Linux, BSD, OS X, and GNU platforms
     plt = sys.platform
-    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt:
+    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt or 'gnu' in plt:
         os.environ['CXXFLAGS'] = os.environ.get('CXXFLAGS', '') + ' -fPIC'
     spawn(cmd, dry_run=dry_run)
 
@@ -192,7 +180,6 @@ ext_stub = Extension(name="llvmlite.binding._stub",
 packages = ['llvmlite',
             'llvmlite.binding',
             'llvmlite.ir',
-            'llvmlite.llvmpy',
             'llvmlite.tests',
             ]
 
@@ -210,10 +197,10 @@ setup(name='llvmlite',
           "Operating System :: OS Independent",
           "Programming Language :: Python",
           "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.7",
           "Programming Language :: Python :: 3.8",
           "Programming Language :: Python :: 3.9",
           "Programming Language :: Python :: 3.10",
+          "Programming Language :: Python :: 3.11",
           "Topic :: Software Development :: Code Generators",
           "Topic :: Software Development :: Compilers",
       ],
@@ -226,5 +213,5 @@ setup(name='llvmlite',
       license="BSD",
       cmdclass=cmdclass,
       long_description=long_description,
-      python_requires=">={}".format(min_python_version),
+      python_requires=">={}".format(_version_info_str(min_python_version)),
       )
