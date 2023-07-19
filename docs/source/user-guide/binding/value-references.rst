@@ -206,8 +206,14 @@ The ValueRef class
 
         The value is a constant.
 
-   * .. method:: get_constant_value(self, signed=False)
+   * .. method:: get_constant_value(self, signed_int=False, round_fp=False)
 
         Return the constant value, either as a literal (for example, int
-        or float) when supported, or as a string otherwise. If ``signed``
-        is True and the constant is an integer, returns a signed integer.
+        or float) when supported, or as a string otherwise. Keyword arguments
+        specify the preferences during conversion:
+
+           * If ``signed_int`` is True and the constant is an integer, returns a
+             signed integer.
+           * If ``round_fp`` True and the constant is a floating point value,
+             rounds the result upon accuracy loss (e.g., when querying an fp128
+             value). By default, raises an exception on accuracy loss.

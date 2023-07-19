@@ -343,15 +343,19 @@ class ValueRef(ffi.ObjectRef):
                              % (self._kind,))
         return ffi.ret_string(ffi.lib.LLVMPY_GetOpcodeName(self))
 
-    def get_constant_value(self, signed=False):
+    def get_constant_value(self, signed_int=False, round_fp=False):
         """
         Return the constant value, either as a literal (when supported)
         or as a string.
 
         Parameters
         -----------
-        signed : bool
+        signed_int : bool
             if True and the constant is an integer, returns a signed version
+        round_fp : bool
+            if True and the constant is a floating point value, rounds the
+            result upon accuracy loss (e.g., when querying an fp128 value).
+            By default, raises an exception on accuracy loss
         """
         if not self.is_constant:
             raise ValueError('expected constant value, got %s'
@@ -367,14 +371,14 @@ class ValueRef(ffi.ObjectRef):
             return int.from_bytes(
                 asbytes,
                 ('little' if little_endian.value else 'big'),
-                signed=signed,
+                signed=signed_int,
             )
         elif self.value_kind == ValueKind.constant_fp:
-            # Convert floating-point values to double (Python float)
+            # Convert floating-point values to double-precision (Python float)
             accuracy_loss = c_bool(False)
             value = ffi.lib.LLVMPY_GetConstantFPValue(self,
                                                       byref(accuracy_loss))
-            if accuracy_loss.value:
+            if accuracy_loss.value and not round_fp:
                 raise ValueError(
                     'Accuracy loss encountered in conversion of constant '
                     f'value {str(self)}')

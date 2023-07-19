@@ -146,7 +146,7 @@ asm_double_inaccurate = r"""
     target triple = "{triple}"
 
     define void @foo() {{
-      %const = fadd fp128 0xLF3CB1CCF26FBC178452FB4EC7F91DEAD, 0xLF3CB1CCF26FBC178452FB4EC7F91973F
+      %const = fadd fp128 0xLF3CB1CCF26FBC178452FB4EC7F91DEAD, 0xL00000000000000000000000000000001
       ret void
     }}
     """  # noqa E501
@@ -1641,10 +1641,10 @@ class TestValueRef(BaseTest):
         posint64 = list(insts[1].operands)[0]
         negint64 = list(insts[2].operands)[0]
         self.assertEqual(posint64.get_constant_value(), 5)
-        self.assertEqual(negint64.get_constant_value(signed=True), -5)
+        self.assertEqual(negint64.get_constant_value(signed_int=True), -5)
 
         # Convert from unsigned arbitrary-precision integer to signed i64
-        as_u64 = negint64.get_constant_value(signed=False)
+        as_u64 = negint64.get_constant_value(signed_int=False)
         as_i64 = int.from_bytes(as_u64.to_bytes(8, 'little'), 'little',
                                 signed=True)
         self.assertEqual(as_i64, -5)
@@ -1667,6 +1667,7 @@ class TestValueRef(BaseTest):
         operands = list(inst.operands)
         with self.assertRaises(ValueError):
             operands[0].get_constant_value()
+        self.assertAlmostEqual(operands[1].get_constant_value(round_fp=True), 0)
 
     def test_constant_as_string(self):
         mod = self.module(asm_null_constant)
