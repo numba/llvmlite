@@ -64,9 +64,9 @@ build_ext = cmdclass.get('build_ext', build_ext)
 
 def build_library_files(dry_run):
     cmd = [sys.executable, os.path.join(here_dir, 'ffi', 'build.py')]
-    # Turn on -fPIC for building on Linux, BSD, and OS X
+    # Turn on -fPIC for building on Linux, BSD, OS X, and GNU platforms
     plt = sys.platform
-    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt:
+    if 'linux' in plt or 'bsd' in plt or 'darwin' in plt or 'gnu' in plt:
         os.environ['CXXFLAGS'] = os.environ.get('CXXFLAGS', '') + ' -fPIC'
     spawn(cmd, dry_run=dry_run)
 

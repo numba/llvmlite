@@ -1,8 +1,9 @@
-From bc2dcd190b7148d04772fa7fcd18b5200b758d4a Mon Sep 17 00:00:00 2001
+From 9de32f5474f1f78990b399214bdbb6c21f8f098e Mon Sep 17 00:00:00 2001
 From: Ivan Butygin <ivan.butygin@gmail.com>
 Date: Sun, 24 Jul 2022 20:31:29 +0200
 Subject: [PATCH] Fixes vectorizer and extends SVML support
 
+Fixes vectorizer and extends SVML support
 Patch was updated to fix SVML calling convention issues uncovered by llvm 10.
 In previous versions of patch SVML calling convention was selected based on
 compilation settings. So if you try to call 256bit vector function from avx512
@@ -29,41 +30,6 @@ patch addresses this issue by adding a legality check during code generation and
 replaces the illegal SVML call with corresponding legalized instructions.
 (RFC: http://lists.llvm.org/pipermail/llvm-dev/2018-June/124357.html)
 Author: Karthik Senthil
----
- .../include/llvm/Analysis/TargetLibraryInfo.h |  22 +-
- llvm/include/llvm/AsmParser/LLToken.h         |   3 +
- llvm/include/llvm/IR/CMakeLists.txt           |   4 +
- llvm/include/llvm/IR/CallingConv.h            |   5 +
- llvm/include/llvm/IR/SVML.td                  |  62 +++
- llvm/lib/Analysis/CMakeLists.txt              |   1 +
- llvm/lib/Analysis/TargetLibraryInfo.cpp       |  55 +-
- llvm/lib/AsmParser/LLLexer.cpp                |   3 +
- llvm/lib/AsmParser/LLParser.cpp               |   6 +
- llvm/lib/CodeGen/ReplaceWithVeclib.cpp        |   2 +-
- llvm/lib/IR/AsmWriter.cpp                     |   3 +
- llvm/lib/IR/Verifier.cpp                      |   3 +
- llvm/lib/Target/X86/X86CallingConv.td         |  70 +++
- llvm/lib/Target/X86/X86ISelLowering.cpp       |   3 +-
- llvm/lib/Target/X86/X86RegisterInfo.cpp       |  46 ++
- llvm/lib/Target/X86/X86Subtarget.h            |   3 +
- .../Transforms/Utils/InjectTLIMappings.cpp    |   2 +-
- .../Transforms/Vectorize/LoopVectorize.cpp    | 269 +++++++++
- .../Generic/replace-intrinsics-with-veclib.ll |   4 +-
- .../LoopVectorize/X86/svml-calls-finite.ll    |  24 +-
- .../LoopVectorize/X86/svml-calls.ll           | 108 ++--
- .../LoopVectorize/X86/svml-legal-calls.ll     | 513 ++++++++++++++++++
- .../LoopVectorize/X86/svml-legal-codegen.ll   |  61 +++
- llvm/test/Transforms/Util/add-TLI-mappings.ll |  18 +-
- llvm/utils/TableGen/CMakeLists.txt            |   1 +
- llvm/utils/TableGen/SVMLEmitter.cpp           | 110 ++++
- llvm/utils/TableGen/TableGen.cpp              |   8 +-
- llvm/utils/TableGen/TableGenBackends.h        |   1 +
- llvm/utils/vim/syntax/llvm.vim                |   1 +
- 29 files changed, 1341 insertions(+), 70 deletions(-)
- create mode 100644 llvm/include/llvm/IR/SVML.td
- create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-calls.ll
- create mode 100644 llvm/test/Transforms/LoopVectorize/X86/svml-legal-codegen.ll
- create mode 100644 llvm/utils/TableGen/SVMLEmitter.cpp
 
 diff --git a/llvm-14.0.6.src/include/llvm/Analysis/TargetLibraryInfo.h b/llvm-14.0.6.src/include/llvm/Analysis/TargetLibraryInfo.h
 index 17d1e3f770c14..110ff08189867 100644
@@ -922,6 +888,42 @@ index 46ff0994e04e7..f472af5e1a835 100644
  }
  
  void LoopVectorizationCostModel::collectLoopScalars(ElementCount VF) {
+diff --git a/llvm-14.0.6.src/lib/Transforms/Vectorize/SLPVectorizer.cpp b/llvm-14.0.6.src/lib/Transforms/Vectorize/SLPVectorizer.cpp
+index 644372483edde..342f018b92184 100644
+--- a/llvm-14.0.6.src/lib/Transforms/Vectorize/SLPVectorizer.cpp
++++ b/llvm-14.0.6.src/lib/Transforms/Vectorize/SLPVectorizer.cpp
+@@ -6322,6 +6322,17 @@ Value *BoUpSLP::vectorizeTree(ArrayRef<Value *> VL) {
+   return Vec;
+ }
+ 
++static void setVectorFunctionCallingConv(CallInst &CI, const DataLayout &DL,
++                                         const TargetLibraryInfo &TLI) {
++  Function *VectorF = CI.getCalledFunction();
++  FunctionType *FTy = VectorF->getFunctionType();
++  StringRef VFName = VectorF->getName();
++  auto CC = TLI.getVectorizedFunctionCallingConv(VFName, *FTy, DL);
++  if (CC) {
++    CI.setCallingConv(*CC);
++  }
++}
++
+ Value *BoUpSLP::vectorizeTree(TreeEntry *E) {
+   IRBuilder<>::InsertPointGuard Guard(Builder);
+ 
+@@ -6794,7 +6805,12 @@ Value *BoUpSLP::vectorizeTree(TreeEntry *E) {
+ 
+       SmallVector<OperandBundleDef, 1> OpBundles;
+       CI->getOperandBundlesAsDefs(OpBundles);
+-      Value *V = Builder.CreateCall(CF, OpVecs, OpBundles);
++
++      CallInst *NewCall = Builder.CreateCall(CF, OpVecs, OpBundles);
++      const DataLayout &DL = NewCall->getModule()->getDataLayout();
++      setVectorFunctionCallingConv(*NewCall, DL, *TLI);
++
++      Value *V = NewCall;
+ 
+       // The scalar argument uses an in-tree scalar so we add the new vectorized
+       // call to ExternalUses list to make sure that an extract will be
 diff --git a/llvm-14.0.6.src/test/CodeGen/Generic/replace-intrinsics-with-veclib.ll b/llvm-14.0.6.src/test/CodeGen/Generic/replace-intrinsics-with-veclib.ll
 index df8b7c498bd00..63a36549f18fd 100644
 --- a/llvm-14.0.6.src/test/CodeGen/Generic/replace-intrinsics-with-veclib.ll

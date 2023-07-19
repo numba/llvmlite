@@ -3,7 +3,7 @@
 {% set sha256_llvm = "050922ecaaca5781fdf6631ea92bc715183f202f9d2f15147226f023414f619a" %}
 {% set sha256_lld = "0c28ce0496934d37d20fec96591032dd66af8d10178a45762e0e75e85cf95ad3" %}
 {% set sha256_libunwind = "3bbe9c23c73259fe39c045dc87d0b283236ba6e00750a226b2c2aeac4a51d86b" %}
-{% set build_number = "1" %}
+{% set build_number = "3" %}
 
 package:
   name: llvmdev

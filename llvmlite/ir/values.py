@@ -6,11 +6,11 @@ Instructions are in the instructions module.
 import functools
 import string
 import re
+from types import MappingProxyType
 
 from llvmlite.ir import values, types, _utils
 from llvmlite.ir._utils import (_StrCaching, _StringReferenceCaching,
                                 _HasMetadata)
-
 
 _VALID_CHARS = (frozenset(map(ord, string.ascii_letters)) |
                 frozenset(map(ord, string.digits)) |
@@ -858,19 +858,22 @@ class AttributeSet(set):
     _known = ()
 
     def __init__(self, args=()):
+        super().__init__()
         if isinstance(args, str):
             args = [args]
         for name in args:
             self.add(name)
+
+    def _expand(self, name, typ):
+        return name
 
     def add(self, name):
         if name not in self._known:
             raise ValueError('unknown attr {!r} for {}'.format(name, self))
         return super(AttributeSet, self).add(name)
 
-    def __iter__(self):
-        # In sorted order
-        return iter(sorted(super(AttributeSet, self).__iter__()))
+    def _to_list(self, typ):
+        return [self._expand(i, typ) for i in sorted(self)]
 
 
 class FunctionAttributes(AttributeSet):
@@ -914,15 +917,15 @@ class FunctionAttributes(AttributeSet):
         assert val is None or isinstance(val, GlobalValue)
         self._personality = val
 
-    def __repr__(self):
-        attrs = list(self)
+    def _to_list(self, ret_type):
+        attrs = super()._to_list(ret_type)
         if self.alignstack:
             attrs.append('alignstack({0:d})'.format(self.alignstack))
         if self.personality:
             attrs.append('personality {persty} {persfn}'.format(
                 persty=self.personality.type,
                 persfn=self.personality.get_reference()))
-        return ' '.join(attrs)
+        return attrs
 
 
 class Function(GlobalValue):
@@ -975,8 +978,8 @@ class Function(GlobalValue):
         ret = self.return_value
         args = ", ".join(str(a) for a in self.args)
         name = self.get_reference()
-        attrs = self.attributes
-        attrs = ' {}'.format(attrs) if attrs else ''
+        attrs = ' ' + ' '.join(self.attributes._to_list(
+            self.ftype.return_type)) if self.attributes else ''
         if any(self.args):
             vararg = ', ...' if self.ftype.var_arg else ''
         else:
@@ -1018,15 +1021,45 @@ class Function(GlobalValue):
 
 
 class ArgumentAttributes(AttributeSet):
-    _known = frozenset(['byval', 'inalloca', 'inreg', 'nest', 'noalias',
-                        'nocapture', 'nonnull', 'returned', 'signext',
-                        'sret', 'zeroext'])
+    # List from
+    # https://releases.llvm.org/14.0.0/docs/LangRef.html#parameter-attributes
+    _known = MappingProxyType({
+        # True (emit type),
+        # False (emit name only)
+        'byref': True,
+        'byval': True,
+        'elementtype': True,
+        'immarg': False,
+        'inalloca': True,
+        'inreg': False,
+        'nest': False,
+        'noalias': False,
+        'nocapture': False,
+        'nofree': False,
+        'nonnull': False,
+        'noundef': False,
+        'preallocated': True,
+        'returned': False,
+        'signext': False,
+        'sret': True,
+        'swiftasync': False,
+        'swifterror': False,
+        'swiftself': False,
+        'zeroext': False,
+    })
 
     def __init__(self, args=()):
         self._align = 0
         self._dereferenceable = 0
         self._dereferenceable_or_null = 0
         super(ArgumentAttributes, self).__init__(args)
+
+    def _expand(self, name, typ):
+        requires_type = self._known.get(name)
+        if requires_type:
+            return f"{name}({typ.pointee})"
+        else:
+            return name
 
     @property
     def align(self):
@@ -1055,8 +1088,8 @@ class ArgumentAttributes(AttributeSet):
         assert isinstance(val, int) and val >= 0
         self._dereferenceable_or_null = val
 
-    def _to_list(self):
-        attrs = sorted(self)
+    def _to_list(self, typ):
+        attrs = super()._to_list(typ)
         if self.align:
             attrs.append('align {0:d}'.format(self.align))
         if self.dereferenceable:
@@ -1088,7 +1121,7 @@ class Argument(_BaseArgument):
     """
 
     def __str__(self):
-        attrs = self.attributes._to_list()
+        attrs = self.attributes._to_list(self.type)
         if attrs:
             return "{0} {1} {2}".format(self.type, ' '.join(attrs),
                                         self.get_reference())
@@ -1102,7 +1135,7 @@ class ReturnValue(_BaseArgument):
     """
 
     def __str__(self):
-        attrs = self.attributes._to_list()
+        attrs = self.attributes._to_list(self.type)
         if attrs:
             return "{0} {1}".format(' '.join(attrs), self.type)
         else:
