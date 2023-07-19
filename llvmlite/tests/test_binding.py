@@ -146,10 +146,10 @@ asm_double_inaccurate = r"""
     target triple = "{triple}"
 
     define void @foo() {{
-      %const = fadd double 5.123456e-324, 0x432ff973cafa8000
+      %const = fadd fp128 0xLF3CB1CCF26FBC178452FB4EC7F91DEAD, 0xLF3CB1CCF26FBC178452FB4EC7F91973F
       ret void
     }}
-    """
+    """  # noqa E501
 
 asm_double_locale = r"""
     ; ModuleID = '<string>'
@@ -1665,8 +1665,8 @@ class TestValueRef(BaseTest):
         func = mod.get_function('foo')
         inst = list(list(func.blocks)[0].instructions)[0]
         operands = list(inst.operands)
-        self.assertAlmostEqual(operands[0].get_constant_value(), 0.0)
-        self.assertAlmostEqual(operands[1].get_constant_value(), 4.5e15)
+        with self.assertRaises(ValueError):
+            operands[0].get_constant_value()
 
     def test_constant_as_string(self):
         mod = self.module(asm_null_constant)

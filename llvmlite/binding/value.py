@@ -1,7 +1,6 @@
 from ctypes import (POINTER, byref, cast, c_char_p, c_double, c_int, c_size_t,
                     c_uint, c_uint64, c_bool, c_void_p)
 import enum
-import warnings
 
 from llvmlite.binding import ffi
 from llvmlite.binding.common import _decode_string, _encode_string
@@ -376,10 +375,9 @@ class ValueRef(ffi.ObjectRef):
             value = ffi.lib.LLVMPY_GetConstantFPValue(self,
                                                       byref(accuracy_loss))
             if accuracy_loss.value:
-                warnings.warn(
+                raise ValueError(
                     'Accuracy loss encountered in conversion of constant '
-                    f'value {str(self)}', BytesWarning
-                )
+                    f'value {str(self)}')
 
             return value
 
