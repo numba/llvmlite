@@ -345,6 +345,10 @@ class ValueRef(ffi.ObjectRef):
 
     @property
     def incoming_blocks(self):
+        """
+        Return an iterator over this phi instruction's incoming blocks.
+        The iterator will yield a ValueRef for each block.
+        """
         if not self.is_instruction or self.opcode != 'phi':
             raise ValueError('expected phi instruction value, got %s'
                              % (self._kind,))

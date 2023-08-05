@@ -162,6 +162,11 @@ The ValueRef class
         An iterator over the instructions in this basic block.
         Each instruction is a :class:`ValueRef` instance.
 
+   * .. attribute:: incoming_blocks
+
+        An iterator over the incoming blocks of a phi instruction.
+        Each block is a :class:`ValueRef` instance.
+
    * .. attribute:: operands
 
         An iterator over the operands in this instruction.
