@@ -3,7 +3,7 @@ CXX ?= g++
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
 CXX_FLTO_FLAGS ?= -flto
-LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
+LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=$(LLVM_EXCLUDE_LIB)
 # -fPIC is required when compiling objects for a shared library
 CXX_FPIC_FLAGS ?= -fPIC
 
@@ -18,15 +18,16 @@ OBJ = assembly.o bitcode.o core.o initfini.o module.o value.o \
 OUTPUT = libllvmlite.so
 BUILTINS_ARCHIVE = libclang_rt.builtins.a
 
-all: $(OUTPUT) $(BUILTINS_ARCHIVE)
+all: $(OUTPUT)
 
 .cpp.o: $(INCLUDE)
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-$(OUTPUT): $(OBJ)
+$(OUTPUT): $(OBJ) $(BUILTINS_ARCHIVE)
 	# static-libstdc++ avoids runtime dependencies on a
 	# particular libstdc++ version.
-	$(CXX) $(CXX_STATIC_LINK) -shared $(CXXFLAGS) $(OBJ) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
+	$(CXX) $(CXX_STATIC_LINK) -shared $(CXXFLAGS) $(OBJ) -o $(OUTPUT) $(LDFLAGS) $(LIBS) \
+		-Wl,--whole-archive ${BUILTINS_ARCHIVE} -Wl,--no-whole-archive
 
 $(BUILTINS_ARCHIVE):
 	if [ -d "$(LLVM_LIBDIR)/clang" ]; then \

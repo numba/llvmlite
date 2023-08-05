@@ -6,6 +6,7 @@ Build script for the shared library providing the C ABI bridge to LLVM.
 from __future__ import print_function
 
 from ctypes.util import find_library
+from glob import glob
 import re
 import multiprocessing
 import os
@@ -191,6 +192,9 @@ def main_posix(kind, library_ext):
     llvm_libdir = run_llvm_config(llvm_config, ["--libdir"]).strip()
     os.environ['LLVM_LIBDIR'] = llvm_libdir
 
+    exclude_file = glob(llvm_libdir + '/*.a')
+    os.environ['LLVM_EXCLUDE_LIB'] = (',').join(exclude_file)
+
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
     cxxflags = cxxflags.replace('\0', '')
@@ -209,6 +213,7 @@ def main_posix(kind, library_ext):
 
     ldflags = run_llvm_config(llvm_config, ["--ldflags"])
     os.environ['LLVM_LDFLAGS'] = ldflags.strip()
+
     # static link libstdc++ for portability
     if int(os.environ.get('LLVMLITE_CXX_STATIC_LINK', 0)):
         os.environ['CXX_STATIC_LINK'] = "-static-libstdc++"

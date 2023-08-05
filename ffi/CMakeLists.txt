@@ -17,6 +17,12 @@ find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
+file(GLOB LLVM_EXCLUDE_LIB
+     "${LLVM_LIBRARY_DIR}/*LLVM*.a"
+)
+
+STRING(REPLACE ";" "," LLVM_EXCLUDE_LIB "${LLVM_EXCLUDE_LIB}")
+
 # Set your project compile flags.
 # E.g. if using the C++ header files
 # you will need to enable C++11 support
@@ -64,7 +70,7 @@ list(REMOVE_ITEM llvm_libs "OptRemarks")
 target_link_libraries(llvmlite ${llvm_libs})
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-    set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "-flto -Wl,--exclude-libs,ALL")
+    set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "-flto -Wl,--exclude-libs,${LLVM_EXCLUDE_LIB}")
 # On Darwin we only include the LLVMPY symbols we require and exclude
 # everything else.
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -80,13 +86,21 @@ else()
     set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
 endif()
 
-# TODO: will need to deal with other OSes but right now this file
-# seems to be used only on Windows.
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     file(COPY ${LLVM_LIBRARY_DIR}/windows/clang_rt.builtins-${ARCH}.lib
-      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-  file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/clang_rt.builtins-${ARCH}.lib
-              ${CMAKE_CURRENT_BINARY_DIR}/clang_rt.builtins.lib)
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/clang_rt.builtins-${ARCH}.lib
+        ${CMAKE_CURRENT_BINARY_DIR}/clang_rt.builtins.lib)
 else()
-    message(SEND_ERROR "Copying of builtins archive not implemented on non-Windows systems")
+    if (EXISTS "$(LLVM_LIBDIR)/clang")
+        file(COPY ${LLVM_LIBRARY_DIR}/linux/libclang_rt.builtins-${ARCH}.a
+            DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+        file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/libclang_rt.builtins-${ARCH}.a
+            ${CMAKE_CURRENT_BINARY_DIR}/libclang_rt.builtins.a)
+    else()
+        file(COPY ${LLVM_LIBRARY_DIR}/clang/${LLVM_PACKAGE_VERSION}/lib/linux/libclang_rt.builtins-${ARCH}.a
+            DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+        file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/libclang_rt.builtins-${ARCH}.a
+            ${CMAKE_CURRENT_BINARY_DIR}/libclang_rt.builtins.a)
+    endif()
 endif()
