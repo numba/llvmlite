@@ -126,7 +126,7 @@ LLVMPY_GetTypeElementCount(LLVMTypeRef type) {
 }
 
 API_EXPORT(uint64_t)
-LLVMPY_GetTypeBitWidth(LLVMTypeRef type){
+LLVMPY_GetTypeBitWidth(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
     auto size = unwrapped->getPrimitiveSizeInBits();
     return size.getFixedSize();
@@ -145,4 +145,5 @@ LLVMPY_GetElementType(LLVMTypeRef type) {
     }
     return nullptr;
 }
-}
+
+} // end extern "C"

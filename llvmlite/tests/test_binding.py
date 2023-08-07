@@ -41,6 +41,7 @@ asm_sum = r"""
     source_filename = "asm_sum.c"
     target triple = "{triple}"
     %struct.glob_type = type {{ i64, [2 x i64]}}
+    %struct.glob_type_vec = type {{ i64, <2 x i64>}}
 
     @glob = global i32 0
     @glob_b = global i8 0
@@ -1676,6 +1677,72 @@ class TestValueRef(BaseTest):
         arg = list(inst.operands)[0]
         self.assertTrue(arg.is_constant)
         self.assertEqual(arg.get_constant_value(), 'i64* null')
+
+
+class TestTypeRef(BaseTest):
+
+    def test_str(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(str(glob.type), "i32*")
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        self.assertEqual(str(glob_struct_type),
+                         "%struct.glob_type = type { i64, [2 x i64] }")
+
+        elements = list(glob_struct_type.elements)
+        self.assertEqual(len(elements), 2)
+        self.assertEqual(str(elements[0]), "i64")
+        self.assertEqual(str(elements[1]), "[2 x i64]")
+
+    def test_type_kind(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(glob.type.type_kind, llvm.TypeKind.pointer)
+        self.assertTrue(glob.type.is_pointer)
+
+        glob_struct = mod.get_global_variable("glob_struct")
+        self.assertEqual(glob_struct.type.type_kind, llvm.TypeKind.pointer)
+        self.assertTrue(glob_struct.type.is_pointer)
+
+        stype = next(iter(glob_struct.type.elements))
+        self.assertEqual(stype.type_kind, llvm.TypeKind.struct)
+        self.assertTrue(stype.is_struct)
+
+        stype_a, stype_b = stype.elements
+        self.assertEqual(stype_a.type_kind, llvm.TypeKind.integer)
+        self.assertEqual(stype_b.type_kind, llvm.TypeKind.array)
+        self.assertTrue(stype_b.is_array)
+
+        glob_vec_struct_type = mod.get_struct_type("struct.glob_type_vec")
+        _, vector_type = glob_vec_struct_type.elements
+        self.assertEqual(vector_type.type_kind, llvm.TypeKind.vector)
+        self.assertTrue(vector_type.is_vector)
+
+        funcptr = mod.get_function("sum").type
+        self.assertEqual(funcptr.type_kind, llvm.TypeKind.pointer)
+        functype, = funcptr.elements
+        self.assertEqual(functype.type_kind, llvm.TypeKind.function)
+
+    def test_element_count(self):
+        mod = self.module()
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        _, array_type = glob_struct_type.elements
+        self.assertEqual(array_type.element_count, 2)
+        with self.assertRaises(ValueError):
+            glob_struct_type.element_count
+
+    def test_type_width(self):
+        mod = self.module()
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        glob_vec_struct_type = mod.get_struct_type("struct.glob_type_vec")
+        integer_type, array_type = glob_struct_type.elements
+        _, vector_type = glob_vec_struct_type.elements
+        self.assertEqual(integer_type.type_width, 64)
+        self.assertEqual(vector_type.type_width, 64 * 2)
+
+        # Structs and arrays are not primitive types
+        self.assertEqual(glob_struct_type.type_width, 0)
+        self.assertEqual(array_type.type_width, 0)
 
 
 class TestTarget(BaseTest):

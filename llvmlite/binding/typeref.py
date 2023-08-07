@@ -28,6 +28,7 @@ class TypeKind(enum.IntEnum):
     bfloat = 18
     x86_amx = 19
 
+
 class TypeRef(ffi.ObjectRef):
     """A weak reference to a LLVM type
     """
