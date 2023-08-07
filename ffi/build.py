@@ -192,7 +192,7 @@ def main_posix(kind, library_ext):
     llvm_libdir = run_llvm_config(llvm_config, ["--libdir"]).strip()
     os.environ['LLVM_LIBDIR'] = llvm_libdir
 
-    exclude_file = glob(llvm_libdir + '/*.a')
+    exclude_file = glob(llvm_libdir + '/*LLVM*.a')
     os.environ['LLVM_EXCLUDE_LIB'] = (',').join(exclude_file)
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
