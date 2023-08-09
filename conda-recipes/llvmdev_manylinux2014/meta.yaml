@@ -33,6 +33,8 @@ source:
     fn: compiler-rt-{{ version }}.src.tar.xz
     sha256: {{ sha256_compiler_rt }}
     folder: rt
+    patches:
+    - ../compiler-rt-14-fp-xstate-magic1.patch
 
 build:
   number: {{ build_number }}
