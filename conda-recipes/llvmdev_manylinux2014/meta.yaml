@@ -15,15 +15,14 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz
     fn: llvm-{{ version }}.src.tar.xz
     sha256: {{ sha256_llvm }}
-    folder: llvm
     patches:
     - ../llvm14-clear-gotoffsetmap.patch
     - ../llvm14-remove-use-of-clonefile.patch
     - ../llvm14-svml.patch
+
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
     fn: lld-{{ version }}.src.tar.xz
     sha256: {{ sha256_lld }}
-    folder: llvm/tools/lld
 
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/libunwind-{{ version }}.src.tar.xz
     fn: libunwind-{{ version }}.src.tar.xz
@@ -33,7 +32,7 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/compiler-rt-{{ version }}.src.tar.xz
     fn: compiler-rt-{{ version }}.src.tar.xz
     sha256: {{ sha256_compiler_rt }}
-    folder: compiler-rt
+    folder: rt
 
 build:
   number: {{ build_number }}

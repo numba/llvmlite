@@ -16,6 +16,7 @@ fi
 
 mv llvm-*.src llvm
 mv lld-*.src lld
+mv rt/compiler-rt-*.src compiler-rt
 mv unwind/libunwind-*.src libunwind
 
 declare -a _cmake_config
@@ -75,8 +76,8 @@ fi
 # _cmake_config+=(--trace-expand)
 # CPU_COUNT=1
 
-mkdir llvm/build
-cd llvm/build
+mkdir build
+cd build
 
 cmake -G'Unix Makefiles'     \
       "${_cmake_config[@]}"  \
