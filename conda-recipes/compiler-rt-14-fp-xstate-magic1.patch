@@ -1,0 +1,46 @@
+From 6f095babc2b7d564168c7afc5bf6afb2188fd6b4 Mon Sep 17 00:00:00 2001
+From: Tobias Burnus <tobias@codesourcery.com>
+Date: Thu, 5 May 2022 10:30:10 +0100
+Subject: [PATCH] sanitizer_common: Define FP_XSTATE_MAGIC1 for old glibc
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+D116208 (commit 1298273e8206a8fc2) added FP_XSTATE_MAGIC1.
+However, when building with glibc < 2.16 for backward-dependency
+compatibility, it is not defined - and the build breaks.
+
+Note: The define comes from Linux's asm/sigcontext.h but the
+file uses signal.h which includes glibc's bits/sigcontext.h - which
+is synced from the kernel's file but lags behind.
+
+Solution: For backward compatility with ancient systems, define
+FP_XSTATE_MAGIC1 if undefined.
+
+//For the old systems, we were building with Linux kernel 3.19 but to support really old glibc systems, we build with a sysroot of glibc 2.12. While our kernel (and the users' kernels) have FP_XSTATE_MAGIC1, glibc 2.12 is too old. – With this patch, building the sanitizer libs works again. This showed up for us today as GCC mainline/13 has now synced the sanitizer libs.//
+
+Reviewed By: #sanitizers, vitalybuka
+
+Differential Revision: https://reviews.llvm.org/D124927
+---
+ .../lib/sanitizer_common/sanitizer_platform_limits_posix.cpp  | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/compiler-rt-14.0.6.src/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp b/compiler-rt-14.0.6.src/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
+index e5cecaaaffc2..8ed3e92d2704 100644
+--- a/compiler-rt-14.0.6.src/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
++++ b/compiler-rt-14.0.6.src/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
+@@ -218,6 +218,10 @@ namespace __sanitizer {
+ 
+   unsigned ucontext_t_sz(void *ctx) {
+ #    if SANITIZER_GLIBC && SANITIZER_X64
++    // Added in Linux kernel 3.4.0, merged to glibc in 2.16
++#      ifndef FP_XSTATE_MAGIC1
++#        define FP_XSTATE_MAGIC1 0x46505853U
++#      endif
+     // See kernel arch/x86/kernel/fpu/signal.c for details.
+     const auto *fpregs = static_cast<ucontext_t *>(ctx)->uc_mcontext.fpregs;
+     // The member names differ across header versions, but the actual layout
+-- 
+2.40.0
+
