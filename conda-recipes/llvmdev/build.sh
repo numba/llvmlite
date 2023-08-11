@@ -10,8 +10,10 @@ LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"all"}
 # This is the clang compiler prefix
 if [[ $build_platform == osx-arm64 ]]; then
     DARWIN_TARGET=arm64-apple-darwin20.0.0
+    DARWIN_ARCH=arm64
 else
     DARWIN_TARGET=x86_64-apple-darwin13.4.0
+    DARWIN_ARCH=arm64
 fi
 
 mv llvm-*.src llvm
@@ -65,7 +67,7 @@ if [[ $(uname) == Darwin ]]; then
   # Once we are using our libc++ (not until llvm_build_final), it will be single-arch only and not setting
   # this causes link failures building the santizers since they respect DARWIN_osx_ARCHS. We may as well
   # save some compilation time by setting this for all of our llvm builds.
-  _cmake_config+=(-DDARWIN_osx_ARCHS=x86_64)
+  _cmake_config+=(-DDARWIN_osx_ARCHS=${DARWIN_ARCH})
 elif [[ $(uname) == Linux ]]; then
   _cmake_config+=(-DLLVM_USE_INTEL_JITEVENTS=ON)
 #  _cmake_config+=(-DLLVM_BINUTILS_INCDIR=${PREFIX}/lib/gcc/${cpu_arch}-${vendor}-linux-gnu/${compiler_ver}/plugin/include)
