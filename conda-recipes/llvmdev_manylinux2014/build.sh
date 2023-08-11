@@ -108,6 +108,16 @@ fi
 declare -a _compiler_rt_cmake_config
 _compiler_rt_cmake_config+=(-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX})
 _compiler_rt_cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_CRT:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_PROFILE:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_SANITIZERS:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_XRAY:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_ORC:BOOL=OFF)
+_compiler_rt_cmake_config+=(-DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF)
 _compiler_rt_cmake_config+=(-DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF)
 _compiler_rt_cmake_config+=(-DLLVM_CONFIG_PATH=../../llvm/build/bin/llvm-config)
 
