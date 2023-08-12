@@ -35,21 +35,14 @@ REM the 64bit linker anyway. This must be passed in to certain generators as
 REM '-Thost x64'.
 set PreferredToolArchitecture=x64
 
-set MAX_INDEX_CMAKE_GENERATOR=1
-
-set "CMAKE_GENERATOR[0]=Visual Studio 16 2019"
-set "CMAKE_GENERATOR[1]=Visual Studio 17 2022"
-
-set "CMAKE_GENERATOR_ARCHITECTURE[0]=%GEN_ARCH%"
-set "CMAKE_GENERATOR_ARCHITECTURE[1]=%GEN_ARCH%"
-
-set "CMAKE_GENERATOR_TOOLSET[0]=v142"
-set "CMAKE_GENERATOR_TOOLSET[1]=v142"
+set "CMAKE_GENERATOR=Visual Studio 16 2019"
+set "CMAKE_GENERATOR_ARCHITECTURE=%GEN_ARCH%"
+set "CMAKE_GENERATOR_TOOLSET=v142"
 
 REM Reduce build times and package size by removing unused stuff
 REM BENCHMARKS (new for llvm8) don't build under Visual Studio 14 2015
 set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD="%LLVM_TARGETS_TO_BUILD%" ^
-    -DLLVM_ENABLE_PROJECTS:STRING=lld ^
+    -DLLVM_ENABLE_PROJECTS:STRING=lld;compiler-rt ^
     -DLLVM_ENABLE_ZLIB=OFF ^
     -DLLVM_INCLUDE_UTILS=ON ^
     -DLLVM_INCLUDE_DOCS=OFF ^
@@ -58,29 +51,27 @@ set CMAKE_CUSTOM=-DLLVM_TARGETS_TO_BUILD="%LLVM_TARGETS_TO_BUILD%" ^
     -DLLVM_USE_INTEL_JITEVENTS=ON ^
     -DLLVM_INCLUDE_BENCHMARKS=OFF ^
     -DLLVM_ENABLE_DIA_SDK=OFF ^
-    -DLLVM_ENABLE_LIBXML2:BOOL=OFF ^
-    -DCLANG_ENABLE_LIBXML=OFF ^
-    -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly
+    -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly ^
+    -DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF ^
+    -DCOMPILER_RT_BUILD_CRT:BOOL=OFF ^
+    -DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF ^
+    -DCOMPILER_RT_BUILD_PROFILE:BOOL=OFF ^
+    -DCOMPILER_RT_BUILD_SANITIZERS:BOOL=OFF ^
+    -DCOMPILER_RT_BUILD_XRAY:BOOL=OFF ^
+    -DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF ^
+    -DCOMPILER_RT_BUILD_ORC:BOOL=OFF ^
+    -DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF
 
-REM try all compatible visual studio toolsets to find one that is installed
-setlocal enabledelayedexpansion
-for /l %%n in (0,1,%MAX_INDEX_CMAKE_GENERATOR%) do (
-    cmake -G "!CMAKE_GENERATOR[%%n]!" ^
-          -A "!CMAKE_GENERATOR_ARCHITECTURE[%%n]!" ^
-          -T "!CMAKE_GENERATOR_TOOLSET[%%n]!" ^
-          -DCMAKE_BUILD_TYPE="%BUILD_CONFIG%" ^
-          -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" ^
-          -DCMAKE_INSTALL_PREFIX:PATH="%LIBRARY_PREFIX%" ^
-          %CMAKE_CUSTOM% "%SRC_DIR%\llvm"
-    if not errorlevel 1 goto configuration_successful
-    del CMakeCache.txt
-)
+cmake -G "%CMAKE_GENERATOR%" ^
+      -A "%CMAKE_GENERATOR_ARCHITECTURE%" ^
+      -T "%CMAKE_GENERATOR_TOOLSET%" ^
+      -DCMAKE_BUILD_TYPE="%BUILD_CONFIG%" ^
+      -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" ^
+      -DCMAKE_INSTALL_PREFIX:PATH="%LIBRARY_PREFIX%" ^
+      %CMAKE_CUSTOM% "%SRC_DIR%\llvm"
 
 REM no compatible visual studio toolset was found
 if errorlevel 1 exit 1
-
-:configuration_successful
-endlocal
 
 REM === Build step ===
 cmake --build . --config "%BUILD_CONFIG%"
@@ -98,50 +89,4 @@ REM This is technically how to run the suite, but it will only run in an
 REM enhanced unix-like shell which has functions like `grep` available.
 REM cd ..\test
 REM "%PYTHON%" "..\build\%BUILD_CONFIG%\bin\llvm-lit.py" -vv Transforms ExecutionEngine Analysis CodeGen/X86
-REM if errorlevel 1 exit 1
-
-
-REM Build compiler-rt separately, because it fails on Windows with LLVM 14.0.6
-REM if built as an LLVM project.
-REM See also: https://stackoverflow.com/questions/46108390/building-llvm-with-cmake-and-visual-stuidio-fails-to-install
-
-cd "%SRC_DIR%\compiler-rt"
-mkdir build
-cd build
-
-set CMAKE_CUSTOM=DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON ^
-    -DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF ^
-    -DCOMPILER_RT_BUILD_CRT:BOOL=OFF ^
-    -DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF ^
-    -DCOMPILER_RT_BUILD_PROFILE:BOOL=OFF ^
-    -DCOMPILER_RT_BUILD_SANITIZERS:BOOL=OFF ^
-    -DCOMPILER_RT_BUILD_XRAY:BOOL=OFF ^
-    -DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF ^
-    -DCOMPILER_RT_BUILD_ORC:BOOL=OFF ^
-    -DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF ^
-    -DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF ^
-    -DLLVM_CONFIG_PATH="%SRC_DIR%\build\%BUILD_CONFIG%\bin\llvm-config.exe"
-
-REM try all compatible visual studio toolsets to find one that is installed
-setlocal enabledelayedexpansion
-for /l %%n in (0,1,%MAX_INDEX_CMAKE_GENERATOR%) do (
-    cmake -G "!CMAKE_GENERATOR[%%n]!" ^
-          -A "!CMAKE_GENERATOR_ARCHITECTURE[%%n]!" ^
-          -T "!CMAKE_GENERATOR_TOOLSET[%%n]!" ^
-          -DCMAKE_BUILD_TYPE="%BUILD_CONFIG%" ^
-          -DCMAKE_PREFIX_PATH="%LIBRARY_PREFIX%" ^
-          -DCMAKE_INSTALL_PREFIX:PATH="%LIBRARY_PREFIX%" ^
-          %CMAKE_CUSTOM% ..
-    if not errorlevel 1 goto crt_configuration_successful
-    del CMakeCache.txt
-)
-if errorlevel 1 exit 1
-
-:crt_configuration_successful
-endlocal
-
-cmake --build . --config "%BUILD_CONFIG%"
-if errorlevel 1 exit 1
-
-cmake --build . --config "%BUILD_CONFIG%" --target install
 if errorlevel 1 exit 1
