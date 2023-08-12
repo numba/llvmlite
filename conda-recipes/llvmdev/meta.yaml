@@ -33,6 +33,7 @@ source:
     folder: rt
     patches:
     - ../compiler-rt-14-fp-xstate-magic1.patch
+    - ../compiler-rt-windows-build.patch
 
 build:
   number: {{ build_number }}
