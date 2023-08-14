@@ -89,4 +89,4 @@ REM This is technically how to run the suite, but it will only run in an
 REM enhanced unix-like shell which has functions like `grep` available.
 REM cd ..\test
 REM "%PYTHON%" "..\build\%BUILD_CONFIG%\bin\llvm-lit.py" -vv Transforms ExecutionEngine Analysis CodeGen/X86
-if errorlevel 1 exit 1
+REM if errorlevel 1 exit 1

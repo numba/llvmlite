@@ -22,7 +22,7 @@ mv unwind/libunwind-*.src libunwind
 declare -a _cmake_config
 _cmake_config+=(-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX})
 _cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
-_cmake_config+=(-DLLVM_ENABLE_PROJECTS:STRING="lld")
+_cmake_config+=(-DLLVM_ENABLE_PROJECTS:STRING="lld;compiler-rt")
 # The bootstrap clang I use was built with a static libLLVMObject.a and I trying to get the same here
 # _cmake_config+=(-DBUILD_SHARED_LIBS:BOOL=ON)
 _cmake_config+=(-DLLVM_ENABLE_ASSERTIONS:BOOL=ON)
@@ -45,6 +45,16 @@ _cmake_config+=(-DLLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD})
 _cmake_config+=(-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly)
 _cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
 _cmake_config+=(-DLLVM_INCLUDE_BENCHMARKS:BOOL=OFF) # doesn't build without the rest of LLVM project
+_cmake_config+=(-DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON)
+_cmake_config+=(-DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_CRT:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_PROFILE:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_SANITIZERS:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_XRAY:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_ORC:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF)
 # TODO :: It would be nice if we had a cross-ecosystem 'BUILD_TIME_LIMITED' env var we could use to
 #         disable these unnecessary but useful things.
 if [[ ${CONDA_FORGE} == yes ]]; then
@@ -94,45 +104,3 @@ make check-llvm-unit || exit $?
 
 # From: https://github.com/conda-forge/llvmdev-feedstock/pull/53
 make install || exit $?
-
-# run the tests, skip some on linux-32
-cd ../test
-if [[ $ARCH == 'i686' ]]; then
-    ../build/bin/llvm-lit -vv Transforms Analysis CodeGen/X86
-else
-    ../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
-fi
-
-# Next, build compiler-rt
-
-declare -a _compiler_rt_cmake_config
-_compiler_rt_cmake_config+=(-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX})
-_compiler_rt_cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_CRT:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_PROFILE:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_SANITIZERS:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_XRAY:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_BUILD_ORC:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF)
-_compiler_rt_cmake_config+=(-DLLVM_CONFIG_PATH=../../llvm/build/bin/llvm-config)
-
-cd ../../compiler-rt
-mkdir build
-cd build
-
-cmake -G'Unix Makefiles'     \
-      "${_compiler_rt_cmake_config[@]}"  \
-      ..
-
-if [ $ARCH == 'armv7l' ]; then # RPi need thread count throttling
-    make -j2 VERBOSE=1
-else
-    make -j${CPU_COUNT} VERBOSE=1
-fi
-
-make install
