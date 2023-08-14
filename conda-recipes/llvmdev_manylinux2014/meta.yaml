@@ -29,6 +29,11 @@ source:
     sha256: {{ sha256_libunwind }}
     folder: unwind
 
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/compiler-rt-{{ version }}.src.tar.xz
+    fn: compiler-rt-{{ version }}.src.tar.xz
+    sha256: {{ sha256_compiler_rt }}
+    folder: rt
+
 build:
   number: {{ build_number }}
   string: "manylinux2014h{{ PKG_HASH }}"
