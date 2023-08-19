@@ -142,6 +142,13 @@ asm_sum_declare = r"""
     declare i32 @sum(i32 %.1, i32 %.2)
     """
 
+asm_vararg_declare = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    declare i32 @vararg(i32 %.1, ...)
+    """
+
 asm_double_inaccurate = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
@@ -1743,6 +1750,18 @@ class TestTypeRef(BaseTest):
         # Structs and arrays are not primitive types
         self.assertEqual(glob_struct_type.type_width, 0)
         self.assertEqual(array_type.type_width, 0)
+
+    def test_vararg_function(self):
+        # Variadic function
+        mod = self.module(asm_vararg_declare)
+        func = mod.get_function('vararg')
+        decltype = func.type.element_type
+        self.assertTrue(decltype.is_function_vararg)
+
+        mod = self.module(asm_sum_declare)
+        func = mod.get_function('sum')
+        decltype = func.type.element_type
+        self.assertFalse(decltype.is_function_vararg)
 
 
 class TestTarget(BaseTest):

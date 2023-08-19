@@ -49,23 +49,33 @@ class TypeRef(ffi.ObjectRef):
     @property
     def is_pointer(self):
         """
-        Returns true is the type is a pointer type.
+        Returns true if the type is a pointer type.
         """
         return ffi.lib.LLVMPY_TypeIsPointer(self)
 
     @property
     def is_array(self):
         """
-        Returns true is the type is an array type.
+        Returns true if the type is an array type.
         """
         return ffi.lib.LLVMPY_TypeIsArray(self)
 
     @property
     def is_vector(self):
         """
-        Returns true is the type is a vector type.
+        Returns true if the type is a vector type.
         """
         return ffi.lib.LLVMPY_TypeIsVector(self)
+
+    @property
+    def is_function_vararg(self):
+        """
+        Returns true if a function type accepts a variable number of arguments.
+        When the type is not a function, raises exception.
+        """
+        if self.type_kind != TypeKind.function:
+            raise ValueError("Type {} is not a function".format(self))
+        return ffi.lib.LLVMPY_IsFunctionVararg(self)
 
     @property
     def elements(self):
@@ -166,6 +176,9 @@ ffi.lib.LLVMPY_TypeIsVector.restype = c_bool
 
 ffi.lib.LLVMPY_TypeIsStruct.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_TypeIsStruct.restype = c_bool
+
+ffi.lib.LLVMPY_IsFunctionVararg.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_IsFunctionVararg.restype = c_bool
 
 ffi.lib.LLVMPY_GetTypeKind.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetTypeKind.restype = c_int

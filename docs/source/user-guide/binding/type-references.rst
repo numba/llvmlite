@@ -39,6 +39,11 @@ A wrapper around an LLVM type. The attributes available are:
     * ``True``---The type is a vector type
     * ``False``---The type is not a vector type
 
+* .. attribute:: is_function_vararg
+
+    * ``True``--- The function type accepts a variable number of arguments
+    * ``False``---The function type accepts a fixed number of arguments
+
 * .. attribute:: elements
 
     Returns an iterator over enclosing types. For example,
