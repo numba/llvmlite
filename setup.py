@@ -139,7 +139,8 @@ class LlvmliteClean(clean):
             else:
                 for fname in files:
                     if (fname.endswith('.pyc') or fname.endswith('.so')
-                            or fname.endswith('.o')):
+                        or fname.endswith('.o') or fname.endswith('.a')
+                        or fname.endswith('.dll') or fname.endswith('.lib')):
                         fpath = os.path.join(path, fname)
                         os.remove(fpath)
                         log.info("removing '%s'", fpath)

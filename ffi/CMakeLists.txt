@@ -7,14 +7,37 @@ project(llvmlite_ffi)
 include(CheckIncludeFiles)
 
 if(NOT MSVC)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -g")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -g $ENV{CXX_STATIC_LINK}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g $ENV{CXX_STATIC_LINK}")
 endif()
 
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+# Copy builtins archive
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD64") # for desktop
+    set(ARCH "x86_64")
+else()
+    set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(COMPILER_RT_LOCATION ${LLVM_LIBRARY_DIR}/windows/clang_rt.builtins-${ARCH}.lib)
+else()
+    if (EXISTS "$(LLVM_LIBDIR)/clang")
+        set(COMPILER_RT_LOCATION ${LLVM_LIBRARY_DIR}/linux/libclang_rt.builtins-${ARCH}.a)
+    else()
+        set(COMPILER_RT_LOCATION ${LLVM_LIBRARY_DIR}/clang/${LLVM_PACKAGE_VERSION}/lib/linux/libclang_rt.builtins-${ARCH}.a)
+    endif()
+endif()
+
+file(GLOB LLVM_EXCLUDE_LIB
+     "${LLVM_LIBRARY_DIR}/*LLVM*.a"
+)
+
+STRING(REPLACE ";" "," LLVM_EXCLUDE_LIB "${LLVM_EXCLUDE_LIB}")
 
 # Set your project compile flags.
 # E.g. if using the C++ header files
@@ -42,6 +65,10 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
             passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
             custom_passes.cpp orcjit.cpp)
 
+# Link compiler-rt whole archive
+set_target_properties(llvmlite PROPERTIES
+    LINK_FLAGS "-Lfoobar -Wl,--whole-archive,${COMPILER_RT_LOCATION},--no-whole-archive ")
+
 # Find the libraries that correspond to the LLVM components
 # that we wish to use.
 # The following line is broken with LLVM 10.0.0 due to a potential bug in
@@ -63,7 +90,7 @@ list(REMOVE_ITEM llvm_libs "OptRemarks")
 target_link_libraries(llvmlite ${llvm_libs})
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-    set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "-flto -Wl,--exclude-libs,ALL")
+    set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "-flto -Wl,--exclude-libs,${LLVM_EXCLUDE_LIB}")
 # On Darwin we only include the LLVMPY symbols we require and exclude
 # everything else.
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

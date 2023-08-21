@@ -20,5 +20,6 @@ call activate %CONDA_ENV%
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 @rem Install llvmdev
-%CONDA_INSTALL% -c numba/label/dev llvmdev="14.*"
+%CONDA_INSTALL% -c gmarkall llvmdev="14.*"
+@REM %CONDA_INSTALL% -c numba/label/dev llvmdev="14.*"
 if %errorlevel% neq 0 exit /b %errorlevel%

@@ -26,8 +26,10 @@ set +v
 source activate $CONDA_ENV
 set -v
 
+# TEMPORARY
+$CONDA_INSTALL -c gmarkall llvmdev="14.*"
 # Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
+# $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
