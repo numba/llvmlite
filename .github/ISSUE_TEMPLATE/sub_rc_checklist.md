@@ -27,7 +27,7 @@ labels: task
 
 ### Post release
 
-* [ ] Cherry-pick changes to the `CHANGE_LOG` to `main`
+* [ ] Cherry-pick changes to the `CHANGE_LOG` to `main`. (FINAL ONLY)
 * [ ] Clean up `ci_artifacts` by moving files to subdirectories
 * [ ] Update release checklist template with any additional bullet points that
       may have arisen during the release.
