@@ -137,6 +137,10 @@ create and configure a :class:`PassManagerBuilder`.
 
         See `basicaa pass documentation <http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass>`_.
 
+   * .. function:: add_instruction_namer_pass()
+
+        See `instnamer pass documentation <http://llvm.org/docs/Passes.html#instnamer-assign-names-to-anonymous-instructions>`_.
+
 .. class:: ModulePassManager()
 
    Create a new pass manager to run optimization passes on a
