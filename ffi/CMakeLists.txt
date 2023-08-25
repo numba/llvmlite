@@ -16,7 +16,6 @@ find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-# Copy builtins archive
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD64") # for desktop
     set(ARCH "x86_64")
 else()
