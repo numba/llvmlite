@@ -27,7 +27,7 @@ source activate $CONDA_ENV
 set -v
 
 # TEMPORARY
-$CONDA_INSTALL gmarkall::llvmdev
+$CONDA_INSTALL ohu::llvmdev
 # Install llvmdev (separate channel, for now)
 # $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
 
