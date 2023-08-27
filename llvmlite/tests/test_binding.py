@@ -2124,7 +2124,7 @@ class TestArchive(BaseTest):
     @unittest.skipUnless(platform.system() in ["Linux"],
                          "test only works on Linux")
     def test_compiler_rt(self):
-        ffi.lib._lib_handle['__gnu_f2h_ieee']()
+        ffi.lib._lib_handle['__ashldi3']()
 
 
 class TestAnalysis(BaseTest):
