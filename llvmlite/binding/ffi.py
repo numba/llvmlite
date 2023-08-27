@@ -115,10 +115,6 @@ class _lib_wrapper(object):
                 self._lib_handle = ctypes.CDLL(str(lib_path))
                 # Check that we can look up expected symbols.
                 _ = self._lib_handle.LLVMPY_GetVersionInfo()
-                # Make sure we can look up symbols from compiler-rt.
-                # Since __getattr__ will override symbol with '__' prefix
-                # with class name, we directly invoke '__getitem__' to validate
-                _ = self._lib_handle['__gnu_f2h_ieee']()
         except (OSError, AttributeError) as e:
             # OSError may be raised if the file cannot be opened, or is not
             # a shared library.

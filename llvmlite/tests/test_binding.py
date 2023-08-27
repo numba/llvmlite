@@ -2120,6 +2120,13 @@ class TestDylib(BaseTest):
         llvm.load_library_permanently(libm)
 
 
+class TestArchive(BaseTest):
+    @unittest.skipUnless(platform.system() in ["Linux"],
+                         "test only works on Linux")
+    def test_libm(self):
+        ffi.lib._lib_handle['__gnu_f2h_ieee']()
+
+
 class TestAnalysis(BaseTest):
     def build_ir_module(self):
         m = ir.Module()

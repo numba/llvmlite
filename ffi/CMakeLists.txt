@@ -22,16 +22,6 @@ else()
     set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
 endif()
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set(COMPILER_RT_LOCATION ${LLVM_LIBRARY_DIR}/windows/clang_rt.builtins-${ARCH}.lib)
-else()
-    if (EXISTS "$(LLVM_LIBDIR)/clang")
-        set(COMPILER_RT_LOCATION ${LLVM_LIBRARY_DIR}/linux/libclang_rt.builtins-${ARCH}.a)
-    else()
-        set(COMPILER_RT_LOCATION ${LLVM_LIBRARY_DIR}/clang/${LLVM_PACKAGE_VERSION}/lib/linux/libclang_rt.builtins-${ARCH}.a)
-    endif()
-endif()
-
 file(GLOB LLVM_EXCLUDE_LIB
      "${LLVM_LIBRARY_DIR}/*LLVM*.a"
 )
@@ -65,8 +55,16 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
             custom_passes.cpp orcjit.cpp)
 
 # Link compiler-rt whole archive
-set_target_properties(llvmlite PROPERTIES
-    LINK_FLAGS "-Lfoobar -Wl,--whole-archive,${COMPILER_RT_LOCATION},--no-whole-archive ")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+    if (EXISTS "$(LLVM_LIBDIR)/clang")
+        set(COMPILER_RT_LOCATION ${LLVM_LIBRARY_DIR}/linux/libclang_rt.builtins-${ARCH}.a)
+    else()
+        set(COMPILER_RT_LOCATION ${LLVM_LIBRARY_DIR}/clang/${LLVM_PACKAGE_VERSION}/lib/linux/libclang_rt.builtins-${ARCH}.a)
+    endif()
+    set_target_properties(llvmlite PROPERTIES
+        LINK_FLAGS "-Wl,--whole-archive,${COMPILER_RT_LOCATION},--no-whole-archive ")
+endif()
+
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use.
