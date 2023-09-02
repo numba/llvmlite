@@ -34,6 +34,7 @@ source:
     folder: rt
     patches:
     - ../compiler-rt-windows-build.patch
+    - ../compiler-rt-macos-build.patch
 
 build:
   number: {{ build_number }}

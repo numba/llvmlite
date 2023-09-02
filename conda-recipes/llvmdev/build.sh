@@ -48,6 +48,7 @@ _cmake_config+=(-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly)
 _cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
 _cmake_config+=(-DLLVM_INCLUDE_BENCHMARKS:BOOL=OFF) # doesn't build without the rest of LLVM project
 _cmake_config+=(-DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON)
+_cmake_config+=(-DCOMPILER_RT_BUILTINS_HIDE_SYMBOLS=OFF)
 _cmake_config+=(-DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF)
 _cmake_config+=(-DCOMPILER_RT_BUILD_CRT:BOOL=OFF)
 _cmake_config+=(-DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF)
