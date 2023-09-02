@@ -13,7 +13,7 @@ if [[ $build_platform == osx-arm64 ]]; then
     DARWIN_ARCH=arm64
 else
     DARWIN_TARGET=x86_64-apple-darwin13.4.0
-    DARWIN_ARCH=arm64
+    DARWIN_ARCH=x86_64
 fi
 
 mv llvm-*.src llvm
