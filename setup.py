@@ -42,9 +42,6 @@ def _guard_py_ver():
 
 _guard_py_ver()
 
-if os.environ.get('READTHEDOCS', None) == 'True':
-    sys.exit("setup.py disabled on readthedocs: called with %s"
-             % (sys.argv,))
 
 import versioneer
 
