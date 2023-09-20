@@ -64,6 +64,18 @@ asm_sum2 = r"""
     }}
     """
 
+asm_sum3 = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define i64 @sum(i64 %.1, i64 %.2) {{
+      %.3 = add i64 %.1, %.2
+      %.4 = add i64 5, %.3
+      %.5 = add i64 -5, %.4
+      ret i64 %.5
+    }}
+    """
+
 asm_mul = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
@@ -129,6 +141,15 @@ asm_sum_declare = r"""
     declare i32 @sum(i32 %.1, i32 %.2)
     """
 
+asm_double_inaccurate = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @foo() {{
+      %const = fadd fp128 0xLF3CB1CCF26FBC178452FB4EC7F91DEAD, 0xL00000000000000000000000000000001
+      ret void
+    }}
+    """  # noqa E501
 
 asm_double_locale = r"""
     ; ModuleID = '<string>'
@@ -350,6 +371,21 @@ define i32 @"foo"()
   ret i32 12345
 }
 """  # noqa W291 # trailing space needed for match later
+
+
+asm_null_constant = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define void @foo(i64* %.1) {{
+      ret void
+    }}
+
+    define void @bar() {{
+      call void @foo(i64* null)
+      ret void
+    }}
+"""
 
 
 riscv_asm_ilp32 = [
@@ -1200,6 +1236,7 @@ class TestOrcLLJIT(BaseTest):
             .link(lljit, func_name)
         cfptr = rt[func_name]
         self.assertTrue(cfptr)
+        self.assertEqual(func_name, rt.name)
         return lljit, rt, func_type(cfptr)
 
     # From test_dylib_symbols
@@ -1566,6 +1603,96 @@ class TestValueRef(BaseTest):
                 args = list(func.arguments)
                 self.assertEqual(list(args[0].attributes), [b'returned'])
                 self.assertEqual(list(args[1].attributes), [])
+
+    def test_value_kind(self):
+        mod = self.module()
+        self.assertEqual(mod.get_global_variable('glob').value_kind,
+                         llvm.ValueKind.global_variable)
+        func = mod.get_function('sum')
+        self.assertEqual(func.value_kind, llvm.ValueKind.function)
+        block = list(func.blocks)[0]
+        self.assertEqual(block.value_kind, llvm.ValueKind.basic_block)
+        inst = list(block.instructions)[1]
+        self.assertEqual(inst.value_kind, llvm.ValueKind.instruction)
+        self.assertEqual(list(inst.operands)[0].value_kind,
+                         llvm.ValueKind.constant_int)
+        self.assertEqual(list(inst.operands)[1].value_kind,
+                         llvm.ValueKind.instruction)
+
+        iasm_func = self.module(asm_inlineasm).get_function('foo')
+        iasm_inst = list(list(iasm_func.blocks)[0].instructions)[0]
+        self.assertEqual(list(iasm_inst.operands)[0].value_kind,
+                         llvm.ValueKind.inline_asm)
+
+    def test_is_constant(self):
+        mod = self.module()
+        self.assertTrue(mod.get_global_variable('glob').is_constant)
+        constant_operands = 0
+        for func in mod.functions:
+            self.assertTrue(func.is_constant)
+            for block in func.blocks:
+                self.assertFalse(block.is_constant)
+                for inst in block.instructions:
+                    self.assertFalse(inst.is_constant)
+                    for op in inst.operands:
+                        if op.is_constant:
+                            constant_operands += 1
+
+        self.assertEqual(constant_operands, 1)
+
+    def test_constant_int(self):
+        mod = self.module()
+        func = mod.get_function('sum')
+        insts = list(list(func.blocks)[0].instructions)
+        self.assertEqual(insts[1].opcode, 'add')
+        operands = list(insts[1].operands)
+        self.assertTrue(operands[0].is_constant)
+        self.assertFalse(operands[1].is_constant)
+        self.assertEqual(operands[0].get_constant_value(), 0)
+        with self.assertRaises(ValueError):
+            operands[1].get_constant_value()
+
+        mod = self.module(asm_sum3)
+        func = mod.get_function('sum')
+        insts = list(list(func.blocks)[0].instructions)
+        posint64 = list(insts[1].operands)[0]
+        negint64 = list(insts[2].operands)[0]
+        self.assertEqual(posint64.get_constant_value(), 5)
+        self.assertEqual(negint64.get_constant_value(signed_int=True), -5)
+
+        # Convert from unsigned arbitrary-precision integer to signed i64
+        as_u64 = negint64.get_constant_value(signed_int=False)
+        as_i64 = int.from_bytes(as_u64.to_bytes(8, 'little'), 'little',
+                                signed=True)
+        self.assertEqual(as_i64, -5)
+
+    def test_constant_fp(self):
+        mod = self.module(asm_double_locale)
+        func = mod.get_function('foo')
+        insts = list(list(func.blocks)[0].instructions)
+        self.assertEqual(len(insts), 2)
+        self.assertEqual(insts[0].opcode, 'fadd')
+        operands = list(insts[0].operands)
+        self.assertTrue(operands[0].is_constant)
+        self.assertAlmostEqual(operands[0].get_constant_value(), 0.0)
+        self.assertTrue(operands[1].is_constant)
+        self.assertAlmostEqual(operands[1].get_constant_value(), 3.14)
+
+        mod = self.module(asm_double_inaccurate)
+        func = mod.get_function('foo')
+        inst = list(list(func.blocks)[0].instructions)[0]
+        operands = list(inst.operands)
+        with self.assertRaises(ValueError):
+            operands[0].get_constant_value()
+        self.assertAlmostEqual(operands[1].get_constant_value(round_fp=True), 0)
+
+    def test_constant_as_string(self):
+        mod = self.module(asm_null_constant)
+        func = mod.get_function('bar')
+        inst = list(list(func.blocks)[0].instructions)[0]
+        arg = list(inst.operands)[0]
+        self.assertTrue(arg.is_constant)
+        self.assertEqual(arg.get_constant_value(), 'i64* null')
 
 
 class TestTarget(BaseTest):

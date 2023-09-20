@@ -304,6 +304,43 @@ LLVMPY_DisposeOperandsIter(LLVMOperandsIteratorRef GI) {
     delete llvm::unwrap(GI);
 }
 
+API_EXPORT(bool)
+LLVMPY_IsConstant(LLVMValueRef Val) { return LLVMIsConstant(Val); }
+
+API_EXPORT(const uint64_t *)
+LLVMPY_GetConstantIntRawValue(LLVMValueRef Val, bool *littleEndian) {
+    if (littleEndian) {
+        *littleEndian = llvm::sys::IsLittleEndianHost;
+    }
+    if (llvm::ConstantInt *CI =
+            llvm::dyn_cast<llvm::ConstantInt>((llvm::Value *)Val)) {
+        return CI->getValue().getRawData();
+    }
+    return nullptr;
+}
+
+API_EXPORT(unsigned)
+LLVMPY_GetConstantIntNumWords(LLVMValueRef Val) {
+    if (llvm::ConstantInt *CI =
+            llvm::dyn_cast<llvm::ConstantInt>((llvm::Value *)Val)) {
+        return CI->getValue().getNumWords();
+    }
+    return 0;
+}
+
+API_EXPORT(double)
+LLVMPY_GetConstantFPValue(LLVMValueRef Val, bool *losesInfo) {
+    LLVMBool losesInfo_internal;
+    double result = LLVMConstRealGetDouble(Val, &losesInfo_internal);
+    if (losesInfo) {
+        *losesInfo = losesInfo_internal;
+    }
+    return result;
+}
+
+API_EXPORT(int)
+LLVMPY_GetValueKind(LLVMValueRef Val) { return (int)LLVMGetValueKind(Val); }
+
 API_EXPORT(void)
 LLVMPY_PrintValueToString(LLVMValueRef Val, const char **outstr) {
     *outstr = LLVMPrintValueToString(Val);
