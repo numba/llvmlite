@@ -112,6 +112,7 @@ def main_posix_cmake(kind, library_ext):
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext), target_dir)
 
+
 def main_posix(kind, library_ext):
     if os.environ.get("LLVMLITE_USE_CMAKE", "0") == "1":
         return main_posix_cmake(kind, library_ext)
