@@ -32,7 +32,8 @@ $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
 if [[ $(uname) == Linux ]]; then
-$CONDA_INSTALL gcc_linux-64 gxx_linux-64 libstdcxx-ng=12
+$CONDA_INSTALL gcc_linux-64 gxx_linux-64
+$CONDA_INSTALL -c conda-forge libstdcxx-ng=12
 fi
 
 # Install dependencies for code coverage (codecov.io)
