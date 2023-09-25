@@ -72,7 +72,6 @@ def find_windows_generator():
         generators.append(
             (env_generator, env_arch, env_toolkit)
         )
-
     generators.extend([
         # use VS2019 to match how llvmdev is built
         ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v142'),
