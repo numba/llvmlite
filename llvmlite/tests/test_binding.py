@@ -2079,6 +2079,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_lint_pass()
         pm.add_module_debug_info_pass()
         pm.add_refprune_pass()
+        pm.add_instruction_namer_pass()
 
     @unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
     def test_target_library_info_behavior(self):
@@ -2105,6 +2106,22 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         mod = run(use_tli=False)
         self.assertNotIn("call float @llvm.exp2.f32", str(mod))
         self.assertIn("call float @ldexpf", str(mod))
+
+    def test_instruction_namer_pass(self):
+        asm = asm_inlineasm3.format(triple=llvm.get_default_triple())
+        mod = llvm.parse_assembly(asm)
+
+        # Run instnamer pass
+        pm = llvm.ModulePassManager()
+        pm.add_instruction_namer_pass()
+        pm.run(mod)
+
+        # Test that unnamed instructions are now named
+        func = mod.get_function('foo')
+        first_block = next(func.blocks)
+        instructions = list(first_block.instructions)
+        self.assertEqual(instructions[0].name, 'i')
+        self.assertEqual(instructions[1].name, 'i2')
 
 
 class TestDylib(BaseTest):
