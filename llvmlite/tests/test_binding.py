@@ -112,6 +112,9 @@ asm_getversion = r"""
     }}
     """
 
+if platform.python_implementation() == 'PyPy':
+    asm_getversion = asm_getversion.replace('Py_GetVersion', 'PyPy_GetVersion')
+
 # `fadd` used on integer inputs
 asm_parse_error = r"""
     ; ModuleID = '<string>'
@@ -1202,6 +1205,11 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         return llvm.create_mcjit_compiler(mod, target_machine)
 
 
+# There are some memory corruption issues with OrcJIT on AArch64 - see Issue
+# #1000. Since OrcJIT is experimental, and we don't test regularly during
+# llvmlite development on non-x86 platforms, it seems safest to skip these
+# tests on non-x86 platforms.
+@unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
 class TestOrcLLJIT(BaseTest):
 
     def jit(self, asm=asm_sum, func_name="sum", target_machine=None,
