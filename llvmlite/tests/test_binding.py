@@ -1239,7 +1239,6 @@ class TestOrcLLJIT(BaseTest):
             .link(lljit, func_name)
         cfptr = rt[func_name]
         self.assertTrue(cfptr)
-        self.assertEqual(func_name, rt.name)
         return lljit, rt, func_type(cfptr)
 
     # From test_dylib_symbols

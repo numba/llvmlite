@@ -144,8 +144,8 @@ class JITLibraryBuilder:
         however, the name of the library cannot be reused.
         """
         assert not lljit.closed, "Cannot add to closed JIT"
-        encoded_library_name = str(library_name).encode('utf-8')
-        assert len(encoded_library_name) > 0, "Library cannot be empty"
+        library_name = str(library_name).encode('utf-8')
+        assert len(library_name) > 0, "Library cannot be empty"
         elements = (_LinkElement * len(self.__entries))()
         for idx, (kind, value) in enumerate(self.__entries):
             elements[idx].element_kind = c_uint8(kind)
@@ -163,7 +163,7 @@ class JITLibraryBuilder:
         with ffi.OutputString() as outerr:
             tracker = lljit._capi.LLVMPY_LLJIT_Link(
                 lljit._ptr,
-                encoded_library_name,
+                library_name,
                 elements,
                 len(self.__entries),
                 imports,
@@ -173,10 +173,9 @@ class JITLibraryBuilder:
                 outerr)
             if not tracker:
                 raise RuntimeError(str(outerr))
-        return ResourceTracker(tracker,
-                               library_name,
-                               {name: exports[idx].address
-                                for idx, name in enumerate(self.__exports)})
+        return ResourceTracker(tracker, {name: exports[idx].address
+                                         for idx, name in
+                                         enumerate(self.__exports)})
 
 
 class ResourceTracker(ffi.ObjectRef):
@@ -196,9 +195,8 @@ class ResourceTracker(ffi.ObjectRef):
     LLVM internally tracks references between different libraries, so only
     "leaf" libraries need to be tracked.
     """
-    def __init__(self, ptr, name, addresses):
+    def __init__(self, ptr, addresses):
         self.__addresses = addresses
-        self.__name = name
         ffi.ObjectRef.__init__(self, ptr)
 
     def __getitem__(self, item):
@@ -206,10 +204,6 @@ class ResourceTracker(ffi.ObjectRef):
         Get the address of an exported symbol as an integer
         """
         return self.__addresses[item]
-
-    @property
-    def name(self):
-        return self.__name
 
     def _dispose(self):
         with ffi.OutputString() as outerr:
@@ -258,7 +252,7 @@ class LLJIT(ffi.ObjectRef):
             if not tracker:
                 raise RuntimeError(str(outerr))
 
-        return ResourceTracker(tracker, dylib, {fn: address.value})
+        return ResourceTracker(tracker, {fn: address.value})
 
     @property
     def target_data(self):
