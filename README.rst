@@ -51,7 +51,7 @@ Key Benefits
   ctypes (no need to wrestle with Python's compiler requirements and C++ 11
   compatibility).
 * The Python binding layer has sane memory management.
-* llvmlite is quite faster than llvmpy's thanks to a much simpler architecture
+* llvmlite is faster than llvmpy thanks to a much simpler architecture
   (the Numba_ test suite is twice faster than it was).
 
 Compatibility
