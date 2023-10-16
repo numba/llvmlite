@@ -1,9 +1,9 @@
 v0.41.1 (Oct 17, 2023)
 ----------------------
 
-This is a maintenance release that includes a fix for ORCJit issues on the
-`aarch64` platform. Also, this
-is the last release to support the Windows 32-bit platform (`win32`).
+This is a maintenance release that includes a workaround in the test suite for
+ORCJit issues on the `aarch64` platform. Also, this is the last release to
+support the Windows 32-bit platform (`win32`).
 
 Pull-Requests:
 
