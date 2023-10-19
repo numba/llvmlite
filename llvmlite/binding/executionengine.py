@@ -71,7 +71,6 @@ class ExecutionEngine(ffi.ObjectRef):
         return ffi.lib.LLVMPY_GetGlobalValueAddress(self, name.encode("ascii"))
 
     def add_global_mapping(self, gv, addr):
-        # XXX unused?
         ffi.lib.LLVMPY_AddGlobalMapping(self, gv, addr)
 
     def add_module(self, module):
