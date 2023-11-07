@@ -1,3 +1,23 @@
+v0.41.1 (Oct 17, 2023)
+----------------------
+
+This is a maintenance release that includes a workaround in the test suite for
+ORCJit issues on the ``aarch64`` platform. Also, this is the last release to
+support the Windows 32-bit platform (``win32``).
+
+Pull-Requests:
+
+* PR `#996 <https://github.com/numba/llvmlite/pull/996>`_: fix typos found by codespell (`esc <https://github.com/esc>`_)
+* PR `#997 <https://github.com/numba/llvmlite/pull/997>`_: Fix issue #880 by ensuring all sources are compiled under FreeBSD. (`ke6jjj <https://github.com/ke6jjj>`_)
+* PR `#998 <https://github.com/numba/llvmlite/pull/998>`_: adding sphinx_rtd_theme to RTD build to fix build (`esc <https://github.com/esc>`_)
+* PR `#1001 <https://github.com/numba/llvmlite/pull/1001>`_: Fix / workaround for OrcJIT blocking issues (`gmarkall <https://github.com/gmarkall>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `ke6jjj <https://github.com/ke6jjj>`_
+* `gmarkall <https://github.com/gmarkall>`_
+
 v0.41.0 (Sept 20, 2023)
 -----------------------
 
