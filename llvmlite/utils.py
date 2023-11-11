@@ -19,11 +19,17 @@ def get_library_name():
         return 'llvmlite.dll'
 
 
+def get_builtins_archive_name():
+    if os.name == 'nt':
+        return 'clang_rt.builtins.lib'
+    return 'libclang_rt.builtins.a'
+
+
 def get_library_files():
     """
     Return the names of shared library files needed for this platform.
     """
-    files = [get_library_name()]
+    files = [get_library_name(), get_builtins_archive_name()]
     if os.name == 'nt':
         files.extend(['msvcr120.dll', 'msvcp120.dll'])
     return files

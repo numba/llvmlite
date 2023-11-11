@@ -11,6 +11,7 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g")
 endif()
 
+
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -69,4 +70,23 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(LLVM_EXPORTED_SYMBOLS "-Wl,-exported_symbol,_LLVMPY_*")
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS "${LLVM_EXPORTED_SYMBOLS}")
+endif()
+
+# Copy builtins archive
+
+if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD64") # for desktop
+    set(ARCH "x86_64")
+else()
+    set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+
+# TODO: will need to deal with other OSes but right now this file
+# seems to be used only on Windows.
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    file(COPY ${LLVM_LIBRARY_DIR}/windows/clang_rt.builtins-${ARCH}.lib
+      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+  file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/clang_rt.builtins-${ARCH}.lib
+              ${CMAKE_CURRENT_BINARY_DIR}/clang_rt.builtins.lib)
+else()
+    message(SEND_ERROR "Copying of builtins archive not implemented on non-Windows systems")
 endif()

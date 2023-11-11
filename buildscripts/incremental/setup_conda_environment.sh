@@ -26,8 +26,18 @@ set +v
 source activate $CONDA_ENV
 set -v
 
+#Install llvmdev from mcollison channel
+#until it can be upload to Anaconda
+if [ "$(uname -sm)" = "Linux aarch64" ]; then
+    $CONDA_INSTALL -c mcollison llvmdev="11.*"
+else
+    $CONDA_INSTALL -c mcollison llvmdev="14.*"
+fi
+
 # Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
+# NOTE: Commented out until llvmdev with compiler-rt
+# available
+#$CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh

@@ -10,10 +10,18 @@ SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp dylib.cpp \
 	  linker.cpp object_file.cpp custom_passes.cpp orcjit.cpp
 OUTPUT = libllvmlite.dylib
+BUILTINS_ARCHIVE = libclang_rt.builtins.a
 MACOSX_DEPLOYMENT_TARGET ?= 10.9
 
-all: $(SRC) $(INCLUDE)
+all: $(SRC) $(INCLUDE) $(BUILTINS_ARCHIVE)
 	MACOSX_DEPLOYMENT_TARGET=$(MACOSX_DEPLOYMENT_TARGET) $(CXX) -dynamiclib $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
 
+$(BUILTINS_ARCHIVE):
+	if [ -d "$(LLVM_LIBDIR)/clang" ]; then \
+		cp $(LLVM_LIBDIR)/clang/*/lib/darwin/libclang_rt.osx.a $(BUILTINS_ARCHIVE); \
+	else \
+		cp $(LLVM_LIBDIR)/darwin/libclang_rt.osx.a $(BUILTINS_ARCHIVE); \
+	fi
+
 clean:
-	rm -rf test
+	rm -rf test $(BUILTINS_ARCHIVE)

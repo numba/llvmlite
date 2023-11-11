@@ -34,7 +34,6 @@ requirements:
     - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
     - zlib           # [unix and not (armv6l or armv7l)]
-    # requires libxml2
     - libxml2        # [win]
   run:
     - python >=3.8

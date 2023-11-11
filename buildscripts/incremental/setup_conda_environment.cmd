@@ -19,6 +19,9 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 call activate %CONDA_ENV%
 if %errorlevel% neq 0 exit /b %errorlevel%
 
+@rem Temporarily point to mcollison llvmdev
+%CONDA_INSTALL% -c mcollison llvmdev="14.*"
+
 @rem Install llvmdev
-%CONDA_INSTALL% -c numba/label/dev llvmdev="14.*"
+@%CONDA_INSTALL% -c numba/label/dev llvmdev="14.*"
 if %errorlevel% neq 0 exit /b %errorlevel%
