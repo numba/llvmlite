@@ -16,6 +16,7 @@
 #include "core.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
+#include "llvm/Support/Alignment.h"
 #include "llvm/Support/Memory.h"
 #include <cstdint>
 #include <string>
@@ -150,6 +151,14 @@ class API_EXPORT(LlvmliteMemoryManager : public RTDyldMemoryManager) {
     ///
     /// This method is called from finalizeMemory.
     virtual void invalidateInstructionCache();
+
+    virtual bool needsToReserveAllocationSpace() override { return true; }
+
+    virtual void reserveAllocationSpace(uintptr_t CodeSize, uint32_t CodeAlign,
+                                        uintptr_t RODataSize,
+                                        uint32_t RODataAlign,
+                                        uintptr_t RWDataSize,
+                                        uint32_t RWDataAlign) override;
 
   private:
     struct FreeMemBlock {
