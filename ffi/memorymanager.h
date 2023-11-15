@@ -1,4 +1,4 @@
-//===- SectionMemoryManager.h - Memory manager for MCJIT/RtDyld -*- C++ -*-===//
+//===----- memorymanager.h - Memory manager for MCJIT/RtDyld -*- C++ -*----===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -11,9 +11,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_EXECUTIONENGINE_SECTIONMEMORYMANAGER_H
-#define LLVM_EXECUTIONENGINE_SECTIONMEMORYMANAGER_H
+#pragma once
 
+#include "core.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/Support/Memory.h"
@@ -34,9 +34,9 @@ namespace llvm {
 /// Any client using this memory manager MUST ensure that section-specific
 /// page permissions have been applied before attempting to execute functions
 /// in the JITed object.  Permissions can be applied either by calling
-/// MCJIT::finalizeObject or by calling SectionMemoryManager::finalizeMemory
+/// MCJIT::finalizeObject or by calling LlvmliteMemoryManager::finalizeMemory
 /// directly.  Clients of MCJIT should call MCJIT::finalizeObject.
-class SectionMemoryManager : public RTDyldMemoryManager {
+class API_EXPORT(LlvmliteMemoryManager : public RTDyldMemoryManager) {
   public:
     /// This enum describes the various reasons to allocate pages from
     /// allocateMappedMemory.
@@ -46,7 +46,7 @@ class SectionMemoryManager : public RTDyldMemoryManager {
         RWData,
     };
 
-    /// Implementations of this interface are used by SectionMemoryManager to
+    /// Implementations of this interface are used by LlvmliteMemoryManager to
     /// request pages from the operating system.
     class MemoryMapper {
       public:
@@ -101,13 +101,13 @@ class SectionMemoryManager : public RTDyldMemoryManager {
         virtual ~MemoryMapper();
     };
 
-    /// Creates a SectionMemoryManager instance with \p MM as the associated
+    /// Creates a LlvmliteMemoryManager instance with \p MM as the associated
     /// memory mapper.  If \p MM is nullptr then a default memory mapper is used
     /// that directly calls into the operating system.
-    SectionMemoryManager(MemoryMapper *MM = nullptr);
-    SectionMemoryManager(const SectionMemoryManager &) = delete;
-    void operator=(const SectionMemoryManager &) = delete;
-    ~SectionMemoryManager() override;
+    LlvmliteMemoryManager(MemoryMapper *MM = nullptr);
+    LlvmliteMemoryManager(const LlvmliteMemoryManager &) = delete;
+    void operator=(const LlvmliteMemoryManager &) = delete;
+    ~LlvmliteMemoryManager() override;
 
     /// Allocates a memory block of (at least) the given size suitable for
     /// executable code.
@@ -192,5 +192,3 @@ class SectionMemoryManager : public RTDyldMemoryManager {
 };
 
 } // end namespace llvm
-
-#endif // LLVM_EXECUTIONENGINE_SECTIONMEMORYMANAGER_H

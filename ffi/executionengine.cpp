@@ -1,4 +1,5 @@
 #include "core.h"
+#include "memorymanager.h"
 
 #include "llvm-c/ExecutionEngine.h"
 #include "llvm-c/Object.h"
@@ -72,6 +73,10 @@ static LLVMExecutionEngineRef create_execution_engine(LLVMModuleRef M,
     std::string err;
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);
+
+    std::unique_ptr<llvm::RTDyldMemoryManager> mm =
+        std::make_unique<llvm::LlvmliteMemoryManager>();
+    eb.setMCJITMemoryManager(std::move(mm));
 
     /* EngineBuilder::create loads the current process symbols */
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));

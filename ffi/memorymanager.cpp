@@ -1,4 +1,4 @@
-//===- SectionMemoryManager.cpp - Memory manager for MCJIT/RtDyld *- C++ -*-==//
+//===---- memorymanager.cpp - Memory manager for MCJIT/RtDyld *- C++ -*----===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -11,35 +11,34 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/Config/config.h"
-#include "llvm/ExecutionEngine/SectionMemoryManager.h"
+#include "memorymanager.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/Process.h"
 
 namespace llvm {
 
-uint8_t *SectionMemoryManager::allocateDataSection(uintptr_t Size,
-                                                   unsigned Alignment,
-                                                   unsigned SectionID,
-                                                   StringRef SectionName,
-                                                   bool IsReadOnly) {
+uint8_t *LlvmliteMemoryManager::allocateDataSection(uintptr_t Size,
+                                                    unsigned Alignment,
+                                                    unsigned SectionID,
+                                                    StringRef SectionName,
+                                                    bool IsReadOnly) {
     if (IsReadOnly)
-        return allocateSection(SectionMemoryManager::AllocationPurpose::ROData,
+        return allocateSection(LlvmliteMemoryManager::AllocationPurpose::ROData,
                                Size, Alignment);
-    return allocateSection(SectionMemoryManager::AllocationPurpose::RWData,
+    return allocateSection(LlvmliteMemoryManager::AllocationPurpose::RWData,
                            Size, Alignment);
 }
 
-uint8_t *SectionMemoryManager::allocateCodeSection(uintptr_t Size,
-                                                   unsigned Alignment,
-                                                   unsigned SectionID,
-                                                   StringRef SectionName) {
-    return allocateSection(SectionMemoryManager::AllocationPurpose::Code, Size,
+uint8_t *LlvmliteMemoryManager::allocateCodeSection(uintptr_t Size,
+                                                    unsigned Alignment,
+                                                    unsigned SectionID,
+                                                    StringRef SectionName) {
+    return allocateSection(LlvmliteMemoryManager::AllocationPurpose::Code, Size,
                            Alignment);
 }
 
-uint8_t *SectionMemoryManager::allocateSection(
-    SectionMemoryManager::AllocationPurpose Purpose, uintptr_t Size,
+uint8_t *LlvmliteMemoryManager::allocateSection(
+    LlvmliteMemoryManager::AllocationPurpose Purpose, uintptr_t Size,
     unsigned Alignment) {
     if (!Alignment)
         Alignment = 16;
@@ -60,7 +59,7 @@ uint8_t *SectionMemoryManager::allocateSection(
         case AllocationPurpose::RWData:
             return RWDataMem;
         }
-        llvm_unreachable("Unknown SectionMemoryManager::AllocationPurpose");
+        llvm_unreachable("Unknown LlvmliteMemoryManager::AllocationPurpose");
     }();
 
     // Look in the list of free memory regions and use a block there if one
@@ -151,7 +150,7 @@ uint8_t *SectionMemoryManager::allocateSection(
     return (uint8_t *)Addr;
 }
 
-bool SectionMemoryManager::finalizeMemory(std::string *ErrMsg) {
+bool LlvmliteMemoryManager::finalizeMemory(std::string *ErrMsg) {
     // FIXME: Should in-progress permissions be reverted if an error occurs?
     std::error_code ec;
 
@@ -206,8 +205,8 @@ static sys::MemoryBlock trimBlockToPageSize(sys::MemoryBlock M) {
 }
 
 std::error_code
-SectionMemoryManager::applyMemoryGroupPermissions(MemoryGroup &MemGroup,
-                                                  unsigned Permissions) {
+LlvmliteMemoryManager::applyMemoryGroupPermissions(MemoryGroup &MemGroup,
+                                                   unsigned Permissions) {
     for (sys::MemoryBlock &MB : MemGroup.PendingMem)
         if (std::error_code EC = MMapper.protectMappedMemory(MB, Permissions))
             return EC;
@@ -230,30 +229,30 @@ SectionMemoryManager::applyMemoryGroupPermissions(MemoryGroup &MemGroup,
     return std::error_code();
 }
 
-void SectionMemoryManager::invalidateInstructionCache() {
+void LlvmliteMemoryManager::invalidateInstructionCache() {
     for (sys::MemoryBlock &Block : CodeMem.PendingMem)
         sys::Memory::InvalidateInstructionCache(Block.base(),
                                                 Block.allocatedSize());
 }
 
-SectionMemoryManager::~SectionMemoryManager() {
+LlvmliteMemoryManager::~LlvmliteMemoryManager() {
     for (MemoryGroup *Group : {&CodeMem, &RWDataMem, &RODataMem}) {
         for (sys::MemoryBlock &Block : Group->AllocatedMem)
             MMapper.releaseMappedMemory(Block);
     }
 }
 
-SectionMemoryManager::MemoryMapper::~MemoryMapper() {}
+LlvmliteMemoryManager::MemoryMapper::~MemoryMapper() {}
 
-void SectionMemoryManager::anchor() {}
+void LlvmliteMemoryManager::anchor() {}
 
 namespace {
-// Trivial implementation of SectionMemoryManager::MemoryMapper that just calls
+// Trivial implementation of LlvmliteMemoryManager::MemoryMapper that just calls
 // into sys::Memory.
-class DefaultMMapper final : public SectionMemoryManager::MemoryMapper {
+class DefaultMMapper final : public LlvmliteMemoryManager::MemoryMapper {
   public:
     sys::MemoryBlock
-    allocateMappedMemory(SectionMemoryManager::AllocationPurpose Purpose,
+    allocateMappedMemory(LlvmliteMemoryManager::AllocationPurpose Purpose,
                          size_t NumBytes,
                          const sys::MemoryBlock *const NearBlock,
                          unsigned Flags, std::error_code &EC) override {
@@ -274,7 +273,7 @@ class DefaultMMapper final : public SectionMemoryManager::MemoryMapper {
 DefaultMMapper DefaultMMapperInstance;
 } // namespace
 
-SectionMemoryManager::SectionMemoryManager(MemoryMapper *MM)
+LlvmliteMemoryManager::LlvmliteMemoryManager(MemoryMapper *MM)
     : MMapper(MM ? *MM : DefaultMMapperInstance) {}
 
 } // namespace llvm
