@@ -1,3 +1,61 @@
+v0.41.1 (Oct 17, 2023)
+----------------------
+
+This is a maintenance release that includes a workaround in the test suite for
+ORCJit issues on the ``aarch64`` platform. Also, this is the last release to
+support the Windows 32-bit platform (``win32``).
+
+Pull-Requests:
+
+* PR `#996 <https://github.com/numba/llvmlite/pull/996>`_: fix typos found by codespell (`esc <https://github.com/esc>`_)
+* PR `#997 <https://github.com/numba/llvmlite/pull/997>`_: Fix issue #880 by ensuring all sources are compiled under FreeBSD. (`ke6jjj <https://github.com/ke6jjj>`_)
+* PR `#998 <https://github.com/numba/llvmlite/pull/998>`_: adding sphinx_rtd_theme to RTD build to fix build (`esc <https://github.com/esc>`_)
+* PR `#1001 <https://github.com/numba/llvmlite/pull/1001>`_: Fix / workaround for OrcJIT blocking issues (`gmarkall <https://github.com/gmarkall>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `ke6jjj <https://github.com/ke6jjj>`_
+* `gmarkall <https://github.com/gmarkall>`_
+
+v0.41.0 (Sept 20, 2023)
+-----------------------
+
+Pull-Requests:
+
+* PR `#871 <https://github.com/numba/llvmlite/pull/871>`_: Refactor native library loading (`folded <https://github.com/folded>`_ `sklam <https://github.com/sklam>`_)
+* PR `#896 <https://github.com/numba/llvmlite/pull/896>`_: drop upper limit on Python for conda recipe (`esc <https://github.com/esc>`_)
+* PR `#904 <https://github.com/numba/llvmlite/pull/904>`_: Create GitHub Action for llvmlite release (`apmasell <https://github.com/apmasell>`_)
+* PR `#934 <https://github.com/numba/llvmlite/pull/934>`_: Expose TargetLibraryInfo pass (`sklam <https://github.com/sklam>`_)
+* PR `#935 <https://github.com/numba/llvmlite/pull/935>`_: Disable zlib for LLVM on Windows (`apmasell <https://github.com/apmasell>`_)
+* PR `#936 <https://github.com/numba/llvmlite/pull/936>`_: Enable querying constants and value kinds (`tbennun <https://github.com/tbennun>`_)
+* PR `#939 <https://github.com/numba/llvmlite/pull/939>`_: Bump llvmdev build number to include the nozlib change for windows (`sklam <https://github.com/sklam>`_)
+* PR `#940 <https://github.com/numba/llvmlite/pull/940>`_: Update CHANGE_LOG for 0.40.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#942 <https://github.com/numba/llvmlite/pull/942>`_: Add ORCJITv2 support (`apmasell <https://github.com/apmasell>`_)
+* PR `#951 <https://github.com/numba/llvmlite/pull/951>`_: Add a type hint for `IntType.width` (`apmasell <https://github.com/apmasell>`_)
+* PR `#952 <https://github.com/numba/llvmlite/pull/952>`_: Fix CI failing due to unsupported target triple on non-x86 platforms. (`sklam <https://github.com/sklam>`_)
+* PR `#958 <https://github.com/numba/llvmlite/pull/958>`_: fixup LLVM versions in version compat table (`esc <https://github.com/esc>`_)
+* PR `#959 <https://github.com/numba/llvmlite/pull/959>`_: Remove support for LLVM < 14 (`apmasell <https://github.com/apmasell>`_)
+* PR `#960 <https://github.com/numba/llvmlite/pull/960>`_: add various bullets to release checklists and sync (`esc <https://github.com/esc>`_)
+* PR `#963 <https://github.com/numba/llvmlite/pull/963>`_: Allow adding comments to generated IR (`apmasell <https://github.com/apmasell>`_)
+* PR `#966 <https://github.com/numba/llvmlite/pull/966>`_: build: support building on GNU/Hurd (`pinotree <https://github.com/pinotree>`_)
+* PR `#967 <https://github.com/numba/llvmlite/pull/967>`_: Expose library name in OrcJIT tracker (`apmasell <https://github.com/apmasell>`_)
+* PR `#968 <https://github.com/numba/llvmlite/pull/968>`_: Update LLVM manual build instructions (`apmasell <https://github.com/apmasell>`_)
+* PR `#969 <https://github.com/numba/llvmlite/pull/969>`_: update changelog on main for v0.40.1 (`esc <https://github.com/esc>`_)
+* PR `#983 <https://github.com/numba/llvmlite/pull/983>`_: adding RTD conf file V2 as per request (`esc <https://github.com/esc>`_)
+* PR `#985 <https://github.com/numba/llvmlite/pull/985>`_: Update release checklist post 0.41.0rc1 (`esc <https://github.com/esc>`_)
+* PR `#988 <https://github.com/numba/llvmlite/pull/988>`_: Fix FreeBsd build (`sklam <https://github.com/sklam>`_)
+
+Authors:
+
+* `apmasell <https://github.com/apmasell>`_
+* `esc <https://github.com/esc>`_
+* `folded <https://github.com/folded>`_
+* `pinotree <https://github.com/pinotree>`_
+* `sklam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+* `tbennun <https://github.com/tbennun>`_
+
 v0.40.1 (June 21, 2023)
 -----------------------
 

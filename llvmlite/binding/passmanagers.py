@@ -638,6 +638,14 @@ class PassManager(ffi.ObjectRef):
     def add_target_library_info(self, triple):
         ffi.lib.LLVMPY_AddTargetLibraryInfoPass(self, _encode_string(triple))
 
+    def add_instruction_namer_pass(self):
+        """
+        See https://llvm.org/docs/Passes.html#instnamer-assign-names-to-anonymous-instructions.
+
+        LLVM 14: `llvm::createInstructionNamerPass`
+        """  # noqa E501
+        ffi.lib.LLVMPY_AddInstructionNamerPass(self)
+
     # Non-standard LLVM passes
 
     def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL,
@@ -916,6 +924,7 @@ ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTargetLibraryInfoPass.argtypes = [ffi.LLVMPassManagerRef,
                                                     c_char_p]
+ffi.lib.LLVMPY_AddInstructionNamerPass.argtypes = [ffi.LLVMPassManagerRef]
 
 ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
                                            c_size_t]
