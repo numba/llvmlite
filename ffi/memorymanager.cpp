@@ -42,12 +42,16 @@ uint8_t *LlvmliteMemoryManager::allocateCodeSection(uintptr_t Size,
 uint8_t *LlvmliteMemoryManager::allocateSection(
     LlvmliteMemoryManager::AllocationPurpose Purpose, uintptr_t Size,
     unsigned Alignment) {
-    if (!Alignment)
-        Alignment = 16;
+    LLVM_DEBUG(
+        dbgs() << "\nLlvmliteMemoryManager::allocateSection() request:\n");
 
     LLVM_DEBUG(dbgs() << "Requested size / alignment: "
                       << format_hex(Size, 2, true) << " / " << Alignment
                       << "\n");
+
+    // Chosen to match the stub alignment value used in reserveAllocationSpace()
+    if (!Alignment)
+        Alignment = 8;
 
     assert(!(Alignment & (Alignment - 1)) &&
            "Alignment must be a power of two.");
@@ -110,23 +114,72 @@ uint8_t *LlvmliteMemoryManager::allocateSection(
 
     assert(false && "All memory must be pre-allocated");
 
+    // If asserts are turned off, returning a null pointer in the event of a
+    // failure to find a preallocated block large enough should at least lead
+    // to a quick crash.
     return nullptr;
 }
 
-static uintptr_t requiredPageSize(uintptr_t Size, uint32_t Alignment) {
-    static const size_t PageSize = sys::Process::getPageSizeEstimate();
-    // Use the same calculation as allocateSection because we need to be able to
-    // satisfy it.
-    uintptr_t RequiredSize =
-        Alignment * ((Size + Alignment - 1) / Alignment + 1);
-    // Round up to the nearest page size. Blocks must be page-aligned.
-    return PageSize * ((RequiredSize + PageSize - 1) / PageSize);
+bool LlvmliteMemoryManager::hasSpace(const MemoryGroup &MemGroup,
+                                     uintptr_t Size) const {
+    for (const FreeMemBlock &FreeMB : MemGroup.FreeMem) {
+        if (FreeMB.Free.allocatedSize() >= Size)
+            return true;
+    }
+    return false;
 }
 
 void LlvmliteMemoryManager::reserveAllocationSpace(
     uintptr_t CodeSize, uint32_t CodeAlign, uintptr_t RODataSize,
     uint32_t RODataAlign, uintptr_t RWDataSize, uint32_t RWDataAlign) {
-    MemoryGroup &MemGroup = CodeMem;
+    LLVM_DEBUG(
+        dbgs()
+        << "\nLlvmliteMemoryManager::reserveAllocationSpace() request:\n\n");
+    LLVM_DEBUG(dbgs() << "Code size / align: " << format_hex(CodeSize, 2, true)
+                      << " / " << CodeAlign << "\n");
+    LLVM_DEBUG(dbgs() << "ROData size / align: "
+                      << format_hex(RODataSize, 2, true) << " / " << RODataAlign
+                      << "\n");
+    LLVM_DEBUG(dbgs() << "RWData size / align: "
+                      << format_hex(RWDataSize, 2, true) << " / " << RWDataAlign
+                      << "\n");
+
+    if (CodeSize == 0 && RODataSize == 0 && RWDataSize == 0) {
+        LLVM_DEBUG(dbgs() << "No memory requested - returning early.\n");
+        return;
+    }
+
+    // Code alignment needs to be at least the stub alignment - however, we
+    // don't have an easy way to get that here so as a workaround, we assume
+    // it's 8, which is the largest value I observed across all platforms.
+    constexpr uint32_t StubAlign = 8;
+    CodeAlign = std::max(CodeAlign, StubAlign);
+
+    // ROData and RWData may not need to be aligned to the StubAlign, but the
+    // stub alignment seems like a reasonable (if slightly arbitrary) minimum
+    // alignment for them that should not cause any issues on all (i.e. 64-bit)
+    // platforms.
+    RODataAlign = std::max(RODataAlign, StubAlign);
+    RWDataAlign = std::max(RWDataAlign, StubAlign);
+
+    // Get space required for each section. Use the same calculation as
+    // allocateSection because we need to be able to satisfy it.
+    uintptr_t RequiredCodeSize = alignTo(CodeSize, CodeAlign) + CodeAlign;
+    uintptr_t RequiredRODataSize =
+        alignTo(RODataSize, RODataAlign) + RODataAlign;
+    uintptr_t RequiredRWDataSize =
+        alignTo(RWDataSize, RWDataAlign) + RWDataAlign;
+    uint64_t TotalSize =
+        RequiredCodeSize + RequiredRODataSize + RequiredRWDataSize;
+
+    if (hasSpace(CodeMem, RequiredCodeSize) &&
+        hasSpace(RODataMem, RequiredRODataSize) &&
+        hasSpace(RWDataMem, RequiredRWDataSize)) {
+        // Sufficient space in contiguous block already available.
+        LLVM_DEBUG(
+            dbgs() << "Previous preallocation sufficient; reusing it.\n");
+        return;
+    }
 
     // MemoryManager does not have functions for releasing memory after it's
     // allocated. Normally it tries to use any excess blocks that were
@@ -138,64 +191,30 @@ void LlvmliteMemoryManager::reserveAllocationSpace(
     RODataMem.FreeMem.clear();
     RWDataMem.FreeMem.clear();
 
-    LLVM_DEBUG(dbgs() << "Code size / align: " << format_hex(CodeSize, 2, true)
-                      << " / " << CodeAlign << "\n");
-    LLVM_DEBUG(dbgs() << "ROData size / align: "
-                      << format_hex(RODataSize, 2, true) << " / " << RODataAlign
-                      << "\n");
-    LLVM_DEBUG(dbgs() << "RWData size / align: "
-                      << format_hex(RWDataSize, 2, true) << " / " << RWDataAlign
-                      << "\n");
-
-    // Code alignment needs to be at least the stub alignment - however, we
-    // don't have an easy way to get that here so as a workaround, we assume
-    // it's 8, which is the largest value I observed across all platforms.
-    CodeAlign = CodeAlign ? CodeAlign : 16;
-    uint32_t StubAlign = 8;
-    CodeAlign = std::max(CodeAlign, StubAlign);
-
-    RODataAlign = RODataAlign ? RODataAlign : 16;
-    RWDataAlign = RWDataAlign ? RWDataAlign : 16;
-    uintptr_t RequiredCodeSize = requiredPageSize(CodeSize, CodeAlign);
-    uintptr_t RequiredRODataSize = requiredPageSize(RODataSize, RODataAlign);
-    uintptr_t RequiredRWDataSize = requiredPageSize(RWDataSize, RWDataAlign);
-    uint64_t TotalSize =
+    // Round up to the nearest page size. Blocks must be page-aligned.
+    static const size_t PageSize = sys::Process::getPageSizeEstimate();
+    RequiredCodeSize = alignTo(RequiredCodeSize, PageSize);
+    RequiredRODataSize = alignTo(RequiredRODataSize, PageSize);
+    RequiredRWDataSize = alignTo(RequiredRWDataSize, PageSize);
+    uintptr_t RequiredSize =
         RequiredCodeSize + RequiredRODataSize + RequiredRWDataSize;
 
     LLVM_DEBUG(dbgs() << "Reserving " << format_hex(TotalSize, 2, true)
                       << " bytes\n");
 
-    // FIXME: It would be useful to define a default allocation size (or add
-    // it as a constructor parameter) to minimize the number of allocations.
-    //
-    // FIXME: Initialize the Near member for each memory group to avoid
-    // interleaving.
     std::error_code ec;
+    const sys::MemoryBlock *near = nullptr;
     sys::MemoryBlock MB = MMapper.allocateMappedMemory(
-        AllocationPurpose::Code, TotalSize, &MemGroup.Near,
+        AllocationPurpose::RWData, RequiredSize, near,
         sys::Memory::MF_READ | sys::Memory::MF_WRITE, ec);
     if (ec) {
-        // FIXME: Add error propagation to the interface.
         assert(false && "Failed to allocate mapped memory");
     }
 
-    // Save this address as the basis for our next request
-    MemGroup.Near = MB;
-
-    // Copy the address to all the other groups, if they have not
-    // been initialized.
-    if (CodeMem.Near.base() == nullptr)
-        CodeMem.Near = MB;
-    if (RODataMem.Near.base() == nullptr)
-        RODataMem.Near = MB;
-    if (RWDataMem.Near.base() == nullptr)
-        RWDataMem.Near = MB;
-
-    // Remember that we allocated this memory
-    MemGroup.AllocatedMem.push_back(MB);
+    // CodeMem will arbitrarily own this MemoryBlock to handle cleanup.
+    CodeMem.AllocatedMem.push_back(MB);
 
     uintptr_t Addr = (uintptr_t)MB.base();
-
     FreeMemBlock FreeMB;
     FreeMB.PendingPrefixIndex = (unsigned)-1;
 
@@ -203,27 +222,32 @@ void LlvmliteMemoryManager::reserveAllocationSpace(
         LLVM_DEBUG(dbgs() << "Code mem starts at " << format_hex(Addr, 18, true)
                           << ", size " << format_hex(RequiredCodeSize, 2, true)
                           << "\n");
+        assert(isAddrAligned(Align(CodeAlign), (void *)Addr));
         FreeMB.Free = sys::MemoryBlock((void *)Addr, RequiredCodeSize);
         CodeMem.FreeMem.push_back(FreeMB);
         Addr += RequiredCodeSize;
     }
 
     if (RODataSize > 0) {
-        LLVM_DEBUG(dbgs() << "Rodata mem starts at 0x"
+        LLVM_DEBUG(dbgs() << "ROData mem starts at "
                           << format_hex(Addr, 18, true) << ", size "
                           << format_hex(RequiredRODataSize, 2, true) << "\n");
+        assert(isAddrAligned(Align(RODataAlign), (void *)Addr));
         FreeMB.Free = sys::MemoryBlock((void *)Addr, RequiredRODataSize);
         RODataMem.FreeMem.push_back(FreeMB);
         Addr += RequiredRODataSize;
     }
 
     if (RWDataSize > 0) {
-        LLVM_DEBUG(dbgs() << "Rwdata mem starts at 0x"
+        LLVM_DEBUG(dbgs() << "RWData mem starts at "
                           << format_hex(Addr, 18, true) << ", size "
                           << format_hex(RequiredRWDataSize, 2, true) << "\n");
+        assert(isAddrAligned(Align(RWDataAlign), (void *)Addr));
         FreeMB.Free = sys::MemoryBlock((void *)Addr, RequiredRWDataSize);
         RWDataMem.FreeMem.push_back(FreeMB);
     }
+
+    LLVM_DEBUG(dbgs() << "\n");
 }
 
 bool LlvmliteMemoryManager::finalizeMemory(std::string *ErrMsg) {

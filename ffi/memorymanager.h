@@ -192,6 +192,8 @@ class API_EXPORT(LlvmliteMemoryManager : public RTDyldMemoryManager) {
     std::error_code applyMemoryGroupPermissions(MemoryGroup &MemGroup,
                                                 unsigned Permissions);
 
+    bool hasSpace(const MemoryGroup &MemGroup, uintptr_t Size) const;
+
     void anchor() override;
 
     MemoryGroup CodeMem;
