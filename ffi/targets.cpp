@@ -85,6 +85,11 @@ API_EXPORT(void)
 LLVMPY_DisposeTargetData(LLVMTargetDataRef TD) { LLVMDisposeTargetData(TD); }
 
 API_EXPORT(long long)
+LLVMPY_ABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
+    return (long long)LLVMABIAlignmentOfType(TD, Ty);
+}
+
+API_EXPORT(long long)
 LLVMPY_ABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     return (long long)LLVMABISizeOfType(TD, Ty);
 }

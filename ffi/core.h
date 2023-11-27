@@ -27,10 +27,13 @@ API_EXPORT(void)
 LLVMPY_DisposeString(const char *msg);
 
 API_EXPORT(LLVMContextRef)
-LLVMPY_GetGlobalContext();
+LLVMPY_GetGlobalContext(bool enable_opaque_pointers);
 
 API_EXPORT(LLVMContextRef)
-LLVMPY_ContextCreate();
+LLVMPY_ContextCreate(bool enable_opaque_pointers);
+
+API_EXPORT(bool)
+LLVMPY_SupportsTypedPointers(LLVMContextRef ctx);
 
 } /* end extern "C" */
 

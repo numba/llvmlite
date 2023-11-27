@@ -404,6 +404,16 @@ API_EXPORT(LLVMModuleRef)
 LLVMPY_GetGlobalParent(LLVMValueRef Val) { return LLVMGetGlobalParent(Val); }
 
 API_EXPORT(LLVMTypeRef)
+LLVMPY_GlobalGetValueType(LLVMValueRef Val) {
+    llvm::Value *unwrapped = llvm::unwrap(Val);
+    llvm::GlobalValue *gv = llvm::dyn_cast<llvm::GlobalValue>(unwrapped);
+    if (!gv) {
+        return nullptr;
+    }
+    return llvm::wrap(gv->getValueType());
+}
+
+API_EXPORT(LLVMTypeRef)
 LLVMPY_TypeOf(LLVMValueRef Val) { return LLVMTypeOf(Val); }
 
 API_EXPORT(const char *)
