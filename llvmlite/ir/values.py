@@ -878,7 +878,7 @@ class AttributeSet(set):
 
 class FunctionAttributes(AttributeSet):
     _known = frozenset([
-        'argmemonly', 'alwaysinline', 'builtin', 'cold',
+        'argmemonly', 'alwaysinline', 'builtin', 'cold', 'convergent',
         'inaccessiblememonly', 'inaccessiblemem_or_argmemonly', 'inlinehint',
         'jumptable', 'minsize', 'naked', 'nobuiltin', 'noduplicate',
         'noimplicitfloat', 'noinline', 'nonlazybind', 'norecurse',
