@@ -145,6 +145,22 @@ class TestFunction(TestBase):
         # Check pickling
         self.assert_pickle_correctly(func)
 
+    def test_declare_convergent_attribute(self):
+        # Now with function attributes
+        func = self.function()
+        func.attributes.add("convergent")
+        func.attributes.alignstack = 16
+        tp_pers = ir.FunctionType(int8, (), var_arg=True)
+        pers = ir.Function(self.module(), tp_pers, '__gxx_personality_v0')
+        func.attributes.personality = pers
+        asm = self.descr(func).strip()
+        self.assertEqual(asm,
+                         ("declare %s convergent alignstack(16) "
+                          "personality i8 (...)* @\"__gxx_personality_v0\"") %
+                         self.proto)
+        # Check pickling
+        self.assert_pickle_correctly(func)
+
     def test_function_attributes(self):
         # Now with parameter attributes
         func = self.function()
@@ -1322,6 +1338,7 @@ my_block:
         builder.call(f, (a, b), 'res_alwaysinline', attrs='alwaysinline')
         builder.call(f, (a, b), 'res_noinline_ro', attrs=('noinline',
                                                           'readonly'))
+        builder.call(f, (a, b), 'res_convergent', attrs='convergent')
         self.check_block(block, """\
         my_block:
             %"res_f" = call float @"f"(i32 %".1", i32 %".2")
@@ -1334,6 +1351,7 @@ my_block:
             %"res_noinline" = call float @"f"(i32 %".1", i32 %".2") noinline
             %"res_alwaysinline" = call float @"f"(i32 %".1", i32 %".2") alwaysinline
             %"res_noinline_ro" = call float @"f"(i32 %".1", i32 %".2") noinline readonly
+            %"res_convergent" = call float @"f"(i32 %".1", i32 %".2") convergent
         """) # noqa E501
 
     def test_call_metadata(self):
