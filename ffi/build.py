@@ -203,7 +203,7 @@ def main_posix(kind, library_ext):
 
     print("SEEING IF I CAN FIND LLD:")
     try:
-        print(subprocess.run(["dpkg", "-L", "lld"], capture_stdout=True))
+        print(subprocess.run(["dpkg", "-L", "lld"], capture_output=True))
     except subprocess.CalledProcessError as e:
         print("stdout:")
         print(e.stdout)
