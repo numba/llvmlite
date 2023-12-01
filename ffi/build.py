@@ -208,8 +208,11 @@ def main_posix(kind, library_ext):
     except NotImplementedError:
         default_makeopts = ""
     makeopts = os.environ.get('LLVMLITE_MAKEOPTS', default_makeopts).split()
-    subprocess.check_call(['make', '-f', makefile] + makeopts)
-    shutil.copy('libllvmlite' + library_ext, target_dir)
+    try:
+        subprocess.check_call(['make', '-f', makefile] + makeopts)
+    except subprocess.CalledProcessError as e:
+        print(e.stdout)
+    shutil.copy('sulibllvmlite' + library_ext, target_dir)
 
 
 def main():
