@@ -179,6 +179,7 @@ def main_posix(kind, library_ext):
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = \
         f'{lld_libs} ' + ' '.join(libs.split())
+    print("LLVM LIBS USED: ", os.environ['LLVM_LIBS'])
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
@@ -210,9 +211,13 @@ def main_posix(kind, library_ext):
     makeopts = os.environ.get('LLVMLITE_MAKEOPTS', default_makeopts).split()
     try:
         subprocess.check_call(['make', '-f', makefile] + makeopts)
+        shutil.copy('sulibllvmlite' + library_ext, target_dir)
     except subprocess.CalledProcessError as e:
+        print('\n\n\n\n PROBLEM HERE:')
+        
         print(e.stdout)
-    shutil.copy('sulibllvmlite' + library_ext, target_dir)
+
+        print('\n\n\nEND OF PROBLEM\n\n\n')
 
 
 def main():
