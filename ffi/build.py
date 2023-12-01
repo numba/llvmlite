@@ -202,7 +202,7 @@ def main_posix(kind, library_ext):
     os.environ['LLVM_LDFLAGS'] = ldflags.strip()
 
     print("SEEING IF I CAN FIND LLD:")
-    print(subprocess.check_output(["dpkg", "-L", "lld"], shell=True))
+    print(subprocess.check_output(["dpkg", "-L", "lld"]))
 
     
     # static link libstdc++ for portability
