@@ -203,7 +203,8 @@ def main_posix(kind, library_ext):
 
     print("SEEING IF I CAN FIND LLD:")
     try:
-        print(os.walk("-I/usr/lib/llvm-14/"))
+        for file in os.walk("-I/usr/lib/llvm-14/"):
+            print(file)
         print("\n\n")
         print(subprocess.run(["dpkg", "-L", "llvm-14"], capture_output=True, check=True).stdout.decode('latin1'))
     except subprocess.CalledProcessError as e:
