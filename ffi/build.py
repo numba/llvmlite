@@ -185,6 +185,7 @@ def main_posix(kind, library_ext):
     # on OSX cxxflags has null bytes at the end of the string, remove them
     cxxflags = cxxflags.replace('\0', '')
     cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
+    print('CXX FLAGS USED:', cxxflags)
 
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
