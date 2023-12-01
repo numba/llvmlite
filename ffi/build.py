@@ -211,13 +211,16 @@ def main_posix(kind, library_ext):
     makeopts = os.environ.get('LLVMLITE_MAKEOPTS', default_makeopts).split()
     try:
         subprocess.check_call(['make', '-f', makefile] + makeopts)
-        shutil.copy('sulibllvmlite' + library_ext, target_dir)
+        shutil.copy('libllvmlite' + library_ext, target_dir)
     except subprocess.CalledProcessError as e:
         print('\n\n\n\n PROBLEM HERE:')
         
         print(e.stdout)
+        print('\n\n')
+        print(e.stderr)
 
         print('\n\n\nEND OF PROBLEM\n\n\n')
+        raise e
 
 
 def main():
