@@ -10,6 +10,7 @@ build:
     python: "3.11"
   apt_packages:
     - lld-14
+    - liblld-14-dev
 
 sphinx:
   configuration: docs/source/conf.py
