@@ -185,7 +185,6 @@ def main_posix(kind, library_ext):
     # on OSX cxxflags has null bytes at the end of the string, remove them
     cxxflags = cxxflags.replace('\0', '')
     cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
-    print('CXX FLAGS USED:', cxxflags)
 
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
@@ -200,20 +199,6 @@ def main_posix(kind, library_ext):
 
     ldflags = run_llvm_config(llvm_config, ["--ldflags"])
     os.environ['LLVM_LDFLAGS'] = ldflags.strip()
-
-    print("SEEING IF I CAN FIND LLD:")
-    try:
-        for file in os.walk("-I/usr/lib/llvm-14"):
-            print(file)
-        print("\n\n")
-        print(subprocess.run(["dpkg", "-L", "lld-14"], capture_output=True, check=True).stdout.decode('latin1'))
-    except subprocess.CalledProcessError as e:
-        print("stdout:")
-        print(e.stdout.decode('latin1'))
-        print("\nstderr:")
-        print(e.stderr.decode('latin1'))
-        print("END OF ERROR")
-
     
     # static link libstdc++ for portability
     if int(os.environ.get('LLVMLITE_CXX_STATIC_LINK', 0)):
@@ -225,19 +210,8 @@ def main_posix(kind, library_ext):
     except NotImplementedError:
         default_makeopts = ""
     makeopts = os.environ.get('LLVMLITE_MAKEOPTS', default_makeopts).split()
-    try:
-        print(subprocess.run(['make', '-f', makefile] + makeopts, check=True, capture_output=True))
-        shutil.copy('libllvmlite' + library_ext, target_dir)
-    except subprocess.CalledProcessError as e:
-        print('\n\n\n\n PROBLEM HERE:')
-        
-        print(e.stdout.decode('latin1'))
-        print('\n\n')
-        print(e.stderr.decode('latin1'))
-
-        print('\n\n\nEND OF PROBLEM\n\n\n')
-        raise e
-
+    print(subprocess.check_call(['make', '-f', makefile] + makeopts))
+    shutil.copy('libllvmlite' + library_ext, target_dir)
 
 def main():
     if sys.platform == 'win32':
