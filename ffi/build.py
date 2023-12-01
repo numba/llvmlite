@@ -215,9 +215,9 @@ def main_posix(kind, library_ext):
     except subprocess.CalledProcessError as e:
         print('\n\n\n\n PROBLEM HERE:')
         
-        print(e.stdout)
+        print(e.stdout.decode('latin1'))
         print('\n\n')
-        print(e.stderr)
+        print(e.stderr.decode('latin1'))
 
         print('\n\n\nEND OF PROBLEM\n\n\n')
         raise e
