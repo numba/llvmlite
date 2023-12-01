@@ -200,6 +200,11 @@ def main_posix(kind, library_ext):
 
     ldflags = run_llvm_config(llvm_config, ["--ldflags"])
     os.environ['LLVM_LDFLAGS'] = ldflags.strip()
+
+    print("SEEING IF I CAN FIND LLD:")
+    print(subprocess.check_output(["dpkg", "-L", "lld"], shell=True))
+
+    
     # static link libstdc++ for portability
     if int(os.environ.get('LLVMLITE_CXX_STATIC_LINK', 0)):
         os.environ['CXX_STATIC_LINK'] = "-static-libstdc++"
