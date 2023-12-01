@@ -8,6 +8,8 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  apt_packages:
+    - lld-14
 
 sphinx:
   configuration: docs/source/conf.py
