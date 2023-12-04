@@ -65,11 +65,11 @@ jobs:
         CONDA_ENV: cienv
         WHEEL: 'yes'
       py311_wheel:
-        PYTHON: '3.10'
+        PYTHON: '3.11'
         CONDA_ENV: cienv
         WHEEL: 'yes'
       py312_wheel:
-        PYTHON: '3.10'
+        PYTHON: '3.12'
         CONDA_ENV: cienv
         WHEEL: 'yes'
 
