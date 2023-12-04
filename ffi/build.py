@@ -20,7 +20,10 @@ build_dir = os.path.join(here_dir, 'build')
 target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 
 is_64bit = sys.maxsize >= 2**32
-lld_libs = "-llldCommon -llldELF -llldWasm"
+
+lld_libs = ["lldCommon", "lldELF", "lldWasm"]
+cxx_lld_libs = ' '.join([f"-l{lib}" for lib in lld_libs])
+cmake_lld_libs = ';'.join(lld_libs)
 
 
 def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
@@ -33,7 +36,7 @@ def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     args.append(cmake_dir)
     try:
         os.chdir(build_dir)
-        os.environ['lld_libs'] = lld_libs.replace("-l", "").replace(' ',';')
+        os.environ['lld_libs'] = cmake_lld_libs
         print('Running:', ' '.join(args))
         subprocess.check_call(args)
     finally:
@@ -178,7 +181,7 @@ def main_posix(kind, library_ext):
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = \
-        f'{lld_libs} ' + ' '.join(libs.split())
+        f'{cxx_lld_libs} ' + ' '.join(libs.split())
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
