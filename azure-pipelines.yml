@@ -17,6 +17,9 @@ jobs:
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
+      py312:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
@@ -40,6 +43,11 @@ jobs:
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
         RUN_CLANG_FORMAT: yes
+      py312:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        RUN_FLAKE8: yes
+        RUN_CLANG_FORMAT: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
@@ -54,6 +62,14 @@ jobs:
         WHEEL: 'yes'
       py310_wheel:
         PYTHON: '3.10'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py311_wheel:
+        PYTHON: '3.11'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py312_wheel:
+        PYTHON: '3.12'
         CONDA_ENV: cienv
         WHEEL: 'yes'
 

@@ -18,6 +18,9 @@ jobs:
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
+      py312:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
 
 
   steps:
