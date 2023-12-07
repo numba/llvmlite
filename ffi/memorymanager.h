@@ -13,6 +13,10 @@
 
 #pragma once
 
+namespace llvm {
+class __attribute__ ((visibility ("default"))) ErrorInfoBase;
+}
+
 #include "core.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
