@@ -1812,6 +1812,13 @@ class TestTypeRef(BaseTest):
         decltype = func.type.element_type
         self.assertFalse(decltype.is_function_vararg)
 
+        # test that the function pointer type cannot use is_function_vararg
+        self.assertTrue(func.type.is_pointer)
+        with self.assertRaises(ValueError) as raises:
+            func.type.is_function_vararg
+        self.assertIn("Type i32 (i32, i32)* is not a function",
+                      str(raises.exception))
+
 
 class TestTarget(BaseTest):
 
