@@ -12,10 +12,14 @@ present a single execution engine, ``MCJIT``, is exposed.
 Functions
 =========
 
-* .. function:: create_mcjit_compiler(module, target_machine)
+* .. function:: create_mcjit_compiler(module, target_machine, use_lmm=None)
 
      Create a MCJIT-powered engine from the given *module* and
      *target_machine*.
+
+     *lmm* controls whether the llvmlite memory manager is used. If not
+     supplied, the default choice for the platform will be used (``True`` on
+     64-bit ARM systems, ``False`` otherwise).
 
      * *module* does not need to contain any code.
      * Returns a :class:`ExecutionEngine` instance.
