@@ -44,7 +44,7 @@ add_definitions(-DLLVM_ENABLE_PROJECTS="lld")
 add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
             module.cpp value.cpp executionengine.cpp transforms.cpp
             passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
-            lld.cpp custom_passes.cpp orcjit.cpp)
+            custom_passes.cpp orcjit.cpp memorymanager.cpp lld.cpp)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use.
