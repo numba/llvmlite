@@ -86,6 +86,20 @@ struct OperandsIterator {
 struct OpaqueOperandsIterator;
 typedef OpaqueOperandsIterator *LLVMOperandsIteratorRef;
 
+/* An iterator around a phi node's incoming blocks, including the stop condition
+ */
+struct IncomingBlocksIterator {
+    typedef llvm::PHINode::const_block_iterator const_iterator;
+    const_iterator cur;
+    const_iterator end;
+
+    IncomingBlocksIterator(const_iterator cur, const_iterator end)
+        : cur(cur), end(end) {}
+};
+
+struct OpaqueIncomingBlocksIterator;
+typedef OpaqueIncomingBlocksIterator *LLVMIncomingBlocksIteratorRef;
+
 namespace llvm {
 
 static LLVMAttributeListIteratorRef wrap(AttributeListIterator *GI) {
@@ -134,6 +148,14 @@ static LLVMOperandsIteratorRef wrap(OperandsIterator *GI) {
 
 static OperandsIterator *unwrap(LLVMOperandsIteratorRef GI) {
     return reinterpret_cast<OperandsIterator *>(GI);
+}
+
+static LLVMIncomingBlocksIteratorRef wrap(IncomingBlocksIterator *GI) {
+    return reinterpret_cast<LLVMIncomingBlocksIteratorRef>(GI);
+}
+
+static IncomingBlocksIterator *unwrap(LLVMIncomingBlocksIteratorRef GI) {
+    return reinterpret_cast<IncomingBlocksIterator *>(GI);
 }
 
 } // namespace llvm
@@ -210,6 +232,14 @@ LLVMPY_InstructionOperandsIter(LLVMValueRef I) {
     return wrap(new OperandsIterator(inst->op_begin(), inst->op_end()));
 }
 
+API_EXPORT(LLVMIncomingBlocksIteratorRef)
+LLVMPY_PhiIncomingBlocksIter(LLVMValueRef I) {
+    using namespace llvm;
+    PHINode *inst = unwrap<PHINode>(I);
+    return wrap(
+        new IncomingBlocksIterator(inst->block_begin(), inst->block_end()));
+}
+
 API_EXPORT(const char *)
 LLVMPY_AttributeListIterNext(LLVMAttributeListIteratorRef GI) {
     using namespace llvm;
@@ -276,6 +306,17 @@ LLVMPY_OperandsIterNext(LLVMOperandsIteratorRef GI) {
     }
 }
 
+API_EXPORT(LLVMValueRef)
+LLVMPY_IncomingBlocksIterNext(LLVMIncomingBlocksIteratorRef GI) {
+    using namespace llvm;
+    IncomingBlocksIterator *iter = unwrap(GI);
+    if (iter->cur != iter->end) {
+        return wrap(static_cast<const Value *>(*iter->cur++));
+    } else {
+        return NULL;
+    }
+}
+
 API_EXPORT(void)
 LLVMPY_DisposeAttributeListIter(LLVMAttributeListIteratorRef GI) {
     delete llvm::unwrap(GI);
@@ -301,6 +342,11 @@ LLVMPY_DisposeInstructionsIter(LLVMInstructionsIteratorRef GI) {
 
 API_EXPORT(void)
 LLVMPY_DisposeOperandsIter(LLVMOperandsIteratorRef GI) {
+    delete llvm::unwrap(GI);
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeIncomingBlocksIter(LLVMIncomingBlocksIteratorRef GI) {
     delete llvm::unwrap(GI);
 }
 

@@ -52,8 +52,8 @@ class Instruction(NamedValue, _HasMetadata):
 
 
 class CallInstrAttributes(AttributeSet):
-    _known = frozenset(['noreturn', 'nounwind', 'readonly', 'readnone',
-                        'noinline', 'alwaysinline'])
+    _known = frozenset(['convergent', 'noreturn', 'nounwind', 'readonly',
+                        'readnone', 'noinline', 'alwaysinline'])
 
 
 TailMarkerOptions = frozenset(['tail', 'musttail', 'notail'])

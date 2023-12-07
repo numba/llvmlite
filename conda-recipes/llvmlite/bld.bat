@@ -18,8 +18,5 @@ set CMAKE_GENERATOR_TOOLKIT=v142
 @rem Ensure there are no build leftovers (CMake can complain)
 if exist ffi\build rmdir /S /Q ffi\build
 
-%PYTHON% -S setup.py install
-if errorlevel 1 exit 1
-
-%PYTHON% runtests.py
+%PYTHON% setup.py install
 if errorlevel 1 exit 1

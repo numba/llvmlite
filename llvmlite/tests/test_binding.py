@@ -113,6 +113,9 @@ asm_getversion = r"""
     }}
     """
 
+if platform.python_implementation() == 'PyPy':
+    asm_getversion = asm_getversion.replace('Py_GetVersion', 'PyPy_GetVersion')
+
 # `fadd` used on integer inputs
 asm_parse_error = r"""
     ; ModuleID = '<string>'
@@ -499,6 +502,26 @@ entry:
 }
 """  # noqa E501
 
+asm_phi_blocks = r"""
+; ModuleID = '<string>'
+target triple = "{triple}"
+
+define void @foo(i32 %N) {{
+  ; unnamed block for testing
+  %cmp4 = icmp sgt i32 %N, 0
+  br i1 %cmp4, label %for.body, label %for.cond.cleanup
+
+for.cond.cleanup:
+  ret void
+
+for.body:
+  %i.05 = phi i32 [ %inc, %for.body ], [ 0, %0 ]
+  %inc = add nuw nsw i32 %i.05, 1
+  %exitcond.not = icmp eq i32 %inc, %N
+  br i1 %exitcond.not, label %for.cond.cleanup, label %for.body
+}}
+"""
+
 
 class BaseTest(TestCase):
 
@@ -552,7 +575,7 @@ class TestDependencies(BaseTest):
         out, _ = p.communicate()
         self.assertEqual(0, p.returncode)
         # Parse library dependencies
-        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
+        lib_pat = re.compile(r'^([+-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
         deps = set()
         for line in out.decode().splitlines():
             parts = line.split()
@@ -1210,6 +1233,11 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         return llvm.create_mcjit_compiler(mod, target_machine)
 
 
+# There are some memory corruption issues with OrcJIT on AArch64 - see Issue
+# #1000. Since OrcJIT is experimental, and we don't test regularly during
+# llvmlite development on non-x86 platforms, it seems safest to skip these
+# tests on non-x86 platforms.
+@unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
 class TestOrcLLJIT(BaseTest):
 
     def jit(self, asm=asm_sum, func_name="sum", target_machine=None,
@@ -1684,6 +1712,27 @@ class TestValueRef(BaseTest):
         arg = list(inst.operands)[0]
         self.assertTrue(arg.is_constant)
         self.assertEqual(arg.get_constant_value(), 'i64* null')
+
+    def test_incoming_phi_blocks(self):
+        mod = self.module(asm_phi_blocks)
+        func = mod.get_function('foo')
+        blocks = list(func.blocks)
+        instructions = list(blocks[-1].instructions)
+        self.assertTrue(instructions[0].is_instruction)
+        self.assertEqual(instructions[0].opcode, 'phi')
+
+        incoming_blocks = list(instructions[0].incoming_blocks)
+        self.assertEqual(len(incoming_blocks), 2)
+        self.assertTrue(incoming_blocks[0].is_block)
+        self.assertTrue(incoming_blocks[1].is_block)
+        # Test reference to blocks (named or unnamed)
+        self.assertEqual(incoming_blocks[0], blocks[-1])
+        self.assertEqual(incoming_blocks[1], blocks[0])
+
+        # Test case that should fail
+        self.assertNotEqual(instructions[1].opcode, 'phi')
+        with self.assertRaises(ValueError):
+            instructions[1].incoming_blocks
 
 
 class TestTypeRef(BaseTest):
@@ -2165,6 +2214,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_lint_pass()
         pm.add_module_debug_info_pass()
         pm.add_refprune_pass()
+        pm.add_instruction_namer_pass()
 
     @unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
     def test_target_library_info_behavior(self):
@@ -2191,6 +2241,22 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         mod = run(use_tli=False)
         self.assertNotIn("call float @llvm.exp2.f32", str(mod))
         self.assertIn("call float @ldexpf", str(mod))
+
+    def test_instruction_namer_pass(self):
+        asm = asm_inlineasm3.format(triple=llvm.get_default_triple())
+        mod = llvm.parse_assembly(asm)
+
+        # Run instnamer pass
+        pm = llvm.ModulePassManager()
+        pm.add_instruction_namer_pass()
+        pm.run(mod)
+
+        # Test that unnamed instructions are now named
+        func = mod.get_function('foo')
+        first_block = next(func.blocks)
+        instructions = list(first_block.instructions)
+        self.assertEqual(instructions[0].name, 'i')
+        self.assertEqual(instructions[1].name, 'i2')
 
 
 class TestDylib(BaseTest):

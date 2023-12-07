@@ -5,9 +5,6 @@ jobs:
     name: macOS
     vmImage: macos-11
     matrix:
-      py38:
-        PYTHON: '3.8'
-        CONDA_ENV: cienv
       py39:
         PYTHON: '3.9'
         CONDA_ENV: cienv
@@ -17,16 +14,15 @@ jobs:
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
+      py312:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: Linux
     vmImage: ubuntu-20.04
     matrix:
-      py38:
-        PYTHON: '3.8'
-        CONDA_ENV: cienv
-        RUN_FLAKE8: yes
       py39:
         PYTHON: '3.9'
         CONDA_ENV: cienv
@@ -40,20 +36,29 @@ jobs:
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
         RUN_CLANG_FORMAT: yes
+      py312:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        RUN_FLAKE8: yes
+        RUN_CLANG_FORMAT: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
 #         CONDA_ENV: cienv
-      py38_wheel:
-        PYTHON: '3.8'
-        CONDA_ENV: cienv
-        WHEEL: 'yes'
       py39_wheel:
         PYTHON: '3.9'
         CONDA_ENV: cienv
         WHEEL: 'yes'
       py310_wheel:
         PYTHON: '3.10'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py311_wheel:
+        PYTHON: '3.11'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py312_wheel:
+        PYTHON: '3.12'
         CONDA_ENV: cienv
         WHEEL: 'yes'
 

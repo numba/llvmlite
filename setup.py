@@ -22,7 +22,7 @@ import os
 import sys
 
 
-min_python_version = (3, 8)
+min_python_version = (3, 9)
 
 
 def _version_info_str(int_tuple):
@@ -42,9 +42,6 @@ def _guard_py_ver():
 
 _guard_py_ver()
 
-if os.environ.get('READTHEDOCS', None) == 'True':
-    sys.exit("setup.py disabled on readthedocs: called with %s"
-             % (sys.argv,))
 
 import versioneer
 
@@ -197,10 +194,10 @@ setup(name='llvmlite',
           "Operating System :: OS Independent",
           "Programming Language :: Python",
           "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.8",
           "Programming Language :: Python :: 3.9",
           "Programming Language :: Python :: 3.10",
           "Programming Language :: Python :: 3.11",
+          "Programming Language :: Python :: 3.12",
           "Topic :: Software Development :: Code Generators",
           "Topic :: Software Development :: Compilers",
       ],
