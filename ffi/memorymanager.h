@@ -13,6 +13,26 @@
 
 #pragma once
 
+// Force default visibility of the llvm::ErrorInfoBase class. The conda
+// compilers use the -fvisibility-inlines-hidden flag, which seems to
+// erroneously result in ErrorInfoBase::isA() being hidden (and not exported) on
+// PowerPC. The reason for this is not conclusively known, but the circumstances
+// appear similar to those reported in GCC Bug 45065
+// (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=45066) - ErrorInfoBase has
+// both a template and non-template version, and the non-template version is
+// overridden by the derived class ErrorInfo; the template vs. non-template
+// versions may have different inlining decisions applied, and this could create
+// a similar circumstance to that described in the bug.
+//
+// The workaround here adds the default visiblity attribute to ErrorInfoBase
+// before its definition, which precludes it from being inferred to be hidden
+// later on.
+#if not defined(_MSC_VER)
+namespace llvm {
+class __attribute__((visibility("default"))) ErrorInfoBase;
+}
+#endif
+
 #include "core.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
