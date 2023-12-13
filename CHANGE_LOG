@@ -1,3 +1,41 @@
+v0.42.0rc1 (Dec 13, 2023)
+-------------------------
+
+Highlights of this release include:
+
+- Support for Python 3.12.
+- A fix for relocation overflows on AArch64 systems.
+- Binding layer: new queries for incoming blocks of phi instructions, type
+  kinds, and elements. Addition of the Instruction Namer pass.
+- IR layer: Support `convergent` a an attribute of function calls and call
+  instructions.
+
+Pull-Requests:
+
+* PR `#973 <https://github.com/numba/llvmlite/pull/973>`_: Bindings: Query incoming blocks of a phi instruction (`tbennun <https://github.com/tbennun>`_)
+* PR `#978 <https://github.com/numba/llvmlite/pull/978>`_: Bindings: Query type kinds, derived types, and elements (`tbennun <https://github.com/tbennun>`_ `sklam <https://github.com/sklam>`_)
+* PR `#981 <https://github.com/numba/llvmlite/pull/981>`_: Add Instruction Namer pass to PassManager (`tbennun <https://github.com/tbennun>`_)
+* PR `#993 <https://github.com/numba/llvmlite/pull/993>`_: Update changelog on main for 0.41.0 (`esc <https://github.com/esc>`_)
+* PR `#1005 <https://github.com/numba/llvmlite/pull/1005>`_: Remove suggestion that add_global_mapping() is unused (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1006 <https://github.com/numba/llvmlite/pull/1006>`_: Release Notes 0.41.1 for main (`esc <https://github.com/esc>`_)
+* PR `#1007 <https://github.com/numba/llvmlite/pull/1007>`_: update release checklists post 0.41.1 (`esc <https://github.com/esc>`_)
+* PR `#1009 <https://github.com/numba/llvmlite/pull/1009>`_: Fix relocation overflows by implementing preallocation in the memory manager (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1010 <https://github.com/numba/llvmlite/pull/1010>`_: Python 3.12 (`esc <https://github.com/esc>`_)
+* PR `#1012 <https://github.com/numba/llvmlite/pull/1012>`_: conda-recipe cleanups (`esc <https://github.com/esc>`_)
+* PR `#1014 <https://github.com/numba/llvmlite/pull/1014>`_: Fix conda-recipe syntax errors from #1012 (`esc <https://github.com/esc>`_)
+* PR `#1017 <https://github.com/numba/llvmlite/pull/1017>`_: add 3.12 to azure (`esc <https://github.com/esc>`_)
+* PR `#1018 <https://github.com/numba/llvmlite/pull/1018>`_: Bump minimum supported Python version to 3.9 (`kc611 <https://github.com/kc611>`_)
+* PR `#1019 <https://github.com/numba/llvmlite/pull/1019>`_: Add convergent as a supported FunctionAttribute and CallInstrAttribute. (`diptorupd <https://github.com/diptorupd>`_)
+
+Authors:
+
+* `diptorupd <https://github.com/diptorupd>`_
+* `esc <https://github.com/esc>`_
+* `gmarkall <https://github.com/gmarkall>`_
+* `kc611 <https://github.com/kc611>`_
+* `sklam <https://github.com/sklam>`_
+* `tbennun <https://github.com/tbennun>`_
+
 v0.41.1 (Oct 17, 2023)
 ----------------------
 
