@@ -7,7 +7,7 @@ Highlights of this release include:
 - A fix for relocation overflows on AArch64 systems.
 - Binding layer: new queries for incoming blocks of phi instructions, type
   kinds, and elements. Addition of the Instruction Namer pass.
-- IR layer: Support `convergent` a an attribute of function calls and call
+- IR layer: Support `convergent` as an attribute of function calls and call
   instructions.
 
 Pull-Requests:
