@@ -1,13 +1,13 @@
-=================
+================
 Linking with LLD
-=================
+================
 
 .. currentmodule:: llvmlite.binding
 
 The LLD linker is automatically built into llvmlite to provide easy-to-use, cross-platform linking.
 
 Known limitations
-==================
+=================
 
 Currently, only ``lld::elf::link`` is used and thus COFF and MACHO object files will **not** link.
 
@@ -19,7 +19,7 @@ The following llvm drivers are usable from :func:`lld_main`
 * wasm-ld  (Web Assembly)
 
 Functions
-==========
+=========
 
 * .. function:: lld_main(args)
 
