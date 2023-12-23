@@ -495,6 +495,29 @@ struct RefPrunePass : public FunctionPass {
      *   │ MORE CFG   │
      *   └────────────┘
      *
+     * a complex pattern about fanout-raise
+     * https://github.com/numba/llvmlite/issues/1023
+     *           ┌────────────┐
+     *           │   incref   │
+     *           │   incref   │
+     *           └────────────┘
+     *             /           \
+     *            /             \
+     *     ┌────────────┐        \
+     *     │   decref   |         \
+     *     └────────────┘          \
+     *      /          \            \
+     *     /            \            \
+     * ┌────────────┐ ┌────────────┐  \
+     * │   decref   | │   incref   |   \
+     * └────────────┘ └────────────┘    \
+     *                 /            \    \
+     *                /              \    \
+     *           ┌────────────┐      ┌────────────┐
+     *           │   decref   |      │   raise    |
+     *           │   decref   |      └────────────┘
+     *           └────────────┘
+     *
      * Parameters:
      *  - F a Function
      *  - prune_raise_exit, if false case 1 is considered, if true case 2 is
@@ -864,6 +887,10 @@ struct RefPrunePass : public FunctionPass {
             while (workstack.size() > 0) {
                 // Get a basic block
                 BasicBlock *cur_node = workstack.pop_back_val();
+                // If cur_node is a raising block, then skip it
+                if (isRaising(cur_node)) {
+                    continue;
+                }
                 // if the block has been seen before then skip
                 if (visited.count(cur_node)) {
                     // Already visited
