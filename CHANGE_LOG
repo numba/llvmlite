@@ -1,5 +1,5 @@
-v0.42.0rc1 (Dec 13, 2023)
--------------------------
+v0.42.0 (January 31, 2024)
+--------------------------
 
 Highlights of this release include:
 
@@ -36,8 +36,8 @@ Authors:
 * `sklam <https://github.com/sklam>`_
 * `tbennun <https://github.com/tbennun>`_
 
-v0.41.1 (Oct 17, 2023)
-----------------------
+v0.41.1 (October 17, 2023)
+--------------------------
 
 This is a maintenance release that includes a workaround in the test suite for
 ORCJit issues on the ``aarch64`` platform. Also, this is the last release to
@@ -56,8 +56,8 @@ Authors:
 * `ke6jjj <https://github.com/ke6jjj>`_
 * `gmarkall <https://github.com/gmarkall>`_
 
-v0.41.0 (Sept 20, 2023)
------------------------
+v0.41.0 (September 20, 2023)
+----------------------------
 
 Pull-Requests:
 
