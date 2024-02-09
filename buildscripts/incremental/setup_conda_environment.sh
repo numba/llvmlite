@@ -26,13 +26,15 @@ set +v
 source activate $CONDA_ENV
 set -v
 
-# Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
-
-# Install the compiler toolchain, for osx, bootstrapping needed
-# which happens in build.sh
 if [[ $(uname) == Linux ]]; then
-$CONDA_INSTALL gcc_linux-64 gxx_linux-64
+    # Install the compiler toolchain, for osx, bootstrapping needed
+    # which happens in build.sh
+    $CONDA_INSTALL gcc_linux-64 gxx_linux-64
+    # Install llvmdev (separate channel, for now)
+    $CONDA_INSTALL ohu::llvmdev
+    # $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
+else
+    $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
 fi
 
 # Install dependencies for code coverage (codecov.io)

@@ -2279,6 +2279,13 @@ class TestDylib(BaseTest):
         llvm.load_library_permanently(libm)
 
 
+class TestArchive(BaseTest):
+    @unittest.skipUnless(platform.system() in ["Linux"],
+                         "test only works on Linux")
+    def test_compiler_rt(self):
+        ffi.lib._lib_handle['__ashldi3']()
+
+
 class TestAnalysis(BaseTest):
     def build_ir_module(self):
         m = ir.Module()

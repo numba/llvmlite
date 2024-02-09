@@ -41,9 +41,13 @@ maintainers do *not* use any LLVM shared libraries that may be present on the
 system, and/or in the Conda environment. The parts of LLVM required by llvmlite
 are statically linked at build time.  As a result, installing llvmlite from a
 binary package from the Numba channel does not also require the end user to
-install LLVM.  (For more
-details on the reasoning behind this, see: :ref:`faq_why_static`). Note however
-also that llvmlite packages compiled by other parties, e.g. conda-forge may
+install LLVM.  (For more details on the reasoning behind this, see:
+:ref:`faq_why_static`). From version 0.42, `compiler-rt <https://compiler-rt.llvm.org/>`_
+builtin is also statically linked at build time to provide an implementation of the
+low-level target-specific hooks required by code generation and other runtime
+components. You can find a a list of supported IR from the builtin `here <https://github.com/llvm/llvm-project/blob/main/compiler-rt/lib/builtins/README.txt>`_.
+
+Note also that llvmlite packages compiled by other parties, e.g. conda-forge may
 split this into and ``llvmlite`` and ``llvm`` package and link dynamically.
 
 Conda packages:
