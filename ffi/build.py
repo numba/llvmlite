@@ -21,6 +21,10 @@ target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 
 is_64bit = sys.maxsize >= 2**32
 
+lld_libs = ["lldCommon", "lldELF", "lldWasm"]
+cxx_lld_libs = ' '.join([f"-l{lib}" for lib in lld_libs])
+cmake_lld_libs = ';'.join(lld_libs)
+
 
 def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     old_dir = os.getcwd()
@@ -32,6 +36,7 @@ def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     args.append(cmake_dir)
     try:
         os.chdir(build_dir)
+        os.environ['lld_libs'] = cmake_lld_libs
         print('Running:', ' '.join(args))
         subprocess.check_call(args)
     finally:
@@ -70,7 +75,6 @@ def find_windows_generator():
         generators.append(
             (env_generator, env_arch, env_toolkit)
         )
-
     generators.extend([
         # use VS2019 to match how llvmdev is built
         ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v142'),
@@ -97,7 +101,6 @@ def main_windows():
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
-    # Run configuration step
     try_cmake(here_dir, build_dir, *generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
@@ -111,6 +114,7 @@ def main_posix_cmake(kind, library_ext):
     try_cmake(here_dir, build_dir, generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext), target_dir)
+
 
 def main_posix(kind, library_ext):
     if os.environ.get("LLVMLITE_USE_CMAKE", "0") == "1":
@@ -176,7 +180,8 @@ def main_posix(kind, library_ext):
     # Get LLVM information for building
     libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
     # Normalize whitespace (trim newlines)
-    os.environ['LLVM_LIBS'] = ' '.join(libs.split())
+    os.environ['LLVM_LIBS'] = \
+        f'{cxx_lld_libs} ' + ' '.join(libs.split())
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
@@ -196,6 +201,7 @@ def main_posix(kind, library_ext):
 
     ldflags = run_llvm_config(llvm_config, ["--ldflags"])
     os.environ['LLVM_LDFLAGS'] = ldflags.strip()
+    
     # static link libstdc++ for portability
     if int(os.environ.get('LLVMLITE_CXX_STATIC_LINK', 0)):
         os.environ['CXX_STATIC_LINK'] = "-static-libstdc++"
@@ -208,7 +214,6 @@ def main_posix(kind, library_ext):
     makeopts = os.environ.get('LLVMLITE_MAKEOPTS', default_makeopts).split()
     subprocess.check_call(['make', '-f', makefile] + makeopts)
     shutil.copy('libllvmlite' + library_ext, target_dir)
-
 
 def main():
     if sys.platform == 'win32':

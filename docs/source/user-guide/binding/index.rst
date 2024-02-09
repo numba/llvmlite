@@ -32,5 +32,6 @@ implement Numba_'s JIT compiler.
    analysis-utilities
    pass_timings
    misc
+   lld
    examples
 
