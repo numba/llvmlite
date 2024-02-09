@@ -1,0 +1,26 @@
+From be79c54f618affc9c4797a5331486fc891d2a4a4 Mon Sep 17 00:00:00 2001
+From: Graham Markall <gmarkall@nvidia.com>
+Date: Fri, 11 Aug 2023 11:31:08 +0100
+Subject: [PATCH] Fix out-of-tree compiler-rt build on Windows
+
+From:
+
+https://stackoverflow.com/questions/46108390/building-llvm-with-cmake-and-visual-stuidio-fails-to-install
+---
+ compiler-rt/cmake/Modules/AddCompilerRT.cmake | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/compiler-rt-14.0.6.src/cmake/Modules/AddCompilerRT.cmake b/compiler-rt-14.0.6.src/cmake/Modules/AddCompilerRT.cmake
+index 4a496fc18f65..2ace529a595d 100644
+--- a/compiler-rt-14.0.6.src/cmake/Modules/AddCompilerRT.cmake
++++ b/compiler-rt-14.0.6.src/cmake/Modules/AddCompilerRT.cmake
+@@ -9,6 +9,7 @@ function(set_target_output_directories target output_dir)
+   # set 'RUNTIME_OUTPUT_DIRECTORY_${CONF}':
+   # RUNTIME_OUTPUT_DIRECTORY_DEBUG, RUNTIME_OUTPUT_DIRECTORY_RELEASE, ...
+   if(CMAKE_CONFIGURATION_TYPES)
++    string(REGEX REPLACE "\\$\\(Configuration\\)" "$<CONFIG>" output_dir "${output_dir}")
+     foreach(build_mode ${CMAKE_CONFIGURATION_TYPES})
+       string(TOUPPER "${build_mode}" CONFIG_SUFFIX)
+       set_target_properties("${target}" PROPERTIES
+--
+2.40.0

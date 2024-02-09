@@ -10,18 +10,21 @@ LLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD:-"all"}
 # This is the clang compiler prefix
 if [[ $build_platform == osx-arm64 ]]; then
     DARWIN_TARGET=arm64-apple-darwin20.0.0
+    DARWIN_ARCH=arm64
 else
     DARWIN_TARGET=x86_64-apple-darwin13.4.0
+    DARWIN_ARCH=x86_64
 fi
 
 mv llvm-*.src llvm
 mv lld-*.src lld
+mv rt/compiler-rt-*.src compiler-rt
 mv unwind/libunwind-*.src libunwind
 
 declare -a _cmake_config
 _cmake_config+=(-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX})
 _cmake_config+=(-DCMAKE_BUILD_TYPE:STRING=Release)
-_cmake_config+=(-DLLVM_ENABLE_PROJECTS:STRING="lld")
+_cmake_config+=(-DLLVM_ENABLE_PROJECTS:STRING="lld;compiler-rt")
 # The bootstrap clang I use was built with a static libLLVMObject.a and I trying to get the same here
 # _cmake_config+=(-DBUILD_SHARED_LIBS:BOOL=ON)
 _cmake_config+=(-DLLVM_ENABLE_ASSERTIONS:BOOL=ON)
@@ -44,6 +47,17 @@ _cmake_config+=(-DLLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD})
 _cmake_config+=(-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly)
 _cmake_config+=(-DLLVM_INCLUDE_UTILS=ON) # for llvm-lit
 _cmake_config+=(-DLLVM_INCLUDE_BENCHMARKS:BOOL=OFF) # doesn't build without the rest of LLVM project
+_cmake_config+=(-DCOMPILER_RT_BUILD_BUILTINS:BOOL=ON)
+_cmake_config+=(-DCOMPILER_RT_BUILTINS_HIDE_SYMBOLS=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_LIBFUZZER:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_CRT:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_MEMPROF:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_PROFILE:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_SANITIZERS:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_XRAY:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_GWP_ASAN:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_BUILD_ORC:BOOL=OFF)
+_cmake_config+=(-DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF) # Requires clang to be built
 # TODO :: It would be nice if we had a cross-ecosystem 'BUILD_TIME_LIMITED' env var we could use to
 #         disable these unnecessary but useful things.
 if [[ ${CONDA_FORGE} == yes ]]; then
@@ -63,7 +77,7 @@ if [[ $(uname) == Darwin ]]; then
   # Once we are using our libc++ (not until llvm_build_final), it will be single-arch only and not setting
   # this causes link failures building the santizers since they respect DARWIN_osx_ARCHS. We may as well
   # save some compilation time by setting this for all of our llvm builds.
-  _cmake_config+=(-DDARWIN_osx_ARCHS=x86_64)
+  _cmake_config+=(-DDARWIN_osx_ARCHS=${DARWIN_ARCH})
 elif [[ $(uname) == Linux ]]; then
   _cmake_config+=(-DLLVM_USE_INTEL_JITEVENTS=ON)
 #  _cmake_config+=(-DLLVM_BINUTILS_INCDIR=${PREFIX}/lib/gcc/${cpu_arch}-${vendor}-linux-gnu/${compiler_ver}/plugin/include)
