@@ -188,7 +188,7 @@ The LLVM build process is fully scripted by conda-build_, and the `llvmdev recip
 The manual instructions below describe the main steps, but refer to the recipe
 for details:
 
-#. Download the `LLVM source code <https://github.com/llvm/llvm-project/releases/download/>`_.
+#. Download the `LLVM source code <https://github.com/llvm/llvm-project/releases/tag/llvmorg-14.0.6>`_.
    You can download the complete "project" package, or llvm, ldd, and libunwind.
 
 #. Download or git checkout the `llvmlite source code <https://github.com/numba/llvmlite>`_.
@@ -203,7 +203,7 @@ for details:
     #. ``export PREFIX=desired_install_location CPU_COUNT=N``
        ( ``N`` is number of parallel compile tasks)
     #. Run the `build.sh <https://github.com/numba/llvmlite/blob/main/conda-recipes/llvmdev/build.sh>`_
-       script in the llvmdev conda recipe from the LLVM source directory.
+       script in conda-recipes/llvmdev from the LLVM source directory.
 
 #. For Windows:
 
