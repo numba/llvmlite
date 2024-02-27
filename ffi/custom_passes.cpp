@@ -400,7 +400,8 @@ struct RefPrunePass : public FunctionPass {
                     SmallBBSet tail_nodes;
                     tail_nodes.insert(decref->getParent());
                     if (!verifyFanoutBackward(incref, incref->getParent(),
-                                              &tail_nodes))
+                                              &tail_nodes, false))
+
                         continue;
 
                     // scan the CFG between the incref and decref BBs, if
@@ -494,6 +495,29 @@ struct RefPrunePass : public FunctionPass {
      *   ┌────────────┐
      *   │ MORE CFG   │
      *   └────────────┘
+     *
+     * a complex pattern about fanout-raise
+     * https://github.com/numba/llvmlite/issues/1023
+     *           ┌────────────┐
+     *           │   incref   │
+     *           │   incref   │
+     *           └────────────┘
+     *             /           \
+     *            /             \
+     *     ┌────────────┐        \
+     *     │   decref   |         \
+     *     └────────────┘          \
+     *      /          \            \
+     *     /            \            \
+     * ┌────────────┐ ┌────────────┐  \
+     * │   decref   | │   incref   |   \
+     * └────────────┘ └────────────┘    \
+     *                 /            \    \
+     *                /              \    \
+     *           ┌────────────┐      ┌────────────┐
+     *           │   decref   |      │   raise    |
+     *           │   decref   |      └────────────┘
+     *           └────────────┘
      *
      * Parameters:
      *  - F a Function
@@ -648,10 +672,12 @@ struct RefPrunePass : public FunctionPass {
                 for (BasicBlock *bb : *decref_blocks) {
                     raising_blocks.insert(bb);
                 }
-                if (verifyFanoutBackward(incref, head_node, p_raising_blocks))
+                if (verifyFanoutBackward(incref, head_node, p_raising_blocks,
+                                         prune_raise_exit))
                     return true;
 
-            } else if (verifyFanoutBackward(incref, head_node, decref_blocks)) {
+            } else if (verifyFanoutBackward(incref, head_node, decref_blocks,
+                                            prune_raise_exit)) {
                 return true;
             }
         }
@@ -844,7 +870,8 @@ struct RefPrunePass : public FunctionPass {
      *
      */
     bool verifyFanoutBackward(CallInst *incref, BasicBlock *head_node,
-                              const SmallBBSet *tail_nodes) {
+                              const SmallBBSet *tail_nodes,
+                              bool prune_raise_exit) {
         // push the tail nodes into a work list
         SmallVector<BasicBlock *, 10> todo;
         for (BasicBlock *bb : *tail_nodes) {
@@ -864,6 +891,10 @@ struct RefPrunePass : public FunctionPass {
             while (workstack.size() > 0) {
                 // Get a basic block
                 BasicBlock *cur_node = workstack.pop_back_val();
+                // If cur_node is a raising block, then skip it
+                if (prune_raise_exit && isRaising(cur_node)) {
+                    continue;
+                }
                 // if the block has been seen before then skip
                 if (visited.count(cur_node)) {
                     // Already visited
