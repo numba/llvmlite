@@ -401,6 +401,7 @@ struct RefPrunePass : public FunctionPass {
                     tail_nodes.insert(decref->getParent());
                     if (!verifyFanoutBackward(incref, incref->getParent(),
                                               &tail_nodes, false))
+
                         continue;
 
                     // scan the CFG between the incref and decref BBs, if
@@ -869,7 +870,8 @@ struct RefPrunePass : public FunctionPass {
      *
      */
     bool verifyFanoutBackward(CallInst *incref, BasicBlock *head_node,
-                              const SmallBBSet *tail_nodes, bool prune_raise_exit) {
+                              const SmallBBSet *tail_nodes,
+                              bool prune_raise_exit) {
         // push the tail nodes into a work list
         SmallVector<BasicBlock *, 10> todo;
         for (BasicBlock *bb : *tail_nodes) {
