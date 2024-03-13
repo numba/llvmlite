@@ -784,7 +784,6 @@ class TestMisc(BaseTest):
             """
         subprocess.check_call([sys.executable, "-c", code])
 
-    @unittest.skip('Edit this test to test for both llvm14 and llvm15')
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
