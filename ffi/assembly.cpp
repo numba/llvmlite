@@ -16,6 +16,7 @@ API_EXPORT(LLVMModuleRef)
 LLVMPY_ParseAssembly(LLVMContextRef context, const char *ir,
                      const char **outmsg) {
     using namespace llvm;
+
     SMDiagnostic error;
 
     Module *m = parseAssemblyString(ir, error, *unwrap(context)).release();
