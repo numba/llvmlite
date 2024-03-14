@@ -22,16 +22,15 @@ LLVMPY_DisposeString(const char *msg) { free(const_cast<char *>(msg)); }
 
 API_EXPORT(LLVMContextRef)
 LLVMPY_GetGlobalContext() {
-  auto context = LLVMGetGlobalContext();
+    auto context = LLVMGetGlobalContext();
 #if LLVM_VERSION_MAJOR > 14
-  LLVMContextSetOpaquePointers(context, false);
+    LLVMContextSetOpaquePointers(context, false);
 #endif
-  return context;
+    return context;
 }
 
-
 API_EXPORT(LLVMContextRef)
-LLVMPY_ContextCreate() { 
+LLVMPY_ContextCreate() {
     LLVMContextRef context = LLVMContextCreate();
 #if LLVM_VERSION_MAJOR > 14
     LLVMContextSetOpaquePointers(context, false);

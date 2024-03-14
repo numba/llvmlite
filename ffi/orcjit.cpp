@@ -159,9 +159,9 @@ LLVMPY_LLJITLookup(std::shared_ptr<LLJIT> *lljit, const char *dylib_name,
     }
 
 #if LLVM_VERSION_MAJOR <= 14
-        *addr = sym->getAddress();
+    *addr = sym->getAddress();
 #else
-        *addr = sym->getValue();
+    *addr = sym->getValue();
 #endif
 
     return new JITDylibTracker(*lljit, *dylib,
@@ -339,11 +339,11 @@ LLVMPY_LLJIT_Link(std::shared_ptr<LLJIT> *lljit, const char *libraryName,
             LLVMDisposeErrorMessage(message);
             return nullptr;
         }
-    #if LLVM_VERSION_MAJOR <= 14
+#if LLVM_VERSION_MAJOR <= 14
         exports[export_idx].address = lookup->getAddress();
-    #else
+#else
         exports[export_idx].address = lookup->getValue();
-    #endif
+#endif
     }
     return new JITDylibTracker(*lljit, *dylib,
                                std::move(dylib->getDefaultResourceTracker()));
