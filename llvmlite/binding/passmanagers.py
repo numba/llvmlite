@@ -13,6 +13,7 @@ _prunestats = namedtuple('PruneStats',
 
 llvm_version_major = llvm_version_info[0]
 
+
 class PruneStats(_prunestats):
     """ Holds statistics from reference count pruning.
     """
@@ -874,7 +875,8 @@ ffi.lib.LLVMPY_AddAggressiveDCEPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddAlwaysInlinerPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
 
 if llvm_version_major < 15:
-    ffi.lib.LLVMPY_AddArgPromotionPass.argtypes = [ffi.LLVMPassManagerRef, c_uint]
+    ffi.lib.LLVMPY_AddArgPromotionPass.argtypes = [
+        ffi.LLVMPassManagerRef, c_uint]
 
 ffi.lib.LLVMPY_AddBreakCriticalEdgesPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadStoreEliminationPass.argtypes = [

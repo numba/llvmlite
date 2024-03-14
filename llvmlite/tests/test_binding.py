@@ -791,7 +791,6 @@ class TestMisc(BaseTest):
         self.assertIn(major, valid)
         self.assertIn(patch, range(8))
 
-
     def test_check_jit_execution(self):
         llvm.check_jit_execution()
 
