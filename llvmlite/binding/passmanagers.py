@@ -471,11 +471,9 @@ class PassManager(ffi.ObjectRef):
         See https://llvm.org/docs/Passes.html#loop-unswitch-unswitch-loops
 
         LLVM 14: `llvm::createLoopUnswitchPass`
+        LLVM 15: `llvm::createSimpleLoopUnswitchLegacyPass`
         """  # noqa E501
-        if llvm_version_major > 14:
-            raise RuntimeError('LoopUnswitchPass unavailable in LLVM > 14')
-        ffi.lib.LLVMPY_AddLoopUnswitchPass(self,
-                                           optimize_for_size,
+        ffi.lib.LLVMPY_AddLoopUnswitchPass(self, optimize_for_size,
                                            has_branch_divergence)
 
     def add_lower_atomic_pass(self):
@@ -894,13 +892,8 @@ ffi.lib.LLVMPY_AddLoopStrengthReducePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopSimplificationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopUnrollPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopUnrollAndJamPass.argtypes = [ffi.LLVMPassManagerRef]
-
-if llvm_version_major < 15:
-    ffi.lib.LLVMPY_AddLoopUnswitchPass.argtypes = [
-        ffi.LLVMPassManagerRef,
-        c_bool,
-        c_bool]
-
+ffi.lib.LLVMPY_AddLoopUnswitchPass.argtypes = [ffi.LLVMPassManagerRef, c_bool,
+                                               c_bool]
 ffi.lib.LLVMPY_AddLowerAtomicPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerInvokePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerSwitchPass.argtypes = [ffi.LLVMPassManagerRef]
