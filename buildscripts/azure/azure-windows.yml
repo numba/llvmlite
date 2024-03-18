@@ -22,6 +22,10 @@ jobs:
         PYTHON: '3.12'
         CONDA_ENV: cienv
 
+      llvm15:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        LLVM: '15'
 
   steps:
 
@@ -33,11 +37,7 @@ jobs:
 
     - script: |
         call C:\Miniconda3\Scripts\activate.bat
-        call conda list
-        call conda remove --all -q -y -n %CONDA_ENV%
-        call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
-        call activate %CONDA_ENV%
-        call conda install -y -q -c numba/label/dev llvmdev="14.*" libxml2
+        call buildscripts\\incremental\\setup_conda_environment.cmd
       displayName: 'Before Install'
 
     - script: |

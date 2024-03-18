@@ -18,6 +18,11 @@ jobs:
         PYTHON: '3.12'
         CONDA_ENV: cienv
 
+      llvm15:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        LLVM: '15'
+
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: Linux
@@ -66,6 +71,11 @@ jobs:
         PYTHON: '3.9'
         CONDA_ENV: cienv
         BUILD_DOCS: 'yes'
+
+      llvm15:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        LLVM: '15'
 
 - template: buildscripts/azure/azure-windows.yml
   parameters:
