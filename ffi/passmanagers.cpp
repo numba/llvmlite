@@ -39,6 +39,7 @@
 #include <llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
+#include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
 #include <llvm/Transforms/Utils.h>
 #include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
 using namespace llvm;
@@ -161,8 +162,13 @@ LLVMPY_AddCallGraphDOTPrinterPass(LLVMPassManagerRef PM) {
 
 API_EXPORT(void)
 LLVMPY_AddDotDomPrinterPass(LLVMPassManagerRef PM, bool showBody) {
+#if LLVM_VERSION_MAJOR > 14
+    unwrap(PM)->add(showBody ? llvm::createDomPrinterWrapperPassPass()
+                             : llvm::createDomOnlyPrinterWrapperPassPass());
+#else
     unwrap(PM)->add(showBody ? llvm::createDomPrinterPass()
                              : llvm::createDomOnlyPrinterPass());
+#endif
 }
 
 API_EXPORT(void)
@@ -172,8 +178,13 @@ LLVMPY_AddGlobalsModRefAAPass(LLVMPassManagerRef PM) {
 
 API_EXPORT(void)
 LLVMPY_AddDotPostDomPrinterPass(LLVMPassManagerRef PM, bool showBody) {
+#if LLVM_VERSION_MAJOR > 14
+    unwrap(PM)->add(showBody ? llvm::createPostDomPrinterWrapperPassPass()
+                             : llvm::createPostDomOnlyPrinterWrapperPassPass());
+#else
     unwrap(PM)->add(showBody ? llvm::createPostDomPrinterPass()
                              : llvm::createPostDomOnlyPrinterPass());
+#endif
 }
 
 API_EXPORT(void)
@@ -244,10 +255,12 @@ LLVMPY_AddAlwaysInlinerPass(LLVMPassManagerRef PM, bool insertLifetime) {
     unwrap(PM)->add(llvm::createAlwaysInlinerLegacyPass(insertLifetime));
 }
 
+#if LLVM_VERSION_MAJOR < 15
 API_EXPORT(void)
 LLVMPY_AddArgPromotionPass(LLVMPassManagerRef PM, unsigned int maxElements) {
     unwrap(PM)->add(llvm::createArgumentPromotionPass(maxElements));
 }
+#endif
 
 API_EXPORT(void)
 LLVMPY_AddBreakCriticalEdgesPass(LLVMPassManagerRef PM) {
@@ -336,8 +349,12 @@ LLVMPY_AddLoopUnrollAndJamPass(LLVMPassManagerRef PM) {
 API_EXPORT(void)
 LLVMPY_AddLoopUnswitchPass(LLVMPassManagerRef PM, bool optimizeForSize,
                            bool hasBranchDivergence) {
+#if LLVM_VERSION_MAJOR > 14
+    unwrap(PM)->add(createSimpleLoopUnswitchLegacyPass(optimizeForSize));
+#else
     unwrap(PM)->add(
         createLoopUnswitchPass(optimizeForSize, hasBranchDivergence));
+#endif
 }
 
 API_EXPORT(void)

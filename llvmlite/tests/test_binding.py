@@ -18,6 +18,7 @@ from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
+llvm_version_major = llvm.llvm_version_info[0]
 
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
@@ -653,7 +654,7 @@ class TestRISCVABI(BaseTest):
     def test_rv32d_ilp32(self):
         self.check_riscv_target()
         llmod = self.fpadd_ll_module()
-        target = self.riscv_target_machine(features="+f,+d")
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32")
         self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
                          riscv_asm_ilp32)
 
@@ -786,9 +787,9 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = [(14, )]
-        self.assertIn((major,), valid)
-        self.assertIn(patch, range(10))
+        valid = (14, 15)
+        self.assertIn(major, valid)
+        self.assertIn(patch, range(8))
 
     def test_check_jit_execution(self):
         llvm.check_jit_execution()
@@ -2176,7 +2177,8 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_aggressive_dead_code_elimination_pass()
         pm.add_aa_eval_pass()
         pm.add_always_inliner_pass()
-        pm.add_arg_promotion_pass(42)
+        if llvm_version_major < 15:
+            pm.add_arg_promotion_pass(42)
         pm.add_break_critical_edges_pass()
         pm.add_dead_store_elimination_pass()
         pm.add_reverse_post_order_function_attrs_pass()
@@ -2191,7 +2193,8 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_loop_simplification_pass()
         pm.add_loop_unroll_pass()
         pm.add_loop_unroll_and_jam_pass()
-        pm.add_loop_unswitch_pass()
+        if llvm_version_major < 15:
+            pm.add_loop_unswitch_pass()
         pm.add_lower_atomic_pass()
         pm.add_lower_invoke_pass()
         pm.add_lower_switch_pass()
