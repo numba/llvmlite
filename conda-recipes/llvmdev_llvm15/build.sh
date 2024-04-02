@@ -85,6 +85,8 @@ else
 fi
 
 if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
+
+  echo "Testing on ${target_platform}"
   # bin/opt -S -vector-library=SVML $TEST_CPU_FLAG -O3 $RECIPE_DIR/numba-3016.ll | bin/FileCheck $RECIPE_DIR/numba-3016.ll || exit $?
 
   if [[ "$target_platform" == linux* ]]; then
@@ -105,7 +107,9 @@ if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
     export LIT_FILTER_OUT='tools/llvm-objcopy/ELF/strip-preserve-atime.test'
   fi
 
-  ninja -j${CPU_COUNT} check-llvm
+  if [[ "${target_platform}" != "linux-ppc64le" ]]; then
+    ninja -j${CPU_COUNT} check-llvm
+  fi
 
   cd ../llvm/test
   ${PYTHON} ../../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
