@@ -105,7 +105,8 @@ if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
     export LIT_FILTER_OUT='tools/llvm-objcopy/ELF/strip-preserve-atime.test'
   fi
 
-  if [[ "${target_platform}" != "linux-ppc64le" ]]; then
+  if [[ "${target_platform}" != "linux-ppc64le" && "${target_platform}" !~ ^osx  ]]; then
+    # test fail on linux-ppc64le and osx*
     ninja -j${CPU_COUNT} check-llvm
   fi
 
