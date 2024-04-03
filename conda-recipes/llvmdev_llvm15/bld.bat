@@ -30,11 +30,15 @@ cmake -G "Ninja" ^
     -DCMAKE_POLICY_DEFAULT_CMP0111=NEW ^
     -DLLVM_ENABLE_PROJECTS:STRING=lld ^
     -DLLVM_ENABLE_ASSERTIONS=ON ^
-    -DLLVM_ENABLE_DIA_SDK=OFF
+    -DLLVM_ENABLE_DIA_SDK=OFF ^
     %SRC_DIR%/llvm
 if %ERRORLEVEL% neq 0 exit 1
 
 cmake --build .
+if %ERRORLEVEL% neq 0 exit 1
+
+cmake --build . --target install
+
 if %ERRORLEVEL% neq 0 exit 1
 
 REM bin\opt -S -vector-library=SVML -mcpu=haswell -O3 %RECIPE_DIR%\numba-3016.ll | bin\FileCheck %RECIPE_DIR%\numba-3016.ll

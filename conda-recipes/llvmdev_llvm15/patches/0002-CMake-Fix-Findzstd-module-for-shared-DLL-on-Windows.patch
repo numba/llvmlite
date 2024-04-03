@@ -1,0 +1,76 @@
+From 697c69468e8972764a5a595e9d81bd356e9d2e42 Mon Sep 17 00:00:00 2001
+From: "Uwe L. Korn" <uwe.korn@quantco.com>
+Date: Fri, 21 Oct 2022 11:00:31 +0200
+Subject: [PATCH 2/2] [CMake] Fix Findzstd module for shared DLL on Windows
+
+Differential Revision: https://reviews.llvm.org/D136065
+---
+ llvm/cmake/modules/Findzstd.cmake | 28 ++++++++++++++++++++++++----
+ 1 file changed, 24 insertions(+), 4 deletions(-)
+
+diff --git a/llvm/cmake/modules/Findzstd.cmake b/llvm/cmake/modules/Findzstd.cmake
+index fab9ea803..3890bd236 100644
+--- a/llvm/cmake/modules/Findzstd.cmake
++++ b/llvm/cmake/modules/Findzstd.cmake
+@@ -3,6 +3,7 @@
+ # If successful, the following variables will be defined:
+ # zstd_INCLUDE_DIR
+ # zstd_LIBRARY
++# zstd_STATIC_LIBRARY
+ # zstd_FOUND
+ #
+ # Additionally, one of the following import targets will be defined:
+@@ -19,6 +20,9 @@ endif()
+ 
+ find_path(zstd_INCLUDE_DIR NAMES zstd.h)
+ find_library(zstd_LIBRARY NAMES zstd zstd_static)
++find_library(zstd_STATIC_LIBRARY NAMES
++  zstd_static
++  "${CMAKE_STATIC_LIBRARY_PREFIX}zstd${CMAKE_STATIC_LIBRARY_SUFFIX}")
+ 
+ include(FindPackageHandleStandardArgs)
+ find_package_handle_standard_args(
+@@ -30,20 +34,36 @@ if(zstd_FOUND)
+   if(zstd_LIBRARY MATCHES "${zstd_SHARED_LIBRARY_SUFFIX}$" AND
+      NOT TARGET zstd::libzstd_shared)
+     add_library(zstd::libzstd_shared SHARED IMPORTED)
+-    set_target_properties(zstd::libzstd_shared PROPERTIES
++    if(MSVC)
++      # IMPORTED_LOCATION is the path to the DLL and IMPORTED_IMPLIB is the "library".
++      get_filename_component(zstd_DIRNAME "${zstd_LIBRARY}" DIRECTORY)
++      string(REGEX REPLACE "${CMAKE_INSTALL_LIBDIR}$" "${CMAKE_INSTALL_BINDIR}" zstd_DIRNAME "${zstd_DIRNAME}")
++      get_filename_component(zstd_BASENAME "${zstd_LIBRARY}" NAME)
++      string(REGEX REPLACE "\\${CMAKE_LINK_LIBRARY_SUFFIX}$" "${CMAKE_SHARED_LIBRARY_SUFFIX}" zstd_BASENAME "${zstd_BASENAME}")
++      set_target_properties(zstd::libzstd_shared PROPERTIES
++          INTERFACE_INCLUDE_DIRECTORIES "${zstd_INCLUDE_DIR}"
++          IMPORTED_LOCATION "${zstd_DIRNAME}/${zstd_BASENAME}"
++          IMPORTED_IMPLIB "${zstd_LIBRARY}")
++      unset(zstd_DIRNAME)
++      unset(zstd_BASENAME)
++    else()
++      set_target_properties(zstd::libzstd_shared PROPERTIES
+           INTERFACE_INCLUDE_DIRECTORIES "${zstd_INCLUDE_DIR}"
+           IMPORTED_LOCATION "${zstd_LIBRARY}")
++    endif()
++  else()
++    set(zstd_STATIC_LIBRARY "${zstd_LIBRARY}")
+   endif()
+-  if(zstd_LIBRARY MATCHES "${zstd_STATIC_LIBRARY_SUFFIX}$" AND
++  if(zstd_STATIC_LIBRARY MATCHES "${zstd_STATIC_LIBRARY_SUFFIX}$" AND
+      NOT TARGET zstd::libzstd_static)
+     add_library(zstd::libzstd_static STATIC IMPORTED)
+     set_target_properties(zstd::libzstd_static PROPERTIES
+         INTERFACE_INCLUDE_DIRECTORIES "${zstd_INCLUDE_DIR}"
+-        IMPORTED_LOCATION "${zstd_LIBRARY}")
++        IMPORTED_LOCATION "${zstd_STATIC_LIBRARY}")
+   endif()
+ endif()
+ 
+ unset(zstd_SHARED_LIBRARY_SUFFIX)
+ unset(zstd_STATIC_LIBRARY_SUFFIX)
+ 
+-mark_as_advanced(zstd_INCLUDE_DIR zstd_LIBRARY)
++mark_as_advanced(zstd_INCLUDE_DIR zstd_LIBRARY zstd_STATIC_LIBRARY)
+-- 
+2.37.0 (Apple Git-136)
+
