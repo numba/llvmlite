@@ -15,3 +15,6 @@ c_compiler:              # [win]
   - vs2019               # [win]
 cxx_compiler:            # [win]
   - vs2019               # [win]
+
+MACOSX_SDK_VERSION:    # [osx and x86_64]
+  - 10.12              # [osx and x86_64]
