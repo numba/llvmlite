@@ -103,7 +103,7 @@ if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
     # This failure seems like something to do with the output format of ls -lu
     # and looks harmless
     export LIT_FILTER_OUT='tools/llvm-objcopy/ELF/strip-preserve-atime.test|'\
-                          'ExecutionEngine/Interpreter/intrinsics.ll'
+'ExecutionEngine/Interpreter/intrinsics.ll'
   fi
 
   # if [[ "${target_platform}" != "linux-ppc64le" && "${target_platform}" !~ ^osx  ]]; then
