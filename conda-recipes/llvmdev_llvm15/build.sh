@@ -32,15 +32,6 @@ if [[ "$target_platform" == "linux-ppc64le" ]]; then
   CMAKE_ARGS="${CMAKE_ARGS} -DFFI_LIBRARY_DIR=$PREFIX/lib"
 fi
 
-# if [[ $target_platform == osx-* ]]; then
-#   CMAKE_ARGS="${CMAKE_ARGS} -DFFI_INCLUDE_DIR=${CONDA_BUILD_SYSROOT}/usr/include/ffi"
-#   CMAKE_ARGS="${CMAKE_ARGS} -DFFI_LIBRARY_DIR=${CONDA_BUILD_SYSROOT}/usr/lib"
-#   CMAKE_ARGS="${CMAKE_ARGS} -DLLVM_BUILD_LLVM_C_DYLIB=ON"
-#   CMAKE_ARGS="${CMAKE_ARGS} -DLLVM_ENABLE_LIBCXX=ON"
-#   CMAKE_ARGS="${CMAKE_ARGS} -DRUNTIMES_CMAKE_ARGS=-DCMAKE_INSTALL_RPATH=loader_path/../lib"
-#   CMAKE_ARGS="${CMAKE_ARGS} -DDEFAULT_SYSROOT=${CONDA_BUILD_SYSROOT}"
-# fi
-
 if [[ $target_platform == osx-arm64 ]]; then
   CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_ENABLE_WERROR=FALSE"
 fi
@@ -105,11 +96,6 @@ if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
     export LIT_FILTER_OUT='tools/llvm-objcopy/ELF/strip-preserve-atime.test|'\
 'ExecutionEngine/Interpreter/intrinsics.ll'
   fi
-
-  # if [[ "${target_platform}" != "linux-ppc64le" && "${target_platform}" !~ ^osx  ]]; then
-  #   # test fail on linux-ppc64le and osx*
-  #   ninja -j${CPU_COUNT} check-llvm
-  # fi
 
   cd ../llvm/test
   ${PYTHON} ../../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
