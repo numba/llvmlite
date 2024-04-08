@@ -1,9 +1,22 @@
 #include "core.h"
 #include "llvm-c/Target.h"
+#include "llvm-c/Transforms/PassBuilder.h"
 #include "llvm-c/Transforms/PassManagerBuilder.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Support/Error.h"
 
 extern "C" {
+
+API_EXPORT(LLVMErrorRef)
+LLVMPY_RunPasses(LLVMPassBuilderOptionsRef Options, LLVMTargetMachineRef TM, LLVMModuleRef M, const char *Passes) 
+                           {return LLVMRunPasses(M, Passes, TM, Options); }
+
+API_EXPORT(LLVMPassBuilderOptionsRef)
+LLVMPY_CreatePassBuilderOptions() {return LLVMCreatePassBuilderOptions();}
+
+API_EXPORT(void)
+LLVMPY_DisposePassBuilderOptions(LLVMPassBuilderOptionsRef Options) 
+                            {return LLVMDisposePassBuilderOptions(Options); }
 
 API_EXPORT(LLVMPassManagerBuilderRef)
 LLVMPY_PassManagerBuilderCreate() { return LLVMPassManagerBuilderCreate(); }

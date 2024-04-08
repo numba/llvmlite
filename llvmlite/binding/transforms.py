@@ -1,11 +1,42 @@
 from ctypes import c_uint, c_bool
 from llvmlite.binding import ffi
 from llvmlite.binding import passmanagers
+from llvmlite.binding.common import _encode_string
 
 
 def create_pass_manager_builder():
     return PassManagerBuilder()
 
+def create_pass_builder_options():
+    return PassBuilderOptions()
+
+class PassBuilderOptions(ffi.ObjectRef):
+
+    def __init__(self, ptr=None):
+        if ptr is None:
+            ptr = ffi.lib.LLVMPY_CreatePassBuilderOptions()
+        ffi.ObjectRef.__init__(self, ptr)
+
+    def runDefaultOptimzationPipeline(self, module, tm, optLevel='3'):
+        return ffi.lib.LLVMPY_RunPasses(self, tm, module, _encode_string("default<O{}>".format(optLevel)))
+
+    def runPasses(self, module, tm, passes):
+        return ffi.lib.LLVMPY_RunPasses(self, tm, module, _encode_string(passes))
+
+
+    # FIXME: Implement such properties
+    def loop_vectorize(self):
+        pass
+
+    def slp_vectorize(self):
+        pass
+
+    def disable_unroll_loops(self):
+        pass
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposePassBuilderOptions(self)
+    
 
 class PassManagerBuilder(ffi.ObjectRef):
     __slots__ = ()
@@ -106,6 +137,11 @@ class PassManagerBuilder(ffi.ObjectRef):
 # FFI
 
 ffi.lib.LLVMPY_PassManagerBuilderCreate.restype = ffi.LLVMPassManagerBuilderRef
+ffi.lib.LLVMPY_CreatePassBuilderOptions.restype = ffi.LLVMPassBuilderOptionsRef
+
+ffi.lib.LLVMPY_DisposePassBuilderOptions.argtypes = [
+    ffi.LLVMPassBuilderOptionsRef,
+]
 
 ffi.lib.LLVMPY_PassManagerBuilderDispose.argtypes = [
     ffi.LLVMPassManagerBuilderRef,
