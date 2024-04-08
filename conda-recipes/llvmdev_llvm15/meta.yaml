@@ -11,10 +11,9 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
-    # - ..//llvm15-no-windows-symlinks.patch
-    # - ../llvm14-clear-gotoffsetmap.patch
-    # - ../llvm14-remove-use-of-clonefile.patch
-    # - ../llvm14-svml.patch
+    - ../llvm15-clear-gotoffsetmap.patch
+    - ../llvm15-remove-use-of-clonefile.patch
+    - ../llvm15-svml.patch
 
     # Patches from conda-forge needed for windows to build
     # backport of zlib patches, can be dropped for vs15.0.3, see
