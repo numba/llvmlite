@@ -7,8 +7,10 @@ from llvmlite.binding.common import _encode_string
 def create_pass_manager_builder():
     return PassManagerBuilder()
 
+
 def create_pass_builder_options():
     return PassBuilderOptions()
+
 
 class PassBuilderOptions(ffi.ObjectRef):
 
@@ -18,11 +20,12 @@ class PassBuilderOptions(ffi.ObjectRef):
         ffi.ObjectRef.__init__(self, ptr)
 
     def runDefaultOptimzationPipeline(self, module, tm, optLevel='3'):
-        return ffi.lib.LLVMPY_RunPasses(self, tm, module, _encode_string("default<O{}>".format(optLevel)))
+        return ffi.lib.LLVMPY_RunPasses(
+            self, tm, module, _encode_string("default<O{}>".format(optLevel)))
 
     def runPasses(self, module, tm, passes):
-        return ffi.lib.LLVMPY_RunPasses(self, tm, module, _encode_string(passes))
-
+        return ffi.lib.LLVMPY_RunPasses(
+            self, tm, module, _encode_string(passes))
 
     # FIXME: Implement such properties
     def loop_vectorize(self):
@@ -36,7 +39,7 @@ class PassBuilderOptions(ffi.ObjectRef):
 
     def _dispose(self):
         self._capi.LLVMPY_DisposePassBuilderOptions(self)
-    
+
 
 class PassManagerBuilder(ffi.ObjectRef):
     __slots__ = ()
