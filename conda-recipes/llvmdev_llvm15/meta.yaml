@@ -14,6 +14,7 @@ source:
     - ../llvm15-clear-gotoffsetmap.patch
     - ../llvm15-remove-use-of-clonefile.patch
     - ../llvm15-svml.patch
+    - ../compiler-rt-cfi-startproc-war.patch
 
     # Patches from conda-forge needed for windows to build
     # backport of zlib patches, can be dropped for vs15.0.3, see
