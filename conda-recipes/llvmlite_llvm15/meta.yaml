@@ -42,6 +42,8 @@ requirements:
     - vs2015_runtime # [win]
     # osx has dynamically linked libstdc++
     - libcxx >=4.0.1 # [osx]
+    - zlib 
+    - zstd 
 
 test:
   imports:
