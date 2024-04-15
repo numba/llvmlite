@@ -18,6 +18,7 @@ from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
+llvm_version_major = llvm.llvm_version_info[0]
 
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
@@ -41,6 +42,7 @@ asm_sum = r"""
     source_filename = "asm_sum.c"
     target triple = "{triple}"
     %struct.glob_type = type {{ i64, [2 x i64]}}
+    %struct.glob_type_vec = type {{ i64, <2 x i64>}}
 
     @glob = global i32 0
     @glob_b = global i8 0
@@ -112,6 +114,9 @@ asm_getversion = r"""
     }}
     """
 
+if platform.python_implementation() == 'PyPy':
+    asm_getversion = asm_getversion.replace('Py_GetVersion', 'PyPy_GetVersion')
+
 # `fadd` used on integer inputs
 asm_parse_error = r"""
     ; ModuleID = '<string>'
@@ -139,6 +144,13 @@ asm_sum_declare = r"""
     target triple = "{triple}"
 
     declare i32 @sum(i32 %.1, i32 %.2)
+    """
+
+asm_vararg_declare = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    declare i32 @vararg(i32 %.1, ...)
     """
 
 asm_double_inaccurate = r"""
@@ -491,6 +503,26 @@ entry:
 }
 """  # noqa E501
 
+asm_phi_blocks = r"""
+; ModuleID = '<string>'
+target triple = "{triple}"
+
+define void @foo(i32 %N) {{
+  ; unnamed block for testing
+  %cmp4 = icmp sgt i32 %N, 0
+  br i1 %cmp4, label %for.body, label %for.cond.cleanup
+
+for.cond.cleanup:
+  ret void
+
+for.body:
+  %i.05 = phi i32 [ %inc, %for.body ], [ 0, %0 ]
+  %inc = add nuw nsw i32 %i.05, 1
+  %exitcond.not = icmp eq i32 %inc, %N
+  br i1 %exitcond.not, label %for.cond.cleanup, label %for.body
+}}
+"""
+
 
 class BaseTest(TestCase):
 
@@ -544,7 +576,7 @@ class TestDependencies(BaseTest):
         out, _ = p.communicate()
         self.assertEqual(0, p.returncode)
         # Parse library dependencies
-        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
+        lib_pat = re.compile(r'^([+-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
         deps = set()
         for line in out.decode().splitlines():
             parts = line.split()
@@ -622,7 +654,7 @@ class TestRISCVABI(BaseTest):
     def test_rv32d_ilp32(self):
         self.check_riscv_target()
         llmod = self.fpadd_ll_module()
-        target = self.riscv_target_machine(features="+f,+d")
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32")
         self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
                          riscv_asm_ilp32)
 
@@ -755,9 +787,9 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = [(14, )]
-        self.assertIn((major,), valid)
-        self.assertIn(patch, range(10))
+        valid = (14, 15)
+        self.assertIn(major, valid)
+        self.assertIn(patch, range(8))
 
     def test_check_jit_execution(self):
         llvm.check_jit_execution()
@@ -1202,6 +1234,11 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         return llvm.create_mcjit_compiler(mod, target_machine)
 
 
+# There are some memory corruption issues with OrcJIT on AArch64 - see Issue
+# #1000. Since OrcJIT is experimental, and we don't test regularly during
+# llvmlite development on non-x86 platforms, it seems safest to skip these
+# tests on non-x86 platforms.
+@unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
 class TestOrcLLJIT(BaseTest):
 
     def jit(self, asm=asm_sum, func_name="sum", target_machine=None,
@@ -1677,6 +1714,112 @@ class TestValueRef(BaseTest):
         self.assertTrue(arg.is_constant)
         self.assertEqual(arg.get_constant_value(), 'i64* null')
 
+    def test_incoming_phi_blocks(self):
+        mod = self.module(asm_phi_blocks)
+        func = mod.get_function('foo')
+        blocks = list(func.blocks)
+        instructions = list(blocks[-1].instructions)
+        self.assertTrue(instructions[0].is_instruction)
+        self.assertEqual(instructions[0].opcode, 'phi')
+
+        incoming_blocks = list(instructions[0].incoming_blocks)
+        self.assertEqual(len(incoming_blocks), 2)
+        self.assertTrue(incoming_blocks[0].is_block)
+        self.assertTrue(incoming_blocks[1].is_block)
+        # Test reference to blocks (named or unnamed)
+        self.assertEqual(incoming_blocks[0], blocks[-1])
+        self.assertEqual(incoming_blocks[1], blocks[0])
+
+        # Test case that should fail
+        self.assertNotEqual(instructions[1].opcode, 'phi')
+        with self.assertRaises(ValueError):
+            instructions[1].incoming_blocks
+
+
+class TestTypeRef(BaseTest):
+
+    def test_str(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(str(glob.type), "i32*")
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        self.assertEqual(str(glob_struct_type),
+                         "%struct.glob_type = type { i64, [2 x i64] }")
+
+        elements = list(glob_struct_type.elements)
+        self.assertEqual(len(elements), 2)
+        self.assertEqual(str(elements[0]), "i64")
+        self.assertEqual(str(elements[1]), "[2 x i64]")
+
+    def test_type_kind(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(glob.type.type_kind, llvm.TypeKind.pointer)
+        self.assertTrue(glob.type.is_pointer)
+
+        glob_struct = mod.get_global_variable("glob_struct")
+        self.assertEqual(glob_struct.type.type_kind, llvm.TypeKind.pointer)
+        self.assertTrue(glob_struct.type.is_pointer)
+
+        stype = next(iter(glob_struct.type.elements))
+        self.assertEqual(stype.type_kind, llvm.TypeKind.struct)
+        self.assertTrue(stype.is_struct)
+
+        stype_a, stype_b = stype.elements
+        self.assertEqual(stype_a.type_kind, llvm.TypeKind.integer)
+        self.assertEqual(stype_b.type_kind, llvm.TypeKind.array)
+        self.assertTrue(stype_b.is_array)
+
+        glob_vec_struct_type = mod.get_struct_type("struct.glob_type_vec")
+        _, vector_type = glob_vec_struct_type.elements
+        self.assertEqual(vector_type.type_kind, llvm.TypeKind.vector)
+        self.assertTrue(vector_type.is_vector)
+
+        funcptr = mod.get_function("sum").type
+        self.assertEqual(funcptr.type_kind, llvm.TypeKind.pointer)
+        functype, = funcptr.elements
+        self.assertEqual(functype.type_kind, llvm.TypeKind.function)
+
+    def test_element_count(self):
+        mod = self.module()
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        _, array_type = glob_struct_type.elements
+        self.assertEqual(array_type.element_count, 2)
+        with self.assertRaises(ValueError):
+            glob_struct_type.element_count
+
+    def test_type_width(self):
+        mod = self.module()
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        glob_vec_struct_type = mod.get_struct_type("struct.glob_type_vec")
+        integer_type, array_type = glob_struct_type.elements
+        _, vector_type = glob_vec_struct_type.elements
+        self.assertEqual(integer_type.type_width, 64)
+        self.assertEqual(vector_type.type_width, 64 * 2)
+
+        # Structs and arrays are not primitive types
+        self.assertEqual(glob_struct_type.type_width, 0)
+        self.assertEqual(array_type.type_width, 0)
+
+    def test_vararg_function(self):
+        # Variadic function
+        mod = self.module(asm_vararg_declare)
+        func = mod.get_function('vararg')
+        decltype = func.type.element_type
+        self.assertTrue(decltype.is_function_vararg)
+
+        mod = self.module(asm_sum_declare)
+        func = mod.get_function('sum')
+        decltype = func.type.element_type
+        self.assertFalse(decltype.is_function_vararg)
+
+        # test that the function pointer type cannot use is_function_vararg
+        self.assertTrue(func.type.is_pointer)
+        with self.assertRaises(ValueError) as raises:
+            func.type.is_function_vararg
+        self.assertIn("Type i32 (i32, i32)* is not a function",
+                      str(raises.exception))
+
 
 class TestTarget(BaseTest):
 
@@ -2034,7 +2177,8 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_aggressive_dead_code_elimination_pass()
         pm.add_aa_eval_pass()
         pm.add_always_inliner_pass()
-        pm.add_arg_promotion_pass(42)
+        if llvm_version_major < 15:
+            pm.add_arg_promotion_pass(42)
         pm.add_break_critical_edges_pass()
         pm.add_dead_store_elimination_pass()
         pm.add_reverse_post_order_function_attrs_pass()
@@ -2049,7 +2193,8 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_loop_simplification_pass()
         pm.add_loop_unroll_pass()
         pm.add_loop_unroll_and_jam_pass()
-        pm.add_loop_unswitch_pass()
+        if llvm_version_major < 15:
+            pm.add_loop_unswitch_pass()
         pm.add_lower_atomic_pass()
         pm.add_lower_invoke_pass()
         pm.add_lower_switch_pass()
@@ -2079,6 +2224,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_lint_pass()
         pm.add_module_debug_info_pass()
         pm.add_refprune_pass()
+        pm.add_instruction_namer_pass()
 
     @unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
     def test_target_library_info_behavior(self):
@@ -2105,6 +2251,22 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         mod = run(use_tli=False)
         self.assertNotIn("call float @llvm.exp2.f32", str(mod))
         self.assertIn("call float @ldexpf", str(mod))
+
+    def test_instruction_namer_pass(self):
+        asm = asm_inlineasm3.format(triple=llvm.get_default_triple())
+        mod = llvm.parse_assembly(asm)
+
+        # Run instnamer pass
+        pm = llvm.ModulePassManager()
+        pm.add_instruction_namer_pass()
+        pm.run(mod)
+
+        # Test that unnamed instructions are now named
+        func = mod.get_function('foo')
+        first_block = next(func.blocks)
+        instructions = list(first_block.instructions)
+        self.assertEqual(instructions[0].name, 'i')
+        self.assertEqual(instructions[1].name, 'i2')
 
 
 class TestDylib(BaseTest):

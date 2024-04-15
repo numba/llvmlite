@@ -1,4 +1,5 @@
 #include "core.h"
+#include "memorymanager.h"
 
 #include "llvm-c/ExecutionEngine.h"
 #include "llvm-c/Object.h"
@@ -65,6 +66,7 @@ LLVMPY_FinalizeObject(LLVMExecutionEngineRef EE) {
 
 static LLVMExecutionEngineRef create_execution_engine(LLVMModuleRef M,
                                                       LLVMTargetMachineRef TM,
+                                                      bool use_lmm,
                                                       const char **OutError) {
     LLVMExecutionEngineRef ee = nullptr;
 
@@ -72,6 +74,12 @@ static LLVMExecutionEngineRef create_execution_engine(LLVMModuleRef M,
     std::string err;
     eb.setErrorStr(&err);
     eb.setEngineKind(llvm::EngineKind::JIT);
+
+    if (use_lmm) {
+        std::unique_ptr<llvm::RTDyldMemoryManager> mm =
+            std::make_unique<llvm::LlvmliteMemoryManager>();
+        eb.setMCJITMemoryManager(std::move(mm));
+    }
 
     /* EngineBuilder::create loads the current process symbols */
     llvm::ExecutionEngine *engine = eb.create(llvm::unwrap(TM));
@@ -85,8 +93,8 @@ static LLVMExecutionEngineRef create_execution_engine(LLVMModuleRef M,
 
 API_EXPORT(LLVMExecutionEngineRef)
 LLVMPY_CreateMCJITCompiler(LLVMModuleRef M, LLVMTargetMachineRef TM,
-                           const char **OutError) {
-    return create_execution_engine(M, TM, OutError);
+                           bool use_lmm, const char **OutError) {
+    return create_execution_engine(M, TM, use_lmm, OutError);
 }
 
 API_EXPORT(uint64_t)

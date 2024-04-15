@@ -30,12 +30,15 @@ if [[ $(uname) == Linux ]]; then
     # Install the compiler toolchain, for osx, bootstrapping needed
     # which happens in build.sh
     $CONDA_INSTALL gcc_linux-64 gxx_linux-64
-    # Install llvmdev (separate channel, for now)
-    $CONDA_INSTALL ohu::llvmdev
-    # $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
-else
-    $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
 fi
+
+# Install llvmdev (separate channel, for now)
+if [ "$LLVM" == "15" ]; then
+    $CONDA_INSTALL gmarkall::llvmdev="15"
+else
+    $CONDA_INSTALL ohu::llvmdev="14.*"
+fi
+
 
 # Install dependencies for code coverage (codecov.io)
 if [ "$RUN_COVERAGE" == "yes" ]; then $PIP_INSTALL codecov coveralls; fi
