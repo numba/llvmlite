@@ -18,7 +18,7 @@ OBJ = assembly.o bitcode.o core.o initfini.o module.o value.o \
 OUTPUT = libllvmlite.so
 
 ifneq ("$(wildcard $(LLVM_LIBDIR)/clang)","")
-    BUILTINS_ARCHIVE := $(LLVM_LIBDIR)/clang/*/lib/linux/libclang_rt.builtins-${ARCH}.a
+    BUILTINS_ARCHIVE := $(LLVM_LIBDIR)/clang/*/lib/*linux*/libclang_rt.builtins.a
 else
     BUILTINS_ARCHIVE := $(LLVM_LIBDIR)/linux/libclang_rt.builtins-$(ARCH).a
 endif
