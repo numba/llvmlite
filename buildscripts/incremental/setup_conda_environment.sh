@@ -34,7 +34,7 @@ fi
 
 # Install llvmdev (separate channel, for now)
 if [ "$LLVM" == "15" ]; then
-    $CONDA_INSTALL gmarkall::llvmdev="15"
+    $CONDA_INSTALL numba/label/ci::llvmdev="15"
 else
     $CONDA_INSTALL ohu::llvmdev="14.*"
 fi

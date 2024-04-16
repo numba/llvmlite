@@ -15,7 +15,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 
 @rem Install llvmdev
 if "%LLVM%"=="15" (
-  set LLVMDEV_CHANNEL="gmarkall"
+  set LLVMDEV_CHANNEL="numba/label/ci"
 ) else (
   set LLVMDEV_CHANNEL="ohu"
 )
