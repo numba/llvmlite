@@ -471,4 +471,14 @@ LLVMPY_GetOpcodeName(LLVMValueRef Val) {
     return LLVMPY_CreateString("");
 }
 
+API_EXPORT(bool)
+LLVMPY_IsFunctionVararg(LLVMValueRef F) {
+    using namespace llvm;
+    Function *func = unwrap<Function>(F);
+    if (func != nullptr) {
+        return func->isVarArg();
+    }
+    return false;
+}
+
 } // end extern "C"

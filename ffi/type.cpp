@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
 #include "llvm/IR/Type.h"
 
 struct ElementIterator {
@@ -62,6 +63,11 @@ LLVMPY_GetTypeKind(LLVMTypeRef Val) { return (int)LLVMGetTypeKind(Val); }
 API_EXPORT(LLVMTypeRef)
 LLVMPY_TypeOf(LLVMValueRef Val) { return LLVMTypeOf(Val); }
 
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GlobalGetValueType(LLVMValueRef Val) {
+    return LLVMGlobalGetValueType(Val);
+}
+
 API_EXPORT(const char *)
 LLVMPY_PrintType(LLVMTypeRef type) {
     char *str = LLVMPrintTypeToString(type);
@@ -100,16 +106,6 @@ LLVMPY_TypeIsStruct(LLVMTypeRef type) {
     return llvm::unwrap(type)->isStructTy();
 }
 
-API_EXPORT(bool)
-LLVMPY_IsFunctionVararg(LLVMTypeRef type) {
-    llvm::Type *unwrapped = llvm::unwrap(type);
-    llvm::FunctionType *ty = llvm::dyn_cast<llvm::FunctionType>(unwrapped);
-    if (ty != nullptr) {
-        return ty->isVarArg();
-    }
-    return false;
-}
-
 API_EXPORT(int)
 LLVMPY_GetTypeElementCount(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
@@ -139,9 +135,11 @@ API_EXPORT(uint64_t)
 LLVMPY_GetTypeBitWidth(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
     auto size = unwrapped->getPrimitiveSizeInBits();
-    return size.getFixedSize();
+    return size.getFixedValue();
 }
 
+// All pointers are opaque, no types
+#if LLVM_VERSION_MAJOR < 17
 API_EXPORT(LLVMTypeRef)
 LLVMPY_GetElementType(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
@@ -155,5 +153,9 @@ LLVMPY_GetElementType(LLVMTypeRef type) {
     }
     return nullptr;
 }
+#else
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GetElementType(LLVMTypeRef type) { return nullptr; }
+#endif
 
 } // end extern "C"

@@ -218,6 +218,14 @@ class ValueRef(ffi.ObjectRef):
         return TypeRef(ffi.lib.LLVMPY_TypeOf(self))
 
     @property
+    def global_value_type(self):
+        """
+        This value's LLVM type.
+        """
+        # XXX what does this return?
+        return TypeRef(ffi.lib.LLVMPY_GlobalGetValueType(self))
+
+    @property
     def is_declaration(self):
         """
         Whether this value (presumably global) is defined in the current
@@ -312,6 +320,17 @@ class ValueRef(ffi.ObjectRef):
             raise ValueError('expected instruction value, got %s'
                              % (self._kind,))
         return ffi.ret_string(ffi.lib.LLVMPY_GetOpcodeName(self))
+
+    @property
+    def is_function_vararg(self):
+        """
+        Returns true if a function type accepts a variable number of arguments.
+        When the type is not a function, raises exception.
+        """
+        if not self.is_function:
+            raise ValueError('expected function value, got %s'
+                             % (self._kind,))
+        return ffi.lib.LLVMPY_IsFunctionVararg(self)
 
     @property
     def incoming_blocks(self):
@@ -505,6 +524,9 @@ ffi.lib.LLVMPY_SetValueName.argtypes = [ffi.LLVMValueRef, c_char_p]
 ffi.lib.LLVMPY_TypeOf.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_TypeOf.restype = ffi.LLVMTypeRef
 
+ffi.lib.LLVMPY_GlobalGetValueType.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GlobalGetValueType.restype = ffi.LLVMTypeRef
+
 ffi.lib.LLVMPY_GetTypeName.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetTypeName.restype = c_void_p
 
@@ -616,3 +638,6 @@ ffi.lib.LLVMPY_GetConstantIntNumWords.restype = c_uint
 ffi.lib.LLVMPY_GetConstantFPValue.argtypes = [ffi.LLVMValueRef,
                                               POINTER(c_bool)]
 ffi.lib.LLVMPY_GetConstantFPValue.restype = c_double
+
+ffi.lib.LLVMPY_IsFunctionVararg.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_IsFunctionVararg.restype = c_bool

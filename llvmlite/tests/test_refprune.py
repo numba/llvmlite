@@ -116,7 +116,9 @@ class TestRefPrunePass(TestCase):
 
     def apply_refprune(self, irmod):
         mod = llvm.parse_assembly(str(irmod))
+        pb = llvm.create_pass_manager_builder()
         pm = llvm.ModulePassManager()
+        pb.populate(pm)
         pm.add_refprune_pass()
         pm.run(mod)
         return mod
@@ -162,13 +164,15 @@ class BaseTestByIR(TestCase):
     refprune_bitmask = 0
 
     prologue = r"""
-declare void @NRT_incref(i8* %ptr)
-declare void @NRT_decref(i8* %ptr)
+declare void @NRT_incref(ptr %ptr)
+declare void @NRT_decref(ptr %ptr)
 """
 
     def check(self, irmod, subgraph_limit=None):
         mod = llvm.parse_assembly(f"{self.prologue}\n{irmod}")
+        pb = llvm.create_pass_manager_builder()
         pm = llvm.ModulePassManager()
+        pb.populate(pm)
         if subgraph_limit is None:
             pm.add_refprune_pass(self.refprune_bitmask)
         else:
@@ -184,9 +188,9 @@ class TestPerBB(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.PER_BB
 
     per_bb_ir_1 = r"""
-define void @main(i8* %ptr) {
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
+define void @main(ptr %ptr) {
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -196,12 +200,12 @@ define void @main(i8* %ptr) {
         self.assertEqual(stats.basicblock, 2)
 
     per_bb_ir_2 = r"""
-define void @main(i8* %ptr) {
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
+define void @main(ptr %ptr) {
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -210,14 +214,14 @@ define void @main(i8* %ptr) {
         mod, stats = self.check(self.per_bb_ir_2)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        self.assertIn("call void @NRT_incref(i8* %ptr)", str(mod))
+        self.assertIn("call void @NRT_incref(ptr %ptr)", str(mod))
 
     per_bb_ir_3 = r"""
-define void @main(i8* %ptr, i8* %other) {
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %other)
+define void @main(ptr %ptr, ptr %other) {
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %other)
     ret void
 }
 """
@@ -226,16 +230,16 @@ define void @main(i8* %ptr, i8* %other) {
         mod, stats = self.check(self.per_bb_ir_3)
         self.assertEqual(stats.basicblock, 2)
         # not pruned
-        self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
 
     per_bb_ir_4 = r"""
 ; reordered
-define void @main(i8* %ptr, i8* %other) {
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %other)
-    call void @NRT_incref(i8* %ptr)
+define void @main(ptr %ptr, ptr %other) {
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %other)
+    call void @NRT_incref(ptr %ptr)
     ret void
 }
 """
@@ -244,19 +248,19 @@ define void @main(i8* %ptr, i8* %other) {
         mod, stats = self.check(self.per_bb_ir_4)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
 
 
 class TestDiamond(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.DIAMOND
 
     per_diamond_1 = r"""
-define void @main(i8* %ptr) {
+define void @main(ptr %ptr) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br label %bb_B
 bb_B:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -266,16 +270,16 @@ bb_B:
         self.assertEqual(stats.diamond, 2)
 
     per_diamond_2 = r"""
-define void @main(i8* %ptr, i1 %cond) {
+define void @main(ptr %ptr, i1 %cond) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
     br label %bb_D
 bb_C:
     br label %bb_D
 bb_D:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -285,17 +289,17 @@ bb_D:
         self.assertEqual(stats.diamond, 2)
 
     per_diamond_3 = r"""
-define void @main(i8* %ptr, i1 %cond) {
+define void @main(ptr %ptr, i1 %cond) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
     br label %bb_D
 bb_C:
-    call void @NRT_decref(i8* %ptr)  ; reject because of decref in diamond
+    call void @NRT_decref(ptr %ptr)  ; reject because of decref in diamond
     br label %bb_D
 bb_D:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -305,17 +309,17 @@ bb_D:
         self.assertEqual(stats.diamond, 0)
 
     per_diamond_4 = r"""
-define void @main(i8* %ptr, i1 %cond) {
+define void @main(ptr %ptr, i1 %cond) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_incref(i8* %ptr)     ; extra incref will not affect prune
+    call void @NRT_incref(ptr %ptr)     ; extra incref will not affect prune
     br label %bb_D
 bb_C:
     br label %bb_D
 bb_D:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -325,18 +329,18 @@ bb_D:
         self.assertEqual(stats.diamond, 2)
 
     per_diamond_5 = r"""
-define void @main(i8* %ptr, i1 %cond) {
+define void @main(ptr %ptr, i1 %cond) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
     br label %bb_D
 bb_C:
     br label %bb_D
 bb_D:
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -353,15 +357,15 @@ class TestFanout(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.FANOUT
 
     fanout_1 = r"""
-define void @main(i8* %ptr, i1 %cond) {
+define void @main(ptr %ptr, i1 %cond) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 bb_C:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -371,15 +375,15 @@ bb_C:
         self.assertEqual(stats.fanout, 3)
 
     fanout_2 = r"""
-define void @main(i8* %ptr, i1 %cond, i8** %excinfo) {
+define void @main(ptr %ptr, i1 %cond, ptr %excinfo) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 bb_C:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     br label %bb_B                      ; illegal jump to other decref
 }
 """
@@ -389,19 +393,19 @@ bb_C:
         self.assertEqual(stats.fanout, 0)
 
     fanout_3 = r"""
-define void @main(i8* %ptr, i1 %cond) {
+define void @main(ptr %ptr, i1 %cond) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 bb_C:
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret void
 }
 """
@@ -421,15 +425,15 @@ class TestFanoutRaise(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.FANOUT_RAISE
 
     fanout_raise_1 = r"""
-define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
+define i32 @main(ptr %ptr, i1 %cond, ptr %excinfo) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret i32 0
 bb_C:
-    store i8* null, i8** %excinfo, !numba_exception_output !0
+    store ptr null, ptr %excinfo, !numba_exception_output !0
     ret i32 1
 }
 !0 = !{i1 true}
@@ -440,15 +444,15 @@ bb_C:
         self.assertEqual(stats.fanout_raise, 2)
 
     fanout_raise_2 = r"""
-define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
+define i32 @main(ptr %ptr, i1 %cond, ptr %excinfo) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret i32 0
 bb_C:
-    store i8* null, i8** %excinfo, !numba_exception_typo !0      ; bad metadata
+    store ptr null, ptr %excinfo, !numba_exception_typo !0      ; bad metadata
     ret i32 1
 }
 
@@ -462,15 +466,15 @@ bb_C:
         self.assertEqual(stats.fanout_raise, 0)
 
     fanout_raise_3 = r"""
-define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
+define i32 @main(ptr %ptr, i1 %cond, ptr %excinfo) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret i32 0
 bb_C:
-    store i8* null, i8** %excinfo, !numba_exception_output !0
+    store ptr null, ptr %excinfo, !numba_exception_output !0
     ret i32 1
 }
 
@@ -482,9 +486,9 @@ bb_C:
         self.assertEqual(stats.fanout_raise, 2)
 
     fanout_raise_4 = r"""
-define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
+define i32 @main(ptr %ptr, i1 %cond, ptr %excinfo) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
     ret i32 1    ; BAD; all tails are raising without decref
@@ -500,15 +504,15 @@ bb_C:
         self.assertEqual(stats.fanout_raise, 0)
 
     fanout_raise_5 = r"""
-define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
+define i32 @main(ptr %ptr, i1 %cond, ptr %excinfo) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     br label %common.ret
 bb_C:
-    store i8* null, i8** %excinfo, !numba_exception_output !0
+    store ptr null, ptr %excinfo, !numba_exception_output !0
     br label %common.ret
 common.ret:
     %common.ret.op = phi i32 [ 0, %bb_B ], [ 1, %bb_C ]
@@ -523,26 +527,26 @@ common.ret:
 
     # test case 6 is from https://github.com/numba/llvmlite/issues/1023
     fanout_raise_6 = r"""
-define i32 @main(i8* %ptr, i1 %cond1, i1 %cond2, i1 %cond3, i8** %excinfo) {
+define i32 @main(ptr %ptr, i1 %cond1, i1 %cond2, i1 %cond3, ptr %excinfo) {
 bb_A:
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond1, label %bb_B, label %bb_C
 bb_B:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     br i1 %cond2, label %bb_D, label %bb_E
 bb_C:
-    store i8* null, i8** %excinfo, !numba_exception_output !0
+    store ptr null, ptr %excinfo, !numba_exception_output !0
     ret i32 1
 bb_D:
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret i32 0
 bb_E:
-    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(ptr %ptr)
     br i1 %cond3, label %bb_F, label %bb_C
 bb_F:
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(ptr %ptr)
+    call void @NRT_decref(ptr %ptr)
     ret i32 0
 }
 !0 = !{i1 1}
@@ -551,6 +555,7 @@ bb_F:
     def test_fanout_raise_6(self):
         mod, stats = self.check(self.fanout_raise_6)
         self.assertEqual(stats.fanout_raise, 7)
+
 
 
 if __name__ == '__main__':

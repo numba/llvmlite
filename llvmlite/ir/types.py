@@ -43,14 +43,14 @@ class Type(_StrCaching):
             m = Module(context=context)
         foo = GlobalVariable(m, self, name="foo")
         with parse_assembly(str(m)) as llmod:
-            return llmod.get_global_variable(foo.name).type
+            return llmod.get_global_variable(foo.name).global_value_type
 
     def get_abi_size(self, target_data, context=None):
         """
         Get the ABI size of this type according to data layout *target_data*.
         """
         llty = self._get_ll_pointer_type(target_data, context)
-        return target_data.get_pointee_abi_size(llty)
+        return target_data.get_abi_size(llty)
 
     def get_abi_alignment(self, target_data, context=None):
         """
@@ -58,7 +58,7 @@ class Type(_StrCaching):
         *target_data*.
         """
         llty = self._get_ll_pointer_type(target_data, context)
-        return target_data.get_pointee_abi_alignment(llty)
+        return target_data.get_abi_alignment(llty)
 
     def format_constant(self, value):
         """

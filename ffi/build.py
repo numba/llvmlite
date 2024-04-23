@@ -167,8 +167,8 @@ def main_posix(kind, library_ext):
     else:
         (version, _) = out.split('.', 1)
         version = int(version)
-        if version == 15:
-            msg = ("Building with LLVM 15; note that LLVM 15 support is "
+        if version == 17:
+            msg = ("Building with LLVM 17; note that LLVM 17 support is "
                    "presently experimental")
             show_warning(msg)
         elif version != 14:

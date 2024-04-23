@@ -130,19 +130,24 @@ bool LlvmliteMemoryManager::hasSpace(const MemoryGroup &MemGroup,
 }
 
 void LlvmliteMemoryManager::reserveAllocationSpace(
-    uintptr_t CodeSize, uint32_t CodeAlign, uintptr_t RODataSize,
-    uint32_t RODataAlign, uintptr_t RWDataSize, uint32_t RWDataAlign) {
+    uintptr_t CodeSize, Align CodeAlign, uintptr_t RODataSize,
+    Align RODataAlign, uintptr_t RWDataSize, Align RWDataAlign) {
+
+    uint64_t CodeAlignValue = CodeAlign.value();
+    uint64_t RODataAlignValue = RODataAlign.value();
+    uint64_t RWDataAlignValue = RWDataAlign.value();
+
     LLVM_DEBUG(
         dbgs()
         << "\nLlvmliteMemoryManager::reserveAllocationSpace() request:\n\n");
     LLVM_DEBUG(dbgs() << "Code size / align: " << format_hex(CodeSize, 2, true)
-                      << " / " << CodeAlign << "\n");
+                      << " / " << CodeAlignValue << "\n");
     LLVM_DEBUG(dbgs() << "ROData size / align: "
-                      << format_hex(RODataSize, 2, true) << " / " << RODataAlign
-                      << "\n");
+                      << format_hex(RODataSize, 2, true) << " / "
+                      << RODataAlignValue << "\n");
     LLVM_DEBUG(dbgs() << "RWData size / align: "
-                      << format_hex(RWDataSize, 2, true) << " / " << RWDataAlign
-                      << "\n");
+                      << format_hex(RWDataSize, 2, true) << " / "
+                      << RWDataAlignValue << "\n");
 
     if (CodeSize == 0 && RODataSize == 0 && RWDataSize == 0) {
         LLVM_DEBUG(dbgs() << "No memory requested - returning early.\n");
@@ -152,23 +157,24 @@ void LlvmliteMemoryManager::reserveAllocationSpace(
     // Code alignment needs to be at least the stub alignment - however, we
     // don't have an easy way to get that here so as a workaround, we assume
     // it's 8, which is the largest value I observed across all platforms.
-    constexpr uint32_t StubAlign = 8;
-    CodeAlign = std::max(CodeAlign, StubAlign);
+    constexpr uint64_t StubAlign = 8;
+    CodeAlignValue = std::max(CodeAlignValue, StubAlign);
 
     // ROData and RWData may not need to be aligned to the StubAlign, but the
     // stub alignment seems like a reasonable (if slightly arbitrary) minimum
     // alignment for them that should not cause any issues on all (i.e. 64-bit)
     // platforms.
-    RODataAlign = std::max(RODataAlign, StubAlign);
-    RWDataAlign = std::max(RWDataAlign, StubAlign);
+    RODataAlignValue = std::max(RODataAlignValue, StubAlign);
+    RWDataAlignValue = std::max(RWDataAlignValue, StubAlign);
 
     // Get space required for each section. Use the same calculation as
     // allocateSection because we need to be able to satisfy it.
-    uintptr_t RequiredCodeSize = alignTo(CodeSize, CodeAlign) + CodeAlign;
+    uintptr_t RequiredCodeSize =
+        alignTo(CodeSize, CodeAlignValue) + CodeAlignValue;
     uintptr_t RequiredRODataSize =
-        alignTo(RODataSize, RODataAlign) + RODataAlign;
+        alignTo(RODataSize, RODataAlignValue) + RODataAlignValue;
     uintptr_t RequiredRWDataSize =
-        alignTo(RWDataSize, RWDataAlign) + RWDataAlign;
+        alignTo(RWDataSize, RWDataAlignValue) + RWDataAlignValue;
     uint64_t TotalSize =
         RequiredCodeSize + RequiredRODataSize + RequiredRWDataSize;
 
@@ -222,7 +228,7 @@ void LlvmliteMemoryManager::reserveAllocationSpace(
         LLVM_DEBUG(dbgs() << "Code mem starts at " << format_hex(Addr, 18, true)
                           << ", size " << format_hex(RequiredCodeSize, 2, true)
                           << "\n");
-        assert(isAddrAligned(Align(CodeAlign), (void *)Addr));
+        assert(isAddrAligned(Align(CodeAlignValue), (void *)Addr));
         FreeMB.Free = sys::MemoryBlock((void *)Addr, RequiredCodeSize);
         CodeMem.FreeMem.push_back(FreeMB);
         Addr += RequiredCodeSize;
@@ -232,7 +238,7 @@ void LlvmliteMemoryManager::reserveAllocationSpace(
         LLVM_DEBUG(dbgs() << "ROData mem starts at "
                           << format_hex(Addr, 18, true) << ", size "
                           << format_hex(RequiredRODataSize, 2, true) << "\n");
-        assert(isAddrAligned(Align(RODataAlign), (void *)Addr));
+        assert(isAddrAligned(Align(RODataAlignValue), (void *)Addr));
         FreeMB.Free = sys::MemoryBlock((void *)Addr, RequiredRODataSize);
         RODataMem.FreeMem.push_back(FreeMB);
         Addr += RequiredRODataSize;
@@ -242,7 +248,7 @@ void LlvmliteMemoryManager::reserveAllocationSpace(
         LLVM_DEBUG(dbgs() << "RWData mem starts at "
                           << format_hex(Addr, 18, true) << ", size "
                           << format_hex(RequiredRWDataSize, 2, true) << "\n");
-        assert(isAddrAligned(Align(RWDataAlign), (void *)Addr));
+        assert(isAddrAligned(Align(RWDataAlignValue), (void *)Addr));
         FreeMB.Free = sys::MemoryBlock((void *)Addr, RequiredRWDataSize);
         RWDataMem.FreeMem.push_back(FreeMB);
     }

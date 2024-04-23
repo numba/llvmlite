@@ -26,10 +26,11 @@
 using namespace llvm;
 
 namespace llvm {
-void initializeRefNormalizePassPass(PassRegistry &Registry);
-void initializeRefPrunePassPass(PassRegistry &Registry);
+void initializeRefNormalizeLegacyPassPass(PassRegistry &Registry);
+void initializeRefPruneLegacyPassPass(PassRegistry &Registry);
 } // namespace llvm
 
+namespace {
 /**
  * Checks if a call instruction is an incref
  *
@@ -104,13 +105,9 @@ template <class Tstack> struct raiiStack {
  * A FunctionPass to reorder incref/decref instructions such that decrefs occur
  * logically after increfs. This is a pre-requisite pass to the pruner passes.
  */
-struct RefNormalizePass : public FunctionPass {
-    static char ID;
-    RefNormalizePass() : FunctionPass(ID) {
-        initializeRefNormalizePassPass(*PassRegistry::getPassRegistry());
-    }
+struct RefNormalize {
 
-    bool runOnFunction(Function &F) override {
+    bool runOnFunction(Function &F) {
         bool mutated = false;
         // For each basic block in F
         for (BasicBlock &bb : F) {
@@ -158,7 +155,16 @@ struct RefNormalizePass : public FunctionPass {
     }
 };
 
-struct RefPrunePass : public FunctionPass {
+typedef enum {
+    None = 0b0000,
+    PerBasicBlock = 0b0001,
+    Diamond = 0b0010,
+    Fanout = 0b0100,
+    FanoutRaise = 0b1000,
+    All = PerBasicBlock | Diamond | Fanout | FanoutRaise
+} Subpasses;
+
+struct RefPrune {
     static char ID;
     static size_t stats_per_bb;
     static size_t stats_diamond;
@@ -175,25 +181,21 @@ struct RefPrunePass : public FunctionPass {
     /**
      * Enum for setting which subpasses to run, there is no interdependence.
      */
-    enum Subpasses {
-        None = 0b0000,
-        PerBasicBlock = 0b0001,
-        Diamond = 0b0010,
-        Fanout = 0b0100,
-        FanoutRaise = 0b1000,
-        All = PerBasicBlock | Diamond | Fanout | FanoutRaise
-    } flags;
 
-    RefPrunePass(Subpasses flags = Subpasses::All, size_t subgraph_limit = -1)
-        : FunctionPass(ID), flags(flags), subgraph_limit(subgraph_limit) {
-        initializeRefPrunePassPass(*PassRegistry::getPassRegistry());
-    }
+    Subpasses flags;
+
+    DominatorTree &DT;
+    PostDominatorTree &PDT;
+
+    RefPrune(DominatorTree &DT, PostDominatorTree &PDT,
+             Subpasses flags = Subpasses::All, size_t subgraph_limit = -1)
+        : DT(DT), PDT(PDT), flags(flags), subgraph_limit(subgraph_limit) {}
 
     bool isSubpassEnabledFor(Subpasses expected) {
         return (flags & expected) == expected;
     }
 
-    bool runOnFunction(Function &F) override {
+    bool runOnFunction(Function &F) {
         // state for LLVM function pass mutated IR
         bool mutated = false;
 
@@ -361,12 +363,6 @@ struct RefPrunePass : public FunctionPass {
      */
     bool runDiamondPrune(Function &F) {
         bool mutated = false;
-        // gets the dominator tree
-        auto &domtree = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-        // gets the post-dominator tree
-        auto &postdomtree =
-            getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
-
         // Find all increfs and decrefs in the Function and store them in
         // incref_list and decref_list respectively.
         std::vector<CallInst *> incref_list, decref_list;
@@ -394,8 +390,8 @@ struct RefPrunePass : public FunctionPass {
                     continue;
 
                 // incref DOM decref && decref POSTDOM incref
-                if (domtree.dominates(incref, decref) &&
-                    postdomtree.dominates(decref, incref)) {
+                if (DT.dominates(incref, decref) &&
+                    PDT.dominates(decref, incref)) {
                     // check that the decref cannot be executed multiple times
                     SmallBBSet tail_nodes;
                     tail_nodes.insert(decref->getParent());
@@ -1029,14 +1025,6 @@ struct RefPrunePass : public FunctionPass {
     }
 
     /**
-     * getAnalysisUsage() LLVM plumbing for the pass
-     */
-    void getAnalysisUsage(AnalysisUsage &Info) const override {
-        Info.addRequired<DominatorTreeWrapperPass>();
-        Info.addRequired<PostDominatorTreeWrapperPass>();
-    }
-
-    /**
      * Checks if the first argument to the supplied call_inst is NULL and
      * returns true if so, false otherwise.
      *
@@ -1163,34 +1151,128 @@ struct RefPrunePass : public FunctionPass {
             }
         }
     }
-}; // end of struct RefPrunePass
+}; // end of struct RefPrune
 
-char RefNormalizePass::ID = 0;
-char RefPrunePass::ID = 0;
+} // namespace
 
-size_t RefPrunePass::stats_per_bb = 0;
-size_t RefPrunePass::stats_diamond = 0;
-size_t RefPrunePass::stats_fanout = 0;
-size_t RefPrunePass::stats_fanout_raise = 0;
+class RefPrunePass : public PassInfoMixin<RefPrunePass> {
 
-INITIALIZE_PASS(RefNormalizePass, "nrtrefnormalizepass", "Normalize NRT refops",
-                false, false)
+  public:
+    Subpasses flags;
+    size_t subgraph_limit;
+    RefPrunePass(Subpasses flags = Subpasses::All, size_t subgraph_limit = -1)
+        : flags(flags), subgraph_limit(subgraph_limit) {}
 
-INITIALIZE_PASS_BEGIN(RefPrunePass, "nrtrefprunepass", "Prune NRT refops",
-                      false, false)
+    PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM) {
+        auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
+        auto &PDT = AM.getResult<PostDominatorTreeAnalysis>(F);
+        if (RefPrune(DT, PDT, flags, subgraph_limit).runOnFunction(F)) {
+            return PreservedAnalyses::none();
+        }
+
+        return PreservedAnalyses::all();
+    }
+};
+
+class RefNormalizePass : public PassInfoMixin<RefNormalizePass> {
+
+  public:
+    RefNormalizePass() = default;
+
+    PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM) {
+        RefNormalize().runOnFunction(F);
+
+        return PreservedAnalyses::all();
+    }
+};
+
+PreservedAnalyses AAEvaluator::run(Function &F, FunctionAnalysisManager &AM) {
+
+    return PreservedAnalyses::all();
+}
+
+class RefNormalizeLegacyPass : public FunctionPass {
+  public:
+    static char ID;
+    RefNormalizeLegacyPass() : FunctionPass(ID) {
+        initializeRefNormalizeLegacyPassPass(*PassRegistry::getPassRegistry());
+    }
+
+    bool runOnFunction(Function &F) override {
+        return RefNormalize().runOnFunction(F);
+    };
+};
+
+class RefPruneLegacyPass : public FunctionPass {
+
+  public:
+    static char ID; // Pass identification, replacement for typeid
+    // The maximum number of nodes that the fanout pruners will look at.
+    size_t subgraph_limit;
+    Subpasses flags;
+    RefPruneLegacyPass(Subpasses flags = Subpasses::All,
+                       size_t subgraph_limit = -1)
+        : FunctionPass(ID), flags(flags), subgraph_limit(subgraph_limit) {
+        initializeRefPruneLegacyPassPass(*PassRegistry::getPassRegistry());
+    }
+
+    bool runOnFunction(Function &F) override {
+        auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+
+        auto &PDT =
+            getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
+
+        return RefPrune(DT, PDT, flags, subgraph_limit).runOnFunction(F);
+    };
+
+    /**
+     * getAnalysisUsage() LLVM plumbing for the pass
+     */
+    void getAnalysisUsage(AnalysisUsage &Info) const override {
+        Info.addRequired<DominatorTreeWrapperPass>();
+        Info.addRequired<PostDominatorTreeWrapperPass>();
+    }
+};
+
+char RefNormalizeLegacyPass::ID = 0;
+char RefPruneLegacyPass::ID = 0;
+
+size_t RefPrune::stats_per_bb = 0;
+size_t RefPrune::stats_diamond = 0;
+size_t RefPrune::stats_fanout = 0;
+size_t RefPrune::stats_fanout_raise = 0;
+
+INITIALIZE_PASS(RefNormalizeLegacyPass, "nrtRefNormalize",
+                "Normalize NRT refops", false, false)
+
+INITIALIZE_PASS_BEGIN(RefPruneLegacyPass, "nrtRefPruneLegacyPass",
+                      "Prune NRT refops", false, false)
 INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(PostDominatorTreeWrapperPass)
 
-INITIALIZE_PASS_END(RefPrunePass, "refprunepass", "Prune NRT refops", false,
-                    false)
+INITIALIZE_PASS_END(RefPruneLegacyPass, "RefPruneLegacyPass",
+                    "Prune NRT refops", false, false)
+
+typedef llvm::ModulePassManager *LLVMModulePassManager;
+
+typedef llvm::FunctionAnalysisManager *LLVMFunctionAnalysisManager;
+
 extern "C" {
 
 API_EXPORT(void)
-LLVMPY_AddRefPrunePass(LLVMPassManagerRef PM, int subpasses,
-                       size_t subgraph_limit) {
-    unwrap(PM)->add(new RefNormalizePass());
+LLVMPY_AddLegacyRefPrunePass(LLVMPassManagerRef PM, int subpasses,
+                             size_t subgraph_limit) {
+    unwrap(PM)->add(new RefNormalizeLegacyPass());
     unwrap(PM)->add(
-        new RefPrunePass((RefPrunePass::Subpasses)subpasses, subgraph_limit));
+        new RefPruneLegacyPass((Subpasses)subpasses, subgraph_limit));
+}
+
+API_EXPORT(void)
+LLVMPY_AddRefPrunePass(LLVMModulePassManager MPM, int subpasses,
+                       size_t subgraph_limit) {
+    MPM->addPass(createModuleToFunctionPassAdaptor(RefNormalizePass()));
+    MPM->addPass(createModuleToFunctionPassAdaptor(
+        RefPrunePass((Subpasses)subpasses, subgraph_limit)));
 }
 
 /**
@@ -1207,24 +1289,24 @@ typedef struct PruneStats {
 API_EXPORT(void)
 LLVMPY_DumpRefPruneStats(PRUNESTATS *buf, bool do_print) {
     /* PRUNESTATS is updated with the statistics about what has been pruned from
-     * the RefPrunePass static state vars. This isn't threadsafe but neither is
+     * the RefPrune static state vars. This isn't threadsafe but neither is
      * the LLVM pass infrastructure so it's all done under a python thread lock.
      *
      * do_print if set will print the stats to stderr.
      */
     if (do_print) {
         errs() << "refprune stats "
-               << "per-BB " << RefPrunePass::stats_per_bb << " "
-               << "diamond " << RefPrunePass::stats_diamond << " "
-               << "fanout " << RefPrunePass::stats_fanout << " "
-               << "fanout+raise " << RefPrunePass::stats_fanout_raise << " "
+               << "per-BB " << RefPrune::stats_per_bb << " "
+               << "diamond " << RefPrune::stats_diamond << " "
+               << "fanout " << RefPrune::stats_fanout << " "
+               << "fanout+raise " << RefPrune::stats_fanout_raise << " "
                << "\n";
     };
 
-    buf->basicblock = RefPrunePass::stats_per_bb;
-    buf->diamond = RefPrunePass::stats_diamond;
-    buf->fanout = RefPrunePass::stats_fanout;
-    buf->fanout_raise = RefPrunePass::stats_fanout_raise;
+    buf->basicblock = RefPrune::stats_per_bb;
+    buf->diamond = RefPrune::stats_diamond;
+    buf->fanout = RefPrune::stats_fanout;
+    buf->fanout_raise = RefPrune::stats_fanout_raise;
 }
 
 } // extern "C"

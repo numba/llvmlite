@@ -68,16 +68,6 @@ class TypeRef(ffi.ObjectRef):
         return ffi.lib.LLVMPY_TypeIsVector(self)
 
     @property
-    def is_function_vararg(self):
-        """
-        Returns true if a function type accepts a variable number of arguments.
-        When the type is not a function, raises exception.
-        """
-        if self.type_kind != TypeKind.function:
-            raise ValueError("Type {} is not a function".format(self))
-        return ffi.lib.LLVMPY_IsFunctionVararg(self)
-
-    @property
     def elements(self):
         """
         Returns iterator over enclosing types
@@ -92,7 +82,7 @@ class TypeRef(ffi.ObjectRef):
         """
         if not self.is_pointer:
             raise ValueError("Type {} is not a pointer".format(self))
-        return TypeRef(ffi.lib.LLVMPY_GetElementType(self))
+        raise ValueError("LLVM uses opaque pointers, so this operation is no longer supported")
 
     @property
     def element_count(self):
@@ -176,9 +166,6 @@ ffi.lib.LLVMPY_TypeIsVector.restype = c_bool
 
 ffi.lib.LLVMPY_TypeIsStruct.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_TypeIsStruct.restype = c_bool
-
-ffi.lib.LLVMPY_IsFunctionVararg.argtypes = [ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_IsFunctionVararg.restype = c_bool
 
 ffi.lib.LLVMPY_GetTypeKind.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetTypeKind.restype = c_int

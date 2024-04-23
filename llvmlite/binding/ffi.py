@@ -40,6 +40,20 @@ LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
 LLVMOrcLLJITRef = _make_opaque_ref("LLVMOrcLLJITRef")
 LLVMOrcDylibTrackerRef = _make_opaque_ref("LLVMOrcDylibTrackerRef")
+LLVMPassBuilderOptionsRef = _make_opaque_ref("LLVMPassBuilderOptions")
+LLVMOptimizationLevel = _make_opaque_ref("LLVMOptimizationLevel")
+LLVMFunctionPassManager = _make_opaque_ref("LLVMFunctionPassManager")
+LLVMPassBuilder = _make_opaque_ref("LLVMPassBuilder")
+LLVMModulePassManager = _make_opaque_ref("LLVMModulePassManager")
+
+LLVMModuleAnalysisManager = _make_opaque_ref("LLVMModuleAnalysisManager")
+LLVMCGSCCAnalysisManager = _make_opaque_ref("LLVMCGSCCAnalysisManager")
+LLVMFunctionAnalysisManager = _make_opaque_ref("LLVMFunctionAnalysisManager")
+LLVMLoopAnalysisManager = _make_opaque_ref("LLVMLoopAnalysisManager")
+LLVMLoopAnalysisManager = _make_opaque_ref("LLVMLoopAnalysisManager")
+LLVMPassInstrumentationCallbacks = _make_opaque_ref("LLVMPassInstrumentationCallbacks")
+LLVMTimePassesHandler = _make_opaque_ref("LLVMTimePassesHandler")
+ 
 
 
 class _LLVMLock:
@@ -189,6 +203,10 @@ class _lib_fn_wrapper(object):
 
     def __call__(self, *args, **kwargs):
         with self._lock:
+            print(self._cfn.__name__)
+            print("calling")
+            for arg in args:
+              print(type(arg))
             return self._cfn(*args, **kwargs)
 
 
