@@ -283,8 +283,8 @@
 #include <llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
-#include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
 #include <llvm/Transforms/IPO/ArgumentPromotion.h>
+#include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
 #include <llvm/Transforms/Utils.h>
 #include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
 
@@ -319,9 +319,6 @@ LLVMPY_DisposeLLVMTimePassesHandler(LLVMTimePassesHandler TimePasses) {
 API_EXPORT(void)
 LLVMPY_SetTimePasses(LLVMTimePassesHandler TimePasses,
                      LLVMPassInstrumentationCallbacks PIC) {
-    // if (TimePasses)
-    //   delete TimePasses;
-    // Reset any existing timing
     TimePasses->print();
     TimePasses->registerCallbacks(*PIC);
 }
@@ -397,25 +394,7 @@ LLVMPY_RunPassManagerWithRemarks(LLVMModulePassManager PM, LLVMModuleRef M,
 API_EXPORT(int)
 LLVMPY_RunPassManager(LLVMModulePassManager PM, LLVMModuleRef M,
                       LLVMModuleAnalysisManager MAM) {
-    // PassBuilder PB;
-    // LoopAnalysisManager LAM;
-    // FunctionAnalysisManager FAM;
-    // CGSCCAnalysisManager CGAM;
-    // ModuleAnalysisManager MAM;
-
-    // // Register all the basic analyses with the managers.
-    // PB.registerModuleAnalyses(MAM);
-    // PB.registerCGSCCAnalyses(CGAM);
-    // PB.registerFunctionAnalyses(FAM);
-    // PB.registerLoopAnalyses(LAM);
-    // PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
-
-    // PM = new
-    // llvm::ModulePassManager(PB.buildPerModuleDefaultPipeline(OptimizationLevel::O2,
-    // false)); PM->printPipeline(outs(), [](StringRef ClassName) { return
-    // ClassName; });
     PM->run(*unwrap(M), *MAM);
-
     return 0;
 }
 
@@ -432,10 +411,6 @@ LLVMPY_RunFunctionPassManagerWithRemarks(FunctionPassManager *FPM, Function *F,
     }
     auto optimisationFile = std::move(*setupResult);
 
-    // F->print(outs());
-    // FPM->printPipeline(outs(), [](StringRef ClassName) {
-    //   return ClassName;
-    // });
     FPM->run(*F, *FAM);
 
     F->getContext().setMainRemarkStreamer(nullptr);
@@ -450,25 +425,7 @@ LLVMPY_RunFunctionPassManagerWithRemarks(FunctionPassManager *FPM, Function *F,
 API_EXPORT(int)
 LLVMPY_RunFunctionPassManager(FunctionPassManager *FPM, Function *F,
                               LLVMFunctionAnalysisManager FAM) {
-    // PassBuilder PB;
-    // LoopAnalysisManager LAM;
-    // FunctionAnalysisManager FAM;
-    // CGSCCAnalysisManager CGAM;
-    // ModuleAnalysisManager MAM;
-
-    // // Register all the basic analyses with the managers.
-    // PB.registerModuleAnalyses(MAM);
-    // PB.registerCGSCCAnalyses(CGAM);
-    // PB.registerFunctionAnalyses(FAM);
-    // PB.registerLoopAnalyses(LAM);
-    // PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
-
-    // FPM = new
-    // llvm::FunctionPassManager(PB.buildFunctionSimplificationPipeline(OptimizationLevel::O2,
-    // llvm::ThinOrFullLTOPhase::None)); FPM->printPipeline(outs(), [](StringRef
-    // ClassName) { return ClassName; });
     FPM->run(*F, *FAM);
-
     return 0;
 }
 

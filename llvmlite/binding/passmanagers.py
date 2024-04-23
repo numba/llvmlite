@@ -636,7 +636,6 @@ class ModulePassManager(PassManager):
             ptr = ffi.lib.LLVMPY_CreatePassManager()
         PassManager.__init__(self, ptr)
         self.__MAM__ = ffi.lib.LLVMPY_LLVMModuleAnalysisManagerCreate()
-        print(self.__MAM__)
         self.__TimePasses__ = ffi.lib.LLVMPY_CreateLLVMTimePassesHandler()
 
     def update(self, ptr):

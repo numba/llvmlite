@@ -203,10 +203,6 @@ class _lib_fn_wrapper(object):
 
     def __call__(self, *args, **kwargs):
         with self._lock:
-            print(self._cfn.__name__)
-            print("calling")
-            for arg in args:
-              print(type(arg))
             return self._cfn(*args, **kwargs)
 
 

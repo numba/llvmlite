@@ -5,8 +5,8 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Type.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/TargetParser/Host.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/TargetParser/Host.h"
 #include "llvm/TargetParser/Triple.h"
 
 #include <cstdio>
@@ -126,7 +126,6 @@ API_EXPORT(LLVMTargetRef)
 LLVMPY_GetTargetFromTriple(const char *Triple, const char **ErrOut) {
     char *ErrorMessage;
     LLVMTargetRef T;
-    printf("GetTargetFromTriple %s\n", Triple);
     if (LLVMGetTargetFromTriple(Triple, &T, &ErrorMessage)) {
         *ErrOut = LLVMPY_CreateString(ErrorMessage);
         LLVMDisposeMessage(ErrorMessage);
