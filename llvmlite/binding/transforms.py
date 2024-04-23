@@ -38,7 +38,6 @@ class PassManagerBuilder(ffi.ObjectRef):
     def opt_level(self):
         """
         The general optimization level as an integer between 0 and 3.
-        Whether and how much to optimize for size.  An integer between 0 and 2.
         """
         return self.__opt_level__
 
@@ -105,11 +104,13 @@ class PassManagerBuilder(ffi.ObjectRef):
         return ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize(self.__pipeline_options__, enable)
 
     def _populate_module_pm(self, pm):
-        pm.update(ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager(self, self.__pipeline_options__, OptimizationLevel(ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(c_uint(self.__opt_level__), c_uint(self.__size_level__))), pm, pm.__MAM__, self.__LAM__, self.__FAM__, self.__CGAM__, self.__PIC__))
+        opt_level = OptimizationLevel(ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(c_uint(self.__opt_level__), c_uint(self.__size_level__)))
+        pm.update(ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager(self, self.__pipeline_options__, opt_level, pm, pm.__MAM__, self.__LAM__, self.__FAM__, self.__CGAM__, self.__PIC__))
         pm.__PIC__ = self.__PIC__
 
     def _populate_function_pm(self, pm):
-        pm.update(ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager(self, self.__pipeline_options__, OptimizationLevel(ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(c_uint(self.__opt_level__), c_uint(self.__size_level__))), pm, self.__MAM__, self.__LAM__, pm.__FAM__, self.__CGAM__, self.__PIC__))
+        opt_level = OptimizationLevel(ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(c_uint(self.__opt_level__), c_uint(self.__size_level__)))
+        pm.update(ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager(self, self.__pipeline_options__, opt_level, pm, self.__MAM__, self.__LAM__, pm.__FAM__, self.__CGAM__, self.__PIC__))
         pm.__PIC__ = self.__PIC__
 
     def populate(self, pm):

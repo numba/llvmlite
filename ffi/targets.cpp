@@ -1,4 +1,4 @@
-#include "core.h"
+#include "ffi_types.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -26,9 +26,6 @@ inline LLVMTargetMachineRef wrap(TargetMachine *TM) {
 }
 
 } // namespace llvm
-
-typedef llvm::ModulePassManager *LLVMModulePassManager;
-typedef llvm::FunctionAnalysisManager *LLVMFunctionAnalysisManager;
 
 extern "C" {
 
@@ -248,8 +245,7 @@ LLVMPY_CreateTargetMachineData(LLVMTargetMachineRef TM) {
 
 API_EXPORT(void)
 LLVMPY_AddAnalysisPasses(LLVMTargetMachineRef TM, LLVMPassManagerRef PM) {
-    assert(0 && "Not implemented");
-    LLVMAddAnalysisPasses(TM, PM);
+    assert(0 && "Legacy Pass Manager only");
 }
 
 API_EXPORT(const void *)

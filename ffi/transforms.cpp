@@ -1,13 +1,8 @@
-#include "core.h"
+#include "ffi_types.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/Transforms/PassBuilder.h"
-#include "llvm/IR/PassManager.h"
-#include "llvm/Passes/OptimizationLevel.h"
-#include "llvm/Passes/PassBuilder.h"
 
-#include "llvm-c/Transforms/PassBuilder.h"
 #include "llvm/IR/Verifier.h"
-#include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Support/CBindingWrapping.h"
 
@@ -32,24 +27,6 @@ static llvm::TargetMachine *unwrap(LLVMTargetMachineRef P) {
 
 DEFINE_SIMPLE_CONVERSION_FUNCTIONS(LLVMPassBuilderOptions,
                                    LLVMPassBuilderOptionsRef)
-
-typedef llvm::FunctionPassManager *LLVMFunctionPassManager;
-
-typedef llvm::ModulePassManager *LLVMModulePassManager;
-
-typedef llvm::OptimizationLevel const *LLVMOptimizationLevel;
-
-typedef llvm::PassBuilder *LLVMPassBuilder;
-
-typedef llvm::ModuleAnalysisManager *LLVMModuleAnalysisManager;
-
-typedef llvm::CGSCCAnalysisManager *LLVMCGSCCAnalysisManager;
-
-typedef llvm::FunctionAnalysisManager *LLVMFunctionAnalysisManager;
-
-typedef llvm::LoopAnalysisManager *LLVMLoopAnalysisManager;
-
-typedef llvm::PassInstrumentationCallbacks *LLVMPassInstrumentationCallbacks;
 
 static const LLVMOptimizationLevel mapToLevel(unsigned OptLevel,
                                               unsigned SizeLevel) {

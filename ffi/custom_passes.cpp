@@ -1,5 +1,5 @@
 
-#include "core.h"
+#include "ffi_types.h"
 
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
@@ -1252,10 +1252,6 @@ INITIALIZE_PASS_DEPENDENCY(PostDominatorTreeWrapperPass)
 
 INITIALIZE_PASS_END(RefPruneLegacyPass, "RefPruneLegacyPass",
                     "Prune NRT refops", false, false)
-
-typedef llvm::ModulePassManager *LLVMModulePassManager;
-
-typedef llvm::FunctionAnalysisManager *LLVMFunctionAnalysisManager;
 
 extern "C" {
 

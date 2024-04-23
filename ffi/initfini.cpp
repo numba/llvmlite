@@ -8,28 +8,6 @@
 
 extern "C" {
 
-#define INIT(F)                                                                \
-    API_EXPORT(void) LLVMPY_Initialize##F() {                                  \
-        llvm::initialize##F(*llvm::PassRegistry::getPassRegistry());           \
-    }
-
-INIT(Core)
-INIT(TransformUtils)
-INIT(ScalarOpts)
-// https://github.com/llvm/llvm-project/commit/4153f989bab0f2f300fa8d3001ebeef7b6d9672c
-// INIT(ObjCARCOpts)
-INIT(Vectorization)
-INIT(InstCombine)
-INIT(IPO)
-// INIT(Instrumentation)
-INIT(Analysis)
-// https://reviews.llvm.org/D145043, done in Analysis
-// INIT(IPA)
-INIT(CodeGen)
-INIT(Target)
-
-#undef INIT
-
 API_EXPORT(void)
 LLVMPY_Shutdown() { LLVMShutdown(); }
 

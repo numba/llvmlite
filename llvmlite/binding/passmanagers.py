@@ -613,7 +613,6 @@ class PassManager(ffi.ObjectRef):
         ffi.lib.LLVMPY_LLVMAddLoopRotatePass(self)
 
     def add_target_library_info(self, triple):
-        raise RuntimeError('Should not be called directly.')
         ffi.lib.LLVMPY_AddTargetLibraryInfoPass(self, _encode_string(triple))
 
     def add_instruction_namer_pass(self):

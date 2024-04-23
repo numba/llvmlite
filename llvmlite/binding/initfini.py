@@ -7,7 +7,8 @@ def initialize():
     """
     Initialize the LLVM core.
     """
-    ffi.lib.LLVMPY_InitializeCore()
+    # No longer necessary with NPM
+    # ffi.lib.LLVMPY_InitializeCore()
 
 
 def initialize_all_targets():

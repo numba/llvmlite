@@ -1,16 +1,20 @@
 #include <sstream>
 
-#include "core.h"
+#include "ffi_types.h"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
-#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/raw_ostream.h"
+
+#include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/Remarks/RemarkStreamer.h"
+#include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/Scalar.h"
 
 // From PassBuilder.cpp
 #include "llvm/Analysis/AliasAnalysisEvaluator.h"
@@ -72,7 +76,7 @@
 #include "llvm/CodeGen/TypePromotion.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/Dominators.h"
-#include "llvm/IR/PassManager.h"
+
 #include "llvm/IR/PrintPasses.h"
 #include "llvm/IR/SafepointIRVerifier.h"
 #include "llvm/IR/Verifier.h"
@@ -259,48 +263,7 @@
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
 #include "llvm/Transforms/Vectorize/VectorCombine.h"
 
-#include "llvm/IR/LLVMRemarkStreamer.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Remarks/RemarkStreamer.h"
-#include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/Scalar.h"
-
-#include <llvm/IR/PassTimingInfo.h>
-
-#include <llvm/Analysis/AliasAnalysisEvaluator.h>
-#include <llvm/Analysis/BasicAliasAnalysis.h>
-#include <llvm/Analysis/CFGPrinter.h>
-#include <llvm/Analysis/CallPrinter.h>
-#include <llvm/Analysis/DependenceAnalysis.h>
-#include <llvm/Analysis/DomPrinter.h>
-#include <llvm/Analysis/GlobalsModRef.h>
-#include <llvm/Analysis/IVUsers.h>
-#include <llvm/Analysis/Lint.h>
-#include <llvm/Analysis/Passes.h>
-#include <llvm/Analysis/ScalarEvolutionAliasAnalysis.h>
-#include <llvm/CodeGen/Passes.h>
-#include <llvm/Passes/PassBuilder.h>
-#include <llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h>
-#include <llvm/Transforms/IPO.h>
-#include <llvm/Transforms/IPO/AlwaysInliner.h>
-#include <llvm/Transforms/IPO/ArgumentPromotion.h>
-#include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
-#include <llvm/Transforms/Utils.h>
-#include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
-
 using namespace llvm;
-
-typedef llvm::PassBuilder *LLVMPassBuilder;
-
-typedef llvm::ModulePassManager *LLVMModulePassManager;
-
-typedef llvm::FunctionAnalysisManager *LLVMFunctionAnalysisManager;
-
-typedef llvm::ModuleAnalysisManager *LLVMModuleAnalysisManager;
-
-typedef llvm::PassInstrumentationCallbacks *LLVMPassInstrumentationCallbacks;
-
-typedef llvm::TimePassesHandler *LLVMTimePassesHandler;
 
 /*
  * Exposed API
@@ -621,7 +584,7 @@ LLVMPY_AddJumpThreadingPass(LLVMPassManagerRef PM, int threshold) {
 
 API_EXPORT(void)
 LLVMPY_AddLCSSAPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLCSSAPass());
+    assert(false && "createLCSSAPass is Legacy");
 }
 
 API_EXPORT(void)
@@ -646,7 +609,7 @@ LLVMPY_AddLoopStrengthReducePass(LLVMPassManagerRef PM) {
 
 API_EXPORT(void)
 LLVMPY_AddLoopSimplificationPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLoopSimplifyPass());
+    assert(false && "LoopSimplifyPass is Legacy");
 }
 
 API_EXPORT(void)
@@ -677,12 +640,12 @@ LLVMPY_AddLowerAtomicPass(LLVMPassManagerRef PM) {
 
 API_EXPORT(void)
 LLVMPY_AddLowerInvokePass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLowerInvokePass());
+    assert(false && "LowerInvokePass is Legacy");
 }
 
 API_EXPORT(void)
 LLVMPY_AddLowerSwitchPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLowerSwitchPass());
+    assert(false && "LowerSwitchPass is Legacy");
 }
 
 API_EXPORT(void)

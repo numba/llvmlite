@@ -654,7 +654,7 @@ class TestRISCVABI(BaseTest):
     def test_rv32d_ilp32(self):
         self.check_riscv_target()
         llmod = self.fpadd_ll_module()
-        target = self.riscv_target_machine(features="+f,+d")
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32")
         self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
                          riscv_asm_ilp32)
 
@@ -2517,6 +2517,8 @@ class TestObjectFile(BaseTest):
 
 
 class TestTimePasses(BaseTest):
+    # Existing bug with LLVM where running the same pass manager multiple times
+    # leads to a crash
     @unittest.skip("https://github.com/llvm/llvm-project/issues/58939")
     def test_reporting(self):
         mp = llvm.create_module_pass_manager()
