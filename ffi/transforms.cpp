@@ -122,9 +122,9 @@ LLVMPY_LLVMPassInstrumentationCallbacksDispose(
 API_EXPORT(void)
 LLVMPY_PassManagerBuilderDispose(LLVMPassBuilder PB,
                                  LLVMPassBuilderOptionsRef Options) {
-    // TODO figure out proper deletion
-    // delete(PB);
-    // LLVMDisposePassBuilderOptions(Options);
+    if (PB)
+        delete(PB);
+    LLVMDisposePassBuilderOptions(Options);
 }
 
 // Deprecated: no longer exists in LLVM
