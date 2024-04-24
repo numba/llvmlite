@@ -22,10 +22,10 @@ jobs:
         PYTHON: '3.12'
         CONDA_ENV: cienv
 
-      llvm15:
+      llvm17:
         PYTHON: '3.12'
         CONDA_ENV: cienv
-        LLVM: '15'
+        LLVM: '17'
 
   steps:
 
