@@ -123,7 +123,7 @@ API_EXPORT(void)
 LLVMPY_PassManagerBuilderDispose(LLVMPassBuilder PB,
                                  LLVMPassBuilderOptionsRef Options) {
     if (PB)
-        delete(PB);
+        delete (PB);
     LLVMDisposePassBuilderOptions(Options);
 }
 
