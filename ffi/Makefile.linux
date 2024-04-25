@@ -2,7 +2,7 @@
 CXX ?= g++
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
-CXX_FLTO_FLAGS ?= -flto
+#CXX_FLTO_FLAGS ?= -flto
 LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
 # -fPIC is required when compiling objects for a shared library
 CXX_FPIC_FLAGS ?= -fPIC
@@ -13,7 +13,7 @@ LIBS = $(LLVM_LIBS)
 INCLUDE = core.h
 OBJ = assembly.o bitcode.o core.o initfini.o module.o value.o \
 	  executionengine.o transforms.o passmanagers.o targets.o type.o dylib.o \
-	  linker.o object_file.o custom_passes.o orcjit.o memorymanager.o
+	  linker.o object_file.o custom_passes.o orcjit.o memorymanager.o newpassmanagers.o
 OUTPUT = libllvmlite.so
 
 all: $(OUTPUT)
