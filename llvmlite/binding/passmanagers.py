@@ -104,7 +104,7 @@ class RefPruneSubpasses(IntFlag):
     DIAMOND      = 0b0010    # noqa: E221
     FANOUT       = 0b0100    # noqa: E221
     FANOUT_RAISE = 0b1000
-    REF_INRAISE  = 0b10000
+    REF_INRAISE  = 0b10000   # noqa: E221
     ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE | REF_INRAISE
 
 
