@@ -273,7 +273,21 @@ struct RefPrunePass : public FunctionPass {
                 }
             }
 
-            // First: Remove refops on NULL
+            // 1st: Remove all refops if this is a raising block
+            if (isRaising(&bb)) {
+                for (CallInst *ci : incref_list) {
+                    ci->eraseFromParent();
+                    mutated = true;
+                }
+                for (CallInst *ci : decref_list) {
+                    ci->eraseFromParent();
+                    mutated = true;
+                }
+                incref_list.clear();
+                decref_list.clear();
+            }
+
+            // 2nd: Remove refops on NULL
             for (CallInst *ci : null_list) {
                 ci->eraseFromParent();
                 mutated = true;
@@ -283,7 +297,7 @@ struct RefPrunePass : public FunctionPass {
                 stats_per_bb += 1;
             }
 
-            // Second: Find matching pairs of incref decref
+            // 3rd: Find matching pairs of incref decref
             while (incref_list.size() > 0) {
                 // get an incref
                 CallInst *incref = incref_list.pop_back_val();
