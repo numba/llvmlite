@@ -552,7 +552,7 @@ bb_F:
         mod, stats = self.check(self.fanout_raise_6)
         self.assertEqual(stats.fanout_raise, 7)
 
-    # test case 7 is from https://github.com/numba/llvmlite/issues/1044
+    # test case 7 is from https://github.com/numba/llvmlite/issues/1044 [part1]
     fanout_raise_7 = r"""
 define i32 @main(i8* %ptr, i1 %cond1, i1 %cond2, i8** %excinfo) {
 bb_A:
@@ -579,8 +579,37 @@ common.ret:
 
     def test_fanout_raise_7(self):
         mod, stats = self.check(self.fanout_raise_7)
-        # why 4? Since one removal in bb_C doesn't count into fanout_raise
         self.assertEqual(stats.fanout_raise, 4)
+
+
+class TestRefInRaise(BaseTestByIR):
+    refprune_bitmask = llvm.RefPruneSubpasses.REF_INRAISE
+
+    # test case 1 is from https://github.com/numba/llvmlite/issues/1044 [part2]
+    ref_inraise_1 = r"""
+define i32 @main(i8* %ptr, i1 %cond1, i1 %cond2, i8** %excinfo) {
+bb_A:
+  br i1 %cond1, label %bb_C, label %bb_B
+bb_B:
+  br i1 %cond2, label %bb_D, label %bb_C
+bb_C:
+  %sroa = phi i8* [ %ptr, %bb_A ], [ null, %bb_B ]
+  tail call void @NRT_decref(i8* %sroa)
+  store i8* null, i8** %excinfo, !numba_exception_output !0
+  br label %common.ret
+bb_D:
+  br label %common.ret
+common.ret:
+  %common.ret.op = phi i32 [ 0, %bb_D ], [ 1, %bb_C ]
+  ret i32 %common.ret.op
+}
+!0 = !{i1 1}
+"""
+
+    def test_ref_in_raise_1(self):
+        mod, stats = self.check(self.ref_inraise_1)
+        self.assertEqual(stats.ref_inraise, 1)
+
 
 if __name__ == '__main__':
     unittest.main()
