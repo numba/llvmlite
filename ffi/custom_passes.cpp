@@ -818,16 +818,6 @@ struct RefPrunePass : public FunctionPass {
             return true;
         }
 
-        // If raising_blocks is non-NULL, see if the current node is a block
-        // which raises, if so add to the raising_blocks list, this path is now
-        // finished.
-        // It has to check isRaising first before checking hasDecref,
-        // since we allow raise basic block leak memory.
-        if (raising_blocks && isRaising(cur_node)) {
-            raising_blocks->insert(cur_node);
-            return true; // done for this path
-        }
-
         // Does the current block have a related decref?
         if (hasDecrefInNode(incref, cur_node)) {
             // Add to the list of decref_blocks
@@ -842,6 +832,14 @@ struct RefPrunePass : public FunctionPass {
             // mark head-node as always fail.
             bad_blocks.insert(incref->getParent());
             return false;
+        }
+
+        // If raising_blocks is non-NULL, see if the current node is a block
+        // which raises, if so add to the raising_blocks list, this path is now
+        // finished.
+        if (raising_blocks && isRaising(cur_node)) {
+            raising_blocks->insert(cur_node);
+            return true; // done for this path
         }
 
         // Continue searching by recursing into successors of the current
