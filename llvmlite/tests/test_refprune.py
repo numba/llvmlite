@@ -579,7 +579,8 @@ common.ret:
 
     def test_fanout_raise_7(self):
         mod, stats = self.check(self.fanout_raise_7)
-        self.assertEqual(stats.fanout_raise, 5)
+        # why 4? Since one removal in bb_C doesn't count into fanout_raise
+        self.assertEqual(stats.fanout_raise, 4)
 
 if __name__ == '__main__':
     unittest.main()
