@@ -1186,11 +1186,6 @@ class RefNormalizePass : public PassInfoMixin<RefNormalizePass> {
     }
 };
 
-PreservedAnalyses AAEvaluator::run(Function &F, FunctionAnalysisManager &AM) {
-
-    return PreservedAnalyses::all();
-}
-
 class RefNormalizeLegacyPass : public FunctionPass {
   public:
     static char ID;
