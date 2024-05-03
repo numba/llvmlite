@@ -610,6 +610,7 @@ struct RefPrunePass : public FunctionPass {
 
     bool runRefInRaise(Function &F) {
         bool mutated = false;
+        SmallVector<CallInst *, 10> ref_list;
 
         // walk the basic blocks in Function F.
         for (BasicBlock &bb : F) {
@@ -621,12 +622,17 @@ struct RefPrunePass : public FunctionPass {
                 CallInst *ci;
                 if ((ci = GetRefOpCall(&ii))) {
                     if (IsIncRef(ci) || IsDecRef(ci)) {
-                        ci->eraseFromParent();
-                        mutated = true;
+                        ref_list.push_back(ci);
                     }
                 }
             }
         }
+
+        for (CallInst *ci : ref_list) {
+            ci->eraseFromParent();
+            mutated = true;
+        }
+
         return mutated;
     }
 
