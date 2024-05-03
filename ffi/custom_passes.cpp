@@ -181,8 +181,7 @@ struct RefPrunePass : public FunctionPass {
         Diamond = 0b0010,
         Fanout = 0b0100,
         FanoutRaise = 0b1000,
-        RefInRaise = 0b10000,
-        All = PerBasicBlock | Diamond | Fanout | FanoutRaise | RefInRaise
+        All = PerBasicBlock | Diamond | Fanout | FanoutRaise
     } flags;
 
     RefPrunePass(Subpasses flags = Subpasses::All, size_t subgraph_limit = -1)
@@ -211,8 +210,6 @@ struct RefPrunePass : public FunctionPass {
                 local_mutated |= runFanoutPrune(F, /*prune_raise*/ false);
             if (isSubpassEnabledFor(Subpasses::FanoutRaise))
                 local_mutated |= runFanoutPrune(F, /*prune_raise*/ true);
-            if (isSubpassEnabledFor(Subpasses::RefInRaise))
-                local_mutated |= runRefInRaise(F);
             mutated |= local_mutated;
         } while (local_mutated);
 
@@ -286,7 +283,22 @@ struct RefPrunePass : public FunctionPass {
                 stats_per_bb += 1;
             }
 
-            // Second: Find matching pairs of incref decref
+            // Second: if it's a Raising block, then remove all refs
+            if (isRaising(&bb)) {
+                for (CallInst *ci : incref_list) {
+                    ci->eraseFromParent();
+                    mutated = true;
+                    stats_per_bb += 1;
+                }
+                for (CallInst *ci : decref_list) {
+                    ci->eraseFromParent();
+                    mutated = true;
+                    stats_per_bb += 1;
+                }
+                continue;
+            }
+
+            // Third: Find matching pairs of incref decref
             while (incref_list.size() > 0) {
                 // get an incref
                 CallInst *incref = incref_list.pop_back_val();
@@ -608,34 +620,6 @@ struct RefPrunePass : public FunctionPass {
         return mutated;
     }
 
-    bool runRefInRaise(Function &F) {
-        bool mutated = false;
-        SmallVector<CallInst *, 10> ref_list;
-
-        // walk the basic blocks in Function F.
-        for (BasicBlock &bb : F) {
-            if (!isRaising(&bb)) {
-                continue;
-            }
-            for (Instruction &ii : bb) {
-                // If the instruction is a refop call
-                CallInst *ci;
-                if ((ci = GetRefOpCall(&ii))) {
-                    if (IsIncRef(ci) || IsDecRef(ci)) {
-                        ref_list.push_back(ci);
-                    }
-                }
-            }
-        }
-
-        for (CallInst *ci : ref_list) {
-            ci->eraseFromParent();
-            mutated = true;
-        }
-
-        return mutated;
-    }
-
     /**
      * This searches for the "fan-out" condition and returns true if it is
      * found.
@@ -835,16 +819,6 @@ struct RefPrunePass : public FunctionPass {
             return true;
         }
 
-        // If raising_blocks is non-NULL, see if the current node is a block
-        // which raises, if so add to the raising_blocks list, this path is now
-        // finished.
-        // It has to check isRaising first before checking hasDecref,
-        // since we allow raise basic block leak memory.
-        if (raising_blocks && isRaising(cur_node)) {
-            raising_blocks->insert(cur_node);
-            return true; // done for this path
-        }
-
         // Does the current block have a related decref?
         if (hasDecrefInNode(incref, cur_node)) {
             // Add to the list of decref_blocks
@@ -859,6 +833,14 @@ struct RefPrunePass : public FunctionPass {
             // mark head-node as always fail.
             bad_blocks.insert(incref->getParent());
             return false;
+        }
+
+        // If raising_blocks is non-NULL, see if the current node is a block
+        // which raises, if so add to the raising_blocks list, this path is now
+        // finished.
+        if (raising_blocks && isRaising(cur_node)) {
+            raising_blocks->insert(cur_node);
+            return true; // done for this path
         }
 
         // Continue searching by recursing into successors of the current

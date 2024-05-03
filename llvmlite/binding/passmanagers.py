@@ -9,7 +9,7 @@ from tempfile import mkstemp
 from llvmlite.binding.common import _encode_string
 
 _prunestats = namedtuple('PruneStats',
-                         ('basicblock diamond fanout fanout_raise ref_inraise'))
+                         ('basicblock diamond fanout fanout_raise'))
 
 llvm_version_major = llvm_version_info[0]
 
@@ -25,8 +25,7 @@ class PruneStats(_prunestats):
         return PruneStats(self.basicblock + other.basicblock,
                           self.diamond + other.diamond,
                           self.fanout + other.fanout,
-                          self.fanout_raise + other.fanout_raise,
-                          self.ref_inraise + other.ref_inraise)
+                          self.fanout_raise + other.fanout_raise)
 
     def __sub__(self, other):
         if not isinstance(other, PruneStats):
@@ -36,8 +35,7 @@ class PruneStats(_prunestats):
         return PruneStats(self.basicblock - other.basicblock,
                           self.diamond - other.diamond,
                           self.fanout - other.fanout,
-                          self.fanout_raise - other.fanout_raise,
-                          self.ref_inraise - other.ref_inraise)
+                          self.fanout_raise - other.fanout_raise)
 
 
 class _c_PruneStats(Structure):
@@ -45,8 +43,7 @@ class _c_PruneStats(Structure):
         ('basicblock', c_size_t),
         ('diamond', c_size_t),
         ('fanout', c_size_t),
-        ('fanout_raise', c_size_t),
-        ('ref_inraise', c_size_t)]
+        ('fanout_raise', c_size_t)]
 
 
 def dump_refprune_stats(printout=False):
@@ -60,7 +57,7 @@ def dump_refprune_stats(printout=False):
 
     ffi.lib.LLVMPY_DumpRefPruneStats(byref(stats), do_print)
     return PruneStats(stats.basicblock, stats.diamond, stats.fanout,
-                      stats.fanout_raise, stats.ref_inraise)
+                      stats.fanout_raise)
 
 
 def set_time_passes(enable):
@@ -104,8 +101,7 @@ class RefPruneSubpasses(IntFlag):
     DIAMOND      = 0b0010    # noqa: E221
     FANOUT       = 0b0100    # noqa: E221
     FANOUT_RAISE = 0b1000
-    REF_INRAISE  = 0b10000   # noqa: E221
-    ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE | REF_INRAISE
+    ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 
 class PassManager(ffi.ObjectRef):

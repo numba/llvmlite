@@ -246,6 +246,30 @@ define void @main(i8* %ptr, i8* %other) {
         # not pruned
         self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
 
+    # test case is for removing all refs if the BB is raising
+    per_bb_ir_5 = r"""
+define i32 @main(i8* %ptr, i1 %cond1, i1 %cond2, i8** %excinfo) {
+bb_A:
+  br i1 %cond1, label %bb_C, label %bb_B
+bb_B:
+  br i1 %cond2, label %bb_D, label %bb_C
+bb_C:
+  %sroa = phi i8* [ %ptr, %bb_A ], [ null, %bb_B ]
+  store i8* null, i8** %excinfo, !numba_exception_output !0
+  br label %common.ret
+bb_D:
+  br label %common.ret
+common.ret:
+  %common.ret.op = phi i32 [ 0, %bb_D ], [ 1, %bb_C ]
+  ret i32 %common.ret.op
+}
+!0 = !{i1 1}
+"""
+
+    def test_per_bb_5(self):
+        mod, stats = self.check(self.per_bb_ir_5)
+        self.assertEqual(stats.basicblock, 1)
+
 
 class TestDiamond(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.DIAMOND
@@ -564,7 +588,6 @@ bb_B:
   br i1 %cond2, label %bb_D, label %bb_C
 bb_C:
   %sroa = phi i8* [ %ptr, %bb_A ], [ null, %bb_B ]
-  tail call void @NRT_decref(i8* %sroa)
   store i8* null, i8** %excinfo, !numba_exception_output !0
   br label %common.ret
 bb_D:
@@ -580,39 +603,6 @@ common.ret:
     def test_fanout_raise_7(self):
         mod, stats = self.check(self.fanout_raise_7)
         self.assertEqual(stats.fanout_raise, 4)
-
-
-class TestRefInRaise(BaseTestByIR):
-    refprune_bitmask = llvm.RefPruneSubpasses.REF_INRAISE
-
-    # test case 1 is from https://github.com/numba/llvmlite/issues/1044 [part2]
-    ref_inraise_1 = r"""
-define i32 @main(i8* %ptr, i1 %cond1, i1 %cond2, i8** %excinfo) {
-bb_A:
-  tail call void @NRT_incref(i8* %ptr)
-  tail call void @NRT_incref(i8* %ptr)
-  br i1 %cond1, label %bb_C, label %bb_B
-bb_B:
-  tail call void @NRT_decref(i8* %ptr)
-  br i1 %cond2, label %bb_D, label %bb_C
-bb_C:
-  %sroa = phi i8* [ %ptr, %bb_A ], [ null, %bb_B ]
-  tail call void @NRT_decref(i8* %sroa)
-  store i8* null, i8** %excinfo, !numba_exception_output !0
-  br label %common.ret
-bb_D:
-  tail call void @NRT_decref(i8* %ptr)
-  br label %common.ret
-common.ret:
-  %common.ret.op = phi i32 [ 0, %bb_D ], [ 1, %bb_C ]
-  ret i32 %common.ret.op
-}
-!0 = !{i1 1}
-"""
-
-    def test_ref_in_raise_1(self):
-        mod, stats = self.check(self.ref_inraise_1)
-        self.assertEqual(stats.ref_inraise, 1)
 
 
 if __name__ == '__main__':
