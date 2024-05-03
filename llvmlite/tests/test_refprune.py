@@ -256,7 +256,7 @@ bb_B:
 bb_C:
   %sroa = phi i8* [ %ptr, %bb_A ], [ null, %bb_B ]
   tail call void @NRT_decref(i8* %ptr)
-  tail call void @NRT_decref(i8* %l.sroa.0.0.i)
+  tail call void @NRT_decref(i8* %sroa)
   store i8* null, i8** %excinfo, !numba_exception_output !0
   br label %common.ret
 bb_D:
