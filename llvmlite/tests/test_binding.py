@@ -2612,20 +2612,23 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         pto.opt_level = 3
         pto.inlining_threshold = 2
         pb = llvm.create_pass_builder(tm, pto)
-    
+        pb.close()
+
     def test_close(self):
         pb = self.pb()
         pb.close()
         pb.close()
-    
+
     def test_getMPM(self):
         pb = self.pb()
         mpm = pb.getNewModulePassManager()
+        mpm.run(self.module(), pb)
         pb.close()
 
     def test_getFPM(self):
         pb = self.pb()
         fpm = pb.getNewFunctionPassManager()
+        fpm.run(self.module().get_function("sum"), pb)
         pb.close()
 
 
@@ -2657,7 +2660,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         optimized_asm = str(mod)
         self.assertIn("%.3", orig_asm)
         self.assertNotIn("%.3", optimized_asm)
-    
+
     def test_passes(self):
         mpm = self.pm()
         mpm.add_aa_eval_pass()
@@ -2698,6 +2701,7 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         optimized_asm = str(fun)
         self.assertIn("%.3", orig_asm)
         self.assertNotIn("%.3", optimized_asm)
+
 
 if __name__ == "__main__":
     unittest.main()

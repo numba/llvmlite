@@ -46,6 +46,7 @@ LLVMModulePassManagerRef = _make_opaque_ref("LLVMModulePassManager")
 LLVMFunctionPassManagerRef = _make_opaque_ref("LLVMFunctionPassManager")
 LLVMPassBuilderRef = _make_opaque_ref("LLVMPassBuilder")
 
+
 class _LLVMLock:
     """A Lock to guarantee thread-safety for the LLVM C-API.
 
