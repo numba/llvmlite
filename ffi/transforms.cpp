@@ -122,12 +122,13 @@ LLVMPY_LLVMPassInstrumentationCallbacksDispose(
 API_EXPORT(void)
 LLVMPY_PassManagerBuilderDispose(LLVMPassBuilder PB,
                                  LLVMPassBuilderOptionsRef Options) {
-    if (PB)
+    if (PB) {
         delete (PB);
+        PB = nullptr;
+    }
     LLVMDisposePassBuilderOptions(Options);
 }
 
-// Deprecated: no longer exists in LLVM
 API_EXPORT(LLVMModulePassManager)
 LLVMPY_PassManagerBuilderPopulateModulePassManager(
     LLVMPassBuilder PB, LLVMPassBuilderOptionsRef Options,
@@ -136,8 +137,10 @@ LLVMPY_PassManagerBuilderPopulateModulePassManager(
     LLVMFunctionAnalysisManager FAM, LLVMCGSCCAnalysisManager CGAM,
     LLVMPassInstrumentationCallbacks PIC) {
     // TODO handle PB memory better
-    if (PB)
+    if (PB) {
         delete (PB);
+        PB = nullptr;
+    }
 
     PB = new llvm::PassBuilder(nullptr, unwrap(Options)->PTO,
                                /*Optional<PGOOptions> PGOOpt =*/{}, PIC);
@@ -197,8 +200,10 @@ LLVMPY_PassManagerBuilderPopulateFunctionPassManager(
     LLVMFunctionAnalysisManager FAM, LLVMCGSCCAnalysisManager CGAM,
     LLVMPassInstrumentationCallbacks PIC) {
     // TODO handle PB memory better
-    if (PB)
+    if (PB) {
         delete (PB);
+        PB = nullptr;
+    }
 
     PB = new llvm::PassBuilder(nullptr, unwrap(Options)->PTO,
                                /*Optional<PGOOptions> PGOOpt =*/{}, PIC);
