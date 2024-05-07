@@ -1,9 +1,9 @@
 v0.43.0 (May, 2024)
 --------------------------
 
-Highlights of this release include:
+Highlights of this release are:
 
-- Support for LLVM 15
+- Support for building against LLVM 15.
 - A fix for `refpruning` algorithm in specific `fanout_raise` cases.
 
 Pull-Requests:
