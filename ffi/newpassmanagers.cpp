@@ -18,50 +18,21 @@ using namespace llvm;
 
 namespace llvm {
 
-// TODO: Use DEFINE_SIMPLE_CONVERSION_FUNCTIONS llvm macro
 struct OpaqueModulePassManager;
 typedef OpaqueModulePassManager *LLVMModulePassManagerRef;
-
-static LLVMModulePassManagerRef wrap(ModulePassManager *MPM) {
-    return reinterpret_cast<LLVMModulePassManagerRef>(MPM);
-}
-
-static ModulePassManager *unwrap(LLVMModulePassManagerRef MPM) {
-    return reinterpret_cast<ModulePassManager *>(MPM);
-}
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(ModulePassManager, LLVMModulePassManagerRef)
 
 struct OpaqueFunctionPassManager;
 typedef OpaqueFunctionPassManager *LLVMFunctionPassManagerRef;
-
-static LLVMFunctionPassManagerRef wrap(FunctionPassManager *FPM) {
-    return reinterpret_cast<LLVMFunctionPassManagerRef>(FPM);
-}
-
-static FunctionPassManager *unwrap(LLVMFunctionPassManagerRef FPM) {
-    return reinterpret_cast<FunctionPassManager *>(FPM);
-}
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(FunctionPassManager, LLVMFunctionPassManagerRef)
 
 struct OpaquePassBuilder;
 typedef OpaquePassBuilder *LLVMPassBuilderRef;
-
-static LLVMPassBuilderRef wrap(PassBuilder *FPM) {
-    return reinterpret_cast<LLVMPassBuilderRef>(FPM);
-}
-
-static PassBuilder *unwrap(LLVMPassBuilderRef FPM) {
-    return reinterpret_cast<PassBuilder *>(FPM);
-}
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PassBuilder, LLVMPassBuilderRef)
 
 struct OpaquePipelineTuningOptions;
 typedef OpaquePipelineTuningOptions *LLVMPipelineTuningOptionsRef;
-
-static LLVMPipelineTuningOptionsRef wrap(PipelineTuningOptions *PTO) {
-    return reinterpret_cast<LLVMPipelineTuningOptionsRef>(PTO);
-}
-
-static PipelineTuningOptions *unwrap(LLVMPipelineTuningOptionsRef PTO) {
-    return reinterpret_cast<PipelineTuningOptions *>(PTO);
-}
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PipelineTuningOptions, LLVMPipelineTuningOptionsRef)
 
 static TargetMachine *unwrap(LLVMTargetMachineRef P) {
     return reinterpret_cast<TargetMachine *>(P);
