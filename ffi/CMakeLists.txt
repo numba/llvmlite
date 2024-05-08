@@ -6,6 +6,10 @@ project(llvmlite_ffi)
 
 include(CheckIncludeFiles)
 
+# LLVM-17 needs C++17 to compile successfully
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(NOT MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -g")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g")

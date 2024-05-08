@@ -167,13 +167,9 @@ def main_posix(kind, library_ext):
     else:
         (version, _) = out.split('.', 1)
         version = int(version)
-        if version == 17:
-            msg = ("Building with LLVM 17; note that LLVM 17 support is "
-                   "presently experimental")
-            show_warning(msg)
-        elif version != 14:
+        if version != 17:
 
-            msg = ("Building llvmlite requires LLVM 14, got "
+            msg = ("Building llvmlite requires LLVM 17, got "
                    "{!r}. Be sure to set LLVM_CONFIG to the right executable "
                    "path.\nRead the documentation at "
                    "http://llvmlite.pydata.org/ for more information about "
