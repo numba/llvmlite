@@ -95,8 +95,8 @@ class PipelineTuningOptions(ffi.ObjectRef):
     def __init__(self, ptr=None):
         if ptr is None:
             ptr = ffi.lib.LLVMPY_CreatePipelineTuningOptions()
-            self._opt_level = 3
-            # self._size_level = 0
+            self._opt_level = 2
+            self._size_level = 0
         ffi.ObjectRef.__init__(self, ptr)
 
     @property
@@ -152,19 +152,17 @@ class PipelineTuningOptions(ffi.ObjectRef):
     def opt_level(self, level):
         self._opt_level = level
 
-    # FIXME: Model optimization level combining opt level and
-    # size level similar to llvm
-    # @property
-    # def size_level(self):
-    #     """
-    #     Whether and how much to optimize for size.
-    #     An integer between 0 and 2.
-    #     """
-    #     return self._size_level
+    @property
+    def size_level(self):
+        """
+        Whether and how much to optimize for size.
+        An integer between 0 and 2.
+        """
+        return self._size_level
 
-    # @size_level.setter
-    # def size_level(self, size):
-    #     self._size_level = size
+    @size_level.setter
+    def size_level(self, size):
+        self._size_level = size
 
     def _dispose(self):
         ffi.lib.LLVMPY_DisposePipelineTuningOptions(self)
@@ -182,13 +180,13 @@ class PassBuilder(ffi.ObjectRef):
     def getNewModulePassManager(self):
         return NewModulePassManager(
             ffi.lib.LLVMPY_buildPerModuleDefaultPipeline(
-                self, self._pto.opt_level)
+                self, self._pto.opt_level, self._pto.size_level)
         )
 
     def getNewFunctionPassManager(self):
         return NewFunctionPassManger(
             ffi.lib.LLVMPY_buildFunctionSimplificationPipeline(
-                self, self._pto.opt_level)
+                self, self._pto.opt_level, self._pto.size_level)
         )
 
     def _dispose(self):

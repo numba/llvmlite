@@ -24,7 +24,8 @@ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(ModulePassManager, LLVMModulePassManagerRef)
 
 struct OpaqueFunctionPassManager;
 typedef OpaqueFunctionPassManager *LLVMFunctionPassManagerRef;
-DEFINE_SIMPLE_CONVERSION_FUNCTIONS(FunctionPassManager, LLVMFunctionPassManagerRef)
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(FunctionPassManager,
+                                   LLVMFunctionPassManagerRef)
 
 struct OpaquePassBuilder;
 typedef OpaquePassBuilder *LLVMPassBuilderRef;
@@ -32,7 +33,8 @@ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PassBuilder, LLVMPassBuilderRef)
 
 struct OpaquePipelineTuningOptions;
 typedef OpaquePipelineTuningOptions *LLVMPipelineTuningOptionsRef;
-DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PipelineTuningOptions, LLVMPipelineTuningOptionsRef)
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PipelineTuningOptions,
+                                   LLVMPipelineTuningOptionsRef)
 
 static TargetMachine *unwrap(LLVMTargetMachineRef P) {
     return reinterpret_cast<TargetMachine *>(P);
@@ -251,50 +253,61 @@ LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TM,
     return llvm::wrap(new PassBuilder(target, *pt));
 }
 
+static OptimizationLevel mapLevel(int speed_level, int size_level) {
+    switch (size_level) {
+    case 0:
+        switch (speed_level) {
+        case 0:
+            return OptimizationLevel::O0;
+        case 1:
+            return OptimizationLevel::O1;
+        case 2:
+            return OptimizationLevel::O2;
+        case 3:
+            return OptimizationLevel::O3;
+        default:
+            llvm_unreachable("Invalid optimization level");
+        }
+    case 1:
+        if (speed_level == 1)
+            return OptimizationLevel::Os;
+        llvm_unreachable("Invalid optimization level for size level 1");
+    case 2:
+        if (speed_level == 2)
+            return OptimizationLevel::Oz;
+        llvm_unreachable("Invalid optimization level for size level 2");
+    default:
+        llvm_unreachable("Invalid size level");
+        break;
+    }
+}
+
 API_EXPORT(LLVMModulePassManagerRef)
-LLVMPY_buildPerModuleDefaultPipeline(LLVMPassBuilderRef PBref, int opt_level) {
+LLVMPY_buildPerModuleDefaultPipeline(LLVMPassBuilderRef PBref, int speed_level,
+                                     int size_level) {
 
     PassBuilder *PB = llvm::unwrap(PBref);
-    ModulePassManager *MPM;
-    if (opt_level == 0) {
-        MPM = new ModulePassManager(
-            PB->buildO0DefaultPipeline(OptimizationLevel::O0));
-        return llvm::wrap(MPM);
+    OptimizationLevel OL = mapLevel(speed_level, size_level);
+    if (OL == OptimizationLevel::O0) {
+        return llvm::wrap(
+            new ModulePassManager(PB->buildO0DefaultPipeline(OL)));
     }
 
-    OptimizationLevel lvl;
-    if (opt_level == 1)
-        lvl = OptimizationLevel::O1;
-    else if (opt_level == 2)
-        lvl = OptimizationLevel::O2;
-    else
-        lvl = OptimizationLevel::O3;
-
-    MPM = new ModulePassManager(PB->buildPerModuleDefaultPipeline(lvl));
-    return llvm::wrap(MPM);
+    return llvm::wrap(
+        new ModulePassManager(PB->buildPerModuleDefaultPipeline(OL)));
 }
 
 API_EXPORT(LLVMFunctionPassManagerRef)
 LLVMPY_buildFunctionSimplificationPipeline(LLVMPassBuilderRef PBref,
-                                           int opt_level) {
+                                           int speed_level, int size_level) {
 
     PassBuilder *PB = llvm::unwrap(PBref);
-    FunctionPassManager *FPM;
-    if (opt_level == 0) {
-        FPM = new FunctionPassManager();
-        return llvm::wrap(FPM);
-    }
+    OptimizationLevel OL = mapLevel(speed_level, size_level);
+    if (OL == OptimizationLevel::O0)
+        return llvm::wrap(new FunctionPassManager());
 
-    OptimizationLevel lvl;
-    if (opt_level == 1)
-        lvl = OptimizationLevel::O1;
-    else if (opt_level == 2)
-        lvl = OptimizationLevel::O2;
-    else
-        lvl = OptimizationLevel::O3;
-
-    FPM = new FunctionPassManager(
-        PB->buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+    FunctionPassManager *FPM = new FunctionPassManager(
+        PB->buildFunctionSimplificationPipeline(OL, ThinOrFullLTOPhase::None));
     return llvm::wrap(FPM);
 }
 
