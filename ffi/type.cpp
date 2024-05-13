@@ -101,6 +101,11 @@ LLVMPY_TypeIsStruct(LLVMTypeRef type) {
 }
 
 API_EXPORT(bool)
+LLVMPY_TypeIsFunction(LLVMTypeRef type) {
+    return llvm::unwrap(type)->isFunctionTy();
+}
+
+API_EXPORT(bool)
 LLVMPY_IsFunctionVararg(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
     llvm::FunctionType *ty = llvm::dyn_cast<llvm::FunctionType>(unwrapped);
@@ -154,6 +159,17 @@ LLVMPY_GetElementType(LLVMTypeRef type) {
 #endif
     }
     return nullptr;
+}
+
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GetReturnType(LLVMTypeRef type) { return LLVMGetReturnType(type); }
+
+API_EXPORT(unsigned)
+LLVMPY_CountParamTypes(LLVMTypeRef type) { return LLVMCountParamTypes(type); }
+
+API_EXPORT(void)
+LLVMPY_GetParamTypes(LLVMTypeRef type, LLVMTypeRef *out_types) {
+    LLVMGetParamTypes(type, out_types);
 }
 
 } // end extern "C"

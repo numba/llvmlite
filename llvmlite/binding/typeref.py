@@ -1,7 +1,9 @@
-from ctypes import c_int, c_bool, c_void_p, c_uint64
+from ctypes import c_int, c_bool, c_void_p, c_uint64, c_uint, POINTER
 import enum
 
+from llvmlite import ir
 from llvmlite.binding import ffi
+from llvmlite.binding.as_ir import as_ir, as_ir_context
 
 
 class TypeKind(enum.IntEnum):
@@ -68,6 +70,13 @@ class TypeRef(ffi.ObjectRef):
         return ffi.lib.LLVMPY_TypeIsVector(self)
 
     @property
+    def is_function(self):
+        """
+        Returns true if the type is a function type.
+        """
+        return ffi.lib.LLVMPY_TypeIsFunction(self)
+
+    @property
     def is_function_vararg(self):
         """
         Returns true if a function type accepts a variable number of arguments.
@@ -129,8 +138,34 @@ class TypeRef(ffi.ObjectRef):
         """
         return TypeKind(ffi.lib.LLVMPY_GetTypeKind(self))
 
+    def get_function_parameters(self) -> tuple["TypeRef"]:
+        nparams = ffi.lib.LLVMPY_CountParamTypes(self)
+        out_buffer = (ffi.LLVMTypeRef * nparams)(None)
+        ffi.lib.LLVMPY_GetParamTypes(self, out_buffer)
+        return tuple(map(TypeRef, out_buffer))
+
+    def get_function_return(self) -> "TypeRef":
+        return TypeRef(ffi.lib.LLVMPY_GetReturnType(self))
+
+    def as_ir(self):
+        return as_ir(self)
+
     def __str__(self):
         return ffi.ret_string(ffi.lib.LLVMPY_PrintType(self))
+
+
+@as_ir_context.register
+def _as_ir_context_TypeRef(typeref: TypeRef, context):
+    if typeref.is_function:
+        params = tuple(x.as_ir() for x in typeref.get_function_parameters())
+        ret = typeref.get_function_return().as_ir()
+        is_vararg = typeref.is_function_vararg
+        out_fnty = ir.FunctionType(ret, params, is_vararg)
+        return out_fnty
+    elif typeref.type_kind == TypeKind.integer:
+        return ir.IntType(typeref.type_width)
+    raise TypeError(typeref, typeref.type_kind)
+
 
 
 class _TypeIterator(ffi.ObjectRef):
@@ -176,6 +211,19 @@ ffi.lib.LLVMPY_TypeIsVector.restype = c_bool
 
 ffi.lib.LLVMPY_TypeIsStruct.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_TypeIsStruct.restype = c_bool
+
+ffi.lib.LLVMPY_TypeIsFunction.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_TypeIsFunction.restype = c_bool
+
+ffi.lib.LLVMPY_GetReturnType.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_GetReturnType.restype = ffi.LLVMTypeRef
+
+ffi.lib.LLVMPY_CountParamTypes.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_CountParamTypes.restype = c_uint
+
+ffi.lib.LLVMPY_GetParamTypes.argtypes = [ffi.LLVMTypeRef,
+                                         POINTER(ffi.LLVMTypeRef)]
+ffi.lib.LLVMPY_GetParamTypes.restype = None
 
 ffi.lib.LLVMPY_IsFunctionVararg.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_IsFunctionVararg.restype = c_bool

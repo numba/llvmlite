@@ -1820,6 +1820,22 @@ class TestTypeRef(BaseTest):
         self.assertIn("Type i32 (i32, i32)* is not a function",
                       str(raises.exception))
 
+    def test_function_typeref_as_ir(self):
+        mod = self.module()
+
+        [fn] = list(mod.functions)
+        # .type gives a pointer type, a problem if it's opaque (llvm15+)
+        self.assertEqual(fn.type.type_kind, llvm.TypeKind.pointer)
+        self.assertFalse(fn.type.is_function)
+        # Use .global_value_type instead
+        fnty = fn.global_value_type
+        self.assertEqual(fnty.type_kind, llvm.TypeKind.function)
+        self.assertTrue(fnty.is_function)
+        # Run .as_ir() to get llvmlite.ir.FunctionType
+        tyir = fnty.as_ir()
+        self.assertIsInstance(tyir, ir.FunctionType)
+        self.assertEqual(tyir.args, (ir.IntType(32), ir.IntType(32)))
+        self.assertEqual(tyir.return_type ,ir.IntType(32))
 
 class TestTarget(BaseTest):
 
