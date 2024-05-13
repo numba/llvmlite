@@ -164,7 +164,7 @@ Classes
    * .. method:: add_analysis_passes(pm)
 
         Register analysis passes for this target machine with the
-        :class:`PassManager` instance *pm*.
+        :class:`LegacyPassManager` instance *pm*.
 
    * .. method:: emit_object(module)
 

@@ -1,487 +1,317 @@
-#include <sstream>
-
 #include "core.h"
+#include "llvm-c/TargetMachine.h"
+#include "llvm/Analysis/AliasAnalysisEvaluator.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar/JumpThreading.h"
+#include "llvm/Transforms/Scalar/LoopRotation.h"
+#include "llvm/Transforms/Scalar/LoopUnrollPass.h"
+#include "llvm/Transforms/Scalar/SimplifyCFG.h"
 
-#include "llvm-c/Transforms/IPO.h"
-#include "llvm-c/Transforms/Scalar.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/IR/DiagnosticInfo.h"
-#include "llvm/IR/DiagnosticPrinter.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/IR/Module.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/ToolOutputFile.h"
-#include "llvm/Support/YAMLTraits.h"
-#include "llvm/Support/raw_ostream.h"
-
-#include "llvm-c/Transforms/IPO.h"
-#include "llvm-c/Transforms/Scalar.h"
-#include "llvm/IR/LLVMRemarkStreamer.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Remarks/RemarkStreamer.h"
-#include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/Scalar.h"
-
-#include <llvm/IR/PassTimingInfo.h>
-
-#include <llvm/Analysis/AliasAnalysisEvaluator.h>
-#include <llvm/Analysis/BasicAliasAnalysis.h>
-#include <llvm/Analysis/CFGPrinter.h>
-#include <llvm/Analysis/CallPrinter.h>
-#include <llvm/Analysis/DependenceAnalysis.h>
-#include <llvm/Analysis/DomPrinter.h>
-#include <llvm/Analysis/GlobalsModRef.h>
-#include <llvm/Analysis/IVUsers.h>
-#include <llvm/Analysis/Lint.h>
-#include <llvm/Analysis/Passes.h>
-#include <llvm/Analysis/ScalarEvolutionAliasAnalysis.h>
-#include <llvm/CodeGen/Passes.h>
-#include <llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h>
-#include <llvm/Transforms/IPO.h>
-#include <llvm/Transforms/IPO/AlwaysInliner.h>
-#include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
-#include <llvm/Transforms/Utils.h>
-#include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
 using namespace llvm;
 
 /*
  * Exposed API
  */
 
+namespace llvm {
+
+struct OpaqueModulePassManager;
+typedef OpaqueModulePassManager *LLVMModulePassManagerRef;
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(ModulePassManager, LLVMModulePassManagerRef)
+
+struct OpaqueFunctionPassManager;
+typedef OpaqueFunctionPassManager *LLVMFunctionPassManagerRef;
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(FunctionPassManager,
+                                   LLVMFunctionPassManagerRef)
+
+struct OpaquePassBuilder;
+typedef OpaquePassBuilder *LLVMPassBuilderRef;
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PassBuilder, LLVMPassBuilderRef)
+
+struct OpaquePipelineTuningOptions;
+typedef OpaquePipelineTuningOptions *LLVMPipelineTuningOptionsRef;
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PipelineTuningOptions,
+                                   LLVMPipelineTuningOptionsRef)
+
+static TargetMachine *unwrap(LLVMTargetMachineRef P) {
+    return reinterpret_cast<TargetMachine *>(P);
+}
+
+} // namespace llvm
+
 extern "C" {
 
-API_EXPORT(void)
-LLVMPY_SetTimePasses(bool enable) { TimePassesIsEnabled = enable; }
+// MPM
 
-API_EXPORT(void)
-LLVMPY_ReportAndResetTimings(const char **outmsg) {
-    std::string osbuf;
-    raw_string_ostream os(osbuf);
-    reportAndResetTimings(&os);
-    os.flush();
-    *outmsg = LLVMPY_CreateString(os.str().c_str());
+API_EXPORT(LLVMModulePassManagerRef)
+LLVMPY_CreateModulePassManager() {
+    return llvm::wrap(new PassManager<Module>());
 }
 
-API_EXPORT(LLVMPassManagerRef)
-LLVMPY_CreatePassManager() { return LLVMCreatePassManager(); }
+API_EXPORT(void)
+LLVMPY_RunModulePassManager(LLVMModulePassManagerRef MPMRef,
+                            LLVMPassBuilderRef PBRef, LLVMModuleRef mod) {
+
+    ModulePassManager *MPM = llvm::unwrap(MPMRef);
+    PassBuilder *PB = llvm::unwrap(PBRef);
+    Module *M = llvm::unwrap(mod);
+
+    LoopAnalysisManager LAM;
+    FunctionAnalysisManager FAM;
+    CGSCCAnalysisManager CGAM;
+    ModuleAnalysisManager MAM;
+    PB->registerLoopAnalyses(LAM);
+    PB->registerFunctionAnalyses(FAM);
+    PB->registerCGSCCAnalyses(CGAM);
+    PB->registerModuleAnalyses(MAM);
+    PB->crossRegisterProxies(LAM, FAM, CGAM, MAM);
+    MPM->run(*M, MAM);
+}
 
 API_EXPORT(void)
-LLVMPY_DisposePassManager(LLVMPassManagerRef PM) {
-    return LLVMDisposePassManager(PM);
+LLVMPY_AddVeriferPass(LLVMModulePassManagerRef MPM) {
+    llvm::unwrap(MPM)->addPass(VerifierPass());
 }
 
-API_EXPORT(LLVMPassManagerRef)
-LLVMPY_CreateFunctionPassManager(LLVMModuleRef M) {
-    return LLVMCreateFunctionPassManagerForModule(M);
+API_EXPORT(void)
+LLVMPY_AddAAEvalPass_module(LLVMModulePassManagerRef MPM) {
+    llvm::unwrap(MPM)->addPass(
+        createModuleToFunctionPassAdaptor(AAEvaluator()));
 }
 
-API_EXPORT(int)
-LLVMPY_RunPassManagerWithRemarks(LLVMPassManagerRef PM, LLVMModuleRef M,
-                                 const char *remarks_format,
-                                 const char *remarks_filter,
-                                 const char *record_filename) {
-    auto setupResult = llvm::setupLLVMOptimizationRemarks(
-        unwrap(M)->getContext(), record_filename, remarks_filter,
-        remarks_format, true);
-    if (!setupResult) {
-        return -1;
+API_EXPORT(void)
+LLVMPY_AddSimplifyCFGPass_module(LLVMModulePassManagerRef MPM) {
+    llvm::unwrap(MPM)->addPass(
+        createModuleToFunctionPassAdaptor(SimplifyCFGPass()));
+}
+
+API_EXPORT(void)
+LLVMPY_AddLoopUnrollPass_module(LLVMModulePassManagerRef MPM) {
+    llvm::unwrap(MPM)->addPass(
+        createModuleToFunctionPassAdaptor(LoopUnrollPass()));
+}
+
+API_EXPORT(void)
+LLVMPY_LLVMAddLoopRotatePass_module(LLVMModulePassManagerRef MPM) {
+    llvm::unwrap(MPM)->addPass(createModuleToFunctionPassAdaptor(
+        createFunctionToLoopPassAdaptor(LoopRotatePass())));
+}
+
+API_EXPORT(void)
+LLVMPY_LLVMAddInstructionCombinePass_module(LLVMModulePassManagerRef MPM) {
+    llvm::unwrap(MPM)->addPass(
+        createModuleToFunctionPassAdaptor(InstCombinePass()));
+}
+
+API_EXPORT(void)
+LLVMPY_AddJumpThreadingPass_module(LLVMModulePassManagerRef MPM, int T) {
+    llvm::unwrap(MPM)->addPass(
+        createModuleToFunctionPassAdaptor(JumpThreadingPass(T)));
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeNewModulePassManger(LLVMModulePassManagerRef MPM) {
+    delete llvm::unwrap(MPM);
+}
+
+// FPM
+
+API_EXPORT(LLVMFunctionPassManagerRef)
+LLVMPY_CreateNewFunctionPassManager() {
+    return llvm::wrap(new PassManager<Function>());
+}
+
+API_EXPORT(void)
+LLVMPY_RunFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
+                              LLVMPassBuilderRef PBRef, LLVMValueRef FRef) {
+
+    FunctionPassManager *FPM = llvm::unwrap(FPMRef);
+    PassBuilder *PB = llvm::unwrap(PBRef);
+    Function *F = reinterpret_cast<Function *>(FRef);
+
+    LoopAnalysisManager LAM;
+    FunctionAnalysisManager FAM;
+    CGSCCAnalysisManager CGAM;
+    ModuleAnalysisManager MAM;
+    PB->registerLoopAnalyses(LAM);
+    PB->registerFunctionAnalyses(FAM);
+    PB->registerCGSCCAnalyses(CGAM);
+    PB->registerModuleAnalyses(MAM);
+    PB->crossRegisterProxies(LAM, FAM, CGAM, MAM);
+    FPM->run(*F, FAM);
+}
+
+API_EXPORT(void)
+LLVMPY_AddAAEvalPass_function(LLVMFunctionPassManagerRef FPM) {
+    llvm::unwrap(FPM)->addPass(AAEvaluator());
+}
+
+API_EXPORT(void)
+LLVMPY_AddSimplifyCFGPass_function(LLVMFunctionPassManagerRef FPM) {
+    llvm::unwrap(FPM)->addPass(SimplifyCFGPass());
+}
+
+API_EXPORT(void)
+LLVMPY_AddLoopUnrollPass_function(LLVMFunctionPassManagerRef FPM) {
+    llvm::unwrap(FPM)->addPass(LoopUnrollPass());
+}
+
+API_EXPORT(void)
+LLVMPY_LLVMAddLoopRotatePass_function(LLVMFunctionPassManagerRef FPM) {
+    llvm::unwrap(FPM)->addPass(
+        createFunctionToLoopPassAdaptor(LoopRotatePass()));
+}
+
+API_EXPORT(void)
+LLVMPY_LLVMAddInstructionCombinePass_function(LLVMFunctionPassManagerRef FPM) {
+    llvm::unwrap(FPM)->addPass(InstCombinePass());
+}
+
+API_EXPORT(void)
+LLVMPY_AddJumpThreadingPass_function(LLVMFunctionPassManagerRef FPM, int T) {
+    llvm::unwrap(FPM)->addPass(JumpThreadingPass(T));
+}
+
+API_EXPORT(void)
+LLVMPY_DisposeNewFunctionPassManger(LLVMFunctionPassManagerRef FPM) {
+    delete llvm::unwrap(FPM);
+}
+
+// PTO
+
+API_EXPORT(LLVMPipelineTuningOptionsRef)
+LLVMPY_CreatePipelineTuningOptions() {
+    return llvm::wrap(new PipelineTuningOptions());
+}
+
+API_EXPORT(bool)
+LLVMPY_PTOGetLoopInterleaving(LLVMPipelineTuningOptionsRef PTO) {
+    return llvm::unwrap(PTO)->LoopInterleaving;
+}
+
+API_EXPORT(void)
+LLVMPY_PTOSetLoopInterleaving(LLVMPipelineTuningOptionsRef PTO, bool value) {
+    llvm::unwrap(PTO)->LoopInterleaving = value;
+}
+
+API_EXPORT(bool)
+LLVMPY_PTOGetLoopVectorization(LLVMPipelineTuningOptionsRef PTO) {
+    return llvm::unwrap(PTO)->LoopVectorization;
+}
+
+API_EXPORT(void)
+LLVMPY_PTOSetLoopVectorization(LLVMPipelineTuningOptionsRef PTO, bool value) {
+    llvm::unwrap(PTO)->LoopVectorization = value;
+}
+
+API_EXPORT(bool)
+LLVMPY_PTOGetSLPVectorization(LLVMPipelineTuningOptionsRef PTO) {
+    return llvm::unwrap(PTO)->SLPVectorization;
+}
+
+API_EXPORT(void)
+LLVMPY_PTOSetSLPVectorization(LLVMPipelineTuningOptionsRef PTO, bool value) {
+    llvm::unwrap(PTO)->SLPVectorization = value;
+}
+
+API_EXPORT(bool)
+LLVMPY_PTOGetLoopUnrolling(LLVMPipelineTuningOptionsRef PTO) {
+    return llvm::unwrap(PTO)->LoopUnrolling;
+}
+
+API_EXPORT(void)
+LLVMPY_PTOSetLoopUnrolling(LLVMPipelineTuningOptionsRef PTO, bool value) {
+    llvm::unwrap(PTO)->LoopUnrolling = value;
+}
+
+// FIXME: Available from llvm16
+// API_EXPORT(int)
+// LLVMPY_PTOGetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO) {
+//     return llvm::unwrap(PTO)->InlinerThreshold;
+// }
+
+// API_EXPORT(void)
+// LLVMPY_PTOSetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO, bool value) {
+//     llvm::unwrap(PTO)->InlinerThreshold = value;
+// }
+
+API_EXPORT(void)
+LLVMPY_DisposePipelineTuningOptions(LLVMPipelineTuningOptionsRef PTO) {
+    delete llvm::unwrap(PTO);
+}
+
+// PB
+
+API_EXPORT(LLVMPassBuilderRef)
+LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TM,
+                         LLVMPipelineTuningOptionsRef PTO) {
+    TargetMachine *target = llvm::unwrap(TM);
+    PipelineTuningOptions *pt = llvm::unwrap(PTO);
+    return llvm::wrap(new PassBuilder(target, *pt));
+}
+
+static OptimizationLevel mapLevel(int speed_level, int size_level) {
+    switch (size_level) {
+    case 0:
+        switch (speed_level) {
+        case 0:
+            return OptimizationLevel::O0;
+        case 1:
+            return OptimizationLevel::O1;
+        case 2:
+            return OptimizationLevel::O2;
+        case 3:
+            return OptimizationLevel::O3;
+        default:
+            llvm_unreachable("Invalid optimization level");
+        }
+    case 1:
+        if (speed_level == 1)
+            return OptimizationLevel::Os;
+        llvm_unreachable("Invalid optimization level for size level 1");
+    case 2:
+        if (speed_level == 2)
+            return OptimizationLevel::Oz;
+        llvm_unreachable("Invalid optimization level for size level 2");
+    default:
+        llvm_unreachable("Invalid size level");
+        break;
     }
-    auto optimisationFile = std::move(*setupResult);
-    auto r = LLVMRunPassManager(PM, M);
-
-    unwrap(M)->getContext().setMainRemarkStreamer(nullptr);
-    unwrap(M)->getContext().setLLVMRemarkStreamer(nullptr);
-
-    optimisationFile->keep();
-    optimisationFile->os().flush();
-    return r;
 }
 
-API_EXPORT(int)
-LLVMPY_RunPassManager(LLVMPassManagerRef PM, LLVMModuleRef M) {
-    return LLVMRunPassManager(PM, M);
-}
+API_EXPORT(LLVMModulePassManagerRef)
+LLVMPY_buildPerModuleDefaultPipeline(LLVMPassBuilderRef PBref, int speed_level,
+                                     int size_level) {
 
-API_EXPORT(int)
-LLVMPY_RunFunctionPassManagerWithRemarks(LLVMPassManagerRef PM, LLVMValueRef F,
-                                         const char *remarks_format,
-                                         const char *remarks_filter,
-                                         const char *record_filename) {
-    auto setupResult = llvm::setupLLVMOptimizationRemarks(
-        unwrap(F)->getContext(), record_filename, remarks_filter,
-        remarks_format, true);
-    if (!setupResult) {
-        return -1;
+    PassBuilder *PB = llvm::unwrap(PBref);
+    OptimizationLevel OL = mapLevel(speed_level, size_level);
+    if (OL == OptimizationLevel::O0) {
+        return llvm::wrap(
+            new ModulePassManager(PB->buildO0DefaultPipeline(OL)));
     }
-    auto optimisationFile = std::move(*setupResult);
 
-    auto r = LLVMRunFunctionPassManager(PM, F);
-
-    unwrap(F)->getContext().setMainRemarkStreamer(nullptr);
-    unwrap(F)->getContext().setLLVMRemarkStreamer(nullptr);
-
-    optimisationFile->keep();
-    optimisationFile->os().flush();
-    return r;
-}
-
-API_EXPORT(int)
-LLVMPY_RunFunctionPassManager(LLVMPassManagerRef PM, LLVMValueRef F) {
-    return LLVMRunFunctionPassManager(PM, F);
-}
-
-API_EXPORT(int)
-LLVMPY_InitializeFunctionPassManager(LLVMPassManagerRef FPM) {
-    return LLVMInitializeFunctionPassManager(FPM);
-}
-
-API_EXPORT(int)
-LLVMPY_FinalizeFunctionPassManager(LLVMPassManagerRef FPM) {
-    return LLVMFinalizeFunctionPassManager(FPM);
-}
-
-API_EXPORT(void)
-LLVMPY_AddAAEvalPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createAAEvalPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddBasicAAWrapperPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createBasicAAWrapperPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddDependenceAnalysisPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createDependenceAnalysisWrapperPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddCallGraphDOTPrinterPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createCallGraphDOTPrinterPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddDotDomPrinterPass(LLVMPassManagerRef PM, bool showBody) {
-#if LLVM_VERSION_MAJOR > 14
-    unwrap(PM)->add(showBody ? llvm::createDomPrinterWrapperPassPass()
-                             : llvm::createDomOnlyPrinterWrapperPassPass());
-#else
-    unwrap(PM)->add(showBody ? llvm::createDomPrinterPass()
-                             : llvm::createDomOnlyPrinterPass());
-#endif
-}
-
-API_EXPORT(void)
-LLVMPY_AddGlobalsModRefAAPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createGlobalsAAWrapperPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddDotPostDomPrinterPass(LLVMPassManagerRef PM, bool showBody) {
-#if LLVM_VERSION_MAJOR > 14
-    unwrap(PM)->add(showBody ? llvm::createPostDomPrinterWrapperPassPass()
-                             : llvm::createPostDomOnlyPrinterWrapperPassPass());
-#else
-    unwrap(PM)->add(showBody ? llvm::createPostDomPrinterPass()
-                             : llvm::createPostDomOnlyPrinterPass());
-#endif
-}
-
-API_EXPORT(void)
-LLVMPY_AddCFGPrinterPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createCFGPrinterLegacyPassPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddConstantMergePass(LLVMPassManagerRef PM) {
-    LLVMAddConstantMergePass(PM);
-}
-
-API_EXPORT(void)
-LLVMPY_AddDeadStoreEliminationPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createDeadStoreEliminationPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddReversePostOrderFunctionAttrsPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createReversePostOrderFunctionAttrsPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddDeadArgEliminationPass(LLVMPassManagerRef PM) {
-    LLVMAddDeadArgEliminationPass(PM);
-}
-
-API_EXPORT(void)
-LLVMPY_AddInstructionCountPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createInstCountPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddIVUsersPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createIVUsersPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddLazyValueInfoPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createLazyValueInfoPass());
-}
-API_EXPORT(void)
-LLVMPY_AddLintPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createLintLegacyPassPass());
-}
-API_EXPORT(void)
-LLVMPY_AddModuleDebugInfoPrinterPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createModuleDebugInfoPrinterPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddRegionInfoPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createRegionInfoPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddScalarEvolutionAAPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createSCEVAAWrapperPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddAggressiveDCEPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createAggressiveDCEPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddAlwaysInlinerPass(LLVMPassManagerRef PM, bool insertLifetime) {
-    unwrap(PM)->add(llvm::createAlwaysInlinerLegacyPass(insertLifetime));
-}
-
-#if LLVM_VERSION_MAJOR < 15
-API_EXPORT(void)
-LLVMPY_AddArgPromotionPass(LLVMPassManagerRef PM, unsigned int maxElements) {
-    unwrap(PM)->add(llvm::createArgumentPromotionPass(maxElements));
-}
-#endif
-
-API_EXPORT(void)
-LLVMPY_AddBreakCriticalEdgesPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(llvm::createBreakCriticalEdgesPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddFunctionAttrsPass(LLVMPassManagerRef PM) {
-    LLVMAddFunctionAttrsPass(PM);
-}
-
-API_EXPORT(void)
-LLVMPY_AddFunctionInliningPass(LLVMPassManagerRef PM, int Threshold) {
-    unwrap(PM)->add(createFunctionInliningPass(Threshold));
-}
-
-API_EXPORT(void)
-LLVMPY_AddGlobalOptimizerPass(LLVMPassManagerRef PM) {
-    LLVMAddGlobalOptimizerPass(PM);
-}
-
-API_EXPORT(void)
-LLVMPY_AddGlobalDCEPass(LLVMPassManagerRef PM) { LLVMAddGlobalDCEPass(PM); }
-
-API_EXPORT(void)
-LLVMPY_AddIPSCCPPass(LLVMPassManagerRef PM) { LLVMAddIPSCCPPass(PM); }
-
-API_EXPORT(void)
-LLVMPY_AddDeadCodeEliminationPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createDeadCodeEliminationPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddAggressiveInstructionCombiningPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createAggressiveInstCombinerPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddInternalizePass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createInternalizePass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddJumpThreadingPass(LLVMPassManagerRef PM, int threshold) {
-    unwrap(PM)->add(createJumpThreadingPass(threshold));
-}
-
-API_EXPORT(void)
-LLVMPY_AddLCSSAPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLCSSAPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddLoopDeletionPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLoopDeletionPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddLoopExtractorPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLoopExtractorPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddSingleLoopExtractorPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createSingleLoopExtractorPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddLoopStrengthReducePass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLoopStrengthReducePass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddLoopSimplificationPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLoopSimplifyPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddLoopUnrollPass(LLVMPassManagerRef PM) { LLVMAddLoopUnrollPass(PM); }
-
-API_EXPORT(void)
-LLVMPY_AddLoopUnrollAndJamPass(LLVMPassManagerRef PM) {
-    LLVMAddLoopUnrollAndJamPass(PM);
-}
-
-API_EXPORT(void)
-LLVMPY_AddLoopUnswitchPass(LLVMPassManagerRef PM, bool optimizeForSize,
-                           bool hasBranchDivergence) {
-#if LLVM_VERSION_MAJOR > 14
-    unwrap(PM)->add(createSimpleLoopUnswitchLegacyPass(optimizeForSize));
-#else
-    unwrap(PM)->add(
-        createLoopUnswitchPass(optimizeForSize, hasBranchDivergence));
-#endif
-}
-
-API_EXPORT(void)
-LLVMPY_AddLowerAtomicPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLowerAtomicPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddLowerInvokePass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLowerInvokePass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddLowerSwitchPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createLowerSwitchPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddMemCpyOptimizationPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createMemCpyOptPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddMergeFunctionsPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createMergeFunctionsPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddMergeReturnsPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createUnifyFunctionExitNodesPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddPartialInliningPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createPartialInliningPass());
+    return llvm::wrap(
+        new ModulePassManager(PB->buildPerModuleDefaultPipeline(OL)));
 }
 
-API_EXPORT(void)
-LLVMPY_AddPruneExceptionHandlingPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createPruneEHPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddReassociatePass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createReassociatePass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddDemoteRegisterToMemoryPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createDemoteRegisterToMemoryPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddSinkPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createSinkingPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddStripSymbolsPass(LLVMPassManagerRef PM, bool onlyDebugInfo) {
-    unwrap(PM)->add(createStripSymbolsPass(onlyDebugInfo));
-}
-
-API_EXPORT(void)
-LLVMPY_AddStripDeadDebugInfoPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createStripDeadDebugInfoPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddStripDeadPrototypesPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createStripDeadPrototypesPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddStripDebugDeclarePrototypesPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createStripDebugDeclarePass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddStripNondebugSymbolsPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createStripNonDebugSymbolsPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddTailCallEliminationPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createTailCallEliminationPass());
-}
-
-API_EXPORT(void)
-LLVMPY_AddCFGSimplificationPass(LLVMPassManagerRef PM) {
-    LLVMAddCFGSimplificationPass(PM);
-}
-
-API_EXPORT(void)
-LLVMPY_AddGVNPass(LLVMPassManagerRef PM) { LLVMAddGVNPass(PM); }
-
-API_EXPORT(void)
-LLVMPY_AddInstructionCombiningPass(LLVMPassManagerRef PM) {
-    LLVMAddInstructionCombiningPass(PM);
-}
+API_EXPORT(LLVMFunctionPassManagerRef)
+LLVMPY_buildFunctionSimplificationPipeline(LLVMPassBuilderRef PBref,
+                                           int speed_level, int size_level) {
 
-API_EXPORT(void)
-LLVMPY_AddLICMPass(LLVMPassManagerRef PM) { LLVMAddLICMPass(PM); }
-
-API_EXPORT(void)
-LLVMPY_AddSCCPPass(LLVMPassManagerRef PM) { LLVMAddSCCPPass(PM); }
-
-API_EXPORT(void)
-LLVMPY_AddSROAPass(LLVMPassManagerRef PM) { unwrap(PM)->add(createSROAPass()); }
-
-API_EXPORT(void)
-LLVMPY_AddTypeBasedAliasAnalysisPass(LLVMPassManagerRef PM) {
-    LLVMAddTypeBasedAliasAnalysisPass(PM);
-}
-
-API_EXPORT(void)
-LLVMPY_AddBasicAliasAnalysisPass(LLVMPassManagerRef PM) {
-    LLVMAddBasicAliasAnalysisPass(PM);
-}
+    PassBuilder *PB = llvm::unwrap(PBref);
+    OptimizationLevel OL = mapLevel(speed_level, size_level);
+    if (OL == OptimizationLevel::O0)
+        return llvm::wrap(new FunctionPassManager());
 
-API_EXPORT(void)
-LLVMPY_LLVMAddLoopRotatePass(LLVMPassManagerRef PM) {
-    LLVMAddLoopRotatePass(PM);
+    FunctionPassManager *FPM = new FunctionPassManager(
+        PB->buildFunctionSimplificationPipeline(OL, ThinOrFullLTOPhase::None));
+    return llvm::wrap(FPM);
 }
 
 API_EXPORT(void)
-LLVMPY_AddInstructionNamerPass(LLVMPassManagerRef PM) {
-    unwrap(PM)->add(createInstructionNamerPass());
-}
+LLVMPY_DisposePassBuilder(LLVMPassBuilderRef PB) { delete llvm::unwrap(PB); }
 
 } // end extern "C"
