@@ -27,7 +27,7 @@ source activate $CONDA_ENV
 set -v
 
 # Install llvmdev (separate channel, for now)
-$CONDA_INSTALL -c conda-forge llvmdev="17"
+$CONDA_INSTALL -c conda-forge llvmdev="%LLVM%"
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh

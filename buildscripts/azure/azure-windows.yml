@@ -12,15 +12,19 @@ jobs:
       py39:
         PYTHON: '3.9'
         CONDA_ENV: cienv
+        LLVM: '17'
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
+        LLVM: '17'
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
+        LLVM: '17'
       py312:
         PYTHON: '3.12'
         CONDA_ENV: cienv
+        LLVM: '17'
 
   steps:
 
