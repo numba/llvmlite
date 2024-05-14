@@ -600,6 +600,7 @@ class TestDependencies(BaseTest):
             if not dep.startswith('ld-linux-') and dep not in allowed:
                 self.fail("unexpected dependency %r in %r" % (dep, deps))
 
+
 class TestRISCVABI(BaseTest):
     """
     Test calling convention of floating point arguments of RISC-V
@@ -671,6 +672,7 @@ class TestRISCVABI(BaseTest):
         target = self.riscv_target_machine(features="+f,+d", abiname="ilp32d")
         self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
                          riscv_asm_ilp32d)
+
 
 class TestMisc(BaseTest):
     """
@@ -810,6 +812,7 @@ class TestMisc(BaseTest):
         flags = "-Werror"
         cmdargs = [sys.executable, flags, "-c", code]
         subprocess.check_call(cmdargs)
+
 
 class TestModuleRef(BaseTest):
 
@@ -1008,6 +1011,7 @@ class TestModuleRef(BaseTest):
         cloned = m.clone()
         self.assertIsNot(cloned, m)
         self.assertEqual(cloned.as_bitcode(), m.as_bitcode())
+
 
 class JITTestMixin(object):
     """
@@ -2225,7 +2229,8 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         """Test a specific situation that demonstrate TLI is affecting
         optimization. See https://github.com/numba/numba/issues/8898.
         """
-        # TLI now correctly enabled without requiring any additional LLVM API calls
+        # TLI now correctly enabled without
+        # requiring any additional LLVM API calls
         def run(use_tli):
             mod = llvm.parse_assembly(asm_tli_exp2)
             pm = llvm.ModulePassManager()
@@ -2576,6 +2581,7 @@ class TestLLVMLockCallbacks(BaseTest):
         # Check: removing non-existent callbacks will trigger a ValueError
         with self.assertRaises(ValueError):
             llvm.ffi.unregister_lock_callback(acq, rel)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -557,6 +557,5 @@ bb_F:
         self.assertEqual(stats.fanout_raise, 7)
 
 
-
 if __name__ == '__main__':
     unittest.main()

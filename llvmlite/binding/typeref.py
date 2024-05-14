@@ -82,7 +82,8 @@ class TypeRef(ffi.ObjectRef):
         """
         if not self.is_pointer:
             raise ValueError("Type {} is not a pointer".format(self))
-        raise ValueError("LLVM uses opaque pointers, so this operation is no longer supported")
+        raise ValueError("LLVM uses opaque pointers, "
+                         "so this operation is no longer supported")
 
     @property
     def element_count(self):

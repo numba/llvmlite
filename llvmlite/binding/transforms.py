@@ -1,4 +1,4 @@
-from ctypes import c_uint, c_bool, POINTER, c_char_p
+from ctypes import c_uint, c_bool
 from llvmlite.binding import ffi
 from llvmlite.binding import passmanagers
 
@@ -6,11 +6,13 @@ from llvmlite.binding import passmanagers
 def create_pass_manager_builder():
     return PassManagerBuilder()
 
+
 class OptimizationLevel(ffi.ObjectRef):
     def __init__(self, ptr=None):
         if ptr is None:
             ptr = ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(0, 0)
         ffi.ObjectRef.__init__(self, ptr)
+
 
 class PassManagerBuilder(ffi.ObjectRef):
     __opt_level__ = 0
@@ -32,7 +34,9 @@ class PassManagerBuilder(ffi.ObjectRef):
         self.__FAM__ = ffi.lib.LLVMPY_LLVMFunctionAnalysisManagerCreate()
         self.__CGAM__ = ffi.lib.LLVMPY_LLVMCGSCCAnalysisManagerCreate()
         self.__PIC__ = ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksCreate()
-        self.__pipeline_options__ = ffi.lib.LLVMPY_PassManagerBuilderOptionsCreate()
+        self.__pipeline_options__ = (
+            ffi.lib.LLVMPY_PassManagerBuilderOptionsCreate()
+        )
 
     @property
     def opt_level(self):
@@ -67,29 +71,38 @@ class PassManagerBuilder(ffi.ObjectRef):
     @inlining_threshold.setter
     def inlining_threshold(self, threshold):
         ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold(
-            self.__pipeline_options__, threshold)
+            self.__pipeline_options__, threshold
+        )
 
     @property
     def disable_unroll_loops(self):
         """
         If true, disable loop unrolling.
         """
-        return ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops(self.__pipeline_options__)
+        return ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops(
+            self.__pipeline_options__
+        )
 
     @disable_unroll_loops.setter
     def disable_unroll_loops(self, disable=True):
-        ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops(self.__pipeline_options__, disable)
+        ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops(
+            self.__pipeline_options__, disable
+        )
 
     @property
     def loop_vectorize(self):
         """
         If true, allow vectorizing loops.
         """
-        return ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize(self.__pipeline_options__)
+        return ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize(
+            self.__pipeline_options__
+        )
 
     @loop_vectorize.setter
     def loop_vectorize(self, enable=True):
-        return ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize(self.__pipeline_options__, enable)
+        return ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize(
+            self.__pipeline_options__, enable
+        )
 
     @property
     def slp_vectorize(self):
@@ -97,20 +110,56 @@ class PassManagerBuilder(ffi.ObjectRef):
         If true, enable the "SLP vectorizer", which uses a different algorithm
         from the loop vectorizer.  Both may be enabled at the same time.
         """
-        return ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize(self.__pipeline_options__)
+        return ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize(
+            self.__pipeline_options__
+        )
 
     @slp_vectorize.setter
     def slp_vectorize(self, enable=True):
-        return ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize(self.__pipeline_options__, enable)
+        return ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize(
+            self.__pipeline_options__, enable
+        )
 
     def _populate_module_pm(self, pm):
-        opt_level = OptimizationLevel(ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(c_uint(self.__opt_level__), c_uint(self.__size_level__)))
-        pm.update(ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager(self, self.__pipeline_options__, opt_level, pm, pm.__MAM__, self.__LAM__, self.__FAM__, self.__CGAM__, self.__PIC__))
+        opt_level = OptimizationLevel(
+            ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(
+                c_uint(self.__opt_level__), c_uint(self.__size_level__)
+            )
+        )
+        pm.update(
+            ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager(
+                self,
+                self.__pipeline_options__,
+                opt_level,
+                pm,
+                pm.__MAM__,
+                self.__LAM__,
+                self.__FAM__,
+                self.__CGAM__,
+                self.__PIC__,
+            )
+        )
         pm.__PIC__ = self.__PIC__
 
     def _populate_function_pm(self, pm):
-        opt_level = OptimizationLevel(ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(c_uint(self.__opt_level__), c_uint(self.__size_level__)))
-        pm.update(ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager(self, self.__pipeline_options__, opt_level, pm, self.__MAM__, self.__LAM__, pm.__FAM__, self.__CGAM__, self.__PIC__))
+        opt_level = OptimizationLevel(
+            ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel(
+                c_uint(self.__opt_level__), c_uint(self.__size_level__)
+            )
+        )
+        pm.update(
+            ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager(
+                self,
+                self.__pipeline_options__,
+                opt_level,
+                pm,
+                self.__MAM__,
+                self.__LAM__,
+                pm.__FAM__,
+                self.__CGAM__,
+                self.__PIC__,
+            )
+        )
         pm.__PIC__ = self.__PIC__
 
     def populate(self, pm):
@@ -122,7 +171,9 @@ class PassManagerBuilder(ffi.ObjectRef):
             raise TypeError(pm)
 
     def _dispose(self):
-        self._capi.LLVMPY_PassManagerBuilderDispose(self, self.__pipeline_options__)
+        self._capi.LLVMPY_PassManagerBuilderDispose(
+            self, self.__pipeline_options__
+        )
 
 
 # ============================================================================
@@ -130,14 +181,26 @@ class PassManagerBuilder(ffi.ObjectRef):
 
 ffi.lib.LLVMPY_PassManagerBuilderCreate.restype = ffi.LLVMPassBuilder
 
-ffi.lib.LLVMPY_LLVMModuleAnalysisManagerCreate.restype = ffi.LLVMModuleAnalysisManager
-ffi.lib.LLVMPY_LLVMLoopAnalysisManagerCreate.restype = ffi.LLVMLoopAnalysisManager
-ffi.lib.LLVMPY_LLVMFunctionAnalysisManagerCreate.restype = ffi.LLVMFunctionAnalysisManager
-ffi.lib.LLVMPY_LLVMCGSCCAnalysisManagerCreate.restype = ffi.LLVMCGSCCAnalysisManager
-ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksCreate.restype = ffi.LLVMPassInstrumentationCallbacks
+ffi.lib.LLVMPY_LLVMModuleAnalysisManagerCreate.restype = (
+    ffi.LLVMModuleAnalysisManager
+)
+ffi.lib.LLVMPY_LLVMLoopAnalysisManagerCreate.restype = (
+    ffi.LLVMLoopAnalysisManager
+)
+ffi.lib.LLVMPY_LLVMFunctionAnalysisManagerCreate.restype = (
+    ffi.LLVMFunctionAnalysisManager
+)
+ffi.lib.LLVMPY_LLVMCGSCCAnalysisManagerCreate.restype = (
+    ffi.LLVMCGSCCAnalysisManager
+)
+ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksCreate.restype = (
+    ffi.LLVMPassInstrumentationCallbacks
+)
 
 
-ffi.lib.LLVMPY_PassManagerBuilderOptionsCreate.restype = ffi.LLVMPassBuilderOptionsRef
+ffi.lib.LLVMPY_PassManagerBuilderOptionsCreate.restype = (
+    ffi.LLVMPassBuilderOptionsRef
+)
 
 ffi.lib.LLVMPY_PassManagerBuilderDispose.argtypes = [
     ffi.LLVMPassBuilder,
@@ -156,7 +219,9 @@ ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager.argtypes = [
     ffi.LLVMPassInstrumentationCallbacks,
 ]
 
-ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager.restype = ffi.LLVMModulePassManager
+ffi.lib.LLVMPY_PassManagerBuilderPopulateModulePassManager.restype = (
+    ffi.LLVMModulePassManager
+)
 
 ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager.argtypes = [
     ffi.LLVMPassBuilder,
@@ -170,35 +235,41 @@ ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager.argtypes = [
     ffi.LLVMPassInstrumentationCallbacks,
 ]
 
-ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager.restype = ffi.LLVMFunctionPassManager
+ffi.lib.LLVMPY_PassManagerBuilderPopulateFunctionPassManager.restype = (
+    ffi.LLVMFunctionPassManager
+)
 
-ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel.restype = ffi.LLVMOptimizationLevel
+ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel.restype = (
+    ffi.LLVMOptimizationLevel
+)
 ffi.lib.LLVMPY_PassManagerCreateOptimizationLevel.argtypes = [c_uint, c_uint]
 
 # Unsigned int PassManagerBuilder properties
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold,
-              ):
+for _func in (ffi.lib.LLVMPY_PassManagerBuilderUseInlinerWithThreshold,):
     _func.argtypes = [ffi.LLVMPassBuilderOptionsRef, c_uint]
-    
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel,
-              ffi.lib.LLVMPY_PassManagerBuilderGetSizeLevel,
-              ):
+
+for _func in (
+    ffi.lib.LLVMPY_PassManagerBuilderGetOptLevel,
+    ffi.lib.LLVMPY_PassManagerBuilderGetSizeLevel,
+):
     _func.argtypes = [ffi.LLVMOptimizationLevel]
     _func.restype = c_uint
 
 # Boolean PassManagerBuilder properties
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops,
-              ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize,
-              ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize,
-              ):
+for _func in (
+    ffi.lib.LLVMPY_PassManagerBuilderSetDisableUnrollLoops,
+    ffi.lib.LLVMPY_PassManagerBuilderSetLoopVectorize,
+    ffi.lib.LLVMPY_PassManagerBuilderSetSLPVectorize,
+):
     _func.argtypes = [ffi.LLVMPassBuilderOptionsRef, c_bool]
 
-for _func in (ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
-              ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize,
-              ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize,
-              ):
+for _func in (
+    ffi.lib.LLVMPY_PassManagerBuilderGetDisableUnrollLoops,
+    ffi.lib.LLVMPY_PassManagerBuilderGetLoopVectorize,
+    ffi.lib.LLVMPY_PassManagerBuilderGetSLPVectorize,
+):
     _func.argtypes = [ffi.LLVMPassBuilderOptionsRef]
     _func.restype = c_bool

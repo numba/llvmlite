@@ -51,9 +51,10 @@ LLVMCGSCCAnalysisManager = _make_opaque_ref("LLVMCGSCCAnalysisManager")
 LLVMFunctionAnalysisManager = _make_opaque_ref("LLVMFunctionAnalysisManager")
 LLVMLoopAnalysisManager = _make_opaque_ref("LLVMLoopAnalysisManager")
 LLVMLoopAnalysisManager = _make_opaque_ref("LLVMLoopAnalysisManager")
-LLVMPassInstrumentationCallbacks = _make_opaque_ref("LLVMPassInstrumentationCallbacks")
+LLVMPassInstrumentationCallbacks = _make_opaque_ref(
+    "LLVMPassInstrumentationCallbacks"
+)
 LLVMTimePassesHandler = _make_opaque_ref("LLVMTimePassesHandler")
- 
 
 
 class _LLVMLock:
