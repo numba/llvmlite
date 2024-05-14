@@ -1837,6 +1837,7 @@ class TestTypeRef(BaseTest):
         self.assertEqual(tyir.args, (ir.IntType(32), ir.IntType(32)))
         self.assertEqual(tyir.return_type ,ir.IntType(32))
 
+
 class TestTarget(BaseTest):
 
     def test_from_triple(self):

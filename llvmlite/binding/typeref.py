@@ -1,4 +1,3 @@
-import typing as _tp
 from ctypes import c_int, c_bool, c_void_p, c_uint64, c_uint, POINTER
 import enum
 
