@@ -3,9 +3,9 @@
 
 #include "core.h"
 
-#include "llvm/Passes/PassBuilder.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/PassTimingInfo.h"
+#include "llvm/Passes/PassBuilder.h"
 
 typedef llvm::PassBuilder *LLVMPassBuilder;
 
