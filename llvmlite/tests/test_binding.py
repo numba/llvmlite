@@ -1859,44 +1859,46 @@ class TestTypeRef(BaseTest):
         makers = {}
 
         def maker_half():
-            return ir.HalfType()
+            yield ir.HalfType()
 
         makers['half'] = maker_half
 
         def maker_float():
-            return ir.FloatType()
+            yield ir.FloatType()
 
         makers['float'] = maker_float
 
         def maker_double():
-            return ir.DoubleType()
+            yield ir.DoubleType()
 
         makers['double'] = maker_double
 
         def maker_integer():
-            return ir.IntType(32)
+            yield ir.IntType(32)
 
         makers['integer'] = maker_integer
 
         def maker_pointer():
-            return ir.PointerType(ir.IntType(8))
+            yield ir.PointerType(ir.IntType(8))
 
         makers['pointer'] = maker_pointer
 
         def maker_array():
-            return ir.ArrayType(ir.IntType(8), 123)
+            yield ir.ArrayType(ir.IntType(8), 123)
 
         makers['array'] = maker_array
 
         def maker_vector():
-            return ir.VectorType(ir.FloatType(), 2)
+            yield ir.VectorType(ir.FloatType(), 2)
 
         makers['vector'] = maker_vector
 
         def maker_struct():
             # XXX what about packed?
             # XXX what about identified struct?
-            return ir.LiteralStructType([ir.FloatType(), ir.IntType(64)])
+            yield ir.LiteralStructType([ir.FloatType(), ir.IntType(64)])
+            yield ir.LiteralStructType([ir.FloatType(), ir.IntType(64)],
+                                       packed=True)
 
         makers['struct'] = maker_struct
 
@@ -1907,17 +1909,17 @@ class TestTypeRef(BaseTest):
         for type_kind, irtype in _TypeKindToIRType.items():
             if type_kind.name in skipped:
                 continue
-            with self.subTest(f"{type_kind!s} -> {irtype}"):
-                irmod = ir.Module()
-                maker = makers[type_kind.name]
-                ty = maker()
-                ir.GlobalVariable(irmod, ty, name='gv')
-                asm = str(irmod)
-                mod = llvm.parse_assembly(asm)
-                gv = mod.get_global_variable("gv")
-                gvty = gv.global_value_type
-                self.assertEqual(gvty.as_ir(), ty)
-                self.assertIsInstance(gvty.as_ir(), irtype)
+            for ty in makers[type_kind.name]():
+                with self.subTest(f"{type_kind!s} -> {ty}"):
+                    irmod = ir.Module()
+                    ir.GlobalVariable(irmod, ty, name='gv')
+                    asm = str(irmod)
+                    mod = llvm.parse_assembly(asm)
+                    gv = mod.get_global_variable("gv")
+                    gvty = gv.global_value_type
+                    got = gvty.as_ir()
+                    self.assertEqual(got, ty)
+                    self.assertIsInstance(got, irtype)
 
 
 class TestTarget(BaseTest):

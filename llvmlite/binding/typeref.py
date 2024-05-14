@@ -152,6 +152,18 @@ class TypeRef(ffi.ObjectRef):
         """
         return TypeKind(ffi.lib.LLVMPY_GetTypeKind(self))
 
+    @property
+    def is_packed_struct(self):
+        return ffi.lib.LLVMPY_IsPackedStruct(self)
+
+    @property
+    def is_literal_struct(self):
+        return ffi.lib.LLVMPY_IsLiteralStruct(self)
+
+    @property
+    def is_opaque_struct(self):
+        return ffi.lib.LLVMPY_IsOpaqueStruct(self)
+
     def get_function_parameters(self) -> tuple["TypeRef"]:
         nparams = ffi.lib.LLVMPY_CountParamTypes(self)
         if nparams > 0:
@@ -224,6 +236,15 @@ ffi.lib.LLVMPY_TypeIsStruct.restype = c_bool
 
 ffi.lib.LLVMPY_TypeIsFunction.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_TypeIsFunction.restype = c_bool
+
+ffi.lib.LLVMPY_IsPackedStruct.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_IsPackedStruct.restype = c_bool
+
+ffi.lib.LLVMPY_IsOpaqueStruct.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_IsOpaqueStruct.restype = c_bool
+
+ffi.lib.LLVMPY_IsLiteralStruct.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_IsLiteralStruct.restype = c_bool
 
 ffi.lib.LLVMPY_GetReturnType.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetReturnType.restype = ffi.LLVMTypeRef

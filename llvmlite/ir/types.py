@@ -607,8 +607,7 @@ class LiteralStructType(BaseStructType):
     @classmethod
     def from_llvm(cls, typeref, ir_ctx=None):
         elems = [el.as_ir() for el in typeref.elements]
-        # XXX: what about "packed"?
-        return cls(elems)
+        return cls(elems, typeref.is_packed_struct)
 
 
 class IdentifiedStructType(BaseStructType):
