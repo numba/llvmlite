@@ -29,7 +29,7 @@ class NewModulePassManager(ffi.ObjectRef):
         ffi.ObjectRef.__init__(self, ptr)
 
     def run(self, module, pb):
-        ffi.lib.LLVMPY_NMPRun_module(self, pb, module)
+        ffi.lib.LLVMPY_RunNewModulePassManager(self, pb, module)
 
     def addVerifier(self):
         ffi.lib.LLVMPY_AddVeriferPass(self)
@@ -71,7 +71,7 @@ class NewFunctionPassManger(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddSimplifyCFGPass_function(self)
 
     def run(self, fun, pb):
-        ffi.lib.LLVMPY_NMPRun_function(self, pb, fun)
+        ffi.lib.LLVMPY_RunNewFunctionPassManager(self, pb, fun)
 
     def add_loop_unroll_pass(self):
         ffi.lib.LLVMPY_AddLoopUnrollPass_function(self)
@@ -200,7 +200,7 @@ class PassBuilder(ffi.ObjectRef):
 
 ffi.lib.LLVMPY_CreateNewModulePassManager.restype = ffi.LLVMModulePassManagerRef
 
-ffi.lib.LLVMPY_NMPRun_module.argtypes = [ffi.LLVMModulePassManagerRef,
+ffi.lib.LLVMPY_RunNewModulePassManager.argtypes = [ffi.LLVMModulePassManagerRef,
                                          ffi.LLVMPassBuilderRef,
                                          ffi.LLVMModuleRef,]
 
@@ -227,7 +227,7 @@ ffi.lib.LLVMPY_DisposeNewModulePassManger.argtypes = [
 ffi.lib.LLVMPY_CreateNewFunctionPassManager.restype = \
     ffi.LLVMFunctionPassManagerRef
 
-ffi.lib.LLVMPY_NMPRun_function.argtypes = [ffi.LLVMFunctionPassManagerRef,
+ffi.lib.LLVMPY_RunNewFunctionPassManager.argtypes = [ffi.LLVMFunctionPassManagerRef,
                                            ffi.LLVMPassBuilderRef,
                                            ffi.LLVMValueRef,]
 
