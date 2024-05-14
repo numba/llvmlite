@@ -1837,6 +1837,81 @@ class TestTypeRef(BaseTest):
         self.assertEqual(tyir.args, (ir.IntType(32), ir.IntType(32)))
         self.assertEqual(tyir.return_type ,ir.IntType(32))
 
+    def test_return_type_typeref_as_ir(self):
+        # Test .as_ir() to on return-type of llvmlite.ir.FunctionType.
+        # Some types can only be used there.
+        fnty = ir.FunctionType(ir.VoidType(), ())
+        irmod = ir.Module()
+        fn = ir.Function(irmod, fnty, "foo")
+        mod = self.module(str(irmod))
+        fn = mod.get_function("foo")
+        gvty = fn.global_value_type
+        self.assertEqual(fnty.return_type, gvty.as_ir().return_type)
+
+    def test_global_typeref_as_ir(self):
+        from llvmlite.binding.typeref import _TypeKindToIRType
+
+        skipped = {
+            "function",
+            "void", # cannot make global of void
+        }
+
+        makers = {}
+
+        def maker_half():
+            return ir.HalfType()
+
+        makers['half'] = maker_half
+
+        def maker_float():
+            return ir.FloatType()
+
+        makers['float'] = maker_float
+
+        def maker_double():
+            return ir.DoubleType()
+
+        makers['double'] = maker_double
+
+        def maker_integer():
+            return ir.IntType(32)
+
+        makers['integer'] = maker_integer
+
+        def maker_pointer():
+            return ir.PointerType(ir.IntType(8))
+
+        makers['pointer'] = maker_pointer
+
+        def maker_array():
+            return ir.ArrayType(ir.IntType(8), 123)
+
+        makers['array'] = maker_array
+
+        def maker_vector():
+            return ir.VectorType(ir.FloatType(), 2)
+
+        makers['vector'] = maker_vector
+
+        # Ensure that number of supported TypeKind matches number of makers
+        self.assertEqual({x.name for x in _TypeKindToIRType.keys()},
+                         set(makers.keys()) | set(skipped))
+
+        for type_kind, irtype in _TypeKindToIRType.items():
+            if type_kind.name in skipped:
+                continue
+            with self.subTest(f"{type_kind!s} -> {irtype}"):
+                irmod = ir.Module()
+                maker = makers[type_kind.name]
+                ty = maker()
+                ir.GlobalVariable(irmod, ty, name='gv')
+                asm = str(irmod)
+                mod = self.module(asm)
+                gv = mod.get_global_variable("gv")
+                gvty = gv.global_value_type
+                self.assertEqual(gvty.as_ir(), ty)
+                self.assertIsInstance(gvty.as_ir(), irtype)
+
 
 class TestTarget(BaseTest):
 

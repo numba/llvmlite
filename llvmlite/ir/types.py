@@ -146,6 +146,13 @@ class PointerType(Type):
     def intrinsic_name(self):
         return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx=None):
+        # opaque pointer will change this
+        [pointee] = typeref.elements
+        # addrspace is not handled
+        return cls(pointee.as_ir())
+
 
 class VoidType(Type):
     """
@@ -160,6 +167,10 @@ class VoidType(Type):
 
     def __hash__(self):
         return hash(VoidType)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx=None):
+        return cls()
 
 
 class FunctionType(Type):
@@ -313,6 +324,10 @@ class _BaseFloatType(Type):
     def _create_instance(cls):
         cls._instance_cache = super(_BaseFloatType, cls).__new__(cls)
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx=None):
+        return cls()
+
 
 class HalfType(_BaseFloatType):
     """
@@ -425,6 +440,13 @@ class VectorType(Type):
         return [Constant(ty, val) if not isinstance(val, Value) else val
                 for ty, val in zip(self.elements, values)]
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx=None):
+        [elemtyperef] = typeref.elements
+        elemty = elemtyperef.as_ir()
+        count = typeref.element_count
+        return cls(elemty, count)
+
 
 class Aggregate(Type):
     """
@@ -482,6 +504,13 @@ class ArrayType(Aggregate):
         itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
                                  for x in value])
         return "[{0}]".format(itemstring)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx=None):
+        [elemtyperef] = typeref.elements
+        elemty = elemtyperef.as_ir()
+        count = typeref.element_count
+        return cls(elemty, count)
 
 
 class BaseStructType(Aggregate):

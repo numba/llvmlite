@@ -30,6 +30,20 @@ class TypeKind(enum.IntEnum):
     x86_amx = 19
 
 
+_TypeKindToIRType = {
+    # All TypeKind here must have a TypeRef.as_ir() implementation
+    TypeKind.void: ir.VoidType,
+    TypeKind.half: ir.HalfType,
+    TypeKind.float: ir.FloatType,
+    TypeKind.double: ir.DoubleType,
+    TypeKind.integer: ir.IntType,
+    TypeKind.function: ir.FunctionType,
+    TypeKind.pointer: ir.PointerType,
+    TypeKind.array: ir.ArrayType,
+    TypeKind.vector: ir.VectorType,
+}
+
+
 class TypeRef(ffi.ObjectRef):
     """A weak reference to a LLVM type
     """
@@ -139,21 +153,25 @@ class TypeRef(ffi.ObjectRef):
 
     def get_function_parameters(self) -> tuple["TypeRef"]:
         nparams = ffi.lib.LLVMPY_CountParamTypes(self)
-        out_buffer = (ffi.LLVMTypeRef * nparams)(None)
-        ffi.lib.LLVMPY_GetParamTypes(self, out_buffer)
-        return tuple(map(TypeRef, out_buffer))
+        if nparams > 0:
+            out_buffer = (ffi.LLVMTypeRef * nparams)(None)
+            ffi.lib.LLVMPY_GetParamTypes(self, out_buffer)
+            return tuple(map(TypeRef, out_buffer))
+        else:
+            return ()
 
     def get_function_return(self) -> "TypeRef":
         return TypeRef(ffi.lib.LLVMPY_GetReturnType(self))
 
     def as_ir(self, ir_ctx: ir.Context = None):
         ir_ctx = ir_ctx or ir.global_context
-        if self.type_kind == TypeKind.function:
-            return ir.FunctionType.from_llvm(self, ir_ctx)
-        elif self.type_kind == TypeKind.integer:
-            return ir.IntType.from_llvm(self, ir_ctx)
+        try:
+            cls = _TypeKindToIRType[self.type_kind]
+        except KeyError:
+            msg = f"as_ir() unsupported for TypeRef of {self.type_kind}"
+            raise TypeError(msg)
         else:
-            raise NotImplementedError(self.type_kind)
+            return cls.from_llvm(self, ir_ctx)
 
     def __str__(self):
         return ffi.ret_string(ffi.lib.LLVMPY_PrintType(self))
