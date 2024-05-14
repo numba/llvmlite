@@ -207,7 +207,8 @@ class FunctionType(Type):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
-        params = tuple(x.as_ir(ir_ctx=ir_ctx) for x in typeref.get_function_parameters())
+        params = tuple(x.as_ir(ir_ctx=ir_ctx)
+                       for x in typeref.get_function_parameters())
         ret = typeref.get_function_return().as_ir(ir_ctx=ir_ctx)
         is_vararg = typeref.is_function_vararg
         return cls(ret, params, is_vararg)

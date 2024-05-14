@@ -1837,9 +1837,8 @@ class TestTypeRef(BaseTest):
         self.assertEqual(tyir.args, (ir.IntType(32), ir.IntType(32)))
         self.assertEqual(tyir.return_type ,ir.IntType(32))
 
-    def test_return_type_typeref_as_ir(self):
-        # Test .as_ir() to on return-type of llvmlite.ir.FunctionType.
-        # Some types can only be used there.
+    def test_void_typeref_as_ir(self):
+        # Void type can only be used as return-type of llvmlite.ir.FunctionType.
         fnty = ir.FunctionType(ir.VoidType(), ())
         irmod = ir.Module()
         fn = ir.Function(irmod, fnty, "foo")
@@ -1854,8 +1853,8 @@ class TestTypeRef(BaseTest):
         ctx = ir.Context()
 
         skipped = {
-            "function",
-            "void", # cannot make global of void
+            "function",     # tested in test_function_typeref_as_ir
+            "void",         # tested in test_void_typeref_as_ir
         }
 
         makers = {}
