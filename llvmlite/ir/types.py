@@ -598,7 +598,8 @@ class LiteralStructType(BaseStructType):
 
     def __eq__(self, other):
         if isinstance(other, LiteralStructType):
-            return self.elements == other.elements
+            return (self.elements == other.elements
+                    and self.packed == other.packed)
 
     def __hash__(self):
         return hash(LiteralStructType)
