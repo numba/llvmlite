@@ -205,7 +205,7 @@ tm = llvm.Target.from_default_triple().create_target_machine()
 pto = llvm.create_pipeline_options()
 pto.opt_level = 2    # similarly more properties can be set
 pb = llvm.create_pass_builder(tm, pto)
-npm_o2 = pb.getModulePassManager()
+npm_o2 = pb.getNewModulePassManager()
 npm_o2.run(llmod, pb)
 print(llmod)
 
@@ -224,7 +224,7 @@ pto.opt_level = 3    # similarly more properties can be set
 pb = llvm.create_pass_builder(tm, pto)
 fun = llmod2.get_function("n")
 print(fun)
-fpm = pb.getFunctionPassManager()
+fpm = pb.getNewFunctionPassManager()
 fpm.add_simplify_cfg_pass()
 fpm.run(fun, pb)
 print(fun)
@@ -238,7 +238,7 @@ pto = llvm.create_pipeline_options()
 pto.opt_level = 3    # similarly more properties can be set
 pto.loop_unrolling = False
 pb = llvm.create_pass_builder(tm, pto)
-npm = pb.getModulePassManager()
+npm = pb.getNewModulePassManager()
 # # Inplace optimize the IR module
 npm.run(llmod_unroll, pb)
 print(llmod_unroll)

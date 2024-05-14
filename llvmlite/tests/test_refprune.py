@@ -116,7 +116,7 @@ class TestRefPrunePass(TestCase):
 
     def apply_refprune(self, irmod):
         mod = llvm.parse_assembly(str(irmod))
-        pm = llvm.LegacyModulePassManager()
+        pm = llvm.ModulePassManager()
         pm.add_refprune_pass()
         pm.run(mod)
         return mod
@@ -168,7 +168,7 @@ declare void @NRT_decref(i8* %ptr)
 
     def check(self, irmod, subgraph_limit=None):
         mod = llvm.parse_assembly(f"{self.prologue}\n{irmod}")
-        pm = llvm.LegacyModulePassManager()
+        pm = llvm.ModulePassManager()
         if subgraph_limit is None:
             pm.add_refprune_pass(self.refprune_bitmask)
         else:

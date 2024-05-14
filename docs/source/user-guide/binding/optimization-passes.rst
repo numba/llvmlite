@@ -8,10 +8,10 @@ LLVM gives you the opportunity to fine-tune optimization passes.
 Optimization passes are managed by a pass manager. There are 2
 kinds of pass managers:
 
-* :class:`LegacyFunctionPassManager`, for optimizations that work on
+* :class:`FunctionPassManager`, for optimizations that work on
   single functions.
 
-* :class:`LegacyModulePassManager`, for optimizations that work on
+* :class:`ModulePassManager`, for optimizations that work on
   whole modules.
 
 To instantiate either of these pass managers, you first need to
@@ -62,7 +62,7 @@ create and configure a :class:`PassManagerBuilder`.
           be enabled at the same time.
 
 
-.. class:: LegacyPassManager
+.. class:: PassManager
 
    The base class for pass managers. Use individual ``add_*``
    methods or :meth:`PassManagerBuilder.populate` to add
@@ -141,7 +141,7 @@ create and configure a :class:`PassManagerBuilder`.
 
         See `instnamer pass documentation <http://llvm.org/docs/Passes.html#instnamer-assign-names-to-anonymous-instructions>`_.
 
-.. class:: LegacyModulePassManager()
+.. class:: ModulePassManager()
 
    Create a new pass manager to run optimization passes on a
    module.
@@ -156,7 +156,7 @@ create and configure a :class:`PassManagerBuilder`.
       Returns ``True`` if the optimizations made any modification
       to the module. Otherwise returns ``False``.
 
-.. class:: LegacyFunctionPassManager(module)
+.. class:: FunctionPassManager(module)
 
    Create a new pass manager to run optimization passes on a
    function of the given *module*, a :class:`ModuleRef` instance.
