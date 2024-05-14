@@ -194,6 +194,13 @@ class FunctionType(Type):
     def __hash__(self):
         return hash(FunctionType)
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx=None):
+        params = tuple(x.as_ir() for x in typeref.get_function_parameters())
+        ret = typeref.get_function_return().as_ir()
+        is_vararg = typeref.is_function_vararg
+        return cls(ret, params, is_vararg)
+
 
 class IntType(Type):
     """
@@ -252,6 +259,10 @@ class IntType(Type):
     @property
     def intrinsic_name(self):
         return str(self)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx=None):
+        return IntType(typeref.type_width)
 
 
 def _as_float(value):

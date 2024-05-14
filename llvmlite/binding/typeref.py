@@ -1,9 +1,9 @@
+import typing as _tp
 from ctypes import c_int, c_bool, c_void_p, c_uint64, c_uint, POINTER
 import enum
 
 from llvmlite import ir
 from llvmlite.binding import ffi
-from llvmlite.binding.as_ir import as_ir, as_ir_context
 
 
 class TypeKind(enum.IntEnum):
@@ -147,25 +147,17 @@ class TypeRef(ffi.ObjectRef):
     def get_function_return(self) -> "TypeRef":
         return TypeRef(ffi.lib.LLVMPY_GetReturnType(self))
 
-    def as_ir(self):
-        return as_ir(self)
+    def as_ir(self, ir_ctx: ir.Context = None):
+        ir_ctx = ir_ctx or ir.global_context
+        if self.type_kind == TypeKind.function:
+            return ir.FunctionType.from_llvm(self, ir_ctx)
+        elif self.type_kind == TypeKind.integer:
+            return ir.IntType.from_llvm(self, ir_ctx)
+        else:
+            raise NotImplementedError(self.type_kind)
 
     def __str__(self):
         return ffi.ret_string(ffi.lib.LLVMPY_PrintType(self))
-
-
-@as_ir_context.register
-def _as_ir_context_TypeRef(typeref: TypeRef, context):
-    if typeref.is_function:
-        params = tuple(x.as_ir() for x in typeref.get_function_parameters())
-        ret = typeref.get_function_return().as_ir()
-        is_vararg = typeref.is_function_vararg
-        out_fnty = ir.FunctionType(ret, params, is_vararg)
-        return out_fnty
-    elif typeref.type_kind == TypeKind.integer:
-        return ir.IntType(typeref.type_width)
-    raise TypeError(typeref, typeref.type_kind)
-
 
 
 class _TypeIterator(ffi.ObjectRef):
