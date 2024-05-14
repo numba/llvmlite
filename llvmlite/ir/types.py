@@ -147,11 +147,11 @@ class PointerType(Type):
         return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
 
     @classmethod
-    def from_llvm(cls, typeref, ir_ctx=None):
+    def from_llvm(cls, typeref, ir_ctx):
         # opaque pointer will change this
         [pointee] = typeref.elements
         # addrspace is not handled
-        return cls(pointee.as_ir())
+        return cls(pointee.as_ir(ir_ctx=ir_ctx))
 
 
 class VoidType(Type):
@@ -169,7 +169,7 @@ class VoidType(Type):
         return hash(VoidType)
 
     @classmethod
-    def from_llvm(cls, typeref, ir_ctx=None):
+    def from_llvm(cls, typeref, ir_ctx):
         return cls()
 
 
@@ -206,9 +206,9 @@ class FunctionType(Type):
         return hash(FunctionType)
 
     @classmethod
-    def from_llvm(cls, typeref, ir_ctx=None):
-        params = tuple(x.as_ir() for x in typeref.get_function_parameters())
-        ret = typeref.get_function_return().as_ir()
+    def from_llvm(cls, typeref, ir_ctx):
+        params = tuple(x.as_ir(ir_ctx=ir_ctx) for x in typeref.get_function_parameters())
+        ret = typeref.get_function_return().as_ir(ir_ctx=ir_ctx)
         is_vararg = typeref.is_function_vararg
         return cls(ret, params, is_vararg)
 
@@ -272,7 +272,7 @@ class IntType(Type):
         return str(self)
 
     @classmethod
-    def from_llvm(cls, typeref, ir_ctx=None):
+    def from_llvm(cls, typeref, ir_ctx):
         return IntType(typeref.type_width)
 
 
@@ -325,7 +325,7 @@ class _BaseFloatType(Type):
         cls._instance_cache = super(_BaseFloatType, cls).__new__(cls)
 
     @classmethod
-    def from_llvm(cls, typeref, ir_ctx=None):
+    def from_llvm(cls, typeref, ir_ctx):
         return cls()
 
 
@@ -441,9 +441,9 @@ class VectorType(Type):
                 for ty, val in zip(self.elements, values)]
 
     @classmethod
-    def from_llvm(cls, typeref, ir_ctx=None):
+    def from_llvm(cls, typeref, ir_ctx):
         [elemtyperef] = typeref.elements
-        elemty = elemtyperef.as_ir()
+        elemty = elemtyperef.as_ir(ir_ctx=ir_ctx)
         count = typeref.element_count
         return cls(elemty, count)
 
@@ -506,9 +506,9 @@ class ArrayType(Aggregate):
         return "[{0}]".format(itemstring)
 
     @classmethod
-    def from_llvm(cls, typeref, ir_ctx=None):
+    def from_llvm(cls, typeref, ir_ctx):
         [elemtyperef] = typeref.elements
-        elemty = elemtyperef.as_ir()
+        elemty = elemtyperef.as_ir(ir_ctx=ir_ctx)
         count = typeref.element_count
         return cls(elemty, count)
 
@@ -576,6 +576,14 @@ class BaseStructType(Aggregate):
         else:
             return textrepr
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        if typeref.is_literal_struct:
+            elems = [el.as_ir(ir_ctx=ir_ctx) for el in typeref.elements]
+            return cls(elems, typeref.is_packed_struct)
+        else:
+            return ir_ctx.get_identified_type(typeref.name)
+
 
 class LiteralStructType(BaseStructType):
     """
@@ -603,11 +611,6 @@ class LiteralStructType(BaseStructType):
 
     def __hash__(self):
         return hash(LiteralStructType)
-
-    @classmethod
-    def from_llvm(cls, typeref, ir_ctx=None):
-        elems = [el.as_ir() for el in typeref.elements]
-        return cls(elems, typeref.is_packed_struct)
 
 
 class IdentifiedStructType(BaseStructType):
@@ -648,7 +651,8 @@ class IdentifiedStructType(BaseStructType):
 
     def __eq__(self, other):
         if isinstance(other, IdentifiedStructType):
-            return self.name == other.name
+            return (self.name == other.name
+                    and self.packed == other.packed)
 
     def __hash__(self):
         return hash(IdentifiedStructType)

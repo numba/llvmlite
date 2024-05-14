@@ -172,4 +172,13 @@ LLVMPY_GetParamTypes(LLVMTypeRef type, LLVMTypeRef *out_types) {
     LLVMGetParamTypes(type, out_types);
 }
 
+API_EXPORT(bool)
+LLVMPY_IsPackedStruct(LLVMTypeRef type) { return LLVMIsPackedStruct(type); }
+
+API_EXPORT(bool)
+LLVMPY_IsOpaqueStruct(LLVMTypeRef type) { return LLVMIsOpaqueStruct(type); }
+
+API_EXPORT(bool)
+LLVMPY_IsLiteralStruct(LLVMTypeRef type) { return LLVMIsLiteralStruct(type); }
+
 } // end extern "C"

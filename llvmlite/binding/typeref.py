@@ -176,8 +176,7 @@ class TypeRef(ffi.ObjectRef):
     def get_function_return(self) -> "TypeRef":
         return TypeRef(ffi.lib.LLVMPY_GetReturnType(self))
 
-    def as_ir(self, ir_ctx: ir.Context = None):
-        ir_ctx = ir_ctx or ir.global_context
+    def as_ir(self, ir_ctx: ir.Context):
         try:
             cls = _TypeKindToIRType[self.type_kind]
         except KeyError:

@@ -1832,7 +1832,7 @@ class TestTypeRef(BaseTest):
         self.assertEqual(fnty.type_kind, llvm.TypeKind.function)
         self.assertTrue(fnty.is_function)
         # Run .as_ir() to get llvmlite.ir.FunctionType
-        tyir = fnty.as_ir()
+        tyir = fnty.as_ir(ir.global_context)
         self.assertIsInstance(tyir, ir.FunctionType)
         self.assertEqual(tyir.args, (ir.IntType(32), ir.IntType(32)))
         self.assertEqual(tyir.return_type ,ir.IntType(32))
@@ -1846,10 +1846,12 @@ class TestTypeRef(BaseTest):
         mod = self.module(str(irmod))
         fn = mod.get_function("foo")
         gvty = fn.global_value_type
-        self.assertEqual(fnty.return_type, gvty.as_ir().return_type)
+        self.assertEqual(fnty.return_type,
+                         gvty.as_ir(ir.global_context).return_type)
 
     def test_global_typeref_as_ir(self):
         from llvmlite.binding.typeref import _TypeKindToIRType
+        ctx = ir.Context()
 
         skipped = {
             "function",
@@ -1880,6 +1882,12 @@ class TestTypeRef(BaseTest):
 
         def maker_pointer():
             yield ir.PointerType(ir.IntType(8))
+            # opaque struct ptr
+            yield ctx.get_identified_type("myclass").as_pointer()
+            # named struct with defined body
+            myclass2 = ctx.get_identified_type("myclass2")
+            myclass2.set_body(ir.IntType(8))
+            yield myclass2.as_pointer()
 
         makers['pointer'] = maker_pointer
 
@@ -1894,8 +1902,6 @@ class TestTypeRef(BaseTest):
         makers['vector'] = maker_vector
 
         def maker_struct():
-            # XXX what about packed?
-            # XXX what about identified struct?
             yield ir.LiteralStructType([ir.FloatType(), ir.IntType(64)])
             yield ir.LiteralStructType([ir.FloatType(), ir.IntType(64)],
                                        packed=True)
@@ -1906,18 +1912,19 @@ class TestTypeRef(BaseTest):
         self.assertEqual({x.name for x in _TypeKindToIRType.keys()},
                          set(makers.keys()) | set(skipped))
 
+        # Test each type-kind
         for type_kind, irtype in _TypeKindToIRType.items():
             if type_kind.name in skipped:
                 continue
             for ty in makers[type_kind.name]():
                 with self.subTest(f"{type_kind!s} -> {ty}"):
-                    irmod = ir.Module()
+                    irmod = ir.Module(context=ctx)
                     ir.GlobalVariable(irmod, ty, name='gv')
                     asm = str(irmod)
                     mod = llvm.parse_assembly(asm)
                     gv = mod.get_global_variable("gv")
                     gvty = gv.global_value_type
-                    got = gvty.as_ir()
+                    got = gvty.as_ir(ir.Context())  # fresh context
                     self.assertEqual(got, ty)
                     self.assertIsInstance(got, irtype)
 
