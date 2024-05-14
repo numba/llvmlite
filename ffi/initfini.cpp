@@ -1,31 +1,12 @@
 #include "llvm-c/Core.h"
-#include "llvm-c/Initialization.h"
 #include "llvm-c/Target.h"
 
 #include "core.h"
 #include "llvm/Config/llvm-config.h"
+#include "llvm/InitializePasses.h"
+#include "llvm/PassRegistry.h"
 
 extern "C" {
-
-#define INIT(F)                                                                \
-    API_EXPORT(void) LLVMPY_Initialize##F() {                                  \
-        LLVMInitialize##F(LLVMGetGlobalPassRegistry());                        \
-    }
-
-INIT(Core)
-INIT(TransformUtils)
-INIT(ScalarOpts)
-INIT(ObjCARCOpts)
-INIT(Vectorization)
-INIT(InstCombine)
-INIT(IPO)
-// INIT(Instrumentation)
-INIT(Analysis)
-INIT(IPA)
-INIT(CodeGen)
-INIT(Target)
-
-#undef INIT
 
 API_EXPORT(void)
 LLVMPY_Shutdown() { LLVMShutdown(); }

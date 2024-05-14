@@ -151,6 +151,8 @@ class TargetData(ffi.ObjectRef):
         """
         Get ABI size of pointee type of LLVM pointer type *ty*.
         """
+        raise RuntimeError("Opaque pointers means pointee "
+                           "information cannot be queried")
         size = ffi.lib.LLVMPY_ABISizeOfElementType(self, ty)
         if size == -1:
             raise RuntimeError("Not a pointer type: %s" % (ty,))
@@ -160,10 +162,18 @@ class TargetData(ffi.ObjectRef):
         """
         Get minimum ABI alignment of pointee type of LLVM pointer type *ty*.
         """
+        raise RuntimeError("Opaque pointers means pointee "
+                           "information cannot be queried")
         size = ffi.lib.LLVMPY_ABIAlignmentOfElementType(self, ty)
         if size == -1:
             raise RuntimeError("Not a pointer type: %s" % (ty,))
         return size
+
+    def get_abi_alignment(self, ty):
+        """
+        Get minimum ABI alignment of pointee type of LLVM pointer type *ty*.
+        """
+        return ffi.lib.LLVMPY_ABIAlignmentOfType(self, ty)
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
@@ -380,6 +390,10 @@ ffi.lib.LLVMPY_ABIAlignmentOfElementType.argtypes = [ffi.LLVMTargetDataRef,
                                                      ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_ABIAlignmentOfElementType.restype = c_longlong
 
+ffi.lib.LLVMPY_ABIAlignmentOfType.argtypes = [ffi.LLVMTargetDataRef,
+                                              ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ABIAlignmentOfType.restype = c_longlong
+
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTargetFromTriple.restype = ffi.LLVMTargetRef
 
@@ -422,7 +436,7 @@ ffi.lib.LLVMPY_SetTargetMachineAsmVerbosity.argtypes = [
 
 ffi.lib.LLVMPY_AddAnalysisPasses.argtypes = [
     ffi.LLVMTargetMachineRef,
-    ffi.LLVMPassManagerRef,
+    ffi.LLVMModulePassManager,
 ]
 
 ffi.lib.LLVMPY_TargetMachineEmitToMemory.argtypes = [

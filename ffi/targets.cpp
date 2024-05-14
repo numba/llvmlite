@@ -1,13 +1,13 @@
-#include "core.h"
+#include "ffi_types.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Type.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/TargetParser/Host.h"
+#include "llvm/TargetParser/Triple.h"
 
 #include <cstdio>
 #include <cstring>
@@ -102,7 +102,6 @@ LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     llvm::Type *tp = llvm::unwrap(Ty);
     if (!tp->isPointerTy())
         return -1;
-    tp = tp->getPointerElementType();
     return (long long)LLVMABISizeOfType(TD, llvm::wrap(tp));
 }
 
@@ -111,7 +110,12 @@ LLVMPY_ABIAlignmentOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     llvm::Type *tp = llvm::unwrap(Ty);
     if (!tp->isPointerTy())
         return -1;
-    tp = tp->getPointerElementType();
+    return (long long)LLVMABIAlignmentOfType(TD, llvm::wrap(tp));
+}
+
+API_EXPORT(long long)
+LLVMPY_ABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
+    llvm::Type *tp = llvm::unwrap(Ty);
     return (long long)LLVMABIAlignmentOfType(TD, llvm::wrap(tp));
 }
 
@@ -178,7 +182,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
             cm = CodeModel::Large;
     }
 
-    Optional<Reloc::Model> rm;
+    std::optional<Reloc::Model> rm;
     std::string rms(RelocModel);
     if (rms == "static")
         rm = Reloc::Static;
@@ -241,7 +245,7 @@ LLVMPY_CreateTargetMachineData(LLVMTargetMachineRef TM) {
 
 API_EXPORT(void)
 LLVMPY_AddAnalysisPasses(LLVMTargetMachineRef TM, LLVMPassManagerRef PM) {
-    LLVMAddAnalysisPasses(TM, PM);
+    assert(0 && "Legacy Pass Manager only");
 }
 
 API_EXPORT(const void *)
@@ -265,9 +269,12 @@ LLVMPY_HasSVMLSupport(void) {
 }
 
 API_EXPORT(void)
-LLVMPY_AddTargetLibraryInfoPass(LLVMPassManagerRef PM, const char *TripleStr) {
+LLVMPY_AddTargetLibraryInfoPass(LLVMFunctionAnalysisManager FAM,
+                                const char *TripleStr) {
     using namespace llvm;
-    unwrap(PM)->add(new TargetLibraryInfoWrapperPass(Triple(TripleStr)));
+    Triple T(TripleStr);
+    TargetLibraryInfoImpl *TLII = new TargetLibraryInfoImpl(T);
+    FAM->registerPass([&] { return TargetLibraryAnalysis(*TLII); });
 }
 
 } // end extern "C"

@@ -8,20 +8,19 @@ jobs:
       py39:
         PYTHON: '3.9'
         CONDA_ENV: cienv
+        LLVM: '17'
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
+        LLVM: '17'
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
+        LLVM: '17'
       py312:
         PYTHON: '3.12'
         CONDA_ENV: cienv
-
-      llvm15:
-        PYTHON: '3.12'
-        CONDA_ENV: cienv
-        LLVM: '15'
+        LLVM: '17'
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
@@ -32,20 +31,24 @@ jobs:
         PYTHON: '3.9'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
+        LLVM: '17'
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
+        LLVM: '17'
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
         RUN_CLANG_FORMAT: yes
+        LLVM: '17'
       py312:
         PYTHON: '3.12'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
         RUN_CLANG_FORMAT: yes
+        LLVM: '17'
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
@@ -54,28 +57,27 @@ jobs:
         PYTHON: '3.9'
         CONDA_ENV: cienv
         WHEEL: 'yes'
+        LLVM: '17'
       py310_wheel:
         PYTHON: '3.10'
         CONDA_ENV: cienv
         WHEEL: 'yes'
+        LLVM: '17'
       py311_wheel:
         PYTHON: '3.11'
         CONDA_ENV: cienv
         WHEEL: 'yes'
+        LLVM: '17'
       py312_wheel:
         PYTHON: '3.12'
         CONDA_ENV: cienv
         WHEEL: 'yes'
+        LLVM: '17'
 
       py39_docs:
         PYTHON: '3.9'
         CONDA_ENV: cienv
         BUILD_DOCS: 'yes'
-
-      llvm15:
-        PYTHON: '3.12'
-        CONDA_ENV: cienv
-        LLVM: '15'
 
 - template: buildscripts/azure/azure-windows.yml
   parameters:

@@ -60,34 +60,6 @@ def dump_refprune_stats(printout=False):
                       stats.fanout_raise)
 
 
-def set_time_passes(enable):
-    """Enable or disable the pass timers.
-
-    Parameters
-    ----------
-    enable : bool
-        Set to True to enable the pass timers.
-        Set to False to disable the pass timers.
-    """
-    ffi.lib.LLVMPY_SetTimePasses(c_bool(enable))
-
-
-def report_and_reset_timings():
-    """Returns the pass timings report and resets the LLVM internal timers.
-
-    Pass timers are enabled by ``set_time_passes()``. If the timers are not
-    enabled, this function will return an empty string.
-
-    Returns
-    -------
-    res : str
-        LLVM generated timing report.
-    """
-    with ffi.OutputString() as buf:
-        ffi.lib.LLVMPY_ReportAndResetTimings(buf)
-        return str(buf)
-
-
 def create_module_pass_manager():
     return ModulePassManager()
 
@@ -651,6 +623,49 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddInstructionNamerPass(self)
 
+
+class ModulePassManager(PassManager):
+
+    __MAM__ = ffi.LLVMModuleAnalysisManager
+    __PIC__ = ffi.LLVMPassInstrumentationCallbacks
+    __TimePasses__ = ffi.LLVMTimePassesHandler
+
+    def __init__(self, ptr=None):
+        if ptr is None:
+            ptr = ffi.lib.LLVMPY_CreatePassManager()
+        PassManager.__init__(self, ptr)
+        self.__MAM__ = ffi.lib.LLVMPY_LLVMModuleAnalysisManagerCreate()
+        self.__TimePasses__ = ffi.lib.LLVMPY_CreateLLVMTimePassesHandler()
+
+    def update(self, ptr):
+        PassManager.__init__(self, ptr)
+
+    def set_time_passes(self, enable):
+        """Enable or disable the pass timers.
+
+        Parameters
+        ----------
+        enable : bool
+            Set to True to enable the pass timers.
+            Set to False to disable the pass timers.
+        """
+        ffi.lib.LLVMPY_SetTimePasses(self.__TimePasses__, self.__PIC__)
+
+    def report_and_reset_timings(self):
+        """Returns the pass timings report and resets the LLVM internal timers.
+
+        Pass timers are enabled by ``set_time_passes()``. If the timers are not
+        enabled, this function will return an empty string.
+
+        Returns
+        -------
+        res : str
+            LLVM generated timing report.
+        """
+        with ffi.OutputString() as buf:
+            ffi.lib.LLVMPY_ReportAndResetTimings(self.__TimePasses__, buf)
+            return str(buf)
+
     # Non-standard LLVM passes
 
     def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL,
@@ -670,14 +685,6 @@ class PassManager(ffi.ObjectRef):
         iflags = RefPruneSubpasses(subpasses_flags)
         ffi.lib.LLVMPY_AddRefPrunePass(self, iflags, subgraph_limit)
 
-
-class ModulePassManager(PassManager):
-
-    def __init__(self, ptr=None):
-        if ptr is None:
-            ptr = ffi.lib.LLVMPY_CreatePassManager()
-        PassManager.__init__(self, ptr)
-
     def run(self, module, remarks_file=None, remarks_format='yaml',
             remarks_filter=''):
         """
@@ -695,10 +702,10 @@ class ModulePassManager(PassManager):
             The filter that should be applied to the remarks output.
         """
         if remarks_file is None:
-            return ffi.lib.LLVMPY_RunPassManager(self, module)
+            return ffi.lib.LLVMPY_RunPassManager(self, module, self.__MAM__)
         else:
             r = ffi.lib.LLVMPY_RunPassManagerWithRemarks(
-                self, module, _encode_string(remarks_format),
+                self, module, self.__MAM__, _encode_string(remarks_format),
                 _encode_string(remarks_filter),
                 _encode_string(remarks_file))
             if r == -1:
@@ -734,11 +741,22 @@ class ModulePassManager(PassManager):
 
 
 class FunctionPassManager(PassManager):
+    __FAM__ = ffi.LLVMFunctionAnalysisManager
+    __PIC__ = ffi.LLVMPassInstrumentationCallbacks
+    __TimePasses__ = ffi.LLVMTimePassesHandler
+
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeFunctionPassManager(self)
 
     def __init__(self, module):
-        ptr = ffi.lib.LLVMPY_CreateFunctionPassManager(module)
+        ptr = ffi.lib.LLVMPY_CreateFunctionPassManager()
         self._module = module
         module._owned = True
+        PassManager.__init__(self, ptr)
+        self.__FAM__ = ffi.lib.LLVMPY_LLVMFunctionAnalysisManagerCreate()
+        self.__TimePasses__ = ffi.lib.LLVMPY_CreateLLVMTimePassesHandler()
+
+    def update(self, ptr):
         PassManager.__init__(self, ptr)
 
     def initialize(self):
@@ -754,6 +772,32 @@ class FunctionPassManager(PassManager):
         any changes (?).
         """
         return ffi.lib.LLVMPY_FinalizeFunctionPassManager(self)
+
+    def set_time_passes(self, enable):
+        """Enable or disable the pass timers.
+
+        Parameters
+        ----------
+        enable : bool
+            Set to True to enable the pass timers.
+            Set to False to disable the pass timers.
+        """
+        ffi.lib.LLVMPY_SetTimePasses(self.__TimePasses__, self.__PIC__)
+
+    def report_and_reset_timings(self):
+        """Returns the pass timings report and resets the LLVM internal timers.
+
+        Pass timers are enabled by ``set_time_passes()``. If the timers are not
+        enabled, this function will return an empty string.
+
+        Returns
+        -------
+        res : str
+            LLVM generated timing report.
+        """
+        with ffi.OutputString() as buf:
+            ffi.lib.LLVMPY_ReportAndResetTimings(self.__TimePasses__, buf)
+            return str(buf)
 
     def run(self, function, remarks_file=None, remarks_format='yaml',
             remarks_filter=''):
@@ -772,10 +816,12 @@ class FunctionPassManager(PassManager):
             The filter that should be applied to the remarks output.
         """
         if remarks_file is None:
-            return ffi.lib.LLVMPY_RunFunctionPassManager(self, function)
+            return ffi.lib.LLVMPY_RunFunctionPassManager(
+                self, function, self.__FAM__
+            )
         else:
             r = ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks(
-                self, function, _encode_string(remarks_format),
+                self, function, self.__FAM__, _encode_string(remarks_format),
                 _encode_string(remarks_filter),
                 _encode_string(remarks_file))
             if r == -1:
@@ -813,40 +859,80 @@ class FunctionPassManager(PassManager):
         finally:
             os.unlink(remarkfile)
 
+    def add_target_library_info(self, triple):
+        ffi.lib.LLVMPY_AddTargetLibraryInfoPass(
+            self.__FAM__, _encode_string(triple)
+        )
+
 
 # ============================================================================
 # FFI
 
-ffi.lib.LLVMPY_CreatePassManager.restype = ffi.LLVMPassManagerRef
+ffi.lib.LLVMPY_LLVMFunctionAnalysisManagerCreate.restype = (
+    ffi.LLVMFunctionAnalysisManager
+)
 
-ffi.lib.LLVMPY_CreateFunctionPassManager.argtypes = [ffi.LLVMModuleRef]
-ffi.lib.LLVMPY_CreateFunctionPassManager.restype = ffi.LLVMPassManagerRef
+ffi.lib.LLVMPY_LLVMModuleAnalysisManagerCreate.restype = (
+    ffi.LLVMModuleAnalysisManager
+)
 
-ffi.lib.LLVMPY_DisposePassManager.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_CreateLLVMTimePassesHandler.restype = ffi.LLVMTimePassesHandler
 
-ffi.lib.LLVMPY_RunPassManager.argtypes = [ffi.LLVMPassManagerRef,
-                                          ffi.LLVMModuleRef]
+ffi.lib.LLVMPY_CreatePassManager.restype = ffi.LLVMModulePassManager
+
+ffi.lib.LLVMPY_CreateFunctionPassManager.argtypes = []
+ffi.lib.LLVMPY_CreateFunctionPassManager.restype = ffi.LLVMFunctionPassManager
+
+ffi.lib.LLVMPY_DisposePassManager.argtypes = [ffi.LLVMModulePassManager]
+
+ffi.lib.LLVMPY_DisposeFunctionPassManager.argtypes = [
+    ffi.LLVMFunctionPassManager
+]
+
+ffi.lib.LLVMPY_DisposeLLVMTimePassesHandler.argtypes = [
+    ffi.LLVMTimePassesHandler
+]
+
+ffi.lib.LLVMPY_RunPassManager.argtypes = [
+    ffi.LLVMModulePassManager,
+    ffi.LLVMModuleRef,
+    ffi.LLVMModuleAnalysisManager,
+]
 ffi.lib.LLVMPY_RunPassManager.restype = c_bool
 
-ffi.lib.LLVMPY_RunPassManagerWithRemarks.argtypes = [ffi.LLVMPassManagerRef,
-                                                     ffi.LLVMModuleRef,
-                                                     c_char_p,
-                                                     c_char_p,
-                                                     c_char_p]
+ffi.lib.LLVMPY_RunPassManagerWithRemarks.argtypes = [
+    ffi.LLVMModulePassManager,
+    ffi.LLVMModuleRef,
+    ffi.LLVMModuleAnalysisManager,
+    c_char_p,
+    c_char_p,
+    c_char_p,
+]
 ffi.lib.LLVMPY_RunPassManagerWithRemarks.restype = c_int
 
-ffi.lib.LLVMPY_InitializeFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_InitializeFunctionPassManager.argtypes = [
+    ffi.LLVMFunctionPassManager
+]
 ffi.lib.LLVMPY_InitializeFunctionPassManager.restype = c_bool
 
-ffi.lib.LLVMPY_FinalizeFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_FinalizeFunctionPassManager.argtypes = [
+    ffi.LLVMFunctionPassManager
+]
 ffi.lib.LLVMPY_FinalizeFunctionPassManager.restype = c_bool
 
-ffi.lib.LLVMPY_RunFunctionPassManager.argtypes = [ffi.LLVMPassManagerRef,
-                                                  ffi.LLVMValueRef]
+ffi.lib.LLVMPY_RunFunctionPassManager.argtypes = [
+    ffi.LLVMFunctionPassManager,
+    ffi.LLVMValueRef,
+]
 ffi.lib.LLVMPY_RunFunctionPassManager.restype = c_bool
 
 ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks.argtypes = [
-    ffi.LLVMPassManagerRef, ffi.LLVMValueRef, c_char_p, c_char_p, c_char_p
+    ffi.LLVMFunctionPassManager,
+    ffi.LLVMValueRef,
+    ffi.LLVMFunctionAnalysisManager,
+    c_char_p,
+    c_char_p,
+    c_char_p,
 ]
 ffi.lib.LLVMPY_RunFunctionPassManagerWithRemarks.restype = c_int
 
@@ -860,7 +946,8 @@ ffi.lib.LLVMPY_AddCFGPrinterPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDotDomPrinterPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
 ffi.lib.LLVMPY_AddDotPostDomPrinterPass.argtypes = [
     ffi.LLVMPassManagerRef,
-    c_bool]
+    c_bool,
+]
 ffi.lib.LLVMPY_AddGlobalsModRefAAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddInstructionCountPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddIVUsersPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -874,15 +961,18 @@ ffi.lib.LLVMPY_AddAlwaysInlinerPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
 
 if llvm_version_major < 15:
     ffi.lib.LLVMPY_AddArgPromotionPass.argtypes = [
-        ffi.LLVMPassManagerRef, c_uint]
+        ffi.LLVMPassManagerRef,
+        c_uint,
+    ]
 
 ffi.lib.LLVMPY_AddBreakCriticalEdgesPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddDeadStoreEliminationPass.argtypes = [
-    ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddDeadStoreEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddReversePostOrderFunctionAttrsPass.argtypes = [
-    ffi.LLVMPassManagerRef]
+    ffi.LLVMPassManagerRef
+]
 ffi.lib.LLVMPY_AddAggressiveInstructionCombiningPass.argtypes = [
-    ffi.LLVMPassManagerRef]
+    ffi.LLVMPassManagerRef
+]
 ffi.lib.LLVMPY_AddInternalizePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLCSSAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopDeletionPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -892,8 +982,11 @@ ffi.lib.LLVMPY_AddLoopStrengthReducePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopSimplificationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopUnrollPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopUnrollAndJamPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddLoopUnswitchPass.argtypes = [ffi.LLVMPassManagerRef, c_bool,
-                                               c_bool]
+ffi.lib.LLVMPY_AddLoopUnswitchPass.argtypes = [
+    ffi.LLVMPassManagerRef,
+    c_bool,
+    c_bool,
+]
 ffi.lib.LLVMPY_AddLowerAtomicPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerInvokePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerSwitchPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -909,13 +1002,16 @@ ffi.lib.LLVMPY_AddStripSymbolsPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
 ffi.lib.LLVMPY_AddStripDeadDebugInfoPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddStripDeadPrototypesPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddStripDebugDeclarePrototypesPass.argtypes = [
-    ffi.LLVMPassManagerRef]
+    ffi.LLVMPassManagerRef
+]
 ffi.lib.LLVMPY_AddStripNondebugSymbolsPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTailCallEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddJumpThreadingPass.argtypes = [ffi.LLVMPassManagerRef, c_int]
 ffi.lib.LLVMPY_AddFunctionAttrsPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddFunctionInliningPass.argtypes = [
-    ffi.LLVMPassManagerRef, c_int]
+    ffi.LLVMModulePassManager,
+    c_int,
+]
 ffi.lib.LLVMPY_AddGlobalDCEPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddGlobalOptimizerPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddIPSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -923,17 +1019,24 @@ ffi.lib.LLVMPY_AddIPSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadCodeEliminationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddCFGSimplificationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddGVNPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddInstructionCombiningPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddLICMPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddInstructionCombiningPass.argtypes = [
+    ffi.LLVMModulePassManager
+]
+ffi.lib.LLVMPY_AddLICMPass.argtypes = [ffi.LLVMFunctionPassManager]
 ffi.lib.LLVMPY_AddSCCPPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSROAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddBasicAliasAnalysisPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddTargetLibraryInfoPass.argtypes = [ffi.LLVMPassManagerRef,
-                                                    c_char_p]
-ffi.lib.LLVMPY_AddInstructionNamerPass.argtypes = [ffi.LLVMPassManagerRef]
+ffi.lib.LLVMPY_AddTargetLibraryInfoPass.argtypes = [
+    ffi.LLVMFunctionAnalysisManager,
+    c_char_p,
+]
+ffi.lib.LLVMPY_AddInstructionNamerPass.argtypes = [ffi.LLVMModulePassManager]
 
-ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
-                                           c_size_t]
+ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [
+    ffi.LLVMModulePassManager,
+    c_int,
+    c_size_t,
+]
 
 ffi.lib.LLVMPY_DumpRefPruneStats.argtypes = [POINTER(_c_PruneStats), c_bool]
