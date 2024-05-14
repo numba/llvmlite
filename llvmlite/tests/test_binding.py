@@ -1893,6 +1893,13 @@ class TestTypeRef(BaseTest):
 
         makers['vector'] = maker_vector
 
+        def maker_struct():
+            # XXX what about packed?
+            # XXX what about identified struct?
+            return ir.LiteralStructType([ir.FloatType(), ir.IntType(64)])
+
+        makers['struct'] = maker_struct
+
         # Ensure that number of supported TypeKind matches number of makers
         self.assertEqual({x.name for x in _TypeKindToIRType.keys()},
                          set(makers.keys()) | set(skipped))
@@ -1906,7 +1913,7 @@ class TestTypeRef(BaseTest):
                 ty = maker()
                 ir.GlobalVariable(irmod, ty, name='gv')
                 asm = str(irmod)
-                mod = self.module(asm)
+                mod = llvm.parse_assembly(asm)
                 gv = mod.get_global_variable("gv")
                 gvty = gv.global_value_type
                 self.assertEqual(gvty.as_ir(), ty)

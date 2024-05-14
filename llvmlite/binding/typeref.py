@@ -41,6 +41,7 @@ _TypeKindToIRType = {
     TypeKind.pointer: ir.PointerType,
     TypeKind.array: ir.ArrayType,
     TypeKind.vector: ir.VectorType,
+    TypeKind.struct: ir.LiteralStructType,
 }
 
 

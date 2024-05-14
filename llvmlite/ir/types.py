@@ -603,6 +603,12 @@ class LiteralStructType(BaseStructType):
     def __hash__(self):
         return hash(LiteralStructType)
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx=None):
+        elems = [el.as_ir() for el in typeref.elements]
+        # XXX: what about "packed"?
+        return cls(elems)
+
 
 class IdentifiedStructType(BaseStructType):
     """
