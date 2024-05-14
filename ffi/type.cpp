@@ -157,6 +157,7 @@ LLVMPY_GetElementType(LLVMTypeRef type) {
 API_EXPORT(LLVMTypeRef)
 LLVMPY_GetElementType(LLVMTypeRef type) {
     assert(false && "No element types with opaque pointers");
+    return nullptr;
 }
 #endif
 
