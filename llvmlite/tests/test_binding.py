@@ -523,6 +523,102 @@ for.body:
 }}
 """
 
+asm_cpp_class = r"""
+; Source C++
+;-----------------------------------------
+; class MyClass;
+;
+; class MyClassDefined{
+;     MyClass *member;
+;     MyClass *m2;
+;     MyClass *m3;
+; };
+;
+; void foo(MyClass *c, MyClassDefined){ }
+;-----------------------------------------
+; LLVM-IR by: clang -arch arm64 -S -emit-llvm file.cpp
+; ModuleID = 'file.cpp'
+source_filename = "class.cpp"
+target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
+target triple = "arm64-apple-macosx13.3.0"
+
+%class.MyClass = type opaque
+%class.MyClassDefined = type { %class.MyClass*, %class.MyClass*, %class.MyClass* }
+
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
+define void @_Z3fooP7MyClass14MyClassDefined(%class.MyClass* noundef %0, %class.MyClassDefined* noundef %1) {
+  %3 = alloca %class.MyClass*, align 8
+  store %class.MyClass* %0, %class.MyClass** %3, align 8
+  ret void
+}
+
+!llvm.module.flags = !{!0, !1, !2, !3, !4, !5, !6, !7, !8}
+!llvm.ident = !{!9}
+
+!0 = !{i32 2, !"SDK Version", [2 x i32] [i32 13, i32 3]}
+!1 = !{i32 1, !"wchar_size", i32 4}
+!2 = !{i32 8, !"branch-target-enforcement", i32 0}
+!3 = !{i32 8, !"sign-return-address", i32 0}
+!4 = !{i32 8, !"sign-return-address-all", i32 0}
+!5 = !{i32 8, !"sign-return-address-with-bkey", i32 0}
+!6 = !{i32 7, !"PIC Level", i32 2}
+!7 = !{i32 7, !"uwtable", i32 1}
+!8 = !{i32 7, !"frame-pointer", i32 1}
+!9 = !{!"Apple clang version 14.0.3 (clang-1403.0.22.14.1)"}
+
+""" # noqa
+
+asm_cpp_vector = r"""; Source C++
+;-----------------------------------------
+
+; struct Vector2D{
+;     float x, y;
+; };
+;
+; void foo(Vector2D vec, Vector2D *out) {
+;     *out = vec;
+; }
+;-----------------------------------------
+; LLVM-IR by: clang -arch x86_64 -S -emit-llvm file.cpp
+; ModuleID = 'file.cpp'
+source_filename = "class.cpp"
+target datalayout = "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-apple-macosx13.3.0"
+
+%struct.Vector2D = type { float, float }
+
+; Function Attrs: noinline nounwind optnone ssp uwtable
+define void @_Z3foo8Vector2DPS_(<2 x float> %0, %struct.Vector2D* noundef %1) #0 {
+  %3 = alloca %struct.Vector2D, align 4
+  %4 = alloca %struct.Vector2D*, align 8
+  %5 = bitcast %struct.Vector2D* %3 to <2 x float>*
+  store <2 x float> %0, <2 x float>* %5, align 4
+  store %struct.Vector2D* %1, %struct.Vector2D** %4, align 8
+  %6 = load %struct.Vector2D*, %struct.Vector2D** %4, align 8
+  %7 = bitcast %struct.Vector2D* %6 to i8*
+  %8 = bitcast %struct.Vector2D* %3 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %7, i8* align 4 %8, i64 8, i1 false)
+  ret void
+}
+
+; Function Attrs: argmemonly nofree nounwind willreturn
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #1
+
+attributes #0 = { noinline nounwind optnone ssp uwtable "darwin-stkchk-strong-link" "frame-pointer"="all" "min-legal-vector-width"="64" "no-trapping-math"="true" "probe-stack"="___chkstk_darwin" "stack-protector-buffer-size"="8" "target-cpu"="penryn" "target-features"="+cx16,+cx8,+fxsr,+mmx,+sahf,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "tune-cpu"="generic" }
+attributes #1 = { argmemonly nofree nounwind willreturn }
+
+!llvm.module.flags = !{!0, !1, !2, !3, !4}
+!llvm.ident = !{!5}
+
+!0 = !{i32 2, !"SDK Version", [2 x i32] [i32 13, i32 3]}
+!1 = !{i32 1, !"wchar_size", i32 4}
+!2 = !{i32 7, !"PIC Level", i32 2}
+!3 = !{i32 7, !"uwtable", i32 2}
+!4 = !{i32 7, !"frame-pointer", i32 2}
+!5 = !{!"Apple clang version 14.0.3 (clang-1403.0.22.14.1)"}
+
+""" # noqa
+
 
 class BaseTest(TestCase):
 
@@ -1926,6 +2022,61 @@ class TestTypeRef(BaseTest):
                     got = gvty.as_ir(ir.Context())  # fresh context
                     self.assertEqual(got, ty)
                     self.assertIsInstance(got, irtype)
+
+    def _check_typeref_as_ir_for_wrappers(self, asm, target_symbol):
+        # Get a clang++ defined function from a llvm ir
+        mod = llvm.parse_assembly(asm)
+        cppfn = mod.get_function(target_symbol)
+        cppfntype = cppfn.global_value_type
+
+        # Get the function type into a new context
+        my_context = ir.Context()  # don't populate global context
+        ty = cppfntype.as_ir(ir_ctx=my_context)
+
+        # Build a wrapper module for the cpp function
+        wrapper_mod = ir.Module(context=my_context)
+        # declare the original function
+        declfn = ir.Function(wrapper_mod, ty, name=cppfn.name)
+        # populate the wrapper function
+        wrapfn = ir.Function(wrapper_mod, ty, name="wrapper")
+        builder = ir.IRBuilder(wrapfn.append_basic_block())
+        # just call the original function
+        builder.call(declfn, wrapfn.args)
+        builder.ret_void()
+        # Create a new LLVM module with the wrapper
+        new_mod = llvm.parse_assembly(str(wrapper_mod))
+        self.assertTrue(new_mod.get_function(declfn.name).is_declaration,
+                        msg="declfn must not have a body")
+        # Merge/link the original module into the new module
+        new_mod.link_in(mod, preserve=True)
+        self.assertEqual(len(list(new_mod.functions)),
+                         len(list(mod.functions)) + 1,
+                         msg="the only new function is the wrapper")
+        self.assertFalse(new_mod.get_function(declfn.name).is_declaration,
+                         msg="declfn must have a body now")
+        self.assertEqual(new_mod.get_function(declfn.name).global_value_type,
+                         new_mod.get_function(wrapfn.name).global_value_type,
+                         msg="declfn and wrapfn must have the same llvm Type")
+
+    def test_typeref_as_ir_for_wrappers_of_cpp_class(self):
+        """Exercise extracting C++ defined class types.
+        Contains both opaque and non-opaque class definitions.
+        """
+        self._check_typeref_as_ir_for_wrappers(
+            asm_cpp_class,
+            "_Z3fooP7MyClass14MyClassDefined",
+        )
+
+    def test_typeref_as_ir_for_wrappers_of_cpp_vector_struct(self):
+        """Exercise extracting C++ struct types that are passed as vectors.
+
+        IA64 ABI on x86_64 will put struct with two floats as
+        a vector of two floats.
+        """
+        self._check_typeref_as_ir_for_wrappers(
+            asm_cpp_vector,
+            "_Z3foo8Vector2DPS_",
+        )
 
 
 class TestTarget(BaseTest):
