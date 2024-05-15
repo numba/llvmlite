@@ -78,6 +78,10 @@ The TypeRef class
 
         Returns the ``LLVMTypeKind`` enumeration of this type.
 
+    * .. method:: as_ir(self, ir_ctx)
+
+        Convert into a ``llvmlite.ir.Type``.
+
     * .. method:: __str__(self)
 
         Get the string IR representation of the type.

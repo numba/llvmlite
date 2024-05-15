@@ -148,6 +148,9 @@ class PointerType(Type):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
         # opaque pointer will change this
         [pointee] = typeref.elements
         # addrspace is not handled
@@ -170,6 +173,9 @@ class VoidType(Type):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
         return cls()
 
 
@@ -207,6 +213,9 @@ class FunctionType(Type):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
         params = tuple(x.as_ir(ir_ctx=ir_ctx)
                        for x in typeref.get_function_parameters())
         ret = typeref.get_function_return().as_ir(ir_ctx=ir_ctx)
@@ -274,6 +283,9 @@ class IntType(Type):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
         return IntType(typeref.type_width)
 
 
@@ -327,6 +339,9 @@ class _BaseFloatType(Type):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
         return cls()
 
 
@@ -443,6 +458,9 @@ class VectorType(Type):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
         [elemtyperef] = typeref.elements
         elemty = elemtyperef.as_ir(ir_ctx=ir_ctx)
         count = typeref.element_count
@@ -508,6 +526,9 @@ class ArrayType(Aggregate):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
         [elemtyperef] = typeref.elements
         elemty = elemtyperef.as_ir(ir_ctx=ir_ctx)
         count = typeref.element_count
@@ -579,6 +600,9 @@ class BaseStructType(Aggregate):
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
         if typeref.is_literal_struct:
             elems = [el.as_ir(ir_ctx=ir_ctx) for el in typeref.elements]
             return cls(elems, typeref.is_packed_struct)
