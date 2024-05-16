@@ -7,35 +7,33 @@ from ctypes import CFUNCTYPE, c_int, POINTER
 import llvmlite.ir as ll
 import llvmlite.binding as llvm
 
+import numpy as np
 
 llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()
 
 strmod = """
-define i32 @foo3(i32* noalias nocapture readonly %src) {
-entry:
-  br label %loop.header
+; ModuleID = '<string>'
+source_filename = "<string>"
+target triple = "unknown-unknown-unknown"
 
-loop.header:
-  %iv = phi i64 [ 0, %entry ], [ %inc, %loop.latch ]
-  %r1  = phi i32 [ 0, %entry ], [ %r3, %loop.latch ]
-  %arrayidx = getelementptr inbounds i32, i32* %src, i64 %iv
-  %src_element = load i32, i32* %arrayidx, align 4
-  %cmp = icmp eq i32 0, %src_element
-  br i1 %cmp, label %loop.if, label %loop.latch
+define i32 @sum(i32* %.1, i32 %.2) {
+.4:
+  br label %.5
 
-loop.if:
-  %r2 = add i32 %r1, 1
-  br label %loop.latch
-loop.latch:
-  %r3 = phi i32 [%r1, %loop.header], [%r2, %loop.if]
-  %inc = add nuw nsw i64 %iv, 1
-  %exitcond = icmp eq i64 %inc, 9
-  br i1 %exitcond, label %loop.end, label %loop.header
-loop.end:
-  %r.lcssa = phi i32 [ %r3, %loop.latch ]
-  ret i32 %r.lcssa
+.5:                                               ; preds = %.5, %.4
+  %.8 = phi i32 [ 0, %.4 ], [ %.13, %.5 ]
+  %.9 = phi i32 [ 0, %.4 ], [ %.12, %.5 ]
+  %.10 = getelementptr i32, i32* %.1, i32 %.8
+  %.11 = load i32, i32* %.10, align 4
+  %.12 = add i32 %.9, %.11
+  %.13 = add i32 %.8, 1
+  %.14 = icmp ult i32 %.13, %.2
+  br i1 %.14, label %.5, label %.6
+
+.6:                                               ; preds = %.5
+  ret i32 %.12
 }
 """
 
@@ -45,12 +43,19 @@ llmod = llvm.parse_assembly(strmod)
 print(llmod)
 
 target_machine = llvm.Target.from_default_triple().create_target_machine()
+
 pto = llvm.create_pipeline_options()
 pto.opt_level = 3
 pb = llvm.create_pass_builder(target_machine, pto)
-
 pm = pb.getNewModulePassManager()
 pm.run(llmod, pb)
+
+# pmb = llvm.create_pass_manager_builder()
+# pmb.opt_level = 2
+# pm = llvm.create_module_pass_manager()
+# pmb.populate(pm)
+# pm.run(llmod)
+
 print(llmod)
 
 with llvm.create_mcjit_compiler(llmod, target_machine) as ee:
