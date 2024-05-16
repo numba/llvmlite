@@ -14,6 +14,110 @@ kinds of pass managers:
 * :class:`ModulePassManager`, for optimizations that work on
   whole modules.
 
+For optimization pipeline LLVM supports 2 different pass managing mechanisms.
+The old one is now renamed to LegacyPassManager and is deprecated. From `llvm17`
+LegacyPassManager's support is no longer reliable with many passes not working 
+with it.
+
+`llvmlite` right now supports both the `LegacyPassManager` and the `NewPassManager`, 
+but consider `LegacyPassManager` deprecated and you are advised to shift your 
+code to `NewPassManager` APIs.
+
+New Pass Manager
+===================
+
+To manage the optimization attributes we first need to instantiate
+.. class:: PipelineTuningOptions()
+   
+   Creates a new PipelineTuningOptions object
+
+   The following writable attributes are available:
+
+    * .. attribute:: loop_interleaving
+
+          If ``False``, disable loop interleaving.
+
+    * .. attribute:: loop_vectorization
+
+          If ``True``, allow vectorizing loops.
+
+    * .. attribute:: slp_vectorize
+
+          If ``True``, enable the SLP vectorizer, which uses a
+          different algorithm than the loop vectorizer. Both may
+          be enabled at the same time.
+
+    * .. attribute:: loop_unrolling
+
+          If ``False``, disable loop unrolling.
+
+..     FIXME: Available from llvm16
+..     * .. attribute:: inlining_threshold
+
+..           The integer threshold for inlining one function into
+..           another. The higher the number, the more likely that
+..           inlining will occur. This attribute is write-only.
+
+    * .. attribute:: opt_level
+
+          The general optimization level, as an integer between 0
+          and 3.
+
+    * .. attribute:: size_level
+
+          Whether and how much to optimize for size, as an integer
+          between 0 and 2.
+
+
+Similar to `LegacyPassManager` we need a `PassBuilder` object to manage the 
+respective `function` and `module` pass managers.
+
+.. class:: PassBuilder(target_machine, pipeline_tuning_options)
+   
+   Create a new pass builder. This takes :class:`TargetMachine` and 
+   :class:`PipelineTuningOptions` objects as parameters.
+
+  .. method:: getNewModulePassManager()
+    
+    Return a populated `ModulePassManager` object based on PTO settings.
+
+  .. method:: getNewFunctionPassManager()
+    
+    Return a populated `FunctionPassManager` object based on PTO settings.
+
+
+.. class:: NewModulePassManager()
+
+   Create a new pass manager to run optimization passes on a
+   llvm module.
+
+  .. method:: run(module, passbuilder)
+    
+      Run optimization passes on the
+      *module*, a :class:`ModuleRef` instance.
+
+   Use individual ``add_*`` methods to add optimization passes
+   or use :meth:`PassBuilder.getNewModulePassManager` to get 
+   optimization passes populated `NewModulePassManager` object.
+
+.. class:: NewFunctionPassManager()
+
+   Create a new pass manager to run optimization passes on a
+   llvm function.
+
+  .. method:: run(function, passbuilder)
+    
+      Run optimization passes on the
+      *function*, a :class:`ValueRef` instance.
+
+   Use individual ``add_*`` methods to add optimization passes
+   or use :meth:`PassBuilder.getNewFunctionPassManager` to get 
+   optimization passes populated `NewFunctionPassManager` object.
+
+
+Legacy Pass Manager
+===================
+
 To instantiate either of these pass managers, you first need to
 create and configure a :class:`PassManagerBuilder`.
 
