@@ -201,8 +201,8 @@ class PassBuilder(ffi.ObjectRef):
 ffi.lib.LLVMPY_CreateNewModulePassManager.restype = ffi.LLVMModulePassManagerRef
 
 ffi.lib.LLVMPY_RunNewModulePassManager.argtypes = [ffi.LLVMModulePassManagerRef,
-                                         ffi.LLVMPassBuilderRef,
-                                         ffi.LLVMModuleRef,]
+                                                   ffi.LLVMPassBuilderRef,
+                                                   ffi.LLVMModuleRef,]
 
 ffi.lib.LLVMPY_AddVeriferPass.argtypes = [ffi.LLVMModulePassManagerRef,]
 ffi.lib.LLVMPY_AddAAEvalPass_module.argtypes = [ffi.LLVMModulePassManagerRef,]
@@ -227,9 +227,10 @@ ffi.lib.LLVMPY_DisposeNewModulePassManger.argtypes = [
 ffi.lib.LLVMPY_CreateNewFunctionPassManager.restype = \
     ffi.LLVMFunctionPassManagerRef
 
-ffi.lib.LLVMPY_RunNewFunctionPassManager.argtypes = [ffi.LLVMFunctionPassManagerRef,
-                                           ffi.LLVMPassBuilderRef,
-                                           ffi.LLVMValueRef,]
+ffi.lib.LLVMPY_RunNewFunctionPassManager.argtypes = [
+    ffi.LLVMFunctionPassManagerRef,
+    ffi.LLVMPassBuilderRef,
+    ffi.LLVMValueRef,]
 
 ffi.lib.LLVMPY_AddAAEvalPass_function.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]

@@ -52,8 +52,8 @@ LLVMPY_CreateNewModulePassManager() {
 }
 
 API_EXPORT(void)
-LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef, LLVMPassBuilderRef PBRef,
-                     LLVMModuleRef mod) {
+LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
+                               LLVMPassBuilderRef PBRef, LLVMModuleRef mod) {
 
     ModulePassManager *MPM = llvm::unwrap(MPMRef);
     PassBuilder *PB = llvm::unwrap(PBRef);
@@ -126,7 +126,7 @@ LLVMPY_CreateNewFunctionPassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
-                       LLVMPassBuilderRef PBRef, LLVMValueRef FRef) {
+                                 LLVMPassBuilderRef PBRef, LLVMValueRef FRef) {
 
     FunctionPassManager *FPM = llvm::unwrap(FPMRef);
     PassBuilder *PB = llvm::unwrap(PBRef);
