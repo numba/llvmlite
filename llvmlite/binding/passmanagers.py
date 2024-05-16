@@ -119,6 +119,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddAAEvalPass(self)
 
+    # Analysis Pass
     def add_basic_aa_pass(self):
         """
         See https://llvm.org/docs/Passes.html#basic-aa-basic-alias-analysis-stateless-aa-impl
@@ -143,6 +144,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddDeadArgEliminationPass(self)
 
+    # Analysis Pass
     def add_dependence_analysis_pass(self):
         """
         See https://llvm.org/docs/Passes.html#da-dependence-analysis
@@ -183,6 +185,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddDotPostDomPrinterPass(self, show_body)
 
+    # Analysis Pass
     def add_globals_mod_ref_aa_pass(self):
         """
         See https://llvm.org/docs/Passes.html#globalsmodref-aa-simple-mod-ref-analysis-for-globals
@@ -191,6 +194,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddGlobalsModRefAAPass(self)
 
+    # Analysis Pass
     def add_iv_users_pass(self):
         """
         See https://llvm.org/docs/Passes.html#iv-users-induction-variable-users
@@ -207,6 +211,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddLintPass(self)
 
+    # Analysis Pass
     def add_lazy_value_info_pass(self):
         """
         See https://llvm.org/docs/Passes.html#lazy-value-info-lazy-value-information-analysis
@@ -215,6 +220,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddLazyValueInfoPass(self)
 
+    # Printer Pass
     def add_module_debug_info_pass(self):
         """
         See https://llvm.org/docs/Passes.html#module-debuginfo-decodes-module-level-debug-info
@@ -223,6 +229,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddModuleDebugInfoPrinterPass(self)
 
+    # Analysis Pass
     def add_region_info_pass(self):
         """
         See https://llvm.org/docs/Passes.html#regions-detect-single-entry-single-exit-regions
@@ -231,6 +238,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddRegionInfoPass(self)
 
+    # Analysis Pass
     def add_scalar_evolution_aa_pass(self):
         """
         See https://llvm.org/docs/Passes.html#scev-aa-scalarevolution-based-alias-analysis
@@ -295,6 +303,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddFunctionAttrsPass(self)
 
+    # Can't find simple inline in NPM
     def add_function_inlining_pass(self, threshold):
         """
         See http://llvm.org/docs/Passes.html#inline-function-integration-inlining
@@ -394,6 +403,7 @@ class PassManager(ffi.ObjectRef):
         """
         ffi.lib.LLVMPY_AddInstructionCombiningPass(self)
 
+    # Loop pass with params
     def add_licm_pass(self):
         """
         See http://llvm.org/docs/Passes.html#licm-loop-invariant-code-motion
@@ -410,6 +420,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddLoopDeletionPass(self)
 
+    # module pass with params
     def add_loop_extractor_pass(self):
         """
         See https://llvm.org/docs/Passes.html#loop-extract-extract-loops-into-new-functions
@@ -418,6 +429,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddLoopExtractorPass(self)
 
+    # for bugpoint not in NPM
     def add_single_loop_extractor_pass(self):
         """
         See https://llvm.org/docs/Passes.html#loop-extract-single-extract-at-most-one-loop-into-a-new-function
@@ -458,6 +470,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddLoopUnrollPass(self)
 
+    # Loop nest pass
     def add_loop_unroll_and_jam_pass(self):
         """
         See https://llvm.org/docs/Passes.html#loop-unroll-and-jam-unroll-and-jam-loops
@@ -466,6 +479,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddLoopUnrollAndJamPass(self)
 
+    # Loop pass with params
     def add_loop_unswitch_pass(self,
                                optimize_for_size=False,
                                has_branch_divergence=False):
@@ -534,6 +548,7 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddPartialInliningPass(self)
 
+    # Not in NPM
     def add_prune_exception_handling_pass(self):
         """
         See https://llvm.org/docs/Passes.html#prune-eh-remove-unused-exception-handling-info
@@ -626,12 +641,14 @@ class PassManager(ffi.ObjectRef):
         """  # noqa E501
         ffi.lib.LLVMPY_AddTailCallEliminationPass(self)
 
+    # Analysis pass
     def add_type_based_alias_analysis_pass(self):
         """
         LLVM 14: `LLVMAddTypeBasedAliasAnalysisPass`
         """  # noqa E501
         ffi.lib.LLVMPY_AddTypeBasedAliasAnalysisPass(self)
 
+    # Analysis pass
     def add_basic_alias_analysis_pass(self):
         """
         See http://llvm.org/docs/AliasAnalysis.html#the-basicaa-pass
@@ -644,6 +661,7 @@ class PassManager(ffi.ObjectRef):
         """http://llvm.org/docs/Passes.html#loop-rotate-rotate-loops."""
         ffi.lib.LLVMPY_AddLoopRotatePass(self)
 
+    # Analysis pass
     def add_target_library_info(self, triple):
         ffi.lib.LLVMPY_AddTargetLibraryInfoPass(self, _encode_string(triple))
 
