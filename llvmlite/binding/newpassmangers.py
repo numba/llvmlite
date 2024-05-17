@@ -197,6 +197,7 @@ class PassBuilder(ffi.ObjectRef):
 # ============================================================================
 # FFI
 
+# ModulePassManager
 
 ffi.lib.LLVMPY_CreateNewModulePassManager.restype = ffi.LLVMModulePassManagerRef
 
@@ -223,6 +224,8 @@ ffi.lib.LLVMPY_AddJumpThreadingPass_module.argtypes = [
 
 ffi.lib.LLVMPY_DisposeNewModulePassManger.argtypes = [
     ffi.LLVMModulePassManagerRef,]
+
+# FunctionPassManager
 
 ffi.lib.LLVMPY_CreateNewFunctionPassManager.restype = \
     ffi.LLVMFunctionPassManagerRef
@@ -253,23 +256,7 @@ ffi.lib.LLVMPY_AddJumpThreadingPass_function.argtypes = [
 ffi.lib.LLVMPY_DisposeNewFunctionPassManger.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]
 
-ffi.lib.LLVMPY_CreatePassBuilder.restype = ffi.LLVMPassBuilderRef
-ffi.lib.LLVMPY_CreatePassBuilder.argtypes = [ffi.LLVMTargetMachineRef,
-                                             ffi.LLVMPipelineTuningOptionsRef,]
-
-ffi.lib.LLVMPY_buildPerModuleDefaultPipeline.restype = \
-    ffi.LLVMModulePassManagerRef
-
-ffi.lib.LLVMPY_buildPerModuleDefaultPipeline.argtypes = [
-    ffi.LLVMPassBuilderRef, c_int,]
-
-ffi.lib.LLVMPY_buildFunctionSimplificationPipeline.restype = \
-    ffi.LLVMFunctionPassManagerRef
-
-ffi.lib.LLVMPY_buildFunctionSimplificationPipeline.argtypes = [
-    ffi.LLVMPassBuilderRef, c_int,]
-
-ffi.lib.LLVMPY_DisposePassBuilder.argtypes = [ffi.LLVMPassBuilderRef,]
+# PipelineTuningOptions
 
 ffi.lib.LLVMPY_CreatePipelineTuningOptions.restype = \
     ffi.LLVMPipelineTuningOptionsRef
@@ -304,3 +291,23 @@ ffi.lib.LLVMPY_PTOSetLoopUnrolling.argtypes = [
 
 ffi.lib.LLVMPY_DisposePipelineTuningOptions.argtypes = \
     [ffi.LLVMPipelineTuningOptionsRef,]
+
+# PassBuilder
+
+ffi.lib.LLVMPY_CreatePassBuilder.restype = ffi.LLVMPassBuilderRef
+ffi.lib.LLVMPY_CreatePassBuilder.argtypes = [ffi.LLVMTargetMachineRef,
+                                             ffi.LLVMPipelineTuningOptionsRef,]
+
+ffi.lib.LLVMPY_DisposePassBuilder.argtypes = [ffi.LLVMPassBuilderRef,]
+
+# Pipeline builders
+
+ffi.lib.LLVMPY_buildPerModuleDefaultPipeline.restype = \
+    ffi.LLVMModulePassManagerRef
+ffi.lib.LLVMPY_buildPerModuleDefaultPipeline.argtypes = [
+    ffi.LLVMPassBuilderRef, c_int, c_int]
+
+ffi.lib.LLVMPY_buildFunctionSimplificationPipeline.restype = \
+    ffi.LLVMFunctionPassManagerRef
+ffi.lib.LLVMPY_buildFunctionSimplificationPipeline.argtypes = [
+    ffi.LLVMPassBuilderRef, c_int, c_int]

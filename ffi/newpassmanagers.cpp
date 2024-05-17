@@ -253,6 +253,9 @@ LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TM,
     return llvm::wrap(new PassBuilder(target, *pt));
 }
 
+API_EXPORT(void)
+LLVMPY_DisposePassBuilder(LLVMPassBuilderRef PB) { delete llvm::unwrap(PB); }
+
 static OptimizationLevel mapLevel(int speed_level, int size_level) {
     switch (size_level) {
     case 0:
@@ -310,8 +313,5 @@ LLVMPY_buildFunctionSimplificationPipeline(LLVMPassBuilderRef PBref,
         PB->buildFunctionSimplificationPipeline(OL, ThinOrFullLTOPhase::None));
     return llvm::wrap(FPM);
 }
-
-API_EXPORT(void)
-LLVMPY_DisposePassBuilder(LLVMPassBuilderRef PB) { delete llvm::unwrap(PB); }
 
 } // end extern "C"
