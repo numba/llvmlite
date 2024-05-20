@@ -14,8 +14,8 @@ def create_pass_builder(tm, pto):
     return PassBuilder(tm, pto)
 
 
-def create_pipeline_tuning_options():
-    return PipelineTuningOptions()
+def create_pipeline_tuning_options(opt_level=2, size_level=0):
+    return PipelineTuningOptions(opt_level=opt_level, size_level=size_level)
 
 
 class NewModulePassManager(ffi.ObjectRef):
@@ -87,11 +87,11 @@ class NewFunctionPassManger(ffi.ObjectRef):
 
 class PipelineTuningOptions(ffi.ObjectRef):
 
-    def __init__(self, ptr=None):
+    def __init__(self, ptr=None, opt_level=2, size_level=0):
         if ptr is None:
             ptr = ffi.lib.LLVMPY_CreatePipelineTuningOptions()
-            self._opt_level = 2
-            self._size_level = 0
+        self.opt_level = opt_level
+        self.size_level = size_level
         super().__init__(ptr)
 
     @property
@@ -134,30 +134,6 @@ class PipelineTuningOptions(ffi.ObjectRef):
     # @inlining_threshold.setter
     # def inlining_threshold(self, value):
     #     ffi.lib.LLVMPY_PTOSetInlinerThreshold(self, value)
-
-    # Not part of PTO
-    @property
-    def opt_level(self):
-        """
-        The general optimization level as an integer between 0 and 3.
-        """
-        return self._opt_level
-
-    @opt_level.setter
-    def opt_level(self, level):
-        self._opt_level = level
-
-    @property
-    def size_level(self):
-        """
-        Whether and how much to optimize for size.
-        An integer between 0 and 2.
-        """
-        return self._size_level
-
-    @size_level.setter
-    def size_level(self, size):
-        self._size_level = size
 
     def _dispose(self):
         ffi.lib.LLVMPY_DisposePipelineTuningOptions(self)
