@@ -1,8 +1,5 @@
-from ctypes import (c_bool, c_int)
+from ctypes import c_bool, c_int
 from llvmlite.binding import ffi
-from llvmlite.binding.initfini import llvm_version_info
-
-llvm_version_major = llvm_version_info[0]
 
 
 def create_new_module_pass_manager():
@@ -17,7 +14,7 @@ def create_pass_builder(tm, pto):
     return PassBuilder(tm, pto)
 
 
-def create_pipeline_options():
+def create_pipeline_tuning_options():
     return PipelineTuningOptions()
 
 
@@ -26,13 +23,13 @@ class NewModulePassManager(ffi.ObjectRef):
     def __init__(self, ptr=None):
         if ptr is None:
             ptr = ffi.lib.LLVMPY_CreateNewModulePassManager()
-        ffi.ObjectRef.__init__(self, ptr)
+        super().__init__(ptr)
 
     def run(self, module, pb):
         ffi.lib.LLVMPY_RunNewModulePassManager(self, pb, module)
 
     def addVerifier(self):
-        ffi.lib.LLVMPY_AddVeriferPass(self)
+        ffi.lib.LLVMPY_AddVerifierPass(self)
 
     def add_aa_eval_pass(self):
         ffi.lib.LLVMPY_AddAAEvalPass_module(self)
@@ -44,15 +41,14 @@ class NewModulePassManager(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddLoopUnrollPass_module(self)
 
     def add_loop_rotate_pass(self):
-        ffi.lib.LLVMPY_LLVMAddLoopRotatePass_module(self)
+        ffi.lib.LLVMPY_AddLoopRotatePass_module(self)
 
     def add_instruction_combine_pass(self):
-        ffi.lib.LLVMPY_LLVMAddInstructionCombinePass_module(self)
+        ffi.lib.LLVMPY_AddInstructionCombinePass_module(self)
 
     def add_jump_threading_pass(self, threshold=-1):
         ffi.lib.LLVMPY_AddJumpThreadingPass_module(self, threshold)
 
-    # What will happen to the pointer to objects created with run() method
     def _dispose(self):
         ffi.lib.LLVMPY_DisposeNewModulePassManger(self)
 
@@ -62,7 +58,7 @@ class NewFunctionPassManger(ffi.ObjectRef):
     def __init__(self, ptr=None):
         if ptr is None:
             ptr = ffi.lib.LLVMPY_CreateNewFunctionPassManager()
-        ffi.ObjectRef.__init__(self, ptr)
+        super().__init__(ptr)
 
     def add_aa_eval_pass(self):
         ffi.lib.LLVMPY_AddAAEvalPass_function(self)
@@ -77,10 +73,10 @@ class NewFunctionPassManger(ffi.ObjectRef):
         ffi.lib.LLVMPY_AddLoopUnrollPass_function(self)
 
     def add_loop_rotate_pass(self):
-        ffi.lib.LLVMPY_LLVMAddLoopRotatePass_function(self)
+        ffi.lib.LLVMPY_AddLoopRotatePass_function(self)
 
     def add_instruction_combine_pass(self):
-        ffi.lib.LLVMPY_LLVMAddInstructionCombinePass_function(self)
+        ffi.lib.LLVMPY_AddInstructionCombinePass_function(self)
 
     def add_jump_threading_pass(self, threshold=-1):
         ffi.lib.LLVMPY_AddJumpThreadingPass_function(self, threshold)
@@ -89,7 +85,6 @@ class NewFunctionPassManger(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposeNewFunctionPassManger(self)
 
 
-# Make this nested class of PassBuilder?
 class PipelineTuningOptions(ffi.ObjectRef):
 
     def __init__(self, ptr=None):
@@ -97,7 +92,7 @@ class PipelineTuningOptions(ffi.ObjectRef):
             ptr = ffi.lib.LLVMPY_CreatePipelineTuningOptions()
             self._opt_level = 2
             self._size_level = 0
-        ffi.ObjectRef.__init__(self, ptr)
+        super().__init__(ptr)
 
     @property
     def loop_interleaving(self):
@@ -172,25 +167,24 @@ class PassBuilder(ffi.ObjectRef):
 
     def __init__(self, tm, pto, ptr=None):
         if ptr is None:
-            self._pto = pto
-            self._tm = tm
             ptr = ffi.lib.LLVMPY_CreatePassBuilder(tm, pto)
-        ffi.ObjectRef.__init__(self, ptr)
+        self._pto = pto
+        self._tm = tm
+        super().__init__(ptr)
 
-    def getNewModulePassManager(self):
+    def getModulePassManager(self):
         return NewModulePassManager(
             ffi.lib.LLVMPY_buildPerModuleDefaultPipeline(
                 self, self._pto.opt_level, self._pto.size_level)
         )
 
-    def getNewFunctionPassManager(self):
+    def getFunctionPassManager(self):
         return NewFunctionPassManger(
             ffi.lib.LLVMPY_buildFunctionSimplificationPipeline(
                 self, self._pto.opt_level, self._pto.size_level)
         )
 
     def _dispose(self):
-        # Should I explicitly delete pointer to pto and tm?
         ffi.lib.LLVMPY_DisposePassBuilder(self)
 
 
@@ -205,7 +199,7 @@ ffi.lib.LLVMPY_RunNewModulePassManager.argtypes = [ffi.LLVMModulePassManagerRef,
                                                    ffi.LLVMPassBuilderRef,
                                                    ffi.LLVMModuleRef,]
 
-ffi.lib.LLVMPY_AddVeriferPass.argtypes = [ffi.LLVMModulePassManagerRef,]
+ffi.lib.LLVMPY_AddVerifierPass.argtypes = [ffi.LLVMModulePassManagerRef,]
 ffi.lib.LLVMPY_AddAAEvalPass_module.argtypes = [ffi.LLVMModulePassManagerRef,]
 ffi.lib.LLVMPY_AddSimplifyCFGPass_module.argtypes = [
     ffi.LLVMModulePassManagerRef,]
@@ -213,10 +207,10 @@ ffi.lib.LLVMPY_AddSimplifyCFGPass_module.argtypes = [
 ffi.lib.LLVMPY_AddLoopUnrollPass_module.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
-ffi.lib.LLVMPY_LLVMAddLoopRotatePass_module.argtypes = [
+ffi.lib.LLVMPY_AddLoopRotatePass_module.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
-ffi.lib.LLVMPY_LLVMAddInstructionCombinePass_module.argtypes = [
+ffi.lib.LLVMPY_AddInstructionCombinePass_module.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
 ffi.lib.LLVMPY_AddJumpThreadingPass_module.argtypes = [
@@ -244,10 +238,10 @@ ffi.lib.LLVMPY_AddSimplifyCFGPass_function.argtypes = [
 ffi.lib.LLVMPY_AddLoopUnrollPass_function.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]
 
-ffi.lib.LLVMPY_LLVMAddLoopRotatePass_function.argtypes = [
+ffi.lib.LLVMPY_AddLoopRotatePass_function.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]
 
-ffi.lib.LLVMPY_LLVMAddInstructionCombinePass_function.argtypes = [
+ffi.lib.LLVMPY_AddInstructionCombinePass_function.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]
 
 ffi.lib.LLVMPY_AddJumpThreadingPass_function.argtypes = [

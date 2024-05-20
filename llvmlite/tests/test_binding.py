@@ -2594,7 +2594,7 @@ class TestLLVMLockCallbacks(BaseTest):
 class NewPassManagerMixin(object):
 
     def pipeline_tuning_options(self):
-        return llvm.create_pipeline_options()
+        return llvm.create_pipeline_tuning_options()
 
     def pb(self, opt_level=0):
         tm = self.target_machine(jit=False)
@@ -2621,13 +2621,13 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
 
     def test_getMPM(self):
         pb = self.pb()
-        mpm = pb.getNewModulePassManager()
+        mpm = pb.getModulePassManager()
         mpm.run(self.module(), pb)
         pb.close()
 
     def test_getFPM(self):
         pb = self.pb()
-        fpm = pb.getNewFunctionPassManager()
+        fpm = pb.getFunctionPassManager()
         fpm.run(self.module().get_function("sum"), pb)
         pb.close()
 
@@ -2644,7 +2644,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         pb = self.pb(3)
         mod = self.module()
         orig_asm = str(mod)
-        mpm = pb.getNewModulePassManager()
+        mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
         optimized_asm = str(mod)
         self.assertIn("%.4", orig_asm)
@@ -2685,7 +2685,7 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         mod = self.module()
         fun = mod.get_function("sum")
         orig_asm = str(fun)
-        fpm = pb.getNewFunctionPassManager()
+        fpm = pb.getFunctionPassManager()
         fpm.run(fun, pb)
         optimized_asm = str(fun)
         self.assertIn("%.4", orig_asm)

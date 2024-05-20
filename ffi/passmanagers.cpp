@@ -475,7 +475,7 @@ LLVMPY_AddBasicAliasAnalysisPass(LLVMPassManagerRef PM) {
 }
 
 API_EXPORT(void)
-LLVMPY_LLVMAddLoopRotatePass(LLVMPassManagerRef PM) {
+LLVMPY_AddLoopRotatePass(LLVMPassManagerRef PM) {
     LLVMAddLoopRotatePass(PM);
 }
 

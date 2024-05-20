@@ -72,7 +72,7 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
 }
 
 API_EXPORT(void)
-LLVMPY_AddVeriferPass(LLVMModulePassManagerRef MPM) {
+LLVMPY_AddVerifierPass(LLVMModulePassManagerRef MPM) {
     llvm::unwrap(MPM)->addPass(VerifierPass());
 }
 
@@ -95,13 +95,13 @@ LLVMPY_AddLoopUnrollPass_module(LLVMModulePassManagerRef MPM) {
 }
 
 API_EXPORT(void)
-LLVMPY_LLVMAddLoopRotatePass_module(LLVMModulePassManagerRef MPM) {
+LLVMPY_AddLoopRotatePass_module(LLVMModulePassManagerRef MPM) {
     llvm::unwrap(MPM)->addPass(createModuleToFunctionPassAdaptor(
         createFunctionToLoopPassAdaptor(LoopRotatePass())));
 }
 
 API_EXPORT(void)
-LLVMPY_LLVMAddInstructionCombinePass_module(LLVMModulePassManagerRef MPM) {
+LLVMPY_AddInstructionCombinePass_module(LLVMModulePassManagerRef MPM) {
     llvm::unwrap(MPM)->addPass(
         createModuleToFunctionPassAdaptor(InstCombinePass()));
 }
@@ -160,13 +160,13 @@ LLVMPY_AddLoopUnrollPass_function(LLVMFunctionPassManagerRef FPM) {
 }
 
 API_EXPORT(void)
-LLVMPY_LLVMAddLoopRotatePass_function(LLVMFunctionPassManagerRef FPM) {
+LLVMPY_AddLoopRotatePass_function(LLVMFunctionPassManagerRef FPM) {
     llvm::unwrap(FPM)->addPass(
         createFunctionToLoopPassAdaptor(LoopRotatePass()));
 }
 
 API_EXPORT(void)
-LLVMPY_LLVMAddInstructionCombinePass_function(LLVMFunctionPassManagerRef FPM) {
+LLVMPY_AddInstructionCombinePass_function(LLVMFunctionPassManagerRef FPM) {
     llvm::unwrap(FPM)->addPass(InstCombinePass());
 }
 

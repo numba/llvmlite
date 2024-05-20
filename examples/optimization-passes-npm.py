@@ -44,7 +44,7 @@ llmod = llvm.parse_assembly(strmod)
 print(llmod)
 
 target_machine = llvm.Target.from_default_triple().create_target_machine()
-pto = llvm.create_pipeline_options()
+pto = llvm.create_pipeline_tuning_options()
 pto.opt_level = 0
 pb = llvm.create_pass_builder(target_machine, pto)
 

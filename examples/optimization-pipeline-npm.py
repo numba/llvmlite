@@ -44,10 +44,10 @@ print(llmod)
 
 target_machine = llvm.Target.from_default_triple().create_target_machine()
 
-pto = llvm.create_pipeline_options()
+pto = llvm.create_pipeline_tuning_options()
 pto.opt_level = 3
 pb = llvm.create_pass_builder(target_machine, pto)
-pm = pb.getNewModulePassManager()
+pm = pb.getModulePassManager()
 pm.run(llmod, pb)
 
 # pmb = llvm.create_pass_manager_builder()

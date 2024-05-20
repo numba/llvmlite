@@ -77,11 +77,11 @@ respective `function` and `module` pass managers.
    Create a new pass builder. This takes :class:`TargetMachine` and 
    :class:`PipelineTuningOptions` objects as parameters.
 
-  .. method:: getNewModulePassManager()
+  .. method:: getModulePassManager()
     
     Return a populated `ModulePassManager` object based on PTO settings.
 
-  .. method:: getNewFunctionPassManager()
+  .. method:: getFunctionPassManager()
     
     Return a populated `FunctionPassManager` object based on PTO settings.
 
@@ -97,7 +97,7 @@ respective `function` and `module` pass managers.
       *module*, a :class:`ModuleRef` instance.
 
    Use individual ``add_*`` methods to add optimization passes
-   or use :meth:`PassBuilder.getNewModulePassManager` to get 
+   or use :meth:`PassBuilder.getModulePassManager` to get 
    optimization passes populated `NewModulePassManager` object.
 
 .. class:: NewFunctionPassManager()
@@ -111,7 +111,7 @@ respective `function` and `module` pass managers.
       *function*, a :class:`ValueRef` instance.
 
    Use individual ``add_*`` methods to add optimization passes
-   or use :meth:`PassBuilder.getNewFunctionPassManager` to get 
+   or use :meth:`PassBuilder.getFunctionPassManager` to get 
    optimization passes populated `NewFunctionPassManager` object.
 
 
