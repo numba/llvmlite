@@ -3054,6 +3054,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         mpm.add_loop_rotate_pass()
         mpm.add_instruction_combine_pass()
         mpm.add_jump_threading_pass()
+        mpm.add_refprune_pass()
 
 
 class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
@@ -3094,6 +3095,7 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         fpm.add_loop_rotate_pass()
         fpm.add_instruction_combine_pass()
         fpm.add_jump_threading_pass()
+        fpm.add_refprune_pass()
 
 
 if __name__ == "__main__":
