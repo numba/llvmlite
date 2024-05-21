@@ -86,7 +86,7 @@ respective `function` and `module` pass managers.
     Return a populated `FunctionPassManager` object based on PTO settings.
 
 
-.. class:: NewModulePassManager()
+.. class:: ModulePassManager()
 
    Create a new pass manager to run optimization passes on a
    llvm module.
@@ -98,9 +98,9 @@ respective `function` and `module` pass managers.
 
    Use individual ``add_*`` methods to add optimization passes
    or use :meth:`PassBuilder.getModulePassManager` to get 
-   optimization passes populated `NewModulePassManager` object.
+   optimization passes populated `ModulePassManager` object.
 
-.. class:: NewFunctionPassManager()
+.. class:: FunctionPassManager()
 
    Create a new pass manager to run optimization passes on a
    llvm function.
@@ -112,7 +112,7 @@ respective `function` and `module` pass managers.
 
    Use individual ``add_*`` methods to add optimization passes
    or use :meth:`PassBuilder.getFunctionPassManager` to get 
-   optimization passes populated `NewFunctionPassManager` object.
+   optimization passes populated `FunctionPassManager` object.
 
 
 Legacy Pass Manager

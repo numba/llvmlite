@@ -3,11 +3,11 @@ from llvmlite.binding import ffi
 
 
 def create_new_module_pass_manager():
-    return NewModulePassManager()
+    return ModulePassManager()
 
 
 def create_new_function_pass_manager():
-    return NewFunctionPassManger()
+    return FunctionPassManager()
 
 
 def create_pass_builder(tm, pto):
@@ -18,7 +18,7 @@ def create_pipeline_tuning_options(opt_level=2, size_level=0):
     return PipelineTuningOptions(opt_level=opt_level, size_level=size_level)
 
 
-class NewModulePassManager(ffi.ObjectRef):
+class ModulePassManager(ffi.ObjectRef):
 
     def __init__(self, ptr=None):
         if ptr is None:
@@ -53,7 +53,7 @@ class NewModulePassManager(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposeNewModulePassManger(self)
 
 
-class NewFunctionPassManger(ffi.ObjectRef):
+class FunctionPassManager(ffi.ObjectRef):
 
     def __init__(self, ptr=None):
         if ptr is None:
@@ -87,12 +87,10 @@ class NewFunctionPassManger(ffi.ObjectRef):
 
 class PipelineTuningOptions(ffi.ObjectRef):
 
-    def __init__(self, ptr=None, opt_level=2, size_level=0):
-        if ptr is None:
-            ptr = ffi.lib.LLVMPY_CreatePipelineTuningOptions()
+    def __init__(self, opt_level=2, size_level=0):
+        super().__init__(ffi.lib.LLVMPY_CreatePipelineTuningOptions())
         self.opt_level = opt_level
         self.size_level = size_level
-        super().__init__(ptr)
 
     @property
     def loop_interleaving(self):
@@ -141,21 +139,19 @@ class PipelineTuningOptions(ffi.ObjectRef):
 
 class PassBuilder(ffi.ObjectRef):
 
-    def __init__(self, tm, pto, ptr=None):
-        if ptr is None:
-            ptr = ffi.lib.LLVMPY_CreatePassBuilder(tm, pto)
+    def __init__(self, tm, pto):
+        super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto))
         self._pto = pto
         self._tm = tm
-        super().__init__(ptr)
 
     def getModulePassManager(self):
-        return NewModulePassManager(
+        return ModulePassManager(
             ffi.lib.LLVMPY_buildPerModuleDefaultPipeline(
                 self, self._pto.opt_level, self._pto.size_level)
         )
 
     def getFunctionPassManager(self):
-        return NewFunctionPassManger(
+        return FunctionPassManager(
             ffi.lib.LLVMPY_buildFunctionSimplificationPipeline(
                 self, self._pto.opt_level, self._pto.size_level)
         )
