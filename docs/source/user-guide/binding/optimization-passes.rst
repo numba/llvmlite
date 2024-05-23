@@ -4,9 +4,8 @@ Optimization passes
 
 .. currentmodule:: llvmlite.binding
 
-LLVM gives you the opportunity to fine-tune optimization passes.
-Optimization passes are managed by a pass manager. There are 2
-kinds of pass managers:
+LLVM gives you the opportunity to fine-tune optimization passes.  Optimization
+passes are managed by a pass manager. There are two kinds of pass managers:
 
 * :class:`FunctionPassManager`, for optimizations that work on
   single functions.
@@ -14,106 +13,148 @@ kinds of pass managers:
 * :class:`ModulePassManager`, for optimizations that work on
   whole modules.
 
-For optimization pipeline LLVM supports 2 different pass managing mechanisms.
-The old one is now renamed to LegacyPassManager and is deprecated. From `llvm17`
-LegacyPassManager's support is no longer reliable with many passes not working 
-with it.
-
-`llvmlite` right now supports both the `LegacyPassManager` and the `NewPassManager`, 
-but consider `LegacyPassManager` deprecated and you are advised to shift your 
-code to `NewPassManager` APIs.
-
+llvmlite provides bindings for LLVM's *New* and *Legacy* pass managers, which
+have slightly different APIs and behaviour. The differences between them and the
+motivations for the New Pass Manager are outlined in the `LLVM Blog post on the
 New Pass Manager
-===================
+<https://blog.llvm.org/posts/2021-03-26-the-new-pass-manager/>`_.
 
-To manage the optimization attributes we first need to instantiate
-.. class:: PipelineTuningOptions()
+In a future version of llvmlite, likely coinciding with a minimum LLVM version
+requirement of 17, support for the Legacy Pass Manager will be removed. It is
+recommended that new code using llvmlite uses the New Pass Manager, and existing
+code using the Legacy Pass Manager be updated to use the New Pass Manager.
+
+
+New Pass Manager APIs
+=====================
+
+To manage the optimization attributes we first need to instantiate a
+:class:`PipelineTuningOptions` instance:
+
+.. class:: PipelineTuningOptions(speed_level=2, size_level=0)
    
-   Creates a new PipelineTuningOptions object
+   Creates a new PipelineTuningOptions object.
 
-   The following writable attributes are available:
+   The following writable attributes are available, whose default values depend
+   on the initial setting of the speed and size optimization levels:
 
-    * .. attribute:: loop_interleaving
+   * .. attribute:: loop_interleaving
 
-          If ``False``, disable loop interleaving.
+        Enable loop interleaving.
 
-    * .. attribute:: loop_vectorization
+   * .. attribute:: loop_vectorization
 
-          If ``True``, allow vectorizing loops.
+        Enable loop vectorization.
 
-    * .. attribute:: slp_vectorize
+   * .. attribute:: slp_vectorization
 
-          If ``True``, enable the SLP vectorizer, which uses a
-          different algorithm than the loop vectorizer. Both may
-          be enabled at the same time.
+        Enable SLP vectorization, which uses a different algorithm to
+        loop vectorization. Both may be enabled at the same time.
 
-    * .. attribute:: loop_unrolling
+   * .. attribute:: loop_unrolling
 
-          If ``False``, disable loop unrolling.
+        Enable loop unrolling.
 
-..     FIXME: Available from llvm16
-..     * .. attribute:: inlining_threshold
+   * .. attribute:: speed_level
 
-..           The integer threshold for inlining one function into
-..           another. The higher the number, the more likely that
-..           inlining will occur. This attribute is write-only.
+        The level of optimization for speed, as an integer between 0 and 3.
 
-    * .. attribute:: opt_level
+   * .. attribute:: size_level
 
-          The general optimization level, as an integer between 0
-          and 3.
+        The level of optimization for size, as an integer between 0 and 2.
 
-    * .. attribute:: size_level
+.. FIXME: Available from llvm16
+.. * .. attribute:: inlining_threshold
 
-          Whether and how much to optimize for size, as an integer
-          between 0 and 2.
+..      The integer threshold for inlining one function into
+..      another. The higher the number, the more likely that
+..      inlining will occur. This attribute is write-only.
 
 
-Similar to `LegacyPassManager` we need a `PassBuilder` object to manage the 
-respective `function` and `module` pass managers.
+We also need a :class:`PassBuilder` object to manage the respective function
+and module pass managers:
 
 .. class:: PassBuilder(target_machine, pipeline_tuning_options)
    
-   Create a new pass builder. This takes :class:`TargetMachine` and 
-   :class:`PipelineTuningOptions` objects as parameters.
+   A pass builder that uses the given :class:`TargetMachine` and
+   :class:`PipelineTuningOptions` instances.
 
-  .. method:: getModulePassManager()
+   .. method:: getModulePassManager()
     
-    Return a populated `ModulePassManager` object based on PTO settings.
+      Return a populated :class:`ModulePassManager` object based on PTO settings.
 
-  .. method:: getFunctionPassManager()
+   .. method:: getFunctionPassManager()
     
-    Return a populated `FunctionPassManager` object based on PTO settings.
+      Return a populated :class:`FunctionPassManager` object based on PTO
+      settings.
 
+
+The :class:`ModulePassManager` and :class:`FunctionPassManager` classes
+implement the module and function pass managers. These can be created with
+passes populated by using the :meth:`PassBuilder.getModulePassManager` and
+:meth:`PassBuilder.getFunctionPassManager` methods, or they can be instantiated
+directly, then passes can be added using the ``add_*`` methods.
 
 .. class:: ModulePassManager()
 
-   Create a new pass manager to run optimization passes on a
-   llvm module.
+   A pass manager for running optimization passes on an LLVM module.
 
-  .. method:: run(module, passbuilder)
+   .. method:: add_verifier()
+
+      Add the `Module Verifier
+      <https://llvm.org/docs/Passes.html#verify-module-verifier>`_ pass.
+
+   .. method:: run(module, passbuilder)
     
-      Run optimization passes on the
-      *module*, a :class:`ModuleRef` instance.
+      Run optimization passes on *module*, a :class:`ModuleRef` instance.
 
-   Use individual ``add_*`` methods to add optimization passes
-   or use :meth:`PassBuilder.getModulePassManager` to get 
-   optimization passes populated `ModulePassManager` object.
 
 .. class:: FunctionPassManager()
 
-   Create a new pass manager to run optimization passes on a
-   llvm function.
+   A pass manager for running optimization passes on an LLVM function.
 
-  .. method:: run(function, passbuilder)
-    
-      Run optimization passes on the
-      *function*, a :class:`ValueRef` instance.
+   .. method:: run(function, passbuilder)
+  
+      Run optimization passes on *function*, a :class:`ValueRef` instance.
 
-   Use individual ``add_*`` methods to add optimization passes
-   or use :meth:`PassBuilder.getFunctionPassManager` to get 
-   optimization passes populated `FunctionPassManager` object.
 
+The ``add_*`` methods supported by both pass manager classes are:
+
+.. currentmodule:: None
+
+.. method:: add_aa_eval_pass()
+
+   Add the `Exhaustive Alias Analysis Precision Evaluator
+   <https://llvm.org/docs/Passes.html#aa-eval-exhaustive-alias-analysis-precision-evaluator>`_
+   pass.
+
+.. method:: add_loop_unroll_pass()
+
+   Add the `Loop Unroll
+   <https://llvm.org/docs/Passes.html#loop-unroll-unroll-loops>`_ pass.
+
+.. method:: add_loop_rotate_pass()
+
+   Add the `Loop Rotate
+   <https://llvm.org/docs/Passes.html#loop-rotate-rotate-loops>`_ pass.
+
+.. method:: add_instruction_combine_pass()
+
+   Add the `Combine Redundant Instructions
+   <https://llvm.org/docs/Passes.html#instcombine-combine-redundant-instructions>`_
+   pass.
+
+.. method:: add_jump_threading_pass()
+
+   Add the `Jump Threading
+   <https://llvm.org/docs/Passes.html#jump-threading-jump-threading>`_ pass.
+
+.. method:: add_simplify_cfg_pass()
+
+   Add the `Simplify CFG
+   <https://llvm.org/docs/Passes.html#simplifycfg-simplify-the-cfg>`_ pass.
+
+.. currentmodule:: llvmlite.binding
 
 Legacy Pass Manager
 ===================
@@ -128,42 +169,42 @@ create and configure a :class:`PassManagerBuilder`.
 
    The ``populate`` method is available:
 
-  .. method:: populate(pm)
+   .. method:: populate(pm)
 
-    Populate the pass manager *pm* with the optimization passes
-    configured in this pass manager builder.
+      Populate the pass manager *pm* with the optimization passes
+      configured in this pass manager builder.
 
-    The following writable attributes are available:
+   The following writable attributes are available:
 
-    * .. attribute:: disable_unroll_loops
+   * .. attribute:: disable_unroll_loops
 
-          If ``True``, disable loop unrolling.
+        If ``True``, disable loop unrolling.
 
-    * .. attribute:: inlining_threshold
+   * .. attribute:: inlining_threshold
 
-          The integer threshold for inlining one function into
-          another. The higher the number, the more likely that
-          inlining will occur. This attribute is write-only.
+        The integer threshold for inlining one function into
+        another. The higher the number, the more likely that
+        inlining will occur. This attribute is write-only.
 
-    * .. attribute:: loop_vectorize
+   * .. attribute:: loop_vectorize
 
-          If ``True``, allow vectorizing loops.
+        If ``True``, allow vectorizing loops.
 
-    * .. attribute:: opt_level
+   * .. attribute:: opt_level
 
-          The general optimization level, as an integer between 0
-          and 3.
+        The general optimization level, as an integer between 0
+        and 3.
 
-    * .. attribute:: size_level
+   * .. attribute:: size_level
 
-          Whether and how much to optimize for size, as an integer
-          between 0 and 2.
+        Whether and how much to optimize for size, as an integer
+        between 0 and 2.
 
-    * .. attribute:: slp_vectorize
+   * .. attribute:: slp_vectorize
 
-          If ``True``, enable the SLP vectorizer, which uses a
-          different algorithm than the loop vectorizer. Both may
-          be enabled at the same time.
+        If ``True``, enable the SLP vectorizer, which uses a
+        different algorithm than the loop vectorizer. Both may
+        be enabled at the same time.
 
 
 .. class:: PassManager
@@ -246,6 +287,7 @@ create and configure a :class:`PassManagerBuilder`.
         See `instnamer pass documentation <http://llvm.org/docs/Passes.html#instnamer-assign-names-to-anonymous-instructions>`_.
 
 .. class:: ModulePassManager()
+   :no-index:
 
    Create a new pass manager to run optimization passes on a
    module.
@@ -253,6 +295,7 @@ create and configure a :class:`PassManagerBuilder`.
    The ``run`` method is available:
 
    .. method:: run(module)
+      :no-index:
 
       Run optimization passes on the
       *module*, a :class:`ModuleRef` instance.
@@ -261,6 +304,7 @@ create and configure a :class:`PassManagerBuilder`.
       to the module. Otherwise returns ``False``.
 
 .. class:: FunctionPassManager(module)
+   :no-index:
 
    Create a new pass manager to run optimization passes on a
    function of the given *module*, a :class:`ModuleRef` instance.
@@ -276,6 +320,7 @@ create and configure a :class:`PassManagerBuilder`.
         Run all the initializers of the optimization passes.
 
    * .. method:: run(function)
+        :no-index:
 
         Run optimization passes on *function*, a
         :class:`ValueRef` instance.
