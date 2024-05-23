@@ -2593,13 +2593,9 @@ class TestLLVMLockCallbacks(BaseTest):
 
 class NewPassManagerMixin(object):
 
-    def pipeline_tuning_options(self):
-        return llvm.create_pipeline_tuning_options()
-
-    def pb(self, opt_level=0):
+    def pb(self, opt_level=0, size_level=0):
         tm = self.target_machine(jit=False)
-        pto = self.pipeline_tuning_options()
-        pto.opt_level = opt_level
+        pto = llvm.create_pipeline_tuning_options(opt_level, size_level)
         pb = llvm.create_pass_builder(tm, pto)
         return pb
 
@@ -2608,11 +2604,27 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
 
     def test_pto(self):
         tm = self.target_machine(jit=False)
-        pto = self.pipeline_tuning_options()
-        pto.opt_level = 3
+        pto = llvm.create_pipeline_tuning_options(3, 0)
         pto.inlining_threshold = 2
         pb = llvm.create_pass_builder(tm, pto)
         pb.close()
+
+    def test_opt_level_constraints(self):
+        pto = llvm.create_pipeline_tuning_options()
+        with self.assertRaises(ValueError):
+            pto.opt_level = 4
+        with self.assertRaises(ValueError):
+            pto.opt_level = -1
+
+    def test_size_level_constraints(self):
+        pto = llvm.create_pipeline_tuning_options()
+        with self.assertRaises(ValueError):
+            pto.size_level = 3
+        with self.assertRaises(ValueError):
+            pto.opt_level = -1
+        with self.assertRaises(ValueError):
+            pto.opt_level = 3
+            pto.size_level = 2
 
     def test_close(self):
         pb = self.pb()

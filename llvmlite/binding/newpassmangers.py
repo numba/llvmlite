@@ -15,7 +15,7 @@ def create_pass_builder(tm, pto):
 
 
 def create_pipeline_tuning_options(opt_level=2, size_level=0):
-    return PipelineTuningOptions(opt_level=opt_level, size_level=size_level)
+    return PipelineTuningOptions(opt_level, size_level)
 
 
 class ModulePassManager(ffi.ObjectRef):
@@ -88,9 +88,35 @@ class FunctionPassManager(ffi.ObjectRef):
 class PipelineTuningOptions(ffi.ObjectRef):
 
     def __init__(self, opt_level=2, size_level=0):
-        super().__init__(ffi.lib.LLVMPY_CreatePipelineTuningOptions())
+        self._opt_level = None
+        self._size_level = None
         self.opt_level = opt_level
         self.size_level = size_level
+        super().__init__(ffi.lib.LLVMPY_CreatePipelineTuningOptions())
+
+    @property
+    def opt_level(self):
+        return self._opt_level
+
+    @opt_level.setter
+    def opt_level(self, value):
+        if not 0 <= value <= 3:
+            raise ValueError(
+                "Optimization level for speed should be 0, 1, 2, or 3")
+        self._opt_level = value
+
+    @property
+    def size_level(self):
+        return self._size_level
+
+    @size_level.setter
+    def size_level(self, value):
+        if not 0 <= value <= 2:
+            raise ValueError("Optimization level for size should be 0, 1, or 2")
+        if value != 0 and self.opt_level != 2:
+            raise ValueError(
+                "Optimize for size should be encoded with speedup level == 2")
+        self._size_level = value
 
     @property
     def loop_interleaving(self):
