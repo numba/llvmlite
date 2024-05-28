@@ -2591,6 +2591,83 @@ class TestLLVMLockCallbacks(BaseTest):
             llvm.ffi.unregister_lock_callback(acq, rel)
 
 
+class TestPipelineTuningOptions(BaseTest):
+
+    def pto(self):
+        return llvm.PipelineTuningOptions()
+
+    def test_pto(self):
+        pto = llvm.create_pipeline_tuning_options(3, 0)
+        pto.close()
+
+    def test_opt_level(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.opt_level, int)
+        for i in range(4):
+            pto.opt_level = i
+            self.assertEqual(pto.opt_level, i)
+
+    def test_size_level(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.size_level, int)
+        for i in range(3):
+            pto.size_level = i
+            self.assertEqual(pto.size_level, i)
+
+    # // FIXME: Available from llvm16
+    # def test_inlining_threshold(self):
+    #     pto = self.pto()
+    #     with self.assertRaises(NotImplementedError):
+    #         pto.inlining_threshold
+    #     for i in (25, 80, 350):
+    #         pto.inlining_threshold = i
+
+    def test_loop_interleaving(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_interleaving, bool)
+        for b in (True, False):
+            pto.loop_interleaving = b
+            self.assertEqual(pto.loop_interleaving, b)
+
+    def test_loop_vectorization(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_vectorization, bool)
+        for b in (True, False):
+            pto.loop_vectorization = b
+            self.assertEqual(pto.loop_vectorization, b)
+
+    def test_slp_vectorization(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.slp_vectorization, bool)
+        for b in (True, False):
+            pto.slp_vectorization = b
+            self.assertEqual(pto.slp_vectorization, b)
+
+    def test_loop_unrolling(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_unrolling, bool)
+        for b in (True, False):
+            pto.loop_unrolling = b
+            self.assertEqual(pto.loop_unrolling, b)
+
+    def test_opt_level_constraints(self):
+        pto = self.pto()
+        with self.assertRaises(ValueError):
+            pto.opt_level = 4
+        with self.assertRaises(ValueError):
+            pto.opt_level = -1
+
+    def test_size_level_constraints(self):
+        pto = self.pto()
+        with self.assertRaises(ValueError):
+            pto.size_level = 3
+        with self.assertRaises(ValueError):
+            pto.opt_level = -1
+        with self.assertRaises(ValueError):
+            pto.opt_level = 3
+            pto.size_level = 2
+
+
 class NewPassManagerMixin(object):
 
     def pb(self, opt_level=0, size_level=0):
@@ -2606,25 +2683,12 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         tm = self.target_machine(jit=False)
         pto = llvm.create_pipeline_tuning_options(3, 0)
         pto.inlining_threshold = 2
+        pto.loop_interleaving = True
+        pto.loop_vectorization = True
+        pto.slp_vectorization = True
+        pto.loop_unrolling = False
         pb = llvm.create_pass_builder(tm, pto)
         pb.close()
-
-    def test_opt_level_constraints(self):
-        pto = llvm.create_pipeline_tuning_options()
-        with self.assertRaises(ValueError):
-            pto.opt_level = 4
-        with self.assertRaises(ValueError):
-            pto.opt_level = -1
-
-    def test_size_level_constraints(self):
-        pto = llvm.create_pipeline_tuning_options()
-        with self.assertRaises(ValueError):
-            pto.size_level = 3
-        with self.assertRaises(ValueError):
-            pto.opt_level = -1
-        with self.assertRaises(ValueError):
-            pto.opt_level = 3
-            pto.size_level = 2
 
     def test_close(self):
         pb = self.pb()
