@@ -108,3 +108,4 @@ with llvm.create_mcjit_compiler(llmod, target_machine) as ee:
     res = cfunc(A.ctypes.data_as(POINTER(c_int)), A.size)
 
     print(res, A.sum())
+
