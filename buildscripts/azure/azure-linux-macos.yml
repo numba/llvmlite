@@ -42,7 +42,7 @@ jobs:
     - script: |
         set -e
         export PATH=$HOME/miniconda3/bin:$PATH
-        conda install -y sphinx sphinx_rtd_theme pygments
+        conda install -y -c conda-forge sphinx sphinx_rtd_theme pygments
         echo "Building docs"
         cd docs
         make SPHINXOPTS=-Wn clean html
