@@ -90,10 +90,7 @@ and module pass managers:
 
 
 The :class:`ModulePassManager` and :class:`FunctionPassManager` classes
-implement the module and function pass managers. These can be created with
-passes populated by using the :meth:`PassBuilder.getModulePassManager` and
-:meth:`PassBuilder.getFunctionPassManager` methods, or they can be instantiated
-directly, then passes can be added using the ``add_*`` methods.
+implement the module and function pass managers:
 
 .. class:: ModulePassManager()
 
@@ -116,6 +113,24 @@ directly, then passes can be added using the ``add_*`` methods.
    .. method:: run(function, passbuilder)
   
       Run optimization passes on *function*, a :class:`ValueRef` instance.
+
+
+These can be created with passes populated by using the
+:meth:`PassBuilder.getModulePassManager` and
+:meth:`PassBuilder.getFunctionPassManager` methods, or they can be instantiated
+unpopulated, then passes can be added using the ``add_*`` methods.
+
+To instantiate the unpopulated instances, use:
+
+.. function:: create_new_module_pass_manager()
+
+   Create an unpopulated :class:`ModulePassManager` instance.
+
+and
+
+.. function:: create_new_function_pass_manager()
+
+   Create an unpopulated :class:`FunctionPassManager` instance.
 
 
 The ``add_*`` methods supported by both pass manager classes are:
@@ -156,8 +171,8 @@ The ``add_*`` methods supported by both pass manager classes are:
 
 .. currentmodule:: llvmlite.binding
 
-Legacy Pass Manager
-===================
+Legacy Pass Manager APIs
+========================
 
 To instantiate either of these pass managers, you first need to
 create and configure a :class:`PassManagerBuilder`.
