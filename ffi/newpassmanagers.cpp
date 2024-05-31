@@ -292,7 +292,7 @@ LLVMPY_buildPerModuleDefaultPipeline(LLVMPassBuilderRef PBref, int speed_level,
     PassBuilder *PB = llvm::unwrap(PBref);
     OptimizationLevel OL = mapLevel(speed_level, size_level);
 
-    // FXIME: No need to explicitly take care of O0 from LLVM 17
+    // FIXME: No need to explicitly take care of O0 from LLVM 17
     if (OL == OptimizationLevel::O0) {
         return llvm::wrap(
             new ModulePassManager(PB->buildO0DefaultPipeline(OL)));
