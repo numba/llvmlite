@@ -115,7 +115,7 @@ class PipelineTuningOptions(ffi.ObjectRef):
             raise ValueError("Optimization level for size should be 0, 1, or 2")
         if value != 0 and self.speed_level != 2:
             raise ValueError(
-                "Optimize for size should be encoded with speedup level == 2")
+                "Optimization for size should be encoded with speed level == 2")
         self._size_level = value
 
     @property
