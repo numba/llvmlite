@@ -2594,10 +2594,10 @@ class TestLLVMLockCallbacks(BaseTest):
 class TestPipelineTuningOptions(BaseTest):
 
     def pto(self):
-        return llvm.PipelineTuningOptions()
+        return llvm.create_pipeline_tuning_options()
 
-    def test_pto(self):
-        pto = llvm.create_pipeline_tuning_options(3, 0)
+    def test_close(self):
+        pto = self.pto()
         pto.close()
 
     def test_speed_level(self):
@@ -2679,6 +2679,10 @@ class NewPassManagerMixin(object):
 
 class TestPassBuilder(BaseTest, NewPassManagerMixin):
 
+    def test_close(self):
+        pb = self.pb()
+        pb.close()
+
     def test_pto(self):
         tm = self.target_machine(jit=False)
         pto = llvm.create_pipeline_tuning_options(3, 0)
@@ -2690,18 +2694,13 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         pb = llvm.create_pass_builder(tm, pto)
         pb.close()
 
-    def test_close(self):
-        pb = self.pb()
-        pb.close()
-        pb.close()
-
-    def test_getMPM(self):
+    def test_get_module_pass_manager(self):
         pb = self.pb()
         mpm = pb.getModulePassManager()
         mpm.run(self.module(), pb)
         pb.close()
 
-    def test_getFPM(self):
+    def test_get_function_pass_manager(self):
         pb = self.pb()
         fpm = pb.getFunctionPassManager()
         fpm.run(self.module().get_function("sum"), pb)
@@ -2717,7 +2716,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         mpm.close()
 
     def test_run(self):
-        pb = self.pb(3)
+        pb = self.pb(speed_level=3, size_level=0)
         mod = self.module()
         orig_asm = str(mod)
         mpm = pb.getModulePassManager()
@@ -2737,15 +2736,15 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         self.assertIn("%.3", orig_asm)
         self.assertNotIn("%.3", optimized_asm)
 
-    def test_passes(self):
+    def test_add_passes(self):
         mpm = self.pm()
+        mpm.add_verifier()
         mpm.add_aa_eval_pass()
+        mpm.add_simplify_cfg_pass()
+        mpm.add_loop_unroll_pass()
+        mpm.add_loop_rotate_pass()
         mpm.add_instruction_combine_pass()
         mpm.add_jump_threading_pass()
-        mpm.add_loop_rotate_pass()
-        mpm.add_loop_unroll_pass()
-        mpm.add_simplify_cfg_pass()
-        mpm.add_verifier()
 
 
 class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
@@ -2777,6 +2776,15 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         optimized_asm = str(fun)
         self.assertIn("%.3", orig_asm)
         self.assertNotIn("%.3", optimized_asm)
+
+    def test_add_passes(self):
+        fpm = self.pm()
+        fpm.add_aa_eval_pass()
+        fpm.add_simplify_cfg_pass()
+        fpm.add_loop_unroll_pass()
+        fpm.add_loop_rotate_pass()
+        fpm.add_instruction_combine_pass()
+        fpm.add_jump_threading_pass()
 
 
 if __name__ == "__main__":

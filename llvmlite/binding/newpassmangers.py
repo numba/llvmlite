@@ -60,14 +60,14 @@ class FunctionPassManager(ffi.ObjectRef):
             ptr = ffi.lib.LLVMPY_CreateNewFunctionPassManager()
         super().__init__(ptr)
 
+    def run(self, fun, pb):
+        ffi.lib.LLVMPY_RunNewFunctionPassManager(self, pb, fun)
+
     def add_aa_eval_pass(self):
         ffi.lib.LLVMPY_AddAAEvalPass_function(self)
 
     def add_simplify_cfg_pass(self):
         ffi.lib.LLVMPY_AddSimplifyCFGPass_function(self)
-
-    def run(self, fun, pb):
-        ffi.lib.LLVMPY_RunNewFunctionPassManager(self, pb, fun)
 
     def add_loop_unroll_pass(self):
         ffi.lib.LLVMPY_AddLoopUnrollPass_function(self)
