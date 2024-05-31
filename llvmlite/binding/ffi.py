@@ -25,6 +25,7 @@ LLVMTargetRef = _make_opaque_ref("LLVMTarget")
 LLVMTargetMachineRef = _make_opaque_ref("LLVMTargetMachine")
 LLVMMemoryBufferRef = _make_opaque_ref("LLVMMemoryBuffer")
 LLVMAttributeListIterator = _make_opaque_ref("LLVMAttributeListIterator")
+LLVMElementIterator = _make_opaque_ref("LLVMElementIterator")
 LLVMAttributeSetIterator = _make_opaque_ref("LLVMAttributeSetIterator")
 LLVMGlobalsIterator = _make_opaque_ref("LLVMGlobalsIterator")
 LLVMFunctionsIterator = _make_opaque_ref("LLVMFunctionsIterator")
@@ -32,6 +33,7 @@ LLVMBlocksIterator = _make_opaque_ref("LLVMBlocksIterator")
 LLVMArgumentsIterator = _make_opaque_ref("LLVMArgumentsIterator")
 LLVMInstructionsIterator = _make_opaque_ref("LLVMInstructionsIterator")
 LLVMOperandsIterator = _make_opaque_ref("LLVMOperandsIterator")
+LLVMIncomingBlocksIterator = _make_opaque_ref("LLVMIncomingBlocksIterator")
 LLVMTypesIterator = _make_opaque_ref("LLVMTypesIterator")
 LLVMObjectCacheRef = _make_opaque_ref("LLVMObjectCache")
 LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
@@ -80,18 +82,54 @@ class _LLVMLock:
         self._lock.release()
 
 
+class _suppress_cleanup_errors:
+    def __init__(self, context):
+        self._context = context
+
+    def __enter__(self):
+        return self._context.__enter__()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            return self._context.__exit__(exc_type, exc_value, traceback)
+        except PermissionError:
+            pass  # Resource dylibs can't be deleted on Windows.
+
+
 class _lib_wrapper(object):
     """Wrap libllvmlite with a lock such that only one thread may access it at
     a time.
 
     This class duck-types a CDLL.
     """
-    __slots__ = ['_lib', '_fntab', '_lock']
+    __slots__ = ['_lib_handle', '_fntab', '_lock']
 
-    def __init__(self, lib):
-        self._lib = lib
+    def __init__(self):
+        self._lib_handle = None
         self._fntab = {}
         self._lock = _LLVMLock()
+
+    def _load_lib(self):
+        try:
+            with _suppress_cleanup_errors(_importlib_resources_path(
+                    __name__.rpartition(".")[0],
+                    get_library_name())) as lib_path:
+                self._lib_handle = ctypes.CDLL(str(lib_path))
+                # Check that we can look up expected symbols.
+                _ = self._lib_handle.LLVMPY_GetVersionInfo()
+        except (OSError, AttributeError) as e:
+            # OSError may be raised if the file cannot be opened, or is not
+            # a shared library.
+            # AttributeError is raised if LLVMPY_GetVersionInfo does not
+            # exist.
+            raise OSError("Could not find/load shared object file") from e
+
+    @property
+    def _lib(self):
+        # Not threadsafe.
+        if not self._lib_handle:
+            self._load_lib()
+        return self._lib_handle
 
     def __getattr__(self, name):
         try:
@@ -173,23 +211,7 @@ _importlib_resources_path = (_importlib_resources_path_repl
                              else _impres.path)
 
 
-_lib_name = get_library_name()
-
-
-pkgname = ".".join(__name__.split(".")[0:-1])
-try:
-    _lib_handle = _importlib_resources_path(pkgname, _lib_name)
-    lib = ctypes.CDLL(str(_lib_handle.__enter__()))
-    # on windows file handles to the dll file remain open after
-    # loading, therefore we can not exit the context manager
-    # which might delete the file
-except OSError as e:
-    msg = f"""Could not find/load shared object file: {_lib_name}
- Error was: {e}"""
-    raise OSError(msg)
-
-
-lib = _lib_wrapper(lib)
+lib = _lib_wrapper()
 
 
 def register_lock_callback(acq_fn, rel_fn):

@@ -1,8 +1,10 @@
-from ctypes import POINTER, c_char_p, c_int, c_size_t, c_uint, c_bool, c_void_p
+from ctypes import (POINTER, byref, cast, c_char_p, c_double, c_int, c_size_t,
+                    c_uint, c_uint64, c_bool, c_void_p)
 import enum
 
 from llvmlite.binding import ffi
 from llvmlite.binding.common import _decode_string, _encode_string
+from llvmlite.binding.typeref import TypeRef
 
 
 class Linkage(enum.IntEnum):
@@ -43,35 +45,39 @@ class StorageClass(enum.IntEnum):
     dllexport = 2
 
 
-class TypeRef(ffi.ObjectRef):
-    """A weak reference to a LLVM type
-    """
-    @property
-    def name(self):
-        """
-        Get type name
-        """
-        return ffi.ret_string(ffi.lib.LLVMPY_GetTypeName(self))
+class ValueKind(enum.IntEnum):
+    # The LLVMValueKind enum from llvm-c/Core.h
 
-    @property
-    def is_pointer(self):
-        """
-        Returns true is the type is a pointer type.
-        """
-        return ffi.lib.LLVMPY_TypeIsPointer(self)
+    argument = 0
+    basic_block = 1
+    memory_use = 2
+    memory_def = 3
+    memory_phi = 4
 
-    @property
-    def element_type(self):
-        """
-        Returns the pointed-to type. When the type is not a pointer,
-        raises exception.
-        """
-        if not self.is_pointer:
-            raise ValueError("Type {} is not a pointer".format(self))
-        return TypeRef(ffi.lib.LLVMPY_GetElementType(self))
+    function = 5
+    global_alias = 6
+    global_ifunc = 7
+    global_variable = 8
+    block_address = 9
+    constant_expr = 10
+    constant_array = 11
+    constant_struct = 12
+    constant_vector = 13
 
-    def __str__(self):
-        return ffi.ret_string(ffi.lib.LLVMPY_PrintType(self))
+    undef_value = 14
+    constant_aggregate_zero = 15
+    constant_data_array = 16
+    constant_data_vector = 17
+    constant_int = 18
+    constant_fp = 19
+    constant_pointer_null = 20
+    constant_token_none = 21
+
+    metadata_as_value = 22
+    inline_asm = 23
+
+    instruction = 24
+    poison_value = 25
 
 
 class ValueRef(ffi.ObjectRef):
@@ -139,6 +145,14 @@ class ValueRef(ffi.ObjectRef):
     @property
     def is_operand(self):
         return self._kind == 'operand'
+
+    @property
+    def is_constant(self):
+        return bool(ffi.lib.LLVMPY_IsConstant(self))
+
+    @property
+    def value_kind(self):
+        return ValueKind(ffi.lib.LLVMPY_GetValueKind(self))
 
     @property
     def name(self):
@@ -299,6 +313,65 @@ class ValueRef(ffi.ObjectRef):
                              % (self._kind,))
         return ffi.ret_string(ffi.lib.LLVMPY_GetOpcodeName(self))
 
+    @property
+    def incoming_blocks(self):
+        """
+        Return an iterator over this phi instruction's incoming blocks.
+        The iterator will yield a ValueRef for each block.
+        """
+        if not self.is_instruction or self.opcode != 'phi':
+            raise ValueError('expected phi instruction value, got %s'
+                             % (self._kind,))
+        it = ffi.lib.LLVMPY_PhiIncomingBlocksIter(self)
+        parents = self._parents.copy()
+        parents.update(instruction=self)
+        return _IncomingBlocksIterator(it, parents)
+
+    def get_constant_value(self, signed_int=False, round_fp=False):
+        """
+        Return the constant value, either as a literal (when supported)
+        or as a string.
+
+        Parameters
+        -----------
+        signed_int : bool
+            if True and the constant is an integer, returns a signed version
+        round_fp : bool
+            if True and the constant is a floating point value, rounds the
+            result upon accuracy loss (e.g., when querying an fp128 value).
+            By default, raises an exception on accuracy loss
+        """
+        if not self.is_constant:
+            raise ValueError('expected constant value, got %s'
+                             % (self._kind,))
+
+        if self.value_kind == ValueKind.constant_int:
+            # Python integers are also arbitrary-precision
+            little_endian = c_bool(False)
+            words = ffi.lib.LLVMPY_GetConstantIntNumWords(self)
+            ptr = ffi.lib.LLVMPY_GetConstantIntRawValue(
+                self, byref(little_endian))
+            asbytes = bytes(cast(ptr, POINTER(c_uint64 * words)).contents)
+            return int.from_bytes(
+                asbytes,
+                ('little' if little_endian.value else 'big'),
+                signed=signed_int,
+            )
+        elif self.value_kind == ValueKind.constant_fp:
+            # Convert floating-point values to double-precision (Python float)
+            accuracy_loss = c_bool(False)
+            value = ffi.lib.LLVMPY_GetConstantFPValue(self,
+                                                      byref(accuracy_loss))
+            if accuracy_loss.value and not round_fp:
+                raise ValueError(
+                    'Accuracy loss encountered in conversion of constant '
+                    f'value {str(self)}')
+
+            return value
+
+        # Otherwise, return the IR string
+        return str(self)
+
 
 class _ValueIterator(ffi.ObjectRef):
 
@@ -403,6 +476,17 @@ class _OperandsIterator(_ValueIterator):
         return ffi.lib.LLVMPY_OperandsIterNext(self)
 
 
+class _IncomingBlocksIterator(_ValueIterator):
+
+    kind = 'block'
+
+    def _dispose(self):
+        self._capi.LLVMPY_DisposeIncomingBlocksIter(self)
+
+    def _next(self):
+        return ffi.lib.LLVMPY_IncomingBlocksIterNext(self)
+
+
 # FFI
 
 ffi.lib.LLVMPY_PrintValueToString.argtypes = [
@@ -420,17 +504,6 @@ ffi.lib.LLVMPY_SetValueName.argtypes = [ffi.LLVMValueRef, c_char_p]
 
 ffi.lib.LLVMPY_TypeOf.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_TypeOf.restype = ffi.LLVMTypeRef
-
-
-ffi.lib.LLVMPY_PrintType.argtypes = [ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_PrintType.restype = c_void_p
-
-ffi.lib.LLVMPY_TypeIsPointer.argtypes = [ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_TypeIsPointer.restype = c_bool
-
-ffi.lib.LLVMPY_GetElementType.argtypes = [ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_GetElementType.restype = ffi.LLVMTypeRef
-
 
 ffi.lib.LLVMPY_GetTypeName.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetTypeName.restype = c_void_p
@@ -485,6 +558,9 @@ ffi.lib.LLVMPY_BlockInstructionsIter.restype = ffi.LLVMInstructionsIterator
 ffi.lib.LLVMPY_InstructionOperandsIter.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_InstructionOperandsIter.restype = ffi.LLVMOperandsIterator
 
+ffi.lib.LLVMPY_PhiIncomingBlocksIter.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_PhiIncomingBlocksIter.restype = ffi.LLVMIncomingBlocksIterator
+
 ffi.lib.LLVMPY_DisposeAttributeListIter.argtypes = [
     ffi.LLVMAttributeListIterator]
 
@@ -495,6 +571,9 @@ ffi.lib.LLVMPY_DisposeBlocksIter.argtypes = [ffi.LLVMBlocksIterator]
 ffi.lib.LLVMPY_DisposeInstructionsIter.argtypes = [ffi.LLVMInstructionsIterator]
 
 ffi.lib.LLVMPY_DisposeOperandsIter.argtypes = [ffi.LLVMOperandsIterator]
+
+ffi.lib.LLVMPY_DisposeIncomingBlocksIter.argtypes = [
+    ffi.LLVMIncomingBlocksIterator]
 
 ffi.lib.LLVMPY_AttributeListIterNext.argtypes = [ffi.LLVMAttributeListIterator]
 ffi.lib.LLVMPY_AttributeListIterNext.restype = c_void_p
@@ -514,5 +593,26 @@ ffi.lib.LLVMPY_InstructionsIterNext.restype = ffi.LLVMValueRef
 ffi.lib.LLVMPY_OperandsIterNext.argtypes = [ffi.LLVMOperandsIterator]
 ffi.lib.LLVMPY_OperandsIterNext.restype = ffi.LLVMValueRef
 
+ffi.lib.LLVMPY_IncomingBlocksIterNext.argtypes = [
+    ffi.LLVMIncomingBlocksIterator]
+ffi.lib.LLVMPY_IncomingBlocksIterNext.restype = ffi.LLVMValueRef
+
 ffi.lib.LLVMPY_GetOpcodeName.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_GetOpcodeName.restype = c_void_p
+
+ffi.lib.LLVMPY_IsConstant.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_IsConstant.restype = c_bool
+
+ffi.lib.LLVMPY_GetValueKind.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetValueKind.restype = c_int
+
+ffi.lib.LLVMPY_GetConstantIntRawValue.argtypes = [ffi.LLVMValueRef,
+                                                  POINTER(c_bool)]
+ffi.lib.LLVMPY_GetConstantIntRawValue.restype = POINTER(c_uint64)
+
+ffi.lib.LLVMPY_GetConstantIntNumWords.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GetConstantIntNumWords.restype = c_uint
+
+ffi.lib.LLVMPY_GetConstantFPValue.argtypes = [ffi.LLVMValueRef,
+                                              POINTER(c_bool)]
+ffi.lib.LLVMPY_GetConstantFPValue.restype = c_double

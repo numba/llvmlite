@@ -95,7 +95,7 @@ you commit changes. You can skip this check with ``git commit --no-verify``.
 Platform support
 ----------------
 
-Llvmlite will be kept compatible with Python 3.8 and later
+Llvmlite will be kept compatible with Python 3.9 and later
 under at least Windows, macOS and Linux.
 
 We do not expect contributors to test their code on all platforms.  Pull

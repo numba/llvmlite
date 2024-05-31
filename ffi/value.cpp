@@ -6,6 +6,9 @@
 
 // the following is needed for WriteGraph()
 #include "llvm/Analysis/CFGPrinter.h"
+#if LLVM_VERSION_MAJOR > 14
+#include "llvm/Support/GraphWriter.h"
+#endif
 
 /* An iterator around a attribute list, including the stop condition */
 struct AttributeListIterator {
@@ -86,6 +89,20 @@ struct OperandsIterator {
 struct OpaqueOperandsIterator;
 typedef OpaqueOperandsIterator *LLVMOperandsIteratorRef;
 
+/* An iterator around a phi node's incoming blocks, including the stop condition
+ */
+struct IncomingBlocksIterator {
+    typedef llvm::PHINode::const_block_iterator const_iterator;
+    const_iterator cur;
+    const_iterator end;
+
+    IncomingBlocksIterator(const_iterator cur, const_iterator end)
+        : cur(cur), end(end) {}
+};
+
+struct OpaqueIncomingBlocksIterator;
+typedef OpaqueIncomingBlocksIterator *LLVMIncomingBlocksIteratorRef;
+
 namespace llvm {
 
 static LLVMAttributeListIteratorRef wrap(AttributeListIterator *GI) {
@@ -136,6 +153,14 @@ static OperandsIterator *unwrap(LLVMOperandsIteratorRef GI) {
     return reinterpret_cast<OperandsIterator *>(GI);
 }
 
+static LLVMIncomingBlocksIteratorRef wrap(IncomingBlocksIterator *GI) {
+    return reinterpret_cast<LLVMIncomingBlocksIteratorRef>(GI);
+}
+
+static IncomingBlocksIterator *unwrap(LLVMIncomingBlocksIteratorRef GI) {
+    return reinterpret_cast<IncomingBlocksIterator *>(GI);
+}
+
 } // namespace llvm
 
 extern "C" {
@@ -153,13 +178,8 @@ LLVMPY_ArgumentAttributesIter(LLVMValueRef A) {
     using namespace llvm;
     Argument *arg = unwrap<Argument>(A);
     unsigned argno = arg->getArgNo();
-    const AttributeSet attrs = arg->getParent()->getAttributes().
-#if LLVM_VERSION_MAJOR < 14
-                               getParamAttributes(argno)
-#else
-                               getParamAttrs(argno)
-#endif
-        ;
+    const AttributeSet attrs =
+        arg->getParent()->getAttributes().getParamAttrs(argno);
     return wrap(new AttributeSetIterator(attrs.begin(), attrs.end()));
 }
 
@@ -213,6 +233,14 @@ LLVMPY_InstructionOperandsIter(LLVMValueRef I) {
     using namespace llvm;
     Instruction *inst = unwrap<Instruction>(I);
     return wrap(new OperandsIterator(inst->op_begin(), inst->op_end()));
+}
+
+API_EXPORT(LLVMIncomingBlocksIteratorRef)
+LLVMPY_PhiIncomingBlocksIter(LLVMValueRef I) {
+    using namespace llvm;
+    PHINode *inst = unwrap<PHINode>(I);
+    return wrap(
+        new IncomingBlocksIterator(inst->block_begin(), inst->block_end()));
 }
 
 API_EXPORT(const char *)
@@ -281,6 +309,17 @@ LLVMPY_OperandsIterNext(LLVMOperandsIteratorRef GI) {
     }
 }
 
+API_EXPORT(LLVMValueRef)
+LLVMPY_IncomingBlocksIterNext(LLVMIncomingBlocksIteratorRef GI) {
+    using namespace llvm;
+    IncomingBlocksIterator *iter = unwrap(GI);
+    if (iter->cur != iter->end) {
+        return wrap(static_cast<const Value *>(*iter->cur++));
+    } else {
+        return NULL;
+    }
+}
+
 API_EXPORT(void)
 LLVMPY_DisposeAttributeListIter(LLVMAttributeListIteratorRef GI) {
     delete llvm::unwrap(GI);
@@ -310,6 +349,48 @@ LLVMPY_DisposeOperandsIter(LLVMOperandsIteratorRef GI) {
 }
 
 API_EXPORT(void)
+LLVMPY_DisposeIncomingBlocksIter(LLVMIncomingBlocksIteratorRef GI) {
+    delete llvm::unwrap(GI);
+}
+
+API_EXPORT(bool)
+LLVMPY_IsConstant(LLVMValueRef Val) { return LLVMIsConstant(Val); }
+
+API_EXPORT(const uint64_t *)
+LLVMPY_GetConstantIntRawValue(LLVMValueRef Val, bool *littleEndian) {
+    if (littleEndian) {
+        *littleEndian = llvm::sys::IsLittleEndianHost;
+    }
+    if (llvm::ConstantInt *CI =
+            llvm::dyn_cast<llvm::ConstantInt>((llvm::Value *)Val)) {
+        return CI->getValue().getRawData();
+    }
+    return nullptr;
+}
+
+API_EXPORT(unsigned)
+LLVMPY_GetConstantIntNumWords(LLVMValueRef Val) {
+    if (llvm::ConstantInt *CI =
+            llvm::dyn_cast<llvm::ConstantInt>((llvm::Value *)Val)) {
+        return CI->getValue().getNumWords();
+    }
+    return 0;
+}
+
+API_EXPORT(double)
+LLVMPY_GetConstantFPValue(LLVMValueRef Val, bool *losesInfo) {
+    LLVMBool losesInfo_internal;
+    double result = LLVMConstRealGetDouble(Val, &losesInfo_internal);
+    if (losesInfo) {
+        *losesInfo = losesInfo_internal;
+    }
+    return result;
+}
+
+API_EXPORT(int)
+LLVMPY_GetValueKind(LLVMValueRef Val) { return (int)LLVMGetValueKind(Val); }
+
+API_EXPORT(void)
 LLVMPY_PrintValueToString(LLVMValueRef Val, const char **outstr) {
     *outstr = LLVMPrintValueToString(Val);
 }
@@ -324,48 +405,6 @@ LLVMPY_SetValueName(LLVMValueRef Val, const char *Name) {
 
 API_EXPORT(LLVMModuleRef)
 LLVMPY_GetGlobalParent(LLVMValueRef Val) { return LLVMGetGlobalParent(Val); }
-
-API_EXPORT(LLVMTypeRef)
-LLVMPY_TypeOf(LLVMValueRef Val) { return LLVMTypeOf(Val); }
-
-API_EXPORT(const char *)
-LLVMPY_PrintType(LLVMTypeRef type) {
-    char *str = LLVMPrintTypeToString(type);
-    const char *out = LLVMPY_CreateString(str);
-    LLVMDisposeMessage(str);
-    return out;
-}
-
-API_EXPORT(const char *)
-LLVMPY_GetTypeName(LLVMTypeRef type) {
-    // try to convert to a struct type, works for other derived
-    // types too
-    llvm::Type *unwrapped = llvm::unwrap(type);
-    llvm::StructType *ty = llvm::dyn_cast<llvm::StructType>(unwrapped);
-    if (ty && !ty->isLiteral()) {
-        return LLVMPY_CreateString(ty->getStructName().str().c_str());
-    }
-    return LLVMPY_CreateString("");
-}
-
-API_EXPORT(bool)
-LLVMPY_TypeIsPointer(LLVMTypeRef type) {
-    return llvm::unwrap(type)->isPointerTy();
-}
-
-API_EXPORT(LLVMTypeRef)
-LLVMPY_GetElementType(LLVMTypeRef type) {
-    llvm::Type *unwrapped = llvm::unwrap(type);
-    llvm::PointerType *ty = llvm::dyn_cast<llvm::PointerType>(unwrapped);
-    if (ty != nullptr) {
-#if LLVM_VERSION_MAJOR < 14
-        return llvm::wrap(ty->getElementType());
-#else
-        return llvm::wrap(ty->getPointerElementType());
-#endif
-    }
-    return nullptr;
-}
 
 API_EXPORT(void)
 LLVMPY_SetLinkage(LLVMValueRef Val, int Linkage) {

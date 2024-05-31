@@ -530,7 +530,7 @@ Function call
        optimized, but may be ignored.
      * ``"musttail"``: indicates that the call must be tail-call optimized for
        program correctness.
-     * ``"notail"``: indicate thats the call should never be tail-call
+     * ``"notail"``: indicates that the call should never be tail-call
        optimized.
 
      For backwards compatibility with previous versions, the following values
@@ -724,3 +724,12 @@ Miscellaneous
 * .. method:: IRBuilder.unreachable()
 
      Mark an unreachable point in the code.
+
+* .. method:: IRBuilder.comment(text)
+
+     Puts a single-line comment into the generated IR. This will be ignored by
+     LLVM, but can be useful for debugging the output of a compiler.
+
+     Arguments:
+
+     * *text* is a string that does not contain new line characters.

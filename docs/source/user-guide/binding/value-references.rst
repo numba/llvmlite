@@ -52,6 +52,38 @@ Enumerations
    * .. data:: dllexport
 
 
+.. class:: ValueKind
+
+   The value kinds allowed are:
+
+   * .. data:: argument
+   * .. data:: basic_block
+   * .. data:: memory_use
+   * .. data:: memory_def
+   * .. data:: memory_phi
+   * .. data:: function
+   * .. data:: global_alias
+   * .. data:: global_ifunc
+   * .. data:: global_variable
+   * .. data:: block_address
+   * .. data:: constant_expr
+   * .. data:: constant_array
+   * .. data:: constant_struct
+   * .. data:: constant_vector
+   * .. data:: undef_value
+   * .. data:: constant_aggregate_zero
+   * .. data:: constant_data_array
+   * .. data:: constant_data_vector
+   * .. data:: constant_int
+   * .. data:: constant_fp
+   * .. data:: constant_pointer_null
+   * .. data:: constant_token_none
+   * .. data:: metadata_as_value
+   * .. data:: inline_asm
+   * .. data:: instruction
+   * .. data:: poison_value
+
+
 The ValueRef class
 ------------------
 
@@ -110,6 +142,11 @@ The ValueRef class
         style---a :class:`Visibility` instance---for 
         this value. This attribute can be set.
 
+   * .. attribute:: value_kind
+
+        The LLVM value kind---a :class:`ValueKind` instance---for
+        this value.
+
    * .. attribute:: blocks
 
         An iterator over the basic blocks in this function.
@@ -124,6 +161,11 @@ The ValueRef class
 
         An iterator over the instructions in this basic block.
         Each instruction is a :class:`ValueRef` instance.
+
+   * .. attribute:: incoming_blocks
+
+        An iterator over the incoming blocks of a phi instruction.
+        Each block is a :class:`ValueRef` instance.
 
    * .. attribute:: operands
 
@@ -164,3 +206,19 @@ The ValueRef class
    * .. attribute:: is_operand
 
         The value is a instruction's operand.
+
+   * .. attribute:: is_constant
+
+        The value is a constant.
+
+   * .. method:: get_constant_value(self, signed_int=False, round_fp=False)
+
+        Return the constant value, either as a literal (for example, int
+        or float) when supported, or as a string otherwise. Keyword arguments
+        specify the preferences during conversion:
+
+           * If ``signed_int`` is True and the constant is an integer, returns a
+             signed integer.
+           * If ``round_fp`` True and the constant is a floating point value,
+             rounds the result upon accuracy loss (e.g., when querying an fp128
+             value). By default, raises an exception on accuracy loss.

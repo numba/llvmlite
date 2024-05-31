@@ -84,12 +84,19 @@ class TestBase(TestCase):
         asm = asm.replace("\n    ", "\n  ")
         return asm
 
+    def check_descr_regex(self, descr, asm):
+        expected = self._normalize_asm(asm)
+        self.assertRegex(descr, expected)
+
     def check_descr(self, descr, asm):
         expected = self._normalize_asm(asm)
         self.assertEqual(descr, expected)
 
     def check_block(self, block, asm):
         self.check_descr(self.descr(block), asm)
+
+    def check_block_regex(self, block, asm):
+        self.check_descr_regex(self.descr(block), asm)
 
     def check_module_body(self, module, asm):
         expected = self._normalize_asm(asm)
@@ -126,13 +133,15 @@ class TestFunction(TestBase):
         func = self.function()
         func.attributes.add("optsize")
         func.attributes.add("alwaysinline")
+        func.attributes.add("convergent")
         func.attributes.alignstack = 16
         tp_pers = ir.FunctionType(int8, (), var_arg=True)
         pers = ir.Function(self.module(), tp_pers, '__gxx_personality_v0')
         func.attributes.personality = pers
         asm = self.descr(func).strip()
         self.assertEqual(asm,
-                         ("declare %s alwaysinline optsize alignstack(16) "
+                         ("declare %s alwaysinline convergent optsize "
+                          "alignstack(16) "
                           "personality i8 (...)* @\"__gxx_personality_v0\"") %
                          self.proto)
         # Check pickling
@@ -1315,6 +1324,7 @@ my_block:
         builder.call(f, (a, b), 'res_alwaysinline', attrs='alwaysinline')
         builder.call(f, (a, b), 'res_noinline_ro', attrs=('noinline',
                                                           'readonly'))
+        builder.call(f, (a, b), 'res_convergent', attrs='convergent')
         self.check_block(block, """\
         my_block:
             %"res_f" = call float @"f"(i32 %".1", i32 %".2")
@@ -1327,6 +1337,7 @@ my_block:
             %"res_noinline" = call float @"f"(i32 %".1", i32 %".2") noinline
             %"res_alwaysinline" = call float @"f"(i32 %".1", i32 %".2") alwaysinline
             %"res_noinline_ro" = call float @"f"(i32 %".1", i32 %".2") noinline readonly
+            %"res_convergent" = call float @"f"(i32 %".1", i32 %".2") convergent
         """) # noqa E501
 
     def test_call_metadata(self):
@@ -1366,11 +1377,11 @@ my_block:
                 2: 'noalias'
             }
         )
-        self.check_block(block, """\
+        self.check_block_regex(block, """\
         my_block:
             %"retval" = alloca i32
             %"other" = alloca i32
-            call void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other")
+            call void @"fun"\\(i32\\* noalias sret(\\(i32\\))? %"retval", i32 42, i32\\* noalias %"other"\\)
         """)  # noqa E501
 
     def test_call_tail(self):
@@ -1472,11 +1483,11 @@ my_block:
                 2: 'noalias'
             }
         )
-        self.check_block(block, """\
+        self.check_block_regex(block, """\
         my_block:
             %"retval" = alloca i32
             %"other" = alloca i32
-            invoke fast fastcc void @"fun"(i32* noalias sret %"retval", i32 42, i32* noalias %"other") noinline
+            invoke fast fastcc void @"fun"\\(i32\\* noalias sret(\\(i32\\))? %"retval", i32 42, i32\\* noalias %"other"\\) noinline
                 to label %"normal" unwind label %"unwind"
         """)  # noqa E501
 
@@ -1617,6 +1628,19 @@ insert_block:
                 fence syncscope("singlethread") release
                 fence syncscope("singlethread") acq_rel
                 fence seq_cst
+                ret void
+            """)
+
+    def test_comment(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        with self.assertRaises(AssertionError):
+            builder.comment("so\nmany lines")
+        builder.comment("my comment")
+        builder.ret_void()
+        self.check_block(block, """\
+            my_block:
+                ; my comment
                 ret void
             """)
 
@@ -1801,6 +1825,72 @@ insert_block:
         self.assertIn(
             "expected types to be the same, got float, double, float",
             str(raises.exception))
+
+    def test_arg_attributes(self):
+        def gen_code(attr_name):
+            fnty = ir.FunctionType(ir.IntType(32), [ir.IntType(32).as_pointer(),
+                                                    ir.IntType(32)])
+            module = ir.Module()
+
+            func = ir.Function(module, fnty, name="sum")
+
+            bb_entry = func.append_basic_block()
+            bb_loop = func.append_basic_block()
+            bb_exit = func.append_basic_block()
+
+            builder = ir.IRBuilder()
+            builder.position_at_end(bb_entry)
+
+            builder.branch(bb_loop)
+            builder.position_at_end(bb_loop)
+
+            index = builder.phi(ir.IntType(32))
+            index.add_incoming(ir.Constant(index.type, 0), bb_entry)
+            accum = builder.phi(ir.IntType(32))
+            accum.add_incoming(ir.Constant(accum.type, 0), bb_entry)
+
+            func.args[0].add_attribute(attr_name)
+            ptr = builder.gep(func.args[0], [index])
+            value = builder.load(ptr)
+
+            added = builder.add(accum, value)
+            accum.add_incoming(added, bb_loop)
+
+            indexp1 = builder.add(index, ir.Constant(index.type, 1))
+            index.add_incoming(indexp1, bb_loop)
+
+            cond = builder.icmp_unsigned('<', indexp1, func.args[1])
+            builder.cbranch(cond, bb_loop, bb_exit)
+
+            builder.position_at_end(bb_exit)
+            builder.ret(added)
+
+            return str(module)
+
+        for attr_name in (
+            'byref',
+            'byval',
+            'elementtype',
+            'immarg',
+            'inalloca',
+            'inreg',
+            'nest',
+            'noalias',
+            'nocapture',
+            'nofree',
+            'nonnull',
+            'noundef',
+            'preallocated',
+            'returned',
+            'signext',
+            'swiftasync',
+            'swifterror',
+            'swiftself',
+            'zeroext',
+        ):
+            # If this parses, we emitted the right byval attribute format
+            llvm.parse_assembly(gen_code(attr_name))
+        # sret doesn't fit this pattern and is tested in test_call_attributes
 
 
 class TestBuilderMisc(TestBase):

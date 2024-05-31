@@ -4,7 +4,6 @@ A collection of analysis utilities
 
 from ctypes import POINTER, c_char_p, c_int
 
-from llvmlite import ir
 from llvmlite.binding import ffi
 from llvmlite.binding.module import parse_assembly
 
@@ -17,6 +16,7 @@ def get_function_cfg(func, show_inst=True):
     are printed.
     """
     assert func is not None
+    from llvmlite import ir
     if isinstance(func, ir.Function):
         mod = parse_assembly(str(func.module))
         func = mod.get_function(func.name)

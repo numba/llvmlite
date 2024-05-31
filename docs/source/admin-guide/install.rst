@@ -188,24 +188,15 @@ The LLVM build process is fully scripted by conda-build_, and the `llvmdev recip
 The manual instructions below describe the main steps, but refer to the recipe
 for details:
 
-#. Download the `LLVM 11.1.0 source code <https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/llvm-11.1.0.src.tar.xz>`_.
+#. Download the `LLVM source code <https://github.com/llvm/llvm-project/releases/download/>`_.
+   You can download the complete "project" package, or llvm, ldd, and libunwind.
 
 #. Download or git checkout the `llvmlite source code <https://github.com/numba/llvmlite>`_.
 
-#. Decompress the LLVM tar file and apply the following patches from the
+#. Decompress the LLVM tar files and apply the appropriate patches from the
    ``llvmlite/conda-recipes/`` directory.  You can apply each patch using the
-   Linux ``patch -p1 -i {patch-file}`` command:
-
-    #. ``llvm-lto-static.patch``: Fix issue with LTO shared library on Windows.
-    #. ``partial-testing.patch``: Enables additional parts of the LLVM test
-       suite.
-    #. ``intel-D47188-svml-VF.patch``: Add support for vectorized math
-       functions via Intel SVML.
-    #. ``expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch``: Fix for a
-       test failure caused by the previous patch.
-    #. ``0001-Revert-Limit-size-of-non-GlobalValue-name.patch``: Revert the
-       limit put on the length of a non-GlobalValue name.
-    #. ``llvm_11_consecutive_registers.patch``: Handle arrays of struct properly
+   Linux ``patch -p1 -i {patch-file}`` command. Patches are prefixed with the
+   LLVM version they apply cleanly to.
 
 #. For Linux/macOS:
 
