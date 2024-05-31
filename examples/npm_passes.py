@@ -59,7 +59,7 @@ pm.add_simplify_cfg_pass()
 # To run the pass manager, we need a pass builder object - we create pipeline
 # tuning options with no optimization, then use that to create a pass builder.
 target_machine = llvm.Target.from_default_triple().create_target_machine()
-pto = llvm.create_pipeline_tuning_options(opt_level=0)
+pto = llvm.create_pipeline_tuning_options(speed_level=0)
 pb = llvm.create_pass_builder(target_machine, pto)
 
 # Now we can run the pass manager on our module

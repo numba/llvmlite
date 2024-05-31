@@ -14,8 +14,8 @@ def create_pass_builder(tm, pto):
     return PassBuilder(tm, pto)
 
 
-def create_pipeline_tuning_options(opt_level=2, size_level=0):
-    return PipelineTuningOptions(opt_level, size_level)
+def create_pipeline_tuning_options(speed_level=2, size_level=0):
+    return PipelineTuningOptions(speed_level, size_level)
 
 
 class ModulePassManager(ffi.ObjectRef):
@@ -28,7 +28,7 @@ class ModulePassManager(ffi.ObjectRef):
     def run(self, module, pb):
         ffi.lib.LLVMPY_RunNewModulePassManager(self, pb, module)
 
-    def addVerifier(self):
+    def add_verifier(self):
         ffi.lib.LLVMPY_AddVerifierPass(self)
 
     def add_aa_eval_pass(self):
@@ -87,23 +87,23 @@ class FunctionPassManager(ffi.ObjectRef):
 
 class PipelineTuningOptions(ffi.ObjectRef):
 
-    def __init__(self, opt_level=2, size_level=0):
-        self._opt_level = None
+    def __init__(self, speed_level=2, size_level=0):
+        self._speed_level = None
         self._size_level = None
-        self.opt_level = opt_level
+        self.speed_level = speed_level
         self.size_level = size_level
         super().__init__(ffi.lib.LLVMPY_CreatePipelineTuningOptions())
 
     @property
-    def opt_level(self):
-        return self._opt_level
+    def speed_level(self):
+        return self._speed_level
 
-    @opt_level.setter
-    def opt_level(self, value):
+    @speed_level.setter
+    def speed_level(self, value):
         if not 0 <= value <= 3:
             raise ValueError(
                 "Optimization level for speed should be 0, 1, 2, or 3")
-        self._opt_level = value
+        self._speed_level = value
 
     @property
     def size_level(self):
@@ -113,7 +113,7 @@ class PipelineTuningOptions(ffi.ObjectRef):
     def size_level(self, value):
         if not 0 <= value <= 2:
             raise ValueError("Optimization level for size should be 0, 1, or 2")
-        if value != 0 and self.opt_level != 2:
+        if value != 0 and self.speed_level != 2:
             raise ValueError(
                 "Optimize for size should be encoded with speedup level == 2")
         self._size_level = value
@@ -173,13 +173,13 @@ class PassBuilder(ffi.ObjectRef):
     def getModulePassManager(self):
         return ModulePassManager(
             ffi.lib.LLVMPY_buildPerModuleDefaultPipeline(
-                self, self._pto.opt_level, self._pto.size_level)
+                self, self._pto.speed_level, self._pto.size_level)
         )
 
     def getFunctionPassManager(self):
         return FunctionPassManager(
             ffi.lib.LLVMPY_buildFunctionSimplificationPipeline(
-                self, self._pto.opt_level, self._pto.size_level)
+                self, self._pto.speed_level, self._pto.size_level)
         )
 
     def _dispose(self):

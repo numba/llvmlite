@@ -2600,12 +2600,12 @@ class TestPipelineTuningOptions(BaseTest):
         pto = llvm.create_pipeline_tuning_options(3, 0)
         pto.close()
 
-    def test_opt_level(self):
+    def test_speed_level(self):
         pto = self.pto()
-        self.assertIsInstance(pto.opt_level, int)
+        self.assertIsInstance(pto.speed_level, int)
         for i in range(4):
-            pto.opt_level = i
-            self.assertEqual(pto.opt_level, i)
+            pto.speed_level = i
+            self.assertEqual(pto.speed_level, i)
 
     def test_size_level(self):
         pto = self.pto()
@@ -2650,29 +2650,29 @@ class TestPipelineTuningOptions(BaseTest):
             pto.loop_unrolling = b
             self.assertEqual(pto.loop_unrolling, b)
 
-    def test_opt_level_constraints(self):
+    def test_speed_level_constraints(self):
         pto = self.pto()
         with self.assertRaises(ValueError):
-            pto.opt_level = 4
+            pto.speed_level = 4
         with self.assertRaises(ValueError):
-            pto.opt_level = -1
+            pto.speed_level = -1
 
     def test_size_level_constraints(self):
         pto = self.pto()
         with self.assertRaises(ValueError):
             pto.size_level = 3
         with self.assertRaises(ValueError):
-            pto.opt_level = -1
+            pto.speed_level = -1
         with self.assertRaises(ValueError):
-            pto.opt_level = 3
+            pto.speed_level = 3
             pto.size_level = 2
 
 
 class NewPassManagerMixin(object):
 
-    def pb(self, opt_level=0, size_level=0):
+    def pb(self, speed_level=0, size_level=0):
         tm = self.target_machine(jit=False)
-        pto = llvm.create_pipeline_tuning_options(opt_level, size_level)
+        pto = llvm.create_pipeline_tuning_options(speed_level, size_level)
         pb = llvm.create_pass_builder(tm, pto)
         return pb
 
@@ -2745,7 +2745,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         mpm.add_loop_rotate_pass()
         mpm.add_loop_unroll_pass()
         mpm.add_simplify_cfg_pass()
-        mpm.addVerifier()
+        mpm.add_verifier()
 
 
 class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):

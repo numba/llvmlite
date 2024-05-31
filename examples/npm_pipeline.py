@@ -52,7 +52,7 @@ print(module)
 
 # Create a ModulePassManager for speed optimization level 3
 target_machine = llvm.Target.from_default_triple().create_target_machine()
-pto = llvm.create_pipeline_tuning_options(opt_level=3)
+pto = llvm.create_pipeline_tuning_options(speed_level=3)
 pb = llvm.create_pass_builder(target_machine, pto)
 pm = pb.getModulePassManager()
 
