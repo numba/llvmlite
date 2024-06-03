@@ -62,6 +62,11 @@ LLVMPY_GetTypeKind(LLVMTypeRef Val) { return (int)LLVMGetTypeKind(Val); }
 API_EXPORT(LLVMTypeRef)
 LLVMPY_TypeOf(LLVMValueRef Val) { return LLVMTypeOf(Val); }
 
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GlobalGetValueType(LLVMValueRef Global) {
+    return LLVMGlobalGetValueType(Global);
+}
+
 API_EXPORT(const char *)
 LLVMPY_PrintType(LLVMTypeRef type) {
     char *str = LLVMPrintTypeToString(type);
@@ -147,6 +152,7 @@ LLVMPY_GetTypeBitWidth(LLVMTypeRef type) {
     return size.getFixedSize();
 }
 
+// FIXME: Remove me once typed pointers support is removed.
 API_EXPORT(LLVMTypeRef)
 LLVMPY_GetElementType(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
@@ -180,5 +186,4 @@ LLVMPY_IsOpaqueStruct(LLVMTypeRef type) { return LLVMIsOpaqueStruct(type); }
 
 API_EXPORT(bool)
 LLVMPY_IsLiteralStruct(LLVMTypeRef type) { return LLVMIsLiteralStruct(type); }
-
 } // end extern "C"

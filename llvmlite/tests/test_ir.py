@@ -13,6 +13,9 @@ from . import TestCase
 from llvmlite import ir
 from llvmlite import binding as llvm
 
+# FIXME: Remove me once typed pointers are no longer supported.
+from llvmlite import _disable_opaque_pointers
+
 
 int1 = ir.IntType(1)
 int8 = ir.IntType(8)
@@ -120,7 +123,10 @@ class TestBase(TestCase):
 
 class TestFunction(TestBase):
 
-    proto = """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4")"""
+    # FIXME: Remove `else' (keep `if') once TP are no longer supported.
+    proto = """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", ptr %".4")""" \
+            if not _disable_opaque_pointers else \
+            """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4")"""
 
     def test_declare(self):
         # A simple declaration
@@ -139,11 +145,19 @@ class TestFunction(TestBase):
         pers = ir.Function(self.module(), tp_pers, '__gxx_personality_v0')
         func.attributes.personality = pers
         asm = self.descr(func).strip()
-        self.assertEqual(asm,
-                         ("declare %s alwaysinline convergent optsize "
-                          "alignstack(16) "
-                          "personality i8 (...)* @\"__gxx_personality_v0\"") %
-                         self.proto)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(asm,
+                             ("declare %s alwaysinline convergent optsize "
+                              "alignstack(16) "
+                              "personality i8 (...)* @\"__gxx_personality_v0\"") %
+                             self.proto)
+        else:
+            self.assertEqual(asm,
+                             ("declare %s alwaysinline convergent optsize "
+                              "alignstack(16) "
+                              "personality ptr @\"__gxx_personality_v0\"") %
+                             self.proto)
         # Check pickling
         self.assert_pickle_correctly(func)
 
@@ -157,9 +171,15 @@ class TestFunction(TestBase):
         func.args[3].add_attribute("nonnull")
         func.return_value.add_attribute("noalias")
         asm = self.descr(func).strip()
-        self.assertEqual(asm,
-                         """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", i32* nonnull align 4 %".4")"""  # noqa E501
-                         )
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(asm,
+                             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", i32* nonnull align 4 %".4")"""  # noqa E501
+                             )
+        else:
+            self.assertEqual(asm,
+                             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", ptr nonnull align 4 %".4")"""  # noqa E501
+                             )
         # Check pickling
         self.assert_pickle_correctly(func)
 
@@ -263,12 +283,19 @@ class TestFunction(TestBase):
         assume = module.declare_intrinsic('llvm.assume')
         self.check_descr(self.descr(powi).strip(), """\
             declare double @"llvm.powi.f64"(double %".1", i32 %".2")""")
-        self.check_descr(self.descr(memset).strip(), """\
-            declare void @"llvm.memset.p0i8.i32"(i8* %".1", i8 %".2", i32 %".3", i1 %".4")""")  # noqa E501
-        self.check_descr(self.descr(memcpy).strip(), """\
-            declare void @"llvm.memcpy.p0i8.p0i8.i32"(i8* %".1", i8* %".2", i32 %".3", i1 %".4")""")  # noqa E501
-        self.check_descr(self.descr(assume).strip(), """\
-            declare void @"llvm.assume"(i1 %".1")""")
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_descr(self.descr(memset).strip(), """\
+                declare void @"llvm.memset.p0i8.i32"(i8* %".1", i8 %".2", i32 %".3", i1 %".4")""")  # noqa E501
+            self.check_descr(self.descr(memcpy).strip(), """\
+                declare void @"llvm.memcpy.p0i8.p0i8.i32"(i8* %".1", i8* %".2", i32 %".3", i1 %".4")""")  # noqa E501
+        else:
+            self.check_descr(self.descr(memset).strip(), """\
+                declare void @"llvm.memset.p0i8.i32"(ptr %".1", i8 %".2", i32 %".3", i1 %".4")""")  # noqa E501
+            self.check_descr(self.descr(memcpy).strip(), """\
+                declare void @"llvm.memcpy.p0i8.p0i8.i32"(ptr %".1", ptr %".2", i32 %".3", i1 %".4")""")  # noqa E501
+            self.check_descr(self.descr(assume).strip(), """\
+                declare void @"llvm.assume"(i1 %".1")""")
 
     def test_redeclare_intrinsic(self):
         module = self.module()
@@ -374,7 +401,11 @@ class TestIR(TestBase):
         # A null metadata (typed) value
         mod = self.module()
         mod.add_metadata([int32.as_pointer()(None)])
-        self.assert_ir_line("!0 = !{ i32* null }", mod)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assert_ir_line("!0 = !{ i32* null }", mod)
+        else:
+            self.assert_ir_line("!0 = !{ ptr null }", mod)
         self.assert_valid_ir(mod)
         # A null metadata (untyped) value
         mod = self.module()
@@ -591,8 +622,13 @@ class TestGlobalValues(TestBase):
         with self.assertRaises(KeyError):
             mod.get_global('kkk')
         # Globals should have a useful repr()
-        self.assertEqual(repr(globdouble),
-                         "<ir.GlobalVariable 'globdouble' of type 'double*'>")
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(repr(globdouble),
+                             "<ir.GlobalVariable 'globdouble' of type 'double*'>")
+        else:
+            self.assertEqual(repr(globdouble),
+                             "<ir.GlobalVariable 'globdouble' of type 'ptr'>")
 
     def test_functions_global_values_access(self):
         """
@@ -997,21 +1033,39 @@ my_block:
         # Mismatching pointer type
         with self.assertRaises(TypeError) as cm:
             builder.store(b, e)
-        self.assertEqual(str(cm.exception),
-                         "cannot store i32 to double*: mismatching types")
-        self.check_block(block, """\
-            my_block:
-                %"c" = alloca i32
-                %"d" = alloca i32, i32 42
-                %"e" = alloca double, i32 %".1", align 8
-                store double %".3", double* %"e"
-                store i32 %".2", i32* %"c"
-                %"g" = load i32, i32* %"c"
-                store i32 %".2", i32* %"c", align 1
-                %"i" = load i32, i32* %"c", align 1
-                store atomic i32 %".2", i32* %"c" seq_cst, align 4
-                %"k" = load atomic i32, i32* %"c" seq_cst, align 4
-            """)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(cm.exception),
+                             "cannot store i32 to double*: mismatching types")
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca i32
+                    %"d" = alloca i32, i32 42
+                    %"e" = alloca double, i32 %".1", align 8
+                    store double %".3", double* %"e"
+                    store i32 %".2", i32* %"c"
+                    %"g" = load i32, i32* %"c"
+                    store i32 %".2", i32* %"c", align 1
+                    %"i" = load i32, i32* %"c", align 1
+                    store atomic i32 %".2", i32* %"c" seq_cst, align 4
+                    %"k" = load atomic i32, i32* %"c" seq_cst, align 4
+                """)
+        else:
+            self.assertEqual(str(cm.exception),
+                             "cannot store i32 to ptr: mismatching types")
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca i32
+                    %"d" = alloca i32, i32 42
+                    %"e" = alloca double, i32 %".1", align 8
+                    store double %".3", ptr %"e"
+                    store i32 %".2", ptr %"c"
+                    %"g" = load i32, ptr %"c"
+                    store i32 %".2", ptr %"c", align 1
+                    %"i" = load i32, ptr %"c", align 1
+                    store atomic i32 %".2", ptr %"c" seq_cst, align 4
+                    %"k" = load atomic i32, ptr %"c" seq_cst, align 4
+                """)
 
     def test_gep(self):
         block = self.block(name='my_block')
@@ -1020,11 +1074,19 @@ my_block:
         c = builder.alloca(ir.PointerType(int32), name='c')
         d = builder.gep(c, [ir.Constant(int32, 5), a], name='d')
         self.assertEqual(d.type, ir.PointerType(int32))
-        self.check_block(block, """\
-            my_block:
-                %"c" = alloca i32*
-                %"d" = getelementptr i32*, i32** %"c", i32 5, i32 %".1"
-            """)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca i32*
+                    %"d" = getelementptr i32*, i32** %"c", i32 5, i32 %".1"
+                """)
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca ptr
+                    %"d" = getelementptr ptr, ptr %"c", i32 5, i32 %".1"
+                """)
         # XXX test with more complex types
 
     def test_gep_castinstr(self):
@@ -1038,11 +1100,19 @@ my_block:
         d = builder.bitcast(a, ls.as_pointer(), name='d')
         e = builder.gep(d, [ir.Constant(int32, x) for x in [0, 3]], name='e')
         self.assertEqual(e.type, ir.PointerType(int8ptr))
-        self.check_block(block, """\
-            my_block:
-                %"d" = bitcast i32 %".1" to {i64, i8*, i8*, i8*, i64}*
-                %"e" = getelementptr {i64, i8*, i8*, i8*, i64}, {i64, i8*, i8*, i8*, i64}* %"d", i32 0, i32 3
-            """)  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"d" = bitcast i32 %".1" to {i64, i8*, i8*, i8*, i64}*
+                    %"e" = getelementptr {i64, i8*, i8*, i8*, i64}, {i64, i8*, i8*, i8*, i64}* %"d", i32 0, i32 3
+                """)  # noqa E501
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"d" = bitcast i32 %".1" to ptr
+                    %"e" = getelementptr {i64, ptr, ptr, ptr, i64}, ptr %"d", i32 0, i32 3
+                """)  # noqa E501
 
     def test_gep_castinstr_addrspace(self):
         # similar to:
@@ -1057,11 +1127,19 @@ my_block:
         e = builder.gep(d, [ir.Constant(int32, x) for x in [0, 3]], name='e')
         self.assertEqual(e.type.addrspace, addrspace)
         self.assertEqual(e.type, ir.PointerType(int8ptr, addrspace=addrspace))
-        self.check_block(block, """\
-            my_block:
-                %"d" = bitcast i32 %".1" to {i64, i8*, i8*, i8*, i64} addrspace(4)*
-                %"e" = getelementptr {i64, i8*, i8*, i8*, i64}, {i64, i8*, i8*, i8*, i64} addrspace(4)* %"d", i32 0, i32 3
-            """)  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"d" = bitcast i32 %".1" to {i64, i8*, i8*, i8*, i64} addrspace(4)*
+                    %"e" = getelementptr {i64, i8*, i8*, i8*, i64}, {i64, i8*, i8*, i8*, i64} addrspace(4)* %"d", i32 0, i32 3
+                """)  # noqa E501
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"d" = bitcast i32 %".1" to ptr addrspace(4)
+                    %"e" = getelementptr {i64, ptr, ptr, ptr, i64}, ptr addrspace(4) %"d", i32 0, i32 3
+                """)  # noqa E501
 
     def test_gep_addrspace(self):
         block = self.block(name='my_block')
@@ -1069,18 +1147,31 @@ my_block:
         a, b = builder.function.args[:2]
         addrspace = 4
         c = builder.alloca(ir.PointerType(int32, addrspace=addrspace), name='c')
-        self.assertEqual(str(c.type), 'i32 addrspace(4)**')
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(c.type), 'i32 addrspace(4)**')
+        else:
+            self.assertEqual(str(c.type), 'ptr')
         self.assertEqual(c.type.pointee.addrspace, addrspace)
         d = builder.gep(c, [ir.Constant(int32, 5), a], name='d')
         self.assertEqual(d.type.addrspace, addrspace)
         e = builder.gep(d, [ir.Constant(int32, 10)], name='e')
         self.assertEqual(e.type.addrspace, addrspace)
-        self.check_block(block, """\
-            my_block:
-                %"c" = alloca i32 addrspace(4)*
-                %"d" = getelementptr i32 addrspace(4)*, i32 addrspace(4)** %"c", i32 5, i32 %".1"
-                %"e" = getelementptr i32, i32 addrspace(4)* %"d", i32 10
-            """)  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca i32 addrspace(4)*
+                    %"d" = getelementptr i32 addrspace(4)*, i32 addrspace(4)** %"c", i32 5, i32 %".1"
+                    %"e" = getelementptr i32, i32 addrspace(4)* %"d", i32 10
+                """)  # noqa E501
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca ptr addrspace(4)
+                    %"d" = getelementptr ptr addrspace(4), ptr %"c", i32 5, i32 %".1"
+                    %"e" = getelementptr i32, ptr addrspace(4) %"d", i32 10
+                """)  # noqa E501
 
     def test_extract_insert_value(self):
         block = self.block(name='my_block')
@@ -1128,20 +1219,37 @@ my_block:
             # Replacement value has the wrong type
             builder.insert_value(c_inner, a, 1)
 
-        self.check_block(block, """\
-            my_block:
-                %"c" = extractvalue {i32, i1} {i32 4, i1 true}, 0
-                %"d" = insertvalue {i32, i1} {i32 4, i1 true}, i32 %".1", 0
-                %"e" = insertvalue {i32, i1} %"d", i1 false, 1
-                %"ptr" = alloca {i8, {i32, i1}}
-                %"j" = load {i8, {i32, i1}}, {i8, {i32, i1}}* %"ptr"
-                %"k" = extractvalue {i8, {i32, i1}} %"j", 0
-                %"l" = extractvalue {i8, {i32, i1}} %"j", 1
-                %"m" = extractvalue {i8, {i32, i1}} %"j", 1, 0
-                %"n" = extractvalue {i8, {i32, i1}} %"j", 1, 1
-                %"o" = insertvalue {i8, {i32, i1}} %"j", {i32, i1} %"l", 1
-                %"p" = insertvalue {i8, {i32, i1}} %"j", i32 %".1", 1, 0
-            """)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = extractvalue {i32, i1} {i32 4, i1 true}, 0
+                    %"d" = insertvalue {i32, i1} {i32 4, i1 true}, i32 %".1", 0
+                    %"e" = insertvalue {i32, i1} %"d", i1 false, 1
+                    %"ptr" = alloca {i8, {i32, i1}}
+                    %"j" = load {i8, {i32, i1}}, {i8, {i32, i1}}* %"ptr"
+                    %"k" = extractvalue {i8, {i32, i1}} %"j", 0
+                    %"l" = extractvalue {i8, {i32, i1}} %"j", 1
+                    %"m" = extractvalue {i8, {i32, i1}} %"j", 1, 0
+                    %"n" = extractvalue {i8, {i32, i1}} %"j", 1, 1
+                    %"o" = insertvalue {i8, {i32, i1}} %"j", {i32, i1} %"l", 1
+                    %"p" = insertvalue {i8, {i32, i1}} %"j", i32 %".1", 1, 0
+                """)
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = extractvalue {i32, i1} {i32 4, i1 true}, 0
+                    %"d" = insertvalue {i32, i1} {i32 4, i1 true}, i32 %".1", 0
+                    %"e" = insertvalue {i32, i1} %"d", i1 false, 1
+                    %"ptr" = alloca {i8, {i32, i1}}
+                    %"j" = load {i8, {i32, i1}}, ptr %"ptr"
+                    %"k" = extractvalue {i8, {i32, i1}} %"j", 0
+                    %"l" = extractvalue {i8, {i32, i1}} %"j", 1
+                    %"m" = extractvalue {i8, {i32, i1}} %"j", 1, 0
+                    %"n" = extractvalue {i8, {i32, i1}} %"j", 1, 1
+                    %"o" = insertvalue {i8, {i32, i1}} %"j", {i32, i1} %"l", 1
+                    %"p" = insertvalue {i8, {i32, i1}} %"j", i32 %".1", 1, 0
+                """)
 
     def test_cast_ops(self):
         block = self.block(name='my_block')
@@ -1160,21 +1268,39 @@ my_block:
         j = builder.inttoptr(i, ir.PointerType(int8), 'j')  # noqa F841
         k = builder.bitcast(a, flt, "k")  # noqa F841
         self.assertFalse(block.is_terminated)
-        self.check_block(block, """\
-            my_block:
-                %"c" = trunc i32 %".1" to i8
-                %"d" = zext i8 %"c" to i32
-                %"e" = sext i8 %"c" to i32
-                %"fb" = fptrunc double %".3" to float
-                %"fc" = fpext float %"fb" to double
-                %"g" = fptoui double %".3" to i32
-                %"h" = fptosi double %".3" to i8
-                %"fd" = uitofp i32 %"g" to float
-                %"fe" = sitofp i8 %"h" to double
-                %"i" = ptrtoint i32* %".4" to i32
-                %"j" = inttoptr i32 %"i" to i8*
-                %"k" = bitcast i32 %".1" to float
-            """)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = trunc i32 %".1" to i8
+                    %"d" = zext i8 %"c" to i32
+                    %"e" = sext i8 %"c" to i32
+                    %"fb" = fptrunc double %".3" to float
+                    %"fc" = fpext float %"fb" to double
+                    %"g" = fptoui double %".3" to i32
+                    %"h" = fptosi double %".3" to i8
+                    %"fd" = uitofp i32 %"g" to float
+                    %"fe" = sitofp i8 %"h" to double
+                    %"i" = ptrtoint i32* %".4" to i32
+                    %"j" = inttoptr i32 %"i" to i8*
+                    %"k" = bitcast i32 %".1" to float
+                """)
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = trunc i32 %".1" to i8
+                    %"d" = zext i8 %"c" to i32
+                    %"e" = sext i8 %"c" to i32
+                    %"fb" = fptrunc double %".3" to float
+                    %"fc" = fpext float %"fb" to double
+                    %"g" = fptoui double %".3" to i32
+                    %"h" = fptosi double %".3" to i8
+                    %"fd" = uitofp i32 %"g" to float
+                    %"fe" = sitofp i8 %"h" to double
+                    %"i" = ptrtoint ptr %".4" to i32
+                    %"j" = inttoptr i32 %"i" to ptr
+                    %"k" = bitcast i32 %".1" to float
+                """)
 
     def test_atomicrmw(self):
         block = self.block(name='my_block')
@@ -1183,11 +1309,19 @@ my_block:
         c = builder.alloca(int32, name='c')
         d = builder.atomic_rmw('add', c, a, 'monotonic', 'd')
         self.assertEqual(d.type, int32)
-        self.check_block(block, """\
-            my_block:
-                %"c" = alloca i32
-                %"d" = atomicrmw add i32* %"c", i32 %".1" monotonic
-            """)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca i32
+                    %"d" = atomicrmw add i32* %"c", i32 %".1" monotonic
+                """)
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca i32
+                    %"d" = atomicrmw add ptr %"c", i32 %".1" monotonic
+                """)
 
     def test_branch(self):
         block = self.block(name='my_block')
@@ -1238,10 +1372,17 @@ my_block:
         indirectbr.add_destination(bb_1)
         indirectbr.add_destination(bb_2)
         self.assertTrue(block.is_terminated)
-        self.check_block(block, """\
-            my_block:
-                indirectbr i8* blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2"]
-            """)  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    indirectbr i8* blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2"]
+                """)  # noqa E501
+        else:
+            self.check_block(block, """\
+                my_block:
+                    indirectbr ptr blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2"]
+                """)  # noqa E501
 
     def test_returns(self):
         def check(block, expected_ir):
@@ -1354,11 +1495,19 @@ my_block:
         a = builder.alloca(int32, name="a")
         b = builder.module.add_metadata(())
         builder.call(dbg_declare, (a, b, b))
-        self.check_block(block, """\
-            my_block:
-                %"a" = alloca i32
-                call void @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
-            """)  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"a" = alloca i32
+                    call void @"llvm.dbg.declare"(metadata i32* %"a", metadata !0, metadata !0)
+                """)  # noqa E501
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"a" = alloca i32
+                    call void @"llvm.dbg.declare"(metadata ptr %"a", metadata !0, metadata !0)
+                """)  # noqa E501
 
     def test_call_attributes(self):
         block = self.block(name='my_block')
@@ -1377,12 +1526,21 @@ my_block:
                 2: 'noalias'
             }
         )
-        self.check_block_regex(block, """\
-        my_block:
-            %"retval" = alloca i32
-            %"other" = alloca i32
-            call void @"fun"\\(i32\\* noalias sret(\\(i32\\))? %"retval", i32 42, i32\\* noalias %"other"\\)
-        """)  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block_regex(block, """\
+            my_block:
+                %"retval" = alloca i32
+                %"other" = alloca i32
+                call void @"fun"\\(i32\\* noalias sret(\\(i32\\))? %"retval", i32 42, i32\\* noalias %"other"\\)
+            """)  # noqa E501
+        else:
+            self.check_block_regex(block, """\
+            my_block:
+                %"retval" = alloca i32
+                %"other" = alloca i32
+                call void @"fun"\\(ptr noalias sret(\\(i32\\))? %"retval", i32 42, ptr noalias %"other"\\)
+            """)  # noqa E501
 
     def test_call_tail(self):
         block = self.block(name='my_block')
@@ -1460,13 +1618,23 @@ my_block:
                 2: 'noalias'
             }
         )
-        self.check_block_regex(block, """\
-        my_block:
-            %"retval" = alloca i32
-            %"other" = alloca i32
-            invoke fast fastcc void @"fun"\\(i32\\* noalias sret(\\(i32\\))? %"retval", i32 42, i32\\* noalias %"other"\\) noinline
-                to label %"normal" unwind label %"unwind"
-        """)  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block_regex(block, """\
+            my_block:
+                %"retval" = alloca i32
+                %"other" = alloca i32
+                invoke fast fastcc void @"fun"\\(i32\\* noalias sret(\\(i32\\))? %"retval", i32 42, i32\\* noalias %"other"\\) noinline
+                    to label %"normal" unwind label %"unwind"
+            """)  # noqa E501
+        else:
+            self.check_block_regex(block, """\
+            my_block:
+                %"retval" = alloca i32
+                %"other" = alloca i32
+                invoke fast fastcc void @"fun"\\(ptr noalias sret(\\(i32\\))? %"retval", i32 42, ptr noalias %"other"\\) noinline
+                    to label %"normal" unwind label %"unwind"
+            """)  # noqa E501
 
     def test_landingpad(self):
         block = self.block(name='my_block')
@@ -1480,13 +1648,23 @@ my_block:
         lp.add_clause(ir.FilterClause(ir.Constant(ir.ArrayType(
             int_typeinfo.type, 1), [int_typeinfo])))
         builder.resume(lp)
-        self.check_block(block, """\
-            my_block:
-                %"lp" = landingpad {i32, i8*}
-                    catch i8** @"_ZTIi"
-                    filter [1 x i8**] [i8** @"_ZTIi"]
-                resume {i32, i8*} %"lp"
-            """)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"lp" = landingpad {i32, i8*}
+                        catch i8** @"_ZTIi"
+                        filter [1 x i8**] [i8** @"_ZTIi"]
+                    resume {i32, i8*} %"lp"
+                """)
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"lp" = landingpad {i32, ptr}
+                        catch ptr @"_ZTIi"
+                        filter [1 x ptr] [ptr @"_ZTIi"]
+                    resume {i32, ptr} %"lp"
+                """)
 
     def test_assume(self):
         block = self.block(name='my_block')
@@ -2158,10 +2336,17 @@ class TestBuilderMisc(TestBase):
         builder = ir.IRBuilder(block)
         builder.debug_metadata = builder.module.add_metadata([])
         builder.alloca(ir.PointerType(int32), name='c')
-        self.check_block(block, """\
-            my_block:
-                %"c" = alloca i32*, !dbg !0
-            """)
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca i32*, !dbg !0
+                """)
+        else:
+            self.check_block(block, """\
+                my_block:
+                    %"c" = alloca ptr, !dbg !0
+                """)
 
 
 class TestTypes(TestBase):
@@ -2236,18 +2421,35 @@ class TestTypes(TestBase):
                          'i1 (float, ...)')
         self.assertEqual(str(ir.FunctionType(int1, (flt, dbl), var_arg=True)),
                          'i1 (float, double, ...)')
-        self.assertEqual(str(ir.PointerType(int32)), 'i32*')
-        self.assertEqual(str(ir.PointerType(ir.PointerType(int32))), 'i32**')
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(ir.PointerType(int32)), 'i32*')
+            self.assertEqual(str(ir.PointerType(ir.PointerType(int32))), 'i32**')
+        else:
+            self.assertEqual(str(ir.PointerType(int32)), 'ptr')
+            self.assertEqual(str(ir.PointerType(ir.PointerType(int32))), 'ptr')
         self.assertEqual(str(ir.ArrayType(int1, 5)), '[5 x i1]')
-        self.assertEqual(str(ir.ArrayType(ir.PointerType(int1), 5)),
-                         '[5 x i1*]')
-        self.assertEqual(str(ir.PointerType(ir.ArrayType(int1, 5))),
-                         '[5 x i1]*')
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(ir.ArrayType(ir.PointerType(int1), 5)),
+                             '[5 x i1*]')
+            self.assertEqual(str(ir.PointerType(ir.ArrayType(int1, 5))),
+                             '[5 x i1]*')
+        else:
+            self.assertEqual(str(ir.ArrayType(ir.PointerType(int1), 5)),
+                             '[5 x ptr]')
+            self.assertEqual(str(ir.PointerType(ir.ArrayType(int1, 5))), 'ptr')
         self.assertEqual(str(ir.LiteralStructType((int1,))), '{i1}')
         self.assertEqual(str(ir.LiteralStructType((int1, flt))), '{i1, float}')
-        self.assertEqual(str(ir.LiteralStructType((
-            ir.PointerType(int1), ir.LiteralStructType((int32, int8))))),
-            '{i1*, {i32, i8}}')
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(ir.LiteralStructType((
+                ir.PointerType(int1), ir.LiteralStructType((int32, int8))))),
+                '{i1*, {i32, i8}}')
+        else:
+            self.assertEqual(str(ir.LiteralStructType((
+                ir.PointerType(int1), ir.LiteralStructType((int32, int8))))),
+                '{ptr, {i32, i8}}')
         self.assertEqual(str(ir.LiteralStructType((int1,), packed=True)),
                          '<{i1}>')
         self.assertEqual(str(ir.LiteralStructType((int1, flt), packed=True)),
@@ -2524,8 +2726,13 @@ class TestConstant(TestBase):
         tp = ir.LiteralStructType((flt, int1))
         gv = ir.GlobalVariable(m, tp, "myconstant")
         c = gv.gep([ir.Constant(int32, x) for x in (0, 1)])
-        self.assertEqual(str(c),
-                         'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0, i32 1)')  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(c),
+                             'getelementptr ({float, i1}, {float, i1}* @"myconstant", i32 0, i32 1)')  # noqa E501
+        else:
+            self.assertEqual(str(c),
+                             'getelementptr ({float, i1}, ptr @"myconstant", i32 0, i32 1)')  # noqa E501
         self.assertEqual(c.type, ir.PointerType(int1))
 
         const = ir.Constant(tp, None)
@@ -2534,8 +2741,13 @@ class TestConstant(TestBase):
 
         const_ptr = ir.Constant(tp.as_pointer(), None)
         c2 = const_ptr.gep([ir.Constant(int32, 0)])
-        self.assertEqual(str(c2),
-                         'getelementptr ({float, i1}, {float, i1}* null, i32 0)')  # noqa E501
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(c2),
+                             'getelementptr ({float, i1}, {float, i1}* null, i32 0)')  # noqa E501
+        else:
+            self.assertEqual(str(c2),
+                             'getelementptr ({float, i1}, ptr null, i32 0)')  # noqa E501
         self.assertEqual(c.type, ir.PointerType(int1))
 
     def test_gep_addrspace_globalvar(self):
@@ -2547,9 +2759,15 @@ class TestConstant(TestBase):
         self.assertEqual(gv.addrspace, addrspace)
         c = gv.gep([ir.Constant(int32, x) for x in (0, 1)])
         self.assertEqual(c.type.addrspace, addrspace)
-        self.assertEqual(str(c),
-                         ('getelementptr ({float, i1}, {float, i1} '
-                          'addrspace(4)* @"myconstant", i32 0, i32 1)'))
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(c),
+                             ('getelementptr ({float, i1}, {float, i1} '
+                              'addrspace(4)* @"myconstant", i32 0, i32 1)'))
+        else:
+            self.assertEqual(str(c),
+                             ('getelementptr ({float, i1}, ptr '
+                              'addrspace(4) @"myconstant", i32 0, i32 1)'))
         self.assertEqual(c.type, ir.PointerType(int1, addrspace=addrspace))
 
     def test_trunc(self):
@@ -2576,7 +2794,11 @@ class TestConstant(TestBase):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
         c = gv.bitcast(int64.as_pointer())
-        self.assertEqual(str(c), 'bitcast (i32* @"myconstant" to i64*)')
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(c), 'bitcast (i32* @"myconstant" to i64*)')
+        else:
+            self.assertEqual(str(c), 'bitcast (ptr @"myconstant" to ptr)')
 
     def test_fptoui(self):
         c = ir.Constant(flt, 1).fptoui(int32)
@@ -2601,19 +2823,33 @@ class TestConstant(TestBase):
 
         self.assertRaises(TypeError, one.ptrtoint, int64)
         self.assertRaises(TypeError, ptr.ptrtoint, flt)
-        self.assertEqual(str(c), 'ptrtoint (i64* null to i32)')
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(c), 'ptrtoint (i64* null to i32)')
+        else:
+            self.assertEqual(str(c), 'ptrtoint (ptr null to i32)')
 
     def test_ptrtoint_2(self):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
         c = gv.ptrtoint(int64)
-        self.assertEqual(str(c), 'ptrtoint (i32* @"myconstant" to i64)')
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(c), 'ptrtoint (i32* @"myconstant" to i64)')
 
-        self.assertRaisesRegex(
-            TypeError,
-            r"can only ptrtoint\(\) to integer type, not 'i64\*'",
-            gv.ptrtoint,
-            int64.as_pointer())
+            self.assertRaisesRegex(
+                TypeError,
+                r"can only ptrtoint\(\) to integer type, not 'i64\*'",
+                gv.ptrtoint,
+                int64.as_pointer())
+        else:
+            self.assertEqual(str(c), 'ptrtoint (ptr @"myconstant" to i64)')
+
+            self.assertRaisesRegex(
+                TypeError,
+                r"can only ptrtoint\(\) to integer type, not 'ptr'",
+                gv.ptrtoint,
+                int64.as_pointer())
 
         c2 = ir.Constant(int32, 0)
         self.assertRaisesRegex(
@@ -2629,7 +2865,11 @@ class TestConstant(TestBase):
 
         self.assertRaises(TypeError, one.inttoptr, int64)
         self.assertRaises(TypeError, pi.inttoptr, int64.as_pointer())
-        self.assertEqual(str(c), 'inttoptr (i32 1 to i64*)')
+        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
+        if _disable_opaque_pointers:
+            self.assertEqual(str(c), 'inttoptr (i32 1 to i64*)')
+        else:
+            self.assertEqual(str(c), 'inttoptr (i32 1 to ptr)')
 
     def test_neg(self):
         one = ir.Constant(int32, 1)

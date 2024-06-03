@@ -20,20 +20,22 @@ LLVMPY_CreateByteString(const char *buf, size_t len) {
 API_EXPORT(void)
 LLVMPY_DisposeString(const char *msg) { free(const_cast<char *>(msg)); }
 
+// FIXME: Remove `enableOpaquePointers' once typed pointers are removed.
 API_EXPORT(LLVMContextRef)
-LLVMPY_GetGlobalContext() {
+LLVMPY_GetGlobalContext(bool enableOpaquePointers) {
     auto context = LLVMGetGlobalContext();
 #if LLVM_VERSION_MAJOR > 14
-    LLVMContextSetOpaquePointers(context, false);
+    LLVMContextSetOpaquePointers(context, enableOpaquePointers);
 #endif
     return context;
 }
 
+// FIXME: Remove `enableOpaquePointers' once typed pointers are removed.
 API_EXPORT(LLVMContextRef)
-LLVMPY_ContextCreate() {
+LLVMPY_ContextCreate(bool enableOpaquePointers) {
     LLVMContextRef context = LLVMContextCreate();
 #if LLVM_VERSION_MAJOR > 14
-    LLVMContextSetOpaquePointers(context, false);
+    LLVMContextSetOpaquePointers(context, enableOpaquePointers);
 #endif
     return context;
 }

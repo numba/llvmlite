@@ -6,6 +6,9 @@ import struct
 
 from llvmlite.ir._utils import _StrCaching
 
+# FIXME: Remove me once typed pointers are no longer supported.
+from llvmlite import _disable_opaque_pointers
+
 
 def _wrapname(x):
     return '"{0}"'.format(x.replace('\\', '\\5c').replace('"', '\\22'))
@@ -30,7 +33,7 @@ class Type(_StrCaching):
     def __ne__(self, other):
         return not (self == other)
 
-    def _get_ll_pointer_type(self, target_data, context=None):
+    def _get_ll_global_value_type(self, target_data, context=None):
         """
         Convert this type object to an LLVM type.
         """
@@ -43,22 +46,22 @@ class Type(_StrCaching):
             m = Module(context=context)
         foo = GlobalVariable(m, self, name="foo")
         with parse_assembly(str(m)) as llmod:
-            return llmod.get_global_variable(foo.name).type
+            return llmod.get_global_variable(foo.name).global_value_type
 
     def get_abi_size(self, target_data, context=None):
         """
         Get the ABI size of this type according to data layout *target_data*.
         """
-        llty = self._get_ll_pointer_type(target_data, context)
-        return target_data.get_pointee_abi_size(llty)
+        llty = self._get_ll_global_value_type(target_data, context)
+        return target_data.get_abi_size(llty)
 
     def get_abi_alignment(self, target_data, context=None):
         """
         Get the minimum ABI alignment of this type according to data layout
         *target_data*.
         """
-        llty = self._get_ll_pointer_type(target_data, context)
-        return target_data.get_pointee_abi_alignment(llty)
+        llty = self._get_ll_global_value_type(target_data, context)
+        return target_data.get_abi_alignment(llty)
 
     def format_constant(self, value):
         """
@@ -119,10 +122,14 @@ class PointerType(Type):
         self.addrspace = addrspace
 
     def _to_string(self):
+        # FIXME: Remove `if' once typed pointers support is removed.
+        if _disable_opaque_pointers:
+            return "{0}*".format(self.pointee) if self.addrspace == 0 else \
+                   "{0} addrspace({1})*".format(self.pointee, self.addrspace)
         if self.addrspace != 0:
-            return "{0} addrspace({1})*".format(self.pointee, self.addrspace)
+            return "ptr addrspace({0})".format(self.addrspace)
         else:
-            return "{0}*".format(self.pointee)
+            return "ptr"
 
     def __eq__(self, other):
         if isinstance(other, PointerType):

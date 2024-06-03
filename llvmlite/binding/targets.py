@@ -147,23 +147,11 @@ class TargetData(ffi.ObjectRef):
                              "type?".format(position, str(ty)))
         return offset
 
-    def get_pointee_abi_size(self, ty):
+    def get_abi_alignment(self, ty):
         """
-        Get ABI size of pointee type of LLVM pointer type *ty*.
+        Get minimum ABI alignment of LLVM type *ty*.
         """
-        size = ffi.lib.LLVMPY_ABISizeOfElementType(self, ty)
-        if size == -1:
-            raise RuntimeError("Not a pointer type: %s" % (ty,))
-        return size
-
-    def get_pointee_abi_alignment(self, ty):
-        """
-        Get minimum ABI alignment of pointee type of LLVM pointer type *ty*.
-        """
-        size = ffi.lib.LLVMPY_ABIAlignmentOfElementType(self, ty)
-        if size == -1:
-            raise RuntimeError("Not a pointer type: %s" % (ty,))
-        return size
+        return ffi.lib.LLVMPY_ABIAlignmentOfType(self, ty)
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
@@ -372,13 +360,9 @@ ffi.lib.LLVMPY_OffsetOfElement.argtypes = [ffi.LLVMTargetDataRef,
                                            c_int]
 ffi.lib.LLVMPY_OffsetOfElement.restype = c_longlong
 
-ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef,
-                                                ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_ABISizeOfElementType.restype = c_longlong
-
-ffi.lib.LLVMPY_ABIAlignmentOfElementType.argtypes = [ffi.LLVMTargetDataRef,
-                                                     ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_ABIAlignmentOfElementType.restype = c_longlong
+ffi.lib.LLVMPY_ABIAlignmentOfType.argtypes = [ffi.LLVMTargetDataRef,
+                                              ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_ABIAlignmentOfType.restype = c_longlong
 
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTargetFromTriple.restype = ffi.LLVMTargetRef
