@@ -88,7 +88,7 @@ the llvmlite API at each release, for the following reasons:
 
    admin-guide/install
    user-guide/index
-   faqs
+   faq
    contributing
    release-notes
    glossary
