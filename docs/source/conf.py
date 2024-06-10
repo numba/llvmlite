@@ -304,3 +304,5 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
     'llvm': ('http://llvm.org/releases/14.0.0/docs', None),
     }
+
+nitpicky = True

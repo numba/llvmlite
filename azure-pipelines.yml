@@ -67,11 +67,6 @@ jobs:
         CONDA_ENV: cienv
         WHEEL: 'yes'
 
-      py39_docs:
-        PYTHON: '3.9'
-        CONDA_ENV: cienv
-        BUILD_DOCS: 'yes'
-
       llvm15:
         PYTHON: '3.12'
         CONDA_ENV: cienv

@@ -18,6 +18,7 @@ labels: task
 * [ ] Test `HEAD` of release branch on buildfarm (pre-tag testing):
     * [ ] conda package build and test.
     * [ ] wheel build.
+* [ ] Test `HEAD` of release branch on conda-forge
 * [ ] Annotated tag `vX.Y.Zrc1` on release branch (`llvmlite` tags DO have a `v` prefix).
 * [ ] Build and upload conda packages on buildfarm (check "upload").
 * [ ] Build wheels and sdist on the buildfarm (check "upload").
