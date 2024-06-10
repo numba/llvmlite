@@ -1,6 +1,7 @@
-from ctypes import c_int, c_bool, c_void_p, c_uint64
+from ctypes import c_int, c_bool, c_void_p, c_uint64, c_uint, POINTER
 import enum
 
+from llvmlite import ir
 from llvmlite.binding import ffi
 
 
@@ -27,6 +28,21 @@ class TypeKind(enum.IntEnum):
     scalable_vector = 17
     bfloat = 18
     x86_amx = 19
+
+
+_TypeKindToIRType = {
+    # All TypeKind here must have a TypeRef.as_ir() implementation
+    TypeKind.void: ir.VoidType,
+    TypeKind.half: ir.HalfType,
+    TypeKind.float: ir.FloatType,
+    TypeKind.double: ir.DoubleType,
+    TypeKind.integer: ir.IntType,
+    TypeKind.function: ir.FunctionType,
+    TypeKind.pointer: ir.PointerType,
+    TypeKind.array: ir.ArrayType,
+    TypeKind.vector: ir.VectorType,
+    TypeKind.struct: ir.LiteralStructType,
+}
 
 
 class TypeRef(ffi.ObjectRef):
@@ -66,6 +82,13 @@ class TypeRef(ffi.ObjectRef):
         Returns true if the type is a vector type.
         """
         return ffi.lib.LLVMPY_TypeIsVector(self)
+
+    @property
+    def is_function(self):
+        """
+        Returns true if the type is a function type.
+        """
+        return ffi.lib.LLVMPY_TypeIsFunction(self)
 
     @property
     def is_function_vararg(self):
@@ -129,6 +152,41 @@ class TypeRef(ffi.ObjectRef):
         """
         return TypeKind(ffi.lib.LLVMPY_GetTypeKind(self))
 
+    @property
+    def is_packed_struct(self):
+        return ffi.lib.LLVMPY_IsPackedStruct(self)
+
+    @property
+    def is_literal_struct(self):
+        return ffi.lib.LLVMPY_IsLiteralStruct(self)
+
+    @property
+    def is_opaque_struct(self):
+        return ffi.lib.LLVMPY_IsOpaqueStruct(self)
+
+    def get_function_parameters(self) -> tuple["TypeRef"]:
+        nparams = ffi.lib.LLVMPY_CountParamTypes(self)
+        if nparams > 0:
+            out_buffer = (ffi.LLVMTypeRef * nparams)(None)
+            ffi.lib.LLVMPY_GetParamTypes(self, out_buffer)
+            return tuple(map(TypeRef, out_buffer))
+        else:
+            return ()
+
+    def get_function_return(self) -> "TypeRef":
+        return TypeRef(ffi.lib.LLVMPY_GetReturnType(self))
+
+    def as_ir(self, ir_ctx: ir.Context) -> ir.Type:
+        """Convert into a ``llvmlite.ir.Type``.
+        """
+        try:
+            cls = _TypeKindToIRType[self.type_kind]
+        except KeyError:
+            msg = f"as_ir() unsupported for TypeRef of {self.type_kind}"
+            raise TypeError(msg)
+        else:
+            return cls.from_llvm(self, ir_ctx)
+
     def __str__(self):
         return ffi.ret_string(ffi.lib.LLVMPY_PrintType(self))
 
@@ -176,6 +234,28 @@ ffi.lib.LLVMPY_TypeIsVector.restype = c_bool
 
 ffi.lib.LLVMPY_TypeIsStruct.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_TypeIsStruct.restype = c_bool
+
+ffi.lib.LLVMPY_TypeIsFunction.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_TypeIsFunction.restype = c_bool
+
+ffi.lib.LLVMPY_IsPackedStruct.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_IsPackedStruct.restype = c_bool
+
+ffi.lib.LLVMPY_IsOpaqueStruct.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_IsOpaqueStruct.restype = c_bool
+
+ffi.lib.LLVMPY_IsLiteralStruct.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_IsLiteralStruct.restype = c_bool
+
+ffi.lib.LLVMPY_GetReturnType.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_GetReturnType.restype = ffi.LLVMTypeRef
+
+ffi.lib.LLVMPY_CountParamTypes.argtypes = [ffi.LLVMTypeRef]
+ffi.lib.LLVMPY_CountParamTypes.restype = c_uint
+
+ffi.lib.LLVMPY_GetParamTypes.argtypes = [ffi.LLVMTypeRef,
+                                         POINTER(ffi.LLVMTypeRef)]
+ffi.lib.LLVMPY_GetParamTypes.restype = None
 
 ffi.lib.LLVMPY_IsFunctionVararg.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_IsFunctionVararg.restype = c_bool

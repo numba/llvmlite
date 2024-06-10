@@ -218,6 +218,17 @@ class ValueRef(ffi.ObjectRef):
         return TypeRef(ffi.lib.LLVMPY_TypeOf(self))
 
     @property
+    def global_value_type(self):
+        """
+        Uses ``LLVMGlobalGetValueType()``.
+        Needed for opaque pointers in globals.
+        > For globals, use getValueType().
+        See https://llvm.org/docs/OpaquePointers.html#migration-instructions
+        """
+        assert self.is_global or self.is_function
+        return TypeRef(ffi.lib.LLVMPY_GlobalGetValueType(self))
+
+    @property
     def is_declaration(self):
         """
         Whether this value (presumably global) is defined in the current
@@ -504,6 +515,9 @@ ffi.lib.LLVMPY_SetValueName.argtypes = [ffi.LLVMValueRef, c_char_p]
 
 ffi.lib.LLVMPY_TypeOf.argtypes = [ffi.LLVMValueRef]
 ffi.lib.LLVMPY_TypeOf.restype = ffi.LLVMTypeRef
+
+ffi.lib.LLVMPY_GlobalGetValueType.argtypes = [ffi.LLVMValueRef]
+ffi.lib.LLVMPY_GlobalGetValueType.restype = ffi.LLVMTypeRef
 
 ffi.lib.LLVMPY_GetTypeName.argtypes = [ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_GetTypeName.restype = c_void_p
