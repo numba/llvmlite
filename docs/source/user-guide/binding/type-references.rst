@@ -80,7 +80,7 @@ The TypeRef class
 
     * .. method:: as_ir(self, ir_ctx)
 
-        Convert into a ``llvmlite.ir.Type``.
+        Convert into an ``llvmlite.ir.Type``.
 
     * .. method:: __str__(self)
 
