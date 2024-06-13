@@ -112,34 +112,67 @@ class LabelType(Type):
 class PointerType(Type):
     """
     The type of all pointer values.
+    By default (without specialisation) represents an opaque pointer.
     """
+    is_opaque = True
     is_pointer = True
     null = 'null'
 
-    def __init__(self, pointee, addrspace=0):
-        assert not isinstance(pointee, VoidType)
-        self.pointee = pointee
+    # Factory to create typed or opaque pointers based on `pointee'.
+    def __new__(cls, pointee=None, addrspace=0):
+        if cls is PointerType and pointee is not None:
+            return _TypedPointerType(pointee, addrspace)
+        return super(PointerType, cls).__new__(cls)
+
+    def __init__(self, addrspace=0):
         self.addrspace = addrspace
 
     def _to_string(self):
-        # FIXME: Remove `if' once typed pointers support is removed.
-        if _disable_opaque_pointers:
-            return "{0}*".format(self.pointee) if self.addrspace == 0 else \
-                   "{0} addrspace({1})*".format(self.pointee, self.addrspace)
         if self.addrspace != 0:
             return "ptr addrspace({0})".format(self.addrspace)
         else:
             return "ptr"
 
-    def __eq__(self, other):
-        if isinstance(other, PointerType):
-            return (self.pointee, self.addrspace) == (other.pointee,
-                                                      other.addrspace)
-        else:
-            return False
-
     def __hash__(self):
         return hash(PointerType)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        if _disable_opaque_pointers:
+            return _TypedPointerType.from_llvm(typeref, ir_ctx)
+        return cls()
+
+
+class _TypedPointerType(PointerType):
+    """
+    The type of typed pointer values. To be removed eventually.
+    """
+
+    def __init__(self, pointee, addrspace=0):
+        super(_TypedPointerType, self).__init__(addrspace)
+        assert pointee is not None
+        assert not isinstance(pointee, VoidType)
+        self.pointee = pointee
+        self.is_opaque = False
+
+    def _to_string(self):
+        if _disable_opaque_pointers:
+            return "{0}*".format(self.pointee) if self.addrspace == 0 else \
+                   "{0} addrspace({1})*".format(self.pointee, self.addrspace)
+        return super(_TypedPointerType, self)._to_string()
+
+    # This implements ``isOpaqueOrPointeeTypeEquals''.
+    def __eq__(self, other):
+        if isinstance(other, _TypedPointerType):
+            return (self.pointee, self.addrspace) == (other.pointee,
+                                                      other.addrspace)
+        return isinstance(other, PointerType)
+
+    def __hash__(self):
+        return hash(_TypedPointerType)
 
     def gep(self, i):
         """
@@ -158,6 +191,7 @@ class PointerType(Type):
         """
         Create from a llvmlite.binding.TypeRef
         """
+        assert _disable_opaque_pointers
         # opaque pointer will change this
         [pointee] = typeref.elements
         # addrspace is not handled
