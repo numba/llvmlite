@@ -1411,6 +1411,29 @@ my_block:
             tail call void @"my_fun"()
         """)  # noqa E501
 
+    def test_call_tags(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        token_ty = ir.TokenType()
+        sfun_ty = ir.FunctionType(token_ty, ())
+        efun_ty = ir.FunctionType(ir.VoidType(), (token_ty,))
+        sfun = ir.Function(builder.function.module, sfun_ty, 'start_fun')
+        efun = ir.Function(builder.function.module, efun_ty, 'end_fun')
+        cres = builder.call(
+            sfun,
+            (),
+            tags="[\"SOME_STRING\"(), \"SOME_OTHER_STRING\"(i64* %\"$const1\")]"
+        )
+        builder.call(
+            efun,
+            (cres,)
+        )
+        self.check_block(block, """\
+        my_block:
+            %".6" = call token @"start_fun"() ["SOME_STRING"(), "SOME_OTHER_STRING"(i64* %"$const1")]
+            call void @"end_fun"(token %".6")
+        """)  # noqa E501
+
     def test_invalid_call_attributes(self):
         block = self.block()
         builder = ir.IRBuilder(block)

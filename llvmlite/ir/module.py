@@ -17,6 +17,7 @@ class Module(object):
         self.namedmetadata = {}
         # Cache for metadata node deduplication
         self._metadatacache = {}
+        self.device_triples = None
 
     def _fix_metadata_operands(self, operands):
         fixed_ops = []
@@ -236,8 +237,10 @@ class Module(object):
         lines += [
             '; ModuleID = "%s"' % (self.name,),
             'target triple = "%s"' % (self.triple,),
-            'target datalayout = "%s"' % (self.data_layout,),
-            '']
+            'target datalayout = "%s"' % (self.data_layout,)]
+        if self.device_triples is not None:
+            lines += ['target device_triples = "%s"' % self.device_triples]
+        lines += ['']
         # Body
         lines += self._get_body_lines()
         # Metadata

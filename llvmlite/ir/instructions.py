@@ -66,7 +66,7 @@ class FastMathFlags(AttributeSet):
 
 class CallInstr(Instruction):
     def __init__(self, parent, func, args, name='', cconv=None, tail=None,
-                 fastmath=(), attrs=(), arg_attrs=None):
+                 fastmath=(), attrs=(), arg_attrs=None, tags=None):
         self.cconv = (func.calling_convention
                       if cconv is None and isinstance(func, Function)
                       else cconv)
@@ -83,6 +83,7 @@ class CallInstr(Instruction):
         self.tail = tail
         self.fastmath = FastMathFlags(fastmath)
         self.attributes = CallInstrAttributes(attrs)
+        self.tags = tags
         self.arg_attributes = {}
         if arg_attrs:
             for idx, attrs in arg_attrs.items():
@@ -161,15 +162,19 @@ class CallInstr(Instruction):
         fm_attrs = ' ' + ' '.join(self.fastmath._to_list(fnty.return_type))\
             if self.fastmath else ''
 
-        buf.append("{tail}{op}{fastmath} {callee}({args}){attr}{meta}\n".format(
+        tag_attrs = ' ' + self.tags if self.tags else ''
+
+        msg = "{tail}{op}{fastmath} {callee}({args}){attr}{tags}{meta}\n"
+        buf.append(msg.format(
             tail=tail_marker,
             op=self.opname,
-            callee=callee_ref,
             fastmath=fm_attrs,
+            callee=callee_ref,
             args=args,
             attr=fn_attrs,
+            tags=tag_attrs,
             meta=(self._stringify_metadata(leading_comma=True)
-                  if add_metadata else ""),
+                  if add_metadata else "")
         ))
 
     def descr(self, buf):
@@ -527,6 +532,9 @@ class AllocaInstr(Instruction):
             buf.append(", align {0}".format(self.align))
         if self.metadata:
             buf.append(self._stringify_metadata(leading_comma=True))
+
+    def get_decl(self):
+        return '{0} %"{1}"'.format(self.type, self._get_name())
 
 
 class GEPInstr(Instruction):
