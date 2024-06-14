@@ -1,3 +1,28 @@
+v0.43.0 (June 13, 2024)
+-----------------------
+
+Highlights of this release are:
+
+- Support for building against LLVM 15.
+- A fix for `refpruning` algorithm in specific `fanout_raise` cases.
+
+Pull-Requests:
+
+* PR `#1025 <https://github.com/numba/llvmlite/pull/1025>`_: skip `raise` basic blocks in `verifyFanoutBackward` (`dlee992 <https://github.com/dlee992>`_)
+* PR `#1029 <https://github.com/numba/llvmlite/pull/1029>`_: Update CHANGE_LOG for 0.42.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#1032 <https://github.com/numba/llvmlite/pull/1032>`_: v0.42 Post release  (`sklam <https://github.com/sklam>`_)
+* PR `#1035 <https://github.com/numba/llvmlite/pull/1035>`_:  Support building against llvm15 (`gmarkall <https://github.com/gmarkall>`_ `yashssh <https://github.com/yashssh>`_)
+* PR `#1059 <https://github.com/numba/llvmlite/pull/1059>`_: update CHANGE_LOG and release date for 0.43.0 final (`esc <https://github.com/esc>`_)
+
+Authors:
+
+* `dlee992 <https://github.com/dlee992>`_
+* `esc <https://github.com/esc>`_
+* `gmarkall <https://github.com/gmarkall>`_
+* `sklam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+* `yashssh <https://github.com/yashssh>`_
+
 v0.42.0 (January 31, 2024)
 --------------------------
 
