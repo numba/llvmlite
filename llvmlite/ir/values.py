@@ -667,6 +667,7 @@ class MDValue(NamedValue):
                                       types.MetaDataType(),
                                       name=name)
         self.operands = tuple(values)
+        self.hash_cache = None
         parent.metadata.append(self)
 
     def descr(self, buf):
@@ -694,8 +695,17 @@ class MDValue(NamedValue):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __getstate__(self):
+        # Ensure that the hash is not cached between Python invocations
+        # due to pickling or other serialization. The hash seed changes
+        # which will cause these not to match.
+        self.hash_cache = None
+        return self.__dict__
+
     def __hash__(self):
-        return hash(self.operands)
+        if self.hash_cache is None:
+            self.hash_cache = hash(self.operands)
+        return self.hash_cache
 
 
 class DIToken:
@@ -725,6 +735,7 @@ class DIValue(NamedValue):
         self.is_distinct = is_distinct
         self.kind = kind
         self.operands = tuple(operands)
+        self.hash_cache = None
         parent.metadata.append(self)
 
     def descr(self, buf):
@@ -767,8 +778,17 @@ class DIValue(NamedValue):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __getstate__(self):
+        # Ensure that the hash is not cached between Python invocations
+        # due to pickling or other serialization. The hash seed changes
+        # which will cause these not to match.
+        self.hash_cache = None
+        return self.__dict__
+
     def __hash__(self):
-        return hash((self.is_distinct, self.kind, self.operands))
+        if self.hash_cache is None:
+            self.hash_cache = hash(self.operands)
+        return self.hash_cache
 
 
 class GlobalValue(NamedValue, _ConstOpMixin, _HasMetadata):
