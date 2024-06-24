@@ -34,6 +34,24 @@ LLVMPY_GetProcessTriple(const char **Out) {
     *Out = LLVMPY_CreateString(llvm::sys::getProcessTriple().c_str());
 }
 
+API_EXPORT(void)
+LLVMPY_GetTripleParts(const char *triple_str, const char **arch_out,
+                      const char **subarch_out, const char **vendor_out,
+                      const char **os_out, const char **environment_out,
+                      const char **object_fmt_out) {
+    auto triple = llvm::Triple(triple_str);
+    *arch_out = LLVMPY_CreateString(triple.getArchName().data());
+    // TODO: Change this to something that actually gets the subarch
+    // Using temporary value to prevent non empty string issues
+    *subarch_out = LLVMPY_CreateString(triple.getArchName().data());
+    *vendor_out = LLVMPY_CreateString(triple.getVendorName().data());
+    *os_out = LLVMPY_CreateString(triple.getOSName().data());
+    *environment_out = LLVMPY_CreateString(triple.getEnvironmentName().data());
+    // TODO: Change this to something that actually gets the subarch
+    // Using temporary value to prevent non empty string issues
+    *object_fmt_out = LLVMPY_CreateString(triple.getEnvironmentName().data());
+}
+
 /**
  * Output the feature string to the output argument.
  * Features are prefixed with '+' or '-' for enabled or disabled, respectively.

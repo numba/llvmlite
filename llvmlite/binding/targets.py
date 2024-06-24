@@ -17,6 +17,18 @@ def get_process_triple():
         ffi.lib.LLVMPY_GetProcessTriple(out)
         return str(out)
 
+def get_triple_parts(triple):
+    """
+    Return a tuple of the parts of the given triple.
+    """
+    with ffi.OutputString() as arch, ffi.OutputString() as subarch, \
+            ffi.OutputString() as vendor, \
+            ffi.OutputString() as os, ffi.OutputString() as env, \
+            ffi.OutputString() as objfmt:
+        ffi.lib.LLVMPY_GetTripleParts(triple.encode('utf8'),
+                                      arch, subarch, vendor, os, env, objfmt)
+        return (str(arch), str(subarch), str(vendor), str(os), str(env), str(objfmt))
+
 
 class FeatureMap(dict):
     """
@@ -340,6 +352,10 @@ def has_svml():
 # FFI
 
 ffi.lib.LLVMPY_GetProcessTriple.argtypes = [POINTER(c_char_p)]
+ffi.lib.LLVMPY_GetTripleParts.argtypes = [c_char_p, POINTER(c_char_p),
+                                          POINTER(c_char_p), POINTER(c_char_p),
+                                          POINTER(c_char_p), POINTER(c_char_p),
+                                          POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_GetHostCPUFeatures.argtypes = [POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetHostCPUFeatures.restype = c_int
