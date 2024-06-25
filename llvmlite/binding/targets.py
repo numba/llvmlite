@@ -6,10 +6,10 @@ from llvmlite.binding import ffi
 from llvmlite.binding.common import _decode_string, _encode_string
 from collections import namedtuple
 
-from collections import namedtuple
-
 # Define the named tuple 'Point' with fields 'x' and 'y'
-Triple = namedtuple('Triple', ['Arch', 'SubArch', 'Vendor', 'OS', 'Env', 'ObjectFormat'])
+Triple = namedtuple('Triple', ['Arch', 'SubArch', 'Vendor',
+                               'OS', 'Env', 'ObjectFormat'])
+
 
 def get_process_triple():
     """
@@ -21,6 +21,7 @@ def get_process_triple():
     with ffi.OutputString() as out:
         ffi.lib.LLVMPY_GetProcessTriple(out)
         return str(out)
+
 
 def get_triple_parts(triple: str):
     """
@@ -37,7 +38,8 @@ def get_triple_parts(triple: str):
             if _str.startswith(arch):
                 subarch = _str[len(arch):]
                 break
-        return Triple(arch, subarch, str(vendor), str(os), str(env), get_object_format(triple))
+        return Triple(arch, subarch, str(vendor), str(os),
+                      str(env), get_object_format(triple))
 
 
 class FeatureMap(dict):
