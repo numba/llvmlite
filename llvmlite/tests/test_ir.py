@@ -124,9 +124,10 @@ class TestBase(TestCase):
 class TestFunction(TestBase):
 
     # FIXME: Remove `else' (keep `if') once TP are no longer supported.
-    proto = """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", ptr %".4")""" \
-            if not _disable_opaque_pointers else \
-            """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4")"""
+    proto = \
+        """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", ptr %".4")""" \
+        if not _disable_opaque_pointers else \
+        """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4")"""
 
     def test_declare(self):
         # A simple declaration
@@ -149,8 +150,8 @@ class TestFunction(TestBase):
         if _disable_opaque_pointers:
             self.assertEqual(asm,
                              ("declare %s alwaysinline convergent optsize "
-                              "alignstack(16) "
-                              "personality i8 (...)* @\"__gxx_personality_v0\"") %
+                              "alignstack(16) personality "
+                              "i8 (...)* @\"__gxx_personality_v0\"") %
                              self.proto)
         else:
             self.assertEqual(asm,
@@ -624,8 +625,9 @@ class TestGlobalValues(TestBase):
         # Globals should have a useful repr()
         # FIXME: Remove `if' (keep `else') once TP are no longer supported.
         if _disable_opaque_pointers:
-            self.assertEqual(repr(globdouble),
-                             "<ir.GlobalVariable 'globdouble' of type 'double*'>")
+            self.assertEqual(
+                repr(globdouble),
+                "<ir.GlobalVariable 'globdouble' of type 'double*'>")
         else:
             self.assertEqual(repr(globdouble),
                              "<ir.GlobalVariable 'globdouble' of type 'ptr'>")
@@ -2424,7 +2426,8 @@ class TestTypes(TestBase):
         # FIXME: Remove `if' (keep `else') once TP are no longer supported.
         if _disable_opaque_pointers:
             self.assertEqual(str(ir.PointerType(int32)), 'i32*')
-            self.assertEqual(str(ir.PointerType(ir.PointerType(int32))), 'i32**')
+            self.assertEqual(str(ir.PointerType(ir.PointerType(int32))),
+                             'i32**')
         else:
             self.assertEqual(str(ir.PointerType(int32)), 'ptr')
             self.assertEqual(str(ir.PointerType(ir.PointerType(int32))), 'ptr')
