@@ -4,7 +4,12 @@ from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
 
 from llvmlite.binding import ffi
 from llvmlite.binding.common import _decode_string, _encode_string
+from collections import namedtuple
 
+from collections import namedtuple
+
+# Define the named tuple 'Point' with fields 'x' and 'y'
+Triple = namedtuple('Triple', ['Arch', 'SubArch', 'Vendor', 'OS', 'Env', 'ObjectFormat'])
 
 def get_process_triple():
     """
@@ -17,17 +22,22 @@ def get_process_triple():
         ffi.lib.LLVMPY_GetProcessTriple(out)
         return str(out)
 
-def get_triple_parts(triple):
+def get_triple_parts(triple: str):
     """
     Return a tuple of the parts of the given triple.
     """
-    with ffi.OutputString() as arch, ffi.OutputString() as subarch, \
+    with ffi.OutputString() as arch, \
             ffi.OutputString() as vendor, \
-            ffi.OutputString() as os, ffi.OutputString() as env, \
-            ffi.OutputString() as objfmt:
+            ffi.OutputString() as os, ffi.OutputString() as env:
         ffi.lib.LLVMPY_GetTripleParts(triple.encode('utf8'),
-                                      arch, subarch, vendor, os, env, objfmt)
-        return (str(arch), str(subarch), str(vendor), str(os), str(env), str(objfmt))
+                                      arch, vendor, os, env)
+        arch = str(arch)
+        subarch = ''
+        for _str in triple.split('-'):
+            if _str.startswith(arch):
+                subarch = _str[len(arch):]
+                break
+        return Triple(arch, subarch, str(vendor), str(os), str(env), get_object_format(triple))
 
 
 class FeatureMap(dict):
@@ -353,7 +363,6 @@ def has_svml():
 
 ffi.lib.LLVMPY_GetProcessTriple.argtypes = [POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTripleParts.argtypes = [c_char_p, POINTER(c_char_p),
-                                          POINTER(c_char_p), POINTER(c_char_p),
                                           POINTER(c_char_p), POINTER(c_char_p),
                                           POINTER(c_char_p)]
 
