@@ -7,7 +7,6 @@ from llvmlite.binding.initfini import llvm_version_info
 from llvmlite.binding.common import _decode_string, _encode_string
 from collections import namedtuple
 
-# Define the named tuple 'Point' with fields 'x' and 'y'
 Triple = namedtuple('Triple', ['Arch', 'SubArch', 'Vendor',
                                'OS', 'Env', 'ObjectFormat'])
 
