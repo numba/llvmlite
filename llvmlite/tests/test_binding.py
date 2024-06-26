@@ -2140,7 +2140,27 @@ class TestTarget(BaseTest):
             ("armv6hl-none-linux-gnueabi",
              llvm.targets.Triple(Arch="arm", SubArch='v6hl',
                                  Vendor="unknown", OS="linux",
-                                 Env="gnueabi", ObjectFormat="ELF"))
+                                 Env="gnueabi", ObjectFormat="ELF")),
+            ("i686-unknown-linux-gnu",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="unknown", OS="linux",
+                                 Env="gnu", ObjectFormat="ELF")),
+            ("i686-apple-macosx",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="apple", OS="macosx",
+                                 Env="unknown", ObjectFormat="MachO")),
+            ("i686-dunno-win32",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="unknown", OS="windows",
+                                 Env="msvc", ObjectFormat="COFF")),
+            ("s390x-ibm-zos",
+             llvm.targets.Triple(Arch="s390x", SubArch='',
+                                 Vendor="ibm", OS="zos",
+                                 Env="unknown", ObjectFormat="GOFF")),
+            ("wasm64-wasi",
+             llvm.targets.Triple(Arch="wasm64", SubArch='',
+                                 Vendor="unknown", OS="wasi",
+                                 Env="unknown", ObjectFormat="Wasm")),
         ]
 
         for case in cases:

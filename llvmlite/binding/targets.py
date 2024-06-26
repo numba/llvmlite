@@ -3,6 +3,7 @@ from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
                     c_void_p, string_at)
 
 from llvmlite.binding import ffi
+from llvmlite.binding.initfini import llvm_version_info
 from llvmlite.binding.common import _decode_string, _encode_string
 from collections import namedtuple
 
@@ -111,11 +112,32 @@ def get_host_cpu_name():
         return str(out)
 
 
-_object_formats = {
-    1: "COFF",
-    2: "ELF",
-    3: "MachO",
-}
+# Adapted from https://github.com/llvm/llvm-project/blob/release/15.x/llvm/include/llvm/ADT/Triple.h#L269 # noqa
+llvm_version_major = llvm_version_info[0]
+
+
+if llvm_version_major >= 15:
+    _object_formats = {
+        0: "Unknown",
+        1: "COFF",
+        2: "DXContainer",
+        3: "ELF",
+        4: "GOFF",
+        5: "MachO",
+        6: "SPIRV",
+        7: "Wasm",
+        8: "XCOFF",
+    }
+else:
+    _object_formats = {
+        0: "Unknown",
+        1: "COFF",
+        2: "ELF",
+        3: "GOFF",
+        4: "MachO",
+        5: "Wasm",
+        6: "XCOFF",
+    }
 
 
 def get_object_format(triple=None):
