@@ -1,0 +1,69 @@
+From 492d4fdd963576cb796e29c3c160e17ea9acfbf8 Mon Sep 17 00:00:00 2001
+From: Siu Kwan Lam <1929845+sklam@users.noreply.github.com>
+Date: Mon, 8 Apr 2024 10:28:24 -0500
+Subject: [PATCH] llvm15-remove-use-of-clonefile
+
+---
+ llvm/lib/Support/Unix/Path.inc  | 2 ++
+ llvm/unittests/Support/Path.cpp | 8 +++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/llvm/lib/Support/Unix/Path.inc b/llvm/lib/Support/Unix/Path.inc
+index 2ae7c6dc4..ae93f7a1f 100644
+--- a/llvm/lib/Support/Unix/Path.inc
++++ b/llvm/lib/Support/Unix/Path.inc
+@@ -1476,6 +1476,7 @@ namespace fs {
+ std::error_code copy_file(const Twine &From, const Twine &To) {
+   std::string FromS = From.str();
+   std::string ToS = To.str();
++  /*
+ #if __has_builtin(__builtin_available)
+   if (__builtin_available(macos 10.12, *)) {
+     // Optimistically try to use clonefile() and handle errors, rather than
+@@ -1504,6 +1505,7 @@ std::error_code copy_file(const Twine &From, const Twine &To) {
+     // cheaper.
+   }
+ #endif
++  */
+   if (!copyfile(FromS.c_str(), ToS.c_str(), /*State=*/NULL, COPYFILE_DATA))
+     return std::error_code();
+   return std::error_code(errno, std::generic_category());
+diff --git a/llvm/unittests/Support/Path.cpp b/llvm/unittests/Support/Path.cpp
+index 6f0022765..822762952 100644
+--- a/llvm/unittests/Support/Path.cpp
++++ b/llvm/unittests/Support/Path.cpp
+@@ -2266,15 +2266,15 @@ TEST_F(FileSystemTest, permissions) {
+ 
+   EXPECT_EQ(fs::setPermissions(TempPath, fs::set_uid_on_exe), NoError);
+   EXPECT_TRUE(CheckPermissions(fs::set_uid_on_exe));
+-
++#if !defined(__APPLE__)
+   EXPECT_EQ(fs::setPermissions(TempPath, fs::set_gid_on_exe), NoError);
+   EXPECT_TRUE(CheckPermissions(fs::set_gid_on_exe));
+-
++#endif
+   // Modern BSDs require root to set the sticky bit on files.
+   // AIX and Solaris without root will mask off (i.e., lose) the sticky bit
+   // on files.
+ #if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) &&  \
+-    !defined(_AIX) && !(defined(__sun__) && defined(__svr4__))
++    !defined(_AIX) && !(defined(__sun__) && defined(__svr4__)) && !defined(__APPLE__)
+   EXPECT_EQ(fs::setPermissions(TempPath, fs::sticky_bit), NoError);
+   EXPECT_TRUE(CheckPermissions(fs::sticky_bit));
+ 
+@@ -2296,10 +2296,12 @@ TEST_F(FileSystemTest, permissions) {
+   EXPECT_TRUE(CheckPermissions(fs::all_perms));
+ #endif // !FreeBSD && !NetBSD && !OpenBSD && !AIX
+ 
++#if !defined(__APPLE__)
+   EXPECT_EQ(fs::setPermissions(TempPath, fs::all_perms & ~fs::sticky_bit),
+                                NoError);
+   EXPECT_TRUE(CheckPermissions(fs::all_perms & ~fs::sticky_bit));
+ #endif
++#endif
+ }
+ 
+ #ifdef _WIN32
+-- 
+2.41.0
+

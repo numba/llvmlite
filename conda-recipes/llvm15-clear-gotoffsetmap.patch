@@ -1,0 +1,24 @@
+From 0bcb486d8f66f6aed142d89e7fe21719f7050756 Mon Sep 17 00:00:00 2001
+From: Siu Kwan Lam <1929845+sklam@users.noreply.github.com>
+Date: Mon, 8 Apr 2024 10:26:49 -0500
+Subject: [PATCH] llvm15-clear-gotoffsetmap.patch
+
+---
+ llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp b/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
+index c702584b7..08c65897c 100644
+--- a/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
++++ b/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldELF.cpp
+@@ -2352,6 +2352,7 @@ Error RuntimeDyldELF::finalizeLoad(const ObjectFile &Obj,
+     }
+   }
+ 
++  GOTOffsetMap.clear();
+   GOTSectionID = 0;
+   CurrentGOTIndex = 0;
+ 
+-- 
+2.41.0
+

@@ -1,0 +1,15 @@
+diff --git a/compiler-rt/cmake/Modules/CompilerRTDarwinUtils.cmake b/compiler-rt/cmake/Modules/CompilerRTDarwinUtils.cmake
+index 640c7e7124c9..7bd3edb86eb1 100644
+--- a/compiler-rt/cmake/Modules/CompilerRTDarwinUtils.cmake
++++ b/compiler-rt/cmake/Modules/CompilerRTDarwinUtils.cmake
+@@ -399,7 +399,9 @@ endfunction()
+ macro(darwin_add_builtin_libraries)
+   set(DARWIN_EXCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Darwin-excludes)
+ 
+-  set(CFLAGS -fPIC -O3 -fvisibility=hidden -DVISIBILITY_HIDDEN -Wall -fomit-frame-pointer)
++  set(CFLAGS -fPIC -O3 -Wall -fomit-frame-pointer)
++  append_list_if(COMPILER_RT_BUILTINS_HIDE_SYMBOLS -fvisibility=hidden CFLAGS)
++  append_list_if(COMPILER_RT_BUILTINS_HIDE_SYMBOLS -DVISIBILITY_HIDDEN CFLAGS)
+   set(CMAKE_C_FLAGS "")
+   set(CMAKE_CXX_FLAGS "")
+   set(CMAKE_ASM_FLAGS "")
