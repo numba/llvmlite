@@ -3,7 +3,12 @@ from ctypes import (POINTER, c_char_p, c_longlong, c_int, c_size_t,
                     c_void_p, string_at)
 
 from llvmlite.binding import ffi
+from llvmlite.binding.initfini import llvm_version_info
 from llvmlite.binding.common import _decode_string, _encode_string
+from collections import namedtuple
+
+Triple = namedtuple('Triple', ['Arch', 'SubArch', 'Vendor',
+                               'OS', 'Env', 'ObjectFormat'])
 
 
 def get_process_triple():
@@ -16,6 +21,25 @@ def get_process_triple():
     with ffi.OutputString() as out:
         ffi.lib.LLVMPY_GetProcessTriple(out)
         return str(out)
+
+
+def get_triple_parts(triple: str):
+    """
+    Return a tuple of the parts of the given triple.
+    """
+    with ffi.OutputString() as arch, \
+            ffi.OutputString() as vendor, \
+            ffi.OutputString() as os, ffi.OutputString() as env:
+        ffi.lib.LLVMPY_GetTripleParts(triple.encode('utf8'),
+                                      arch, vendor, os, env)
+        arch = str(arch)
+        subarch = ''
+        for _str in triple.split('-'):
+            if _str.startswith(arch):
+                subarch = _str[len(arch):]
+                break
+        return Triple(arch, subarch, str(vendor), str(os),
+                      str(env), get_object_format(triple))
 
 
 class FeatureMap(dict):
@@ -87,11 +111,32 @@ def get_host_cpu_name():
         return str(out)
 
 
-_object_formats = {
-    1: "COFF",
-    2: "ELF",
-    3: "MachO",
-}
+# Adapted from https://github.com/llvm/llvm-project/blob/release/15.x/llvm/include/llvm/ADT/Triple.h#L269 # noqa
+llvm_version_major = llvm_version_info[0]
+
+
+if llvm_version_major >= 15:
+    _object_formats = {
+        0: "Unknown",
+        1: "COFF",
+        2: "DXContainer",
+        3: "ELF",
+        4: "GOFF",
+        5: "MachO",
+        6: "SPIRV",
+        7: "Wasm",
+        8: "XCOFF",
+    }
+else:
+    _object_formats = {
+        0: "Unknown",
+        1: "COFF",
+        2: "ELF",
+        3: "GOFF",
+        4: "MachO",
+        5: "Wasm",
+        6: "XCOFF",
+    }
 
 
 def get_object_format(triple=None):
@@ -340,6 +385,9 @@ def has_svml():
 # FFI
 
 ffi.lib.LLVMPY_GetProcessTriple.argtypes = [POINTER(c_char_p)]
+ffi.lib.LLVMPY_GetTripleParts.argtypes = [c_char_p, POINTER(c_char_p),
+                                          POINTER(c_char_p), POINTER(c_char_p),
+                                          POINTER(c_char_p)]
 
 ffi.lib.LLVMPY_GetHostCPUFeatures.argtypes = [POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetHostCPUFeatures.restype = c_int

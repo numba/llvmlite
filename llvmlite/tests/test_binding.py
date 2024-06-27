@@ -2118,6 +2118,57 @@ class TestTarget(BaseTest):
         self.assertIn(target.name, s)
         self.assertIn(target.description, s)
 
+    def test_get_parts_from_triple(self):
+        # Tests adapted from llvm-14::llvm/unittests/ADT/TripleTest.cpp
+        cases = [
+            ("x86_64-scei-ps4",
+             llvm.targets.Triple(Arch="x86_64", SubArch='',
+                                 Vendor="scei", OS="ps4",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("x86_64-sie-ps4",
+             llvm.targets.Triple(Arch="x86_64", SubArch='',
+                                 Vendor="scei", OS="ps4",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("powerpc-dunno-notsure",
+             llvm.targets.Triple(Arch="powerpc", SubArch='',
+                                 Vendor="unknown", OS="unknown",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("powerpcspe-unknown-freebsd",
+             llvm.targets.Triple(Arch="powerpc", SubArch='spe',
+                                 Vendor="unknown", OS="freebsd",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("armv6hl-none-linux-gnueabi",
+             llvm.targets.Triple(Arch="arm", SubArch='v6hl',
+                                 Vendor="unknown", OS="linux",
+                                 Env="gnueabi", ObjectFormat="ELF")),
+            ("i686-unknown-linux-gnu",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="unknown", OS="linux",
+                                 Env="gnu", ObjectFormat="ELF")),
+            ("i686-apple-macosx",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="apple", OS="macosx",
+                                 Env="unknown", ObjectFormat="MachO")),
+            ("i686-dunno-win32",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="unknown", OS="windows",
+                                 Env="msvc", ObjectFormat="COFF")),
+            ("s390x-ibm-zos",
+             llvm.targets.Triple(Arch="s390x", SubArch='',
+                                 Vendor="ibm", OS="zos",
+                                 Env="unknown", ObjectFormat="GOFF")),
+            ("wasm64-wasi",
+             llvm.targets.Triple(Arch="wasm64", SubArch='',
+                                 Vendor="unknown", OS="wasi",
+                                 Env="unknown", ObjectFormat="Wasm")),
+        ]
+
+        for case in cases:
+            triple_str, triple_obj = case
+            res = llvm.get_triple_parts(triple_str)
+
+            self.assertEqual(res, triple_obj)
+
 
 class TestTargetData(BaseTest):
 
