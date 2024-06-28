@@ -3,15 +3,12 @@ from ctypes import (c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref,
 from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
-from llvmlite.binding.initfini import llvm_version_info
 import os
 from tempfile import mkstemp
 from llvmlite.binding.common import _encode_string
 
 _prunestats = namedtuple('PruneStats',
                          ('basicblock diamond fanout fanout_raise'))
-
-llvm_version_major = llvm_version_info[0]
 
 
 class PruneStats(_prunestats):
@@ -261,9 +258,7 @@ class PassManager(ffi.ObjectRef):
 
         LLVM 14: `llvm::createArgumentPromotionPass`
         """  # noqa E501
-        if llvm_version_major > 14:
-            raise RuntimeError('ArgumentPromotionPass unavailable in LLVM > 14')
-        ffi.lib.LLVMPY_AddArgPromotionPass(self, max_elements)
+        raise RuntimeError('ArgumentPromotionPass unavailable in LLVM > 14')
 
     def add_break_critical_edges_pass(self):
         """
@@ -871,11 +866,6 @@ ffi.lib.LLVMPY_AddRegionInfoPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddScalarEvolutionAAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddAggressiveDCEPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddAlwaysInlinerPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
-
-if llvm_version_major < 15:
-    ffi.lib.LLVMPY_AddArgPromotionPass.argtypes = [
-        ffi.LLVMPassManagerRef, c_uint]
-
 ffi.lib.LLVMPY_AddBreakCriticalEdgesPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadStoreEliminationPass.argtypes = [
     ffi.LLVMPassManagerRef]
