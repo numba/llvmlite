@@ -952,9 +952,10 @@ my_block:
     def test_phi(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
-        a, b = builder.function.args[:2]
+        a, b, c = builder.function.args[:3]
         bb2 = builder.function.append_basic_block('b2')
         bb3 = builder.function.append_basic_block('b3')
+        bb4 = builder.function.append_basic_block('b4')
         phi = builder.phi(int32, 'my_phi', flags=('fast',))
         phi.add_incoming(a, bb2)
         phi.add_incoming(b, bb3)
@@ -963,6 +964,16 @@ my_block:
             my_block:
                 %"my_phi" = phi fast i32 [%".1", %"b2"], [%".2", %"b3"]
             """)
+        phi.add_incoming(a, bb4)
+        self.check_block(block, """\
+            my_block:
+                %"my_phi" = phi fast i32 [%".1", %"b2"], [%".2", %"b3"], [%".1", %"b4"]
+            """)  # noqa E501
+        phi.replace_usage(a, c)
+        self.check_block(block, """\
+            my_block:
+                %"my_phi" = phi fast i32 [%".3", %"b2"], [%".2", %"b3"], [%".3", %"b4"]
+            """)  # noqa E501
 
     def test_mem_ops(self):
         block = self.block(name='my_block')
@@ -1218,6 +1229,7 @@ my_block:
         bb_true = builder.function.append_basic_block(name='b_true')
         bb_false = builder.function.append_basic_block(name='b_false')
         br = builder.cbranch(ir.Constant(int1, False), bb_true, bb_false)
+        self.assertNotIn('branch_weights', str(br))
         br.set_weights([5, 42])
         self.assertTrue(block.is_terminated)
         self.check_block(block, """\
@@ -1233,6 +1245,7 @@ my_block:
         builder = ir.IRBuilder(block)
         bb_1 = builder.function.append_basic_block(name='b_1')
         bb_2 = builder.function.append_basic_block(name='b_2')
+        bb_3 = builder.function.append_basic_block(name='b_3')
         indirectbr = builder.branch_indirect(
             ir.BlockAddress(builder.function, bb_1))
         indirectbr.add_destination(bb_1)
@@ -1241,6 +1254,11 @@ my_block:
         self.check_block(block, """\
             my_block:
                 indirectbr i8* blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2"]
+            """)  # noqa E501
+        indirectbr.add_destination(bb_3)
+        self.check_block(block, """\
+            my_block:
+                indirectbr i8* blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2", label %"b_3"]
             """)  # noqa E501
 
     def test_returns(self):
@@ -1290,6 +1308,7 @@ my_block:
         bb_onzero = builder.function.append_basic_block(name='onzero')
         bb_onone = builder.function.append_basic_block(name='onone')
         bb_ontwo = builder.function.append_basic_block(name='ontwo')
+        bb_onfour = builder.function.append_basic_block(name='onfour')
         bb_else = builder.function.append_basic_block(name='otherwise')
         sw = builder.switch(a, bb_else)
         sw.add_case(ir.Constant(int32, 0), bb_onzero)
@@ -1300,6 +1319,11 @@ my_block:
         self.check_block(block, """\
             my_block:
                 switch i32 %".1", label %"otherwise" [i32 0, label %"onzero" i32 1, label %"onone" i32 2, label %"ontwo"]
+            """)  # noqa E501
+        sw.add_case(ir.Constant(int32, 4), bb_onfour)
+        self.check_block(block, """\
+            my_block:
+                switch i32 %".1", label %"otherwise" [i32 0, label %"onzero" i32 1, label %"onone" i32 2, label %"ontwo" i32 4, label %"onfour"]
             """)  # noqa E501
 
     def test_call(self):
@@ -1472,9 +1496,11 @@ my_block:
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
         lp = builder.landingpad(ir.LiteralStructType([int32,
-                                                      int8.as_pointer()]), 'lp')
+                                                      int8.as_pointer()]),
+                                cleanup=True, name='lp')
         int_typeinfo = ir.GlobalVariable(builder.function.module,
-                                         int8.as_pointer(), "_ZTIi")
+                                         int8.as_pointer(),
+                                         "_ZTIi")
         int_typeinfo.global_constant = True
         lp.add_clause(ir.CatchClause(int_typeinfo))
         lp.add_clause(ir.FilterClause(ir.Constant(ir.ArrayType(
@@ -1482,9 +1508,21 @@ my_block:
         builder.resume(lp)
         self.check_block(block, """\
             my_block:
-                %"lp" = landingpad {i32, i8*}
+                %"lp" = landingpad {i32, i8*} cleanup
                     catch i8** @"_ZTIi"
                     filter [1 x i8**] [i8** @"_ZTIi"]
+                resume {i32, i8*} %"lp"
+            """)
+        d_typeinfo = ir.GlobalVariable(builder.function.module,
+                                       int8.as_pointer(), "_ZTId")
+        d_typeinfo.global_constant = True
+        lp.add_clause(ir.CatchClause(d_typeinfo))
+        self.check_block(block, """\
+            my_block:
+                %"lp" = landingpad {i32, i8*} cleanup
+                    catch i8** @"_ZTIi"
+                    filter [1 x i8**] [i8** @"_ZTIi"]
+                    catch i8** @"_ZTId"
                 resume {i32, i8*} %"lp"
             """)
 
@@ -2711,8 +2749,10 @@ class TestTransforms(TestBase):
         builder.position_at_end(foo.append_basic_block())
         call = builder.call(foo, ())
         self.assertEqual(call.callee, foo)
+        self.assertIn("call void @\"foo\"()", str(mod))
         modified = ir.replace_all_calls(mod, foo, bar)
         self.assertIn(call, modified)
+        self.assertNotIn("call void @\"foo\"()", str(mod))
         self.assertNotEqual(call.callee, foo)
         self.assertEqual(call.callee, bar)
 
