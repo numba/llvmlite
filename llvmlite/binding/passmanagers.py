@@ -1,4 +1,4 @@
-from ctypes import (c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref,
+from ctypes import (c_bool, c_char_p, c_int, c_size_t, Structure, byref,
                     POINTER)
 from collections import namedtuple
 from enum import IntFlag
