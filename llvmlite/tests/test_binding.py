@@ -18,8 +18,6 @@ from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
-llvm_version_major = llvm.llvm_version_info[0]
-
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
@@ -1082,13 +1080,9 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(RuntimeError) as cm:
             llvm.parse_bitcode(b"")
         self.assertIn("LLVM bitcode parsing error", str(cm.exception))
-        # for llvm < 9
-        if llvm.llvm_version_info[0] < 9:
-            self.assertIn("Invalid bitcode signature", str(cm.exception))
-        else:
-            self.assertIn(
-                "file too small to contain bitcode header", str(cm.exception),
-            )
+        self.assertIn(
+            "file too small to contain bitcode header", str(cm.exception),
+        )
 
     def test_bitcode_roundtrip(self):
         # create a new context to avoid struct renaming
@@ -2486,8 +2480,6 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_aggressive_dead_code_elimination_pass()
         pm.add_aa_eval_pass()
         pm.add_always_inliner_pass()
-        if llvm_version_major < 15:
-            pm.add_arg_promotion_pass(42)
         pm.add_break_critical_edges_pass()
         pm.add_dead_store_elimination_pass()
         pm.add_reverse_post_order_function_attrs_pass()
@@ -2502,8 +2494,6 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_loop_simplification_pass()
         pm.add_loop_unroll_pass()
         pm.add_loop_unroll_and_jam_pass()
-        if llvm_version_major < 15:
-            pm.add_loop_unswitch_pass()
         pm.add_lower_atomic_pass()
         pm.add_lower_invoke_pass()
         pm.add_lower_switch_pass()
