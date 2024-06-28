@@ -638,7 +638,7 @@ class PassManager(ffi.ObjectRef):
 
     def add_loop_rotate_pass(self):
         """http://llvm.org/docs/Passes.html#loop-rotate-rotate-loops."""
-        ffi.lib.LLVMPY_LLVMAddLoopRotatePass(self)
+        ffi.lib.LLVMPY_AddLoopRotatePass(self)
 
     def add_target_library_info(self, triple):
         ffi.lib.LLVMPY_AddTargetLibraryInfoPass(self, _encode_string(triple))
