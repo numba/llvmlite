@@ -638,7 +638,7 @@ class PassManager(ffi.ObjectRef):
 
     def add_loop_rotate_pass(self):
         """http://llvm.org/docs/Passes.html#loop-rotate-rotate-loops."""
-        ffi.lib.LLVMPY_LLVMAddLoopRotatePass(self)
+        ffi.lib.LLVMPY_AddLoopRotatePass(self)
 
     def add_target_library_info(self, triple):
         ffi.lib.LLVMPY_AddTargetLibraryInfoPass(self, _encode_string(triple))
@@ -668,7 +668,7 @@ class PassManager(ffi.ObjectRef):
             versions.
         """
         iflags = RefPruneSubpasses(subpasses_flags)
-        ffi.lib.LLVMPY_AddRefPrunePass(self, iflags, subgraph_limit)
+        ffi.lib.LLVMPY_AddLegacyRefPrunePass(self, iflags, subgraph_limit)
 
 
 class ModulePassManager(PassManager):
@@ -933,7 +933,7 @@ ffi.lib.LLVMPY_AddTargetLibraryInfoPass.argtypes = [ffi.LLVMPassManagerRef,
                                                     c_char_p]
 ffi.lib.LLVMPY_AddInstructionNamerPass.argtypes = [ffi.LLVMPassManagerRef]
 
-ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
-                                           c_size_t]
+ffi.lib.LLVMPY_AddLegacyRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
+                                                 c_size_t]
 
 ffi.lib.LLVMPY_DumpRefPruneStats.argtypes = [POINTER(_c_PruneStats), c_bool]
