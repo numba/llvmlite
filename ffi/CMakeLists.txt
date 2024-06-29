@@ -16,9 +16,12 @@ endif()
 include(GNUInstallDirs)
 
 find_package(LLVM REQUIRED CONFIG)
+find_package(LLD REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+message(STATUS "Found LLD ${LLD_PACKAGE_VERSION}")
+message(STATUS "Using LLDConfig.cmake in: ${LLD_DIR}")
 
 # Set your project compile flags.
 # E.g. if using the C++ header files
@@ -39,12 +42,13 @@ else()
     message(STATUS "SVML not found")
 endif()
 
+add_definitions(-DLLVM_ENABLE_PROJECTS="lld")
 
 # Define our shared library
 add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
             module.cpp value.cpp executionengine.cpp transforms.cpp type.cpp
             passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
-            custom_passes.cpp orcjit.cpp memorymanager.cpp)
+            custom_passes.cpp orcjit.cpp memorymanager.cpp lld.cpp)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use.
@@ -53,9 +57,9 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
 # Bug reported upstream at: https://bugs.llvm.org/show_bug.cgi?id=47003
 # BROKEN: llvm_map_components_to_libnames(llvm_libs all)
 if ($ENV{LLVMLITE_SHARED})
-    set(llvm_libs LLVM)
+    set(llvm_libs $ENV{lld_libs} LLVM)
 else()
-    set(llvm_libs ${LLVM_AVAILABLE_LIBS})
+    set(llvm_libs ${LLVM_AVAILABLE_LIBS} $ENV{lld_libs})
 endif()
 
 # Since LLVM 8 "OptRemarks" is built as a shared library only and also appears

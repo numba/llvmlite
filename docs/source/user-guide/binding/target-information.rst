@@ -136,7 +136,7 @@ Classes
 
    * .. method:: create_target_machine(cpu='', features='', \
           opt=2, reloc='default', codemodel='jitdefault', \
-          abiname='')
+          abiname='', force_elf=False)
 
         Create a new :class:`TargetMachine` instance for this
         target and with the given options:
@@ -148,6 +148,7 @@ Classes
         * *reloc* is the relocation model.
         * *codemodel* is the code model.
         * *abiname* is the name of the ABI.
+        * *force_elf* is an option that forces the target to use the ELF object format instead of the target's object format.
 
         The defaults for reloc and codemodel are appropriate for
         JIT compilation.
