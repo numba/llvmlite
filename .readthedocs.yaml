@@ -8,6 +8,11 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  apt_packages:
+    - llvm-15
+  jobs:
+    pre_build:
+      - update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-15 200
 
 sphinx:
   configuration: docs/source/conf.py
