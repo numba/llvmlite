@@ -11,7 +11,7 @@ build:
   apt_packages:
     - llvm-15
   jobs:
-    pre_build:
+    post_system_dependencies:
       - update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-15 200
 
 sphinx:
