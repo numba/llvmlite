@@ -78,6 +78,16 @@ asm_sum3 = r"""
     }}
     """
 
+asm_sum4 = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define i32 @sum(i32 %.1, i32 %.2) {{
+        %.3 = add i32 %.1, %.2
+        ret i32 0
+    }}
+    """
+
 asm_mul = r"""
     ; ModuleID = '<string>'
     target triple = "{triple}"
@@ -2888,6 +2898,202 @@ class TestLLVMLockCallbacks(BaseTest):
         # Check: removing non-existent callbacks will trigger a ValueError
         with self.assertRaises(ValueError):
             llvm.ffi.unregister_lock_callback(acq, rel)
+
+
+class TestPipelineTuningOptions(BaseTest):
+
+    def pto(self):
+        return llvm.create_pipeline_tuning_options()
+
+    def test_close(self):
+        pto = self.pto()
+        pto.close()
+
+    def test_speed_level(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.speed_level, int)
+        for i in range(4):
+            pto.speed_level = i
+            self.assertEqual(pto.speed_level, i)
+
+    def test_size_level(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.size_level, int)
+        for i in range(3):
+            pto.size_level = i
+            self.assertEqual(pto.size_level, i)
+
+    # // FIXME: Available from llvm16
+    # def test_inlining_threshold(self):
+    #     pto = self.pto()
+    #     with self.assertRaises(NotImplementedError):
+    #         pto.inlining_threshold
+    #     for i in (25, 80, 350):
+    #         pto.inlining_threshold = i
+
+    def test_loop_interleaving(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_interleaving, bool)
+        for b in (True, False):
+            pto.loop_interleaving = b
+            self.assertEqual(pto.loop_interleaving, b)
+
+    def test_loop_vectorization(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_vectorization, bool)
+        for b in (True, False):
+            pto.loop_vectorization = b
+            self.assertEqual(pto.loop_vectorization, b)
+
+    def test_slp_vectorization(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.slp_vectorization, bool)
+        for b in (True, False):
+            pto.slp_vectorization = b
+            self.assertEqual(pto.slp_vectorization, b)
+
+    def test_loop_unrolling(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_unrolling, bool)
+        for b in (True, False):
+            pto.loop_unrolling = b
+            self.assertEqual(pto.loop_unrolling, b)
+
+    def test_speed_level_constraints(self):
+        pto = self.pto()
+        with self.assertRaises(ValueError):
+            pto.speed_level = 4
+        with self.assertRaises(ValueError):
+            pto.speed_level = -1
+
+    def test_size_level_constraints(self):
+        pto = self.pto()
+        with self.assertRaises(ValueError):
+            pto.size_level = 3
+        with self.assertRaises(ValueError):
+            pto.speed_level = -1
+        with self.assertRaises(ValueError):
+            pto.speed_level = 3
+            pto.size_level = 2
+
+
+class NewPassManagerMixin(object):
+
+    def pb(self, speed_level=0, size_level=0):
+        tm = self.target_machine(jit=False)
+        pto = llvm.create_pipeline_tuning_options(speed_level, size_level)
+        pb = llvm.create_pass_builder(tm, pto)
+        return pb
+
+
+class TestPassBuilder(BaseTest, NewPassManagerMixin):
+
+    def test_close(self):
+        pb = self.pb()
+        pb.close()
+
+    def test_pto(self):
+        tm = self.target_machine(jit=False)
+        pto = llvm.create_pipeline_tuning_options(3, 0)
+        pto.inlining_threshold = 2
+        pto.loop_interleaving = True
+        pto.loop_vectorization = True
+        pto.slp_vectorization = True
+        pto.loop_unrolling = False
+        pb = llvm.create_pass_builder(tm, pto)
+        pb.close()
+
+    def test_get_module_pass_manager(self):
+        pb = self.pb()
+        mpm = pb.getModulePassManager()
+        mpm.run(self.module(), pb)
+        pb.close()
+
+    def test_get_function_pass_manager(self):
+        pb = self.pb()
+        fpm = pb.getFunctionPassManager()
+        fpm.run(self.module().get_function("sum"), pb)
+        pb.close()
+
+
+class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
+    def pm(self):
+        return llvm.create_new_module_pass_manager()
+
+    def test_close(self):
+        mpm = self.pm()
+        mpm.close()
+
+    def test_run(self):
+        pb = self.pb(speed_level=3, size_level=0)
+        mod = self.module()
+        orig_asm = str(mod)
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        optimized_asm = str(mod)
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", optimized_asm)
+
+    def test_instcombine(self):
+        pb = self.pb()
+        mpm = self.pm()
+        mpm.add_instruction_combine_pass()
+        mod = self.module(asm_sum4)
+        orig_asm = str(mod)
+        mpm.run(mod, pb)
+        optimized_asm = str(mod)
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", optimized_asm)
+
+    def test_add_passes(self):
+        mpm = self.pm()
+        mpm.add_verifier()
+        mpm.add_aa_eval_pass()
+        mpm.add_simplify_cfg_pass()
+        mpm.add_loop_unroll_pass()
+        mpm.add_loop_rotate_pass()
+        mpm.add_instruction_combine_pass()
+        mpm.add_jump_threading_pass()
+
+
+class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
+    def pm(self):
+        return llvm.create_new_function_pass_manager()
+
+    def test_close(self):
+        fpm = self.pm()
+        fpm.close()
+
+    def test_run(self):
+        pb = self.pb(3)
+        mod = self.module()
+        fun = mod.get_function("sum")
+        orig_asm = str(fun)
+        fpm = pb.getFunctionPassManager()
+        fpm.run(fun, pb)
+        optimized_asm = str(fun)
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", optimized_asm)
+
+    def test_instcombine(self):
+        pb = self.pb()
+        fpm = self.pm()
+        fun = self.module(asm_sum4).get_function("sum")
+        fpm.add_instruction_combine_pass()
+        orig_asm = str(fun)
+        fpm.run(fun, pb)
+        optimized_asm = str(fun)
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", optimized_asm)
+
+    def test_add_passes(self):
+        fpm = self.pm()
+        fpm.add_aa_eval_pass()
+        fpm.add_simplify_cfg_pass()
+        fpm.add_loop_unroll_pass()
+        fpm.add_loop_rotate_pass()
+        fpm.add_instruction_combine_pass()
+        fpm.add_jump_threading_pass()
 
 
 if __name__ == "__main__":
