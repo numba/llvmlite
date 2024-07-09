@@ -1,9 +1,11 @@
 #include "core.h"
 #include "llvm-c/TargetMachine.h"
 #include "llvm/Analysis/AliasAnalysisEvaluator.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar/JumpThreading.h"
 #include "llvm/Transforms/Scalar/LoopRotation.h"
@@ -53,21 +55,36 @@ LLVMPY_CreateNewModulePassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
-                               LLVMPassBuilderRef PBRef, LLVMModuleRef mod) {
+                               LLVMModuleRef mod,
+                               LLVMPipelineTuningOptionsRef PTORef,
+                               LLVMTargetMachineRef TMRef) {
 
     ModulePassManager *MPM = llvm::unwrap(MPMRef);
-    PassBuilder *PB = llvm::unwrap(PBRef);
     Module *M = llvm::unwrap(mod);
+    PipelineTuningOptions *PTO = llvm::unwrap(PTORef);
+    TargetMachine *TM = llvm::unwrap(TMRef);
+
+    // TODO: Make these set(able) by user
+    bool DebugLogging = false;
+    bool VerifyEach = false;
+
+    PrintPassOptions PrintPassOpts;
+    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
+    PassInstrumentationCallbacks PIC;
 
     LoopAnalysisManager LAM;
     FunctionAnalysisManager FAM;
     CGSCCAnalysisManager CGAM;
     ModuleAnalysisManager MAM;
-    PB->registerLoopAnalyses(LAM);
-    PB->registerFunctionAnalyses(FAM);
-    PB->registerCGSCCAnalyses(CGAM);
-    PB->registerModuleAnalyses(MAM);
-    PB->crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    SI.registerCallbacks(PIC, &FAM);
+    PassBuilder PB(TM, *PTO, None, &PIC);
+
+    PB.registerLoopAnalyses(LAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerModuleAnalyses(MAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
     MPM->run(*M, MAM);
 }
 
@@ -126,11 +143,26 @@ LLVMPY_CreateNewFunctionPassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
-                                 LLVMPassBuilderRef PBRef, LLVMValueRef FRef) {
+                                 LLVMValueRef FRef,
+                                 LLVMPipelineTuningOptionsRef PTORef,
+                                 LLVMTargetMachineRef TMRef) {
 
     FunctionPassManager *FPM = llvm::unwrap(FPMRef);
-    PassBuilder *PB = llvm::unwrap(PBRef);
     Function *F = reinterpret_cast<Function *>(FRef);
+    PipelineTuningOptions *PTO = llvm::unwrap(PTORef);
+    TargetMachine *TM = llvm::unwrap(TMRef);
+
+    // Don't try to optimize function declarations
+    if (F->isDeclaration())
+        return;
+
+    // TODO: Make these set(able) by user
+    bool DebugLogging = false;
+    bool VerifyEach = false;
+
+    PrintPassOptions PrintPassOpts;
+    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
+    PassInstrumentationCallbacks PIC;
 
     // Don't try to optimize function declarations
     if (F->isDeclaration())
@@ -140,11 +172,15 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     FunctionAnalysisManager FAM;
     CGSCCAnalysisManager CGAM;
     ModuleAnalysisManager MAM;
-    PB->registerLoopAnalyses(LAM);
-    PB->registerFunctionAnalyses(FAM);
-    PB->registerCGSCCAnalyses(CGAM);
-    PB->registerModuleAnalyses(MAM);
-    PB->crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    SI.registerCallbacks(PIC, &FAM);
+    PassBuilder PB(TM, *PTO, None, &PIC);
+
+    PB.registerLoopAnalyses(LAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerModuleAnalyses(MAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
     FPM->run(*F, FAM);
 }
 

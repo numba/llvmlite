@@ -26,7 +26,7 @@ class ModulePassManager(ffi.ObjectRef):
         super().__init__(ptr)
 
     def run(self, module, pb):
-        ffi.lib.LLVMPY_RunNewModulePassManager(self, pb, module)
+        ffi.lib.LLVMPY_RunNewModulePassManager(self, module, pb._pto, pb._tm)
 
     def add_verifier(self):
         ffi.lib.LLVMPY_AddVerifierPass(self)
@@ -61,7 +61,7 @@ class FunctionPassManager(ffi.ObjectRef):
         super().__init__(ptr)
 
     def run(self, fun, pb):
-        ffi.lib.LLVMPY_RunNewFunctionPassManager(self, pb, fun)
+        ffi.lib.LLVMPY_RunNewFunctionPassManager(self, fun, pb._pto, pb._tm)
 
     def add_aa_eval_pass(self):
         ffi.lib.LLVMPY_AddAAEvalPass_function(self)
@@ -193,9 +193,9 @@ class PassBuilder(ffi.ObjectRef):
 
 ffi.lib.LLVMPY_CreateNewModulePassManager.restype = ffi.LLVMModulePassManagerRef
 
-ffi.lib.LLVMPY_RunNewModulePassManager.argtypes = [ffi.LLVMModulePassManagerRef,
-                                                   ffi.LLVMPassBuilderRef,
-                                                   ffi.LLVMModuleRef,]
+ffi.lib.LLVMPY_RunNewModulePassManager.argtypes = [
+    ffi.LLVMModulePassManagerRef, ffi.LLVMModuleRef,
+    ffi.LLVMPipelineTuningOptionsRef, ffi.LLVMTargetMachineRef, ]
 
 ffi.lib.LLVMPY_AddVerifierPass.argtypes = [ffi.LLVMModulePassManagerRef,]
 ffi.lib.LLVMPY_AddAAEvalPass_module.argtypes = [ffi.LLVMModulePassManagerRef,]
@@ -223,9 +223,8 @@ ffi.lib.LLVMPY_CreateNewFunctionPassManager.restype = \
     ffi.LLVMFunctionPassManagerRef
 
 ffi.lib.LLVMPY_RunNewFunctionPassManager.argtypes = [
-    ffi.LLVMFunctionPassManagerRef,
-    ffi.LLVMPassBuilderRef,
-    ffi.LLVMValueRef,]
+    ffi.LLVMFunctionPassManagerRef, ffi.LLVMValueRef,
+    ffi.LLVMPipelineTuningOptionsRef, ffi.LLVMTargetMachineRef, ]
 
 ffi.lib.LLVMPY_AddAAEvalPass_function.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]

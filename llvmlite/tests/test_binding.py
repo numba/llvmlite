@@ -452,6 +452,40 @@ declare void @a_readonly_func(i8 *) readonly
 declare i8* @a_arg0_return_func(i8* returned, i32*)
 """
 
+asm_alloca_optnone = r"""
+define double @foo(i32 %i, double %j) optnone noinline {
+    %I = alloca i32		; <i32*> [#uses=4]
+    %J = alloca double		; <double*> [#uses=2]
+    store i32 %i, i32* %I
+    store double %j, double* %J
+    %t1 = load i32, i32* %I		; <i32> [#uses=1]
+    %t2 = add i32 %t1, 1		; <i32> [#uses=1]
+    store i32 %t2, i32* %I
+    %t3 = load i32, i32* %I		; <i32> [#uses=1]
+    %t4 = sitofp i32 %t3 to double		; <double> [#uses=1]
+    %t5 = load double, double* %J		; <double> [#uses=1]
+    %t6 = fmul double %t4, %t5		; <double> [#uses=1]
+    ret double %t6
+}
+"""
+
+asm_alloca_no_optnone = r"""
+define double @foo(i32 %i, double %j) noinline {
+    %I = alloca i32		; <i32*> [#uses=4]
+    %J = alloca double		; <double*> [#uses=2]
+    store i32 %i, i32* %I
+    store double %j, double* %J
+    %t1 = load i32, i32* %I		; <i32> [#uses=1]
+    %t2 = add i32 %t1, 1		; <i32> [#uses=1]
+    store i32 %t2, i32* %I
+    %t3 = load i32, i32* %I		; <i32> [#uses=1]
+    %t4 = sitofp i32 %t3 to double		; <double> [#uses=1]
+    %t5 = load double, double* %J		; <double> [#uses=1]
+    %t6 = fmul double %t4, %t5		; <double> [#uses=1]
+    ret double %t6
+}
+"""
+
 asm_declaration = r"""
 declare void @test_declare(i32* )
 """
@@ -3027,7 +3061,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         mpm = self.pm()
         mpm.close()
 
-    def test_run(self):
+    def test_run_O3(self):
         pb = self.pb(speed_level=3, size_level=0)
         mod = self.module()
         orig_asm = str(mod)
@@ -3036,6 +3070,16 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         optimized_asm = str(mod)
         self.assertIn("%.4", orig_asm)
         self.assertNotIn("%.4", optimized_asm)
+
+    def test_run_O0(self):
+        pb = self.pb(speed_level=0, size_level=0)
+        mod = self.module()
+        orig_asm = str(mod)
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        optimized_asm = str(mod)
+        self.assertIn("%.4", orig_asm)
+        self.assertIn("%.4", optimized_asm)
 
     def test_instcombine(self):
         pb = self.pb()
@@ -3047,6 +3091,25 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         optimized_asm = str(mod)
         self.assertIn("%.3", orig_asm)
         self.assertNotIn("%.3", optimized_asm)
+
+    def test_optnone(self):
+        # Module shouldn't be optimized if the function as `optnone` attached
+        pb = self.pb(speed_level=3, size_level=0)
+        orig_asm_no_optnone = str(asm_alloca_no_optnone)
+        mod = llvm.parse_assembly(orig_asm_no_optnone)
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        optimized_asm_no_optnone = str(mod)
+        self.assertIn("alloca", orig_asm_no_optnone)
+        self.assertNotIn("alloca", optimized_asm_no_optnone)
+
+        orig_asm_optnone = str(asm_alloca_optnone)
+        mpm = pb.getModulePassManager()
+        mod = llvm.parse_assembly(orig_asm_optnone)
+        mpm.run(mod, pb)
+        optimized_asm_optnone = str(mod)
+        self.assertIn("alloca", orig_asm_optnone)
+        self.assertIn("alloca", optimized_asm_optnone)
 
     def test_add_passes(self):
         mpm = self.pm()
@@ -3067,7 +3130,7 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         fpm = self.pm()
         fpm.close()
 
-    def test_run(self):
+    def test_run_O3(self):
         pb = self.pb(3)
         mod = self.module()
         fun = mod.get_function("sum")
@@ -3077,6 +3140,36 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         optimized_asm = str(fun)
         self.assertIn("%.4", orig_asm)
         self.assertNotIn("%.4", optimized_asm)
+
+    def test_run_O0(self):
+        pb = self.pb(0)
+        mod = self.module()
+        fun = mod.get_function("sum")
+        orig_asm = str(fun)
+        fpm = pb.getFunctionPassManager()
+        fpm.run(fun, pb)
+        optimized_asm = str(fun)
+        self.assertIn("%.4", orig_asm)
+        self.assertIn("%.4", optimized_asm)
+
+    def test_optnone(self):
+        # Function shouldn't be optimized if the function as `optnone` attached
+        pb = self.pb(speed_level=3, size_level=0)
+        orig_asm_no_optnone = str(asm_alloca_no_optnone)
+        fun = llvm.parse_assembly(orig_asm_no_optnone).get_function("foo")
+        fpm = pb.getFunctionPassManager()
+        fpm.run(fun, pb)
+        optimized_asm_no_optnone = str(fun)
+        self.assertIn("alloca", orig_asm_no_optnone)
+        self.assertNotIn("alloca", optimized_asm_no_optnone)
+
+        orig_asm_optnone = str(asm_alloca_optnone)
+        fun = llvm.parse_assembly(orig_asm_optnone).get_function("foo")
+        fpm = pb.getFunctionPassManager()
+        fpm.run(fun, pb)
+        optimized_asm_optnone = str(fun)
+        self.assertIn("alloca", orig_asm_optnone)
+        self.assertIn("alloca", optimized_asm_optnone)
 
     def test_instcombine(self):
         pb = self.pb()
