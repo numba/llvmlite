@@ -1016,15 +1016,16 @@ my_block:
     def test_gep(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
+        elem_type = ir.LiteralStructType([int32, int32])
         a, b = builder.function.args[:2]
-        c = builder.alloca(ir.PointerType(int32), name='c')
-        d = builder.gep(c, [ir.Constant(int32, 5), a], name='d')
+        c = builder.alloca(ir.PointerType(elem_type), name='c')
+        d = builder.gep(c, [ir.Constant(int32, 5), a, 1], name='d')
         self.assertEqual(d.type, ir.PointerType(int32))
         self.check_block(block, """\
             my_block:
-                %"c" = alloca i32*
-                %"d" = getelementptr i32*, i32** %"c", i32 5, i32 %".1"
-            """)
+                %"c" = alloca {i32, i32}*
+                %"d" = getelementptr {i32, i32}*, {i32, i32}** %"c", i32 5, i32 %".1", i32 1
+            """)  # noqa E501
         # XXX test with more complex types
 
     def test_gep_castinstr(self):
