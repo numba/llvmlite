@@ -1,30 +1,27 @@
-{% set shortversion = "14.0" %}
-{% set version = "14.0.6" %}
-{% set sha256_llvm = "050922ecaaca5781fdf6631ea92bc715183f202f9d2f15147226f023414f619a" %}
-{% set sha256_lld = "0c28ce0496934d37d20fec96591032dd66af8d10178a45762e0e75e85cf95ad3" %}
-{% set sha256_libunwind = "3bbe9c23c73259fe39c045dc87d0b283236ba6e00750a226b2c2aeac4a51d86b" %}
-{% set build_number = "3" %}
+{% set shortversion = "15.0" %}
+{% set version = "15.0.7" %}
+{% set sha256_llvm = "8b5fcb24b4128cf04df1b0b9410ce8b1a729cb3c544e6da885d234280dedeac6" %}
+{% set build_number = "1" %}
 
 package:
   name: llvmdev
   version: {{ version }}
 
 source:
-  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/llvm-{{ version }}.src.tar.xz
-    fn: llvm-{{ version }}.src.tar.xz
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
-    - ../llvm14-clear-gotoffsetmap.patch
-    - ../llvm14-remove-use-of-clonefile.patch
-    - ../llvm14-svml.patch
-  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/lld-{{ version }}.src.tar.xz
-    fn: lld-{{ version }}.src.tar.xz
-    sha256: {{ sha256_lld }}
+    - ../llvm15-clear-gotoffsetmap.patch
+    - ../llvm15-remove-use-of-clonefile.patch
+    - ../llvm15-svml.patch
+    - ../compiler-rt-cfi-startproc-war.patch
+    - ../compiler-rt-macos-build.patch
 
-  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version }}/libunwind-{{ version }}.src.tar.xz
-    fn: libunwind-{{ version }}.src.tar.xz
-    sha256: {{ sha256_libunwind }}
-    folder: unwind
+    # Patches from conda-forge needed for windows to build
+    # backport of zlib patches, can be dropped for vs15.0.3, see
+    # https://reviews.llvm.org/D135457 & https://reviews.llvm.org/D136065
+    - patches/0002-CMake-Fix-Findzstd-module-for-shared-DLL-on-Windows.patch
+    - patches/no-windows-symlinks.patch
 
 build:
   number: {{ build_number }}
@@ -36,25 +33,22 @@ build:
 
 requirements:
   build:
-    # We cannot do this on macOS or windows
-    # OSX already has llvm so has to be handled
-    # at build.sh time
-    # Windows needs to build using vs2015_runtime
-    # irrespective of python version
-    - {{ compiler('c') }} # [unix and not (armv6l or armv7l)]
-    - {{ compiler('cxx') }} # [unix and not (armv6l or armv7l)]
+    - {{ compiler('cxx') }}
     - cmake
-    - make # [unix and not (armv6l or armv7l or aarch64)]
-    # Needed to unpack the source tarball
-    - m2w64-xz  # [win]
-    # Needed to build LLVM
+    - ninja
     - python >=3
+    - libcxx      # it is not defined{{ cxx_compiler_version }}  # [osx]
+    - patch       # [not win]
+    - m2-patch    # [win]
+    - git         # [(linux and x86_64)]
+
   host:
-    # needed for llc at runtime
-    - zlib # [not win]
-    - xar # [osx and x86_64]
-    # llvm-lit testing needs *a* python
-    - python # [not (armv6l or armv7l or aarch64 or win)]
+    - libcxx    # it is not defined{{ cxx_compiler_version }}  # [osx]
+    - libffi    # [unix]
+    # libxml2 supports a windows-only feature, see https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/llvm/include/llvm/WindowsManifest/WindowsManifestMerger.h
+    - libxml2   # [win]
+    - zlib 
+    - zstd 
 
 test:
   files:
