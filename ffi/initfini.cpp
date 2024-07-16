@@ -15,7 +15,9 @@ extern "C" {
 INIT(Core)
 INIT(TransformUtils)
 INIT(ScalarOpts)
+#if LLVM_VERSION_MAJOR < 16
 INIT(ObjCARCOpts)
+#endif
 INIT(Vectorization)
 INIT(InstCombine)
 INIT(IPO)

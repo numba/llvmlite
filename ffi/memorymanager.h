@@ -42,6 +42,14 @@ class __attribute__((visibility("default"))) ErrorInfoBase;
 #include <string>
 #include <system_error>
 
+#if LLVM_VERSION_MAJOR < 16
+#define LLVMLITE_ALIGN uint32_t
+#define GET_ALIGN_VALUE(align) align
+#else
+#define LLVMLITE_ALIGN Align
+#define GET_ALIGN_VALUE(align) align.value()
+#endif
+
 namespace llvm {
 
 /// This is a simple memory manager which implements the methods called by
@@ -174,11 +182,12 @@ class API_EXPORT(LlvmliteMemoryManager : public RTDyldMemoryManager) {
 
     virtual bool needsToReserveAllocationSpace() override { return true; }
 
-    virtual void reserveAllocationSpace(uintptr_t CodeSize, uint32_t CodeAlign,
+    virtual void reserveAllocationSpace(uintptr_t CodeSize,
+                                        LLVMLITE_ALIGN CodeAlign,
                                         uintptr_t RODataSize,
-                                        uint32_t RODataAlign,
+                                        LLVMLITE_ALIGN RODataAlign,
                                         uintptr_t RWDataSize,
-                                        uint32_t RWDataAlign) override;
+                                        LLVMLITE_ALIGN RWDataAlign) override;
 
   private:
     struct FreeMemBlock {

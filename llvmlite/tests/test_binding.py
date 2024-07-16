@@ -18,8 +18,6 @@ from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
-llvm_version_major = llvm.llvm_version_info[0]
-
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
@@ -893,7 +891,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = (14, 15)
+        valid = (15, 16)
         self.assertIn(major, valid)
         self.assertIn(patch, range(8))
 
@@ -1092,13 +1090,9 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(RuntimeError) as cm:
             llvm.parse_bitcode(b"")
         self.assertIn("LLVM bitcode parsing error", str(cm.exception))
-        # for llvm < 9
-        if llvm.llvm_version_info[0] < 9:
-            self.assertIn("Invalid bitcode signature", str(cm.exception))
-        else:
-            self.assertIn(
-                "file too small to contain bitcode header", str(cm.exception),
-            )
+        self.assertIn(
+            "file too small to contain bitcode header", str(cm.exception),
+        )
 
     def test_bitcode_roundtrip(self):
         # create a new context to avoid struct renaming
@@ -1719,11 +1713,13 @@ class TestValueRef(BaseTest):
         self.assertEqual(str(operands[1].type), 'i32')
 
     def test_function_attributes(self):
+        ver = llvm.llvm_version_info[0]
+        readonly_attrs = [b'memory(read)' if ver == 16 else b'readonly']
         mod = self.module(asm_attributes)
         for func in mod.functions:
             attrs = list(func.attributes)
             if func.name == 'a_readonly_func':
-                self.assertEqual(attrs, [b'readonly'])
+                self.assertEqual(attrs, readonly_attrs)
             elif func.name == 'a_arg0_return_func':
                 self.assertEqual(attrs, [])
                 args = list(func.arguments)
@@ -2472,6 +2468,8 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         return llvm.create_module_pass_manager()
 
     def test_populate(self):
+        llvm_ver = llvm.llvm_version_info[0]
+
         pm = self.pm()
         pm.add_target_library_info("") # unspecified target triple
         pm.add_constant_merge_pass()
@@ -2496,12 +2494,13 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_aggressive_dead_code_elimination_pass()
         pm.add_aa_eval_pass()
         pm.add_always_inliner_pass()
-        if llvm_version_major < 15:
-            pm.add_arg_promotion_pass(42)
         pm.add_break_critical_edges_pass()
         pm.add_dead_store_elimination_pass()
         pm.add_reverse_post_order_function_attrs_pass()
-        pm.add_aggressive_instruction_combining_pass()
+
+        if llvm_ver < 16:
+            pm.add_aggressive_instruction_combining_pass()
+
         pm.add_internalize_pass()
         pm.add_jump_threading_pass(7)
         pm.add_lcssa_pass()
@@ -2512,8 +2511,6 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_loop_simplification_pass()
         pm.add_loop_unroll_pass()
         pm.add_loop_unroll_and_jam_pass()
-        if llvm_version_major < 15:
-            pm.add_loop_unswitch_pass()
         pm.add_lower_atomic_pass()
         pm.add_lower_invoke_pass()
         pm.add_lower_switch_pass()
@@ -2521,7 +2518,10 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_merge_functions_pass()
         pm.add_merge_returns_pass()
         pm.add_partial_inlining_pass()
-        pm.add_prune_exception_handling_pass()
+
+        if llvm_ver < 16:
+            pm.add_prune_exception_handling_pass()
+
         pm.add_reassociate_expressions_pass()
         pm.add_demote_register_to_memory_pass()
         pm.add_sink_pass()

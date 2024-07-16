@@ -11,6 +11,8 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g")
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
 # Work around llvm/llvm-project#83802 - LLVM's Findzstd.cmake uses variables
 # that require including `GNUInstallDirs`, but it does not include it itself.
 include(GNUInstallDirs)
