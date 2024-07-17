@@ -452,6 +452,9 @@ declare void @a_readonly_func(i8 *) readonly
 declare i8* @a_arg0_return_func(i8* returned, i32*)
 """
 
+asm_declaration = r"""
+declare void @test_declare(i32* )
+"""
 
 # This produces the following output from objdump:
 #
@@ -3085,6 +3088,13 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         optimized_asm = str(fun)
         self.assertIn("%.3", orig_asm)
         self.assertNotIn("%.3", optimized_asm)
+
+    # This should not crash
+    def test_declarations(self):
+        pb = self.pb(3)
+        fpm = pb.getFunctionPassManager()
+        for fun in llvm.parse_assembly(asm_declaration).functions:
+            fpm.run(fun, pb)
 
     def test_add_passes(self):
         fpm = self.pm()
