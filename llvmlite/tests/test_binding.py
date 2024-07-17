@@ -21,8 +21,6 @@ from llvmlite.tests import TestCase
 # FIXME: Remove me once typed pointers are no longer supported.
 from llvmlite import _disable_opaque_pointers
 
-llvm_version_major = llvm.llvm_version_info[0]
-
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
@@ -78,6 +76,16 @@ asm_sum3 = r"""
       %.4 = add i64 5, %.3
       %.5 = add i64 -5, %.4
       ret i64 %.5
+    }}
+    """
+
+asm_sum4 = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define i32 @sum(i32 %.1, i32 %.2) {{
+        %.3 = add i32 %.1, %.2
+        ret i32 0
     }}
     """
 
@@ -886,7 +894,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = (14, 15)
+        valid = (15, 16)
         self.assertIn(major, valid)
         self.assertIn(patch, range(8))
 
@@ -1085,13 +1093,9 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(RuntimeError) as cm:
             llvm.parse_bitcode(b"")
         self.assertIn("LLVM bitcode parsing error", str(cm.exception))
-        # for llvm < 9
-        if llvm.llvm_version_info[0] < 9:
-            self.assertIn("Invalid bitcode signature", str(cm.exception))
-        else:
-            self.assertIn(
-                "file too small to contain bitcode header", str(cm.exception),
-            )
+        self.assertIn(
+            "file too small to contain bitcode header", str(cm.exception),
+        )
 
     def test_bitcode_roundtrip(self):
         # create a new context to avoid struct renaming
@@ -1716,11 +1720,13 @@ class TestValueRef(BaseTest):
         self.assertEqual(str(operands[1].type), 'i32')
 
     def test_function_attributes(self):
+        ver = llvm.llvm_version_info[0]
+        readonly_attrs = [b'memory(read)' if ver == 16 else b'readonly']
         mod = self.module(asm_attributes)
         for func in mod.functions:
             attrs = list(func.attributes)
             if func.name == 'a_readonly_func':
-                self.assertEqual(attrs, [b'readonly'])
+                self.assertEqual(attrs, readonly_attrs)
             elif func.name == 'a_arg0_return_func':
                 self.assertEqual(attrs, [])
                 args = list(func.arguments)
@@ -2133,6 +2139,57 @@ class TestTarget(BaseTest):
         self.assertIn(target.name, s)
         self.assertIn(target.description, s)
 
+    def test_get_parts_from_triple(self):
+        # Tests adapted from llvm-14::llvm/unittests/ADT/TripleTest.cpp
+        cases = [
+            ("x86_64-scei-ps4",
+             llvm.targets.Triple(Arch="x86_64", SubArch='',
+                                 Vendor="scei", OS="ps4",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("x86_64-sie-ps4",
+             llvm.targets.Triple(Arch="x86_64", SubArch='',
+                                 Vendor="scei", OS="ps4",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("powerpc-dunno-notsure",
+             llvm.targets.Triple(Arch="powerpc", SubArch='',
+                                 Vendor="unknown", OS="unknown",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("powerpcspe-unknown-freebsd",
+             llvm.targets.Triple(Arch="powerpc", SubArch='spe',
+                                 Vendor="unknown", OS="freebsd",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("armv6hl-none-linux-gnueabi",
+             llvm.targets.Triple(Arch="arm", SubArch='v6hl',
+                                 Vendor="unknown", OS="linux",
+                                 Env="gnueabi", ObjectFormat="ELF")),
+            ("i686-unknown-linux-gnu",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="unknown", OS="linux",
+                                 Env="gnu", ObjectFormat="ELF")),
+            ("i686-apple-macosx",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="apple", OS="macosx",
+                                 Env="unknown", ObjectFormat="MachO")),
+            ("i686-dunno-win32",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="unknown", OS="windows",
+                                 Env="msvc", ObjectFormat="COFF")),
+            ("s390x-ibm-zos",
+             llvm.targets.Triple(Arch="s390x", SubArch='',
+                                 Vendor="ibm", OS="zos",
+                                 Env="unknown", ObjectFormat="GOFF")),
+            ("wasm64-wasi",
+             llvm.targets.Triple(Arch="wasm64", SubArch='',
+                                 Vendor="unknown", OS="wasi",
+                                 Env="unknown", ObjectFormat="Wasm")),
+        ]
+
+        for case in cases:
+            triple_str, triple_obj = case
+            res = llvm.get_triple_parts(triple_str)
+
+            self.assertEqual(res, triple_obj)
+
 
 class TestTargetData(BaseTest):
 
@@ -2426,6 +2483,8 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         return llvm.create_module_pass_manager()
 
     def test_populate(self):
+        llvm_ver = llvm.llvm_version_info[0]
+
         pm = self.pm()
         pm.add_target_library_info("") # unspecified target triple
         pm.add_constant_merge_pass()
@@ -2450,12 +2509,13 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_aggressive_dead_code_elimination_pass()
         pm.add_aa_eval_pass()
         pm.add_always_inliner_pass()
-        if llvm_version_major < 15:
-            pm.add_arg_promotion_pass(42)
         pm.add_break_critical_edges_pass()
         pm.add_dead_store_elimination_pass()
         pm.add_reverse_post_order_function_attrs_pass()
-        pm.add_aggressive_instruction_combining_pass()
+
+        if llvm_ver < 16:
+            pm.add_aggressive_instruction_combining_pass()
+
         pm.add_internalize_pass()
         pm.add_jump_threading_pass(7)
         pm.add_lcssa_pass()
@@ -2466,8 +2526,6 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_loop_simplification_pass()
         pm.add_loop_unroll_pass()
         pm.add_loop_unroll_and_jam_pass()
-        if llvm_version_major < 15:
-            pm.add_loop_unswitch_pass()
         pm.add_lower_atomic_pass()
         pm.add_lower_invoke_pass()
         pm.add_lower_switch_pass()
@@ -2475,7 +2533,10 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_merge_functions_pass()
         pm.add_merge_returns_pass()
         pm.add_partial_inlining_pass()
-        pm.add_prune_exception_handling_pass()
+
+        if llvm_ver < 16:
+            pm.add_prune_exception_handling_pass()
+
         pm.add_reassociate_expressions_pass()
         pm.add_demote_register_to_memory_pass()
         pm.add_sink_pass()
@@ -2852,6 +2913,202 @@ class TestLLVMLockCallbacks(BaseTest):
         # Check: removing non-existent callbacks will trigger a ValueError
         with self.assertRaises(ValueError):
             llvm.ffi.unregister_lock_callback(acq, rel)
+
+
+class TestPipelineTuningOptions(BaseTest):
+
+    def pto(self):
+        return llvm.create_pipeline_tuning_options()
+
+    def test_close(self):
+        pto = self.pto()
+        pto.close()
+
+    def test_speed_level(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.speed_level, int)
+        for i in range(4):
+            pto.speed_level = i
+            self.assertEqual(pto.speed_level, i)
+
+    def test_size_level(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.size_level, int)
+        for i in range(3):
+            pto.size_level = i
+            self.assertEqual(pto.size_level, i)
+
+    # // FIXME: Available from llvm16
+    # def test_inlining_threshold(self):
+    #     pto = self.pto()
+    #     with self.assertRaises(NotImplementedError):
+    #         pto.inlining_threshold
+    #     for i in (25, 80, 350):
+    #         pto.inlining_threshold = i
+
+    def test_loop_interleaving(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_interleaving, bool)
+        for b in (True, False):
+            pto.loop_interleaving = b
+            self.assertEqual(pto.loop_interleaving, b)
+
+    def test_loop_vectorization(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_vectorization, bool)
+        for b in (True, False):
+            pto.loop_vectorization = b
+            self.assertEqual(pto.loop_vectorization, b)
+
+    def test_slp_vectorization(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.slp_vectorization, bool)
+        for b in (True, False):
+            pto.slp_vectorization = b
+            self.assertEqual(pto.slp_vectorization, b)
+
+    def test_loop_unrolling(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_unrolling, bool)
+        for b in (True, False):
+            pto.loop_unrolling = b
+            self.assertEqual(pto.loop_unrolling, b)
+
+    def test_speed_level_constraints(self):
+        pto = self.pto()
+        with self.assertRaises(ValueError):
+            pto.speed_level = 4
+        with self.assertRaises(ValueError):
+            pto.speed_level = -1
+
+    def test_size_level_constraints(self):
+        pto = self.pto()
+        with self.assertRaises(ValueError):
+            pto.size_level = 3
+        with self.assertRaises(ValueError):
+            pto.speed_level = -1
+        with self.assertRaises(ValueError):
+            pto.speed_level = 3
+            pto.size_level = 2
+
+
+class NewPassManagerMixin(object):
+
+    def pb(self, speed_level=0, size_level=0):
+        tm = self.target_machine(jit=False)
+        pto = llvm.create_pipeline_tuning_options(speed_level, size_level)
+        pb = llvm.create_pass_builder(tm, pto)
+        return pb
+
+
+class TestPassBuilder(BaseTest, NewPassManagerMixin):
+
+    def test_close(self):
+        pb = self.pb()
+        pb.close()
+
+    def test_pto(self):
+        tm = self.target_machine(jit=False)
+        pto = llvm.create_pipeline_tuning_options(3, 0)
+        pto.inlining_threshold = 2
+        pto.loop_interleaving = True
+        pto.loop_vectorization = True
+        pto.slp_vectorization = True
+        pto.loop_unrolling = False
+        pb = llvm.create_pass_builder(tm, pto)
+        pb.close()
+
+    def test_get_module_pass_manager(self):
+        pb = self.pb()
+        mpm = pb.getModulePassManager()
+        mpm.run(self.module(), pb)
+        pb.close()
+
+    def test_get_function_pass_manager(self):
+        pb = self.pb()
+        fpm = pb.getFunctionPassManager()
+        fpm.run(self.module().get_function("sum"), pb)
+        pb.close()
+
+
+class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
+    def pm(self):
+        return llvm.create_new_module_pass_manager()
+
+    def test_close(self):
+        mpm = self.pm()
+        mpm.close()
+
+    def test_run(self):
+        pb = self.pb(speed_level=3, size_level=0)
+        mod = self.module()
+        orig_asm = str(mod)
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        optimized_asm = str(mod)
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", optimized_asm)
+
+    def test_instcombine(self):
+        pb = self.pb()
+        mpm = self.pm()
+        mpm.add_instruction_combine_pass()
+        mod = self.module(asm_sum4)
+        orig_asm = str(mod)
+        mpm.run(mod, pb)
+        optimized_asm = str(mod)
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", optimized_asm)
+
+    def test_add_passes(self):
+        mpm = self.pm()
+        mpm.add_verifier()
+        mpm.add_aa_eval_pass()
+        mpm.add_simplify_cfg_pass()
+        mpm.add_loop_unroll_pass()
+        mpm.add_loop_rotate_pass()
+        mpm.add_instruction_combine_pass()
+        mpm.add_jump_threading_pass()
+
+
+class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
+    def pm(self):
+        return llvm.create_new_function_pass_manager()
+
+    def test_close(self):
+        fpm = self.pm()
+        fpm.close()
+
+    def test_run(self):
+        pb = self.pb(3)
+        mod = self.module()
+        fun = mod.get_function("sum")
+        orig_asm = str(fun)
+        fpm = pb.getFunctionPassManager()
+        fpm.run(fun, pb)
+        optimized_asm = str(fun)
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", optimized_asm)
+
+    def test_instcombine(self):
+        pb = self.pb()
+        fpm = self.pm()
+        fun = self.module(asm_sum4).get_function("sum")
+        fpm.add_instruction_combine_pass()
+        orig_asm = str(fun)
+        fpm.run(fun, pb)
+        optimized_asm = str(fun)
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", optimized_asm)
+
+    def test_add_passes(self):
+        fpm = self.pm()
+        fpm.add_aa_eval_pass()
+        fpm.add_simplify_cfg_pass()
+        fpm.add_loop_unroll_pass()
+        fpm.add_loop_rotate_pass()
+        fpm.add_instruction_combine_pass()
+        fpm.add_jump_threading_pass()
 
 
 if __name__ == "__main__":

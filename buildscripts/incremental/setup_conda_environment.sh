@@ -27,10 +27,10 @@ source activate $CONDA_ENV
 set -v
 
 # Install llvmdev (separate channel, for now)
-if [ "$LLVM" == "15" ]; then
-    $CONDA_INSTALL -c conda-forge llvmdev="15"
+if [ "$LLVM" == "16" ]; then
+    $CONDA_INSTALL -c conda-forge llvmdev="16"
 else
-    $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
+    $CONDA_INSTALL -c numba llvmdev="15.*"
 fi
 
 # Install the compiler toolchain, for osx, bootstrapping needed

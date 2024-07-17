@@ -8,6 +8,11 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  apt_packages:
+    - llvm-15
+  jobs:
+    post_checkout:
+      - sed -i "s/'llvm-config'/'llvm-config-15'/g" ffi/build.py
 
 sphinx:
   configuration: docs/source/conf.py

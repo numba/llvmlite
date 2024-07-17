@@ -11,6 +11,8 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g")
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
 # Work around llvm/llvm-project#83802 - LLVM's Findzstd.cmake uses variables
 # that require including `GNUInstallDirs`, but it does not include it itself.
 include(GNUInstallDirs)
@@ -44,7 +46,7 @@ endif()
 add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
             module.cpp value.cpp executionengine.cpp transforms.cpp type.cpp
             passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
-            custom_passes.cpp orcjit.cpp memorymanager.cpp)
+            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use.
