@@ -68,17 +68,23 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
     bool DebugLogging = false;
     bool VerifyEach = false;
 
-    PrintPassOptions PrintPassOpts;
-    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
-    PassInstrumentationCallbacks PIC;
-
     LoopAnalysisManager LAM;
     FunctionAnalysisManager FAM;
     CGSCCAnalysisManager CGAM;
     ModuleAnalysisManager MAM;
 
+    PassInstrumentationCallbacks PIC;
+    PrintPassOptions PrintPassOpts;
+
+#if LLVM_VERSION_MAJOR < 16
+    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
     SI.registerCallbacks(PIC, &FAM);
     PassBuilder PB(TM, *PTO, None, &PIC);
+# else
+    StandardInstrumentations SI(M->getContext(), DebugLogging, VerifyEach, PrintPassOpts);
+    SI.registerCallbacks(PIC, &FAM);
+    PassBuilder PB(TM, *PTO, std::nullopt, &PIC);
+# endif
 
     PB.registerLoopAnalyses(LAM);
     PB.registerFunctionAnalyses(FAM);
@@ -160,21 +166,23 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     bool DebugLogging = false;
     bool VerifyEach = false;
 
-    PrintPassOptions PrintPassOpts;
-    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
-    PassInstrumentationCallbacks PIC;
-
-    // Don't try to optimize function declarations
-    if (F->isDeclaration())
-        return;
-
     LoopAnalysisManager LAM;
     FunctionAnalysisManager FAM;
     CGSCCAnalysisManager CGAM;
     ModuleAnalysisManager MAM;
 
+    PrintPassOptions PrintPassOpts;
+    PassInstrumentationCallbacks PIC;
+
+#if LLVM_VERSION_MAJOR < 16
+    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
     SI.registerCallbacks(PIC, &FAM);
     PassBuilder PB(TM, *PTO, None, &PIC);
+# else
+    StandardInstrumentations SI(F->getContext(), DebugLogging, VerifyEach, PrintPassOpts);
+    SI.registerCallbacks(PIC, &FAM);
+    PassBuilder PB(TM, *PTO, std::nullopt, &PIC);
+#endif
 
     PB.registerLoopAnalyses(LAM);
     PB.registerFunctionAnalyses(FAM);
