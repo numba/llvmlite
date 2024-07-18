@@ -80,11 +80,12 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
     StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
     SI.registerCallbacks(PIC, &FAM);
     PassBuilder PB(TM, *PTO, None, &PIC);
-# else
-    StandardInstrumentations SI(M->getContext(), DebugLogging, VerifyEach, PrintPassOpts);
+#else
+    StandardInstrumentations SI(M->getContext(), DebugLogging, VerifyEach,
+                                PrintPassOpts);
     SI.registerCallbacks(PIC, &FAM);
     PassBuilder PB(TM, *PTO, std::nullopt, &PIC);
-# endif
+#endif
 
     PB.registerLoopAnalyses(LAM);
     PB.registerFunctionAnalyses(FAM);
@@ -178,8 +179,9 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
     SI.registerCallbacks(PIC, &FAM);
     PassBuilder PB(TM, *PTO, None, &PIC);
-# else
-    StandardInstrumentations SI(F->getContext(), DebugLogging, VerifyEach, PrintPassOpts);
+#else
+    StandardInstrumentations SI(F->getContext(), DebugLogging, VerifyEach,
+                                PrintPassOpts);
     SI.registerCallbacks(PIC, &FAM);
     PassBuilder PB(TM, *PTO, std::nullopt, &PIC);
 #endif
