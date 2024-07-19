@@ -59,8 +59,7 @@ LLVMPY_CreateNewModulePassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
-                               LLVMModuleRef mod,
-                               LLVMPassBuilderRef PBRef,
+                               LLVMModuleRef mod, LLVMPassBuilderRef PBRef,
                                LLVMPassInstrumentationCallbacksRef PICRef) {
 
     ModulePassManager *MPM = llvm::unwrap(MPMRef);
@@ -150,8 +149,7 @@ LLVMPY_CreateNewFunctionPassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
-                                 LLVMValueRef FRef,
-                                 LLVMPassBuilderRef PBRef,
+                                 LLVMValueRef FRef, LLVMPassBuilderRef PBRef,
                                  LLVMPassInstrumentationCallbacksRef PICRef) {
 
     FunctionPassManager *FPM = llvm::unwrap(FPMRef);
@@ -297,7 +295,8 @@ LLVMPY_CreatePassInstrumentationCallbacks() {
 }
 
 API_EXPORT(void)
-LLVMPY_DisposePassInstrumentationCallbacks(LLVMPassInstrumentationCallbacksRef PIC) {
+LLVMPY_DisposePassInstrumentationCallbacks(
+    LLVMPassInstrumentationCallbacksRef PIC) {
     delete llvm::unwrap(PIC);
 }
 
