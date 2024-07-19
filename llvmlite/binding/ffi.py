@@ -42,6 +42,8 @@ LLVMOrcLLJITRef = _make_opaque_ref("LLVMOrcLLJITRef")
 LLVMOrcDylibTrackerRef = _make_opaque_ref("LLVMOrcDylibTrackerRef")
 
 LLVMPipelineTuningOptionsRef = _make_opaque_ref("LLVMPipeLineTuningOptions")
+LLVMPassInstrumentationCallbacksRef = \
+    _make_opaque_ref("LLVMPassInstrumentationCallbacks")
 LLVMModulePassManagerRef = _make_opaque_ref("LLVMModulePassManager")
 LLVMFunctionPassManagerRef = _make_opaque_ref("LLVMFunctionPassManager")
 LLVMPassBuilderRef = _make_opaque_ref("LLVMPassBuilder")
