@@ -3,7 +3,7 @@ from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.tests import TestCase
 
-from . import refprune_proto as proto
+import llvmlite.tests.refprune_proto as proto
 
 
 def _iterate_cases(generate_test):
@@ -16,6 +16,15 @@ def _iterate_cases(generate_test):
     for k, case_fn in proto.__dict__.items():
         if k.startswith('case'):
             yield f'test_{k}', wrap(case_fn)
+
+
+class PassManagerMixin():
+
+    def pb(self):
+        llvm.initialize_native_target()
+        tm = llvm.Target.from_default_triple().create_target_machine()
+        pto = llvm.create_pipeline_tuning_options(speed_level=0, size_level=0)
+        return llvm.create_pass_builder(tm, pto)
 
 
 class TestRefPrunePrototype(TestCase):
@@ -35,7 +44,7 @@ class TestRefPrunePrototype(TestCase):
 ptr_ty = ir.IntType(8).as_pointer()
 
 
-class TestRefPrunePass(TestCase):
+class TestRefPrunePass(TestCase, PassManagerMixin):
     """
     Test that the C++ implementation matches the expected behavior as for
     the prototype.
@@ -116,9 +125,10 @@ class TestRefPrunePass(TestCase):
 
     def apply_refprune(self, irmod):
         mod = llvm.parse_assembly(str(irmod))
-        pm = llvm.ModulePassManager()
+        pb = self.pb()
+        pm = pb.getModulePassManager()
         pm.add_refprune_pass()
-        pm.run(mod)
+        pm.run(mod, pb)
         return mod
 
     def check(self, mod, expected, nodes):
@@ -158,7 +168,7 @@ class TestRefPrunePass(TestCase):
         locals()[name] = case
 
 
-class BaseTestByIR(TestCase):
+class BaseTestByIR(TestCase, PassManagerMixin):
     refprune_bitmask = 0
 
     prologue = r"""
@@ -168,14 +178,15 @@ declare void @NRT_decref(i8* %ptr)
 
     def check(self, irmod, subgraph_limit=None):
         mod = llvm.parse_assembly(f"{self.prologue}\n{irmod}")
-        pm = llvm.ModulePassManager()
+        pb = self.pb()
+        pm = pb.getModulePassManager()
         if subgraph_limit is None:
             pm.add_refprune_pass(self.refprune_bitmask)
         else:
             pm.add_refprune_pass(self.refprune_bitmask,
                                  subgraph_limit=subgraph_limit)
         before = llvm.dump_refprune_stats()
-        pm.run(mod)
+        pm.run(mod, pb)
         after = llvm.dump_refprune_stats()
         return mod, after - before
 
