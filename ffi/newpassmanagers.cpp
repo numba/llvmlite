@@ -1,7 +1,6 @@
 #include "core.h"
 #include "llvm-c/TargetMachine.h"
 #include "llvm/Analysis/AliasAnalysisEvaluator.h"
-#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
