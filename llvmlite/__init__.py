@@ -3,8 +3,8 @@ __version__ = get_versions()['version']
 del get_versions
 
 # FIXME: Remove me once typed pointers are no longer supported.
-def _get_disable_opaque_pointers():
+def _opaque_pointers_enabled():
   import os
-  return os.environ.get('LLVMLITE_DISABLE_OPAQUE_POINTERS', '0') == '1'
-_disable_opaque_pointers = _get_disable_opaque_pointers()
-del _get_disable_opaque_pointers
+  return os.environ.get('LLVMLITE_DISABLE_OPAQUE_POINTERS', '0') != '1'
+opaque_pointers_enabled = _opaque_pointers_enabled()
+del _opaque_pointers_enabled

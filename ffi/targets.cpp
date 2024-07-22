@@ -121,6 +121,27 @@ LLVMPY_ABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     return (long long)LLVMABIAlignmentOfType(TD, Ty);
 }
 
+// FIXME: Remove me once typed pointers are no longer supported.
+API_EXPORT(long long)
+LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
+    llvm::Type *tp = llvm::unwrap(Ty);
+    return (long long)LLVMABIAlignmentOfType(TD, Ty);
+    if (!tp->isPointerTy())
+        return -1;
+    tp = tp->getPointerElementType();
+    return (long long)LLVMABISizeOfType(TD, llvm::wrap(tp));
+}
+
+// FIXME: Remove me once typed pointers are no longer supported.
+API_EXPORT(long long)
+LLVMPY_ABIAlignmentOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
+    llvm::Type *tp = llvm::unwrap(Ty);
+    if (!tp->isPointerTy())
+        return -1;
+    tp = tp->getPointerElementType();
+    return (long long)LLVMABIAlignmentOfType(TD, llvm::wrap(tp));
+}
+
 API_EXPORT(LLVMTargetRef)
 LLVMPY_GetTargetFromTriple(const char *Triple, const char **ErrOut) {
     char *ErrorMessage;

@@ -404,6 +404,11 @@ LLVMPY_SetValueName(LLVMValueRef Val, const char *Name) {
 API_EXPORT(LLVMModuleRef)
 LLVMPY_GetGlobalParent(LLVMValueRef Val) { return LLVMGetGlobalParent(Val); }
 
+API_EXPORT(LLVMTypeRef)
+LLVMPY_GlobalGetValueType(LLVMValueRef Global) {
+    return LLVMGlobalGetValueType(Global);
+}
+
 API_EXPORT(void)
 LLVMPY_SetLinkage(LLVMValueRef Val, int Linkage) {
     LLVMSetLinkage(Val, (LLVMLinkage)Linkage);

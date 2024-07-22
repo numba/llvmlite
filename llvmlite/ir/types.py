@@ -7,7 +7,7 @@ import struct
 from llvmlite.ir._utils import _StrCaching
 
 # FIXME: Remove me once typed pointers are no longer supported.
-from llvmlite import _disable_opaque_pointers
+from llvmlite import opaque_pointers_enabled
 
 
 def _wrapname(x):
@@ -141,7 +141,7 @@ class PointerType(Type):
         """
         Create from a llvmlite.binding.TypeRef
         """
-        if _disable_opaque_pointers:
+        if not opaque_pointers_enabled:
             return _TypedPointerType.from_llvm(typeref, ir_ctx)
         return cls()
 
@@ -159,7 +159,7 @@ class _TypedPointerType(PointerType):
         self.is_opaque = False
 
     def _to_string(self):
-        if _disable_opaque_pointers:
+        if not opaque_pointers_enabled:
             return "{0}*".format(self.pointee) if self.addrspace == 0 else \
                    "{0} addrspace({1})*".format(self.pointee, self.addrspace)
         return super(_TypedPointerType, self)._to_string()
@@ -191,7 +191,7 @@ class _TypedPointerType(PointerType):
         """
         Create from a llvmlite.binding.TypeRef
         """
-        assert _disable_opaque_pointers
+        assert not opaque_pointers_enabled
         # opaque pointer will change this
         [pointee] = typeref.elements
         # addrspace is not handled

@@ -19,7 +19,7 @@ from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
 # FIXME: Remove me once typed pointers are no longer supported.
-from llvmlite import _disable_opaque_pointers
+from llvmlite import opaque_pointers_enabled
 
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
@@ -1627,12 +1627,12 @@ class TestValueRef(BaseTest):
         mod = self.module()
         st = mod.get_global_variable("glob_struct")
         self.assertTrue(st.type.is_pointer)
-        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
-        if _disable_opaque_pointers:
+        # FIXME: Remove `else' once TP are no longer supported.
+        if opaque_pointers_enabled:
+            self.assertIsNotNone(re.match(r'ptr', str(st.type)))
+        else:
             self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
                                           str(st.type)))
-        else:
-            self.assertIsNotNone(re.match(r'ptr', str(st.type)))
         self.assertIsNotNone(re.match(
             r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
             str(st.global_value_type)))
@@ -1821,11 +1821,11 @@ class TestValueRef(BaseTest):
         inst = list(list(func.blocks)[0].instructions)[0]
         arg = list(inst.operands)[0]
         self.assertTrue(arg.is_constant)
-        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
-        if _disable_opaque_pointers:
-            self.assertEqual(arg.get_constant_value(), 'i64* null')
-        else:
+        # FIXME: Remove `else' once TP are no longer supported.
+        if opaque_pointers_enabled:
             self.assertEqual(arg.get_constant_value(), 'ptr null')
+        else:
+            self.assertEqual(arg.get_constant_value(), 'i64* null')
 
     def test_incoming_phi_blocks(self):
         mod = self.module(asm_phi_blocks)
@@ -1930,12 +1930,12 @@ class TestTypeRef(BaseTest):
         self.assertTrue(func.type.is_pointer)
         with self.assertRaises(ValueError) as raises:
             func.type.is_function_vararg
-        # FIXME: Remove `if' (keep `else') once TP are no longer supported.
-        if _disable_opaque_pointers:
+        # FIXME: Remove `else' once TP are no longer supported.
+        if opaque_pointers_enabled:
+            self.assertIn("Type ptr is not a function", str(raises.exception))
+        else:
             self.assertIn("Type i32 (i32, i32)* is not a function",
                           str(raises.exception))
-        else:
-            self.assertIn("Type ptr is not a function", str(raises.exception))
 
     def test_function_typeref_as_ir(self):
         mod = self.module()

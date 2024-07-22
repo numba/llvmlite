@@ -1,18 +1,18 @@
 from llvmlite.binding import ffi
 
 # FIXME: Remove me once typed pointers are no longer supported.
-from llvmlite import _disable_opaque_pointers
+from llvmlite import opaque_pointers_enabled
 from ctypes import c_bool
 
 
 def create_context():
     return ContextRef(
-        ffi.lib.LLVMPY_ContextCreate(not _disable_opaque_pointers))
+        ffi.lib.LLVMPY_ContextCreate(opaque_pointers_enabled))
 
 
 def get_global_context():
     return GlobalContextRef(
-        ffi.lib.LLVMPY_GetGlobalContext(not _disable_opaque_pointers))
+        ffi.lib.LLVMPY_GetGlobalContext(opaque_pointers_enabled))
 
 
 class ContextRef(ffi.ObjectRef):

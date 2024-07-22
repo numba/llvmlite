@@ -105,9 +105,9 @@ class TypeRef(ffi.ObjectRef):
         """
         Returns iterator over enclosing types
         """
-        # FIXME: Remove `_disable_opaque_pointers' when TP's are removed.
-        from llvmlite import _disable_opaque_pointers
-        if self.is_pointer and not _disable_opaque_pointers:
+        # FIXME: Remove `opaque_pointers_enabled' when TP's are removed.
+        from llvmlite import opaque_pointers_enabled
+        if self.is_pointer and opaque_pointers_enabled:
             raise ValueError("Type {} doesn't contain elements.".format(self))
         return _TypeListIterator(ffi.lib.LLVMPY_ElementIter(self))
 

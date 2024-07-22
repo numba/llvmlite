@@ -62,11 +62,6 @@ LLVMPY_GetTypeKind(LLVMTypeRef Val) { return (int)LLVMGetTypeKind(Val); }
 API_EXPORT(LLVMTypeRef)
 LLVMPY_TypeOf(LLVMValueRef Val) { return LLVMTypeOf(Val); }
 
-API_EXPORT(LLVMTypeRef)
-LLVMPY_GlobalGetValueType(LLVMValueRef Global) {
-    return LLVMGlobalGetValueType(Global);
-}
-
 API_EXPORT(const char *)
 LLVMPY_PrintType(LLVMTypeRef type) {
     char *str = LLVMPrintTypeToString(type);
