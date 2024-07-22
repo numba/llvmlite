@@ -125,7 +125,6 @@ LLVMPY_ABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
 API_EXPORT(long long)
 LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     llvm::Type *tp = llvm::unwrap(Ty);
-    return (long long)LLVMABIAlignmentOfType(TD, Ty);
     if (!tp->isPointerTy())
         return -1;
     tp = tp->getPointerElementType();

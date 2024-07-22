@@ -181,4 +181,5 @@ LLVMPY_IsOpaqueStruct(LLVMTypeRef type) { return LLVMIsOpaqueStruct(type); }
 
 API_EXPORT(bool)
 LLVMPY_IsLiteralStruct(LLVMTypeRef type) { return LLVMIsLiteralStruct(type); }
+
 } // end extern "C"

@@ -405,8 +405,8 @@ API_EXPORT(LLVMModuleRef)
 LLVMPY_GetGlobalParent(LLVMValueRef Val) { return LLVMGetGlobalParent(Val); }
 
 API_EXPORT(LLVMTypeRef)
-LLVMPY_GlobalGetValueType(LLVMValueRef Global) {
-    return LLVMGlobalGetValueType(Global);
+LLVMPY_GlobalGetValueType(LLVMValueRef GlobalVal) {
+    return LLVMGlobalGetValueType(GlobalVal);
 }
 
 API_EXPORT(void)
