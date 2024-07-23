@@ -26,7 +26,7 @@ class ModulePassManager(ffi.ObjectRef):
         super().__init__(ptr)
 
     def run(self, module, pb):
-        ffi.lib.LLVMPY_RunNewModulePassManager(self, module, pb, pb._pic)
+        ffi.lib.LLVMPY_RunNewModulePassManager(self, module, pb)
 
     def add_verifier(self):
         ffi.lib.LLVMPY_AddVerifierPass(self)
@@ -61,7 +61,7 @@ class FunctionPassManager(ffi.ObjectRef):
         super().__init__(ptr)
 
     def run(self, fun, pb):
-        ffi.lib.LLVMPY_RunNewFunctionPassManager(self, fun, pb, pb._pic)
+        ffi.lib.LLVMPY_RunNewFunctionPassManager(self, fun, pb)
 
     def add_aa_eval_pass(self):
         ffi.lib.LLVMPY_AddAAEvalPass_function(self)
@@ -163,23 +163,12 @@ class PipelineTuningOptions(ffi.ObjectRef):
         ffi.lib.LLVMPY_DisposePipelineTuningOptions(self)
 
 
-class PassInstrumentationCallbacks(ffi.ObjectRef):
-
-    def __init__(self):
-        super().__init__(ffi.lib.LLVMPY_CreatePassInstrumentationCallbacks())
-
-    def _dispose(self):
-        return ffi.lib.LLVMPY_DisposePassInstrumentationCallbacks(self)
-
-
 class PassBuilder(ffi.ObjectRef):
 
     def __init__(self, tm, pto):
-        pic = PassInstrumentationCallbacks()
-        super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto, pic))
+        super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto))
         self._pto = pto
         self._tm = tm
-        self._pic = pic
 
     def getModulePassManager(self):
         return ModulePassManager(
@@ -206,7 +195,7 @@ ffi.lib.LLVMPY_CreateNewModulePassManager.restype = ffi.LLVMModulePassManagerRef
 
 ffi.lib.LLVMPY_RunNewModulePassManager.argtypes = [
     ffi.LLVMModulePassManagerRef, ffi.LLVMModuleRef,
-    ffi.LLVMPassBuilderRef, ffi.LLVMPassInstrumentationCallbacksRef,]
+    ffi.LLVMPassBuilderRef,]
 
 ffi.lib.LLVMPY_AddVerifierPass.argtypes = [ffi.LLVMModulePassManagerRef,]
 ffi.lib.LLVMPY_AddAAEvalPass_module.argtypes = [ffi.LLVMModulePassManagerRef,]
@@ -235,7 +224,7 @@ ffi.lib.LLVMPY_CreateNewFunctionPassManager.restype = \
 
 ffi.lib.LLVMPY_RunNewFunctionPassManager.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ffi.LLVMValueRef,
-    ffi.LLVMPassBuilderRef, ffi.LLVMPassInstrumentationCallbacksRef, ]
+    ffi.LLVMPassBuilderRef,]
 
 ffi.lib.LLVMPY_AddAAEvalPass_function.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]
@@ -293,12 +282,6 @@ ffi.lib.LLVMPY_PTOSetLoopUnrolling.argtypes = [
 
 ffi.lib.LLVMPY_DisposePipelineTuningOptions.argtypes = \
     [ffi.LLVMPipelineTuningOptionsRef,]
-
-# PassInstrumentationCallbacks
-ffi.lib.LLVMPY_CreatePassInstrumentationCallbacks.restype = \
-    ffi.LLVMPassInstrumentationCallbacksRef
-ffi.lib.LLVMPY_DisposePassInstrumentationCallbacks.argtypes = \
-    [ffi.LLVMPassInstrumentationCallbacksRef,]
 
 # PassBuilder
 

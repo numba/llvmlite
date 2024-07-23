@@ -37,11 +37,6 @@ typedef OpaquePipelineTuningOptions *LLVMPipelineTuningOptionsRef;
 DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PipelineTuningOptions,
                                    LLVMPipelineTuningOptionsRef)
 
-struct OpaquePassInstrumentationCallbacks;
-typedef OpaquePassInstrumentationCallbacks *LLVMPassInstrumentationCallbacksRef;
-DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PassInstrumentationCallbacks,
-                                   LLVMPassInstrumentationCallbacksRef)
-
 static TargetMachine *unwrap(LLVMTargetMachineRef P) {
     return reinterpret_cast<TargetMachine *>(P);
 }
@@ -59,13 +54,11 @@ LLVMPY_CreateNewModulePassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
-                               LLVMModuleRef mod, LLVMPassBuilderRef PBRef,
-                               LLVMPassInstrumentationCallbacksRef PICRef) {
+                               LLVMModuleRef mod, LLVMPassBuilderRef PBRef) {
 
     ModulePassManager *MPM = llvm::unwrap(MPMRef);
     Module *M = llvm::unwrap(mod);
     PassBuilder *PB = llvm::unwrap(PBRef);
-    PassInstrumentationCallbacks *PIC = llvm::unwrap(PICRef);
 
     // TODO: Make these set(able) by user
     bool DebugLogging = false;
@@ -84,7 +77,7 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
     StandardInstrumentations SI(M->getContext(), DebugLogging, VerifyEach,
                                 PrintPassOpts);
 #endif
-    SI.registerCallbacks(*PIC, &FAM);
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
@@ -149,13 +142,11 @@ LLVMPY_CreateNewFunctionPassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
-                                 LLVMValueRef FRef, LLVMPassBuilderRef PBRef,
-                                 LLVMPassInstrumentationCallbacksRef PICRef) {
+                                 LLVMValueRef FRef, LLVMPassBuilderRef PBRef) {
 
     FunctionPassManager *FPM = llvm::unwrap(FPMRef);
     Function *F = reinterpret_cast<Function *>(FRef);
     PassBuilder *PB = llvm::unwrap(PBRef);
-    PassInstrumentationCallbacks *PIC = llvm::unwrap(PICRef);
 
     // Don't try to optimize function declarations
     if (F->isDeclaration())
@@ -179,7 +170,7 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     StandardInstrumentations SI(F->getContext(), DebugLogging, VerifyEach,
                                 PrintPassOpts);
 #endif
-    SI.registerCallbacks(*PIC, &FAM);
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
@@ -288,27 +279,14 @@ LLVMPY_DisposePipelineTuningOptions(LLVMPipelineTuningOptionsRef PTO) {
     delete llvm::unwrap(PTO);
 }
 
-// PIC
-API_EXPORT(LLVMPassInstrumentationCallbacksRef)
-LLVMPY_CreatePassInstrumentationCallbacks() {
-    return llvm::wrap(new PassInstrumentationCallbacks());
-}
-
-API_EXPORT(void)
-LLVMPY_DisposePassInstrumentationCallbacks(
-    LLVMPassInstrumentationCallbacksRef PIC) {
-    delete llvm::unwrap(PIC);
-}
-
 // PB
 
 API_EXPORT(LLVMPassBuilderRef)
 LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TM,
-                         LLVMPipelineTuningOptionsRef PTO,
-                         LLVMPassInstrumentationCallbacksRef PICRef) {
+                         LLVMPipelineTuningOptionsRef PTO) {
     TargetMachine *target = llvm::unwrap(TM);
     PipelineTuningOptions *pt = llvm::unwrap(PTO);
-    PassInstrumentationCallbacks *PIC = llvm::unwrap(PICRef);
+    PassInstrumentationCallbacks *PIC = new PassInstrumentationCallbacks();
 #if LLVM_VERSION_MAJOR < 16
     return llvm::wrap(new PassBuilder(target, *pt, None, PIC));
 #else
