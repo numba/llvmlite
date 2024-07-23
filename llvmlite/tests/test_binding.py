@@ -3042,7 +3042,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
 
     def run_o_n(self, level):
         mod = self.module()
-        orig_asm = str(self.module())
+        orig_asm = str(mod)
         pb = self.pb(speed_level=level, size_level=0)
         mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
@@ -3075,16 +3075,16 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         self.assertNotIn("%.3", optimized_asm)
 
     def test_optnone(self):
-        # Module shouldn't be optimized if the function has `optnone` attached
         pb = self.pb(speed_level=3, size_level=0)
-        orig_asm_no_optnone = str(asm_alloca_optnone.replace("optnone ", ""))
-        mod = llvm.parse_assembly(orig_asm_no_optnone)
+        orig_asm = str(asm_alloca_optnone.replace("optnone ", ""))
+        mod = llvm.parse_assembly(orig_asm)
         mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
-        optimized_asm_no_optnone = str(mod)
-        self.assertIn("alloca", orig_asm_no_optnone)
-        self.assertNotIn("alloca", optimized_asm_no_optnone)
+        optimized_asm = str(mod)
+        self.assertIn("alloca", orig_asm)
+        self.assertNotIn("alloca", optimized_asm)
 
+        # Module shouldn't be optimized if the function has `optnone` attached
         orig_asm_optnone = str(asm_alloca_optnone)
         mpm = pb.getModulePassManager()
         mod = llvm.parse_assembly(orig_asm_optnone)
@@ -3133,16 +3133,16 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         self.assertIn("%.4", optimized_asm)
 
     def test_optnone(self):
-        # Function shouldn't be optimized if the function has `optnone` attached
         pb = self.pb(speed_level=3, size_level=0)
-        orig_asm_no_optnone = str(asm_alloca_optnone.replace("optnone ", ""))
-        fun = llvm.parse_assembly(orig_asm_no_optnone).get_function("foo")
+        orig_asm = str(asm_alloca_optnone.replace("optnone ", ""))
+        fun = llvm.parse_assembly(orig_asm).get_function("foo")
         fpm = pb.getFunctionPassManager()
         fpm.run(fun, pb)
-        optimized_asm_no_optnone = str(fun)
-        self.assertIn("alloca", orig_asm_no_optnone)
-        self.assertNotIn("alloca", optimized_asm_no_optnone)
+        optimized_asm = str(fun)
+        self.assertIn("alloca", orig_asm)
+        self.assertNotIn("alloca", optimized_asm)
 
+        # Function shouldn't be optimized if the function has `optnone` attached
         orig_asm_optnone = str(asm_alloca_optnone)
         fun = llvm.parse_assembly(orig_asm_optnone).get_function("foo")
         fpm = pb.getFunctionPassManager()
