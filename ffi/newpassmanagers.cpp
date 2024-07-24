@@ -4,6 +4,7 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar/JumpThreading.h"
 #include "llvm/Transforms/Scalar/LoopRotation.h"
@@ -53,16 +54,31 @@ LLVMPY_CreateNewModulePassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
-                               LLVMPassBuilderRef PBRef, LLVMModuleRef mod) {
+                               LLVMModuleRef mod, LLVMPassBuilderRef PBRef) {
 
     ModulePassManager *MPM = llvm::unwrap(MPMRef);
-    PassBuilder *PB = llvm::unwrap(PBRef);
     Module *M = llvm::unwrap(mod);
+    PassBuilder *PB = llvm::unwrap(PBRef);
+
+    // TODO: Make these set(able) by user
+    bool DebugLogging = false;
+    bool VerifyEach = false;
 
     LoopAnalysisManager LAM;
     FunctionAnalysisManager FAM;
     CGSCCAnalysisManager CGAM;
     ModuleAnalysisManager MAM;
+
+    PrintPassOptions PrintPassOpts;
+
+#if LLVM_VERSION_MAJOR < 16
+    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
+#else
+    StandardInstrumentations SI(M->getContext(), DebugLogging, VerifyEach,
+                                PrintPassOpts);
+#endif
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
     PB->registerCGSCCAnalyses(CGAM);
@@ -126,20 +142,36 @@ LLVMPY_CreateNewFunctionPassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
-                                 LLVMPassBuilderRef PBRef, LLVMValueRef FRef) {
+                                 LLVMValueRef FRef, LLVMPassBuilderRef PBRef) {
 
     FunctionPassManager *FPM = llvm::unwrap(FPMRef);
-    PassBuilder *PB = llvm::unwrap(PBRef);
     Function *F = reinterpret_cast<Function *>(FRef);
+    PassBuilder *PB = llvm::unwrap(PBRef);
 
     // Don't try to optimize function declarations
     if (F->isDeclaration())
         return;
 
+    // TODO: Make these set(able) by user
+    bool DebugLogging = false;
+    bool VerifyEach = false;
+
     LoopAnalysisManager LAM;
     FunctionAnalysisManager FAM;
     CGSCCAnalysisManager CGAM;
     ModuleAnalysisManager MAM;
+
+    // TODO: Can expose this in ffi layer
+    PrintPassOptions PrintPassOpts;
+
+#if LLVM_VERSION_MAJOR < 16
+    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
+#else
+    StandardInstrumentations SI(F->getContext(), DebugLogging, VerifyEach,
+                                PrintPassOpts);
+#endif
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
     PB->registerCGSCCAnalyses(CGAM);
@@ -254,7 +286,12 @@ LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TM,
                          LLVMPipelineTuningOptionsRef PTO) {
     TargetMachine *target = llvm::unwrap(TM);
     PipelineTuningOptions *pt = llvm::unwrap(PTO);
-    return llvm::wrap(new PassBuilder(target, *pt));
+    PassInstrumentationCallbacks *PIC = new PassInstrumentationCallbacks();
+#if LLVM_VERSION_MAJOR < 16
+    return llvm::wrap(new PassBuilder(target, *pt, None, PIC));
+#else
+    return llvm::wrap(new PassBuilder(target, *pt, std::nullopt, PIC));
+#endif
 }
 
 API_EXPORT(void)
