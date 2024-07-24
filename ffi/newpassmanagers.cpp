@@ -132,6 +132,10 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     PassBuilder *PB = llvm::unwrap(PBRef);
     Function *F = reinterpret_cast<Function *>(FRef);
 
+    // Don't try to optimize function declarations
+    if (F->isDeclaration())
+        return;
+
     LoopAnalysisManager LAM;
     FunctionAnalysisManager FAM;
     CGSCCAnalysisManager CGAM;
