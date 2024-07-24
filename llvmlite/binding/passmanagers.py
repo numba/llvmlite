@@ -672,7 +672,7 @@ class PassManager(ffi.ObjectRef):
             versions.
         """
         iflags = RefPruneSubpasses(subpasses_flags)
-        ffi.lib.LLVMPY_AddRefPrunePass(self, iflags, subgraph_limit)
+        ffi.lib.LLVMPY_AddLegacyRefPrunePass(self, iflags, subgraph_limit)
 
 
 class ModulePassManager(PassManager):
@@ -940,7 +940,7 @@ ffi.lib.LLVMPY_AddTargetLibraryInfoPass.argtypes = [ffi.LLVMPassManagerRef,
                                                     c_char_p]
 ffi.lib.LLVMPY_AddInstructionNamerPass.argtypes = [ffi.LLVMPassManagerRef]
 
-ffi.lib.LLVMPY_AddRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
-                                           c_size_t]
+ffi.lib.LLVMPY_AddLegacyRefPrunePass.argtypes = [ffi.LLVMPassManagerRef, c_int,
+                                                 c_size_t]
 
 ffi.lib.LLVMPY_DumpRefPruneStats.argtypes = [POINTER(_c_PruneStats), c_bool]
