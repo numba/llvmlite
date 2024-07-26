@@ -1,0 +1,27 @@
+commit ca5eab8b706d4307b954f39254efdfa6cad47cb5
+Author: Isuru Fernando <idf2@illinois.edu>
+Date:   Tue Nov 8 13:34:20 2022 -0600
+
+    Always copy on windows
+    
+    The conda package build machine may have permissions to
+    create symlinks, but conda doesn't handle symlinks on windows
+    properly
+
+diff --git a/llvm/cmake/modules/LLVMInstallSymlink.cmake b/llvm/cmake/modules/LLVMInstallSymlink.cmake
+index e9be04aceb3d..1ff77f28385a 100644
+--- a/llvm/cmake/modules/LLVMInstallSymlink.cmake
++++ b/llvm/cmake/modules/LLVMInstallSymlink.cmake
+@@ -13,10 +13,11 @@ function(install_symlink name target outdir)
+ 
+   message(STATUS "Creating ${name}")
+ 
++  if(NOT CMAKE_HOST_WIN32)
+   execute_process(
+     COMMAND "${CMAKE_COMMAND}" -E create_symlink "${target}" "${name}"
+     WORKING_DIRECTORY "${outdir}" ERROR_VARIABLE has_err)
+-  if(CMAKE_HOST_WIN32 AND has_err)
++  else()
+     execute_process(
+       COMMAND "${CMAKE_COMMAND}" -E copy "${target}" "${name}"
+       WORKING_DIRECTORY "${outdir}")

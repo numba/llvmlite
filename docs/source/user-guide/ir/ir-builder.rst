@@ -530,7 +530,7 @@ Function call
        optimized, but may be ignored.
      * ``"musttail"``: indicates that the call must be tail-call optimized for
        program correctness.
-     * ``"notail"``: indicate thats the call should never be tail-call
+     * ``"notail"``: indicates that the call should never be tail-call
        optimized.
 
      For backwards compatibility with previous versions, the following values

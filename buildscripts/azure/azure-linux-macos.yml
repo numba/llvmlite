@@ -42,17 +42,6 @@ jobs:
     - script: |
         set -e
         export PATH=$HOME/miniconda3/bin:$PATH
-        conda install -y sphinx sphinx_rtd_theme pygments
-        echo "Building docs"
-        cd docs
-        make SPHINXOPTS=-Wn clean html
-        cd ..
-      displayName: 'Build Docs'
-      condition: eq(variables['BUILD_DOCS'], 'yes')
-
-    - script: |
-        set -e
-        export PATH=$HOME/miniconda3/bin:$PATH
         buildscripts/incremental/test.sh
       displayName: 'Test'
 # This is last because we need to install a bunch of LLVM stuff that will pollute the build environment

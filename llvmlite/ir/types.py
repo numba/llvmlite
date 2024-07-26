@@ -146,6 +146,16 @@ class PointerType(Type):
     def intrinsic_name(self):
         return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        # opaque pointer will change this
+        [pointee] = typeref.elements
+        # addrspace is not handled
+        return cls(pointee.as_ir(ir_ctx=ir_ctx))
+
 
 class VoidType(Type):
     """
@@ -160,6 +170,13 @@ class VoidType(Type):
 
     def __hash__(self):
         return hash(VoidType)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        return cls()
 
 
 class FunctionType(Type):
@@ -193,6 +210,17 @@ class FunctionType(Type):
 
     def __hash__(self):
         return hash(FunctionType)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        params = tuple(x.as_ir(ir_ctx=ir_ctx)
+                       for x in typeref.get_function_parameters())
+        ret = typeref.get_function_return().as_ir(ir_ctx=ir_ctx)
+        is_vararg = typeref.is_function_vararg
+        return cls(ret, params, is_vararg)
 
 
 class IntType(Type):
@@ -253,6 +281,13 @@ class IntType(Type):
     def intrinsic_name(self):
         return str(self)
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        return IntType(typeref.type_width)
+
 
 def _as_float(value):
     """
@@ -301,6 +336,13 @@ class _BaseFloatType(Type):
     @classmethod
     def _create_instance(cls):
         cls._instance_cache = super(_BaseFloatType, cls).__new__(cls)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        return cls()
 
 
 class HalfType(_BaseFloatType):
@@ -414,6 +456,16 @@ class VectorType(Type):
         return [Constant(ty, val) if not isinstance(val, Value) else val
                 for ty, val in zip(self.elements, values)]
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        [elemtyperef] = typeref.elements
+        elemty = elemtyperef.as_ir(ir_ctx=ir_ctx)
+        count = typeref.element_count
+        return cls(elemty, count)
+
 
 class Aggregate(Type):
     """
@@ -471,6 +523,16 @@ class ArrayType(Aggregate):
         itemstring = ", " .join(["{0} {1}".format(x.type, x.get_reference())
                                  for x in value])
         return "[{0}]".format(itemstring)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        [elemtyperef] = typeref.elements
+        elemty = elemtyperef.as_ir(ir_ctx=ir_ctx)
+        count = typeref.element_count
+        return cls(elemty, count)
 
 
 class BaseStructType(Aggregate):
@@ -536,6 +598,17 @@ class BaseStructType(Aggregate):
         else:
             return textrepr
 
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        if typeref.is_literal_struct:
+            elems = [el.as_ir(ir_ctx=ir_ctx) for el in typeref.elements]
+            return cls(elems, typeref.is_packed_struct)
+        else:
+            return ir_ctx.get_identified_type(typeref.name)
+
 
 class LiteralStructType(BaseStructType):
     """
@@ -558,7 +631,8 @@ class LiteralStructType(BaseStructType):
 
     def __eq__(self, other):
         if isinstance(other, LiteralStructType):
-            return self.elements == other.elements
+            return (self.elements == other.elements
+                    and self.packed == other.packed)
 
     def __hash__(self):
         return hash(LiteralStructType)
@@ -602,7 +676,8 @@ class IdentifiedStructType(BaseStructType):
 
     def __eq__(self, other):
         if isinstance(other, IdentifiedStructType):
-            return self.name == other.name
+            return (self.name == other.name
+                    and self.packed == other.packed)
 
     def __hash__(self):
         return hash(IdentifiedStructType)

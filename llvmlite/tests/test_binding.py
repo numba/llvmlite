@@ -18,7 +18,6 @@ from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
-
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
@@ -41,6 +40,7 @@ asm_sum = r"""
     source_filename = "asm_sum.c"
     target triple = "{triple}"
     %struct.glob_type = type {{ i64, [2 x i64]}}
+    %struct.glob_type_vec = type {{ i64, <2 x i64>}}
 
     @glob = global i32 0
     @glob_b = global i8 0
@@ -73,6 +73,16 @@ asm_sum3 = r"""
       %.4 = add i64 5, %.3
       %.5 = add i64 -5, %.4
       ret i64 %.5
+    }}
+    """
+
+asm_sum4 = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    define i32 @sum(i32 %.1, i32 %.2) {{
+        %.3 = add i32 %.1, %.2
+        ret i32 0
     }}
     """
 
@@ -112,6 +122,9 @@ asm_getversion = r"""
     }}
     """
 
+if platform.python_implementation() == 'PyPy':
+    asm_getversion = asm_getversion.replace('Py_GetVersion', 'PyPy_GetVersion')
+
 # `fadd` used on integer inputs
 asm_parse_error = r"""
     ; ModuleID = '<string>'
@@ -139,6 +152,13 @@ asm_sum_declare = r"""
     target triple = "{triple}"
 
     declare i32 @sum(i32 %.1, i32 %.2)
+    """
+
+asm_vararg_declare = r"""
+    ; ModuleID = '<string>'
+    target triple = "{triple}"
+
+    declare i32 @vararg(i32 %.1, ...)
     """
 
 asm_double_inaccurate = r"""
@@ -491,6 +511,122 @@ entry:
 }
 """  # noqa E501
 
+asm_phi_blocks = r"""
+; ModuleID = '<string>'
+target triple = "{triple}"
+
+define void @foo(i32 %N) {{
+  ; unnamed block for testing
+  %cmp4 = icmp sgt i32 %N, 0
+  br i1 %cmp4, label %for.body, label %for.cond.cleanup
+
+for.cond.cleanup:
+  ret void
+
+for.body:
+  %i.05 = phi i32 [ %inc, %for.body ], [ 0, %0 ]
+  %inc = add nuw nsw i32 %i.05, 1
+  %exitcond.not = icmp eq i32 %inc, %N
+  br i1 %exitcond.not, label %for.cond.cleanup, label %for.body
+}}
+"""
+
+asm_cpp_class = r"""
+; Source C++
+;-----------------------------------------
+; class MyClass;
+;
+; class MyClassDefined{
+;     MyClass *member;
+;     MyClass *m2;
+;     MyClass *m3;
+; };
+;
+; void foo(MyClass *c, MyClassDefined){ }
+;-----------------------------------------
+; LLVM-IR by: clang -arch arm64 -S -emit-llvm file.cpp
+; ModuleID = 'file.cpp'
+source_filename = "class.cpp"
+target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
+target triple = "arm64-apple-macosx13.3.0"
+
+%class.MyClass = type opaque
+%class.MyClassDefined = type { %class.MyClass*, %class.MyClass*, %class.MyClass* }
+
+; Function Attrs: noinline nounwind optnone ssp uwtable(sync)
+define void @_Z3fooP7MyClass14MyClassDefined(%class.MyClass* noundef %0, %class.MyClassDefined* noundef %1) {
+  %3 = alloca %class.MyClass*, align 8
+  store %class.MyClass* %0, %class.MyClass** %3, align 8
+  ret void
+}
+
+!llvm.module.flags = !{!0, !1, !2, !3, !4, !5, !6, !7, !8}
+!llvm.ident = !{!9}
+
+!0 = !{i32 2, !"SDK Version", [2 x i32] [i32 13, i32 3]}
+!1 = !{i32 1, !"wchar_size", i32 4}
+!2 = !{i32 8, !"branch-target-enforcement", i32 0}
+!3 = !{i32 8, !"sign-return-address", i32 0}
+!4 = !{i32 8, !"sign-return-address-all", i32 0}
+!5 = !{i32 8, !"sign-return-address-with-bkey", i32 0}
+!6 = !{i32 7, !"PIC Level", i32 2}
+!7 = !{i32 7, !"uwtable", i32 1}
+!8 = !{i32 7, !"frame-pointer", i32 1}
+!9 = !{!"Apple clang version 14.0.3 (clang-1403.0.22.14.1)"}
+
+""" # noqa
+
+asm_cpp_vector = r"""; Source C++
+;-----------------------------------------
+
+; struct Vector2D{
+;     float x, y;
+; };
+;
+; void foo(Vector2D vec, Vector2D *out) {
+;     *out = vec;
+; }
+;-----------------------------------------
+; LLVM-IR by: clang -arch x86_64 -S -emit-llvm file.cpp
+; ModuleID = 'file.cpp'
+source_filename = "class.cpp"
+target datalayout = "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-apple-macosx13.3.0"
+
+%struct.Vector2D = type { float, float }
+
+; Function Attrs: noinline nounwind optnone ssp uwtable
+define void @_Z3foo8Vector2DPS_(<2 x float> %0, %struct.Vector2D* noundef %1) #0 {
+  %3 = alloca %struct.Vector2D, align 4
+  %4 = alloca %struct.Vector2D*, align 8
+  %5 = bitcast %struct.Vector2D* %3 to <2 x float>*
+  store <2 x float> %0, <2 x float>* %5, align 4
+  store %struct.Vector2D* %1, %struct.Vector2D** %4, align 8
+  %6 = load %struct.Vector2D*, %struct.Vector2D** %4, align 8
+  %7 = bitcast %struct.Vector2D* %6 to i8*
+  %8 = bitcast %struct.Vector2D* %3 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 4 %7, i8* align 4 %8, i64 8, i1 false)
+  ret void
+}
+
+; Function Attrs: argmemonly nofree nounwind willreturn
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #1
+
+attributes #0 = { noinline nounwind optnone ssp uwtable "darwin-stkchk-strong-link" "frame-pointer"="all" "min-legal-vector-width"="64" "no-trapping-math"="true" "probe-stack"="___chkstk_darwin" "stack-protector-buffer-size"="8" "target-cpu"="penryn" "target-features"="+cx16,+cx8,+fxsr,+mmx,+sahf,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "tune-cpu"="generic" }
+attributes #1 = { argmemonly nofree nounwind willreturn }
+
+!llvm.module.flags = !{!0, !1, !2, !3, !4}
+!llvm.ident = !{!5}
+
+!0 = !{i32 2, !"SDK Version", [2 x i32] [i32 13, i32 3]}
+!1 = !{i32 1, !"wchar_size", i32 4}
+!2 = !{i32 7, !"PIC Level", i32 2}
+!3 = !{i32 7, !"uwtable", i32 2}
+!4 = !{i32 7, !"frame-pointer", i32 2}
+!5 = !{!"Apple clang version 14.0.3 (clang-1403.0.22.14.1)"}
+
+""" # noqa
+
 
 class BaseTest(TestCase):
 
@@ -544,7 +680,7 @@ class TestDependencies(BaseTest):
         out, _ = p.communicate()
         self.assertEqual(0, p.returncode)
         # Parse library dependencies
-        lib_pat = re.compile(r'^([-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
+        lib_pat = re.compile(r'^([+-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
         deps = set()
         for line in out.decode().splitlines():
             parts = line.split()
@@ -622,7 +758,7 @@ class TestRISCVABI(BaseTest):
     def test_rv32d_ilp32(self):
         self.check_riscv_target()
         llmod = self.fpadd_ll_module()
-        target = self.riscv_target_machine(features="+f,+d")
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32")
         self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
                          riscv_asm_ilp32)
 
@@ -755,9 +891,9 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = [(14, )]
-        self.assertIn((major,), valid)
-        self.assertIn(patch, range(10))
+        valid = (15, 16)
+        self.assertIn(major, valid)
+        self.assertIn(patch, range(8))
 
     def test_check_jit_execution(self):
         llvm.check_jit_execution()
@@ -954,13 +1090,9 @@ class TestModuleRef(BaseTest):
         with self.assertRaises(RuntimeError) as cm:
             llvm.parse_bitcode(b"")
         self.assertIn("LLVM bitcode parsing error", str(cm.exception))
-        # for llvm < 9
-        if llvm.llvm_version_info[0] < 9:
-            self.assertIn("Invalid bitcode signature", str(cm.exception))
-        else:
-            self.assertIn(
-                "file too small to contain bitcode header", str(cm.exception),
-            )
+        self.assertIn(
+            "file too small to contain bitcode header", str(cm.exception),
+        )
 
     def test_bitcode_roundtrip(self):
         # create a new context to avoid struct renaming
@@ -1202,6 +1334,11 @@ class TestMCJit(BaseTest, JITWithTMTestMixin):
         return llvm.create_mcjit_compiler(mod, target_machine)
 
 
+# There are some memory corruption issues with OrcJIT on AArch64 - see Issue
+# #1000. Since OrcJIT is experimental, and we don't test regularly during
+# llvmlite development on non-x86 platforms, it seems safest to skip these
+# tests on non-x86 platforms.
+@unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
 class TestOrcLLJIT(BaseTest):
 
     def jit(self, asm=asm_sum, func_name="sum", target_machine=None,
@@ -1576,11 +1713,13 @@ class TestValueRef(BaseTest):
         self.assertEqual(str(operands[1].type), 'i32')
 
     def test_function_attributes(self):
+        ver = llvm.llvm_version_info[0]
+        readonly_attrs = [b'memory(read)' if ver == 16 else b'readonly']
         mod = self.module(asm_attributes)
         for func in mod.functions:
             attrs = list(func.attributes)
             if func.name == 'a_readonly_func':
-                self.assertEqual(attrs, [b'readonly'])
+                self.assertEqual(attrs, readonly_attrs)
             elif func.name == 'a_arg0_return_func':
                 self.assertEqual(attrs, [])
                 args = list(func.arguments)
@@ -1677,6 +1816,274 @@ class TestValueRef(BaseTest):
         self.assertTrue(arg.is_constant)
         self.assertEqual(arg.get_constant_value(), 'i64* null')
 
+    def test_incoming_phi_blocks(self):
+        mod = self.module(asm_phi_blocks)
+        func = mod.get_function('foo')
+        blocks = list(func.blocks)
+        instructions = list(blocks[-1].instructions)
+        self.assertTrue(instructions[0].is_instruction)
+        self.assertEqual(instructions[0].opcode, 'phi')
+
+        incoming_blocks = list(instructions[0].incoming_blocks)
+        self.assertEqual(len(incoming_blocks), 2)
+        self.assertTrue(incoming_blocks[0].is_block)
+        self.assertTrue(incoming_blocks[1].is_block)
+        # Test reference to blocks (named or unnamed)
+        self.assertEqual(incoming_blocks[0], blocks[-1])
+        self.assertEqual(incoming_blocks[1], blocks[0])
+
+        # Test case that should fail
+        self.assertNotEqual(instructions[1].opcode, 'phi')
+        with self.assertRaises(ValueError):
+            instructions[1].incoming_blocks
+
+
+class TestTypeRef(BaseTest):
+
+    def test_str(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(str(glob.type), "i32*")
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        self.assertEqual(str(glob_struct_type),
+                         "%struct.glob_type = type { i64, [2 x i64] }")
+
+        elements = list(glob_struct_type.elements)
+        self.assertEqual(len(elements), 2)
+        self.assertEqual(str(elements[0]), "i64")
+        self.assertEqual(str(elements[1]), "[2 x i64]")
+
+    def test_type_kind(self):
+        mod = self.module()
+        glob = mod.get_global_variable("glob")
+        self.assertEqual(glob.type.type_kind, llvm.TypeKind.pointer)
+        self.assertTrue(glob.type.is_pointer)
+
+        glob_struct = mod.get_global_variable("glob_struct")
+        self.assertEqual(glob_struct.type.type_kind, llvm.TypeKind.pointer)
+        self.assertTrue(glob_struct.type.is_pointer)
+
+        stype = next(iter(glob_struct.type.elements))
+        self.assertEqual(stype.type_kind, llvm.TypeKind.struct)
+        self.assertTrue(stype.is_struct)
+
+        stype_a, stype_b = stype.elements
+        self.assertEqual(stype_a.type_kind, llvm.TypeKind.integer)
+        self.assertEqual(stype_b.type_kind, llvm.TypeKind.array)
+        self.assertTrue(stype_b.is_array)
+
+        glob_vec_struct_type = mod.get_struct_type("struct.glob_type_vec")
+        _, vector_type = glob_vec_struct_type.elements
+        self.assertEqual(vector_type.type_kind, llvm.TypeKind.vector)
+        self.assertTrue(vector_type.is_vector)
+
+        funcptr = mod.get_function("sum").type
+        self.assertEqual(funcptr.type_kind, llvm.TypeKind.pointer)
+        functype, = funcptr.elements
+        self.assertEqual(functype.type_kind, llvm.TypeKind.function)
+
+    def test_element_count(self):
+        mod = self.module()
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        _, array_type = glob_struct_type.elements
+        self.assertEqual(array_type.element_count, 2)
+        with self.assertRaises(ValueError):
+            glob_struct_type.element_count
+
+    def test_type_width(self):
+        mod = self.module()
+        glob_struct_type = mod.get_struct_type("struct.glob_type")
+        glob_vec_struct_type = mod.get_struct_type("struct.glob_type_vec")
+        integer_type, array_type = glob_struct_type.elements
+        _, vector_type = glob_vec_struct_type.elements
+        self.assertEqual(integer_type.type_width, 64)
+        self.assertEqual(vector_type.type_width, 64 * 2)
+
+        # Structs and arrays are not primitive types
+        self.assertEqual(glob_struct_type.type_width, 0)
+        self.assertEqual(array_type.type_width, 0)
+
+    def test_vararg_function(self):
+        # Variadic function
+        mod = self.module(asm_vararg_declare)
+        func = mod.get_function('vararg')
+        decltype = func.type.element_type
+        self.assertTrue(decltype.is_function_vararg)
+
+        mod = self.module(asm_sum_declare)
+        func = mod.get_function('sum')
+        decltype = func.type.element_type
+        self.assertFalse(decltype.is_function_vararg)
+
+        # test that the function pointer type cannot use is_function_vararg
+        self.assertTrue(func.type.is_pointer)
+        with self.assertRaises(ValueError) as raises:
+            func.type.is_function_vararg
+        self.assertIn("Type i32 (i32, i32)* is not a function",
+                      str(raises.exception))
+
+    def test_function_typeref_as_ir(self):
+        mod = self.module()
+
+        [fn] = list(mod.functions)
+        # .type gives a pointer type, a problem if it's opaque (llvm15+)
+        self.assertEqual(fn.type.type_kind, llvm.TypeKind.pointer)
+        self.assertFalse(fn.type.is_function)
+        # Use .global_value_type instead
+        fnty = fn.global_value_type
+        self.assertEqual(fnty.type_kind, llvm.TypeKind.function)
+        self.assertTrue(fnty.is_function)
+        # Run .as_ir() to get llvmlite.ir.FunctionType
+        tyir = fnty.as_ir(ir.global_context)
+        self.assertIsInstance(tyir, ir.FunctionType)
+        self.assertEqual(tyir.args, (ir.IntType(32), ir.IntType(32)))
+        self.assertEqual(tyir.return_type ,ir.IntType(32))
+
+    def test_void_typeref_as_ir(self):
+        # Void type can only be used as return-type of llvmlite.ir.FunctionType.
+        fnty = ir.FunctionType(ir.VoidType(), ())
+        irmod = ir.Module()
+        fn = ir.Function(irmod, fnty, "foo")
+        mod = self.module(str(irmod))
+        fn = mod.get_function("foo")
+        gvty = fn.global_value_type
+        self.assertEqual(fnty.return_type,
+                         gvty.as_ir(ir.global_context).return_type)
+
+    def test_global_typeref_as_ir(self):
+        from llvmlite.binding.typeref import _TypeKindToIRType
+        ctx = ir.Context()
+
+        skipped = {
+            "function",     # tested in test_function_typeref_as_ir
+            "void",         # tested in test_void_typeref_as_ir
+        }
+
+        makers = {}
+
+        def maker_half():
+            yield ir.HalfType()
+
+        makers['half'] = maker_half
+
+        def maker_float():
+            yield ir.FloatType()
+
+        makers['float'] = maker_float
+
+        def maker_double():
+            yield ir.DoubleType()
+
+        makers['double'] = maker_double
+
+        def maker_integer():
+            yield ir.IntType(32)
+
+        makers['integer'] = maker_integer
+
+        def maker_pointer():
+            yield ir.PointerType(ir.IntType(8))
+            # opaque struct ptr
+            yield ctx.get_identified_type("myclass").as_pointer()
+            # named struct with defined body
+            myclass2 = ctx.get_identified_type("myclass2")
+            myclass2.set_body(ir.IntType(8))
+            yield myclass2.as_pointer()
+
+        makers['pointer'] = maker_pointer
+
+        def maker_array():
+            yield ir.ArrayType(ir.IntType(8), 123)
+
+        makers['array'] = maker_array
+
+        def maker_vector():
+            yield ir.VectorType(ir.FloatType(), 2)
+
+        makers['vector'] = maker_vector
+
+        def maker_struct():
+            yield ir.LiteralStructType([ir.FloatType(), ir.IntType(64)])
+            yield ir.LiteralStructType([ir.FloatType(), ir.IntType(64)],
+                                       packed=True)
+
+        makers['struct'] = maker_struct
+
+        # Ensure that number of supported TypeKind matches number of makers
+        self.assertEqual({x.name for x in _TypeKindToIRType.keys()},
+                         set(makers.keys()) | set(skipped))
+
+        # Test each type-kind
+        for type_kind, irtype in _TypeKindToIRType.items():
+            if type_kind.name in skipped:
+                continue
+            for ty in makers[type_kind.name]():
+                with self.subTest(f"{type_kind!s} -> {ty}"):
+                    irmod = ir.Module(context=ctx)
+                    ir.GlobalVariable(irmod, ty, name='gv')
+                    asm = str(irmod)
+                    mod = llvm.parse_assembly(asm)
+                    gv = mod.get_global_variable("gv")
+                    gvty = gv.global_value_type
+                    got = gvty.as_ir(ir.Context())  # fresh context
+                    self.assertEqual(got, ty)
+                    self.assertIsInstance(got, irtype)
+
+    def _check_typeref_as_ir_for_wrappers(self, asm, target_symbol):
+        # Get a clang++ defined function from a llvm ir
+        mod = llvm.parse_assembly(asm)
+        cppfn = mod.get_function(target_symbol)
+        cppfntype = cppfn.global_value_type
+
+        # Get the function type into a new context
+        my_context = ir.Context()  # don't populate global context
+        ty = cppfntype.as_ir(ir_ctx=my_context)
+
+        # Build a wrapper module for the cpp function
+        wrapper_mod = ir.Module(context=my_context)
+        # declare the original function
+        declfn = ir.Function(wrapper_mod, ty, name=cppfn.name)
+        # populate the wrapper function
+        wrapfn = ir.Function(wrapper_mod, ty, name="wrapper")
+        builder = ir.IRBuilder(wrapfn.append_basic_block())
+        # just call the original function
+        builder.call(declfn, wrapfn.args)
+        builder.ret_void()
+        # Create a new LLVM module with the wrapper
+        new_mod = llvm.parse_assembly(str(wrapper_mod))
+        self.assertTrue(new_mod.get_function(declfn.name).is_declaration,
+                        msg="declfn must not have a body")
+        # Merge/link the original module into the new module
+        new_mod.link_in(mod, preserve=True)
+        self.assertEqual(len(list(new_mod.functions)),
+                         len(list(mod.functions)) + 1,
+                         msg="the only new function is the wrapper")
+        self.assertFalse(new_mod.get_function(declfn.name).is_declaration,
+                         msg="declfn must have a body now")
+        self.assertEqual(new_mod.get_function(declfn.name).global_value_type,
+                         new_mod.get_function(wrapfn.name).global_value_type,
+                         msg="declfn and wrapfn must have the same llvm Type")
+
+    def test_typeref_as_ir_for_wrappers_of_cpp_class(self):
+        """Exercise extracting C++ defined class types.
+        Contains both opaque and non-opaque class definitions.
+        """
+        self._check_typeref_as_ir_for_wrappers(
+            asm_cpp_class,
+            "_Z3fooP7MyClass14MyClassDefined",
+        )
+
+    def test_typeref_as_ir_for_wrappers_of_cpp_vector_struct(self):
+        """Exercise extracting C++ struct types that are passed as vectors.
+
+        IA64 ABI on x86_64 will put struct with two floats as
+        a vector of two floats.
+        """
+        self._check_typeref_as_ir_for_wrappers(
+            asm_cpp_vector,
+            "_Z3foo8Vector2DPS_",
+        )
+
 
 class TestTarget(BaseTest):
 
@@ -1716,6 +2123,57 @@ class TestTarget(BaseTest):
         s = str(target)
         self.assertIn(target.name, s)
         self.assertIn(target.description, s)
+
+    def test_get_parts_from_triple(self):
+        # Tests adapted from llvm-14::llvm/unittests/ADT/TripleTest.cpp
+        cases = [
+            ("x86_64-scei-ps4",
+             llvm.targets.Triple(Arch="x86_64", SubArch='',
+                                 Vendor="scei", OS="ps4",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("x86_64-sie-ps4",
+             llvm.targets.Triple(Arch="x86_64", SubArch='',
+                                 Vendor="scei", OS="ps4",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("powerpc-dunno-notsure",
+             llvm.targets.Triple(Arch="powerpc", SubArch='',
+                                 Vendor="unknown", OS="unknown",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("powerpcspe-unknown-freebsd",
+             llvm.targets.Triple(Arch="powerpc", SubArch='spe',
+                                 Vendor="unknown", OS="freebsd",
+                                 Env="unknown", ObjectFormat="ELF")),
+            ("armv6hl-none-linux-gnueabi",
+             llvm.targets.Triple(Arch="arm", SubArch='v6hl',
+                                 Vendor="unknown", OS="linux",
+                                 Env="gnueabi", ObjectFormat="ELF")),
+            ("i686-unknown-linux-gnu",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="unknown", OS="linux",
+                                 Env="gnu", ObjectFormat="ELF")),
+            ("i686-apple-macosx",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="apple", OS="macosx",
+                                 Env="unknown", ObjectFormat="MachO")),
+            ("i686-dunno-win32",
+             llvm.targets.Triple(Arch="i386", SubArch='',
+                                 Vendor="unknown", OS="windows",
+                                 Env="msvc", ObjectFormat="COFF")),
+            ("s390x-ibm-zos",
+             llvm.targets.Triple(Arch="s390x", SubArch='',
+                                 Vendor="ibm", OS="zos",
+                                 Env="unknown", ObjectFormat="GOFF")),
+            ("wasm64-wasi",
+             llvm.targets.Triple(Arch="wasm64", SubArch='',
+                                 Vendor="unknown", OS="wasi",
+                                 Env="unknown", ObjectFormat="Wasm")),
+        ]
+
+        for case in cases:
+            triple_str, triple_obj = case
+            res = llvm.get_triple_parts(triple_str)
+
+            self.assertEqual(res, triple_obj)
 
 
 class TestTargetData(BaseTest):
@@ -2010,6 +2468,8 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         return llvm.create_module_pass_manager()
 
     def test_populate(self):
+        llvm_ver = llvm.llvm_version_info[0]
+
         pm = self.pm()
         pm.add_target_library_info("") # unspecified target triple
         pm.add_constant_merge_pass()
@@ -2034,11 +2494,13 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_aggressive_dead_code_elimination_pass()
         pm.add_aa_eval_pass()
         pm.add_always_inliner_pass()
-        pm.add_arg_promotion_pass(42)
         pm.add_break_critical_edges_pass()
         pm.add_dead_store_elimination_pass()
         pm.add_reverse_post_order_function_attrs_pass()
-        pm.add_aggressive_instruction_combining_pass()
+
+        if llvm_ver < 16:
+            pm.add_aggressive_instruction_combining_pass()
+
         pm.add_internalize_pass()
         pm.add_jump_threading_pass(7)
         pm.add_lcssa_pass()
@@ -2049,7 +2511,6 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_loop_simplification_pass()
         pm.add_loop_unroll_pass()
         pm.add_loop_unroll_and_jam_pass()
-        pm.add_loop_unswitch_pass()
         pm.add_lower_atomic_pass()
         pm.add_lower_invoke_pass()
         pm.add_lower_switch_pass()
@@ -2057,7 +2518,10 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_merge_functions_pass()
         pm.add_merge_returns_pass()
         pm.add_partial_inlining_pass()
-        pm.add_prune_exception_handling_pass()
+
+        if llvm_ver < 16:
+            pm.add_prune_exception_handling_pass()
+
         pm.add_reassociate_expressions_pass()
         pm.add_demote_register_to_memory_pass()
         pm.add_sink_pass()
@@ -2079,6 +2543,7 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         pm.add_lint_pass()
         pm.add_module_debug_info_pass()
         pm.add_refprune_pass()
+        pm.add_instruction_namer_pass()
 
     @unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
     def test_target_library_info_behavior(self):
@@ -2105,6 +2570,22 @@ class TestPasses(BaseTest, PassManagerTestMixin):
         mod = run(use_tli=False)
         self.assertNotIn("call float @llvm.exp2.f32", str(mod))
         self.assertIn("call float @ldexpf", str(mod))
+
+    def test_instruction_namer_pass(self):
+        asm = asm_inlineasm3.format(triple=llvm.get_default_triple())
+        mod = llvm.parse_assembly(asm)
+
+        # Run instnamer pass
+        pm = llvm.ModulePassManager()
+        pm.add_instruction_namer_pass()
+        pm.run(mod)
+
+        # Test that unnamed instructions are now named
+        func = mod.get_function('foo')
+        first_block = next(func.blocks)
+        instructions = list(first_block.instructions)
+        self.assertEqual(instructions[0].name, 'i')
+        self.assertEqual(instructions[1].name, 'i2')
 
 
 class TestDylib(BaseTest):
@@ -2424,6 +2905,202 @@ class TestLLVMLockCallbacks(BaseTest):
         # Check: removing non-existent callbacks will trigger a ValueError
         with self.assertRaises(ValueError):
             llvm.ffi.unregister_lock_callback(acq, rel)
+
+
+class TestPipelineTuningOptions(BaseTest):
+
+    def pto(self):
+        return llvm.create_pipeline_tuning_options()
+
+    def test_close(self):
+        pto = self.pto()
+        pto.close()
+
+    def test_speed_level(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.speed_level, int)
+        for i in range(4):
+            pto.speed_level = i
+            self.assertEqual(pto.speed_level, i)
+
+    def test_size_level(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.size_level, int)
+        for i in range(3):
+            pto.size_level = i
+            self.assertEqual(pto.size_level, i)
+
+    # // FIXME: Available from llvm16
+    # def test_inlining_threshold(self):
+    #     pto = self.pto()
+    #     with self.assertRaises(NotImplementedError):
+    #         pto.inlining_threshold
+    #     for i in (25, 80, 350):
+    #         pto.inlining_threshold = i
+
+    def test_loop_interleaving(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_interleaving, bool)
+        for b in (True, False):
+            pto.loop_interleaving = b
+            self.assertEqual(pto.loop_interleaving, b)
+
+    def test_loop_vectorization(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_vectorization, bool)
+        for b in (True, False):
+            pto.loop_vectorization = b
+            self.assertEqual(pto.loop_vectorization, b)
+
+    def test_slp_vectorization(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.slp_vectorization, bool)
+        for b in (True, False):
+            pto.slp_vectorization = b
+            self.assertEqual(pto.slp_vectorization, b)
+
+    def test_loop_unrolling(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.loop_unrolling, bool)
+        for b in (True, False):
+            pto.loop_unrolling = b
+            self.assertEqual(pto.loop_unrolling, b)
+
+    def test_speed_level_constraints(self):
+        pto = self.pto()
+        with self.assertRaises(ValueError):
+            pto.speed_level = 4
+        with self.assertRaises(ValueError):
+            pto.speed_level = -1
+
+    def test_size_level_constraints(self):
+        pto = self.pto()
+        with self.assertRaises(ValueError):
+            pto.size_level = 3
+        with self.assertRaises(ValueError):
+            pto.speed_level = -1
+        with self.assertRaises(ValueError):
+            pto.speed_level = 3
+            pto.size_level = 2
+
+
+class NewPassManagerMixin(object):
+
+    def pb(self, speed_level=0, size_level=0):
+        tm = self.target_machine(jit=False)
+        pto = llvm.create_pipeline_tuning_options(speed_level, size_level)
+        pb = llvm.create_pass_builder(tm, pto)
+        return pb
+
+
+class TestPassBuilder(BaseTest, NewPassManagerMixin):
+
+    def test_close(self):
+        pb = self.pb()
+        pb.close()
+
+    def test_pto(self):
+        tm = self.target_machine(jit=False)
+        pto = llvm.create_pipeline_tuning_options(3, 0)
+        pto.inlining_threshold = 2
+        pto.loop_interleaving = True
+        pto.loop_vectorization = True
+        pto.slp_vectorization = True
+        pto.loop_unrolling = False
+        pb = llvm.create_pass_builder(tm, pto)
+        pb.close()
+
+    def test_get_module_pass_manager(self):
+        pb = self.pb()
+        mpm = pb.getModulePassManager()
+        mpm.run(self.module(), pb)
+        pb.close()
+
+    def test_get_function_pass_manager(self):
+        pb = self.pb()
+        fpm = pb.getFunctionPassManager()
+        fpm.run(self.module().get_function("sum"), pb)
+        pb.close()
+
+
+class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
+    def pm(self):
+        return llvm.create_new_module_pass_manager()
+
+    def test_close(self):
+        mpm = self.pm()
+        mpm.close()
+
+    def test_run(self):
+        pb = self.pb(speed_level=3, size_level=0)
+        mod = self.module()
+        orig_asm = str(mod)
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        optimized_asm = str(mod)
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", optimized_asm)
+
+    def test_instcombine(self):
+        pb = self.pb()
+        mpm = self.pm()
+        mpm.add_instruction_combine_pass()
+        mod = self.module(asm_sum4)
+        orig_asm = str(mod)
+        mpm.run(mod, pb)
+        optimized_asm = str(mod)
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", optimized_asm)
+
+    def test_add_passes(self):
+        mpm = self.pm()
+        mpm.add_verifier()
+        mpm.add_aa_eval_pass()
+        mpm.add_simplify_cfg_pass()
+        mpm.add_loop_unroll_pass()
+        mpm.add_loop_rotate_pass()
+        mpm.add_instruction_combine_pass()
+        mpm.add_jump_threading_pass()
+
+
+class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
+    def pm(self):
+        return llvm.create_new_function_pass_manager()
+
+    def test_close(self):
+        fpm = self.pm()
+        fpm.close()
+
+    def test_run(self):
+        pb = self.pb(3)
+        mod = self.module()
+        fun = mod.get_function("sum")
+        orig_asm = str(fun)
+        fpm = pb.getFunctionPassManager()
+        fpm.run(fun, pb)
+        optimized_asm = str(fun)
+        self.assertIn("%.4", orig_asm)
+        self.assertNotIn("%.4", optimized_asm)
+
+    def test_instcombine(self):
+        pb = self.pb()
+        fpm = self.pm()
+        fun = self.module(asm_sum4).get_function("sum")
+        fpm.add_instruction_combine_pass()
+        orig_asm = str(fun)
+        fpm.run(fun, pb)
+        optimized_asm = str(fun)
+        self.assertIn("%.3", orig_asm)
+        self.assertNotIn("%.3", optimized_asm)
+
+    def test_add_passes(self):
+        fpm = self.pm()
+        fpm.add_aa_eval_pass()
+        fpm.add_simplify_cfg_pass()
+        fpm.add_loop_unroll_pass()
+        fpm.add_loop_rotate_pass()
+        fpm.add_instruction_combine_pass()
+        fpm.add_jump_threading_pass()
 
 
 if __name__ == "__main__":

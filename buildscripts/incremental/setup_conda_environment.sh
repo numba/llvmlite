@@ -26,15 +26,17 @@ set +v
 source activate $CONDA_ENV
 set -v
 
-if [[ $(uname) == Linux ]]; then
-    # Install the compiler toolchain, for osx, bootstrapping needed
-    # which happens in build.sh
-    $CONDA_INSTALL gcc_linux-64 gxx_linux-64
-    # Install llvmdev (separate channel, for now)
-    $CONDA_INSTALL ohu::llvmdev
-    # $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
+# Install llvmdev (separate channel, for now)
+if [ "$LLVM" == "16" ]; then
+    $CONDA_INSTALL -c conda-forge llvmdev="16"
 else
-    $CONDA_INSTALL -c numba/label/dev llvmdev="14.*"
+    $CONDA_INSTALL -c numba llvmdev="15.*"
+fi
+
+# Install the compiler toolchain, for osx, bootstrapping needed
+# which happens in build.sh
+if [[ $(uname) == Linux ]]; then
+$CONDA_INSTALL gcc_linux-64 gxx_linux-64
 fi
 
 # Install dependencies for code coverage (codecov.io)

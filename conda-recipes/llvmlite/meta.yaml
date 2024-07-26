@@ -21,33 +21,34 @@ requirements:
     # We cannot do this on macOS as the llvm-config from the
     # toolchain conflicts with the same from llvmdev, the
     # build.sh deals with it!
-    - {{ compiler('c') }}    # [not (osx or armv6l or armv7l or win)]
-    - {{ compiler('cxx') }}  # [not (osx or armv6l or armv7l or win)]
+    - {{ compiler('c') }}  # [not osx]
+    - {{ compiler('cxx') }}  # [not osx]
     - vs2015_{{ target_platform  }}    # [win]
     # The DLL build uses cmake on Windows
     - cmake          # [win]
-    - make           # [unix and not (armv6l or armv7l or aarch64)]
+    - make           # [unix]
   host:
     - python
+    - setuptools
     # On channel https://anaconda.org/numba/
-    - llvmdev 14.* *3
+    - llvmdev 15.*
     - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
-    - zlib           # [unix and not (armv6l or armv7l)]
+    - zlib           # [unix]
     # requires libxml2
     - libxml2        # [win]
   run:
-    - python >=3.8
+    - python >=3.9
     - vs2015_runtime # [win]
     # osx has dynamically linked libstdc++
     - libcxx >=4.0.1 # [osx]
+    - zlib 
+    - zstd 
 
 test:
   imports:
     - llvmlite
     - llvmlite.binding
-  commands:
-    - python -m llvmlite.tests
 
 about:
   home: https://github.com/numba/llvmlite

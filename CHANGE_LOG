@@ -1,3 +1,124 @@
+v0.43.0 (June 13, 2024)
+-----------------------
+
+Highlights of this release are:
+
+- Support for building against LLVM 15.
+- A fix for `refpruning` algorithm in specific `fanout_raise` cases.
+
+Pull-Requests:
+
+* PR `#1025 <https://github.com/numba/llvmlite/pull/1025>`_: skip `raise` basic blocks in `verifyFanoutBackward` (`dlee992 <https://github.com/dlee992>`_)
+* PR `#1029 <https://github.com/numba/llvmlite/pull/1029>`_: Update CHANGE_LOG for 0.42.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#1032 <https://github.com/numba/llvmlite/pull/1032>`_: v0.42 Post release  (`sklam <https://github.com/sklam>`_)
+* PR `#1035 <https://github.com/numba/llvmlite/pull/1035>`_:  Support building against llvm15 (`gmarkall <https://github.com/gmarkall>`_ `yashssh <https://github.com/yashssh>`_)
+* PR `#1059 <https://github.com/numba/llvmlite/pull/1059>`_: update CHANGE_LOG and release date for 0.43.0 final (`esc <https://github.com/esc>`_)
+
+Authors:
+
+* `dlee992 <https://github.com/dlee992>`_
+* `esc <https://github.com/esc>`_
+* `gmarkall <https://github.com/gmarkall>`_
+* `sklam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+* `yashssh <https://github.com/yashssh>`_
+
+v0.42.0 (January 31, 2024)
+--------------------------
+
+Highlights of this release include:
+
+- Support for Python 3.12.
+- A fix for relocation overflows on AArch64 systems.
+- Binding layer: new queries for incoming blocks of phi instructions, type
+  kinds, and elements. Addition of the Instruction Namer pass.
+- IR layer: Support `convergent` as an attribute of function calls and call
+  instructions.
+
+Pull-Requests:
+
+* PR `#973 <https://github.com/numba/llvmlite/pull/973>`_: Bindings: Query incoming blocks of a phi instruction (`tbennun <https://github.com/tbennun>`_)
+* PR `#978 <https://github.com/numba/llvmlite/pull/978>`_: Bindings: Query type kinds, derived types, and elements (`tbennun <https://github.com/tbennun>`_ `sklam <https://github.com/sklam>`_)
+* PR `#981 <https://github.com/numba/llvmlite/pull/981>`_: Add Instruction Namer pass to PassManager (`tbennun <https://github.com/tbennun>`_)
+* PR `#993 <https://github.com/numba/llvmlite/pull/993>`_: Update changelog on main for 0.41.0 (`esc <https://github.com/esc>`_)
+* PR `#1005 <https://github.com/numba/llvmlite/pull/1005>`_: Remove suggestion that add_global_mapping() is unused (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1006 <https://github.com/numba/llvmlite/pull/1006>`_: Release Notes 0.41.1 for main (`esc <https://github.com/esc>`_)
+* PR `#1007 <https://github.com/numba/llvmlite/pull/1007>`_: update release checklists post 0.41.1 (`esc <https://github.com/esc>`_)
+* PR `#1009 <https://github.com/numba/llvmlite/pull/1009>`_: Fix relocation overflows by implementing preallocation in the memory manager (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1010 <https://github.com/numba/llvmlite/pull/1010>`_: Python 3.12 (`esc <https://github.com/esc>`_)
+* PR `#1012 <https://github.com/numba/llvmlite/pull/1012>`_: conda-recipe cleanups (`esc <https://github.com/esc>`_)
+* PR `#1014 <https://github.com/numba/llvmlite/pull/1014>`_: Fix conda-recipe syntax errors from #1012 (`esc <https://github.com/esc>`_)
+* PR `#1017 <https://github.com/numba/llvmlite/pull/1017>`_: add 3.12 to azure (`esc <https://github.com/esc>`_)
+* PR `#1018 <https://github.com/numba/llvmlite/pull/1018>`_: Bump minimum supported Python version to 3.9 (`kc611 <https://github.com/kc611>`_)
+* PR `#1019 <https://github.com/numba/llvmlite/pull/1019>`_: Add convergent as a supported FunctionAttribute and CallInstrAttribute. (`diptorupd <https://github.com/diptorupd>`_)
+
+Authors:
+
+* `diptorupd <https://github.com/diptorupd>`_
+* `esc <https://github.com/esc>`_
+* `gmarkall <https://github.com/gmarkall>`_
+* `kc611 <https://github.com/kc611>`_
+* `sklam <https://github.com/sklam>`_
+* `tbennun <https://github.com/tbennun>`_
+
+v0.41.1 (October 17, 2023)
+--------------------------
+
+This is a maintenance release that includes a workaround in the test suite for
+ORCJit issues on the ``aarch64`` platform. Also, this is the last release to
+support the Windows 32-bit platform (``win32``).
+
+Pull-Requests:
+
+* PR `#996 <https://github.com/numba/llvmlite/pull/996>`_: fix typos found by codespell (`esc <https://github.com/esc>`_)
+* PR `#997 <https://github.com/numba/llvmlite/pull/997>`_: Fix issue #880 by ensuring all sources are compiled under FreeBSD. (`ke6jjj <https://github.com/ke6jjj>`_)
+* PR `#998 <https://github.com/numba/llvmlite/pull/998>`_: adding sphinx_rtd_theme to RTD build to fix build (`esc <https://github.com/esc>`_)
+* PR `#1001 <https://github.com/numba/llvmlite/pull/1001>`_: Fix / workaround for OrcJIT blocking issues (`gmarkall <https://github.com/gmarkall>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `ke6jjj <https://github.com/ke6jjj>`_
+* `gmarkall <https://github.com/gmarkall>`_
+
+v0.41.0 (September 20, 2023)
+----------------------------
+
+Pull-Requests:
+
+* PR `#871 <https://github.com/numba/llvmlite/pull/871>`_: Refactor native library loading (`folded <https://github.com/folded>`_ `sklam <https://github.com/sklam>`_)
+* PR `#896 <https://github.com/numba/llvmlite/pull/896>`_: drop upper limit on Python for conda recipe (`esc <https://github.com/esc>`_)
+* PR `#904 <https://github.com/numba/llvmlite/pull/904>`_: Create GitHub Action for llvmlite release (`apmasell <https://github.com/apmasell>`_)
+* PR `#934 <https://github.com/numba/llvmlite/pull/934>`_: Expose TargetLibraryInfo pass (`sklam <https://github.com/sklam>`_)
+* PR `#935 <https://github.com/numba/llvmlite/pull/935>`_: Disable zlib for LLVM on Windows (`apmasell <https://github.com/apmasell>`_)
+* PR `#936 <https://github.com/numba/llvmlite/pull/936>`_: Enable querying constants and value kinds (`tbennun <https://github.com/tbennun>`_)
+* PR `#939 <https://github.com/numba/llvmlite/pull/939>`_: Bump llvmdev build number to include the nozlib change for windows (`sklam <https://github.com/sklam>`_)
+* PR `#940 <https://github.com/numba/llvmlite/pull/940>`_: Update CHANGE_LOG for 0.40.0 final. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#942 <https://github.com/numba/llvmlite/pull/942>`_: Add ORCJITv2 support (`apmasell <https://github.com/apmasell>`_)
+* PR `#951 <https://github.com/numba/llvmlite/pull/951>`_: Add a type hint for `IntType.width` (`apmasell <https://github.com/apmasell>`_)
+* PR `#952 <https://github.com/numba/llvmlite/pull/952>`_: Fix CI failing due to unsupported target triple on non-x86 platforms. (`sklam <https://github.com/sklam>`_)
+* PR `#958 <https://github.com/numba/llvmlite/pull/958>`_: fixup LLVM versions in version compat table (`esc <https://github.com/esc>`_)
+* PR `#959 <https://github.com/numba/llvmlite/pull/959>`_: Remove support for LLVM < 14 (`apmasell <https://github.com/apmasell>`_)
+* PR `#960 <https://github.com/numba/llvmlite/pull/960>`_: add various bullets to release checklists and sync (`esc <https://github.com/esc>`_)
+* PR `#963 <https://github.com/numba/llvmlite/pull/963>`_: Allow adding comments to generated IR (`apmasell <https://github.com/apmasell>`_)
+* PR `#966 <https://github.com/numba/llvmlite/pull/966>`_: build: support building on GNU/Hurd (`pinotree <https://github.com/pinotree>`_)
+* PR `#967 <https://github.com/numba/llvmlite/pull/967>`_: Expose library name in OrcJIT tracker (`apmasell <https://github.com/apmasell>`_)
+* PR `#968 <https://github.com/numba/llvmlite/pull/968>`_: Update LLVM manual build instructions (`apmasell <https://github.com/apmasell>`_)
+* PR `#969 <https://github.com/numba/llvmlite/pull/969>`_: update changelog on main for v0.40.1 (`esc <https://github.com/esc>`_)
+* PR `#983 <https://github.com/numba/llvmlite/pull/983>`_: adding RTD conf file V2 as per request (`esc <https://github.com/esc>`_)
+* PR `#985 <https://github.com/numba/llvmlite/pull/985>`_: Update release checklist post 0.41.0rc1 (`esc <https://github.com/esc>`_)
+* PR `#988 <https://github.com/numba/llvmlite/pull/988>`_: Fix FreeBsd build (`sklam <https://github.com/sklam>`_)
+
+Authors:
+
+* `apmasell <https://github.com/apmasell>`_
+* `esc <https://github.com/esc>`_
+* `folded <https://github.com/folded>`_
+* `pinotree <https://github.com/pinotree>`_
+* `sklam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+* `tbennun <https://github.com/tbennun>`_
+
 v0.40.1 (June 21, 2023)
 -----------------------
 

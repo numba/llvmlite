@@ -1,0 +1,17 @@
+diff --git a/compiler-rt/lib/builtins/assembly.h b/compiler-rt/lib/builtins/assembly.h
+index 69a3d8620f92..094285d12ec2 100644
+--- a/compiler-rt/lib/builtins/assembly.h
++++ b/compiler-rt/lib/builtins/assembly.h
+@@ -260,9 +260,10 @@
+   .globl name SEPARATOR                                                        \
+   SYMBOL_IS_FUNC(name) SEPARATOR                                               \
+   DECLARE_SYMBOL_VISIBILITY_UNMANGLED(name) SEPARATOR                          \
+-  CFI_START SEPARATOR                                                          \
+   DECLARE_FUNC_ENCODING                                                        \
+-  name: SEPARATOR BTI_C
++  name:                                                                        \
++  SEPARATOR CFI_START                                                          \
++  SEPARATOR BTI_C
+ 
+ #define DEFINE_COMPILERRT_FUNCTION_ALIAS(name, target)                         \
+   .globl SYMBOL_NAME(name) SEPARATOR                                           \

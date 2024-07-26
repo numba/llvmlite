@@ -11,6 +11,12 @@ if(NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -g $ENV{CXX_STATIC_LINK}")
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
+# Work around llvm/llvm-project#83802 - LLVM's Findzstd.cmake uses variables
+# that require including `GNUInstallDirs`, but it does not include it itself.
+include(GNUInstallDirs)
+
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -50,9 +56,9 @@ endif()
 
 # Define our shared library
 add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
-            module.cpp value.cpp executionengine.cpp transforms.cpp
+            module.cpp value.cpp executionengine.cpp transforms.cpp type.cpp
             passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
-            custom_passes.cpp orcjit.cpp)
+            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp)
 
 # Link compiler-rt whole archive
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")

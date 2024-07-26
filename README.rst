@@ -51,14 +51,14 @@ Key Benefits
   ctypes (no need to wrestle with Python's compiler requirements and C++ 11
   compatibility).
 * The Python binding layer has sane memory management.
-* llvmlite is quite faster than llvmpy's thanks to a much simpler architeture
+* llvmlite is faster than llvmpy thanks to a much simpler architecture
   (the Numba_ test suite is twice faster than it was).
 
 Compatibility
 =============
 
-llvmlite works with Python 3.8 and greater. We attempt to test with the latest
-Python version, this can be checked by looking at the public CI builds.
+llvmlite has been tested with Python 3.9 -- 3.12 and is likely to work with
+greater versions.
 
 As of version 0.41.0, llvmlite requires LLVM 14.x.x on all architectures
 
