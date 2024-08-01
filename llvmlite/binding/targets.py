@@ -7,6 +7,10 @@ from llvmlite.binding.initfini import llvm_version_info
 from llvmlite.binding.common import _decode_string, _encode_string
 from collections import namedtuple
 
+# FIXME: Remove `opaque_pointers_enabled` once typed pointers are no longer
+# supported.
+from llvmlite import opaque_pointers_enabled
+
 Triple = namedtuple('Triple', ['Arch', 'SubArch', 'Vendor',
                                'OS', 'Env', 'ObjectFormat'])
 
@@ -202,9 +206,6 @@ class TargetData(ffi.ObjectRef):
         """
         Get ABI size of pointee type of LLVM pointer type *ty*.
         """
-        # FIXME: Remove `opaque_pointers_enabled` once typed pointers are no
-        # longer supported.
-        from llvmlite import opaque_pointers_enabled
         if opaque_pointers_enabled:
             raise RuntimeError("Cannot get pointee type in opaque pointer "
                                "mode.")
@@ -217,9 +218,6 @@ class TargetData(ffi.ObjectRef):
         """
         Get minimum ABI alignment of pointee type of LLVM pointer type *ty*.
         """
-        # FIXME: Remove `opaque_pointers_enabled` once typed pointers are no
-        # longer supported.
-        from llvmlite import opaque_pointers_enabled
         if opaque_pointers_enabled:
             raise RuntimeError("Cannot get pointee type in opaque pointer "
                                "mode.")

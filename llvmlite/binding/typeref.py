@@ -4,6 +4,9 @@ import enum
 from llvmlite import ir
 from llvmlite.binding import ffi
 
+# FIXME: Remove `opaque_pointers_enabled' when TP's are removed.
+from llvmlite import opaque_pointers_enabled
+
 
 class TypeKind(enum.IntEnum):
     # The LLVMTypeKind enum from llvm-c/Core.h
@@ -105,8 +108,6 @@ class TypeRef(ffi.ObjectRef):
         """
         Returns iterator over enclosing types
         """
-        # FIXME: Remove `opaque_pointers_enabled' when TP's are removed.
-        from llvmlite import opaque_pointers_enabled
         if self.is_pointer and opaque_pointers_enabled:
             raise ValueError("Type {} doesn't contain elements.".format(self))
         return _TypeListIterator(ffi.lib.LLVMPY_ElementIter(self))

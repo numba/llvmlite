@@ -432,16 +432,15 @@ class CastInstr(Instruction):
 class LoadInstr(Instruction):
 
     def __init__(self, parent, ptr, name='', typ=None):
-        if typ is not None:
-            pass
-        elif isinstance(ptr, AllocaInstr):
-            typ = ptr.allocated_type
-        # For compatibility with typed pointers. Eventually this should
-        # probably be removed (when typed pointers are fully removed).
-        elif not ptr.type.is_opaque:
-            typ = ptr.type.pointee
-        else:
-            raise ValueError("Load lacks type.")
+        if typ is None:
+            if isinstance(ptr, AllocaInstr):
+                typ = ptr.allocated_type
+            # For compatibility with typed pointers. Eventually this should
+            # probably be removed (when typed pointers are fully removed).
+            elif not ptr.type.is_opaque:
+                typ = ptr.type.pointee
+            else:
+                raise ValueError("Load lacks type.")
         super(LoadInstr, self).__init__(parent, typ, "load", [ptr], name=name)
         self.align = None
 
@@ -483,16 +482,15 @@ class StoreInstr(Instruction):
 
 class LoadAtomicInstr(Instruction):
     def __init__(self, parent, ptr, ordering, align, name='', typ=None):
-        if typ is not None:
-            pass
-        elif isinstance(ptr, AllocaInstr):
-            typ = ptr.allocated_type
-        # For compatibility with typed pointers. Eventually this should
-        # probably be removed (when typed pointers are fully removed).
-        elif not ptr.type.is_opaque:
-            typ = ptr.type.pointee
-        else:
-            raise ValueError("Load atomic lacks type.")
+        if typ is None:
+            if isinstance(ptr, AllocaInstr):
+                typ = ptr.allocated_type
+            # For compatibility with typed pointers. Eventually this should
+            # probably be removed (when typed pointers are fully removed).
+            elif not ptr.type.is_opaque:
+                typ = ptr.type.pointee
+            else:
+                raise ValueError("Load atomic lacks type.")
         super(LoadAtomicInstr, self).__init__(parent, typ, "load atomic",
                                               [ptr], name=name)
         self.ordering = ordering
