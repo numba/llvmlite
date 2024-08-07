@@ -9,6 +9,60 @@ APIs that have become undesirable/obsolete. Any information about the schedule
 for their deprecation and reasoning behind the changes, along with examples, is
 provided.
 
+Deprecation of Typed Pointers
+=============================
+
+The use of Typed Pointers is deprecated, and `Opaque Pointers <>`_ will be the
+default (and eventually required) in a future llvmlite version.
+
+Reason for deprecation
+----------------------
+
+llvmlite aims to move forward to newer LLVM versions, which will necessitate
+switching to Opaque Pointers:
+
+- In LLVM 15, `Opaque Pointers <>`_ are the default.
+- In LLVM 16, Typed Pointers are only supported on a best-effort basis (and
+  therefore may have bugs that go unfixed).
+- In LLVM 17, support for Typed Pointers is removed.
+
+Examples(s) of the impact
+-------------------------
+
+Code that uses llvmlite to work with pointers or to parse assembly that uses
+pointers will break if not modified to use opaque pointers.
+
+Schedule
+--------
+
+- In llvmlite 0.44, Opaque Pointers will be the default pointer kind.
+- In llvmlite 0.45, support for Typed Pointers will be removed.
+
+Recommendations
+---------------
+
+Binding layer:
+
+`TargetData`
+
+- Replace calls to `TargetData.get_pointee_abi_size` with calls to
+  `TargetData.get_abi_size.
+- Replace calls to `TargetData.get_pointee_abi_alignment` with calls to
+  `TargetData.get_abi_alignment`.
+
+Global Variables (binding) / Functions
+
+- Replace use of the `GlobalValue.type` with `GlobalValue.global_value_type`
+
+- Ensure that any IR passed to `parse_assembly` uses Opaque Pointers.
+
+
+IR layer:
+
+Modify calls to `ir.load`, `ir.load_atomic`, and `ir.gep` to pass in pointer
+types.
+
+
 Deprecation of `llvmlite.llvmpy` module
 =======================================
 The `llvmlite.llvmpy` module was originally created for compatibility with
