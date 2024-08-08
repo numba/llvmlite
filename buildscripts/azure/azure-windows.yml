@@ -27,6 +27,11 @@ jobs:
         CONDA_ENV: cienv
         LLVM: '16'
 
+      opaque_pointers:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        OPAQUE_POINTERS: yes
+
   steps:
 
     - powershell: |

@@ -431,9 +431,17 @@ class CastInstr(Instruction):
 
 class LoadInstr(Instruction):
 
-    def __init__(self, parent, ptr, name=''):
-        super(LoadInstr, self).__init__(parent, ptr.type.pointee, "load",
-                                        [ptr], name=name)
+    def __init__(self, parent, ptr, name='', typ=None):
+        if typ is None:
+            if isinstance(ptr, AllocaInstr):
+                typ = ptr.allocated_type
+            # For compatibility with typed pointers. Eventually this should
+            # probably be removed (when typed pointers are fully removed).
+            elif not ptr.type.is_opaque:
+                typ = ptr.type.pointee
+            else:
+                raise ValueError("Load lacks type.")
+        super(LoadInstr, self).__init__(parent, typ, "load", [ptr], name=name)
         self.align = None
 
     def descr(self, buf):
@@ -443,7 +451,7 @@ class LoadInstr(Instruction):
         else:
             align = ''
         buf.append("load {0}, {1} {2}{3}{4}\n".format(
-            val.type.pointee,
+            self.type,
             val.type,
             val.get_reference(),
             align,
@@ -473,16 +481,25 @@ class StoreInstr(Instruction):
 
 
 class LoadAtomicInstr(Instruction):
-    def __init__(self, parent, ptr, ordering, align, name=''):
-        super(LoadAtomicInstr, self).__init__(parent, ptr.type.pointee,
-                                              "load atomic", [ptr], name=name)
+    def __init__(self, parent, ptr, ordering, align, name='', typ=None):
+        if typ is None:
+            if isinstance(ptr, AllocaInstr):
+                typ = ptr.allocated_type
+            # For compatibility with typed pointers. Eventually this should
+            # probably be removed (when typed pointers are fully removed).
+            elif not ptr.type.is_opaque:
+                typ = ptr.type.pointee
+            else:
+                raise ValueError("Load atomic lacks type.")
+        super(LoadAtomicInstr, self).__init__(parent, typ, "load atomic",
+                                              [ptr], name=name)
         self.ordering = ordering
         self.align = align
 
     def descr(self, buf):
         [val] = self.operands
         buf.append("load atomic {0}, {1} {2} {3}, align {4}{5}\n".format(
-            val.type.pointee,
+            self.type,
             val.type,
             val.get_reference(),
             self.ordering,
@@ -516,10 +533,11 @@ class AllocaInstr(Instruction):
         operands = [count] if count else ()
         super(AllocaInstr, self).__init__(parent, typ.as_pointer(), "alloca",
                                           operands, name)
+        self.allocated_type = typ
         self.align = None
 
     def descr(self, buf):
-        buf.append("{0} {1}".format(self.opname, self.type.pointee))
+        buf.append("{0} {1}".format(self.opname, self.allocated_type))
         if self.operands:
             op, = self.operands
             buf.append(", {0} {1}".format(op.type, op.get_reference()))
@@ -530,22 +548,31 @@ class AllocaInstr(Instruction):
 
 
 class GEPInstr(Instruction):
-    def __init__(self, parent, ptr, indices, inbounds, name):
-        typ = ptr.type
-        lasttyp = None
-        lastaddrspace = 0
-        for i in indices:
-            lasttyp, typ = typ, typ.gep(i)
-            # inherit the addrspace from the last seen pointer
-            if isinstance(lasttyp, types.PointerType):
-                lastaddrspace = lasttyp.addrspace
+    def __init__(self, parent, ptr, indices, inbounds, name,
+                 source_etype=None):
+        if source_etype is not None:
+            typ = ptr.type
+            self.source_etype = source_etype
+        # For compatibility with typed pointers. Eventually this should
+        # probably be removed (when typed pointers are fully removed).
+        elif not ptr.type.is_opaque:
+            typ = ptr.type
+            lasttyp = None
+            lastaddrspace = 0
+            for i in indices:
+                lasttyp, typ = typ, typ.gep(i)
+                # inherit the addrspace from the last seen pointer
+                if isinstance(lasttyp, types.PointerType):
+                    lastaddrspace = lasttyp.addrspace
 
-        if (not isinstance(typ, types.PointerType) and
-                isinstance(lasttyp, types.PointerType)):
-            typ = lasttyp
+            if (not isinstance(typ, types.PointerType) and
+                    isinstance(lasttyp, types.PointerType)):
+                typ = lasttyp
+            else:
+                typ = typ.as_pointer(lastaddrspace)
+            self.source_etype = ptr.type.pointee
         else:
-            typ = typ.as_pointer(lastaddrspace)
-
+            raise ValueError("GEP lacks type.")
         super(GEPInstr, self).__init__(parent, typ, "getelementptr",
                                        [ptr] + list(indices), name=name)
         self.pointer = ptr
@@ -558,7 +585,7 @@ class GEPInstr(Instruction):
         op = "getelementptr inbounds" if self.inbounds else "getelementptr"
         buf.append("{0} {1}, {2} {3}, {4} {5}\n".format(
                    op,
-                   self.pointer.type.pointee,
+                   self.source_etype,
                    self.pointer.type,
                    self.pointer.get_reference(),
                    ', '.join(indices),
