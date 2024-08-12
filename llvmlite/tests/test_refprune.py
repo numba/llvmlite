@@ -521,6 +521,37 @@ common.ret:
         mod, stats = self.check(self.fanout_raise_5)
         self.assertEqual(stats.fanout_raise, 2)
 
+    # test case 6 is from https://github.com/numba/llvmlite/issues/1023
+    fanout_raise_6 = r"""
+define i32 @main(i8* %ptr, i1 %cond1, i1 %cond2, i1 %cond3, i8** %excinfo) {
+bb_A:
+    call void @NRT_incref(i8* %ptr)
+    call void @NRT_incref(i8* %ptr)
+    br i1 %cond1, label %bb_B, label %bb_C
+bb_B:
+    call void @NRT_decref(i8* %ptr)
+    br i1 %cond2, label %bb_D, label %bb_E
+bb_C:
+    store i8* null, i8** %excinfo, !numba_exception_output !0
+    ret i32 1
+bb_D:
+    call void @NRT_decref(i8* %ptr)
+    ret i32 0
+bb_E:
+    call void @NRT_incref(i8* %ptr)
+    br i1 %cond3, label %bb_F, label %bb_C
+bb_F:
+    call void @NRT_decref(i8* %ptr)
+    call void @NRT_decref(i8* %ptr)
+    ret i32 0
+}
+!0 = !{i1 1}
+"""
+
+    def test_fanout_raise_6(self):
+        mod, stats = self.check(self.fanout_raise_6)
+        self.assertEqual(stats.fanout_raise, 7)
+
 
 if __name__ == '__main__':
     unittest.main()

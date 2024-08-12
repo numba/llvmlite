@@ -1,11 +1,14 @@
-from ctypes import (c_bool, c_char_p, c_int, c_size_t, c_uint, Structure, byref,
+from ctypes import (c_bool, c_char_p, c_int, c_size_t, Structure, byref,
                     POINTER)
 from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
+from llvmlite.binding.initfini import llvm_version_info
 import os
 from tempfile import mkstemp
 from llvmlite.binding.common import _encode_string
+
+llvm_version_major = llvm_version_info[0]
 
 _prunestats = namedtuple('PruneStats',
                          ('basicblock diamond fanout fanout_raise'))
@@ -258,7 +261,7 @@ class PassManager(ffi.ObjectRef):
 
         LLVM 14: `llvm::createArgumentPromotionPass`
         """  # noqa E501
-        ffi.lib.LLVMPY_AddArgPromotionPass(self, max_elements)
+        raise RuntimeError('ArgumentPromotionPass unavailable in LLVM > 14')
 
     def add_break_critical_edges_pass(self):
         """
@@ -337,6 +340,10 @@ class PassManager(ffi.ObjectRef):
 
         LLVM 14: `llvm::createAggressiveInstCombinerPass`
         """  # noqa E501
+        if llvm_version_major > 15:
+            msg = "AggressiveInstrCombinerPass unavailable in LLVM > 15"
+            raise RuntimeError(msg)
+
         ffi.lib.LLVMPY_AddAggressiveInstructionCombiningPass(self)
 
     def add_internalize_pass(self):
@@ -466,9 +473,9 @@ class PassManager(ffi.ObjectRef):
         See https://llvm.org/docs/Passes.html#loop-unswitch-unswitch-loops
 
         LLVM 14: `llvm::createLoopUnswitchPass`
+        LLVM 15: `llvm::createSimpleLoopUnswitchLegacyPass`
         """  # noqa E501
-        ffi.lib.LLVMPY_AddLoopUnswitchPass(self,
-                                           optimize_for_size,
+        ffi.lib.LLVMPY_AddLoopUnswitchPass(self, optimize_for_size,
                                            has_branch_divergence)
 
     def add_lower_atomic_pass(self):
@@ -533,6 +540,8 @@ class PassManager(ffi.ObjectRef):
 
         LLVM 14: `llvm::createPruneEHPass`
         """  # noqa E501
+        if llvm_version_major > 15:
+            raise RuntimeError("PruneEHPass unavailable in LLVM > 15")
         ffi.lib.LLVMPY_AddPruneExceptionHandlingPass(self)
 
     def add_reassociate_expressions_pass(self):
@@ -633,7 +642,7 @@ class PassManager(ffi.ObjectRef):
 
     def add_loop_rotate_pass(self):
         """http://llvm.org/docs/Passes.html#loop-rotate-rotate-loops."""
-        ffi.lib.LLVMPY_LLVMAddLoopRotatePass(self)
+        ffi.lib.LLVMPY_AddLoopRotatePass(self)
 
     def add_target_library_info(self, triple):
         ffi.lib.LLVMPY_AddTargetLibraryInfoPass(self, _encode_string(triple))
@@ -866,14 +875,16 @@ ffi.lib.LLVMPY_AddRegionInfoPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddScalarEvolutionAAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddAggressiveDCEPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddAlwaysInlinerPass.argtypes = [ffi.LLVMPassManagerRef, c_bool]
-ffi.lib.LLVMPY_AddArgPromotionPass.argtypes = [ffi.LLVMPassManagerRef, c_uint]
 ffi.lib.LLVMPY_AddBreakCriticalEdgesPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDeadStoreEliminationPass.argtypes = [
     ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddReversePostOrderFunctionAttrsPass.argtypes = [
     ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddAggressiveInstructionCombiningPass.argtypes = [
-    ffi.LLVMPassManagerRef]
+
+if llvm_version_major < 16:
+    ffi.lib.LLVMPY_AddAggressiveInstructionCombiningPass.argtypes = [
+        ffi.LLVMPassManagerRef]
+
 ffi.lib.LLVMPY_AddInternalizePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLCSSAPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopDeletionPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -883,10 +894,8 @@ ffi.lib.LLVMPY_AddLoopStrengthReducePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopSimplificationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopUnrollPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLoopUnrollAndJamPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddLoopUnswitchPass.argtypes = [
-    ffi.LLVMPassManagerRef,
-    c_bool,
-    c_bool]
+ffi.lib.LLVMPY_AddLoopUnswitchPass.argtypes = [ffi.LLVMPassManagerRef, c_bool,
+                                               c_bool]
 ffi.lib.LLVMPY_AddLowerAtomicPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerInvokePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddLowerSwitchPass.argtypes = [ffi.LLVMPassManagerRef]
@@ -894,7 +903,12 @@ ffi.lib.LLVMPY_AddMemCpyOptimizationPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddMergeFunctionsPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddMergeReturnsPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddPartialInliningPass.argtypes = [ffi.LLVMPassManagerRef]
-ffi.lib.LLVMPY_AddPruneExceptionHandlingPass.argtypes = [ffi.LLVMPassManagerRef]
+
+if llvm_version_major < 16:
+    ffi.lib.LLVMPY_AddPruneExceptionHandlingPass.argtypes = [
+        ffi.LLVMPassManagerRef
+    ]
+
 ffi.lib.LLVMPY_AddReassociatePass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddDemoteRegisterToMemoryPass.argtypes = [ffi.LLVMPassManagerRef]
 ffi.lib.LLVMPY_AddSinkPass.argtypes = [ffi.LLVMPassManagerRef]

@@ -158,7 +158,7 @@ LLVMPY_LLJITLookup(std::shared_ptr<LLJIT> *lljit, const char *dylib_name,
         return nullptr;
     }
 
-    *addr = sym->getAddress();
+    *addr = sym->getValue();
     return new JITDylibTracker(*lljit, *dylib,
                                std::move(dylib->createResourceTracker()));
 }
@@ -334,7 +334,7 @@ LLVMPY_LLJIT_Link(std::shared_ptr<LLJIT> *lljit, const char *libraryName,
             LLVMDisposeErrorMessage(message);
             return nullptr;
         }
-        exports[export_idx].address = lookup->getAddress();
+        exports[export_idx].address = lookup->getValue();
     }
     return new JITDylibTracker(*lljit, *dylib,
                                std::move(dylib->getDefaultResourceTracker()));

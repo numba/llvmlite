@@ -9,8 +9,12 @@ build:
   tools:
     python: "3.11"
   apt_packages:
-    - lld-14
-    - liblld-14-dev
+    - lld-15
+    - liblld-15-dev
+    - llvm-15
+  jobs:
+    post_checkout:
+      - sed -i "s/'llvm-config'/'llvm-config-15'/g" ffi/build.py
 
 sphinx:
   configuration: docs/source/conf.py

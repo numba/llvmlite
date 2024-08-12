@@ -39,6 +39,7 @@
 #include <llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
+#include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
 #include <llvm/Transforms/Utils.h>
 #include <llvm/Transforms/Utils/UnifyFunctionExitNodes.h>
 using namespace llvm;
@@ -161,8 +162,8 @@ LLVMPY_AddCallGraphDOTPrinterPass(LLVMPassManagerRef PM) {
 
 API_EXPORT(void)
 LLVMPY_AddDotDomPrinterPass(LLVMPassManagerRef PM, bool showBody) {
-    unwrap(PM)->add(showBody ? llvm::createDomPrinterPass()
-                             : llvm::createDomOnlyPrinterPass());
+    unwrap(PM)->add(showBody ? llvm::createDomPrinterWrapperPassPass()
+                             : llvm::createDomOnlyPrinterWrapperPassPass());
 }
 
 API_EXPORT(void)
@@ -172,8 +173,8 @@ LLVMPY_AddGlobalsModRefAAPass(LLVMPassManagerRef PM) {
 
 API_EXPORT(void)
 LLVMPY_AddDotPostDomPrinterPass(LLVMPassManagerRef PM, bool showBody) {
-    unwrap(PM)->add(showBody ? llvm::createPostDomPrinterPass()
-                             : llvm::createPostDomOnlyPrinterPass());
+    unwrap(PM)->add(showBody ? llvm::createPostDomPrinterWrapperPassPass()
+                             : llvm::createPostDomOnlyPrinterWrapperPassPass());
 }
 
 API_EXPORT(void)
@@ -245,11 +246,6 @@ LLVMPY_AddAlwaysInlinerPass(LLVMPassManagerRef PM, bool insertLifetime) {
 }
 
 API_EXPORT(void)
-LLVMPY_AddArgPromotionPass(LLVMPassManagerRef PM, unsigned int maxElements) {
-    unwrap(PM)->add(llvm::createArgumentPromotionPass(maxElements));
-}
-
-API_EXPORT(void)
 LLVMPY_AddBreakCriticalEdgesPass(LLVMPassManagerRef PM) {
     unwrap(PM)->add(llvm::createBreakCriticalEdgesPass());
 }
@@ -280,10 +276,12 @@ LLVMPY_AddDeadCodeEliminationPass(LLVMPassManagerRef PM) {
     unwrap(PM)->add(createDeadCodeEliminationPass());
 }
 
+#if LLVM_VERSION_MAJOR < 16
 API_EXPORT(void)
 LLVMPY_AddAggressiveInstructionCombiningPass(LLVMPassManagerRef PM) {
     unwrap(PM)->add(createAggressiveInstCombinerPass());
 }
+#endif
 
 API_EXPORT(void)
 LLVMPY_AddInternalizePass(LLVMPassManagerRef PM) {
@@ -336,8 +334,7 @@ LLVMPY_AddLoopUnrollAndJamPass(LLVMPassManagerRef PM) {
 API_EXPORT(void)
 LLVMPY_AddLoopUnswitchPass(LLVMPassManagerRef PM, bool optimizeForSize,
                            bool hasBranchDivergence) {
-    unwrap(PM)->add(
-        createLoopUnswitchPass(optimizeForSize, hasBranchDivergence));
+    unwrap(PM)->add(createSimpleLoopUnswitchLegacyPass(optimizeForSize));
 }
 
 API_EXPORT(void)
@@ -375,10 +372,12 @@ LLVMPY_AddPartialInliningPass(LLVMPassManagerRef PM) {
     unwrap(PM)->add(createPartialInliningPass());
 }
 
+#if LLVM_VERSION_MAJOR < 16
 API_EXPORT(void)
 LLVMPY_AddPruneExceptionHandlingPass(LLVMPassManagerRef PM) {
     unwrap(PM)->add(createPruneEHPass());
 }
+#endif
 
 API_EXPORT(void)
 LLVMPY_AddReassociatePass(LLVMPassManagerRef PM) {
@@ -458,9 +457,7 @@ LLVMPY_AddBasicAliasAnalysisPass(LLVMPassManagerRef PM) {
 }
 
 API_EXPORT(void)
-LLVMPY_LLVMAddLoopRotatePass(LLVMPassManagerRef PM) {
-    LLVMAddLoopRotatePass(PM);
-}
+LLVMPY_AddLoopRotatePass(LLVMPassManagerRef PM) { LLVMAddLoopRotatePass(PM); }
 
 API_EXPORT(void)
 LLVMPY_AddInstructionNamerPass(LLVMPassManagerRef PM) {

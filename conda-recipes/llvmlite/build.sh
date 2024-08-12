@@ -4,9 +4,9 @@ set -x
 
 if [[ $(uname) == Darwin ]]; then
   if [[ $build_platform == osx-arm64 ]]; then
-      CLANG_PKG_SELECTOR=clangxx_osx-arm64=12
+      CLANG_PKG_SELECTOR=clangxx_osx-arm64=14
   else
-      CLANG_PKG_SELECTOR=clangxx_osx-64=10
+      CLANG_PKG_SELECTOR=clangxx_osx-64=14
   fi
   ${SYS_PREFIX}/bin/conda create -y -p ${SRC_DIR}/bootstrap ${CLANG_PKG_SELECTOR}
   export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
@@ -28,7 +28,7 @@ if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
         export MACOSX_DEPLOYMENT_TARGET=11.0
     else
         # OSX needs 10.7 or above with libc++ enabled
-        export MACOSX_DEPLOYMENT_TARGET=10.10
+        export MACOSX_DEPLOYMENT_TARGET=10.12
     fi
 fi
 

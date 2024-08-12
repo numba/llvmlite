@@ -3,7 +3,7 @@ jobs:
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: macOS
-    vmImage: macos-11
+    vmImage: macos-12
     matrix:
       py39:
         PYTHON: '3.9'
@@ -17,6 +17,11 @@ jobs:
       py312:
         PYTHON: '3.12'
         CONDA_ENV: cienv
+
+      llvm16:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        LLVM: '16'
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
@@ -62,10 +67,10 @@ jobs:
         CONDA_ENV: cienv
         WHEEL: 'yes'
 
-      py39_docs:
-        PYTHON: '3.9'
+      llvm16:
+        PYTHON: '3.12'
         CONDA_ENV: cienv
-        BUILD_DOCS: 'yes'
+        LLVM: '16'
 
 - template: buildscripts/azure/azure-windows.yml
   parameters:

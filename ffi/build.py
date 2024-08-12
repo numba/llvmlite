@@ -58,6 +58,13 @@ def run_llvm_config(llvm_config, args):
     return out
 
 
+def show_warning(message):
+    header = ' * '.join(("WARNING",) * 8)
+    blk = '=' * 80
+    warning = f'{blk}\n{header}\n{blk}'
+    print(f"{warning}\n{message}\n{warning}")
+
+
 def find_windows_generator():
     """
     Find a suitable cmake "generator" under Windows.
@@ -160,17 +167,17 @@ def main_posix(kind, library_ext):
                "overridden.\nThis is unsupported behaviour, llvmlite may not "
                "work as intended.\nRequested LLVM version: {}".format(
                    out.strip()))
-        warn = ' * '.join(("WARNING",) * 8)
-        blk = '=' * 80
-        warning = '{}\n{}\n{}'.format(blk, warn, blk)
-        print(warning)
-        print(msg)
-        print(warning + '\n')
+        show_warning(msg)
     else:
         (version, _) = out.split('.', 1)
         version = int(version)
-        if version != 14:
-            msg = ("Building llvmlite requires LLVM 14, got "
+        if version == 16:
+            msg = ("Building with LLVM 16; note that LLVM 16 support is "
+                   "presently experimental")
+            show_warning(msg)
+        elif version != 15:
+
+            msg = ("Building llvmlite requires LLVM 15, got "
                    "{!r}. Be sure to set LLVM_CONFIG to the right executable "
                    "path.\nRead the documentation at "
                    "http://llvmlite.pydata.org/ for more information about "

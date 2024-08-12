@@ -2,6 +2,11 @@
 #define LLVMPY_CORE_H_
 
 #include "llvm-c/Core.h"
+
+// Needed for macros that control version-specific behaviour - included here so
+// that they are available in all ffi translation units
+#include "llvm/Config/llvm-config.h"
+
 #include <cstdlib>
 #include <cstring>
 
