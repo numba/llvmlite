@@ -169,6 +169,11 @@ The ``add_*`` methods supported by both pass manager classes are:
    Add the `Simplify CFG
    <https://llvm.org/docs/Passes.html#simplifycfg-simplify-the-cfg>`_ pass.
 
+.. method:: add_refprune_pass()
+
+   Add the `Reference pruning
+   <https://github.com/numba/llvmlite/blob/main/ffi/custom_passes.cpp>`_ pass.
+
 .. currentmodule:: llvmlite.binding
 
 Legacy Pass Manager APIs
@@ -300,6 +305,11 @@ create and configure a :class:`PassManagerBuilder`.
    * .. function:: add_instruction_namer_pass()
 
         See `instnamer pass documentation <http://llvm.org/docs/Passes.html#instnamer-assign-names-to-anonymous-instructions>`_.
+
+   * .. function:: add_refprune_pass()
+
+     Add the `Reference pruning
+     <https://github.com/numba/llvmlite/blob/main/ffi/custom_passes.cpp>`_ pass.
 
 .. class:: ModulePassManager()
    :no-index:
