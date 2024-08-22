@@ -28,7 +28,9 @@ set -v
 
 # Install llvmdev (separate channel, for now)
 if [ "$LLVM" == "16" ]; then
-    $CONDA_INSTALL -c conda-forge llvmdev="16"
+    # also install lld, not required when using the numba channel because the numba
+    #  channel includes lld.
+    $CONDA_INSTALL -c conda-forge llvmdev="16" lld="16"
 else
     $CONDA_INSTALL -c numba llvmdev="15.*"
 fi
