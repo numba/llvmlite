@@ -7,8 +7,6 @@
 #include "llvm/Analysis/BlockFrequencyInfo.h"
 #include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "llvm/Analysis/CFGPrinter.h"
-#include "llvm/Analysis/CFLAndersAliasAnalysis.h"
-#include "llvm/Analysis/CFLSteensAliasAnalysis.h"
 #include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/CallPrinter.h"
@@ -514,6 +512,11 @@ LLVMPY_buildFunctionSimplificationPipeline(LLVMPassBuilderRef PBref,
     FunctionPassManager *FPM = new FunctionPassManager(
         PB->buildFunctionSimplificationPipeline(OL, ThinOrFullLTOPhase::None));
     return llvm::wrap(FPM);
+}
+
+API_EXPORT(void)
+LLVMPY_module_AddModuleDebugInfoPrinterPass(LLVMModulePassManagerRef MPM) {
+    llvm::unwrap(MPM)->addPass(ModuleDebugInfoPrinterPass(llvm::outs()));
 }
 
 #define CGSCC_PASS(NAME)                                                       \

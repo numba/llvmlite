@@ -48,9 +48,9 @@ class NewPassManager():
 
     def run(self,IR, pb):
         if isinstance(self, ModulePassManager):
-            ffi.lib.LLVMPY_RunNewModulePassManager(self, pb, IR)
+            ffi.lib.LLVMPY_RunNewModulePassManager(self, IR, pb)
         else:
-            ffi.lib.LLVMPY_RunNewFunctionPassManager(self, pb, IR)
+            ffi.lib.LLVMPY_RunNewFunctionPassManager(self, IR, pb)
 
     def add_aa_eval_pass(self):
         if isinstance(self, ModulePassManager):
@@ -244,11 +244,13 @@ class NewPassManager():
         else:
             ffi.lib.LLVMPY_function_AddRegToMemPass(self)
 
-    def add_sroa_pass(self):
-        if isinstance(self, ModulePassManager):
-            ffi.lib.LLVMPY_module_AddSROAPass(self)
-        else:
-            ffi.lib.LLVMPY_function_AddSROAPass(self)
+    # FIXME: SROA now takes parameter whether to preserve cfg or not
+    # https://reviews.llvm.org/D138238
+    # def add_sroa_pass(self):
+    #     if isinstance(self, ModulePassManager):
+    #         ffi.lib.LLVMPY_module_AddSROAPass(self)
+    #     else:
+    #         ffi.lib.LLVMPY_function_AddSROAPass(self)
 
     def add_sinking_pass(self):
         if isinstance(self, ModulePassManager):
@@ -311,6 +313,11 @@ class ModulePassManager(ffi.ObjectRef, NewPassManager):
 
     def add_dot_call_graph_printer_pass(self):
         ffi.lib.LLVMPY_module_AddCallGraphDOTPrinterPass(self)
+
+    # TODO: There are a lot more printer passes in llvm that can be exposed
+    # FIXME: Find a way to write the output toa  buffer instead of stdout
+    def add_module_debug_info_pass(self):
+        ffi.lib.LLVMPY_module_AddModuleDebugInfoPrinterPass(self)
 
     def add_always_inliner_pass(self):
         ffi.lib.LLVMPY_module_AddAlwaysInlinerPass(self)
@@ -540,6 +547,9 @@ ffi.lib.LLVMPY_module_AddDeadArgumentEliminationPass.argtypes = [
 ffi.lib.LLVMPY_module_AddCallGraphDOTPrinterPass.argtypes = [
     ffi.LLVMModulePassManagerRef, ]
 
+ffi.lib.LLVMPY_module_AddModuleDebugInfoPrinterPass.argtypes = [
+    ffi.LLVMModulePassManagerRef, ]
+
 ffi.lib.LLVMPY_module_AddAlwaysInlinerPass.argtypes = [
     ffi.LLVMModulePassManagerRef, ]
 
@@ -693,8 +703,9 @@ ffi.lib.LLVMPY_function_AddReassociatePass.argtypes = [
 ffi.lib.LLVMPY_function_AddRegToMemPass.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]
 
-ffi.lib.LLVMPY_function_AddSROAPass.argtypes = [
-    ffi.LLVMFunctionPassManagerRef, ]
+# FIXME
+# ffi.lib.LLVMPY_function_AddSROAPass.argtypes = [
+#     ffi.LLVMFunctionPassManagerRef, ]
 
 ffi.lib.LLVMPY_function_AddSinkingPass.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]

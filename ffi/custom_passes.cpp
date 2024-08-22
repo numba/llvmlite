@@ -1307,12 +1307,10 @@ LLVMPY_DumpRefPruneStats(PRUNESTATS *buf, bool do_print) {
      * do_print if set will print the stats to stderr.
      */
     if (do_print) {
-        errs() << "refprune stats "
-               << "per-BB " << RefPrune::stats_per_bb << " "
-               << "diamond " << RefPrune::stats_diamond << " "
-               << "fanout " << RefPrune::stats_fanout << " "
-               << "fanout+raise " << RefPrune::stats_fanout_raise << " "
-               << "\n";
+        errs() << "refprune stats " << "per-BB " << RefPrune::stats_per_bb
+               << " " << "diamond " << RefPrune::stats_diamond << " "
+               << "fanout " << RefPrune::stats_fanout << " " << "fanout+raise "
+               << RefPrune::stats_fanout_raise << " " << "\n";
     };
 
     buf->basicblock = RefPrune::stats_per_bb;
