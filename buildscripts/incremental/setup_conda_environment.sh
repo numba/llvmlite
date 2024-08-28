@@ -39,7 +39,8 @@ fi
 # which happens in build.sh
 if [[ $(uname) == Linux ]]; then
 # $CONDA_INSTALL gcc_linux-64 gxx_linux-64
-$CONDA_INSTALL -c conda-forge libstdcxx-ng=12
+# $CONDA_INSTALL -c conda-forge libstdcxx-ng=12
+$CONDA_INSTALL -c conda-forge clangxx=16
 fi
 
 # Install dependencies for code coverage (codecov.io)
