@@ -1,4 +1,5 @@
 from ctypes import c_bool, c_int
+from enum import IntFlag
 from llvmlite.binding import ffi
 
 
@@ -16,6 +17,14 @@ def create_pass_builder(tm, pto):
 
 def create_pipeline_tuning_options(speed_level=2, size_level=0):
     return PipelineTuningOptions(speed_level, size_level)
+
+
+class RefPruneSubpasses(IntFlag):
+    PER_BB       = 0b0001    # noqa: E221
+    DIAMOND      = 0b0010    # noqa: E221
+    FANOUT       = 0b0100    # noqa: E221
+    FANOUT_RAISE = 0b1000
+    ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
 
 
 class ModulePassManager(ffi.ObjectRef):
@@ -52,6 +61,24 @@ class ModulePassManager(ffi.ObjectRef):
     def _dispose(self):
         ffi.lib.LLVMPY_DisposeNewModulePassManger(self)
 
+    # Non-standard LLVM passes
+    def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL,
+                          subgraph_limit=1000):
+        """Add Numba specific Reference count pruning pass.
+
+        Parameters
+        ----------
+        subpasses_flags : RefPruneSubpasses
+            A bitmask to control the subpasses to be enabled.
+        subgraph_limit : int
+            Limit the fanout pruners to working on a subgraph no bigger than
+            this number of basic-blocks to avoid spending too much time in very
+            large graphs. Default is 1000. Subject to change in future
+            versions.
+        """
+        iflags = RefPruneSubpasses(subpasses_flags)
+        ffi.lib.LLVMPY_AddRefPrunePass_module(self, iflags, subgraph_limit)
+
 
 class FunctionPassManager(ffi.ObjectRef):
 
@@ -83,6 +110,24 @@ class FunctionPassManager(ffi.ObjectRef):
 
     def _dispose(self):
         ffi.lib.LLVMPY_DisposeNewFunctionPassManger(self)
+
+    # Non-standard LLVM passes
+    def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL,
+                          subgraph_limit=1000):
+        """Add Numba specific Reference count pruning pass.
+
+        Parameters
+        ----------
+        subpasses_flags : RefPruneSubpasses
+            A bitmask to control the subpasses to be enabled.
+        subgraph_limit : int
+            Limit the fanout pruners to working on a subgraph no bigger than
+            this number of basic-blocks to avoid spending too much time in very
+            large graphs. Default is 1000. Subject to change in future
+            versions.
+        """
+        iflags = RefPruneSubpasses(subpasses_flags)
+        ffi.lib.LLVMPY_AddRefPrunePass_function(self, iflags, subgraph_limit)
 
 
 class PipelineTuningOptions(ffi.ObjectRef):
