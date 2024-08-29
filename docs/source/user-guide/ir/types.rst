@@ -58,22 +58,6 @@ instantiated, a type should be considered immutable.
 Atomic types
 =============
 
-.. class:: PointerType(pointee, addrspace=0)
-
-   The type of pointers to another type.
-
-   Pointer types expose the following attributes:
-
-   * .. attribute:: addrspace
-
-        The pointer's address space number. This optional integer
-        allows you to choose a non-default address space---the
-        meaning is platform dependent.
-
-   * .. attribute:: pointee
-
-        The type pointed to.
-
 
 .. class:: IntType(bits)
 
@@ -103,6 +87,70 @@ Atomic types
 
    The class for void types. Used only as the return type of a
    function without a return value.
+
+
+.. _pointer-types:
+
+Pointer Types
+=============
+
+llvmlite presently supports both *Typed Pointers* and *Opaque Pointers*. Typed
+Pointers are currently the default; Opaque Pointers will become the default in
+future, and support for Typed Pointers will be eventually be removed.
+
+.. note::
+   Further details of the migration to Opaque Pointers are outlined in the
+   section on :ref:`deprecation-of-typed-pointers`.
+
+When Typed Pointers are enabled, the pointer type is represented using:
+
+.. class:: PointerType(pointee, addrspace=0)
+
+   The type of pointers to another type.
+
+   Pointer types expose the following attributes:
+
+   * .. attribute:: addrspace
+
+        The pointer's address space number. This optional integer
+        allows you to choose a non-default address space---the
+        meaning is platform dependent.
+
+   * .. attribute:: pointee
+
+        The type pointed to.
+
+Opaque pointers can be enabled by setting the environment variable:
+
+.. code:: bash
+
+   LLVMLITE_ENABLE_OPAQUE_POINTERS=1
+
+or by setting the ``opaque_pointers_enabled`` attribute after importing
+llvmlite, but prior to using any of its functionality. For example:
+
+.. code:: python
+
+   import llvmlite
+   llvmlite.opaque_pointers_enabled = True
+
+   # ... continue using llvmlite ...
+
+When Opaque Pointers are enabled, the pointer type is represented using:
+
+.. class:: PointerType(addrspace=0)
+   :no-index:
+
+   The type of pointers.
+
+   Pointer types expose the following attribute:
+
+   * .. attribute:: addrspace
+        :no-index:
+
+        The pointer's address space number. This optional integer
+        allows you to choose a non-default address space---the
+        meaning is platform dependent.
 
 
 .. _aggregate-types:

@@ -23,6 +23,11 @@ jobs:
         CONDA_ENV: cienv
         LLVM: '16'
 
+      opaque_pointers:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        OPAQUE_POINTERS: yes
+
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: Linux
@@ -71,6 +76,11 @@ jobs:
         PYTHON: '3.12'
         CONDA_ENV: cienv
         LLVM: '16'
+
+      opaque_pointers:
+        PYTHON: '3.12'
+        CONDA_ENV: cienv
+        OPAQUE_POINTERS: yes
 
 - template: buildscripts/azure/azure-windows.yml
   parameters:

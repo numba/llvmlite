@@ -9,6 +9,127 @@ APIs that have become undesirable/obsolete. Any information about the schedule
 for their deprecation and reasoning behind the changes, along with examples, is
 provided.
 
+
+.. _deprecation-of-typed-pointers:
+
+Deprecation of Typed Pointers
+=============================
+
+The use of Typed Pointers is deprecated, and :ref:`Opaque Pointers
+<pointer-types>` will be the default (and eventually required) in a future
+llvmlite version.
+
+Reason for deprecation
+----------------------
+
+llvmlite aims to move forward to newer LLVM versions, which will necessitate
+switching to `Opaque Pointers <https://llvm.org/docs/OpaquePointers.html>`_:
+
+- In LLVM 15, Opaque Pointers are the default.
+- In LLVM 16, Typed Pointers are only supported on a best-effort basis (and
+  therefore may have bugs that go unfixed).
+- In LLVM 17, support for Typed Pointers is removed.
+
+Although Opaque Pointers are already the default in LLVM 15, llvmlite still uses
+Typed Pointers by default with LLVM 15.
+
+Examples(s) of the impact
+-------------------------
+
+Code that uses llvmlite to work with pointers or to parse assembly that uses
+pointers will break if not modified to use opaque pointers.
+
+Schedule
+--------
+
+- In llvmlite 0.44, Opaque Pointers will be the default pointer kind.
+- In llvmlite 0.45, support for Typed Pointers will be removed.
+
+Recommendations
+---------------
+
+Code using llvmlite should be updated as follows when switching to Opaque
+Pointers.
+
+IR layer
+~~~~~~~~
+
+Modify uses of ``.type.pointee`` of instructions to use ``.allocated_type``
+instead. For example:
+
+.. code:: python
+
+   # Allocating an integer on the stack and storing a value to it
+   stackint = builder.alloca(ir.IntType(32))
+   builder.store(ir.Constant(stackint.type.pointee, 123), stackint)
+
+becomes:
+
+.. code:: python
+
+   # Allocating an integer on the stack and storing a value to it
+   stackint = builder.alloca(ir.IntType(32))
+   builder.store(ir.Constant(stackint.allocated_type, 123), stackint)
+
+
+Replace the use of ``.as_pointer()`` of types with the ``PointerType`` class.
+For example:
+
+.. code:: python
+
+   # Declaring a function of type i32(i32*, i32)
+   fnty = ir.FunctionType(ir.IntType(32), [ir.IntType(32).as_pointer(),
+                          ir.IntType(32)])
+
+
+becomes:
+
+.. code:: python
+
+   # Declaring a function of type i32(ptr, i32)
+   fnty = ir.FunctionType(ir.IntType(32), [ir.PointerType(),
+                          ir.IntType(32)])
+
+
+Modify calls to ``ir.load``, ``ir.load_atomic``, and ``ir.gep`` instructions to
+pass in pointer types. For example:
+
+.. code:: python
+
+   ptr = builder.gep(func.args[0], [index])
+   value = builder.load(ptr)
+
+becomes:
+
+.. code:: python
+
+   ptr = builder.gep(func.args[0], [index], source_etype=ll.IntType(32))
+   value = builder.load(ptr, typ=ll.IntType(32))
+
+
+Binding layer
+~~~~~~~~~~~~~
+
+When working with :class:`TargetData <llvmlite.binding.TargetData>` instances:
+
+- Replace calls to :meth:`get_pointee_abi_size()
+  <llvmlite.binding.TargetData.get_pointee_abi_size>` with calls to
+  :meth:`get_abi_size() <llvmlite.binding.TargetData.get_abi_size>`.
+- Replace calls to :meth:`get_pointee_abi_alignment()
+  <llvmlite.binding.TargetData.get_pointee_abi_alignment>` with calls to
+  :meth:`get_abi_alignment() <llvmlite.binding.TargetData.get_abi_alignment>`.
+
+When working with global variables and functions (which will be :class:`ValueRef
+<llvmlite.binding.ValueRef>` instances):
+
+- Replace any use of ``valueref.type`` with ``valueref.global_value_type`` for
+  any ``valueref`` that is a global variable or function.
+
+When passing assembly to :func:`llvmlite.binding.parse_assembly`:
+
+- Ensure that any IR passed to ``parse_assembly()`` uses Opaque Pointers.
+
+
 Deprecation of `llvmlite.llvmpy` module
 =======================================
 The `llvmlite.llvmpy` module was originally created for compatibility with

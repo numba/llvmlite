@@ -84,6 +84,11 @@ Classes
         Get the ABI-mandated size of a :class:`TypeRef` object.
         Returns an integer.
 
+   * .. method:: get_abi_alignment(type)
+
+        Similar to :meth:`get_abi_size`, but returns the ABI-mandated alignment
+        rather that the ABI size.
+
    * .. method:: get_pointee_abi_size(type)
 
         Similar to :meth:`get_abi_size`, but assumes that *type* is

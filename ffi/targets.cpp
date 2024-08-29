@@ -117,6 +117,12 @@ LLVMPY_OffsetOfElement(LLVMTargetDataRef TD, LLVMTypeRef Ty, int Element) {
 }
 
 API_EXPORT(long long)
+LLVMPY_ABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
+    return (long long)LLVMABIAlignmentOfType(TD, Ty);
+}
+
+// FIXME: Remove me once typed pointers are no longer supported.
+API_EXPORT(long long)
 LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     llvm::Type *tp = llvm::unwrap(Ty);
     if (!tp->isPointerTy())
@@ -125,6 +131,7 @@ LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     return (long long)LLVMABISizeOfType(TD, llvm::wrap(tp));
 }
 
+// FIXME: Remove me once typed pointers are no longer supported.
 API_EXPORT(long long)
 LLVMPY_ABIAlignmentOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     llvm::Type *tp = llvm::unwrap(Ty);

@@ -147,6 +147,7 @@ LLVMPY_GetTypeBitWidth(LLVMTypeRef type) {
     return size.getFixedSize();
 }
 
+// FIXME: Remove me once typed pointers support is removed.
 API_EXPORT(LLVMTypeRef)
 LLVMPY_GetElementType(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);

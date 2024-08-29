@@ -6,6 +6,9 @@ import struct
 
 from llvmlite.ir._utils import _StrCaching
 
+# FIXME: Remove me once typed pointers are no longer supported.
+from llvmlite import opaque_pointers_enabled
+
 
 def _wrapname(x):
     return '"{0}"'.format(x.replace('\\', '\\5c').replace('"', '\\22'))
@@ -30,7 +33,7 @@ class Type(_StrCaching):
     def __ne__(self, other):
         return not (self == other)
 
-    def _get_ll_pointer_type(self, target_data, context=None):
+    def _get_ll_global_value_type(self, target_data, context=None):
         """
         Convert this type object to an LLVM type.
         """
@@ -43,22 +46,22 @@ class Type(_StrCaching):
             m = Module(context=context)
         foo = GlobalVariable(m, self, name="foo")
         with parse_assembly(str(m)) as llmod:
-            return llmod.get_global_variable(foo.name).type
+            return llmod.get_global_variable(foo.name).global_value_type
 
     def get_abi_size(self, target_data, context=None):
         """
         Get the ABI size of this type according to data layout *target_data*.
         """
-        llty = self._get_ll_pointer_type(target_data, context)
-        return target_data.get_pointee_abi_size(llty)
+        llty = self._get_ll_global_value_type(target_data, context)
+        return target_data.get_abi_size(llty)
 
     def get_abi_alignment(self, target_data, context=None):
         """
         Get the minimum ABI alignment of this type according to data layout
         *target_data*.
         """
-        llty = self._get_ll_pointer_type(target_data, context)
-        return target_data.get_pointee_abi_alignment(llty)
+        llty = self._get_ll_global_value_type(target_data, context)
+        return target_data.get_abi_alignment(llty)
 
     def format_constant(self, value):
         """
@@ -109,30 +112,67 @@ class LabelType(Type):
 class PointerType(Type):
     """
     The type of all pointer values.
+    By default (without specialisation) represents an opaque pointer.
     """
+    is_opaque = True
     is_pointer = True
     null = 'null'
 
-    def __init__(self, pointee, addrspace=0):
-        assert not isinstance(pointee, VoidType)
-        self.pointee = pointee
+    # Factory to create typed or opaque pointers based on `pointee'.
+    def __new__(cls, pointee=None, addrspace=0):
+        if cls is PointerType and pointee is not None:
+            return super().__new__(_TypedPointerType)
+        return super(PointerType, cls).__new__(cls)
+
+    def __init__(self, addrspace=0):
         self.addrspace = addrspace
 
     def _to_string(self):
         if self.addrspace != 0:
-            return "{0} addrspace({1})*".format(self.pointee, self.addrspace)
+            return "ptr addrspace({0})".format(self.addrspace)
         else:
-            return "{0}*".format(self.pointee)
-
-    def __eq__(self, other):
-        if isinstance(other, PointerType):
-            return (self.pointee, self.addrspace) == (other.pointee,
-                                                      other.addrspace)
-        else:
-            return False
+            return "ptr"
 
     def __hash__(self):
         return hash(PointerType)
+
+    @classmethod
+    def from_llvm(cls, typeref, ir_ctx):
+        """
+        Create from a llvmlite.binding.TypeRef
+        """
+        if not opaque_pointers_enabled:
+            return _TypedPointerType.from_llvm(typeref, ir_ctx)
+        return cls()
+
+
+class _TypedPointerType(PointerType):
+    """
+    The type of typed pointer values. To be removed eventually.
+    """
+
+    def __init__(self, pointee, addrspace=0):
+        super(_TypedPointerType, self).__init__(addrspace)
+        assert pointee is not None
+        assert not isinstance(pointee, VoidType)
+        self.pointee = pointee
+        self.is_opaque = False
+
+    def _to_string(self):
+        if not opaque_pointers_enabled:
+            return "{0}*".format(self.pointee) if self.addrspace == 0 else \
+                   "{0} addrspace({1})*".format(self.pointee, self.addrspace)
+        return super(_TypedPointerType, self)._to_string()
+
+    # This implements ``isOpaqueOrPointeeTypeEquals''.
+    def __eq__(self, other):
+        if isinstance(other, _TypedPointerType):
+            return (self.pointee, self.addrspace) == (other.pointee,
+                                                      other.addrspace)
+        return isinstance(other, PointerType)
+
+    def __hash__(self):
+        return hash(_TypedPointerType)
 
     def gep(self, i):
         """
@@ -151,6 +191,7 @@ class PointerType(Type):
         """
         Create from a llvmlite.binding.TypeRef
         """
+        assert not opaque_pointers_enabled
         # opaque pointer will change this
         [pointee] = typeref.elements
         # addrspace is not handled
