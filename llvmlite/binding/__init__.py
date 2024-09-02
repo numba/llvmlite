@@ -8,7 +8,6 @@ from .linker import *
 from .module import *
 from .options import *
 from .newpassmanagers import *
-from .passmanagers import *
 from .targets import *
 from .value import *
 from .typeref import *

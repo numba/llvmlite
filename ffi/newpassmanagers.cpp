@@ -2,6 +2,7 @@
 #include "llvm-c/TargetMachine.h"
 #include "llvm/Analysis/AliasAnalysisEvaluator.h"
 #include "llvm/IR/PassManager.h"
+#include <llvm/IR/PassTimingInfo.h>
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
@@ -344,6 +345,18 @@ LLVMPY_buildFunctionSimplificationPipeline(LLVMPassBuilderRef PBref,
     FunctionPassManager *FPM = new FunctionPassManager(
         PB->buildFunctionSimplificationPipeline(OL, ThinOrFullLTOPhase::None));
     return llvm::wrap(FPM);
+}
+
+API_EXPORT(void)
+LLVMPY_SetTimePasses(bool enable) { TimePassesIsEnabled = enable; }
+
+API_EXPORT(void)
+LLVMPY_ReportAndResetTimings(const char **outmsg) {
+    std::string osbuf;
+    raw_string_ostream os(osbuf);
+    reportAndResetTimings(&os);
+    os.flush();
+    *outmsg = LLVMPY_CreateString(os.str().c_str());
 }
 
 } // end extern "C"
