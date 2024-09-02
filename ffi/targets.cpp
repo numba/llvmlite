@@ -1,8 +1,7 @@
 #include "core.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
-#include "llvm/ADT/Optional.h"
-#include "llvm/ADT/Triple.h"
+#include "llvm/TargetParser/Triple.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Type.h"
@@ -121,26 +120,6 @@ LLVMPY_ABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
     return (long long)LLVMABIAlignmentOfType(TD, Ty);
 }
 
-// FIXME: Remove me once typed pointers are no longer supported.
-API_EXPORT(long long)
-LLVMPY_ABISizeOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
-    llvm::Type *tp = llvm::unwrap(Ty);
-    if (!tp->isPointerTy())
-        return -1;
-    tp = tp->getPointerElementType();
-    return (long long)LLVMABISizeOfType(TD, llvm::wrap(tp));
-}
-
-// FIXME: Remove me once typed pointers are no longer supported.
-API_EXPORT(long long)
-LLVMPY_ABIAlignmentOfElementType(LLVMTargetDataRef TD, LLVMTypeRef Ty) {
-    llvm::Type *tp = llvm::unwrap(Ty);
-    if (!tp->isPointerTy())
-        return -1;
-    tp = tp->getPointerElementType();
-    return (long long)LLVMABIAlignmentOfType(TD, llvm::wrap(tp));
-}
-
 API_EXPORT(LLVMTargetRef)
 LLVMPY_GetTargetFromTriple(const char *Triple, const char **ErrOut) {
     char *ErrorMessage;
@@ -204,7 +183,8 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
             cm = CodeModel::Large;
     }
 
-    Optional<Reloc::Model> rm;
+    // llvm::Optional removed in llvm17
+    std::optional<Reloc::Model> rm;
     std::string rms(RelocModel);
     if (rms == "static")
         rm = Reloc::Static;

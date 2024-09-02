@@ -15,7 +15,6 @@ except ImportError:
     pass
 
 import llvmlite
-llvmlite.opaque_pointers_enabled = True
 
 import llvmlite.ir as ll
 import llvmlite.binding as llvm

@@ -195,8 +195,11 @@ LLVMPY_LLJIT_Link(std::shared_ptr<LLJIT> *lljit, const char *libraryName,
     for (size_t import_idx = 0; import_idx < imports_length; import_idx++) {
         SymbolStringPtr mangled =
             (*lljit)->mangleAndIntern(imports[import_idx].name);
-        JITEvaluatedSymbol symbol(imports[import_idx].address,
+        ExecutorSymbolDef symbol(ExecutorAddr(imports[import_idx].address),
                                   JITSymbolFlags::Exported);
+        
+        llvm::orc::SymbolMap sym_map;
+        sym_map[mangled] = symbol;
         auto error = dylib->define(absoluteSymbols({{mangled, symbol}}));
 
         if (error) {

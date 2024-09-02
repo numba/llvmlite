@@ -7,7 +7,8 @@ def initialize():
     """
     Initialize the LLVM core.
     """
-    ffi.lib.LLVMPY_InitializeCore()
+    if llvm_version_info[0] < 17:
+        ffi.lib.LLVMPY_InitializeCore()
 
 
 def initialize_all_targets():

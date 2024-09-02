@@ -147,21 +147,6 @@ LLVMPY_GetTypeBitWidth(LLVMTypeRef type) {
     return size.getFixedSize();
 }
 
-// FIXME: Remove me once typed pointers support is removed.
-API_EXPORT(LLVMTypeRef)
-LLVMPY_GetElementType(LLVMTypeRef type) {
-    llvm::Type *unwrapped = llvm::unwrap(type);
-    llvm::PointerType *ty = llvm::dyn_cast<llvm::PointerType>(unwrapped);
-    if (ty != nullptr) {
-#if LLVM_VERSION_MAJOR < 14
-        return llvm::wrap(ty->getElementType());
-#else
-        return llvm::wrap(ty->getPointerElementType());
-#endif
-    }
-    return nullptr;
-}
-
 API_EXPORT(LLVMTypeRef)
 LLVMPY_GetReturnType(LLVMTypeRef type) { return LLVMGetReturnType(type); }
 

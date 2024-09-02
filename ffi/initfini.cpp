@@ -1,5 +1,4 @@
 #include "llvm-c/Core.h"
-#include "llvm-c/Initialization.h"
 #include "llvm-c/Target.h"
 
 #include "core.h"
@@ -7,6 +6,9 @@
 
 extern "C" {
 
+// Pass registry and initialization APIs support dropped
+// https://reviews.llvm.org/D145043 
+#if LLVM_VERSION_MAJOR < 17
 #define INIT(F)                                                                \
     API_EXPORT(void) LLVMPY_Initialize##F() {                                  \
         LLVMInitialize##F(LLVMGetGlobalPassRegistry());                        \
@@ -28,6 +30,7 @@ INIT(CodeGen)
 INIT(Target)
 
 #undef INIT
+#endif
 
 API_EXPORT(void)
 LLVMPY_Shutdown() { LLVMShutdown(); }

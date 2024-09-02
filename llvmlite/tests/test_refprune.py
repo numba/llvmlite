@@ -3,8 +3,6 @@ from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.tests import TestCase
 
-# FIXME: Remove me once typed pointers are no longer supported.
-from llvmlite import opaque_pointers_enabled
 import llvmlite.tests.refprune_proto as proto
 
 
@@ -135,13 +133,6 @@ class TestRefPrunePass(TestCase, PassManagerMixin):
         pm.run(mod, pb)
         return mod
 
-    def apply_refprune_legacy(self, irmod):
-        mod = llvm.parse_assembly(str(irmod))
-        pm = llvm.ModulePassManager()
-        pm.add_refprune_pass()
-        pm.run(mod)
-        return mod
-
     def check(self, mod, expected, nodes):
         # preprocess incref/decref locations
         d = {}
@@ -174,19 +165,9 @@ class TestRefPrunePass(TestCase, PassManagerMixin):
         outmod = self.apply_refprune(irmod)
         self.check(outmod, expected, nodes)
 
-    def generate_test_legacy(self, case_gen):
-        nodes, edges, expected = case_gen()
-        irmod = self.generate_ir(nodes, edges)
-        outmod = self.apply_refprune_legacy(irmod)
-        self.check(outmod, expected, nodes)
-
     # Generate tests
     for name, case in _iterate_cases(generate_test):
         locals()[name] = case
-
-    for name, case in _iterate_cases(generate_test_legacy):
-        locals()[name + "_legacy"] = case
-
 
 class BaseTestByIR(TestCase, PassManagerMixin):
     refprune_bitmask = 0
@@ -210,19 +191,6 @@ declare void @NRT_decref(i8* %ptr)
         after = llvm.dump_refprune_stats()
         return mod, after - before
 
-    def check_legacy(self, irmod, subgraph_limit=None):
-        mod = llvm.parse_assembly(f"{self.prologue}\n{irmod}")
-        pm = llvm.ModulePassManager()
-        if subgraph_limit is None:
-            pm.add_refprune_pass(self.refprune_bitmask)
-        else:
-            pm.add_refprune_pass(self.refprune_bitmask,
-                                 subgraph_limit=subgraph_limit)
-        before = llvm.dump_refprune_stats()
-        pm.run(mod)
-        after = llvm.dump_refprune_stats()
-        return mod, after - before
-
 
 class TestPerBB(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.PER_BB
@@ -237,10 +205,6 @@ define void @main(i8* %ptr) {
 
     def test_per_bb_1(self):
         mod, stats = self.check(self.per_bb_ir_1)
-        self.assertEqual(stats.basicblock, 2)
-
-    def test_per_bb_1_legacy(self):
-        mod, stats = self.check_legacy(self.per_bb_ir_1)
         self.assertEqual(stats.basicblock, 2)
 
     per_bb_ir_2 = r"""
@@ -258,22 +222,9 @@ define void @main(i8* %ptr) {
         mod, stats = self.check(self.per_bb_ir_2)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_incref(ptr %ptr)", str(mod))
-        else:
-            self.assertIn("call void @NRT_incref(i8* %ptr)", str(mod))
+        self.assertIn("call void @NRT_incref(ptr %ptr)", str(mod))
 
-<<<<<<< HEAD
-    # FIXME: Remove `else' once TP are no longer supported.
-=======
-    def test_per_bb_2_legacy(self):
-        mod, stats = self.check_legacy(self.per_bb_ir_2)
-        self.assertEqual(stats.basicblock, 4)
-        # not pruned
-        self.assertIn("call void @NRT_incref(i8* %ptr)", str(mod))
 
->>>>>>> yashwants/npm-refprune
     per_bb_ir_3 = r"""
 define void @main(ptr %ptr, ptr %other) {
     call void @NRT_incref(ptr %ptr)
@@ -282,36 +233,14 @@ define void @main(ptr %ptr, ptr %other) {
     call void @NRT_decref(ptr %other)
     ret void
 }
-""" if opaque_pointers_enabled else r"""
-define void @main(i8* %ptr, i8* %other) {
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %other)
-    ret void
-}
 """
 
     def test_per_bb_3(self):
         mod, stats = self.check(self.per_bb_ir_3)
         self.assertEqual(stats.basicblock, 2)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
-        else:
-            self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
 
-<<<<<<< HEAD
-    # FIXME: Remove `else' once TP are no longer supported.
-=======
-    def test_per_bb_3_legacy(self):
-        mod, stats = self.check_legacy(self.per_bb_ir_3)
-        self.assertEqual(stats.basicblock, 2)
-        # not pruned
-        self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
-
->>>>>>> yashwants/npm-refprune
     per_bb_ir_4 = r"""
 ; reordered
 define void @main(ptr %ptr, ptr %other) {
@@ -322,34 +251,13 @@ define void @main(ptr %ptr, ptr %other) {
     call void @NRT_incref(ptr %ptr)
     ret void
 }
-""" if opaque_pointers_enabled else r"""
-; reordered
-define void @main(i8* %ptr, i8* %other) {
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %other)
-    call void @NRT_incref(i8* %ptr)
-    ret void
-}
 """
 
     def test_per_bb_4(self):
         mod, stats = self.check(self.per_bb_ir_4)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
-        else:
-            self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
-
-    def test_per_bb_4_legacy(self):
-        mod, stats = self.check_legacy(self.per_bb_ir_4)
-        self.assertEqual(stats.basicblock, 4)
-        # not pruned
-        self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
-
+        self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
 
 class TestDiamond(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.DIAMOND
@@ -369,10 +277,6 @@ bb_B:
         mod, stats = self.check(self.per_diamond_1)
         self.assertEqual(stats.diamond, 2)
 
-    def test_per_diamond_1_legacy(self):
-        mod, stats = self.check_legacy(self.per_diamond_1)
-        self.assertEqual(stats.diamond, 2)
-
     per_diamond_2 = r"""
 define void @main(i8* %ptr, i1 %cond) {
 bb_A:
@@ -390,10 +294,6 @@ bb_D:
 
     def test_per_diamond_2(self):
         mod, stats = self.check(self.per_diamond_2)
-        self.assertEqual(stats.diamond, 2)
-
-    def test_per_diamond_2_legacy(self):
-        mod, stats = self.check_legacy(self.per_diamond_2)
         self.assertEqual(stats.diamond, 2)
 
     per_diamond_3 = r"""
@@ -416,10 +316,6 @@ bb_D:
         mod, stats = self.check(self.per_diamond_3)
         self.assertEqual(stats.diamond, 0)
 
-    def test_per_diamond_3_legacy(self):
-        mod, stats = self.check_legacy(self.per_diamond_3)
-        self.assertEqual(stats.diamond, 0)
-
     per_diamond_4 = r"""
 define void @main(i8* %ptr, i1 %cond) {
 bb_A:
@@ -438,10 +334,6 @@ bb_D:
 
     def test_per_diamond_4(self):
         mod, stats = self.check(self.per_diamond_4)
-        self.assertEqual(stats.diamond, 2)
-
-    def test_per_diamond_4_legacy(self):
-        mod, stats = self.check_legacy(self.per_diamond_4)
         self.assertEqual(stats.diamond, 2)
 
     per_diamond_5 = r"""
@@ -463,10 +355,6 @@ bb_D:
 
     def test_per_diamond_5(self):
         mod, stats = self.check(self.per_diamond_5)
-        self.assertEqual(stats.diamond, 4)
-
-    def test_per_diamond_5_legacy(self):
-        mod, stats = self.check_legacy(self.per_diamond_5)
         self.assertEqual(stats.diamond, 4)
 
 
@@ -494,10 +382,6 @@ bb_C:
         mod, stats = self.check(self.fanout_1)
         self.assertEqual(stats.fanout, 3)
 
-    def test_fanout_1_legacy(self):
-        mod, stats = self.check_legacy(self.fanout_1)
-        self.assertEqual(stats.fanout, 3)
-
     fanout_2 = r"""
 define void @main(i8* %ptr, i1 %cond, i8** %excinfo) {
 bb_A:
@@ -514,10 +398,6 @@ bb_C:
 
     def test_fanout_2(self):
         mod, stats = self.check(self.fanout_2)
-        self.assertEqual(stats.fanout, 0)
-
-    def test_fanout_2_legacy(self):
-        mod, stats = self.check_legacy(self.fanout_2)
         self.assertEqual(stats.fanout, 0)
 
     fanout_3 = r"""
@@ -548,17 +428,6 @@ bb_C:
         mod, stats = self.check(self.fanout_3, subgraph_limit=1)
         self.assertEqual(stats.fanout, 0)
 
-    def test_fanout_3_legacy(self):
-        mod, stats = self.check_legacy(self.fanout_3)
-        self.assertEqual(stats.fanout, 6)
-
-    def test_fanout_3_limited_legacy(self):
-        # With subgraph limit at 1, it is essentially turning off the fanout
-        # pruner.
-        mod, stats = self.check_legacy(self.fanout_3, subgraph_limit=1)
-        self.assertEqual(stats.fanout, 0)
-
-
 class TestFanoutRaise(BaseTestByIR):
     refprune_bitmask = llvm.RefPruneSubpasses.FANOUT_RAISE
 
@@ -579,10 +448,6 @@ bb_C:
 
     def test_fanout_raise_1(self):
         mod, stats = self.check(self.fanout_raise_1)
-        self.assertEqual(stats.fanout_raise, 2)
-
-    def test_fanout_raise_1_legacy(self):
-        mod, stats = self.check_legacy(self.fanout_raise_1)
         self.assertEqual(stats.fanout_raise, 2)
 
     fanout_raise_2 = r"""
@@ -607,12 +472,6 @@ bb_C:
         mod, stats = self.check(self.fanout_raise_2)
         self.assertEqual(stats.fanout_raise, 0)
 
-    def test_fanout_raise_2_legacy(self):
-        # This is ensuring that fanout_raise is not pruning when the metadata
-        # is incorrectly named.
-        mod, stats = self.check_legacy(self.fanout_raise_2)
-        self.assertEqual(stats.fanout_raise, 0)
-
     fanout_raise_3 = r"""
 define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
 bb_A:
@@ -633,10 +492,6 @@ bb_C:
         mod, stats = self.check(self.fanout_raise_3)
         self.assertEqual(stats.fanout_raise, 2)
 
-    def test_fanout_raise_3_legacy(self):
-        mod, stats = self.check_legacy(self.fanout_raise_3)
-        self.assertEqual(stats.fanout_raise, 2)
-
     fanout_raise_4 = r"""
 define i32 @main(i8* %ptr, i1 %cond, i8** %excinfo) {
 bb_A:
@@ -653,10 +508,6 @@ bb_C:
 
     def test_fanout_raise_4(self):
         mod, stats = self.check(self.fanout_raise_4)
-        self.assertEqual(stats.fanout_raise, 0)
-
-    def test_fanout_raise_4_legacy(self):
-        mod, stats = self.check_legacy(self.fanout_raise_4)
         self.assertEqual(stats.fanout_raise, 0)
 
     fanout_raise_5 = r"""
@@ -679,10 +530,6 @@ common.ret:
 
     def test_fanout_raise_5(self):
         mod, stats = self.check(self.fanout_raise_5)
-        self.assertEqual(stats.fanout_raise, 2)
-
-    def test_fanout_raise_5_legacy(self):
-        mod, stats = self.check_legacy(self.fanout_raise_5)
         self.assertEqual(stats.fanout_raise, 2)
 
     # test case 6 is from https://github.com/numba/llvmlite/issues/1023
@@ -714,10 +561,6 @@ bb_F:
 
     def test_fanout_raise_6(self):
         mod, stats = self.check(self.fanout_raise_6)
-        self.assertEqual(stats.fanout_raise, 7)
-
-    def test_fanout_raise_6_legacy(self):
-        mod, stats = self.check_legacy(self.fanout_raise_6)
         self.assertEqual(stats.fanout_raise, 7)
 
 

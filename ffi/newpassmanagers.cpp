@@ -77,7 +77,8 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
     StandardInstrumentations SI(M->getContext(), DebugLogging, VerifyEach,
                                 PrintPassOpts);
 #endif
-    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+    // https://reviews.llvm.org/D146160
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &MAM);
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
@@ -170,7 +171,8 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     StandardInstrumentations SI(F->getContext(), DebugLogging, VerifyEach,
                                 PrintPassOpts);
 #endif
-    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+    // https://reviews.llvm.org/D146160
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &MAM);
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
