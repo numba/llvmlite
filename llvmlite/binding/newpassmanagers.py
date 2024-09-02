@@ -1,4 +1,4 @@
-from ctypes import c_bool, c_int, c_size_t, POINTER, Structure, byref
+from ctypes import c_bool, c_int, c_size_t, POINTER, Structure, byref, c_char_p
 from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
