@@ -10,7 +10,6 @@ from .options import *
 from .newpassmanagers import *
 from .passmanagers import *
 from .targets import *
-from .transforms import *
 from .value import *
 from .typeref import *
 from .analysis import *

@@ -92,7 +92,7 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
             auto linkingLayer =
                 std::make_unique<llvm::orc::ObjectLinkingLayer>(session);
 
-            /* TODO(LLVM16): In newer LLVM versions, there is a simple
+            /* FIXME(LLVM16): In newer LLVM versions, there is a simple
              * EnableDebugSupport flag on the builder and we don't need to do
              * any of this. */
             if (triple.getObjectFormat() == Triple::ELF ||

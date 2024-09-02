@@ -8,29 +8,6 @@ extern "C" {
 
 // Pass registry and initialization APIs support dropped
 // https://reviews.llvm.org/D145043 
-#if LLVM_VERSION_MAJOR < 17
-#define INIT(F)                                                                \
-    API_EXPORT(void) LLVMPY_Initialize##F() {                                  \
-        LLVMInitialize##F(LLVMGetGlobalPassRegistry());                        \
-    }
-
-INIT(Core)
-INIT(TransformUtils)
-INIT(ScalarOpts)
-#if LLVM_VERSION_MAJOR < 16
-INIT(ObjCARCOpts)
-#endif
-INIT(Vectorization)
-INIT(InstCombine)
-INIT(IPO)
-// INIT(Instrumentation)
-INIT(Analysis)
-INIT(IPA)
-INIT(CodeGen)
-INIT(Target)
-
-#undef INIT
-#endif
 
 API_EXPORT(void)
 LLVMPY_Shutdown() { LLVMShutdown(); }

@@ -195,14 +195,13 @@ class PipelineTuningOptions(ffi.ObjectRef):
     def loop_unrolling(self, value):
         ffi.lib.LLVMPY_PTOSetLoopUnrolling(self, value)
 
-    # // FIXME: Available from llvm16
-    # @property
-    # def inlining_threshold(self):
-    #     return ffi.lib.LLVMPY_PTOGetInlinerThreshold(self)
+    @property
+    def inlining_threshold(self):
+        return ffi.lib.LLVMPY_PTOGetInlinerThreshold(self)
 
-    # @inlining_threshold.setter
-    # def inlining_threshold(self, value):
-    #     ffi.lib.LLVMPY_PTOSetInlinerThreshold(self, value)
+    @inlining_threshold.setter
+    def inlining_threshold(self, value):
+        ffi.lib.LLVMPY_PTOSetInlinerThreshold(self, value)
 
     def _dispose(self):
         ffi.lib.LLVMPY_DisposePipelineTuningOptions(self)
