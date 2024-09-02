@@ -57,6 +57,7 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/IRPrintingPasses.h"
 #include "llvm/IR/PassManager.h"
+#include <llvm/IR/PassTimingInfo.h>
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
@@ -289,13 +290,10 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
 
     PrintPassOptions PrintPassOpts;
 
-#if LLVM_VERSION_MAJOR < 16
-    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
-#else
     StandardInstrumentations SI(M->getContext(), DebugLogging, VerifyEach,
                                 PrintPassOpts);
-#endif
-    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+    // https://reviews.llvm.org/D146160
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &MAM);
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
@@ -347,13 +345,10 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     // TODO: Can expose this in ffi layer
     PrintPassOptions PrintPassOpts;
 
-#if LLVM_VERSION_MAJOR < 16
-    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
-#else
     StandardInstrumentations SI(F->getContext(), DebugLogging, VerifyEach,
                                 PrintPassOpts);
-#endif
-    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+    // https://reviews.llvm.org/D146160
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &MAM);
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
@@ -420,16 +415,15 @@ LLVMPY_PTOSetLoopUnrolling(LLVMPipelineTuningOptionsRef PTO, bool value) {
     llvm::unwrap(PTO)->LoopUnrolling = value;
 }
 
-// FIXME: Available from llvm16
-// API_EXPORT(int)
-// LLVMPY_PTOGetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO) {
-//     return llvm::unwrap(PTO)->InlinerThreshold;
-// }
+API_EXPORT(int)
+LLVMPY_PTOGetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO) {
+    return llvm::unwrap(PTO)->InlinerThreshold;
+}
 
-// API_EXPORT(void)
-// LLVMPY_PTOSetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO, bool value) {
-//     llvm::unwrap(PTO)->InlinerThreshold = value;
-// }
+API_EXPORT(void)
+LLVMPY_PTOSetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO, bool value) {
+    llvm::unwrap(PTO)->InlinerThreshold = value;
+}
 
 API_EXPORT(void)
 LLVMPY_DisposePipelineTuningOptions(LLVMPipelineTuningOptionsRef PTO) {
@@ -444,11 +438,7 @@ LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TM,
     TargetMachine *target = llvm::unwrap(TM);
     PipelineTuningOptions *pt = llvm::unwrap(PTO);
     PassInstrumentationCallbacks *PIC = new PassInstrumentationCallbacks();
-#if LLVM_VERSION_MAJOR < 16
-    return llvm::wrap(new PassBuilder(target, *pt, None, PIC));
-#else
     return llvm::wrap(new PassBuilder(target, *pt, std::nullopt, PIC));
-#endif
 }
 
 API_EXPORT(void)
@@ -573,6 +563,15 @@ const char *LLVMPY_getFunctionLevelPasses() {
 #include "PASSREGISTRY.def"
 
     return LLVMPY_CreateString(function_passes.c_str());
+LLVMPY_SetTimePasses(bool enable) { TimePassesIsEnabled = enable; }
+
+API_EXPORT(void)
+LLVMPY_ReportAndResetTimings(const char **outmsg) {
+    std::string osbuf;
+    raw_string_ostream os(osbuf);
+    reportAndResetTimings(&os);
+    os.flush();
+    *outmsg = LLVMPY_CreateString(os.str().c_str());
 }
 
 } // end extern "C"
