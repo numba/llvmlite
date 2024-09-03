@@ -144,7 +144,7 @@ API_EXPORT(uint64_t)
 LLVMPY_GetTypeBitWidth(LLVMTypeRef type) {
     llvm::Type *unwrapped = llvm::unwrap(type);
     auto size = unwrapped->getPrimitiveSizeInBits();
-    return size.getFixedSize();
+    return size.getFixedValue();
 }
 
 API_EXPORT(LLVMTypeRef)

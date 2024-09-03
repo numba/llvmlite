@@ -146,20 +146,22 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
                            const char *RelocModel, const char *CodeModel,
                            int PrintMC, int JIT, const char *ABIName) {
     using namespace llvm;
-    CodeGenOpt::Level cgol;
+
+    // https://github.com/llvm/llvm-project/pull/66295
+    CodeGenOptLevel cgol;
     switch (OptLevel) {
     case 0:
-        cgol = CodeGenOpt::None;
+        cgol = CodeGenOptLevel::None;
         break;
     case 1:
-        cgol = CodeGenOpt::Less;
+        cgol = CodeGenOptLevel::Less;
         break;
     case 3:
-        cgol = CodeGenOpt::Aggressive;
+        cgol = CodeGenOptLevel::Aggressive;
         break;
     case 2:
     default:
-        cgol = CodeGenOpt::Default;
+        cgol = CodeGenOptLevel::Default;
     }
 
     CodeModel::Model cm;
