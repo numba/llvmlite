@@ -960,7 +960,7 @@ struct RefPrune {
                 auto name = dyn_cast<StoreInst>(&instruction)
                                 ->getPointerOperand()
                                 ->getName();
-                if (name.equals("excinfo") &&
+                if (name.compare("excinfo") == 0 &&
                     instruction.hasMetadata("numba_exception_output")) {
                     return true;
                 }

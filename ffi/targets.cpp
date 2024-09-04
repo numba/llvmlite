@@ -59,9 +59,10 @@ LLVMPY_GetTripleParts(const char *triple_str, const char **arch_out,
  */
 API_EXPORT(int)
 LLVMPY_GetHostCPUFeatures(const char **Out) {
-    llvm::StringMap<bool> features;
+    // https://github.com/llvm/llvm-project/pull/97824
+    llvm::StringMap<bool> features = llvm::sys::getHostCPUFeatures();
     std::ostringstream buf;
-    if (llvm::sys::getHostCPUFeatures(features)) {
+    if (!features.empty()) {
         for (auto &F : features) {
             if (buf.tellp()) {
                 buf << ',';
