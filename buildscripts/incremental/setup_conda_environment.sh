@@ -35,6 +35,8 @@ else
     $CONDA_INSTALL -c numba llvmdev="15.*"
 fi
 
+$CONDA_INSTALL -c numba libxml2
+
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh
 if [[ $(uname) == Linux ]]; then
