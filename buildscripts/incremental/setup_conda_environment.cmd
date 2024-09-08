@@ -15,7 +15,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 
 @rem Install llvmdev
 if "%LLVM%"=="16" (
-  set LLVMDEV_CHANNEL="conda-forge" lld="16"
+  set LLVMDEV_CHANNEL="conda-forge"
 ) else (
   set LLVMDEV_CHANNEL="numba"
 )
