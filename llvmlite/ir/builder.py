@@ -753,7 +753,7 @@ class IRBuilder(object):
         self._insert(al)
         return al
 
-    def load(self, ptr, name='', align=None):
+    def load(self, ptr, name='', align=None, typ=None):
         """
         Load value from pointer, with optional guaranteed alignment:
             name = *ptr
@@ -761,7 +761,7 @@ class IRBuilder(object):
         if not isinstance(ptr.type, types.PointerType):
             msg = "cannot load from value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
-        ld = instructions.LoadInstr(self.block, ptr, name)
+        ld = instructions.LoadInstr(self.block, ptr, name, typ=typ)
         ld.align = align
         self._insert(ld)
         return ld
@@ -782,7 +782,7 @@ class IRBuilder(object):
         self._insert(st)
         return st
 
-    def load_atomic(self, ptr, ordering, align, name=''):
+    def load_atomic(self, ptr, ordering, align, name='', typ=None):
         """
         Load value from pointer, with optional guaranteed alignment:
             name = *ptr
@@ -791,7 +791,7 @@ class IRBuilder(object):
             msg = "cannot load from value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
         ld = instructions.LoadAtomicInstr(
-            self.block, ptr, ordering, align, name)
+            self.block, ptr, ordering, align, name, typ=typ)
         self._insert(ld)
         return ld
 
@@ -919,13 +919,14 @@ class IRBuilder(object):
 
     # GEP APIs
 
-    def gep(self, ptr, indices, inbounds=False, name=''):
+    def gep(self, ptr, indices, inbounds=False, name='', source_etype=None):
         """
         Compute effective address (getelementptr):
             name = getelementptr ptr, <indices...>
         """
         instr = instructions.GEPInstr(self.block, ptr, indices,
-                                      inbounds=inbounds, name=name)
+                                      inbounds=inbounds, name=name,
+                                      source_etype=source_etype)
         self._insert(instr)
         return instr
 
