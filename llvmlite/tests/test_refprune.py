@@ -349,7 +349,11 @@ define void @main(i8* %ptr, i8* %other) {
         mod, stats = self.check_legacy(self.per_bb_ir_4)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        # FIXME: Remove `else' once TP are no longer supported.
+        if opaque_pointers_enabled:
+            self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
+        else:
+            self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
 
 
 class TestDiamond(BaseTestByIR):
