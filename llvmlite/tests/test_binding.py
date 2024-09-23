@@ -18,6 +18,9 @@ from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
+# FIXME: Remove me once typed pointers are no longer supported.
+from llvmlite import opaque_pointers_enabled
+
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
@@ -1253,14 +1256,14 @@ class JITTestMixin(object):
         for g in (gv_i32, gv_i8, gv_struct):
             self.assertEqual(td.get_abi_size(g.type), pointer_size)
 
-        self.assertEqual(td.get_pointee_abi_size(gv_i32.type), 4)
-        self.assertEqual(td.get_pointee_abi_alignment(gv_i32.type), 4)
+        self.assertEqual(td.get_abi_size(gv_i32.global_value_type), 4)
+        self.assertEqual(td.get_abi_alignment(gv_i32.global_value_type), 4)
 
-        self.assertEqual(td.get_pointee_abi_size(gv_i8.type), 1)
-        self.assertIn(td.get_pointee_abi_alignment(gv_i8.type), (1, 2, 4))
+        self.assertEqual(td.get_abi_size(gv_i8.global_value_type), 1)
+        self.assertIn(td.get_abi_alignment(gv_i8.global_value_type), (1, 2, 4))
 
-        self.assertEqual(td.get_pointee_abi_size(gv_struct.type), 24)
-        self.assertIn(td.get_pointee_abi_alignment(gv_struct.type), (4, 8))
+        self.assertEqual(td.get_abi_size(gv_struct.global_value_type), 24)
+        self.assertIn(td.get_abi_alignment(gv_struct.global_value_type), (4, 8))
 
     def test_object_cache_notify(self):
         notifies = []
@@ -1644,28 +1647,32 @@ class TestValueRef(BaseTest):
         self.assertEqual(tp.name, "")
         st = mod.get_global_variable("glob_struct")
         self.assertIsNotNone(re.match(r"struct\.glob_type(\.[\d]+)?",
-                                      st.type.element_type.name))
+                                      st.global_value_type.name))
 
     def test_type_printing_variable(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
-        tp = glob.type
-        self.assertEqual(str(tp), 'i32*')
+        tp = glob.global_value_type
+        self.assertEqual(str(tp), 'i32')
 
     def test_type_printing_function(self):
         mod = self.module()
         fn = mod.get_function("sum")
-        self.assertEqual(str(fn.type), "i32 (i32, i32)*")
+        self.assertEqual(str(fn.global_value_type), "i32 (i32, i32)")
 
     def test_type_printing_struct(self):
         mod = self.module()
         st = mod.get_global_variable("glob_struct")
         self.assertTrue(st.type.is_pointer)
-        self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
-                                      str(st.type)))
+        # FIXME: Remove `else' once TP are no longer supported.
+        if opaque_pointers_enabled:
+            self.assertIsNotNone(re.match(r'ptr', str(st.type)))
+        else:
+            self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
+                                          str(st.type)))
         self.assertIsNotNone(re.match(
             r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
-            str(st.type.element_type)))
+            str(st.global_value_type)))
 
     def test_close(self):
         glob = self.glob()
@@ -1851,7 +1858,11 @@ class TestValueRef(BaseTest):
         inst = list(list(func.blocks)[0].instructions)[0]
         arg = list(inst.operands)[0]
         self.assertTrue(arg.is_constant)
-        self.assertEqual(arg.get_constant_value(), 'i64* null')
+        # FIXME: Remove `else' once TP are no longer supported.
+        if opaque_pointers_enabled:
+            self.assertEqual(arg.get_constant_value(), 'ptr null')
+        else:
+            self.assertEqual(arg.get_constant_value(), 'i64* null')
 
     def test_incoming_phi_blocks(self):
         mod = self.module(asm_phi_blocks)
@@ -1880,7 +1891,7 @@ class TestTypeRef(BaseTest):
     def test_str(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
-        self.assertEqual(str(glob.type), "i32*")
+        self.assertEqual(str(glob.global_value_type), "i32")
         glob_struct_type = mod.get_struct_type("struct.glob_type")
         self.assertEqual(str(glob_struct_type),
                          "%struct.glob_type = type { i64, [2 x i64] }")
@@ -1900,7 +1911,7 @@ class TestTypeRef(BaseTest):
         self.assertEqual(glob_struct.type.type_kind, llvm.TypeKind.pointer)
         self.assertTrue(glob_struct.type.is_pointer)
 
-        stype = next(iter(glob_struct.type.elements))
+        stype = glob_struct.global_value_type
         self.assertEqual(stype.type_kind, llvm.TypeKind.struct)
         self.assertTrue(stype.is_struct)
 
@@ -1916,7 +1927,7 @@ class TestTypeRef(BaseTest):
 
         funcptr = mod.get_function("sum").type
         self.assertEqual(funcptr.type_kind, llvm.TypeKind.pointer)
-        functype, = funcptr.elements
+        functype = mod.get_function("sum").global_value_type
         self.assertEqual(functype.type_kind, llvm.TypeKind.function)
 
     def test_element_count(self):
@@ -1944,20 +1955,24 @@ class TestTypeRef(BaseTest):
         # Variadic function
         mod = self.module(asm_vararg_declare)
         func = mod.get_function('vararg')
-        decltype = func.type.element_type
+        decltype = func.global_value_type
         self.assertTrue(decltype.is_function_vararg)
 
         mod = self.module(asm_sum_declare)
         func = mod.get_function('sum')
-        decltype = func.type.element_type
+        decltype = func.global_value_type
         self.assertFalse(decltype.is_function_vararg)
 
         # test that the function pointer type cannot use is_function_vararg
         self.assertTrue(func.type.is_pointer)
         with self.assertRaises(ValueError) as raises:
             func.type.is_function_vararg
-        self.assertIn("Type i32 (i32, i32)* is not a function",
-                      str(raises.exception))
+        # FIXME: Remove `else' once TP are no longer supported.
+        if opaque_pointers_enabled:
+            self.assertIn("Type ptr is not a function", str(raises.exception))
+        else:
+            self.assertIn("Type i32 (i32, i32)* is not a function",
+                          str(raises.exception))
 
     def test_function_typeref_as_ir(self):
         mod = self.module()
@@ -2227,10 +2242,10 @@ class TestTargetData(BaseTest):
         td = self.target_data()
 
         glob = self.glob()
-        self.assertEqual(td.get_pointee_abi_size(glob.type), 4)
+        self.assertEqual(td.get_abi_size(glob.global_value_type), 4)
 
         glob = self.glob("glob_struct")
-        self.assertEqual(td.get_pointee_abi_size(glob.type), 24)
+        self.assertEqual(td.get_abi_size(glob.global_value_type), 24)
 
     def test_get_struct_element_offset(self):
         td = self.target_data()
@@ -2239,7 +2254,7 @@ class TestTargetData(BaseTest):
         with self.assertRaises(ValueError):
             td.get_element_offset(glob.type, 0)
 
-        struct_type = glob.type.element_type
+        struct_type = glob.global_value_type
         self.assertEqual(td.get_element_offset(struct_type, 0), 0)
         self.assertEqual(td.get_element_offset(struct_type, 1), 8)
 
