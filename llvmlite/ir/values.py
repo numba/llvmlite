@@ -662,11 +662,14 @@ class MDValue(NamedValue):
     """
     name_prefix = '!'
 
-    def __init__(self, parent, values, name):
+    def __init__(self, parent, values, name, *, self_ref=False):
         super(MDValue, self).__init__(parent,
                                       types.MetaDataType(),
                                       name=name)
-        self.operands = tuple(values)
+        # Store only the non-self params to avoid
+        # ref counting cycles
+        self._operands = tuple(values)
+        self._is_self_ref = self_ref
         parent.metadata.append(self)
 
     def descr(self, buf):
@@ -687,6 +690,8 @@ class MDValue(NamedValue):
 
     def __eq__(self, other):
         if isinstance(other, MDValue):
+            if self._is_self_ref:
+                return self is other
             return self.operands == other.operands
         else:
             return False
@@ -695,7 +700,13 @@ class MDValue(NamedValue):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(self.operands)
+        return hash(self._operands)
+
+    @property
+    def operands(self):
+        if self._is_self_ref:
+            return (self,) + self._operands
+        return self._operands
 
 
 class DIToken:
