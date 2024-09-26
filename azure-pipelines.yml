@@ -17,6 +17,9 @@ jobs:
       py312:
         PYTHON: '3.12'
         CONDA_ENV: cienv
+      py313:
+        PYTHON: '3.13'
+        CONDA_ENV: cienv
 
       llvm16:
         PYTHON: '3.12'
@@ -51,6 +54,11 @@ jobs:
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
         RUN_CLANG_FORMAT: yes
+      py313:
+        PYTHON: '3.13'
+        CONDA_ENV: cienv
+        RUN_FLAKE8: yes
+        RUN_CLANG_FORMAT: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
@@ -65,6 +73,10 @@ jobs:
         WHEEL: 'yes'
       py311_wheel:
         PYTHON: '3.11'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py312_wheel:
+        PYTHON: '3.12'
         CONDA_ENV: cienv
         WHEEL: 'yes'
       py312_wheel:
