@@ -55,6 +55,10 @@ class Type(_StrCaching):
         llty = self._get_ll_global_value_type(target_data, context)
         return target_data.get_abi_size(llty)
 
+    def get_element_offset(self, target_data, ndx, context=None):
+        llty = self._get_ll_global_value_type(target_data, context)
+        return target_data.get_element_offset(llty, ndx)
+
     def get_abi_alignment(self, target_data, context=None):
         """
         Get the minimum ABI alignment of this type according to data layout

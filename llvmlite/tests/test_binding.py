@@ -2701,6 +2701,12 @@ class TestTypeParsing(BaseTest):
             # Also test constant text repr
             gv.initializer = ir.Constant(typ, [1])
 
+        # Packed layout2
+        with self.check_parsing() as mod:
+            const = ir.Constant.literal_struct([ir.IntType(32)(1),
+                                                ir.IntType(32)(2)])
+            gv = ir.GlobalVariable(mod, const.type, "foo")
+            gv.initializer = const
 
 class TestGlobalConstructors(TestMCJit):
     def test_global_ctors_dtors(self):
