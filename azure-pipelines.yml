@@ -79,8 +79,8 @@ jobs:
         PYTHON: '3.12'
         CONDA_ENV: cienv
         WHEEL: 'yes'
-      py312_wheel:
-        PYTHON: '3.12'
+      py313_wheel:
+        PYTHON: '3.13'
         CONDA_ENV: cienv
         WHEEL: 'yes'
 
