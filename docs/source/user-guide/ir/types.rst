@@ -38,10 +38,16 @@ instantiated, a type should be considered immutable.
         to the *target_data*---an
         :class:`llvmlite.binding.TargetData` instance.
 
-        NOTE: :meth:`get_abi_size` and :meth:`get_abi_alignment`
-        call into the LLVM C++ API to get the requested
-        information.
+   * .. method:: get_element_offset(target_data, position)
 
+        Get the byte offset for the struct element at position,
+        according to the *target_data*---an
+        :class:`llvmlite.binding.TargetData` instance.
+
+        NOTE: :meth:`get_abi_size`, :meth:`get_abi_alignment`,
+        and :meth:`get_element_offset` call into the LLVM C++
+        API to get the requested information.
+        
    * .. method:: __call__(value)
 
         A convenience method to create a :class:`Constant` of
