@@ -2708,6 +2708,7 @@ class TestTypeParsing(BaseTest):
             gv = ir.GlobalVariable(mod, const.type, "foo")
             gv.initializer = const
 
+
 class TestGlobalConstructors(TestMCJit):
     def test_global_ctors_dtors(self):
         # test issue #303

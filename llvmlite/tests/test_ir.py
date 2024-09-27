@@ -2552,11 +2552,11 @@ class TestTypes(TestBase):
         self.assert_valid_ir(module)
         oldstr = str(module)
         mytype.set_body(ir.IntType(16), ir.IntType(64), ir.FloatType())
-        self.assertEqual(mytype.get_element_offset (td, 1, context), 2)
+        self.assertEqual(mytype.get_element_offset(td, 1, context), 2)
         self.assertFalse(mytype.is_opaque)
         self.assert_valid_ir(module)
         self.assertNotEqual(oldstr, str(module))
-        
+
     def test_target_data_non_default_context(self):
         context = ir.Context()
         mytype = context.get_identified_type("MyType")
