@@ -2704,7 +2704,8 @@ class TestTypeParsing(BaseTest):
         # Packed layout2
         with self.check_parsing() as mod:
             const = ir.Constant.literal_struct([ir.IntType(32)(1),
-                                                ir.IntType(32)(2)])
+                                                ir.IntType(32)(2)],
+                                               packed=True)
             gv = ir.GlobalVariable(mod, const.type, "foo")
             gv.initializer = const
 
