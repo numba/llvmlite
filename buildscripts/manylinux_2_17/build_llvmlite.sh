@@ -20,7 +20,7 @@ conda create -y -n $envname
 source activate $envname
 # Install llvmdev
 
-if [[ $ARCH == "aarch64" ]] ; then
+if [[ $ARCH == "aarch64" || $ARCH == "ppc64le" ]] ; then
     conda install -y numba/label/manylinux2014::llvmdev --no-deps
 else
     conda install -y -c numba/label/manylinux2014 llvmdev
