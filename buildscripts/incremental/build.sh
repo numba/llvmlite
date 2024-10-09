@@ -26,8 +26,7 @@ if [[ $(uname) == Darwin ]]; then
 fi
 
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    # OSX needs 10.7 or above with libc++ enabled
-    export MACOSX_DEPLOYMENT_TARGET=10.9
+    export MACOSX_DEPLOYMENT_TARGET=10.12
 fi
 
 if [[ ${MACOSX_DEPLOYMENT_TARGET} == 10.9 ]]; then
