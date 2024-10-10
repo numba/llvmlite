@@ -2701,7 +2701,7 @@ class TestTypeParsing(BaseTest):
             # Also test constant text repr
             gv.initializer = ir.Constant(typ, [1])
 
-        # Packed layout2
+        # Packed layout created from Constant.literal_struct
         with self.check_parsing() as mod:
             const = ir.Constant.literal_struct([ir.IntType(32)(1),
                                                 ir.IntType(32)(2)],
