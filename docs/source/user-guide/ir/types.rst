@@ -40,7 +40,7 @@ instantiated, a type should be considered immutable.
 
    * .. method:: get_element_offset(target_data, position)
 
-        Get the byte offset for the struct element at position,
+        Get the byte offset for the struct element at *position*,
         according to the *target_data*---an
         :class:`llvmlite.binding.TargetData` instance.
 
