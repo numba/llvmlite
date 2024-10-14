@@ -1,4 +1,4 @@
-from ctypes import c_bool, c_int
+from ctypes import c_bool, c_int, c_size_t
 from enum import IntFlag
 from llvmlite.binding import ffi
 
@@ -262,6 +262,10 @@ ffi.lib.LLVMPY_AddJumpThreadingPass_module.argtypes = [
 ffi.lib.LLVMPY_DisposeNewModulePassManger.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
+ffi.lib.LLVMPY_AddRefPrunePass_module.argtypes = [
+    ffi.LLVMModulePassManagerRef, c_int, c_size_t,
+]
+
 # FunctionPassManager
 
 ffi.lib.LLVMPY_CreateNewFunctionPassManager.restype = \
@@ -291,6 +295,10 @@ ffi.lib.LLVMPY_AddJumpThreadingPass_function.argtypes = [
 
 ffi.lib.LLVMPY_DisposeNewFunctionPassManger.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]
+
+ffi.lib.LLVMPY_AddRefPrunePass_function.argtypes = [
+    ffi.LLVMFunctionPassManagerRef, c_int, c_size_t,
+]
 
 # PipelineTuningOptions
 
