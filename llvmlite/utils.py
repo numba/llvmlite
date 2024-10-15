@@ -25,5 +25,5 @@ def get_library_files():
     """
     files = [get_library_name()]
     if os.name == 'nt':
-        files.extend(['msvcr120.dll', 'msvcp120.dll'])
+        files.extend(['llvmlite.pdb', 'msvcr120.dll', 'msvcp120.dll'])
     return files
