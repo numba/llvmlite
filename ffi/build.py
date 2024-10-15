@@ -101,13 +101,14 @@ def find_windows_generator():
 
 def main_windows():
     generator = find_windows_generator()
-    config = 'Release'
+    config = 'RelWithDebInfo'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
     # Run configuration step
     try_cmake(here_dir, build_dir, *generator)
     subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
+    shutil.copy(os.path.join(build_dir, config, 'llvmlite.pdb'), target_dir)
 
 
 def main_posix_cmake(kind, library_ext):
