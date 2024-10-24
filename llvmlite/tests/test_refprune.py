@@ -163,7 +163,7 @@ class TestRefPrunePass(TestCase, PassManagerMixin):
         outmod = self.apply_refprune(irmod)
         self.check(outmod, expected, nodes)
 
-    # FIXME: Tests/Refprune pass needs fixing for llvm18
+    # FIXME: Tests/Refprune pass needs fixing from llvm18
     # Generate tests
     # for name, case in _iterate_cases(generate_test):
     #     locals()[name] = case

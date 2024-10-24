@@ -909,9 +909,7 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        # one of these can be valid
-        valid = (17, 18, 19)
-        self.assertIn(major, valid)
+        self.assertEqual(major, 19)
         self.assertIn(patch, range(8))
 
     def test_check_jit_execution(self):
@@ -2572,13 +2570,11 @@ class TestPipelineTuningOptions(BaseTest):
             pto.size_level = i
             self.assertEqual(pto.size_level, i)
 
-    # // FIXME: Available from llvm16
-    # def test_inlining_threshold(self):
-    #     pto = self.pto()
-    #     with self.assertRaises(NotImplementedError):
-    #         pto.inlining_threshold
-    #     for i in (25, 80, 350):
-    #         pto.inlining_threshold = i
+    def test_inlining_threshold(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.inlining_threshold, int)
+        for i in (25, 80, 350):
+            pto.inlining_threshold = i
 
     def test_loop_interleaving(self):
         pto = self.pto()

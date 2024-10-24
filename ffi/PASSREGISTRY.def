@@ -63,7 +63,7 @@ FUNCTION_PASS(TailCallElimPass)
 FUNCTION_PASS(InstructionNamerPass)
 #undef FUNCTION_PASS
 
-// TODO: Investigate do we need this macro as well
+// TODO: Add them if needed
 // FUNCTION_PASS_WITH_PARAMS(SimplifyCFGPass)
 // FUNCTION_PASS_WITH_PARAMS(LoopUnrollPass)
 
@@ -82,7 +82,7 @@ CGSCC_PASS(ArgumentPromotionPass)
 CGSCC_PASS(PostOrderFunctionAttrsPass)
 #undef CGSCC_PASS
 
-// TODO: To be added 
+// TODO: Add them if needed
 /**
 MODULE_PASS("attributor", AttributorPass())
 MODULE_PASS("annotation2metadata", Annotation2MetadataPass())

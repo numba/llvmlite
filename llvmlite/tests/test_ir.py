@@ -2635,7 +2635,6 @@ class TestConstant(TestBase):
 
         self.assertRaises(TypeError, one.inttoptr, int64)
         self.assertRaises(TypeError, pi.inttoptr, int64.as_pointer())
-        # FIXME: Remove `else' once TP are no longer supported.
         self.assertEqual(str(c), 'inttoptr (i32 1 to ptr)')
 
     def test_neg(self):

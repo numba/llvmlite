@@ -167,7 +167,7 @@ def main_posix(kind, library_ext):
     else:
         (version, _) = out.split('.', 1)
         version = int(version)
-        if version not in (17, 18, 19):
+        if version != 19:
             msg = ("Building llvmlite requires LLVM {0}, got "
                    "{!r}. Be sure to set LLVM_CONFIG to the right executable "
                    "path.\nRead the documentation at "
@@ -220,6 +220,8 @@ def main():
         main_posix('linux', '.so')
     elif sys.platform.startswith(('freebsd','openbsd')):
         main_posix('freebsd', '.so')
+    elif sys.platform.startswith('netbsd'):
+        main_posix('netbsd', '.so')
     elif sys.platform == 'darwin':
         main_posix('osx', '.dylib')
     else:

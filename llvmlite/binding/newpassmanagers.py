@@ -393,7 +393,7 @@ class ModulePassManager(ffi.ObjectRef, NewPassManager):
         ffi.lib.LLVMPY_module_AddCallGraphDOTPrinterPass(self)
 
     # TODO: There are a lot more printer passes in llvm that can be exposed
-    # FIXME: Find a way to write the output toa  buffer instead of stdout
+    # FIXME: Find a way to write the output to a buffer instead of stdout
     def add_module_debug_info_pass(self):
         ffi.lib.LLVMPY_module_AddModuleDebugInfoPrinterPass(self)
 
@@ -617,6 +617,105 @@ ffi.lib.LLVMPY_module_AddInstCombinePass.argtypes = [
 ffi.lib.LLVMPY_AddJumpThreadingPass_module.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
+ffi.lib.LLVMPY_module_AddCFGPrinterPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddCFGOnlyPrinterPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddDomPrinter.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddDomOnlyPrinter.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddPostDomPrinter.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddPostDomOnlyPrinter.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddDomViewer.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddDomOnlyViewer.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddPostDomViewer.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddPostDomOnlyViewer.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddLintPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddADCEPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddBreakCriticalEdgesPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddDSEPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddDCEPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddAggressiveInstCombinePass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddLCSSAPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddNewGVNPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddLoopSimplifyPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddSCCPPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddLowerAtomicPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddLowerInvokePass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddLowerSwitchPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddMemCpyOptPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddUnifyFunctionExitNodesPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddReassociatePass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddRegToMemPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+# ffi.lib.LLVMPY_module_AddSROAPass.argtypes = [
+#     ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddSinkingPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddTailCallElimPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddInstructionNamerPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddLoopDeletionPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_module_AddLoopStrengthReducePass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
 ffi.lib.LLVMPY_module_AddConstantMergePass.argtypes = [
     ffi.LLVMModulePassManagerRef, ]
 
@@ -676,6 +775,10 @@ ffi.lib.LLVMPY_module_AddPostOrderFunctionAttrsPass.argtypes = [
 
 ffi.lib.LLVMPY_DisposeNewModulePassManger.argtypes = [
     ffi.LLVMModulePassManagerRef,]
+
+ffi.lib.LLVMPY_AddRefPrunePass_module.argtypes = [
+    ffi.LLVMModulePassManagerRef, c_int, c_size_t,
+]
 
 # FunctionPassManager
 
@@ -782,7 +885,7 @@ ffi.lib.LLVMPY_function_AddReassociatePass.argtypes = [
 ffi.lib.LLVMPY_function_AddRegToMemPass.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]
 
-# FIXME
+# FIXME SROA is disabled
 # ffi.lib.LLVMPY_function_AddSROAPass.argtypes = [
 #     ffi.LLVMFunctionPassManagerRef, ]
 
@@ -806,6 +909,10 @@ ffi.lib.LLVMPY_function_AddLoopStrengthReducePass.argtypes = [
 
 ffi.lib.LLVMPY_DisposeNewFunctionPassManger.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]
+
+ffi.lib.LLVMPY_AddRefPrunePass_function.argtypes = [
+    ffi.LLVMFunctionPassManagerRef, c_int, c_size_t,
+]
 
 # PipelineTuningOptions
 
