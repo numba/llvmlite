@@ -412,11 +412,11 @@ riscv_asm_ilp32 = [
     'addi\tsp, sp, -16',
     'sw\ta1, 8(sp)',
     'sw\ta2, 12(sp)',
-    'fld\tft0, 8(sp)',
-    'fmv.w.x\tft1, a0',
-    'fcvt.d.s\tft1, ft1',
-    'fadd.d\tft0, ft1, ft0',
-    'fsd\tft0, 8(sp)',
+    'fld\tfa5, 8(sp)',
+    'fmv.w.x\tfa4, a0',
+    'fcvt.d.s\tfa4, fa4',
+    'fadd.d\tfa5, fa4, fa5',
+    'fsd\tfa5, 8(sp)',
     'lw\ta0, 8(sp)',
     'lw\ta1, 12(sp)',
     'addi\tsp, sp, 16',
@@ -428,10 +428,10 @@ riscv_asm_ilp32f = [
     'addi\tsp, sp, -16',
     'sw\ta0, 8(sp)',
     'sw\ta1, 12(sp)',
-    'fld\tft0, 8(sp)',
-    'fcvt.d.s\tft1, fa0',
-    'fadd.d\tft0, ft1, ft0',
-    'fsd\tft0, 8(sp)',
+    'fld\tfa5, 8(sp)',
+    'fcvt.d.s\tfa4, fa0',
+    'fadd.d\tfa5, fa4, fa5',
+    'fsd\tfa5, 8(sp)',
     'lw\ta0, 8(sp)',
     'lw\ta1, 12(sp)',
     'addi\tsp, sp, 16',
@@ -440,8 +440,8 @@ riscv_asm_ilp32f = [
 
 
 riscv_asm_ilp32d = [
-    'fcvt.d.s\tft0, fa0',
-    'fadd.d\tfa0, ft0, fa1',
+    'fcvt.d.s\tfa5, fa0',
+    'fadd.d\tfa0, fa5, fa1',
     'ret'
 ]
 
@@ -774,27 +774,26 @@ class TestRISCVABI(BaseTest):
                 asm_list.append(s_line)
         return asm_list
 
-    # FIXME: Assembly need to be updated for llvm17
-    # def test_rv32d_ilp32(self):
-    #     self.check_riscv_target()
-    #     llmod = self.fpadd_ll_module()
-    #     target = self.riscv_target_machine(features="+f,+d", abiname="ilp32")
-    #     self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
-    #                      riscv_asm_ilp32)
+    def test_rv32d_ilp32(self):
+        self.check_riscv_target()
+        llmod = self.fpadd_ll_module()
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32")
+        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
+                         riscv_asm_ilp32)
 
-    # def test_rv32d_ilp32f(self):
-    #     self.check_riscv_target()
-    #     llmod = self.fpadd_ll_module()
-    #     target = self.riscv_target_machine(features="+f,+d", abiname="ilp32f")
-    #     self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
-    #                      riscv_asm_ilp32f)
+    def test_rv32d_ilp32f(self):
+        self.check_riscv_target()
+        llmod = self.fpadd_ll_module()
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32f")
+        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
+                         riscv_asm_ilp32f)
 
-    # def test_rv32d_ilp32d(self):
-    #     self.check_riscv_target()
-    #     llmod = self.fpadd_ll_module()
-    #     target = self.riscv_target_machine(features="+f,+d", abiname="ilp32d")
-    #     self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
-    #                      riscv_asm_ilp32d)
+    def test_rv32d_ilp32d(self):
+        self.check_riscv_target()
+        llmod = self.fpadd_ll_module()
+        target = self.riscv_target_machine(features="+f,+d", abiname="ilp32d")
+        self.assertEqual(self.break_up_asm(target.emit_assembly(llmod)),
+                         riscv_asm_ilp32d)
 
 
 class TestMisc(BaseTest):
