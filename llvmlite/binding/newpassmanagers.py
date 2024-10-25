@@ -24,6 +24,7 @@ def create_pipeline_tuning_options(speed_level=2, size_level=0):
 _prunestats = namedtuple('PruneStats',
                          ('basicblock diamond fanout fanout_raise'))
 
+
 class PruneStats(_prunestats):
     """ Holds statistics from reference count pruning.
     """

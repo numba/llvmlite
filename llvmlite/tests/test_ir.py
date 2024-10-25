@@ -121,7 +121,7 @@ class TestBase(TestCase):
 class TestFunction(TestBase):
 
     proto = \
-        """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", ptr %".4")""" 
+        """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", ptr %".4")"""
 
     def test_declare(self):
         # A simple declaration
@@ -140,11 +140,10 @@ class TestFunction(TestBase):
         pers = ir.Function(self.module(), tp_pers, '__gxx_personality_v0')
         func.attributes.personality = pers
         asm = self.descr(func).strip()
-        self.assertEqual(asm,
-                            ("declare %s alwaysinline convergent optsize "
-                            "alignstack(16) "
-                            "personality ptr @\"__gxx_personality_v0\"") %
-                            self.proto)
+        self.assertEqual(asm, ("declare %s alwaysinline convergent optsize "
+                               "alignstack(16) "
+                               "personality ptr @\"__gxx_personality_v0\""
+                               ) % self.proto)
         # Check pickling
         self.assert_pickle_correctly(func)
 
@@ -158,9 +157,8 @@ class TestFunction(TestBase):
         func.args[3].add_attribute("nonnull")
         func.return_value.add_attribute("noalias")
         asm = self.descr(func).strip()
-        self.assertEqual(asm,
-                            """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", ptr nonnull align 4 %".4")"""  # noqa E501
-                            )
+        self.assertEqual(asm, """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", ptr nonnull align 4 %".4")""")  # noqa E501
+
         # Check pickling
         self.assert_pickle_correctly(func)
 
@@ -595,7 +593,7 @@ class TestGlobalValues(TestBase):
             mod.get_global('kkk')
         # Globals should have a useful repr()
         self.assertEqual(repr(globdouble),
-                            "<ir.GlobalVariable 'globdouble' of type 'ptr'>")
+                         "<ir.GlobalVariable 'globdouble' of type 'ptr'>")
 
     def test_functions_global_values_access(self):
         """
@@ -1001,7 +999,7 @@ my_block:
         with self.assertRaises(TypeError) as cm:
             builder.store(b, e)
         self.assertEqual(str(cm.exception),
-                            "cannot store i32 to ptr: mismatching types")
+                         "cannot store i32 to ptr: mismatching types")
         self.check_block(block, """\
             my_block:
                 %"c" = alloca i32
@@ -1015,7 +1013,6 @@ my_block:
                 store atomic i32 %".2", ptr %"c" seq_cst, align 4
                 %"k" = load atomic i32, ptr %"c" seq_cst, align 4
             """)
-
 
     def test_gep(self):
         block = self.block(name='my_block')
@@ -1047,7 +1044,6 @@ my_block:
                 %"d" = bitcast i32 %".1" to ptr
                 %"e" = getelementptr {i64, ptr, ptr, ptr, i64}, ptr %"d", i32 0, i32 3
             """)  # noqa E501
-
 
     def test_gep_castinstr_addrspace(self):
         # similar to:
@@ -1364,7 +1360,7 @@ my_block:
                 %"a" = alloca i32
                 call void @"llvm.dbg.declare"(metadata ptr %"a", metadata !0, metadata !0)
             """)  # noqa E501
-        
+
     def test_call_attributes(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -1388,7 +1384,7 @@ my_block:
             %"other" = alloca i32
             call void @"fun"\\(ptr noalias sret(\\(i32\\))? %"retval", i32 42, ptr noalias %"other"\\)
         """)  # noqa E501
-        
+
     def test_call_tail(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -2245,7 +2241,7 @@ class TestTypes(TestBase):
         self.assertEqual(str(ir.PointerType(ir.PointerType(int32))), 'ptr')
         self.assertEqual(str(ir.ArrayType(int1, 5)), '[5 x i1]')
         self.assertEqual(str(ir.ArrayType(ir.PointerType(int1), 5)),
-                            '[5 x ptr]')
+                         '[5 x ptr]')
         self.assertEqual(str(ir.PointerType(ir.ArrayType(int1, 5))), 'ptr')
 
         self.assertEqual(str(ir.LiteralStructType((int1,))), '{i1}')
@@ -2555,7 +2551,7 @@ class TestConstant(TestBase):
         self.assertEqual(c.type.addrspace, addrspace)
         self.assertEqual(str(c),
                             ('getelementptr ({float, i1}, ptr '
-                            'addrspace(4) @"myconstant", i32 0, i32 1)'))
+                             'addrspace(4) @"myconstant", i32 0, i32 1)'))
         self.assertEqual(c.type, ir.PointerType(int1, addrspace=addrspace))
 
     def test_trunc(self):
