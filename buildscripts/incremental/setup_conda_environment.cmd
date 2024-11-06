@@ -3,9 +3,6 @@
 @rem Display root environment (for debugging)
 call conda list
 
-@rem Clean up any left-over from a previous build
-call conda remove --all -q -y -n %CONDA_ENV%
-
 @rem Create and populate environment
 call conda create -n %CONDA_ENV% -q -y python=%PYTHON% cmake
 if %errorlevel% neq 0 exit /b %errorlevel%
