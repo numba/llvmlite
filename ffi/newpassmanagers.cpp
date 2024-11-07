@@ -519,6 +519,11 @@ LLVMPY_module_AddModuleDebugInfoPrinterPass(LLVMModulePassManagerRef MPM) {
     llvm::unwrap(MPM)->addPass(ModuleDebugInfoPrinterPass(llvm::outs()));
 }
 
+API_EXPORT(void)
+LLVMPY_module_AddVerifierPass(LLVMModulePassManagerRef MPM) {
+    llvm::unwrap(MPM)->addPass(VerifierPass());
+}
+
 #define CGSCC_PASS(NAME)                                                       \
     void LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {               \
         llvm::unwrap(MPM)->addPass(                                            \
