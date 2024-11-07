@@ -5,6 +5,11 @@ Highlights of this release are:
 
 - Official support for Python 3.13.
 - Dropped official support for Python 3.9, the minimum supported Python version is 3.10.
+- LLVM 15 is now the default LLVM.
+- Added support for a new PassManager.
+- Support for LLVM based process triple partitioning.
+- `llvmlite.binding.TypeRef` now roundtrips back into `llvmlite.ir.Type`.
+- API has been updated to acomodate packed Literal Structs.
 - Usage of RTD for building docs. 
 - Added NetBSD support.
 - Support for opaque pointers.
