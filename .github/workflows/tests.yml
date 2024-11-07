@@ -86,7 +86,7 @@ jobs:
 
   macos:
     name: macOS • Py${{ matrix.config.python }}${{ matrix.config.llvm && ' llvm' || '' }}${{ matrix.config.opaque_pointers && ' opaque' || '' }}
-    runs-on: macos-12
+    runs-on: macos-13
     strategy:
       matrix:
         config:
@@ -104,6 +104,7 @@ jobs:
       OPAQUE_POINTERS: ${{ matrix.config.opaque_pointers }}
       RUN_FLAKE8: ${{ matrix.config.flake8 }}
       RUN_CLANG_FORMAT: ${{ matrix.config.clang_format }}
+      MACOSX_DEPLOYMENT_TARGET: '11.0'  # Updated for modern macOS support
 
     steps:
     - uses: actions/checkout@v4
