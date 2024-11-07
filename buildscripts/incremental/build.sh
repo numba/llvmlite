@@ -26,10 +26,16 @@ if [[ $(uname) == Darwin ]]; then
   export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
   CONDA_PREFIX=${SRC_DIR}/bootstrap \
     . ${SRC_DIR}/bootstrap/etc/conda/activate.d/*
-  SDKPATH=$(xcrun --show-sdk-path)
+  
+  # Use explicit SDK path if set, otherwise detect
+  if [ -z "$SDKROOT" ]; then
+    SDKPATH=$(xcrun --show-sdk-path)
+  else
+    SDKPATH=$SDKROOT
+  fi
   export CONDA_BUILD_SYSROOT=${CONDA_BUILD_SYSROOT:-${SDKPATH}}
   
-  # Set minimum deployment target
+  # Set minimum deployment target if not already set
   if [ -z "$MACOSX_DEPLOYMENT_TARGET" ]; then
     export MACOSX_DEPLOYMENT_TARGET=11.0
   fi
@@ -40,17 +46,19 @@ if [[ $(uname) == Darwin ]]; then
   CFLAG_SYSROOT="--sysroot ${SYSROOT_DIR}"
   ${LLVM_CONFIG} --version
   export SDKROOT=${SDKPATH}
+
+  # Set Darwin target based on architecture
+  if [[ "$ARCH" == "arm64" ]]; then
+    DARWIN_TARGET=arm64-apple-darwin20.0.0
+  else
+    DARWIN_TARGET=x86_64-apple-darwin13.4.0
+  fi
 fi
 
+# Remove old deployment target override since we're using the one from env
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    # OSX needs 10.7 or above with libc++ enabled
-    export MACOSX_DEPLOYMENT_TARGET=10.9
+    export MACOSX_DEPLOYMENT_TARGET  # Keep existing value
 fi
-
-if [[ ${MACOSX_DEPLOYMENT_TARGET} == 10.9 ]]; then
-  DARWIN_TARGET=x86_64-apple-darwin13.4.0
-fi
-
 
 # Make sure any error below is reported as such
 set -v -e
