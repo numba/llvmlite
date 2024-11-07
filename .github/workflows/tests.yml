@@ -86,7 +86,7 @@ jobs:
 
   macos:
     name: macOS • Py${{ matrix.config.python }}${{ matrix.config.llvm && ' llvm' || '' }}${{ matrix.config.opaque_pointers && ' opaque' || '' }}
-    runs-on: macos-13
+    runs-on: macos-13-arm64
     strategy:
       matrix:
         config:
