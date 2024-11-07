@@ -34,10 +34,10 @@ jobs:
       RUN_CLANG_FORMAT: ${{ matrix.config.clang_format }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Cache Miniconda
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache-miniconda
       with:
         path: ~/miniconda3
@@ -52,7 +52,7 @@ jobs:
       run: echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
 
     - name: Cache Conda Environment
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache-conda-env
       with:
         path: |
@@ -106,10 +106,10 @@ jobs:
       RUN_CLANG_FORMAT: ${{ matrix.config.clang_format }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Cache Miniconda
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache-miniconda
       with:
         path: ~/miniconda3
@@ -124,7 +124,7 @@ jobs:
       run: echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
 
     - name: Cache Conda Environment
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache-conda-env
       with:
         path: |
@@ -176,10 +176,10 @@ jobs:
       OPAQUE_POINTERS: ${{ matrix.config.opaque_pointers }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Cache Miniconda
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache-miniconda
       with:
         path: C:\Miniconda3
@@ -194,7 +194,7 @@ jobs:
         Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
 
     - name: Cache Conda Environment
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: cache-conda-env
       with:
         path: |
