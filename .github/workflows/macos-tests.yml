@@ -1,0 +1,44 @@
+name: macOS Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: macos-12
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        include:
+          - python-version: '3.12'
+            llvm: '16'
+            name: 'llvm16'
+          - python-version: '3.12' 
+            opaque_pointers: 'yes'
+            name: 'opaque_pointers'
+
+    env:
+      CONDA_ENV: cienv
+      PYTHON: ${{ matrix.python-version }}
+      LLVM: ${{ matrix.llvm }}
+      OPAQUE_POINTERS: ${{ matrix.opaque_pointers }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Miniconda
+      run: |
+        bash buildscripts/incremental/install_miniconda.sh
+        echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+
+    - name: Setup Conda Environment  
+      run: bash buildscripts/incremental/setup_conda_environment.sh
+
+    - name: Build
+      run: bash buildscripts/incremental/build.sh
+
+    - name: Run Tests
+      run: bash buildscripts/incremental/test.sh 
