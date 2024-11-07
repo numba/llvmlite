@@ -1,3 +1,50 @@
+v0.44.0 (Nov 8, 2024)
+---------------------
+
+Highlights of this release are:
+
+- Official support for Python 3.13.
+- Dropped official support for Python 3.9, the minimum supported Python version is 3.10.
+- Usage of RTD for building docs. 
+- Added NetBSD support.
+- Support for opaque pointers.
+
+Pull-Requests:
+
+* PR `#1036 <https://github.com/numba/llvmlite/pull/1036>`_: LLVM 15 conda recipe (`sklam <https://github.com/sklam>`_ `gmarkall <https://github.com/gmarkall>`_)
+* PR `#1046 <https://github.com/numba/llvmlite/pull/1046>`_: Add basic infra required to move Numba to NewPassManager (`yashssh <https://github.com/yashssh>`_ `gmarkall <https://github.com/gmarkall>`_)
+* PR `#1050 <https://github.com/numba/llvmlite/pull/1050>`_: Add conda-forge pre-tag testing to release checklist (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1051 <https://github.com/numba/llvmlite/pull/1051>`_: Roundtrip llvmlite.binding.TypeRef back into llvmlite.ir.Type (`sklam <https://github.com/sklam>`_)
+* PR `#1053 <https://github.com/numba/llvmlite/pull/1053>`_: Use RTD for all docs CI / testing (was: Try and get CI to use a newer Sphinx) (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1057 <https://github.com/numba/llvmlite/pull/1057>`_: Port refprune pass to NewPassManager (`yashssh <https://github.com/yashssh>`_)
+* PR `#1060 <https://github.com/numba/llvmlite/pull/1060>`_: port changelog for 0.43.0 to main (`esc <https://github.com/esc>`_)
+* PR `#1063 <https://github.com/numba/llvmlite/pull/1063>`_: Added llvm based process triple partitioning (`kc611 <https://github.com/kc611>`_)
+* PR `#1064 <https://github.com/numba/llvmlite/pull/1064>`_: Add support for opaque pointers (`gmarkall <https://github.com/gmarkall>`_ `rj-jesus <https://github.com/rj-jesus>`_)
+* PR `#1066 <https://github.com/numba/llvmlite/pull/1066>`_: Move Azure to use macos-12 (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1067 <https://github.com/numba/llvmlite/pull/1067>`_: Use LLVM 15 by default, add experimental LLVM 16 support (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1068 <https://github.com/numba/llvmlite/pull/1068>`_: Early exit from fpm.run() if called on function declarations (`yashssh <https://github.com/yashssh>`_)
+* PR `#1069 <https://github.com/numba/llvmlite/pull/1069>`_: Add instrumentation callback hook for new pass managers (`yashssh <https://github.com/yashssh>`_)
+* PR `#1073 <https://github.com/numba/llvmlite/pull/1073>`_: bump compiler for linux-aarch64 to 11 (`esc <https://github.com/esc>`_)
+* PR `#1077 <https://github.com/numba/llvmlite/pull/1077>`_: Add NetBSD support. (`0-wiz-0 <https://github.com/0-wiz-0>`_)
+* PR `#1080 <https://github.com/numba/llvmlite/pull/1080>`_: Added Python 3.13 to CI and Descriptions (`kc611 <https://github.com/kc611>`_)
+* PR `#1081 <https://github.com/numba/llvmlite/pull/1081>`_: Add convenience func and args (`thomaspinckney3 <https://github.com/thomaspinckney3>`_)
+* PR `#1085 <https://github.com/numba/llvmlite/pull/1085>`_: Fix RTD build, no need for get_html_theme_path(). (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#1087 <https://github.com/numba/llvmlite/pull/1087>`_: Add missing argtypes description for refprune pass related APIs (`yashssh <https://github.com/yashssh>`_)
+* PR `#1090 <https://github.com/numba/llvmlite/pull/1090>`_: Add MSVC `-GL` workaround (`sklam <https://github.com/sklam>`_)
+* PR `#1094 <https://github.com/numba/llvmlite/pull/1094>`_: Fix CI by not removing nonexistent environment (`gmarkall <https://github.com/gmarkall>`_)
+
+Authors:
+
+* `0-wiz-0 <https://github.com/0-wiz-0>`_
+* `esc <https://github.com/esc>`_
+* `gmarkall <https://github.com/gmarkall>`_
+* `kc611 <https://github.com/kc611>`_
+* `rj-jesus <https://github.com/rj-jesus>`_
+* `sklam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+* `thomaspinckney3 <https://github.com/thomaspinckney3>`_
+* `yashssh <https://github.com/yashssh>`_
+
 v0.43.0 (June 13, 2024)
 -----------------------
 
