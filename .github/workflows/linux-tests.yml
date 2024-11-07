@@ -1,4 +1,4 @@
-name: macOS Tests
+name: Linux Tests
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: macos-12
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         config:
@@ -16,6 +16,10 @@ jobs:
           - {python: '3.11', flake8: true, clang_format: true}
           - {python: '3.12', flake8: true, clang_format: true}
           - {python: '3.13', flake8: true, clang_format: true}
+          - {python: '3.10', wheel: true}
+          - {python: '3.11', wheel: true}
+          - {python: '3.12', wheel: true}
+          - {python: '3.13', wheel: true}
           - {python: '3.12', llvm: '16'}
           - {python: '3.12', opaque_pointers: 'yes'}
 
@@ -24,6 +28,7 @@ jobs:
       PYTHON: ${{ matrix.config.python }}
       LLVM: ${{ matrix.config.llvm }}
       OPAQUE_POINTERS: ${{ matrix.config.opaque_pointers }}
+      WHEEL: ${{ matrix.config.wheel }}
       RUN_FLAKE8: ${{ matrix.config.flake8 }}
       RUN_CLANG_FORMAT: ${{ matrix.config.clang_format }}
 
@@ -35,7 +40,7 @@ jobs:
         bash buildscripts/incremental/install_miniconda.sh
         echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
 
-    - name: Setup Conda Environment  
+    - name: Setup Conda Environment
       run: bash buildscripts/incremental/setup_conda_environment.sh
 
     - name: Build
@@ -56,4 +61,4 @@ jobs:
       run: |
         export PATH=$HOME/miniconda3/bin:$PATH
         conda install -c conda-forge -y clang-format-13
-        clang-format-13 -n -Werror ffi/*.cpp ffi/*.h
+        clang-format-13 -n -Werror ffi/*.cpp ffi/*.h 

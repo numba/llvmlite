@@ -1,0 +1,54 @@
+name: Windows Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        config:
+          - {python: '3.10'}
+          - {python: '3.11'}
+          - {python: '3.12'}
+          - {python: '3.13'}
+          - {python: '3.12', llvm: '16'}
+          - {python: '3.12', opaque_pointers: 'yes'}
+
+    env:
+      CONDA_ENV: cienv
+      PYTHON: ${{ matrix.config.python }}
+      LLVM: ${{ matrix.config.llvm }}
+      OPAQUE_POINTERS: ${{ matrix.config.opaque_pointers }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Miniconda
+      shell: pwsh
+      run: |
+        $wc = New-Object net.webclient
+        $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
+        Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
+
+    - name: Setup Conda Environment
+      shell: cmd
+      run: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call buildscripts\incremental\setup_conda_environment.cmd
+
+    - name: Build
+      shell: cmd
+      run: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call buildscripts\incremental\build.cmd
+
+    - name: Run Tests
+      shell: cmd
+      run: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call buildscripts\incremental\test.cmd 
