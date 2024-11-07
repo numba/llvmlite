@@ -1,0 +1,222 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  linux:
+    name: Linux • Py${{ matrix.config.python }}${{ matrix.config.wheel && ' wheel' || '' }}${{ matrix.config.llvm && ' llvm' || '' }}${{ matrix.config.opaque_pointers && ' opaque' || '' }}
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        config:
+          - {python: '3.10', flake8: true}
+          - {python: '3.11', flake8: true, clang_format: true}
+          - {python: '3.12', flake8: true, clang_format: true}
+          - {python: '3.13', flake8: true, clang_format: true}
+          - {python: '3.10', wheel: true}
+          - {python: '3.11', wheel: true}
+          - {python: '3.12', wheel: true}
+          - {python: '3.13', wheel: true}
+          - {python: '3.12', llvm: '16'}
+          - {python: '3.12', opaque_pointers: 'yes'}
+
+    env:
+      CONDA_ENV: cienv
+      PYTHON: ${{ matrix.config.python }}
+      LLVM: ${{ matrix.config.llvm }}
+      OPAQUE_POINTERS: ${{ matrix.config.opaque_pointers }}
+      WHEEL: ${{ matrix.config.wheel }}
+      RUN_FLAKE8: ${{ matrix.config.flake8 }}
+      RUN_CLANG_FORMAT: ${{ matrix.config.clang_format }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Cache Miniconda
+      uses: actions/cache@v3
+      id: cache-miniconda
+      with:
+        path: ~/miniconda3
+        key: ${{ runner.os }}-miniconda-${{ hashFiles('buildscripts/incremental/install_miniconda.sh') }}
+
+    - name: Install Miniconda
+      if: steps.cache-miniconda.outputs.cache-hit != 'true'
+      run: |
+        bash buildscripts/incremental/install_miniconda.sh
+    
+    - name: Add Conda to PATH
+      run: echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+
+    - name: Cache Conda Environment
+      uses: actions/cache@v3
+      id: cache-conda-env
+      with:
+        path: |
+          ~/miniconda3/pkgs
+          ~/miniconda3/envs/${{ env.CONDA_ENV }}
+        key: ${{ runner.os }}-conda-${{ matrix.config.python }}-${{ hashFiles('buildscripts/incremental/setup_conda_environment.sh') }}
+
+    - name: Setup Conda Environment
+      if: steps.cache-conda-env.outputs.cache-hit != 'true'
+      run: bash buildscripts/incremental/setup_conda_environment.sh
+
+    - name: Build
+      run: bash buildscripts/incremental/build.sh
+
+    - name: Run Flake8
+      if: matrix.config.flake8
+      run: |
+        export PATH=$HOME/miniconda3/bin:$PATH
+        conda install -y flake8
+        flake8 llvmlite
+
+    - name: Run Tests
+      run: bash buildscripts/incremental/test.sh
+
+    - name: Check C++ formatting
+      if: matrix.config.clang_format
+      run: |
+        export PATH=$HOME/miniconda3/bin:$PATH
+        conda install -c conda-forge -y clang-format-13
+        clang-format-13 -n -Werror ffi/*.cpp ffi/*.h
+
+  macos:
+    name: macOS • Py${{ matrix.config.python }}${{ matrix.config.llvm && ' llvm' || '' }}${{ matrix.config.opaque_pointers && ' opaque' || '' }}
+    runs-on: macos-12
+    strategy:
+      matrix:
+        config:
+          - {python: '3.10', flake8: true}
+          - {python: '3.11', flake8: true, clang_format: true}
+          - {python: '3.12', flake8: true, clang_format: true}
+          - {python: '3.13', flake8: true, clang_format: true}
+          - {python: '3.12', llvm: '16'}
+          - {python: '3.12', opaque_pointers: 'yes'}
+
+    env:
+      CONDA_ENV: cienv
+      PYTHON: ${{ matrix.config.python }}
+      LLVM: ${{ matrix.config.llvm }}
+      OPAQUE_POINTERS: ${{ matrix.config.opaque_pointers }}
+      RUN_FLAKE8: ${{ matrix.config.flake8 }}
+      RUN_CLANG_FORMAT: ${{ matrix.config.clang_format }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Cache Miniconda
+      uses: actions/cache@v3
+      id: cache-miniconda
+      with:
+        path: ~/miniconda3
+        key: ${{ runner.os }}-miniconda-${{ hashFiles('buildscripts/incremental/install_miniconda.sh') }}
+
+    - name: Install Miniconda
+      if: steps.cache-miniconda.outputs.cache-hit != 'true'
+      run: |
+        bash buildscripts/incremental/install_miniconda.sh
+    
+    - name: Add Conda to PATH
+      run: echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+
+    - name: Cache Conda Environment
+      uses: actions/cache@v3
+      id: cache-conda-env
+      with:
+        path: |
+          ~/miniconda3/pkgs
+          ~/miniconda3/envs/${{ env.CONDA_ENV }}
+        key: ${{ runner.os }}-conda-${{ matrix.config.python }}-${{ hashFiles('buildscripts/incremental/setup_conda_environment.sh') }}
+
+    - name: Setup Conda Environment
+      if: steps.cache-conda-env.outputs.cache-hit != 'true'
+      run: bash buildscripts/incremental/setup_conda_environment.sh
+
+    - name: Build
+      run: bash buildscripts/incremental/build.sh
+
+    - name: Run Flake8
+      if: matrix.config.flake8
+      run: |
+        export PATH=$HOME/miniconda3/bin:$PATH
+        conda install -y flake8
+        flake8 llvmlite
+
+    - name: Run Tests
+      run: bash buildscripts/incremental/test.sh
+
+    - name: Check C++ formatting
+      if: matrix.config.clang_format
+      run: |
+        export PATH=$HOME/miniconda3/bin:$PATH
+        conda install -c conda-forge -y clang-format-13
+        clang-format-13 -n -Werror ffi/*.cpp ffi/*.h
+
+  windows:
+    name: Windows • Py${{ matrix.config.python }}${{ matrix.config.llvm && ' llvm' || '' }}${{ matrix.config.opaque_pointers && ' opaque' || '' }}
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        config:
+          - {python: '3.10'}
+          - {python: '3.11'}
+          - {python: '3.12'}
+          - {python: '3.13'}
+          - {python: '3.12', llvm: '16'}
+          - {python: '3.12', opaque_pointers: 'yes'}
+
+    env:
+      CONDA_ENV: cienv
+      PYTHON: ${{ matrix.config.python }}
+      LLVM: ${{ matrix.config.llvm }}
+      OPAQUE_POINTERS: ${{ matrix.config.opaque_pointers }}
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Cache Miniconda
+      uses: actions/cache@v3
+      id: cache-miniconda
+      with:
+        path: C:\Miniconda3
+        key: ${{ runner.os }}-miniconda-${{ hashFiles('buildscripts/incremental/install_miniconda.sh') }}
+
+    - name: Install Miniconda
+      if: steps.cache-miniconda.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        $wc = New-Object net.webclient
+        $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
+        Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
+
+    - name: Cache Conda Environment
+      uses: actions/cache@v3
+      id: cache-conda-env
+      with:
+        path: |
+          C:\Miniconda3\pkgs
+          C:\Miniconda3\envs\${{ env.CONDA_ENV }}
+        key: ${{ runner.os }}-conda-${{ matrix.config.python }}-${{ hashFiles('buildscripts/incremental/setup_conda_environment.cmd') }}
+
+    - name: Setup Conda Environment
+      if: steps.cache-conda-env.outputs.cache-hit != 'true'
+      shell: cmd
+      run: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call buildscripts\incremental\setup_conda_environment.cmd
+
+    - name: Build
+      shell: cmd
+      run: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call buildscripts\incremental\build.cmd
+
+    - name: Run Tests
+      shell: cmd
+      run: |
+        call C:\Miniconda3\Scripts\activate.bat
+        call buildscripts\incremental\test.cmd 
