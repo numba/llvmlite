@@ -1069,6 +1069,26 @@ my_block:
                     %"k" = load atomic i32, i32* %"c" seq_cst, align 4
                 """)
 
+    def test_store(self):
+        block = self.block(name='my_block')
+        builder = ir.IRBuilder(block)
+        if opaque_pointers_enabled:
+            ptr = ir.Constant(ir.PointerType(), None)
+        else:
+            ptr = ir.Constant(ir.PointerType(int32), None)
+        builder.store(ir.Constant(int32, 5), ptr)
+        # FIXME: Remove `else' once TP are no longer supported.
+        if opaque_pointers_enabled:
+            self.check_block(block, """\
+                my_block:
+                    store i32 5, ptr null
+                """)
+        else:
+            self.check_block(block, """\
+                my_block:
+                    store i32 5, i32* null
+                """)
+
     def test_gep(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)

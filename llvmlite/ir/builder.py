@@ -774,7 +774,7 @@ class IRBuilder(object):
         if not isinstance(ptr.type, types.PointerType):
             msg = "cannot store to value of type %s (%r): not a pointer"
             raise TypeError(msg % (ptr.type, str(ptr)))
-        if ptr.type.pointee != value.type:
+        if not ptr.type.is_opaque and ptr.type.pointee != value.type:
             raise TypeError("cannot store %s to %s: mismatching types"
                             % (value.type, ptr.type))
         st = instructions.StoreInstr(self.block, value, ptr)
