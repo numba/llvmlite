@@ -4,35 +4,31 @@ jobs:
   parameters:
     name: macOS
     vmImage: macos-13
+    variables:
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
     matrix:
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
-        MACOSX_DEPLOYMENT_TARGET: '11.0'
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
-        MACOSX_DEPLOYMENT_TARGET: '11.0'
       py312:
         PYTHON: '3.12'
         CONDA_ENV: cienv
-        MACOSX_DEPLOYMENT_TARGET: '11.0'
       py313:
         PYTHON: '3.13'
         CONDA_ENV: cienv
-        MACOSX_DEPLOYMENT_TARGET: '11.0'
 
       llvm16:
         PYTHON: '3.12'
         CONDA_ENV: cienv
         LLVM: '16'
-        MACOSX_DEPLOYMENT_TARGET: '11.0'
 
       opaque_pointers:
         PYTHON: '3.12'
         CONDA_ENV: cienv
         OPAQUE_POINTERS: yes
-        MACOSX_DEPLOYMENT_TARGET: '11.0'
 
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
