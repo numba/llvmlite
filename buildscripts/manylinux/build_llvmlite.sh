@@ -20,7 +20,7 @@ conda create -y -n $envname
 conda activate $envname
 # Install llvmdev
 
-if [[ $MANYLINUX_IMAGE == "manylinux_2_28_aarch64" ]] ; then
+if [[ $(uname -m) == "aarch64" ]] ; then
     conda install -y numba/label/manylinux_2_28::llvmdev --no-deps
 else
     conda install -y numba/label/manylinux_2_17::llvmdev --no-deps
