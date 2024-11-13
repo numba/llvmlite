@@ -17,13 +17,13 @@ outputdir="/root/llvmlite/docker_output"
 ls -l /opt/python/$pyver/bin
 
 conda create -y -n $envname 
-source activate $envname
+conda activate $envname
 # Install llvmdev
 
-if [[ $ARCH == "aarch64" ]] ; then
-    conda install -y numba/label/manylinux_2_28::llvmdev 
+if [[ $MANYLINUX_IMAGE == "manylinux_2_28_aarch64" ]] ; then
+    conda install -y numba/label/manylinux_2_28::llvmdev --no-deps
 else
-    conda install -y numba/label/manylinux_2_17::llvmdev
+    conda install -y numba/label/manylinux_2_17::llvmdev --no-deps
 fi
 
 # Prepend builtin Python Path
@@ -31,8 +31,10 @@ export PATH=/opt/python/$pyver/bin:$PATH
 
 echo "Using python: $(which python)"
 
+# Python 3.12+ won't have setuptools pre-installed
+pip install setuptools
+
 # Clean up
-git clean -xdf llvmlite build
 python setup.py clean
 
 # Build wheel

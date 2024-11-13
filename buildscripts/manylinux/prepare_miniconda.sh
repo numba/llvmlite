@@ -7,5 +7,3 @@ echo "Miniconda installed"
 source $HOME/miniconda3/bin/activate base
 echo "Env activated"
 cd /root/llvmlite/buildscripts/manylinux
-conda create -n buildenv -y conda conda-build
-

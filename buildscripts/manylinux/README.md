@@ -5,7 +5,7 @@
 
 Run the script below to start docker off building `llvmdev` base from the current state of the source tree:
 
-- 64-bit linux: `./buildscripts/manylinux/docker_run_x64.sh build_llvmdev.sh`
+- x86_64 linux: `./buildscripts/manylinux/docker_run_x64.sh build_llvmdev.sh`
     - uses manylinux2014 image for glibc 2.17+
 - aarch64 linux: `./buildscripts/manylinux/docker_run_aarch64.sh build_llvmdev.sh`
     - uses manylinux_2_28 image for glibc 2.28+
@@ -23,8 +23,8 @@ Finally, upload the conda package to the numba channel under the "manylinux_x_y"
 
 Run the script below to start docker off building `llvmlite` base from the current state of the source tree:
 
-- 32-bit linux: `./buildscripts/manylinux/docker_run_x32.sh build_llvmlite.sh <pyver>`
-- 64-bit linux: `./buildscripts/manylinux/docker_run_x64.sh build_llvmlite.sh <pyver>`
+- x86_64 linux: `./buildscripts/manylinux/docker_run_x64.sh build_llvmlite.sh <pyver>`
+- aarch64 linux: `./buildscripts/manylinux/docker_run_aarch64.sh build_llvmlite.sh <pyver>`
 
 The conda packages will be stored into `<llvmlite_source_root>/docker_output/dist_<arch>_<pyver>`
 
