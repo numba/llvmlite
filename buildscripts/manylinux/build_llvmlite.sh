@@ -21,9 +21,9 @@ source activate $envname
 # Install llvmdev
 
 if [[ $ARCH == "aarch64" ]] ; then
-    conda install -y numba/label/manylinux2014::llvmdev --no-deps
+    conda install -y numba/label/manylinux_2_28::llvmdev 
 else
-    conda install -y -c numba/label/manylinux2014 llvmdev
+    conda install -y numba/label/manylinux_2_17::llvmdev
 fi
 
 # Prepend builtin Python Path
