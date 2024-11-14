@@ -1,10 +1,13 @@
 #!/bin/bash
+# $1 is the miniconda download link
+if [ -z "$1" ]; then
+    echo "Error: Miniconda download link argument is required"
+    exit 1
+fi
 set -xe
 cd $(dirname $0)
 source ./prepare_miniconda.sh $1
-# make conda-build env t
 conda create -n buildenv -y conda conda-build
 conda activate buildenv
 conda list
-echo "BUILD_CHANNELS:  $BUILD_CHANNELS"
-conda-build $BUILD_CHANNELS /root/llvmlite/conda-recipes/llvmdev_manylinux --output-folder=/root/llvmlite/docker_output
+conda-build /root/llvmlite/conda-recipes/llvmdev_manylinux --output-folder=/root/llvmlite/docker_output

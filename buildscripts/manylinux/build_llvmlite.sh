@@ -22,8 +22,11 @@ conda activate $envname
 
 if [[ $(uname -m) == "aarch64" ]] ; then
     conda install -y numba/label/manylinux_2_28::llvmdev --no-deps
-else
+elif [[ $(uname -m) == "x86_64" ]] ; then
     conda install -y numba/label/manylinux_2_17::llvmdev --no-deps
+else
+    echo "Error: Unsupported architecture: $(uname -m)"
+    exit 1
 fi
 
 # Prepend builtin Python Path

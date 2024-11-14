@@ -1,4 +1,7 @@
 #!/bin/bash
+# File is a copy of ../llvmdev/build.sh with changes to:
+# - disable ZSTD
+
 
 # based on https://github.com/AnacondaRecipes/llvmdev-feedstock/blob/master/recipe/build.sh
 
