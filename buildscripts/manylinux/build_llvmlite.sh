@@ -17,13 +17,16 @@ outputdir="/root/llvmlite/docker_output"
 ls -l /opt/python/$pyver/bin
 
 conda create -y -n $envname 
-source activate $envname
+conda activate $envname
 # Install llvmdev
 
-if [[ $ARCH == "aarch64" ]] ; then
-    conda install -y numba/label/manylinux2014::llvmdev --no-deps
+if [[ $(uname -m) == "aarch64" ]] ; then
+    conda install -y numba/label/manylinux_2_28::llvmdev --no-deps
+elif [[ $(uname -m) == "x86_64" ]] ; then
+    conda install -y numba/label/manylinux_2_17::llvmdev --no-deps
 else
-    conda install -y -c numba/label/manylinux2014 llvmdev
+    echo "Error: Unsupported architecture: $(uname -m)"
+    exit 1
 fi
 
 # Prepend builtin Python Path
@@ -31,8 +34,10 @@ export PATH=/opt/python/$pyver/bin:$PATH
 
 echo "Using python: $(which python)"
 
+# Python 3.12+ won't have setuptools pre-installed
+pip install setuptools
+
 # Clean up
-git clean -xdf llvmlite build
 python setup.py clean
 
 # Build wheel
