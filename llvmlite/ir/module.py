@@ -42,22 +42,35 @@ class Module(object):
             fixed_ops.append((name, op))
         return fixed_ops
 
-    def add_metadata(self, operands):
+    def add_metadata(self, operands, *, self_ref=False):
         """
         Add an unnamed metadata to the module with the given *operands*
         (a sequence of values) or return a previous equivalent metadata.
         A MDValue instance is returned, it can then be associated to
         e.g. an instruction.
+
+        A self referential metadata entry has itself as the first
+        operand to ensure uniqueness. These references are never
+        cached. If `self_ref` is set, create a self referential
+        metadata entry by first creating a new metadata value
+        and then add itself as first argument. `operands` are then
+        added as additional operands.
         """
         if not isinstance(operands, (list, tuple)):
             raise TypeError("expected a list or tuple of metadata values, "
                             "got %r" % (operands,))
         operands = self._fix_metadata_operands(operands)
         key = tuple(operands)
-        if key not in self._metadatacache:
+        if self_ref or key not in self._metadatacache:
             n = len(self.metadata)
-            md = values.MDValue(self, operands, name=str(n))
-            self._metadatacache[key] = md
+            md = values.MDValue(
+                self,
+                operands,
+                name=str(n),
+                self_ref=self_ref,
+            )
+            if not self_ref:
+                self._metadatacache[key] = md
         else:
             md = self._metadatacache[key]
         return md
