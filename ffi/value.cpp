@@ -7,6 +7,7 @@
 // the following is needed for WriteGraph()
 #include "llvm/Analysis/CFGPrinter.h"
 #include "llvm/Support/GraphWriter.h"
+#include "llvm/IR/GlobalVariable.h"
 
 /* An iterator around a attribute list, including the stop condition */
 struct AttributeListIterator {
