@@ -3,7 +3,7 @@
 #ifndef MODULE_PASS
 #define MODULE_PASS(NAME)
 #endif
-//MODULE_PASS(VerifierPass)
+MODULE_PASS(VerifierPass)
 MODULE_PASS(ConstantMergePass)
 MODULE_PASS(DeadArgumentEliminationPass)
 MODULE_PASS(CallGraphDOTPrinterPass)
