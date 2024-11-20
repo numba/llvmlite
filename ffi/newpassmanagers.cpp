@@ -520,38 +520,41 @@ LLVMPY_module_AddModuleDebugInfoPrinterPass(LLVMModulePassManagerRef MPM) {
 }
 
 #define CGSCC_PASS(NAME)                                                       \
-    void LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {               \
+    API_EXPORT(void) LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {   \
         llvm::unwrap(MPM)->addPass(                                            \
             createModuleToPostOrderCGSCCPassAdaptor(NAME()));                  \
     }
 #include "PASSREGISTRY.def"
 
 #define MODULE_PASS(NAME)                                                      \
-    void LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {               \
+    API_EXPORT(void) LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {   \
         llvm::unwrap(MPM)->addPass(NAME());                                    \
     }
 #include "PASSREGISTRY.def"
 
 #define FUNCTION_PASS(NAME)                                                    \
-    void LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {               \
+    API_EXPORT(void) LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {   \
         llvm::unwrap(MPM)->addPass(createModuleToFunctionPassAdaptor(NAME())); \
     }                                                                          \
-    void LLVMPY_function_Add##NAME(LLVMFunctionPassManagerRef FPM) {           \
+    API_EXPORT(void)                                                           \
+    LLVMPY_function_Add##NAME(LLVMFunctionPassManagerRef FPM) {                \
         llvm::unwrap(FPM)->addPass(NAME());                                    \
     }
 #include "PASSREGISTRY.def"
 
 #define LOOP_PASS(NAME)                                                        \
-    void LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {               \
+    API_EXPORT(void) LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {   \
         llvm::unwrap(MPM)->addPass(createModuleToFunctionPassAdaptor(          \
             createFunctionToLoopPassAdaptor(NAME())));                         \
     }                                                                          \
-    void LLVMPY_function_Add##NAME(LLVMFunctionPassManagerRef FPM) {           \
+    API_EXPORT(void)                                                           \
+    LLVMPY_function_Add##NAME(LLVMFunctionPassManagerRef FPM) {                \
         llvm::unwrap(FPM)->addPass(createFunctionToLoopPassAdaptor(NAME()));   \
     }
 #include "PASSREGISTRY.def"
 
-const char *LLVMPY_getModuleLevelPasses() {
+API_EXPORT(const char *)
+LLVMPY_getModuleLevelPasses() {
     std::string module_passes;
 
 #define MODULE_PASS(NAME) module_passes = module_passes + " " + TOSTRING(NAME);
@@ -563,7 +566,8 @@ const char *LLVMPY_getModuleLevelPasses() {
     return LLVMPY_CreateString(module_passes.c_str());
 }
 
-const char *LLVMPY_getFunctionLevelPasses() {
+API_EXPORT(const char *)
+LLVMPY_getFunctionLevelPasses() {
     std::string function_passes;
 
 #define FUNCTION_PASS(NAME)                                                    \
