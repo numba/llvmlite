@@ -7,6 +7,7 @@ import itertools
 import pickle
 import re
 import textwrap
+import timeit
 import unittest
 
 from . import TestCase
@@ -566,6 +567,94 @@ class TestIR(TestBase):
         # The unicode character is utf8 encoded with \XX format, where XX is hex
         name = ''.join(map(lambda x: f"\\{x:02x}", "∆".encode()))
         self.assert_ir_line(f'!0 = !DILocalVariable(name: "a{name}")', strmod)
+
+    def test_debug_info_caching(self):
+        mod = None
+        foo = None
+        builder = None
+        di_subprogram = None
+
+        def setup_test():
+            nonlocal mod, foo, builder, di_subprogram
+            mod = self.module()
+
+            di_file = mod.add_debug_info(
+                'DIFile',
+                {
+                    'directory': 'my_directory',
+                    'filename': 'my_path.foo',
+                })
+
+            di_compile_unit = mod.add_debug_info(
+                'DICompileUnit',
+                {
+                    'emissionKind': ir.DIToken('FullDebug'),
+                    'file': di_file,
+                    'isOptimized': False,
+                    'language': ir.DIToken('DW_LANG_C99'),
+                    'producer': 'llvmlite-test',
+                })
+
+            di_subprogram = mod.add_debug_info(
+                'DISubprogram',
+                {
+                    'file': di_file,
+                    'line': 123,
+                    'name': 'my function',
+                    'scope': di_file,
+                    'scopeLine': 123,
+                    'unit': di_compile_unit,
+                })
+
+            foo = ir.Function(mod, ir.FunctionType(ir.VoidType(), []), 'foo')
+            builder = ir.IRBuilder(foo.append_basic_block(''))
+
+        def do_test():
+            for i in range(100_000):
+                di_location = mod.add_debug_info(
+                    'DILocation',
+                    {
+                        'scope': di_subprogram,
+                        'line': i,
+                        'column': 15,
+                        'other': [di_subprogram, di_subprogram],
+                    })
+
+                builder.debug_metadata = di_location
+
+                builder.and_(
+                    ir.Constant(ir.IntType(bits=32), i),
+                    ir.Constant(ir.IntType(bits=32), i + 1))
+
+        total_time = timeit.timeit(
+            'do_test()',
+            'setup_test()',
+            number=10,
+            globals=locals())
+
+        print('test_debug_info_performance took', total_time, 'to finish')
+
+        self.assertEqual(100004, len(mod._metadatacache))
+
+    def test_debug_info_pickle(self):
+        mod = self.module()
+
+        di_file = mod.add_debug_info(
+            'DIFile',
+            {
+                'directory': 'my_directory',
+                'filename': 'my_path.foo',
+            })
+        self.assertEqual(hash(di_file), di_file.hash_cache)
+        found_di_file = pickle.loads(pickle.dumps(di_file))
+        self.assertIsNone(found_di_file.hash_cache)
+        self.assertEqual(di_file, found_di_file)
+
+        meta = mod.add_metadata([di_file])
+        self.assertEqual(hash(meta), meta.hash_cache)
+        found_meta = pickle.loads(pickle.dumps(meta))
+        self.assertIsNone(found_meta.hash_cache)
+        self.assertEqual(meta, found_meta)
 
     def test_inline_assembly(self):
         mod = self.module()
