@@ -32,12 +32,12 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
-
+          
       - name: Build LLVMDEV
         run: |
           cd buildscripts/manylinux
           bash ./${{ matrix.docker_script }} build_llvmdev.sh
-      
+          
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -61,7 +61,6 @@ jobs:
           - arch: aarch64
             runner: ubuntu-latest
             docker_script: docker_run_aarch64.sh
-    
     steps:
       - uses: actions/checkout@v4
       
@@ -70,22 +69,22 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
-      
+          
       - name: Download LLVMDEV artifacts
         uses: actions/download-artifact@v4
         with:
           name: llvmdev-${{ matrix.arch }}
           path: docker_output
-
+          
       - name: Build LLVMLITE
         run: |
           cd buildscripts/manylinux
           bash ./${{ matrix.docker_script }} build_llvmlite.sh ${{ matrix.python_version }}
-      
+          
       - name: Upload wheel artifacts
         uses: actions/upload-artifact@v4
         with:
           name: llvmlite-${{ matrix.arch }}-${{ matrix.python_version }}
           path: |
             docker_output/dist_${{ matrix.arch }}_${{ matrix.python_version }}/wheelhouse/*.whl
-          retention-days: 7 
+          retention-days: 7
