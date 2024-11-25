@@ -52,13 +52,51 @@ LLVMPY_CreateNewModulePassManager() {
     return llvm::wrap(new PassManager<Module>());
 }
 
+void LLVMPY_AddTargetAttributes(Module *M, std::string &triple,
+                                std::string &cpu, std::string &features) {
+    if (!triple.empty())
+        M->setTargetTriple(triple);
+
+    if (!cpu.empty() || !features.empty()) {
+        for (Function &F : *M) {
+            auto &Ctx = F.getContext();
+            AttributeList Attrs = F.getAttributes();
+            AttrBuilder NewAttrs(Ctx);
+
+            if (!cpu.empty() && !F.hasFnAttribute("target-cpu"))
+                NewAttrs.addAttribute("target-cpu", cpu);
+
+            if (!features.empty()) {
+                StringRef OldFeatures =
+                    F.getFnAttribute("target-features").getValueAsString();
+
+                if (OldFeatures.empty())
+                    NewAttrs.addAttribute("target-features", features);
+                else {
+                    SmallString<256> Appended(OldFeatures);
+                    Appended.push_back(',');
+                    Appended.append(features);
+                    NewAttrs.addAttribute("target-features", Appended);
+                }
+            }
+            // Override with new attributes
+            F.setAttributes(Attrs.addFnAttributes(Ctx, NewAttrs));
+        }
+    }
+}
+
 API_EXPORT(void)
 LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
-                               LLVMModuleRef mod, LLVMPassBuilderRef PBRef) {
+                               LLVMModuleRef mod, LLVMPassBuilderRef PBRef,
+                               const char *triple, const char *cpu,
+                               const char *features) {
 
     ModulePassManager *MPM = llvm::unwrap(MPMRef);
     Module *M = llvm::unwrap(mod);
     PassBuilder *PB = llvm::unwrap(PBRef);
+    std::string triple_str = std::string(triple);
+    std::string cpu_str = std::string(cpu);
+    std::string features_str = std::string(features);
 
     // TODO: Make these set(able) by user
     bool DebugLogging = false;
@@ -84,6 +122,9 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
     PB->registerCGSCCAnalyses(CGAM);
     PB->registerModuleAnalyses(MAM);
     PB->crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+    LLVMPY_AddTargetAttributes(M, triple_str, cpu_str, features_str);
+
     MPM->run(*M, MAM);
 }
 
