@@ -1,0 +1,91 @@
+name: Test Manylinux Builds
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_versions:
+        description: 'Python versions to build (comma-separated)'
+        required: true
+        default: 'cp310-cp310,cp311-cp311,cp312-cp312'
+        type: string
+
+jobs:
+  build_llvmdev:
+    name: Build LLVMDEV - ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+            docker_script: docker_run_x64.sh
+          - arch: aarch64
+            runner: ubuntu-latest
+            docker_script: docker_run_aarch64.sh
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up QEMU
+        if: matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build LLVMDEV
+        run: |
+          cd buildscripts/manylinux
+          bash ./${{ matrix.docker_script }} build_llvmdev.sh
+      
+      - name: Upload LLVMDEV artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmdev-${{ matrix.arch }}
+          path: docker_output/*.tar.bz2
+          retention-days: 1
+
+  build_llvmlite:
+    needs: build_llvmdev
+    name: Build LLVMLITE - ${{ matrix.arch }} - ${{ matrix.python_version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+        python_version: ${{ fromJson(format('[{0}]', join(github.event.inputs.python_versions, '","'))) }}
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+            docker_script: docker_run_x64.sh
+          - arch: aarch64
+            runner: ubuntu-latest
+            docker_script: docker_run_aarch64.sh
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up QEMU
+        if: matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      
+      - name: Download LLVMDEV artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev-${{ matrix.arch }}
+          path: docker_output
+
+      - name: Build LLVMLITE
+        run: |
+          cd buildscripts/manylinux
+          bash ./${{ matrix.docker_script }} build_llvmlite.sh ${{ matrix.python_version }}
+      
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-${{ matrix.arch }}-${{ matrix.python_version }}
+          path: |
+            docker_output/dist_${{ matrix.arch }}_${{ matrix.python_version }}/wheelhouse/*.whl
+          retention-days: 7 
