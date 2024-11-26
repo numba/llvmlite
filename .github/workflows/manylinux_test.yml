@@ -94,14 +94,35 @@ jobs:
         run: |
           cd buildscripts/manylinux
           chmod +x ./${{ matrix.docker_script }}
+          mkdir -p docker_output
           ./${{ matrix.docker_script }} build_llvmdev.sh
+          
+      - name: Move Build Artifacts
+        run: |
+          # Find and move the built package
+          find /root/miniconda3/envs/buildenv/conda-bld -name "*.tar.bz2" -exec cp {} docker_output/ \;
+          
+      - name: Debug Build Output
+        if: always()
+        run: |
+          echo "=== Current Directory ==="
+          pwd
+          echo "=== Directory Structure ==="
+          ls -R
+          echo "=== Docker Output Directory ==="
+          ls -la docker_output/ || echo "docker_output directory not found"
+          echo "=== Conda Build Directory ==="
+          ls -R /root/miniconda3/envs/buildenv/conda-bld/ || echo "conda-bld directory not found"
       
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
         with:
           name: llvmdev-${{ matrix.arch }}
-          path: docker_output/*.tar.bz2
+          path: |
+            docker_output/*.tar.bz2
+            docker_output/**/*.tar.bz2
           retention-days: 1
+          if-no-files-found: warn
 
   build-llvmlite:
     needs: [matrix-prep, build-llvmdev]
