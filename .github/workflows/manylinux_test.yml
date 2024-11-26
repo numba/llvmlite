@@ -52,108 +52,122 @@ jobs:
             echo "python_versions=[$VERSIONS]" >> $GITHUB_OUTPUT
           fi
 
-  build-llvmdev:
+  build-llvmdev-x86:
     needs: matrix-prep
-    name: Build LLVMDEV - ${{ matrix.arch }}
+    name: Build LLVMDEV - x86_64
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x86_64, aarch64]
-        include:
-          - arch: x86_64
-            docker_script: docker_run_x64.sh
-          - arch: aarch64
-            docker_script: docker_run_aarch64.sh
-    
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up QEMU
-        if: matrix.arch == 'aarch64'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Build LLVMDEV
-        id: build-llvmdev
         run: |
           cd buildscripts/manylinux
-          chmod +x ./${{ matrix.docker_script }}
-          ./${{ matrix.docker_script }} build_llvmdev.sh
-      
+          chmod +x ./docker_run_x64.sh
+          ./docker_run_x64.sh build_llvmdev.sh
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: llvmdev-${{ matrix.arch }}
+          name: llvmdev-x86_64
           path: docker_output/*.tar.bz2
           retention-days: 1
 
-  build-llvmlite:
-    needs: [matrix-prep, build-llvmdev]
-    name: Build LLVMLITE - ${{ matrix.arch }} - Python ${{ matrix.python_version }}
+  build-llvmdev-arm:
+    needs: matrix-prep
+    name: Build LLVMDEV - aarch64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: Build LLVMDEV
+        run: |
+          cd buildscripts/manylinux
+          chmod +x ./docker_run_aarch64.sh
+          ./docker_run_aarch64.sh build_llvmdev.sh
+      - name: Upload LLVMDEV artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmdev-aarch64
+          path: docker_output/*.tar.bz2
+          retention-days: 1
+
+  build-llvmlite-x86:
+    needs: [matrix-prep, build-llvmdev-x86]
+    name: Build LLVMLITE x86_64 - Python ${{ matrix.python_version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64, aarch64]
         python_version: ${{ fromJson(needs.matrix-prep.outputs.python_versions) }}
-        include:
-          - arch: x86_64
-            docker_script: docker_run_x64.sh
-          - arch: aarch64
-            docker_script: docker_run_aarch64.sh
-    
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up QEMU
-        if: matrix.arch == 'aarch64'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-      
       - name: Download LLVMDEV artifacts
         uses: actions/download-artifact@v4
         with:
-          name: llvmdev-${{ matrix.arch }}
+          name: llvmdev-x86_64
           path: docker_output
-
       - name: Setup local conda channel
         run: |
           mkdir -p docker_output/linux-64
-          mkdir -p docker_output/linux-aarch64
-          if [[ "${{ matrix.arch }}" == "x86_64" ]]; then
-            mv docker_output/*.tar.bz2 docker_output/linux-64/
-          else
-            mv docker_output/*.tar.bz2 docker_output/linux-aarch64/
-          fi
+          mv docker_output/*.tar.bz2 docker_output/linux-64/
           conda index docker_output
-
       - name: Build LLVMLITE
-        id: build-llvmlite
         run: |
           cd buildscripts/manylinux
-          chmod +x ./${{ matrix.docker_script }}
-          ./${{ matrix.docker_script }} build_llvmlite.sh ${{ matrix.python_version }}
-      
+          chmod +x ./docker_run_x64.sh
+          ./docker_run_x64.sh build_llvmlite.sh ${{ matrix.python_version }}
       - name: Upload wheel artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: llvmlite-${{ matrix.arch }}-${{ matrix.python_version }}
-          path: |
-            docker_output/dist_${{ matrix.arch }}_${{ matrix.python_version }}/wheelhouse/*.whl
+          name: llvmlite-x86_64-${{ matrix.python_version }}
+          path: docker_output/dist_x86_64_${{ matrix.python_version }}/wheelhouse/*.whl
+          retention-days: 7
+
+  build-llvmlite-arm:
+    needs: [matrix-prep, build-llvmdev-arm]
+    name: Build LLVMLITE aarch64 - Python ${{ matrix.python_version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ${{ fromJson(needs.matrix-prep.outputs.python_versions) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: Download LLVMDEV artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev-aarch64
+          path: docker_output
+      - name: Setup local conda channel
+        run: |
+          mkdir -p docker_output/linux-aarch64
+          mv docker_output/*.tar.bz2 docker_output/linux-aarch64/
+          conda index docker_output
+      - name: Build LLVMLITE
+        run: |
+          cd buildscripts/manylinux
+          chmod +x ./docker_run_aarch64.sh
+          ./docker_run_aarch64.sh build_llvmlite.sh ${{ matrix.python_version }}
+      - name: Upload wheel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-aarch64-${{ matrix.python_version }}
+          path: docker_output/dist_aarch64_${{ matrix.python_version }}/wheelhouse/*.whl
           retention-days: 7
 
   collect-results:
-    needs: build-llvmlite
+    needs: [build-llvmlite-x86, build-llvmlite-arm]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: all-artifacts
-          
       - name: List all built artifacts
         run: |
           echo "Built artifacts:"
