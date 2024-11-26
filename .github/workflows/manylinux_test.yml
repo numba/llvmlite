@@ -72,9 +72,10 @@ jobs:
       - name: Set up Docker for macOS
         if: matrix.arch == 'aarch64'
         run: |
-          brew install docker
-          colima start
+          brew install docker colima
+          colima start --arch aarch64 --memory 6 --cpu 3 --disk-size 40
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          docker context use colima
       
       - name: Build LLVMDEV
         run: |
@@ -110,9 +111,10 @@ jobs:
       - name: Set up Docker for macOS
         if: matrix.arch == 'aarch64'
         run: |
-          brew install docker
-          colima start
+          brew install docker colima
+          colima start --arch aarch64 --memory 6 --cpu 3 --disk-size 40
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          docker context use colima
       
       - name: Download LLVMDEV artifacts
         uses: actions/download-artifact@v4
