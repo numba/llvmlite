@@ -18,4 +18,4 @@ echo "MINICONDA_FILE=$MINICONDA_FILE"
 # Ensure the latest docker image
 IMAGE_URI="quay.io/pypa/${MANYLINUX_IMAGE}:latest"
 docker pull $IMAGE_URI
-docker run --rm -it -v $SRCDIR:/root/llvmlite $IMAGE_URI ${PRECMD} /root/llvmlite/buildscripts/manylinux/$1 ${MINICONDA_FILE} $2
+docker run --rm -v $SRCDIR:/root/llvmlite $IMAGE_URI ${PRECMD} /root/llvmlite/buildscripts/manylinux/$1 ${MINICONDA_FILE} $2
