@@ -69,6 +69,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Set up Docker for macOS
+        if: matrix.arch == 'aarch64'
+        run: |
+          brew install docker
+          colima start
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+      
       - name: Build LLVMDEV
         run: |
           cd buildscripts/manylinux
@@ -99,6 +106,13 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Set up Docker for macOS
+        if: matrix.arch == 'aarch64'
+        run: |
+          brew install docker
+          colima start
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       
       - name: Download LLVMDEV artifacts
         uses: actions/download-artifact@v4
