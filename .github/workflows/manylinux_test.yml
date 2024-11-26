@@ -73,9 +73,22 @@ jobs:
         if: matrix.arch == 'aarch64'
         run: |
           brew install docker colima
-          colima start -f --arch aarch64 --vm-type vz
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          # Try to start Colima and capture logs if it fails
+          colima start --runtime docker --arch aarch64 || {
+            echo "Colima failed to start. Checking logs..."
+            echo "=== ha.stderr.log ==="
+            cat /Users/runner/.colima/_lima/colima/ha.stderr.log || true
+            echo "=== serial logs ==="
+            cat /Users/runner/.colima/_lima/colima/serial*.log || true
+            echo "=== Trying alternative approach ==="
+            # Try alternative approach with minimal config
+            colima delete || true
+            colima start --minimal --arch aarch64
+          }
+          # Verify Docker is working
+          docker version
           docker context use colima
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       
       - name: Build LLVMDEV
         run: |
@@ -112,9 +125,22 @@ jobs:
         if: matrix.arch == 'aarch64'
         run: |
           brew install docker colima
-          colima start -f --arch aarch64 --vm-type vz
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          # Try to start Colima and capture logs if it fails
+          colima start --runtime docker --arch aarch64 || {
+            echo "Colima failed to start. Checking logs..."
+            echo "=== ha.stderr.log ==="
+            cat /Users/runner/.colima/_lima/colima/ha.stderr.log || true
+            echo "=== serial logs ==="
+            cat /Users/runner/.colima/_lima/colima/serial*.log || true
+            echo "=== Trying alternative approach ==="
+            # Try alternative approach with minimal config
+            colima delete || true
+            colima start --minimal --arch aarch64
+          }
+          # Verify Docker is working
+          docker version
           docker context use colima
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       
       - name: Download LLVMDEV artifacts
         uses: actions/download-artifact@v4
