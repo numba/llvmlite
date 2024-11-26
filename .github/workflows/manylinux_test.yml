@@ -52,15 +52,14 @@ jobs:
             echo "python_versions=[$VERSIONS]" >> $GITHUB_OUTPUT
           fi
 
-  build-python-version:
+  build-llvmdev:
     needs: matrix-prep
-    name: Build ${{ matrix.arch }} - Python ${{ matrix.python_version }}
+    name: Build LLVMDEV - ${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         arch: [x86_64, aarch64]
-        python_version: ${{ fromJson(needs.matrix-prep.outputs.python_versions) }}
         include:
           - arch: x86_64
             docker_script: docker_run_x64.sh
@@ -86,9 +85,50 @@ jobs:
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: llvmdev-${{ matrix.arch }}-${{ matrix.python_version }}
+          name: llvmdev-${{ matrix.arch }}
           path: docker_output/*.tar.bz2
           retention-days: 1
+
+  build-llvmlite:
+    needs: [matrix-prep, build-llvmdev]
+    name: Build LLVMLITE - ${{ matrix.arch }} - Python ${{ matrix.python_version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+        python_version: ${{ fromJson(needs.matrix-prep.outputs.python_versions) }}
+        include:
+          - arch: x86_64
+            docker_script: docker_run_x64.sh
+          - arch: aarch64
+            docker_script: docker_run_aarch64.sh
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up QEMU
+        if: matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      
+      - name: Download LLVMDEV artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev-${{ matrix.arch }}
+          path: docker_output
+
+      - name: Setup local conda channel
+        run: |
+          mkdir -p docker_output/linux-64
+          mkdir -p docker_output/linux-aarch64
+          if [[ "${{ matrix.arch }}" == "x86_64" ]]; then
+            mv docker_output/*.tar.bz2 docker_output/linux-64/
+          else
+            mv docker_output/*.tar.bz2 docker_output/linux-aarch64/
+          fi
+          conda index docker_output
 
       - name: Build LLVMLITE
         id: build-llvmlite
@@ -106,7 +146,7 @@ jobs:
           retention-days: 7
 
   collect-results:
-    needs: build-python-version
+    needs: build-llvmlite
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
