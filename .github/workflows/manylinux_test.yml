@@ -72,20 +72,17 @@ jobs:
       - name: Set up Docker for macOS
         if: matrix.arch == 'aarch64'
         run: |
-          brew install docker colima
-          # Try to start Colima and capture logs if it fails
-          colima start --runtime docker --arch aarch64 || {
+          brew install docker colima qemu
+          colima start --arch aarch64 --vm-type qemu || {
             echo "Colima failed to start. Checking logs..."
             echo "=== ha.stderr.log ==="
             cat /Users/runner/.colima/_lima/colima/ha.stderr.log || true
             echo "=== serial logs ==="
             cat /Users/runner/.colima/_lima/colima/serial*.log || true
-            echo "=== Trying alternative approach ==="
-            # Try alternative approach with minimal config
+            echo "=== Trying with more options ==="
             colima delete || true
-            colima start --minimal --arch aarch64
+            colima start --arch aarch64 --vm-type qemu --cpu 3 --memory 6 --disk 40
           }
-          # Verify Docker is working
           docker version
           docker context use colima
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
@@ -145,20 +142,17 @@ jobs:
       - name: Set up Docker for macOS
         if: matrix.arch == 'aarch64'
         run: |
-          brew install docker colima
-          # Try to start Colima and capture logs if it fails
-          colima start --runtime docker --arch aarch64 || {
+          brew install docker colima qemu
+          colima start --arch aarch64 --vm-type qemu || {
             echo "Colima failed to start. Checking logs..."
             echo "=== ha.stderr.log ==="
             cat /Users/runner/.colima/_lima/colima/ha.stderr.log || true
             echo "=== serial logs ==="
             cat /Users/runner/.colima/_lima/colima/serial*.log || true
-            echo "=== Trying alternative approach ==="
-            # Try alternative approach with minimal config
+            echo "=== Trying with more options ==="
             colima delete || true
-            colima start --minimal --arch aarch64
+            colima start --arch aarch64 --vm-type qemu --cpu 3 --memory 6 --disk 40
           }
-          # Verify Docker is working
           docker version
           docker context use colima
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
