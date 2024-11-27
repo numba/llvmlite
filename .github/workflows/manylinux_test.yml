@@ -63,29 +63,17 @@ jobs:
             runner: ubuntu-latest
             docker_script: docker_run_x64.sh
           - arch: aarch64
-            runner: macos-14
+            runner: ubuntu-latest
             docker_script: docker_run_aarch64.sh
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Docker for macOS
+      - name: Set up QEMU
         if: matrix.arch == 'aarch64'
-        run: |
-          brew install docker colima qemu
-          colima start --arch aarch64 --vm-type qemu || {
-            echo "Colima failed to start. Checking logs..."
-            echo "=== ha.stderr.log ==="
-            cat /Users/runner/.colima/_lima/colima/ha.stderr.log || true
-            echo "=== serial logs ==="
-            cat /Users/runner/.colima/_lima/colima/serial*.log || true
-            echo "=== Trying with more options ==="
-            colima delete || true
-            colima start --arch aarch64 --vm-type qemu --cpu 3 --memory 6 --disk 40
-          }
-          docker version
-          docker context use colima
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
       
       - name: Build LLVMDEV
         run: |
@@ -96,8 +84,7 @@ jobs:
           
       - name: Move Build Artifacts
         run: |
-          # Find and move the built package
-          find /root/miniconda3/envs/buildenv/conda-bld -name "*.tar.bz2" -exec cp {} docker_output/ \;
+          sudo find /root/miniconda3/envs/buildenv/conda-bld -name "*.tar.bz2" -exec cp {} docker_output/ \;
           
       - name: Debug Build Output
         if: always()
@@ -109,7 +96,7 @@ jobs:
           echo "=== Docker Output Directory ==="
           ls -la docker_output/ || echo "docker_output directory not found"
           echo "=== Conda Build Directory ==="
-          ls -R /root/miniconda3/envs/buildenv/conda-bld/ || echo "conda-bld directory not found"
+          sudo ls -R /root/miniconda3/envs/buildenv/conda-bld/ || echo "conda-bld directory not found"
       
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
@@ -133,29 +120,17 @@ jobs:
             runner: ubuntu-latest
             docker_script: docker_run_x64.sh
           - arch: aarch64
-            runner: macos-14
+            runner: ubuntu-latest
             docker_script: docker_run_aarch64.sh
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Docker for macOS
+      - name: Set up QEMU
         if: matrix.arch == 'aarch64'
-        run: |
-          brew install docker colima qemu
-          colima start --arch aarch64 --vm-type qemu || {
-            echo "Colima failed to start. Checking logs..."
-            echo "=== ha.stderr.log ==="
-            cat /Users/runner/.colima/_lima/colima/ha.stderr.log || true
-            echo "=== serial logs ==="
-            cat /Users/runner/.colima/_lima/colima/serial*.log || true
-            echo "=== Trying with more options ==="
-            colima delete || true
-            colima start --arch aarch64 --vm-type qemu --cpu 3 --memory 6 --disk 40
-          }
-          docker version
-          docker context use colima
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
       
       - name: Download LLVMDEV artifacts
         uses: actions/download-artifact@v4
