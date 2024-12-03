@@ -10,17 +10,9 @@ if [[ $(uname) == Darwin ]]; then
   # in the build root env, the one in the bootstrap location needs to be ignored.
   export LLVM_CONFIG=$(ls $(which llvm-config))
   
-  # Determine architecture
-  ARCH=$(uname -m)
-  if [[ "$ARCH" == "arm64" ]]; then
-    CONDA_SUBDIR=osx-arm64
-    # Bootstrap with ARM64 compiler
-    conda create -y -p ${PWD}/bootstrap clangxx_osx-arm64
-  else
-    CONDA_SUBDIR=osx-64
-    # Bootstrap with x86_64 compiler
-    conda create -y -p ${PWD}/bootstrap clangxx_osx-64
-  fi
+  # Set conda subdir and bootstrap with x86_64 compiler
+  CONDA_SUBDIR=osx-64
+  conda create -y -p ${PWD}/bootstrap clangxx_osx-64
   
   SRC_DIR=${PWD}
   export PATH=${SRC_DIR}/bootstrap/bin:${PATH}
@@ -47,17 +39,11 @@ if [[ $(uname) == Darwin ]]; then
   ${LLVM_CONFIG} --version
   export SDKROOT=${SDKPATH}
 
-  # Set Darwin target based on architecture
-  if [[ "$ARCH" == "arm64" ]]; then
-    DARWIN_TARGET=arm64-apple-darwin20.0.0
-  else
-    DARWIN_TARGET=x86_64-apple-darwin13.4.0
-  fi
+  DARWIN_TARGET=x86_64-apple-darwin13.4.0
 fi
 
-# Remove old deployment target override since we're using the one from env
 if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
-    export MACOSX_DEPLOYMENT_TARGET  # Keep existing value
+    export MACOSX_DEPLOYMENT_TARGET
 fi
 
 # Make sure any error below is reported as such
