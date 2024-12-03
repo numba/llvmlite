@@ -2,12 +2,6 @@ name: incremental-build-and-test
 
 on:
   workflow_dispatch:
-    inputs:
-      debug_enabled:
-        type: boolean
-        description: 'Run the build with tmate debugging enabled'
-        required: false
-        default: false
 
 jobs:
   linux:
