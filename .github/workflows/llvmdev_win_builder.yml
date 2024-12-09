@@ -33,7 +33,7 @@ jobs:
       run: |
         source /c/Miniconda3/Scripts/activate
         conda create -n builder conda-build -y
-        
+
     - name: Build
       shell: bash
       run: |

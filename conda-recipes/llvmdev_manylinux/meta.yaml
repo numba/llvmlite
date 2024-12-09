@@ -51,10 +51,12 @@ requirements:
     - libffi    # [unix]
     # # libxml2 supports a windows-only feature, see https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/llvm/include/llvm/WindowsManifest/WindowsManifestMerger.h
     # - libxml2   # [win]
+    # Remove compression libs
     # - zlib 
     # - zstd 
 
 test:
+  # Unused test file
   # files:
   #   - numba-3016.ll
   commands:
