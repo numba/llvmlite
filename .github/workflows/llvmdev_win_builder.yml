@@ -2,10 +2,6 @@ name: llvmdev_win_builder
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - misc/win_wheel_fix
-
 
 jobs:
 
