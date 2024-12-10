@@ -6,17 +6,8 @@ on:
 jobs:
 
   windows:
-    name: Windows • Py${{ matrix.config.python }}
+    name: Windows
     runs-on: windows-2019
-    strategy:
-      matrix:
-        config:
-          - {python: '3.10'}
-    env:
-      CONDA_ENV: cienv
-      PYTHON: ${{ matrix.config.python }}
-      LLVM: ${{ matrix.config.llvm }}
-      OPAQUE_POINTERS: ${{ matrix.config.opaque_pointers }}
 
     steps:
     - uses: actions/checkout@v4
