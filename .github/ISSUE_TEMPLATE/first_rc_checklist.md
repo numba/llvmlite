@@ -11,6 +11,10 @@ labels: task
 
 * [ ] Merge to `main`.
     * [ ] "remaining Pull-Requests from milestone".
+* In case of an LLVM upgrade:
+    * [ ] Check if the compatability matrix in the `README.rst` needs updating
+    * [ ] Check if the inter-sphinx link in `llvmlite/docs/source/conf.py`
+          needs an update
 * [ ] Create X.Y release branch `releaseX.Y`
     * [ ] Update `CHANGE_LOG` in a PR targeting the release branch.
     * [ ] Follow the format of previous `CHANGE_LOG` entries.
