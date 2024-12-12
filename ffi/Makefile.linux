@@ -3,10 +3,11 @@ CXX ?= g++
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
 CXX_FLTO_FLAGS ?= -flto
-LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
+LD_FLTO_FLAGS ?= -flto=auto -flto -Wl,--exclude-libs=$(LLVM_EXCLUDE_LIB)
 # -fPIC is required when compiling objects for a shared library
 CXX_FPIC_FLAGS ?= -fPIC
 
+ARCH = `uname -m`
 CXXFLAGS := $(CPPFLAGS) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CXX_FLTO_FLAGS) $(CXX_FPIC_FLAGS)
 LDFLAGS := $(LDFLAGS) $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
 LIBS = $(LLVM_LIBS)
@@ -16,6 +17,12 @@ OBJ = assembly.o bitcode.o core.o initfini.o module.o value.o \
 	  linker.o object_file.o custom_passes.o orcjit.o memorymanager.o newpassmanagers.o
 OUTPUT = libllvmlite.so
 
+ifneq ("$(wildcard $(LLVM_LIBDIR)/clang)","")
+    BUILTINS_ARCHIVE := $(LLVM_LIBDIR)/clang/*/lib/linux/libclang_rt.builtins-${ARCH}.a
+else
+    BUILTINS_ARCHIVE := $(LLVM_LIBDIR)/linux/libclang_rt.builtins-$(ARCH).a
+endif
+
 all: $(OUTPUT)
 
 .cpp.o: $(INCLUDE)
@@ -23,8 +30,9 @@ all: $(OUTPUT)
 
 $(OUTPUT): $(OBJ)
 	# static-libstdc++ avoids runtime dependencies on a
-	# particular libstdc++ version.
-	$(CXX) $(CXX_STATIC_LINK) -shared $(CXXFLAGS) $(OBJ) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
+	# particular libstdc++ version.'
+	$(CXX) $(CXX_STATIC_LINK) -shared $(CXXFLAGS) $(OBJ) -o $(OUTPUT) $(LDFLAGS) $(LIBS) \
+		-Wl,--whole-archive $(BUILTINS_ARCHIVE) -Wl,--no-whole-archive
 
 clean:
 	rm -rf test $(OUTPUT) $(OBJ)
