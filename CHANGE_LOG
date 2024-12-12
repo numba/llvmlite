@@ -1,4 +1,4 @@
-v0.44.0rc1 (November 18, 2024)
+v0.44.0rc2 (December 12, 2024)
 ------------------------------
 
 Highlights of this release are:
@@ -36,6 +36,10 @@ Pull-Requests:
 * PR `#1087 <https://github.com/numba/llvmlite/pull/1087>`_: Add missing argtypes description for refprune pass related APIs (`yashssh <https://github.com/yashssh>`_)
 * PR `#1090 <https://github.com/numba/llvmlite/pull/1090>`_: Add MSVC `-GL` workaround (`sklam <https://github.com/sklam>`_)
 * PR `#1094 <https://github.com/numba/llvmlite/pull/1094>`_: Fix CI by not removing nonexistent environment (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1097 <https://github.com/numba/llvmlite/pull/1097>`_: update azure-pipelines to macos-13 (`swap357 <https://github.com/swap357>`_)
+* PR `#1098 <https://github.com/numba/llvmlite/pull/1098>`_: Fix store to opaque ptr (`alexander-shaposhnikov <https://github.com/alexander-shaposhnikov>`_)
+* PR `#1104 <https://github.com/numba/llvmlite/pull/1104>`_: Target 0.44.0: Fix osx wheel build (`sklam <https://github.com/sklam>`_)
+* PR `#1108 <https://github.com/numba/llvmlite/pull/1108>`_: Fix Windows llvmdev build due to zlib linkage (`sklam <https://github.com/sklam>`_)
 
 Authors:
 
@@ -48,6 +52,8 @@ Authors:
 * `stuartarchibald <https://github.com/stuartarchibald>`_
 * `thomaspinckney3 <https://github.com/thomaspinckney3>`_
 * `yashssh <https://github.com/yashssh>`_
+* `alexander-shaposhnikov <https://github.com/alexander-shaposhnikov>`_
+* `swap357 <https://github.com/swap357>`_
 
 v0.43.0 (June 13, 2024)
 -----------------------
