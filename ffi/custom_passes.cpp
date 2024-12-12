@@ -296,7 +296,22 @@ struct RefPrune {
                 stats_per_bb += 1;
             }
 
-            // Second: Find matching pairs of incref decref
+            // Second: if it's a Raising block, then remove all refs
+            if (isRaising(&bb)) {
+                for (CallInst *ci : incref_list) {
+                    ci->eraseFromParent();
+                    mutated = true;
+                    stats_per_bb += 1;
+                }
+                for (CallInst *ci : decref_list) {
+                    ci->eraseFromParent();
+                    mutated = true;
+                    stats_per_bb += 1;
+                }
+                continue;
+            }
+
+            // Third: Find matching pairs of incref decref
             while (incref_list.size() > 0) {
                 // get an incref
                 CallInst *incref = incref_list.pop_back_val();
