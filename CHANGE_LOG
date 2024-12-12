@@ -40,7 +40,6 @@ Pull-Requests:
 * PR `#1098 <https://github.com/numba/llvmlite/pull/1098>`_: Fix store to opaque ptr (`alexander-shaposhnikov <https://github.com/alexander-shaposhnikov>`_)
 * PR `#1104 <https://github.com/numba/llvmlite/pull/1104>`_: Target 0.44.0: Fix osx wheel build (`sklam <https://github.com/sklam>`_)
 * PR `#1108 <https://github.com/numba/llvmlite/pull/1108>`_: Fix Windows llvmdev build due to zlib linkage (`sklam <https://github.com/sklam>`_)
-* PR `#1111 <https://github.com/numba/llvmlite/pull/1111>`_: Cherry-picks for `0.44.0rc2` (`kc611 <https://github.com/kc611>`_)
 
 Authors:
 
