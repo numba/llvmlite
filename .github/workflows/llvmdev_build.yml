@@ -1,0 +1,34 @@
+name: llvmdev-build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-llvmdev:
+    name: Build LLVMDEV
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build LLVMDEV
+        run: |
+          mkdir -p /home/runner/work/llvmlite/llvmlite/docker_output
+          chmod 777 /home/runner/work/llvmlite/llvmlite/docker_output
+          cd buildscripts/manylinux
+          ./docker_run_x64.sh build_llvmdev.sh "${MINICONDA_FILE}"
+          
+      - name: Debug Output
+        if: always()
+        run: |
+          echo "=== Build Output Directory ==="
+          ls -la /home/runner/work/llvmlite/llvmlite/docker_output/
+          echo "=== Linux-64 Directory ==="
+          ls -la /home/runner/work/llvmlite/llvmlite/docker_output/linux-64/
+      
+      - name: Upload LLVMDEV artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmdev-x86_64
+          path: /home/runner/work/llvmlite/llvmlite/docker_output/linux-64/*.tar.bz2
+          retention-days: 1
+          if-no-files-found: error 
