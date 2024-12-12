@@ -32,17 +32,17 @@ build:
 requirements:
   build:
     # Do not use the compiler
-    # - {{ compiler('cxx') }} 
+    - {{ compiler('cxx') }}    # [osx]
     - cmake
     - ninja
     - python >=3
-    # - libcxx      # it is not defined{{ cxx_compiler_version }}  # [osx]
+    - libcxx      # it is not defined{{ cxx_compiler_version }}  # [osx]
     - patch       # [not win]
     # - m2-patch    # [win]
     - git         # [(linux and x86_64)]
 
   host:
-    #- libcxx    # it is not defined{{ cxx_compiler_version }}  # [osx]
+    - libcxx    # it is not defined{{ cxx_compiler_version }}  # [osx]
     - libffi    # [unix]
     # # libxml2 supports a windows-only feature, see https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/llvm/include/llvm/WindowsManifest/WindowsManifestMerger.h
     # - libxml2   # [win]
