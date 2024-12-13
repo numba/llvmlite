@@ -16,15 +16,7 @@ jobs:
           chmod 777 /home/runner/work/llvmlite/llvmlite/docker_output
           cd buildscripts/manylinux
           ./docker_run_x64.sh build_llvmdev.sh "${MINICONDA_FILE}"
-          
-      - name: Debug Output
-        if: always()
-        run: |
-          echo "=== Build Output Directory ==="
-          ls -la /home/runner/work/llvmlite/llvmlite/docker_output/
-          echo "=== Linux-64 Directory ==="
-          ls -la /home/runner/work/llvmlite/llvmlite/docker_output/linux-64/
-      
+
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
         with:

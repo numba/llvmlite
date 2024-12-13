@@ -19,26 +19,13 @@ jobs:
         run: |
           mkdir -p /home/runner/work/llvmlite/llvmlite/docker_output
           chmod 777 /home/runner/work/llvmlite/llvmlite/docker_output
-      
-      - name: List Available Python Versions
-        run: |
-          cd buildscripts/manylinux
-          docker run --rm quay.io/pypa/manylinux2014_x86_64:latest ls -l /opt/python/
-      
+
       - name: Build LLVMLITE
         run: |
           cd buildscripts/manylinux
           chmod +x ./docker_run_x64.sh
           ./docker_run_x64.sh build_llvmlite.sh "${{ matrix.python-version }}"
-      
-      - name: Debug Output
-        if: always()
-        run: |
-          echo "=== Build Output Directory ==="
-          ls -la /home/runner/work/llvmlite/llvmlite/docker_output/
-          echo "=== Python-specific Directory ==="
-          ls -la /home/runner/work/llvmlite/llvmlite/docker_output/dist_x86_64_${{ matrix.python-version }}/wheelhouse/ || true
-      
+
       - name: Upload LLVMLITE artifacts
         uses: actions/upload-artifact@v4
         with:
