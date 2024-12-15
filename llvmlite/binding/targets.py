@@ -376,6 +376,18 @@ class TargetMachine(ffi.ObjectRef):
         finally:
             ffi.lib.LLVMPY_DisposeMemoryBuffer(mb)
 
+    def get_target_triple(self):
+        s = ffi.lib.LLVMPY_getTargetTriple(self)
+        return _decode_string(s)
+
+    def get_target_cpu(self):
+        s = ffi.lib.LLVMPY_getTargetCPU(self)
+        return _decode_string(s)
+
+    def get_target_feature_string(self):
+        s = ffi.lib.LLVMPY_getTargetFeatureString(self)
+        return _decode_string(s)
+
     @property
     def target_data(self):
         return TargetData(ffi.lib.LLVMPY_CreateTargetMachineData(self))
@@ -510,6 +522,15 @@ ffi.lib.LLVMPY_GetBufferSize.argtypes = [ffi.LLVMMemoryBufferRef]
 ffi.lib.LLVMPY_GetBufferSize.restype = c_size_t
 
 ffi.lib.LLVMPY_DisposeMemoryBuffer.argtypes = [ffi.LLVMMemoryBufferRef]
+
+ffi.lib.LLVMPY_getTargetTriple.argtypes = [ffi.LLVMTargetMachineRef]
+ffi.lib.LLVMPY_getTargetTriple.restype = c_char_p
+
+ffi.lib.LLVMPY_getTargetCPU.argtypes = [ffi.LLVMTargetMachineRef]
+ffi.lib.LLVMPY_getTargetCPU.restype = c_char_p
+
+ffi.lib.LLVMPY_getTargetFeatureString.argtypes = [ffi.LLVMTargetMachineRef]
+ffi.lib.LLVMPY_getTargetFeatureString.restype = c_char_p
 
 ffi.lib.LLVMPY_CreateTargetMachineData.argtypes = [
     ffi.LLVMTargetMachineRef,
