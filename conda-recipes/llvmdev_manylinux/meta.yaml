@@ -26,19 +26,17 @@ source:
 build:
   number: {{ build_number }}
   string: "manylinux"
-  script_env:
-    - CFLAGS        [linux]
-    - CXXFLAGS      [linux]
-    - PY_VCRUNTIME_REDIST
   ignore_run_exports:
     # Is static-linked
     - xar
+  ignore_run_exports_from:
+    - {{ compiler('cxx') }}
 
 requirements:
   build:
     # Do not use the compiler on linux
     - {{ compiler('cxx') }}  # [not linux]
-    - cmake
+    - cmake >=3.4.3
     - ninja
     - python >=3
     # - libcxx      # it is not defined{{ cxx_compiler_version }}  # [osx]
@@ -52,6 +50,7 @@ requirements:
     # # libxml2 supports a windows-only feature, see https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/llvm/include/llvm/WindowsManifest/WindowsManifestMerger.h
     # - libxml2   # [win]
     - zlib      # [not win]
+    - glibc     # [linux]
 
 test:
   # Unused test file
