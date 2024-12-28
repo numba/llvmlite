@@ -27,6 +27,8 @@ build:
   number: {{ build_number }}
   script_env:
     - PY_VCRUNTIME_REDIST
+    - CFLAGS
+    - CXXFLAGS
   ignore_run_exports:
     # Is static-linked
     - xar
