@@ -60,6 +60,7 @@ jobs:
         shell: bash
         env:
           CONDA_NO_PLUGINS: "true"
+          CONDA_SOLVER: "classic"
         run: |
           source $HOME/miniconda/bin/activate
           conda install -y conda-build ninja cmake
@@ -71,6 +72,7 @@ jobs:
         shell: bash
         env:
           CONDA_NO_PLUGINS: "true"
+          CONDA_SOLVER: "classic"
         run: |
           source $HOME/miniconda/bin/activate
           conda install -y conda-build ninja cmake
@@ -82,6 +84,7 @@ jobs:
         shell: bash
         env:
           CONDA_NO_PLUGINS: "true"
+          CONDA_SOLVER: "classic"
         run: |
           source /c/Miniconda3/Scripts/activate
           conda install -y conda-build ninja cmake
