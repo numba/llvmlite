@@ -62,8 +62,8 @@ jobs:
           CONDA_NO_PLUGINS: "true"
         run: |
           source $HOME/miniconda/bin/activate
-          conda install -y --no-plugins conda-build ninja cmake
-          conda build --no-plugins conda-recipes/llvmdev
+          conda install -y conda-build ninja cmake
+          conda build conda-recipes/llvmdev
 
       # macOS build
       - name: Build LLVMDEV (macOS)
@@ -73,8 +73,8 @@ jobs:
           CONDA_NO_PLUGINS: "true"
         run: |
           source $HOME/miniconda/bin/activate
-          conda install -y --no-plugins conda-build ninja cmake
-          conda build --no-plugins conda-recipes/llvmdev
+          conda install -y conda-build ninja cmake
+          conda build conda-recipes/llvmdev
 
       # Windows build
       - name: Build LLVMDEV (Windows)
@@ -84,8 +84,8 @@ jobs:
           CONDA_NO_PLUGINS: "true"
         run: |
           source /c/Miniconda3/Scripts/activate
-          conda install -y --no-plugins conda-build ninja cmake
-          conda build --no-plugins conda-recipes/llvmdev
+          conda install -y conda-build ninja cmake
+          conda build conda-recipes/llvmdev
 
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
