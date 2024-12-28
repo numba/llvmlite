@@ -27,8 +27,6 @@ build:
   number: {{ build_number }}
   script_env:
     - PY_VCRUNTIME_REDIST
-    - CFLAGS
-    - CXXFLAGS
   ignore_run_exports:
     # Is static-linked
     - xar
@@ -39,7 +37,7 @@ requirements:
     - cmake
     - ninja
     - python >=3
-    # - libcxx      # it is not defined{{ cxx_compiler_version }}  # [osx]
+    - libcxx      # it is not defined{{ cxx_compiler_version }}  # [osx]
     - patch       # [not win]
     - m2-patch    # [win]
     - git         # [(linux and x86_64)]
