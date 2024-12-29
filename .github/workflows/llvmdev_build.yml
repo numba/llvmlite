@@ -1,0 +1,74 @@
+name: llvmdev-build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-llvmdev:
+    name: Build LLVMDEV on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact-name: llvmdev-x86_64
+            output-path: conda-bld/linux-64/*.tar.bz2
+            miniconda-path: $HOME/miniconda
+            miniconda-url: https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+          - os: macos-14
+            artifact-name: llvmdev-macos
+            output-path: conda-bld/osx-64/*.tar.bz2
+            miniconda-path: $HOME/miniconda
+            miniconda-url: https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+          - os: macos-13
+            artifact-name: llvmdev-macos-x86_64
+            output-path: conda-bld/osx-64/*.tar.bz2
+            miniconda-path: $HOME/miniconda
+            miniconda-url: https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+          - os: windows-2022
+            artifact-name: llvmdev-win64
+            output-path: conda-bld/win-64/*.tar.bz2
+            miniconda-path: C:\Miniconda3
+            miniconda-url: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Miniconda
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" = "Windows" ]]; then
+            curl -L ${{ matrix.miniconda-url }} -o miniconda.exe
+            ./miniconda.exe /S /D=${{ matrix.miniconda-path }}
+            echo "${{ matrix.miniconda-path }}/Scripts" >> $GITHUB_PATH
+          else
+            curl -L ${{ matrix.miniconda-url }} -o miniconda.sh
+            bash miniconda.sh -b -p ${{ matrix.miniconda-path }}
+            echo "${{ matrix.miniconda-path }}/bin" >> $GITHUB_PATH
+          fi
+
+      - name: Build
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" = "Windows" ]]; then
+            source ${{ matrix.miniconda-path }}/Scripts/activate
+          else
+            source ${{ matrix.miniconda-path }}/bin/activate
+          fi
+          conda config --add channels conda-forge
+          conda config --add channels defaults
+          conda create -n builder conda-build -y
+          conda activate builder
+          RECIPE_NAME=./conda-recipes/llvmdev_manylinux
+          conda build $RECIPE_NAME --override-channels -c defaults -c conda-forge
+          echo "OUTPUT=$(conda build --output $RECIPE_NAME)" >> $GITHUB_ENV
+
+      - name: Upload LLVMDEV artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.output-path }}
+          retention-days: 1
+          if-no-files-found: error
+
