@@ -56,10 +56,12 @@ jobs:
           else
             source ${{ matrix.miniconda-path }}/bin/activate
           fi
+          conda config --add channels conda-forge
+          conda config --add channels defaults
           conda create -n builder conda-build -y
           conda activate builder
           RECIPE_NAME=./conda-recipes/llvmdev_manylinux
-          conda build $RECIPE_NAME
+          conda build $RECIPE_NAME --override-channels -c defaults -c conda-forge
           echo "OUTPUT=$(conda build --output $RECIPE_NAME)" >> $GITHUB_ENV
 
       - name: Upload LLVMDEV artifacts
