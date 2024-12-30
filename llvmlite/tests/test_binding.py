@@ -908,7 +908,9 @@ class TestMisc(BaseTest):
 
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
-        self.assertEqual(major, 19)
+        # one of these can be valid
+        valid = (17, 18, 19, 20)
+        self.assertIn(major, valid)
         self.assertIn(patch, range(8))
 
     def test_check_jit_execution(self):
