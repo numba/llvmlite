@@ -11,7 +11,7 @@ def _make_opaque_ref(name):
     newcls = type(name, (ctypes.Structure,), {})
     return ctypes.POINTER(newcls)
 
-
+LLVMPY_AddSymbol=_make_opaque_ref("LLVMAddSymbol")
 LLVMContextRef = _make_opaque_ref("LLVMContext")
 LLVMModuleRef = _make_opaque_ref("LLVMModule")
 LLVMValueRef = _make_opaque_ref("LLVMValue")
