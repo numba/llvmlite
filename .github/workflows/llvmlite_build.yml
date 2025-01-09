@@ -9,27 +9,80 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: ["cp310-cp310", "cp311-cp311", "cp312-cp312"]
+        python-version: ["3.10", "3.11", "3.12"]
       fail-fast: false
     
     steps:
       - uses: actions/checkout@v4
       
-      - name: Create Output Directory
+      - name: Install Miniconda
         run: |
-          mkdir -p /home/runner/work/llvmlite/llvmlite/docker_output
-          chmod 777 /home/runner/work/llvmlite/llvmlite/docker_output
+          bash buildscripts/incremental/install_miniconda.sh
+      
+      - name: Add Conda to PATH
+        run: echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+      
+      - name: Create Build Environment
+        run: |
+          conda create -n build_env \
+            python=${{ matrix.python-version }} \
+            conda-build \
+            conda-verify \
+            -y
+          
+          conda activate build_env
+          conda config --set always_yes yes --set changeps1 no
 
       - name: Build LLVMLITE
         run: |
-          cd buildscripts/manylinux
-          chmod +x ./docker_run_x64.sh
-          ./docker_run_x64.sh build_llvmlite.sh "${{ matrix.python-version }}"
+          conda activate build_env
+          conda build conda-recipes/llvmlite \
+            --python ${{ matrix.python-version }} \
+            --output-folder ./conda_output
 
       - name: Upload LLVMLITE artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: llvmlite-${{ matrix.python-version }}
-          path: /home/runner/work/llvmlite/llvmlite/docker_output/dist_x86_64_${{ matrix.python-version }}/wheelhouse/*.whl
+          name: llvmlite-py${{ matrix.python-version }}
+          path: ./conda_output/linux-64/*.tar.bz2
           retention-days: 7
           if-no-files-found: error
+
+  test-llvmlite:
+    needs: build-llvmlite
+    name: Test LLVMLITE Python ${{ matrix.python-version }}
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Miniconda
+        run: |
+          bash buildscripts/incremental/install_miniconda.sh
+      
+      - name: Add Conda to PATH
+        run: echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-py${{ matrix.python-version }}
+          path: ./conda_pkg
+
+      - name: Create Test Environment
+        run: |
+          conda create -n test_env \
+            python=${{ matrix.python-version }} \
+            -y
+          
+          conda activate test_env
+          conda install -c ./conda_pkg llvmlite -y
+
+      - name: Run Tests
+        run: |
+          conda activate test_env
+          python -m llvmlite.tests
