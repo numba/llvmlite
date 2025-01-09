@@ -44,6 +44,7 @@ requirements:
     - libcxx >=4.0.1 # [osx]
     - zlib 
     - zstd 
+    - libllvm15  # [linux64]
 
 test:
   imports:
