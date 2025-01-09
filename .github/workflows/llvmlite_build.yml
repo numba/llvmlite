@@ -92,6 +92,8 @@ jobs:
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda create -n test_env \
             python=${{ matrix.python-version }} \
+            llvmdev \
+            -c numba \
             -y
           
           conda activate test_env
@@ -101,4 +103,7 @@ jobs:
         run: |
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda activate test_env
+          # List dependencies to verify
+          conda list
+          # Run tests
           python -m llvmlite.tests
