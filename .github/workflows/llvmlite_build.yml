@@ -43,6 +43,10 @@ jobs:
         run: |
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda activate build_env
+          # Set version info for conda build
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          export GIT_DESCRIBE_TAG="v0.dev0+${COMMIT_SHA}"
+          export GIT_DESCRIBE_NUMBER=0
           conda build conda-recipes/llvmlite \
             --python ${{ matrix.python-version }} \
             --output-folder ./conda_output
