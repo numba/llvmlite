@@ -11,6 +11,8 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
       fail-fast: false
+    outputs:
+      matrix: ${{ toJSON(matrix) }}
     
     steps:
       - uses: actions/checkout@v4
@@ -20,10 +22,14 @@ jobs:
           bash buildscripts/incremental/install_miniconda.sh
       
       - name: Add Conda to PATH
-        run: echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+        run: |
+          echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda init bash
       
       - name: Create Build Environment
         run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda create -n build_env \
             python=${{ matrix.python-version }} \
             conda-build \
@@ -35,6 +41,7 @@ jobs:
 
       - name: Build LLVMLITE
         run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda activate build_env
           conda build conda-recipes/llvmlite \
             --python ${{ matrix.python-version }} \
@@ -54,7 +61,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ${{ fromJSON(needs.build-llvmlite.outputs.matrix).python-version }}
       fail-fast: false
 
     steps:
@@ -65,7 +72,10 @@ jobs:
           bash buildscripts/incremental/install_miniconda.sh
       
       - name: Add Conda to PATH
-        run: echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+        run: |
+          echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda init bash
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -75,6 +85,7 @@ jobs:
 
       - name: Create Test Environment
         run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda create -n test_env \
             python=${{ matrix.python-version }} \
             -y
@@ -84,5 +95,6 @@ jobs:
 
       - name: Run Tests
         run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda activate test_env
           python -m llvmlite.tests
