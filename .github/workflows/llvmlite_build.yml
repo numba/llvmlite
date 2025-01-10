@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
       fail-fast: false
     outputs:
       matrix: ${{ toJSON(matrix) }}
@@ -32,38 +32,35 @@ jobs:
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda create -n build_env \
             python=${{ matrix.python-version }} \
-            conda-build \
-            conda-verify \
+            setuptools \
+            wheel \
             -y
           
           conda activate build_env
           # Install llvmdev without dependencies, like manylinux build
           conda install -y numba/label/ci::llvmdev --no-deps
-          conda config --set always_yes yes --set changeps1 no
 
       - name: Build LLVMLITE
         run: |
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda activate build_env
-          # Set version info for conda build
-          COMMIT_SHA=$(git rev-parse --short HEAD)
-          export GIT_DESCRIBE_TAG="v0.dev0+${COMMIT_SHA}"
-          export GIT_DESCRIBE_NUMBER=0
           # Build with static linking like manylinux
           export LLVMLITE_CXX_STATIC_LINK=1
           # Set LLVM_CONFIG to point to the correct llvm-config
           export LLVM_CONFIG="$CONDA_PREFIX/bin/llvm-config"
           # Ensure shared library is built
           export LLVMLITE_SHARED=1
-          conda build conda-recipes/llvmlite \
-            --python ${{ matrix.python-version }} \
-            --output-folder ./conda_output
+          
+          # Clean up
+          python setup.py clean
+          # Build wheel
+          python setup.py bdist_wheel
 
       - name: Upload LLVMLITE artifacts
         uses: actions/upload-artifact@v4
         with:
           name: llvmlite-py${{ matrix.python-version }}
-          path: ./conda_output/linux-64/*.tar.bz2
+          path: dist/*.whl
           retention-days: 7
           if-no-files-found: error
 
