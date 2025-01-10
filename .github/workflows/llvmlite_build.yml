@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-llvmlite:
-    name: Build LLVMLITE Python ${{ matrix.python-version }}
+    name: build_linux_64_py${{ matrix.python-version }}_npy1.11
     runs-on: ubuntu-24.04
     strategy:
       matrix:
@@ -37,10 +37,8 @@ jobs:
             -y
           
           conda activate build_env
-          # Install llvmdev without dependencies, like manylinux build
-          conda install -y numba/label/ci::llvmdev --no-deps
 
-      - name: Build LLVMLITE
+      - name: build_linux_64_py${{ matrix.python-version }}_npy1.11
         run: |
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
           conda activate build_env
@@ -56,7 +54,14 @@ jobs:
           # Build wheel
           python setup.py bdist_wheel
 
-      - name: Upload LLVMLITE artifacts
+      - name: test_linux_64_py${{ matrix.python-version }}_npyNone
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda activate build_env
+          python -m pip install dist/*.whl
+          python -m llvmlite.tests
+
+      - name: upload_linux_64_py${{ matrix.python-version }}
         uses: actions/upload-artifact@v4
         with:
           name: llvmlite-py${{ matrix.python-version }}
