@@ -34,11 +34,11 @@ jobs:
             python=${{ matrix.python-version }} \
             conda-build \
             conda-verify \
-            llvmdev \
-            -c numba \
             -y
           
           conda activate build_env
+          # Install llvmdev without dependencies, like manylinux build
+          conda install -y numba/label/ci::llvmdev --no-deps
           conda config --set always_yes yes --set changeps1 no
 
       - name: Build LLVMLITE
@@ -49,8 +49,8 @@ jobs:
           COMMIT_SHA=$(git rev-parse --short HEAD)
           export GIT_DESCRIBE_TAG="v0.dev0+${COMMIT_SHA}"
           export GIT_DESCRIBE_NUMBER=0
-          # Debug: show environment
-          conda list
+          # Build with static linking like manylinux
+          export LLVMLITE_CXX_STATIC_LINK=1
           conda build conda-recipes/llvmlite \
             --python ${{ matrix.python-version }} \
             --output-folder ./conda_output
