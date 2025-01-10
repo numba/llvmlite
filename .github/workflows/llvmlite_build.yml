@@ -30,8 +30,10 @@ jobs:
       - name: Create Build Environment
         run: |
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          # Match Airflow build environment
           conda create -n build_env \
             python=${{ matrix.python-version }} \
+            numpy=1.11 \
             conda-build \
             conda-verify \
             -y
@@ -55,8 +57,6 @@ jobs:
           export LLVM_CONFIG="$CONDA_PREFIX/bin/llvm-config"
           # Ensure shared library is built
           export LLVMLITE_SHARED=1
-          # Add LLVM lib directory to library path
-          export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
           conda build conda-recipes/llvmlite \
             --python ${{ matrix.python-version }} \
             --output-folder ./conda_output
