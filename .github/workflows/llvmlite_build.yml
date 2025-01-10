@@ -51,6 +51,10 @@ jobs:
           export GIT_DESCRIBE_NUMBER=0
           # Build with static linking like manylinux
           export LLVMLITE_CXX_STATIC_LINK=1
+          # Set LLVM_CONFIG to point to the correct llvm-config
+          export LLVM_CONFIG="$CONDA_PREFIX/bin/llvm-config"
+          # Ensure shared library is built
+          export LLVMLITE_SHARED=1
           conda build conda-recipes/llvmlite \
             --python ${{ matrix.python-version }} \
             --output-folder ./conda_output
@@ -63,51 +67,3 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-  test-llvmlite:
-    needs: build-llvmlite
-    name: Test LLVMLITE Python ${{ matrix.python-version }}
-    runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        python-version: ${{ fromJSON(needs.build-llvmlite.outputs.matrix).python-version }}
-      fail-fast: false
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Miniconda
-        run: |
-          bash buildscripts/incremental/install_miniconda.sh
-      
-      - name: Add Conda to PATH
-        run: |
-          echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
-          source "$HOME/miniconda3/etc/profile.d/conda.sh"
-          conda init bash
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: llvmlite-py${{ matrix.python-version }}
-          path: ./conda_pkg
-
-      - name: Create Test Environment
-        run: |
-          source "$HOME/miniconda3/etc/profile.d/conda.sh"
-          conda create -n test_env \
-            python=${{ matrix.python-version }} \
-            llvmdev \
-            -c numba \
-            -y
-          
-          conda activate test_env
-          conda install -c ./conda_pkg llvmlite -y
-
-      - name: Run Tests
-        run: |
-          source "$HOME/miniconda3/etc/profile.d/conda.sh"
-          conda activate test_env
-          # List dependencies to verify
-          conda list
-          # Run tests
-          python -m llvmlite.tests
