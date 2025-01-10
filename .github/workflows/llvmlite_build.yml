@@ -83,7 +83,7 @@ jobs:
       - name: Create Build Environment
         shell: bash
         run: |
-          ssource /c/Miniconda3/Scripts/activate
+          source /c/Miniconda3/Scripts/activate
           conda create -n build_env \
             python=${{ matrix.python-version }} \
             setuptools \
