@@ -73,6 +73,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Install Visual Studio
+        uses: microsoft/setup-msbuild@v1.1
+        
       - name: Install Miniconda
         shell: pwsh
         run: |
@@ -88,28 +91,35 @@ jobs:
             python=${{ matrix.python-version }} \
             setuptools \
             wheel \
+            cmake \
             -y
           conda activate build_env
-          conda install -y numba/label/ci::llvmdev --no-deps
+          conda install -y -c numba/label/ci llvmdev --no-deps
 
-      - name: build_win_64_py${{ matrix.python-version }}_npy1.11
+      - name: Set Environment Variables
         shell: bash
         run: |
-          source /c/Miniconda3/etc/profile.d/conda.sh
-          conda activate build_env
-          export LLVMLITE_CXX_STATIC_LINK=1
-          export LLVM_CONFIG="$CONDA_PREFIX/bin/llvm-config"
-          export LLVMLITE_SHARED=1
-          
+          echo "CMAKE_GENERATOR=Visual Studio 16 2019" >> $GITHUB_ENV
+          echo "CMAKE_GENERATOR_PLATFORM=x64" >> $GITHUB_ENV
+          echo "LLVM_CONFIG=C:/Miniconda3/envs/build_env/Library/bin/llvm-config" >> $GITHUB_ENV
+          echo "LLVM_DIR=C:/Miniconda3/envs/build_env/Library/lib/cmake/llvm" >> $GITHUB_ENV
+          echo "LLVM_SHARED=1" >> $GITHUB_ENV
+
+      - name: build_win_64_py${{ matrix.python-version }}_npy1.11
+        shell: cmd
+        run: |
+          call C:\Miniconda3\Scripts\activate.bat build_env
+          set DISTUTILS_USE_SDK=1
+          set VS_VERSION=2019
+          set VS_PLATFORM=x64
           python setup.py clean
           python setup.py bdist_wheel
 
       - name: test_win_64_py${{ matrix.python-version }}_npyNone
-        shell: bash
+        shell: cmd
         run: |
-          source /c/Miniconda3/etc/profile.d/conda.sh
-          conda activate build_env
-          python -m pip install dist/*.whl
+          call C:\Miniconda3\Scripts\activate.bat build_env
+          python -m pip install dist\*.whl
           python -m llvmlite.tests
 
       - name: upload_win_64_py${{ matrix.python-version }}
