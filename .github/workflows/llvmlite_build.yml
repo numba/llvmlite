@@ -30,10 +30,8 @@ jobs:
       - name: Create Build Environment
         run: |
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
-          # Match Airflow build environment
           conda create -n build_env \
             python=${{ matrix.python-version }} \
-            numpy=1.11 \
             conda-build \
             conda-verify \
             -y
