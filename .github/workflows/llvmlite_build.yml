@@ -92,9 +92,11 @@ jobs:
             setuptools \
             wheel \
             cmake \
+            libxml2 \
             -y
           conda activate build_env
-          conda install -y -c numba/label/ci llvmdev --no-deps
+          # Install LLVM with all dependencies
+          conda install -y -c numba/label/ci llvmdev
 
       - name: Set Environment Variables
         shell: bash
@@ -104,6 +106,7 @@ jobs:
           echo "LLVM_CONFIG=C:/Miniconda3/envs/build_env/Library/bin/llvm-config" >> $GITHUB_ENV
           echo "LLVM_DIR=C:/Miniconda3/envs/build_env/Library/lib/cmake/llvm" >> $GITHUB_ENV
           echo "LLVM_SHARED=1" >> $GITHUB_ENV
+          echo "LIBXML2_ROOT=C:/Miniconda3/envs/build_env/Library" >> $GITHUB_ENV
 
       - name: build_win_64_py${{ matrix.python-version }}_npy1.11
         shell: cmd
