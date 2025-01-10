@@ -1,0 +1,195 @@
+name: llvmlite-build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  linux-build:
+    name: build_linux_64_py${{ matrix.python-version }}_npy1.11
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Miniconda
+        run: |
+          bash buildscripts/incremental/install_miniconda.sh
+      
+      - name: Add Conda to PATH
+        run: |
+          echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda init bash
+      
+      - name: Create Build Environment
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda create -n build_env \
+            python=${{ matrix.python-version }} \
+            setuptools \
+            wheel \
+            -y
+          conda activate build_env
+          conda install -y numba/label/ci::llvmdev --no-deps
+
+      - name: build_linux_64_py${{ matrix.python-version }}_npy1.11
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda activate build_env
+          export LLVMLITE_CXX_STATIC_LINK=1
+          export LLVM_CONFIG="$CONDA_PREFIX/bin/llvm-config"
+          export LLVMLITE_SHARED=1
+          
+          python setup.py clean
+          python setup.py bdist_wheel
+
+      - name: test_linux_64_py${{ matrix.python-version }}_npyNone
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda activate build_env
+          python -m pip install dist/*.whl
+          python -m llvmlite.tests
+
+      - name: upload_linux_64_py${{ matrix.python-version }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-linux-64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          retention-days: 7
+          if-no-files-found: error
+
+  windows-build:
+    name: build_win_64_py${{ matrix.python-version }}_npy1.11
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Visual Studio
+        uses: microsoft/setup-msbuild@v1.1
+        
+      - name: Install Miniconda
+        shell: pwsh
+        run: |
+          $wc = New-Object net.webclient
+          $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
+          Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
+      
+      - name: Create Build Environment
+        shell: bash
+        run: |
+          source /c/Miniconda3/Scripts/activate
+          conda create -n build_env \
+            python=${{ matrix.python-version }} \
+            setuptools \
+            wheel \
+            cmake \
+            libxml2 \
+            -y
+          conda activate build_env
+          # Install LLVM with all dependencies
+          conda install -y -c numba/label/ci llvmdev
+
+      - name: Set Environment Variables
+        shell: bash
+        run: |
+          echo "CMAKE_GENERATOR=Visual Studio 16 2019" >> $GITHUB_ENV
+          echo "CMAKE_GENERATOR_PLATFORM=x64" >> $GITHUB_ENV
+          echo "LLVM_CONFIG=C:/Miniconda3/envs/build_env/Library/bin/llvm-config" >> $GITHUB_ENV
+          echo "LLVM_DIR=C:/Miniconda3/envs/build_env/Library/lib/cmake/llvm" >> $GITHUB_ENV
+          echo "LLVM_SHARED=1" >> $GITHUB_ENV
+          echo "LIBXML2_ROOT=C:/Miniconda3/envs/build_env/Library" >> $GITHUB_ENV
+
+      - name: build_win_64_py${{ matrix.python-version }}_npy1.11
+        shell: cmd
+        run: |
+          call C:\Miniconda3\Scripts\activate.bat build_env
+          set DISTUTILS_USE_SDK=1
+          set VS_VERSION=2019
+          set VS_PLATFORM=x64
+          python setup.py clean
+          python setup.py bdist_wheel
+
+      - name: test_win_64_py${{ matrix.python-version }}_npyNone
+        shell: cmd
+        run: |
+          call C:\Miniconda3\Scripts\activate.bat build_env
+          python -m pip install dist\*.whl
+          python -m llvmlite.tests
+
+      - name: upload_win_64_py${{ matrix.python-version }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          retention-days: 7
+          if-no-files-found: error
+
+  macos-build:
+    name: build_osx_64_py${{ matrix.python-version }}_npy1.11
+    runs-on: macos-13
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Miniconda
+        run: |
+          bash buildscripts/incremental/install_miniconda.sh
+      
+      - name: Add Conda to PATH
+        run: |
+          echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda init bash
+      
+      - name: Create Build Environment
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda create -n build_env \
+            python=${{ matrix.python-version }} \
+            setuptools \
+            wheel \
+            -y
+          conda activate build_env
+          # Install LLVM with all dependencies for macOS
+          conda install -y -c numba/label/ci llvmdev
+
+      - name: build_osx_64_py${{ matrix.python-version }}_npy1.11
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda activate build_env
+          export MACOSX_DEPLOYMENT_TARGET=10.9
+          export CONDA_BUILD_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+          export LLVM_CONFIG="$CONDA_PREFIX/bin/llvm-config"
+          export LLVMLITE_SHARED=1
+          
+          python setup.py clean
+          python setup.py bdist_wheel
+
+      - name: test_osx_64_py${{ matrix.python-version }}_npyNone
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda activate build_env
+          python -m pip install dist/*.whl
+          python -m llvmlite.tests
+
+      - name: upload_osx_64_py${{ matrix.python-version }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-osx-64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          retention-days: 7
+          if-no-files-found: error
+
