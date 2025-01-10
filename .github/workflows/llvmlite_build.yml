@@ -133,3 +133,63 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  macos-build:
+    name: build_osx_64_py${{ matrix.python-version }}_npy1.11
+    runs-on: macos-13
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Miniconda
+        run: |
+          bash buildscripts/incremental/install_miniconda.sh
+      
+      - name: Add Conda to PATH
+        run: |
+          echo "$HOME/miniconda3/bin" >> $GITHUB_PATH
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda init bash
+      
+      - name: Create Build Environment
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda create -n build_env \
+            python=${{ matrix.python-version }} \
+            setuptools \
+            wheel \
+            -y
+          conda activate build_env
+          # Install LLVM with all dependencies for macOS
+          conda install -y -c numba/label/ci llvmdev
+
+      - name: build_osx_64_py${{ matrix.python-version }}_npy1.11
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda activate build_env
+          export MACOSX_DEPLOYMENT_TARGET=10.9
+          export CONDA_BUILD_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+          export LLVM_CONFIG="$CONDA_PREFIX/bin/llvm-config"
+          export LLVMLITE_SHARED=1
+          
+          python setup.py clean
+          python setup.py bdist_wheel
+
+      - name: test_osx_64_py${{ matrix.python-version }}_npyNone
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda activate build_env
+          python -m pip install dist/*.whl
+          python -m llvmlite.tests
+
+      - name: upload_osx_64_py${{ matrix.python-version }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-osx-64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          retention-days: 7
+          if-no-files-found: error
+
