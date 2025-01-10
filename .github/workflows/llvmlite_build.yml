@@ -35,8 +35,8 @@ jobs:
             setuptools \
             wheel \
             -y
-          
           conda activate build_env
+          conda install -y numba/label/ci::llvmdev --no-deps
 
       - name: build_linux_64_py${{ matrix.python-version }}_npy1.11
         run: |
