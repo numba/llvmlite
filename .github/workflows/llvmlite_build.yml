@@ -57,9 +57,11 @@ jobs:
           export LLVMLITE_SHARED=1
           # Add LLVM lib directory to library path
           export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
+          # Add libllvm15 as runtime dependency
           conda build conda-recipes/llvmlite \
             --python ${{ matrix.python-version }} \
-            --output-folder ./conda_output
+            --output-folder ./conda_output \
+            --extra-deps "libllvm15"
 
       - name: Upload LLVMLITE artifacts
         uses: actions/upload-artifact@v4
