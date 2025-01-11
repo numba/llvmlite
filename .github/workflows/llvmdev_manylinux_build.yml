@@ -1,0 +1,27 @@
+name: llvmdev-manylinux-build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  linux-64:
+    name: Build LLVMDEV Manylinux (linux-64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build LLVMDEV Manylinux
+        run: |
+          mkdir -p /home/runner/work/llvmlite/llvmlite/docker_output
+          chmod 777 /home/runner/work/llvmlite/llvmlite/docker_output
+          cd buildscripts/manylinux
+          ./docker_run_x64.sh build_llvmdev.sh "${MINICONDA_FILE}"
+
+      - name: Upload LLVMDEV Manylinux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmdev-manylinux-linux-x86_64
+          path: /home/runner/work/llvmlite/llvmlite/docker_output/linux-64/*.tar.bz2
+          retention-days: 7
+          if-no-files-found: error 
+

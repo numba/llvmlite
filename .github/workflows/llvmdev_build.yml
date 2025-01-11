@@ -9,22 +9,32 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Build LLVMDEV
+
+      - name: Install Miniconda
         run: |
-          mkdir -p /home/runner/work/llvmlite/llvmlite/docker_output
-          chmod 777 /home/runner/work/llvmlite/llvmlite/docker_output
-          cd buildscripts/manylinux
-          ./docker_run_x64.sh build_llvmdev.sh "${MINICONDA_FILE}"
-          RECIPE_NAME=./conda-recipes/llvmdev_manylinux
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
+
+      - name: Setup Conda Environment
+        run: |
+          source $HOME/miniconda/bin/activate
+          conda create -n builder conda-build -y
+
+      - name: Build
+        run: |
+          source $HOME/miniconda/bin/activate
+          conda activate builder
+          RECIPE_NAME=./conda-recipes/llvmdev
+          conda build $RECIPE_NAME
           echo "OUTPUT=$(conda build --output $RECIPE_NAME)" >> $GITHUB_ENV
 
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
         with:
           name: llvmdev-linux-x86_64
-          path: /home/runner/work/llvmlite/llvmlite/docker_output/linux-64/*.tar.bz2
-          retention-days: 1
+          path: ${{ env.OUTPUT }}
+          retention-days: 7
           if-no-files-found: error 
 
   win-64:
@@ -39,27 +49,55 @@ jobs:
           $wc = New-Object net.webclient
           $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
           Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
+          # Initialize conda for PowerShell
+          & C:\Miniconda3\shell\condabin\conda-hook.ps1
+          conda init powershell
 
       - name: Setup Conda Environment
-        shell: bash
+        shell: pwsh
         run: |
-          source /c/Miniconda3/Scripts/activate
+          # Reload the path
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           conda create -n builder conda-build -y
 
-      - name: Build
-        shell: bash
+      - name: Install Build Dependencies
+        shell: pwsh
         run: |
-          source /c/Miniconda3/Scripts/activate
           conda activate builder
-          RECIPE_NAME=./conda-recipes/llvmdev_manylinux
-          conda build $RECIPE_NAME
-          echo "OUTPUT=$(conda build --output $RECIPE_NAME)" >> $GITHUB_ENV
+          conda install -y cmake ninja
+
+      - name: Build
+        shell: pwsh
+        run: |
+          conda activate builder
+          
+          $ErrorActionPreference = 'Stop'
+          $RecipeName = ".\conda-recipes\llvmdev"
+          
+          Write-Host "Starting conda build..."
+          conda build $RecipeName
+          if ($LASTEXITCODE -ne 0) {
+              throw "Conda build failed with exit code $LASTEXITCODE"
+          }
+          
+          Write-Host "Getting output path..."
+          $OUTPUT = conda build --output $RecipeName
+          if ($LASTEXITCODE -ne 0) {
+              throw "Failed to get conda build output path"
+          }
+          
+          Write-Host "Conda package will be at: $OUTPUT"
+          if (-not (Test-Path $OUTPUT)) {
+              throw "Expected output package does not exist: $OUTPUT"
+          }
+          
+          "OUTPUT=$OUTPUT" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Upload LLVMDEV artifacts
         uses: actions/upload-artifact@v4
         with:
           name: llvmdev-windows-x86_64
           path: ${{ env.OUTPUT }}
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: error
 
