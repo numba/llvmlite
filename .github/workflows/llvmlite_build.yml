@@ -47,10 +47,17 @@ jobs:
           python setup.py clean
           python setup.py bdist_wheel
 
+      - name: Create Test Environment
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda create -n test_env \
+            python=${{ matrix.python-version }} \
+            -y
+
       - name: test_linux_64_py${{ matrix.python-version }}_npyNone
         run: |
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
-          conda activate build_env
+          conda activate test_env
           python -m pip install dist/*.whl
           python -m llvmlite.tests
 
@@ -118,10 +125,16 @@ jobs:
           python setup.py clean
           python setup.py bdist_wheel
 
+      - name: Create Test Environment
+        shell: cmd
+        run: |
+          call C:\Miniconda3\Scripts\activate.bat
+          conda create -n test_env python=${{ matrix.python-version }} -y
+
       - name: test_win_64_py${{ matrix.python-version }}_npyNone
         shell: cmd
         run: |
-          call C:\Miniconda3\Scripts\activate.bat build_env
+          call C:\Miniconda3\Scripts\activate.bat test_env
           python -m pip install dist\*.whl
           python -m llvmlite.tests
 
@@ -178,10 +191,24 @@ jobs:
           python setup.py clean
           python setup.py bdist_wheel
 
+      - name: Create Test Environment
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh"
+          conda create -n test_env \
+            python=${{ matrix.python-version }} \
+            -y
+          conda activate test_env
+          conda install -y -c numba/label/ci llvmdev
+
       - name: test_osx_64_py${{ matrix.python-version }}_npyNone
         run: |
           source "$HOME/miniconda3/etc/profile.d/conda.sh"
-          conda activate build_env
+          conda activate test_env
+          export MACOSX_DEPLOYMENT_TARGET=10.9
+          export CONDA_BUILD_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+          export LLVM_CONFIG="$CONDA_PREFIX/bin/llvm-config"
+          export LLVMLITE_SHARED=1
+          
           python -m pip install dist/*.whl
           python -m llvmlite.tests
 
