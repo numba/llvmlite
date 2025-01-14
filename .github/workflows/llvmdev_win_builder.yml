@@ -1,0 +1,42 @@
+name: llvmdev_win_builder
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  windows:
+    name: Windows
+    runs-on: windows-2019
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Miniconda
+      shell: pwsh
+      run: |
+        $wc = New-Object net.webclient
+        $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
+        Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
+
+    - name: Setup Conda Environment
+      shell: bash
+      run: |
+        source /c/Miniconda3/Scripts/activate
+        conda create -n builder conda-build -y
+
+    - name: Build
+      shell: bash
+      run: |
+        source /c/Miniconda3/Scripts/activate
+        conda activate builder
+        RECIPE_NAME=./conda-recipes/llvmdev_manylinux
+        conda build $RECIPE_NAME
+        echo "OUTPUT=$(conda build --output $RECIPE_NAME)" >> $GITHUB_ENV
+
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: llvmdev
+        path: ${{ env.OUTPUT }}
