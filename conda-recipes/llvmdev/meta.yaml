@@ -28,12 +28,11 @@ build:
   script_env:
     - PY_VCRUNTIME_REDIST
   ignore_run_exports:
-    # Is static-linked
     - xar
 
 requirements:
   build:
-    - {{ compiler('cxx') }} # [not osx]
+    - {{ compiler('cxx') }}  # [not osx]
     - cmake
     - ninja
     - python >=3

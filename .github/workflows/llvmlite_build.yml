@@ -2,6 +2,10 @@ name: llvmlite-build
 
 on:
   workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'LLVMDEV workflow run ID to use artifacts from'
+        type: string
 
 jobs:
   linux-build:
@@ -15,6 +19,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      # Download llvmdev artifact from specific workflow run
+      - name: Download LLVMDEV Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev-linux-x86_64
+          path: llvmdev-pkg
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: swap357/llvmlite
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: Install Miniconda
         run: |
           bash buildscripts/incremental/install_miniconda.sh
@@ -34,7 +49,13 @@ jobs:
             wheel \
             -y
           conda activate build_env
-          conda install -y numba/label/ci::llvmdev --no-deps
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+            # Install local llvmdev package if workflow ID provided
+            conda install -y ./llvmdev-pkg/*.tar.bz2
+          else
+            # Install from numba channel if no workflow ID
+            conda install -y -c numba/label/ci llvmdev
+          fi
 
       - name: build_linux_64_py${{ matrix.python-version }}_npy1.11
         run: |
@@ -80,6 +101,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Download LLVMDEV Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev-windows-x86_64
+          path: llvmdev-pkg
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: swap357/llvmlite
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install Visual Studio
         uses: microsoft/setup-msbuild@v1.1
         
@@ -102,8 +133,13 @@ jobs:
             libxml2 \
             -y
           conda activate build_env
-          # Install LLVM with all dependencies
-          conda install -y -c numba/label/ci llvmdev
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+            # Install local llvmdev package if workflow ID provided
+            conda install -y ./llvmdev-pkg/*.tar.bz2
+          else
+            # Install from numba channel if no workflow ID
+            conda install -y -c numba/label/ci llvmdev
+          fi
 
       - name: Set Environment Variables
         shell: bash
@@ -157,6 +193,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Download LLVMDEV Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev-osx-64
+          path: llvmdev-pkg
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: swap357/llvmlite
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install Miniconda
         run: |
           bash buildscripts/incremental/install_miniconda.sh
@@ -176,8 +222,13 @@ jobs:
             wheel \
             -y
           conda activate build_env
-          # Install LLVM with all dependencies for macOS
-          conda install -y -c numba/label/ci llvmdev
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+            # Install local llvmdev package if workflow ID provided
+            conda install -y ./llvmdev-pkg/*.tar.bz2
+          else
+            # Install from numba channel if no workflow ID
+            conda install -y -c numba/label/ci llvmdev
+          fi
 
       - name: build_osx_64_py${{ matrix.python-version }}_npy1.11
         run: |

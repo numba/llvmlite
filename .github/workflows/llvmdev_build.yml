@@ -37,6 +37,11 @@ jobs:
           retention-days: 7
           if-no-files-found: error 
 
+      - name: Get Workflow Run ID
+        run: |
+          echo "Current workflow run ID: ${{ github.run_id }}"
+          echo "Use this ID when triggering llvmlite workflow"
+
   win-64:
     name: Build LLVMDEV (win-64)
     runs-on: windows-2019
@@ -101,6 +106,11 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      - name: Get Workflow Run ID
+        run: |
+          echo "Current workflow run ID: ${{ github.run_id }}"
+          echo "Use this ID when triggering llvmlite workflow"
+          
   osx-64:
     name: Build LLVMDEV (osx-64)
     runs-on: macos-13
@@ -143,5 +153,4 @@ jobs:
         run: |
           echo "Current workflow run ID: ${{ github.run_id }}"
           echo "Use this ID when triggering llvmlite workflow"
-      
 
