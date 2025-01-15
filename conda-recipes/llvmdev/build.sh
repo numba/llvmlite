@@ -8,6 +8,20 @@ set -x
 sed -i.bak "s/NOT APPLE AND ARG_SONAME/ARG_SONAME/g" llvm/cmake/modules/AddLLVM.cmake
 sed -i.bak "s/NOT APPLE AND NOT ARG_SONAME/NOT ARG_SONAME/g" llvm/cmake/modules/AddLLVM.cmake
 
+# For macOS, use system clang instead of conda's toolchain
+ if [[ "$target_platform" == osx-* ]]; then
+   export CONDA_BUILD_SYSROOT=$(xcrun --show-sdk-path)
+   export SDKROOT=$(xcrun --show-sdk-path)
+   export MACOSX_DEPLOYMENT_TARGET=10.9
+   export CC=$(xcrun -f clang)
+   export CXX=$(xcrun -f clang++)
+   export CFLAGS="-isysroot $SDKROOT"
+   export CXXFLAGS="-isysroot $SDKROOT"
+   export LDFLAGS="-isysroot $SDKROOT"
+   # Override conda's cmake args
+   CMAKE_ARGS=""
+ fi
+
 mkdir build
 cd build
 

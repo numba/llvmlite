@@ -101,3 +101,47 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  osx-64:
+    name: Build LLVMDEV (osx-64)
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_14.2.app
+          xcrun --show-sdk-path
+
+      - name: Install Miniconda
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
+
+      - name: Setup Conda Environment
+        run: |
+          source $HOME/miniconda/bin/activate
+          conda create -n builder conda-build cmake ninja -y
+
+      - name: Build
+        run: |
+          source $HOME/miniconda/bin/activate
+          conda activate builder
+          RECIPE_NAME=./conda-recipes/llvmdev
+          conda build $RECIPE_NAME --no-anaconda-upload
+          echo "OUTPUT=$(conda build --output $RECIPE_NAME)" >> $GITHUB_ENV
+
+      - name: Upload LLVMDEV artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmdev-osx-64
+          path: ${{ env.OUTPUT }}
+          retention-days: 7
+          if-no-files-found: error 
+
+      - name: Get Workflow Run ID
+        run: |
+          echo "Current workflow run ID: ${{ github.run_id }}"
+          echo "Use this ID when triggering llvmlite workflow"
+      
+

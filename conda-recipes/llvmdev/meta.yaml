@@ -33,7 +33,7 @@ build:
 
 requirements:
   build:
-    - {{ compiler('cxx') }}
+    - {{ compiler('cxx') }} # [not osx]
     - cmake
     - ninja
     - python >=3
