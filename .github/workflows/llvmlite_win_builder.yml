@@ -69,8 +69,10 @@ jobs:
             -y
           conda activate build_env
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+            # Install local llvmdev package if workflow ID provided
             conda install -y ./llvmdev-pkg/*.tar.bz2
           else
+            # Install from numba channel if no workflow ID
             conda install -y -c numba/label/ci llvmdev
           fi
           # Set environment variable to disable DIA SDK requirement
