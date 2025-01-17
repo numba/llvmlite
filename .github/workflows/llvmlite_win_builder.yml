@@ -1,0 +1,79 @@
+name: llvmlite-build
+
+on:
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+
+jobs:
+  windows:
+    name: windows
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download LLVMDEV Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev-windows-x86_64
+          path: llvmdev-pkg
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Visual Studio
+        uses: microsoft/setup-msbuild@v1.1
+        
+      - name: Install Miniconda
+        shell: pwsh
+        run: |
+          $wc = New-Object net.webclient
+          $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
+          Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
+
+      - name: Create Build Environment
+        shell: bash
+        run: |
+          source /c/Miniconda3/Scripts/activate
+          conda create -n build_env \
+            python=${{ matrix.python-version }} \
+            conda-build \
+            setuptools \
+            wheel \
+            cmake \
+            libxml2 \
+            -y
+          conda activate build_env
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+            # Install local llvmdev package if workflow ID provided
+            conda install -y ./llvmdev-pkg/*.tar.bz2
+          else
+            # Install from numba channel if no workflow ID
+            conda install -y -c numba/label/ci llvmdev
+          fi
+
+      - name: Build Conda Package
+        shell: bash
+        run: |
+          source /c/Miniconda3/Scripts/activate
+          conda activate build_env
+          RECIPE_NAME=./conda-recipes/llvmlite
+          conda build $RECIPE_NAME
+          echo "CONDA_PKG=$(conda build --output $RECIPE_NAME)" >> $GITHUB_ENV
+
+      - name: Upload Conda Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: ${{ env.CONDA_PKG }}
+          retention-days: 7
+          if-no-files-found: error
