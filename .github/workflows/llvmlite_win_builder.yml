@@ -32,6 +32,21 @@ jobs:
 
       - name: Install Visual Studio
         uses: microsoft/setup-msbuild@v1.1
+        with:
+          vs-version: '[16.11,16.12)'
+          vs-prerelease: false
+        
+      - name: Install Visual Studio Components
+        shell: powershell
+        run: |
+          # Install required VS components
+          $vsPath = & vswhere -latest -property installationPath
+          $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+          & $vsInstallerPath modify `
+            --installPath "$vsPath" `
+            --quiet --norestart --nocache `
+            --add Microsoft.VisualStudio.Component.VC.DiagnosticTools `
+            --add Microsoft.VisualStudio.Component.Windows10SDK
         
       - name: Install Miniconda
         shell: pwsh
@@ -54,12 +69,12 @@ jobs:
             -y
           conda activate build_env
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-            # Install local llvmdev package if workflow ID provided
             conda install -y ./llvmdev-pkg/*.tar.bz2
           else
-            # Install from numba channel if no workflow ID
             conda install -y -c numba/label/ci llvmdev
           fi
+          # Set environment variable to disable DIA SDK requirement
+          echo "LLVM_ENABLE_DIA_SDK=OFF" >> $GITHUB_ENV
 
       - name: Build Conda Package
         shell: bash
