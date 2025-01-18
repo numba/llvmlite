@@ -30,6 +30,7 @@ set -v
 if [ "$LLVM" == "16" ]; then
     # also install lld, not required when using the numba channel because the numba
     #  channel includes lld.
+    $CONDA_INSTALL libstdcxx-ng
     $CONDA_INSTALL -c conda-forge llvmdev="16" lld="16"
 else
     $CONDA_INSTALL -c numba llvmdev="15.*"
