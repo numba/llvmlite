@@ -20,8 +20,10 @@ if "%LLVM%"=="16" (
   set LLVMDEV_CHANNEL="numba"
 )
 
-call conda install -y -q -c %LLVMDEV_CHANNEL% llvmdev="%LLVM%" libxml2
 if "%LLVM%"=="16" (
+  call conda install libstdcxx-ng
   call conda install -y -q -c %LLVMDEV_CHANNEL% lld="16"
 )
+call conda install -y -q -c %LLVMDEV_CHANNEL% llvmdev="%LLVM%" libxml2
+
 if %errorlevel% neq 0 exit /b %errorlevel%
