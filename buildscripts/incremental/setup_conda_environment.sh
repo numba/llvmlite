@@ -31,7 +31,9 @@ if [ "$LLVM" == "16" ]; then
     # also install lld, not required when using the numba channel because the numba
     #  channel includes lld.
     if [[ $(uname) == Linux ]]; then
-        $CONDA_INSTALL update libstdcxx-ng
+        conda update libstdcxx-ng
+    else
+        $CONDA_INSTALL -c conda-forge libcxx
     fi
     $CONDA_INSTALL -c conda-forge llvmdev="16" lld="16"
 else
@@ -40,6 +42,8 @@ else
     if [[ $(uname) == Linux ]]; then
         # $CONDA_INSTALL gcc_linux-64 gxx_linux-64
         $CONDA_INSTALL -c conda-forge libstdcxx-ng=12
+    else
+        $CONDA_INSTALL -c conda-forge libcxx
     fi
     $CONDA_INSTALL -c numba llvmdev="15.*"
 fi
