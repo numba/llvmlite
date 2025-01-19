@@ -38,7 +38,7 @@ else
     $CONDA_INSTALL -c numba llvmdev="15.*"
 fi
 
-$CONDA_INSTALL -c numba libxml2 libcxx="12.*"
+$CONDA_INSTALL -c numba libxml2
 
 if [[ $(uname) == Linux ]]; then
     # $CONDA_INSTALL gcc_linux-64 gxx_linux-64
