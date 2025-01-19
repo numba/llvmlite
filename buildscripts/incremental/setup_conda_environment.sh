@@ -31,22 +31,23 @@ if [ "$LLVM" == "16" ]; then
     # also install lld, not required when using the numba channel because the numba
     #  channel includes lld.
     $CONDA_INSTALL -c conda-forge lld="16" llvmdev="16"
-    $CONDA_INSTALL -c conda-forge libclang-cpp
 else
     # Install the compiler toolchain, for osx, bootstrapping needed
     # which happens in build.sh
     $CONDA_INSTALL -c numba llvmdev="15.*"
-    if [[ $(uname) == Linux ]]; then
-        # $CONDA_INSTALL gcc_linux-64 gxx_linux-64
-        $CONDA_INSTALL -c conda-forge libstdcxx-ng=12
-    else
-        $CONDA_INSTALL -c conda-forge libcxx
-    fi
 fi
 
 $CONDA_INSTALL -c numba libxml2
 
-conda list
+if [[ $(uname) == Linux ]]; then
+    # $CONDA_INSTALL gcc_linux-64 gxx_linux-64
+    $CONDA_INSTALL -c conda-forge libclang-cpp
+fi
+
+if [[ $(uname) == Darwin ]]; then
+    # $CONDA_INSTALL gcc_linux-64 gxx_linux-64
+    $CONDA_INSTALL -c conda-forge zstd
+fi
 
 # Install dependencies for code coverage (codecov.io)
 if [ "$RUN_COVERAGE" == "yes" ]; then $PIP_INSTALL codecov coveralls; fi
