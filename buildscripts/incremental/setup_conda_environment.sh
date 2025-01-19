@@ -40,11 +40,13 @@ fi
 $CONDA_INSTALL -c numba libxml2
 
 if [[ $(uname) == Linux ]]; then
-    # $CONDA_INSTALL gcc_linux-64 gxx_linux-64
-    $CONDA_INSTALL -c conda-forge libstdcxx-ng=11
+    $CONDA_INSTALL gcc_linux-64 gxx_linux-64
+    $CONDA_INSTALL -c conda-forge libstdcxx-ng=12
 else
     $CONDA_INSTALL -c conda-forge libcxx
 fi
+
+conda list
 
 # Install dependencies for code coverage (codecov.io)
 if [ "$RUN_COVERAGE" == "yes" ]; then $PIP_INSTALL codecov coveralls; fi
