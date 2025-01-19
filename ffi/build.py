@@ -175,6 +175,7 @@ def main_posix(kind, library_ext):
             msg = ("Building with LLVM 16; note that LLVM 16 support is "
                    "presently experimental")
             show_warning(msg)
+            return main_posix_cmake(kind, library_ext)
         elif version != 15:
 
             msg = ("Building llvmlite requires LLVM 15, got "
