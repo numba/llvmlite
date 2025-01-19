@@ -172,6 +172,7 @@ def main_posix(kind, library_ext):
         (version, _) = out.split('.', 1)
         version = int(version)
         if version == 16:
+            subprocess.check_call(['sh', f'{here_dir}/build_lld.sh'])
             msg = ("Building with LLVM 16; note that LLVM 16 support is "
                    "presently experimental")
             show_warning(msg)
@@ -194,6 +195,8 @@ def main_posix(kind, library_ext):
     # on OSX cxxflags has null bytes at the end of the string, remove them
     cxxflags = cxxflags.replace('\0', '')
     cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
+    if version == 16:
+        cxxflags += [f"-L{here_dir}/lldbuild/lib -I{here_dir}/lldbuild/include"]
 
     # look for SVML
     include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
