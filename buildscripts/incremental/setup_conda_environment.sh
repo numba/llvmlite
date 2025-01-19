@@ -30,7 +30,7 @@ set -v
 if [ "$LLVM" == "16" ]; then
     # also install lld, not required when using the numba channel because the numba
     #  channel includes lld.
-    $CONDA_INSTALL -c conda-forge llvmdev="16" lld="16"
+    $CONDA_INSTALL -c conda-forge lld="16" llvmdev="16" libxml2
 else
     # Install the compiler toolchain, for osx, bootstrapping needed
     # which happens in build.sh
@@ -40,7 +40,7 @@ fi
 $CONDA_INSTALL -c numba libxml2
 
 if [[ $(uname) == Linux ]]; then
-    $CONDA_INSTALL gcc_linux-64 gxx_linux-64
+    # $CONDA_INSTALL gcc_linux-64 gxx_linux-64
     $CONDA_INSTALL -c conda-forge libstdcxx-ng=12
 else
     $CONDA_INSTALL -c conda-forge libcxx
