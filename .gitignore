@@ -5,9 +5,6 @@
 *.dylib
 *.dll
 build/
-ffi/*.tar.xz
-ffi/lldbuild/
-ffi/llvm-project-16.0.0.src/
 dist/
 *.egg-info
 ffi/build/
