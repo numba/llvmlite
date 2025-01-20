@@ -9,7 +9,7 @@ CXX_FPIC_FLAGS ?= -fPIC
 
 CXXFLAGS := $(CPPFLAGS) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CXX_FLTO_FLAGS) $(CXX_FPIC_FLAGS)
 LDFLAGS := $(LDFLAGS) $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
-LIBS = $(LLVM_LIBS)
+LIBS = -rdynamic -Wl,-whole-archive $(LLVM_LIBS) -Wl,-no-whole-archive
 INCLUDE = core.h
 OBJ = assembly.o bitcode.o core.o initfini.o module.o value.o \
 	  executionengine.o transforms.o passmanagers.o targets.o type.o dylib.o \

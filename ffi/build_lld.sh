@@ -1,5 +1,5 @@
-curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz -o llvm-project-16.0.0.tar.xz
-tar -xf llvm-project-16.0.0.tar.xz
+# curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz -o llvm-project-16.0.0.tar.xz
+# tar -xf llvm-project-16.0.0.tar.xz
 cd .
 cwd=$PWD
 cd llvm-project-16.0.0.src
@@ -40,6 +40,8 @@ cmake --fresh -G "Unix Makefiles" \
   -DLLVM_INCLUDE_TESTS=OFF \
   -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} \
   -DCMAKE_LIBRARY_PATH=${CONDA_PREFIX}/lib \
+  -DCMAKE_SHARED_LINKER_FLAGS="-stdc++" \
+  -DLLD_BUILT_STANDALONE=ON \
   ${CMAKE_ARGS} \
   ${cwd}/llvm-project-16.0.0.src/lld
   # -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
