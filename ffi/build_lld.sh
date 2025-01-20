@@ -1,5 +1,5 @@
-# curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz -o llvm-project-16.0.0.tar.xz
-# tar -xf llvm-project-16.0.0.tar.xz
+curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.0/llvm-project-16.0.0.src.tar.xz -o llvm-project-16.0.0.tar.xz
+tar -xf llvm-project-16.0.0.tar.xz
 cd .
 cwd=$PWD
 cd llvm-project-16.0.0.src
