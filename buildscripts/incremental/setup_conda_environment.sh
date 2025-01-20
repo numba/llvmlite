@@ -27,7 +27,6 @@ source activate $CONDA_ENV
 set -v
 
 $CONDA_INSTALL -c numba libxml2
-$CONDA_INSTALL -c conda-forge libcrc32c
 
 # Install llvmdev (separate channel, for now)
 if [ "$LLVM" == "16" ]; then

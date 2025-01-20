@@ -4,7 +4,7 @@ CXXFLAGS = $(LLVM_CXXFLAGS)
 # Only export the LLVMPY symbols we require and exclude everything else.
 EXPORT = "-Wl,-exported_symbol,_LLVMPY_*"
 LDFLAGS :=  $(LDFLAGS) $(EXPORT) $(LLVM_LDFLAGS)
-LIBS = $(LLVM_LIBS) -lzstd
+LIBS = $(LLVM_LIBS) -l:libzstd.a -l:libz.a
 INCLUDE = core.h
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp type.cpp \
