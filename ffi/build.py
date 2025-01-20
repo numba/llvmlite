@@ -190,7 +190,8 @@ def main_posix(kind, library_ext):
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = \
         f'{cxx_lld_libs} ' + ' '.join(libs.split())
-    if version == 16:
+    # A necessary fix to use the conda-forge version of lld.
+    if version == 16 and sys.platform.startswith(('linux', 'gnu')):
         os.environ['LLVM_LIBS'] = f"-rdynamic -Wl,-whole-archive {os.environ['LLVM_LIBS']} -Wl,-no-whole-archive"
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
