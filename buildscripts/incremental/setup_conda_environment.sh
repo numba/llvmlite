@@ -33,7 +33,7 @@ $CONDA_INSTALL -c conda-forge libcrc32c
 if [ "$LLVM" == "16" ]; then
     # also install lld, not required when using the numba channel because the numba
     #  channel includes lld.
-    $CONDA_INSTALL -c conda-forge llvmdev="16"
+    $CONDA_INSTALL -c conda-forge llvmdev="16" lld="16"
 else
     # Install the compiler toolchain, for osx, bootstrapping needed
     # which happens in build.sh
