@@ -482,12 +482,12 @@ class Constant(_StrCaching, _StringReferenceCaching, _ConstOpMixin, Value):
         return cls(types.ArrayType(ty, len(elems)), elems)
 
     @classmethod
-    def literal_struct(cls, elems):
+    def literal_struct(cls, elems, packed=False):
         """
         Construct a literal structure constant made of the given members.
         """
         tys = [el.type for el in elems]
-        return cls(types.LiteralStructType(tys), elems)
+        return cls(types.LiteralStructType(tys, packed), elems)
 
     @property
     def addrspace(self):

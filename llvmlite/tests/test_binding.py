@@ -2718,6 +2718,14 @@ class TestTypeParsing(BaseTest):
             # Also test constant text repr
             gv.initializer = ir.Constant(typ, [1])
 
+        # Packed layout created from Constant.literal_struct
+        with self.check_parsing() as mod:
+            const = ir.Constant.literal_struct([ir.IntType(32)(1),
+                                                ir.IntType(32)(2)],
+                                               packed=True)
+            gv = ir.GlobalVariable(mod, const.type, "foo")
+            gv.initializer = const
+
 
 class TestGlobalConstructors(TestMCJit):
     def test_global_ctors_dtors(self):
@@ -3134,6 +3142,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         mpm.add_loop_rotate_pass()
         mpm.add_instruction_combine_pass()
         mpm.add_jump_threading_pass()
+        mpm.add_refprune_pass()
 
 
 class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
@@ -3209,6 +3218,7 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         fpm.add_loop_rotate_pass()
         fpm.add_instruction_combine_pass()
         fpm.add_jump_threading_pass()
+        fpm.add_refprune_pass()
 
 
 class TestLLD(BaseTest):

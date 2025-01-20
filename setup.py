@@ -22,7 +22,7 @@ import os
 import sys
 
 
-min_python_version = (3, 9)
+min_python_version = (3, 10)
 
 
 def _version_info_str(int_tuple):
@@ -194,10 +194,10 @@ setup(name='llvmlite',
           "Operating System :: OS Independent",
           "Programming Language :: Python",
           "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.9",
-          "Programming Language :: Python :: 3.10",
+           "Programming Language :: Python :: 3.10",
           "Programming Language :: Python :: 3.11",
           "Programming Language :: Python :: 3.12",
+          "Programming Language :: Python :: 3.13",
           "Topic :: Software Development :: Code Generators",
           "Topic :: Software Development :: Compilers",
       ],

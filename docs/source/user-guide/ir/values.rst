@@ -234,12 +234,14 @@ A :ref:`module` consists mostly of values.
       * Returns a constant array containing the *elements*, in
         order.
 
-   .. classmethod:: literal_struct(elements)
+   .. classmethod:: literal_struct(elements, packed=False)
 
       An alternate constructor for constant structs.
 
       * *elements* is a sequence of values, :class:`Constant` or
-        otherwise. Returns a constant struct containing the
+        otherwise.
+      * *packed* controls whether to use packed layout.
+      * Returns a constant struct containing the
         *elements* in order.
 
    .. method:: gep(indices)

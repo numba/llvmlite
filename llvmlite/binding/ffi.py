@@ -212,7 +212,7 @@ def _importlib_resources_path_repl(package, resource):
 
 
 _importlib_resources_path = (_importlib_resources_path_repl
-                             if sys.version_info[:2] >= (3, 9)
+                             if sys.version_info[:2] >= (3, 10)
                              else _impres.path)
 
 

@@ -1027,6 +1027,11 @@ my_block:
         self.assertEqual(j.type, ir.VoidType())
         k = builder.load_atomic(c, ordering="seq_cst", align=4, name='k')
         self.assertEqual(k.type, int32)
+        if opaque_pointers_enabled:
+            ptr = ir.Constant(ir.PointerType(), None)
+        else:
+            ptr = ir.Constant(ir.PointerType(int32), None)
+        builder.store(ir.Constant(int32, 5), ptr)
         # Not pointer types
         with self.assertRaises(TypeError):
             builder.store(b, a)
@@ -1035,6 +1040,7 @@ my_block:
         # Mismatching pointer type
         with self.assertRaises(TypeError) as cm:
             builder.store(b, e)
+
         # FIXME: Remove `else' once TP are no longer supported.
         if opaque_pointers_enabled:
             self.assertEqual(str(cm.exception),
@@ -1051,6 +1057,7 @@ my_block:
                     %"i" = load i32, ptr %"c", align 1
                     store atomic i32 %".2", ptr %"c" seq_cst, align 4
                     %"k" = load atomic i32, ptr %"c" seq_cst, align 4
+                    store i32 5, ptr null
                 """)
         else:
             self.assertEqual(str(cm.exception),
@@ -1067,6 +1074,7 @@ my_block:
                     %"i" = load i32, i32* %"c", align 1
                     store atomic i32 %".2", i32* %"c" seq_cst, align 4
                     %"k" = load atomic i32, i32* %"c" seq_cst, align 4
+                    store i32 5, i32* null
                 """)
 
     def test_gep(self):
@@ -2539,6 +2547,20 @@ class TestTypes(TestBase):
         self.assert_valid_ir(module)
         oldstr = str(module)
         mytype.set_body(ir.IntType(32), ir.IntType(64), ir.FloatType())
+        self.assertFalse(mytype.is_opaque)
+        self.assert_valid_ir(module)
+        self.assertNotEqual(oldstr, str(module))
+
+    def test_identified_struct_packed(self):
+        td = llvm.create_target_data("e-m:e-i64:64-f80:128-n8:16:32:64-S128")
+        context = ir.Context()
+        mytype = context.get_identified_type("MyType", True)
+        module = ir.Module(context=context)
+        self.assertTrue(mytype.is_opaque)
+        self.assert_valid_ir(module)
+        oldstr = str(module)
+        mytype.set_body(ir.IntType(16), ir.IntType(64), ir.FloatType())
+        self.assertEqual(mytype.get_element_offset(td, 1, context), 2)
         self.assertFalse(mytype.is_opaque)
         self.assert_valid_ir(module)
         self.assertNotEqual(oldstr, str(module))

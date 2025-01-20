@@ -103,7 +103,28 @@ def find_windows_generator():
     raise RuntimeError("No compatible cmake generator installed on this machine")
 
 
+def remove_msvc_whole_program_optimization():
+    """Remove MSVC whole-program optimization flags.
+    This workaround a segfault issue on windows.
+    Note: conda-build is known to enable the `-GL` flag.
+    """
+    def drop_gl(flags):
+        try:
+            flags.remove('-GL')
+        except ValueError:
+            pass
+        else:
+            print(f"removed '-GL' flag in {flags}")
+    cflags = os.environ.get('CFLAGS', '').split(' ')
+    cxxflags = os.environ.get('CXXFLAGS', '').split(' ')
+    drop_gl(cflags)
+    drop_gl(cxxflags)
+    os.environ['CFLAGS'] = ' '.join(cflags)
+    os.environ['CXXFLAGS'] = ' '.join(cxxflags)
+
+
 def main_windows():
+    remove_msvc_whole_program_optimization()
     generator = find_windows_generator()
     config = 'Release'
     if not os.path.exists(build_dir):
