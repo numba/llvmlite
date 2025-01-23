@@ -1,0 +1,96 @@
+
+name: llvmlite_linux-64_conda_builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+
+jobs:
+  linux-64-build:
+    name: linux-64-build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: ""
+
+      - name: Install conda-build
+        run: conda install conda-build
+
+      - name: Download llvmdev Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev_linux-64_conda
+          path: llvmdev_conda_packages
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build llvmlite conda package
+        run: |
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+              LLVMDEV_CHANNEL="file://$PWD/llvmdev_conda_packages"
+          else
+              LLVMDEV_CHANNEL="numba"
+          fi
+          CONDA_CHANNEL_DIR="conda_channel_dir"
+          mkdir $CONDA_CHANNEL_DIR
+          conda build --debug -c $LLVMDEV_CHANNEL --python=${{ matrix.python-version }} -c defaults conda-recipes/llvmlite" --output-folder=$CONDA_CHANNEL_DIR
+
+      - name: Upload llvmlite conda package
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-linux-64-py${{ matrix.python-version }}
+          path: ${{ env.CONDA_CHANNEL_DIR }}
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+  linux-64-test:
+    name: linux-64-test
+    needs: linux-64-build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Setup miniconda
+        uses: conda-incubator/setup-miniconda@v3
+
+      - name: Download llvmlite artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-win-linux-py${{ matrix.python-version }}
+
+      - name: Install conda-build and llvmlite
+        run: |
+          conda install conda-build
+
+      - name: Run tests
+        run: conda build --test llvmlite*.conda
