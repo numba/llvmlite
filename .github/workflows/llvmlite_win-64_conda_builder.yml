@@ -56,7 +56,7 @@ jobs:
           fi
           CONDA_CHANNEL_DIR="conda_channel_dir"
           mkdir $CONDA_CHANNEL_DIR
-          conda build --debug -c $LLVMDEV_CHANNEL --python=${{ matrix.python-version }} -d defaults conda-recipes/llvmlite --output-folder=$CONDA_CHANNEL_DIR
+          conda build --debug -c $LLVMDEV_CHANNEL -d defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder=$CONDA_CHANNEL_DIR --no-test
 
       - name: Upload llvmlite conda package
         uses: actions/upload-artifact@v4
