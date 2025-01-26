@@ -1,4 +1,3 @@
-from collections import defaultdict
 
 
 class DuplicatedNameError(NameError):
@@ -8,7 +7,7 @@ class DuplicatedNameError(NameError):
 class NameScope(object):
     def __init__(self):
         self._useset = set([''])
-        self._basenamemap = defaultdict(int)
+        self._basenamemap = {}
 
     def is_used(self, name):
         return name in self._useset
@@ -23,10 +22,18 @@ class NameScope(object):
 
     def deduplicate(self, name):
         basename = name
+
+        try:
+            ident = self._basenamemap[basename]
+        except KeyError:
+            ident = 0
+
         while self.is_used(name):
-            ident = self._basenamemap[basename] + 1
-            self._basenamemap[basename] = ident
+            ident += 1
             name = "{0}.{1}".format(basename, ident)
+
+        self._basenamemap[basename] = ident
+
         return name
 
     def get_child(self):
