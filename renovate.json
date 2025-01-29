@@ -3,5 +3,5 @@
   "extends": [
     "config:recommended"
   ],
-  "excludePaths": ["docs/rtd-requirements.txt"]
+  ignorePaths: ["docs/rtd-requirements.txt"]
 }
