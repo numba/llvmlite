@@ -4,12 +4,12 @@ CXXFLAGS = $(LLVM_CXXFLAGS)
 # Only export the LLVMPY symbols we require and exclude everything else.
 EXPORT = "-Wl,-exported_symbol,_LLVMPY_*"
 LDFLAGS :=  $(LDFLAGS) $(EXPORT) $(LLVM_LDFLAGS)
-LIBS = $(LLVM_LIBS)
+LIBS = $(LLVM_LIBS) -lzstd -lz
 INCLUDE = core.h
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp type.cpp \
 	  dylib.cpp linker.cpp object_file.cpp custom_passes.cpp orcjit.cpp \
-	  memorymanager.cpp newpassmanagers.cpp
+	  memorymanager.cpp lld.cpp newpassmanagers.cpp
 OUTPUT = libllvmlite.dylib
 MACOSX_DEPLOYMENT_TARGET ?= 10.9
 
