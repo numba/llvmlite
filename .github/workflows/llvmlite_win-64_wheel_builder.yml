@@ -1,0 +1,160 @@
+name: llvmlite_win-64_wheel_builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+
+env:
+  CONDA_CHANNEL: numba
+  CONDA_LABEL: ci
+
+jobs:
+  win-64-build:
+    name: win-64-build
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create build environment
+        run: |
+          conda create -n build_env --yes -c numba/label/win64_wheel -c numba python=${{ matrix.python-version }} llvmdev=15
+          conda activate build_env
+          conda install cmake --yes
+
+      - name: Build wheel
+        run: |
+          conda activate build_env
+          python setup.py bdist_wheel
+
+      - name: Create validation environment (with py-lief)
+        if: ${{ matrix.python-version != '3.13' }}
+        run: |
+          conda create -n validate_env python=${{ matrix.python-version }} py-lief "wheel>=0.32" twine keyring>=15.1 rfc3986>=1.4.0 --yes
+          conda activate validate_env
+
+      - name: Create basic validation environment
+        if: ${{ matrix.python-version == '3.13' }}
+        run: |
+          conda create -n validate_env python=${{ matrix.python-version }} "wheel>=0.32" twine keyring>=15.1 rfc3986>=1.4.0 --yes
+          conda activate validate_env
+
+      - name: Validate wheel
+        if: ${{ matrix.python-version != '3.13' }}
+        run: |
+          conda activate validate_env
+          cd dist
+          
+          # Create validation script
+          cat > test_wheel.py <<EOF
+          import lief
+          import pathlib
+          
+          for path in pathlib.Path('.').rglob("**/*.dll"):
+              print("path", path)
+              dll = lief.PE.parse(str(path))
+          
+              if hasattr(dll, "delay_imports"):
+                  delay_imports = {x.name for x in dll.delay_imports}
+                  print("Delay imports:", delay_imports)
+                  expected_delay_imports = {'SHELL32.dll', 'ole32.dll'}
+                  assert delay_imports == expected_delay_imports, f"Unexpected delay imports: {delay_imports}"
+          
+              imports = {x.name for x in dll.imports}
+              print("Regular imports:", imports)
+              expected_imports = {
+                  'ADVAPI32.dll',
+                  'KERNEL32.dll',
+                  'MSVCP140.dll',
+                  'VCRUNTIME140.dll',
+                  'VCRUNTIME140_1.dll',
+                  'api-ms-win-crt-convert-l1-1-0.dll',
+                  'api-ms-win-crt-environment-l1-1-0.dll',
+                  'api-ms-win-crt-heap-l1-1-0.dll',
+                  'api-ms-win-crt-locale-l1-1-0.dll',
+                  'api-ms-win-crt-math-l1-1-0.dll',
+                  'api-ms-win-crt-runtime-l1-1-0.dll',
+                  'api-ms-win-crt-stdio-l1-1-0.dll',
+                  'api-ms-win-crt-string-l1-1-0.dll',
+                  'api-ms-win-crt-time-l1-1-0.dll',
+                  'api-ms-win-crt-utility-l1-1-0.dll',
+              }
+              assert imports == expected_imports, f"Unexpected imports: {imports}"
+          EOF
+          
+          # Unpack and validate wheel
+          WHL_FILE=$(ls *.whl)
+          wheel unpack $WHL_FILE
+          python test_wheel.py llvmlite/binding/llvmlite.dll
+          
+          # Check wheel with twine
+          twine check *.whl
+
+      - name: Basic wheel validation
+        if: ${{ matrix.python-version == '3.13' }}
+        run: |
+          conda activate validate_env
+          cd dist
+          # Only run twine check for Python 3.13
+          twine check *.whl
+
+      - name: Upload llvmlite wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+  win-64-test:
+    name: win-64-test
+    needs: win-64-build
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Install and test
+        run: |
+          pip install pytest
+          pip install dist/*.whl
+          pytest llvmlite/tests
