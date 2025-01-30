@@ -1,0 +1,49 @@
+name: llvmdev_win-64_conda_builder
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  windows:
+    name: Windows
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -elx {0}
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: ""
+
+      - name: Install conda-build
+        run: |
+          conda install conda-build
+
+      - name: Build llvmdev conda package
+        run: |
+          CONDA_CHANNEL_DIR="conda_channel_dir"
+          mkdir $CONDA_CHANNEL_DIR
+          conda build conda-recipes/llvmdev --output-folder=$CONDA_CHANNEL_DIR
+          ls -lah $CONDA_CHANNEL_DIR
+
+      - name: Upload llvmdev conda package
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmdev_win-64_conda
+          path: conda_channel_dir
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Get Workflow Run ID
+        run: |
+          echo "Current workflow run ID: ${{ github.run_id }}"
+          echo "Use this ID when triggering llvmlite workflow"
