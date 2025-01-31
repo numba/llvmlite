@@ -8,10 +8,6 @@ on:
         required: false
         type: string
 
-env:
-  CONDA_CHANNEL: numba
-  CONDA_LABEL: ci
-
 jobs:
   win-64-build:
     name: win-64-build
@@ -34,88 +30,14 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python-version }}
+          conda-remove-defaults: true
 
-      - name: Create build environment
-        run: |
-          conda create -n build_env --yes -c numba/label/win64_wheel -c numba python=${{ matrix.python-version }} llvmdev=15
-          conda activate build_env
-          conda install cmake --yes
+      - name: Install build dependencies
+        run: conda install -c numba/label/win64_wheel llvmdev=15 cmake libxml2
 
       - name: Build wheel
         run: |
-          conda activate build_env
           python setup.py bdist_wheel
-
-      - name: Create validation environment (with py-lief)
-        if: ${{ matrix.python-version != '3.13' }}
-        run: |
-          conda create -n validate_env python=${{ matrix.python-version }} py-lief "wheel>=0.32" twine keyring>=15.1 rfc3986>=1.4.0 --yes
-          conda activate validate_env
-
-      - name: Create basic validation environment
-        if: ${{ matrix.python-version == '3.13' }}
-        run: |
-          conda create -n validate_env python=${{ matrix.python-version }} "wheel>=0.32" twine keyring>=15.1 rfc3986>=1.4.0 --yes
-          conda activate validate_env
-
-      - name: Validate wheel
-        if: ${{ matrix.python-version != '3.13' }}
-        run: |
-          conda activate validate_env
-          cd dist
-          
-          # Create validation script
-          cat > test_wheel.py <<EOF
-          import lief
-          import pathlib
-          
-          for path in pathlib.Path('.').rglob("**/*.dll"):
-              print("path", path)
-              dll = lief.PE.parse(str(path))
-          
-              if hasattr(dll, "delay_imports"):
-                  delay_imports = {x.name for x in dll.delay_imports}
-                  print("Delay imports:", delay_imports)
-                  expected_delay_imports = {'SHELL32.dll', 'ole32.dll'}
-                  assert delay_imports == expected_delay_imports, f"Unexpected delay imports: {delay_imports}"
-          
-              imports = {x.name for x in dll.imports}
-              print("Regular imports:", imports)
-              expected_imports = {
-                  'ADVAPI32.dll',
-                  'KERNEL32.dll',
-                  'MSVCP140.dll',
-                  'VCRUNTIME140.dll',
-                  'VCRUNTIME140_1.dll',
-                  'api-ms-win-crt-convert-l1-1-0.dll',
-                  'api-ms-win-crt-environment-l1-1-0.dll',
-                  'api-ms-win-crt-heap-l1-1-0.dll',
-                  'api-ms-win-crt-locale-l1-1-0.dll',
-                  'api-ms-win-crt-math-l1-1-0.dll',
-                  'api-ms-win-crt-runtime-l1-1-0.dll',
-                  'api-ms-win-crt-stdio-l1-1-0.dll',
-                  'api-ms-win-crt-string-l1-1-0.dll',
-                  'api-ms-win-crt-time-l1-1-0.dll',
-                  'api-ms-win-crt-utility-l1-1-0.dll',
-              }
-              assert imports == expected_imports, f"Unexpected imports: {imports}"
-          EOF
-          
-          # Unpack and validate wheel
-          WHL_FILE=$(ls *.whl)
-          wheel unpack $WHL_FILE
-          python test_wheel.py llvmlite/binding/llvmlite.dll
-          
-          # Check wheel with twine
-          twine check *.whl
-
-      - name: Basic wheel validation
-        if: ${{ matrix.python-version == '3.13' }}
-        run: |
-          conda activate validate_env
-          cd dist
-          # Only run twine check for Python 3.13
-          twine check *.whl
 
       - name: Upload llvmlite wheel
         uses: actions/upload-artifact@v4
@@ -126,9 +48,48 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  win-64-validate:
+    name: win-64-validate
+    needs: win-64-build
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: 3.12
+          conda-remove-defaults: true
+
+      - name: Install validation dependencies
+        run: conda install -c defaults py-lief wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          cd dist
+          for WHL_FILE in *.whl; do
+            wheel unpack $WHL_FILE
+            python $GITHUB_WORKSPACE/buildscripts/github/validate_win64_wheel.py llvmlite/binding/llvmlite.dll
+            twine check $WHL_FILE
+          done
+
   win-64-test:
     name: win-64-test
-    needs: win-64-build
+    needs: win-64-validate
     runs-on: windows-2019
     defaults:
       run:
@@ -139,9 +100,6 @@ jobs:
       fail-fast: false
 
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -155,6 +113,24 @@ jobs:
 
       - name: Install and test
         run: |
-          pip install pytest
+          pip install wheel
+          
+          # Install the wheel
           pip install dist/*.whl
-          pytest llvmlite/tests
+          
+          # Get Python site-packages directory
+          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+          
+          # Copy DLL from wheel to site-packages
+          cd dist
+          wheel unpack *.whl
+          WHEEL_DIR=$(ls -d llvmlite-* | head -n1 | tr -d '\n')
+          mkdir -p "$SITE_PACKAGES/llvmlite/binding"
+          cp "$WHEEL_DIR/llvmlite/binding/llvmlite.dll" "$SITE_PACKAGES/llvmlite/binding/"
+          cd ..
+          
+          # Add DLL location to PATH
+          export PATH="$PATH:$SITE_PACKAGES/llvmlite/binding"
+          
+          # Run tests
+          python -m llvmlite.tests
