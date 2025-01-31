@@ -1,4 +1,4 @@
-from ctypes import c_bool, c_int, c_size_t
+from ctypes import c_bool, c_int, c_size_t, c_char_p
 from enum import IntFlag
 from llvmlite.binding import ffi
 
@@ -35,7 +35,11 @@ class ModulePassManager(ffi.ObjectRef):
         super().__init__(ptr)
 
     def run(self, module, pb):
-        ffi.lib.LLVMPY_RunNewModulePassManager(self, module, pb)
+        ffi.lib.LLVMPY_RunNewModulePassManager(
+            self, module, pb,
+            pb._target_triple.encode('utf8'),
+            pb._target_cpu.encode('utf8'),
+            pb._target_features.encode('utf8'))
 
     def add_verifier(self):
         ffi.lib.LLVMPY_AddVerifierPass(self)
@@ -214,6 +218,9 @@ class PassBuilder(ffi.ObjectRef):
         super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto))
         self._pto = pto
         self._tm = tm
+        self._target_triple = tm.get_target_triple()
+        self._target_cpu = tm.get_target_cpu()
+        self._target_features = tm.get_target_feature_string()
 
     def getModulePassManager(self):
         return ModulePassManager(
@@ -240,7 +247,8 @@ ffi.lib.LLVMPY_CreateNewModulePassManager.restype = ffi.LLVMModulePassManagerRef
 
 ffi.lib.LLVMPY_RunNewModulePassManager.argtypes = [
     ffi.LLVMModulePassManagerRef, ffi.LLVMModuleRef,
-    ffi.LLVMPassBuilderRef,]
+    ffi.LLVMPassBuilderRef,
+    c_char_p, c_char_p, c_char_p,]
 
 ffi.lib.LLVMPY_AddVerifierPass.argtypes = [ffi.LLVMModulePassManagerRef,]
 ffi.lib.LLVMPY_AddAAEvalPass_module.argtypes = [ffi.LLVMModulePassManagerRef,]
