@@ -21,6 +21,7 @@ jobs:
         with:
           auto-update-conda: true
           auto-activate-base: true
+          conda-remove-defaults: true
 
       - name: Install conda-build
         run: |
