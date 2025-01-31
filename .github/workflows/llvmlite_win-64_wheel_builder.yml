@@ -1,0 +1,136 @@
+name: llvmlite_win-64_wheel_builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+
+jobs:
+  win-64-build:
+    name: win-64-build
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          conda-remove-defaults: true
+
+      - name: Install build dependencies
+        run: conda install -c numba/label/win64_wheel llvmdev=15 cmake libxml2
+
+      - name: Build wheel
+        run: |
+          python setup.py bdist_wheel
+
+      - name: Upload llvmlite wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+  win-64-validate:
+    name: win-64-validate
+    needs: win-64-build
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: 3.12
+          conda-remove-defaults: true
+
+      - name: Install validation dependencies
+        run: conda install -c defaults py-lief wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          cd dist
+          for WHL_FILE in *.whl; do
+            wheel unpack $WHL_FILE
+            python $GITHUB_WORKSPACE/buildscripts/github/validate_win64_wheel.py llvmlite/binding/llvmlite.dll
+            twine check $WHL_FILE
+          done
+
+  win-64-test:
+    name: win-64-test
+    needs: win-64-validate
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Install and test
+        run: |
+          pip install wheel
+          
+          # Install the wheel
+          pip install dist/*.whl
+          
+          # Get Python site-packages directory
+          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+          
+          # Copy DLL from wheel to site-packages
+          cd dist
+          wheel unpack *.whl
+          WHEEL_DIR=$(ls -d llvmlite-* | head -n1 | tr -d '\n')
+          mkdir -p "$SITE_PACKAGES/llvmlite/binding"
+          cp "$WHEEL_DIR/llvmlite/binding/llvmlite.dll" "$SITE_PACKAGES/llvmlite/binding/"
+          cd ..
+          
+          # Add DLL location to PATH
+          export PATH="$PATH:$SITE_PACKAGES/llvmlite/binding"
+          
+          # Run tests
+          python -m llvmlite.tests
