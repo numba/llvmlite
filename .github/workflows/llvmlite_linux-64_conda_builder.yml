@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: llvmlite-linux-64-py${{ matrix.python-version }}
-          path: ${{ env.CONDA_CHANNEL_DIR }}
+          path: conda_channel_dir
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
