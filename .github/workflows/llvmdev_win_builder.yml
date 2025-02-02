@@ -27,14 +27,23 @@ jobs:
         run: |
           conda install conda-build
 
-      - name: Build
+      - name: Build llvmdev conda package
         run: |
-          RECIPE_NAME=./conda-recipes/llvmdev_manylinux
-          conda build $RECIPE_NAME
-          echo "OUTPUT=$(conda build --output $RECIPE_NAME)" >> $GITHUB_ENV
+          CONDA_CHANNEL_DIR="conda_channel_dir"
+          mkdir $CONDA_CHANNEL_DIR
+          conda build ./conda-recipes/llvmdev_manylinux --output-folder=$CONDA_CHANNEL_DIR
+          ls -lah $CONDA_CHANNEL_DIR
 
-      - name: Upload artifact
+      - name: Upload llvmdev conda package
         uses: actions/upload-artifact@v4
         with:
-          name: llvmdev
-          path: ${{ env.OUTPUT }}
+          name: llvmdev_win-64_conda
+          path: conda_channel_dir
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Get Workflow Run ID
+        run: |
+          echo "Current workflow run ID: ${{ github.run_id }}"
+          echo "Use this ID when triggering llvmlite workflow"
