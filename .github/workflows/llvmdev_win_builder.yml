@@ -25,7 +25,7 @@ jobs:
 
       - name: Install conda-build
         run: |
-          conda install conda-build -y
+          conda install conda-build
 
       - name: Build
         run: |
