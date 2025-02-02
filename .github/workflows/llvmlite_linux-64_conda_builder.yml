@@ -86,7 +86,7 @@ jobs:
       - name: Download llvmlite artifact
         uses: actions/download-artifact@v4
         with:
-          name: llvmlite-win-linux-py${{ matrix.python-version }}
+          name: llvmlite-linux-64-py${{ matrix.python-version }}
 
       - name: Install conda-build and llvmlite
         run: |
