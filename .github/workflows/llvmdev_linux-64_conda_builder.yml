@@ -1,13 +1,13 @@
-name: llvmdev_win_builder
+name: llvmdev_linux-64_conda_builder
 
 on:
   workflow_dispatch:
 
 jobs:
 
-  windows:
-    name: Windows
-    runs-on: windows-2019
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -elx {0}
@@ -31,13 +31,13 @@ jobs:
         run: |
           CONDA_CHANNEL_DIR="conda_channel_dir"
           mkdir $CONDA_CHANNEL_DIR
-          conda build ./conda-recipes/llvmdev_manylinux --output-folder=$CONDA_CHANNEL_DIR
+          conda build conda-recipes/llvmdev --output-folder=$CONDA_CHANNEL_DIR
           ls -lah $CONDA_CHANNEL_DIR
 
       - name: Upload llvmdev conda package
         uses: actions/upload-artifact@v4
         with:
-          name: llvmdev_win-64_conda
+          name: llvmdev_linux-64_conda
           path: conda_channel_dir
           compression-level: 0
           retention-days: 7

@@ -93,4 +93,4 @@ jobs:
           conda install conda-build
 
       - name: Run tests
-        run: conda build --test llvmlite*.conda
+        run: conda build --test win-64/llvmlite*.conda
