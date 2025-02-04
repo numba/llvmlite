@@ -70,9 +70,9 @@ jobs:
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
               conda install -c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }} llvmdev --no-deps
-              conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} cmake libxml2
+              conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} cmake
           else
-              conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2
+              conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake
           fi
 
       - name: Build wheel
