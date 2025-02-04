@@ -79,7 +79,6 @@ jobs:
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
-          run-post: false
 
   win-64-validate:
     name: win-64-validate
