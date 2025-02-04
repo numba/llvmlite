@@ -69,7 +69,7 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              conda install -c file://${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }} llvmdev cmake libxml2 --no-deps
+              conda install -c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }} llvmdev cmake libxml2 --no-deps
               conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} --no-deps cmake libxml2
           else
               conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2
