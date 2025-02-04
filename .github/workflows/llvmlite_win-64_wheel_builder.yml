@@ -23,6 +23,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+env:
+  LOCAL_LLVMDEV_ARTIFACT_PATH: D:/a/llvmlite/llvmlite/llvmdev_conda_packages
+  FALLBACK_LLVMDEV_VERSION: "15"
+  CONDA_CHANNEL_NUMBA: numba/label/win64_wheel
+  VALIDATION_PYTHON_VERSION: "3.12"
+  ARTIFACT_RETENTION_DAYS: 7
+
 jobs:
   win-64-build:
     name: win-64-build
@@ -62,14 +69,14 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              conda install -c file:///D:/a/llvmlite/llvmlite/llvmdev_conda_packages llvmdev cmake libxml2
+              conda install -c file://${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }} llvmdev cmake libxml2 --no-deps
+              conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} --no-deps cmake libxml2
           else
-              conda install -c numba/label/win64_wheel llvmdev=15 cmake libxml2
+              conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2
           fi
 
       - name: Build wheel
-        run: |
-          python setup.py bdist_wheel
+        run: python setup.py bdist_wheel
 
       - name: Upload llvmlite wheel
         uses: actions/upload-artifact@v4
@@ -77,7 +84,7 @@ jobs:
           name: llvmlite-win-64-py${{ matrix.python-version }}
           path: dist/*.whl
           compression-level: 0
-          retention-days: 7
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: error
 
   win-64-validate:
@@ -98,8 +105,10 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: 3.12
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
           conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
 
       - name: Install validation dependencies
         run: conda install -c defaults py-lief wheel twine keyring rfc3986
@@ -146,23 +155,13 @@ jobs:
       - name: Install and test
         run: |
           pip install wheel
-          
-          # Install the wheel
           pip install dist/*.whl
-          
-          # Get Python site-packages directory
           SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
-          
-          # Copy DLL from wheel to site-packages
           cd dist
           wheel unpack *.whl
           WHEEL_DIR=$(ls -d llvmlite-* | head -n1 | tr -d '\n')
           mkdir -p "$SITE_PACKAGES/llvmlite/binding"
           cp "$WHEEL_DIR/llvmlite/binding/llvmlite.dll" "$SITE_PACKAGES/llvmlite/binding/"
           cd ..
-          
-          # Add DLL location to PATH
           export PATH="$PATH:$SITE_PACKAGES/llvmlite/binding"
-          
-          # Run tests
           python -m llvmlite.tests
