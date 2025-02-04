@@ -28,7 +28,6 @@ for path in pathlib.Path('.').rglob("**/*.dll"):
         'api-ms-win-crt-stdio-l1-1-0.dll',
         'api-ms-win-crt-string-l1-1-0.dll',
         'api-ms-win-crt-time-l1-1-0.dll',
-        'api-ms-win-crt-utility-l1-1-0.dll',
-        'zlib.dll'
+        'api-ms-win-crt-utility-l1-1-0.dll'
     }
     assert imports == expected_imports, f"Unexpected imports: {imports - expected_imports}\nMissing imports: {expected_imports - imports}"
