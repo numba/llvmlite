@@ -6,7 +6,6 @@ an HTML report in "htmlcov".
 
 import os
 import shutil
-import sys
 
 try:
     import coverage
