@@ -1,6 +1,0 @@
-[tool.cibuildwheel]
-environment = { LLVM_CONFIG = "$HOME/miniconda3/bin/llvm-config" }
-
-[tool.cibuildwheel.windows]
-environment = { LLVM_DIR = "D:/a/llvmlite/llvmlite/miniconda3/Library/lib/cmake/llvm" }
-
