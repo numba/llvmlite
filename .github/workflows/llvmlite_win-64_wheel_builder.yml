@@ -1,0 +1,166 @@
+name: llvmlite_win-64_wheel_builder
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/llvmlite_win-64_wheel_builder.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/llvmlite_win-64_wheel_builder.yml
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+
+# Add concurrency control
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  LOCAL_LLVMDEV_ARTIFACT_PATH: D:/a/llvmlite/llvmlite/llvmdev_conda_packages
+  FALLBACK_LLVMDEV_VERSION: "15"
+  CONDA_CHANNEL_NUMBA: numba/label/win64_wheel
+  VALIDATION_PYTHON_VERSION: "3.12"
+  ARTIFACT_RETENTION_DAYS: 7
+
+jobs:
+  win-64-build:
+    name: win-64-build
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -el {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+
+      - name: Download llvmdev Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev_win-64_conda
+          path: llvmdev_conda_packages
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install build dependencies
+        run: |
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+              conda install -c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }} llvmdev cmake libxml2 --no-deps
+          else
+              conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2
+          fi
+
+      - name: Build wheel
+        run: python setup.py bdist_wheel
+
+      - name: Upload llvmlite wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  win-64-validate:
+    name: win-64-validate
+    needs: win-64-build
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -el {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+
+      - name: Install validation dependencies
+        run: conda install -c defaults py-lief wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          cd dist
+          for WHL_FILE in *.whl; do
+            wheel unpack $WHL_FILE
+            python $GITHUB_WORKSPACE/buildscripts/github/validate_win64_wheel.py llvmlite/binding/llvmlite.dll
+            twine check $WHL_FILE
+          done
+
+  win-64-test:
+    name: win-64-test
+    needs: win-64-validate
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash -el {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-win-64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Install and test
+        run: |
+          pip install wheel
+          pip install dist/*.whl
+          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+          cd dist
+          wheel unpack *.whl
+          WHEEL_DIR=$(ls -d llvmlite-* | head -n1 | tr -d '\n')
+          mkdir -p "$SITE_PACKAGES/llvmlite/binding"
+          cp "$WHEEL_DIR/llvmlite/binding/llvmlite.dll" "$SITE_PACKAGES/llvmlite/binding/"
+          cd ..
+          export PATH="$PATH:$SITE_PACKAGES/llvmlite/binding"
+          python -m llvmlite.tests
