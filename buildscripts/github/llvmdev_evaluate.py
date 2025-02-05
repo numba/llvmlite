@@ -23,18 +23,8 @@ default_include = [
         "recipe": "llvmdev"
     },
     {
-        "runner": runner_mapping["linux-aarch64"],
-        "platform": "linux-aarch64",
-        "recipe": "llvmdev",
-    },
-    {
-        "runner": runner_mapping["osx-arm64"],
-        "platform": "osx-arm64",
-        "recipe": "llvmdev",
-    },
-    {
-        "runner": runner_mapping["osx-arm64"],
-        "platform": "osx-arm64",
+        "runner": runner_mapping["linux-64"],
+        "platform": "linux-64",
         "recipe": "llvmdev_manylinux",
     },
     {   "runner": runner_mapping["win-64"],
@@ -52,7 +42,7 @@ print(f"Deciding what to do based on event: '{event}', label: '{label}', inputs:
 if event == "pull_request":
     print("pull_request detected")
     include = default_include
-elif event == "label" and label == "build":
+elif event == "label" and label == "build_on_gha":
     print("build label detected")
     include = default_include
 elif event == "workflow_dispatch":

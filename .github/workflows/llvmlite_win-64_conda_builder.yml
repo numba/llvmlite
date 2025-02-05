@@ -41,7 +41,7 @@ jobs:
         if: ${{ inputs.llvmdev_run_id != '' }}
         uses: actions/download-artifact@v4
         with:
-          name: llvmdev_win-64_conda
+          name: llvmdev_win-64
           path: llvmdev_conda_packages
           run-id: ${{ inputs.llvmdev_run_id }}
           repository: ${{ github.repository }}
