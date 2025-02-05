@@ -3,5 +3,8 @@
   "extends": [
     "config:recommended"
   ],
+  "pre-commit": {
+    "enabled": true
+  },
   "ignorePaths": ["docs/rtd-requirements.txt"]
 }

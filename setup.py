@@ -21,6 +21,8 @@ from distutils.spawn import spawn
 import os
 import sys
 
+import versioneer
+
 
 min_python_version = (3, 10)
 
@@ -41,9 +43,6 @@ def _guard_py_ver():
 
 
 _guard_py_ver()
-
-
-import versioneer
 
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'llvmlite/_version.py'
