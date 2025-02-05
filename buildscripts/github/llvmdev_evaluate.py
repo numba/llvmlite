@@ -22,11 +22,6 @@ default_include = [
         "platform": "linux-64",
         "recipe": "llvmdev"
     },
-    {
-        "runner": runner_mapping["linux-64"],
-        "platform": "linux-64",
-        "recipe": "llvmdev_manylinux",
-    },
     {   "runner": runner_mapping["win-64"],
         "platform": "win-64",
         "recipe": "llvmdev"
