@@ -212,7 +212,8 @@ def main_posix(kind, library_ext):
     os.environ['LLVM_LIBS'] = \
         f'{cxx_lld_libs} ' + ' '.join(libs.split())
     # A necessary fix to use the conda-forge version of lld.
-    os.environ['LLVM_LIBS'] = f"-rdynamic -Wl,-whole-archive {os.environ['LLVM_LIBS']} -Wl,-no-whole-archive"
+    if sys.platform.startswith(('linux', 'gnu')):
+        os.environ['LLVM_LIBS'] = f"-rdynamic -Wl,-whole-archive {os.environ['LLVM_LIBS']} -Wl,-no-whole-archive"
 
     cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
     # on OSX cxxflags has null bytes at the end of the string, remove them
