@@ -19,8 +19,10 @@ fi
 if [ "$WHEEL" == "yes" ]; then
     cd dist
     python -m llvmlite.tests -v
-else
+elif [ "$DIST_TEST" == "yes" ]; then
     LLVMLITE_DIST_TEST=1 python runtests.py -v
+else
+    python runtests.py -v
 fi
 
 if [ "$RUN_COVERAGE" == "yes" ]; then coverage run runtests.py; fi
