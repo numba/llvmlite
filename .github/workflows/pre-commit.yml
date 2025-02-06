@@ -23,6 +23,6 @@ jobs:
           auto-update-conda: true
           auto-activate-base: false
       - name: Install pre-commit
-        run: conda install pre-commit
+        run: conda install -c conda-forge pre-commit
       - name: Lint code with pre-commit
         run: pre-commit run --verbose --all-files
