@@ -9,7 +9,7 @@ on:
       - '*'
 
 jobs:
-  test:
+  pre-commit:
     runs-on: ubuntu-latest
     defaults:
       run:
