@@ -728,7 +728,7 @@ class TestDependencies(BaseTest):
             if not dep.startswith('ld-linux-') and dep not in allowed:
                 fails.append(dep)
         if len(fails) == 1:
-            self.fail("unexpected dependeny %r in %r" % (fails[0], deps))
+            self.fail("unexpected dependency %r in %r" % (fails[0], deps))
         elif len(fails) > 1:
             self.fail("unexpected dependencies %r in %r" % (fails, deps))
         else:
