@@ -27,7 +27,7 @@ on:
         type: choice
         options:
           - llvmdev
-          - llvmdev_manylinux
+          - llvmdev_for_wheels
 
 concurrency:
   # Concurrency group that uses the workflow name and PR number if available

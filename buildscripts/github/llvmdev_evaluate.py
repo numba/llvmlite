@@ -29,7 +29,7 @@ default_include = [
     {
         "runner": runner_mapping["win-64"],
         "platform": "win-64",
-        "recipe": "llvmdev_manylinux",
+        "recipe": "llvmdev_for_wheels",
     },
 ]
 
