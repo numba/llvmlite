@@ -2,6 +2,9 @@
 name: llvmlite_linux-64_conda_builder
 
 on:
+  pull_request:
+    paths:
+      - .github/workflows/llvmlite_linux-64_conda_builder.yml
   workflow_dispatch:
     inputs:
       llvmdev_run_id:
