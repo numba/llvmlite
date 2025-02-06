@@ -10,19 +10,24 @@ on:
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -el {0}
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          auto-activate-base: false
       - name: Install pre-commit
-        run: conda install -c conda-forge pre-commit
+        run: |
+          source "${CONDA}/etc/profile.d/conda.sh"
+          # avoid future conflicts with base environment
+          conda create --name pre-commit -c conda-forge pre-commit
+          conda activate pre-commit
+          echo "versions='$(python --version)-$(pre-commit --version)'" | tee -a "${GITHUB_ENV}"
+      # inspired by https://github.com/pre-commit/action/blob/main/action.yml
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit|${{ env.versions }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Lint code with pre-commit
-        run: pre-commit run --verbose --all-files
+        run: |
+          source "${CONDA}/etc/profile.d/conda.sh"
+          conda activate pre-commit
+          pre-commit run --verbose --all-files --show-diff-on-failure --color=always
