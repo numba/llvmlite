@@ -18,13 +18,15 @@ runner_mapping = {
 }
 
 default_include = [
-    {   "runner": runner_mapping["linux-64"],
+    {
+        "runner": runner_mapping["linux-64"],
         "platform": "linux-64",
-        "recipe": "llvmdev"
+        "recipe": "llvmdev",
     },
-    {   "runner": runner_mapping["win-64"],
+    {
+        "runner": runner_mapping["win-64"],
         "platform": "win-64",
-        "recipe": "llvmdev"
+        "recipe": "llvmdev",
     },
     {
         "runner": runner_mapping["win-64"],
@@ -33,7 +35,10 @@ default_include = [
     },
 ]
 
-print(f"Deciding what to do based on event: '{event}', label: '{label}', inputs: '{inputs}'")
+print(
+    "Deciding what to do based on event: "
+    f"'{event}', label: '{label}', inputs: '{inputs}'"
+)
 if event == "pull_request":
     print("pull_request detected")
     include = default_include
