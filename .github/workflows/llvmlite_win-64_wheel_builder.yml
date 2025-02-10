@@ -62,11 +62,11 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="-c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+              CHAN=""-c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
           else
               CHAN="-c ${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
-          conda install $CHAN llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
+          conda install "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
 
       - name: Build wheel
         run: python -m build
@@ -115,10 +115,10 @@ jobs:
       - name: Validate wheels
         run: |
           cd dist
-          for WHL_FILE in *.whl; do
-            wheel unpack $WHL_FILE
-            python $GITHUB_WORKSPACE/buildscripts/github/validate_win64_wheel.py llvmlite/binding/llvmlite.dll
-            twine check $WHL_FILE
+          for WHL_FILE in "*.whl"; do
+            wheel unpack "$WHL_FILE"
+            python "$GITHUB_WORKSPACE"/buildscripts/github/validate_win64_wheel.py llvmlite/binding/llvmlite.dll
+            twine check "$WHL_FILE"
           done
 
   win-64-test:
