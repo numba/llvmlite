@@ -62,7 +62,7 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN=""-c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+              CHAN="-c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
           else
               CHAN="-c ${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
