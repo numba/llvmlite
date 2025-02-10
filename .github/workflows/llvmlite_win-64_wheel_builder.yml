@@ -147,14 +147,5 @@ jobs:
 
       - name: Install and test
         run: |
-          pip install wheel
           pip install dist/*.whl
-          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
-          cd dist
-          wheel unpack *.whl
-          WHEEL_DIR=$(ls -d llvmlite-* | head -n1 | tr -d '\n')
-          mkdir -p "$SITE_PACKAGES/llvmlite/binding"
-          cp "$WHEEL_DIR/llvmlite/binding/llvmlite.dll" "$SITE_PACKAGES/llvmlite/binding/"
-          cd ..
-          export PATH="$PATH:$SITE_PACKAGES/llvmlite/binding"
           python -m llvmlite.tests
