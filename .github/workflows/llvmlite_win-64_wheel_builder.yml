@@ -62,13 +62,14 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              conda install -c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }} llvmdev cmake libxml2 --no-deps
+              CHAN="-c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
           else
-              conda install -c ${{ env.CONDA_CHANNEL_NUMBA }} llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2
+              CHAN="-c ${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
+          conda install $CHAN llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
 
       - name: Build wheel
-        run: python setup.py bdist_wheel
+        run: python -m build
 
       - name: Upload llvmlite wheel
         uses: actions/upload-artifact@v4
