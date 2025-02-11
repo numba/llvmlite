@@ -718,13 +718,21 @@ class TestDependencies(BaseTest):
             self.fail("failed parsing dependencies? got %r" % (deps,))
         # Ensure all dependencies are expected
         allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
-                       'libgcc_s', 'libc', 'ld-linux', 'ld64'])
+                       'libgcc_s', 'libc', 'ld-linux', 'ld64', 'libzstd',
+                       'libstdc++'])
         if platform.python_implementation() == 'PyPy':
             allowed.add('libtinfo')
 
+        fails = []
         for dep in deps:
             if not dep.startswith('ld-linux-') and dep not in allowed:
-                self.fail("unexpected dependency %r in %r" % (dep, deps))
+                fails.append(dep)
+        if len(fails) == 1:
+            self.fail("unexpected dependency %r in %r" % (fails[0], deps))
+        elif len(fails) > 1:
+            self.fail("unexpected dependencies %r in %r" % (fails, deps))
+        else:
+            pass  # test passes
 
 
 class TestRISCVABI(BaseTest):

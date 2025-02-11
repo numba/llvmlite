@@ -19,6 +19,8 @@ fi
 if [ "$WHEEL" == "yes" ]; then
     cd dist
     python -m llvmlite.tests -v
+elif [ "$DIST_TEST" == "yes" ]; then
+    LLVMLITE_DIST_TEST=1 python runtests.py -v
 else
     python runtests.py -v
 fi
