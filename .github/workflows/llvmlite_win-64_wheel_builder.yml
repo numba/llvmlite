@@ -115,7 +115,7 @@ jobs:
       - name: Validate wheels
         run: |
           cd dist
-          for WHL_FILE in "*.whl"; do
+          for WHL_FILE in *.whl; do
             wheel unpack "$WHL_FILE"
             python "$GITHUB_WORKSPACE"/buildscripts/github/validate_win64_wheel.py llvmlite/binding/llvmlite.dll
             twine check "$WHL_FILE"
