@@ -61,12 +61,13 @@ jobs:
 
       - name: Install build dependencies
         run: |
+          set -x
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="-c file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+              CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
           else
-              CHAN="-c ${{ env.CONDA_CHANNEL_NUMBA }}"
+              CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
-          conda install "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
+          conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
 
       - name: Build wheel
         run: python -m build
