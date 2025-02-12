@@ -3029,6 +3029,15 @@ class TestPipelineTuningOptions(BaseTest):
 
 
 class NewPassManagerMixin(object):
+    def icelake_pass_builder(self, speed_level=0, size_level=0):
+        llvm.initialize_all_targets()
+        target = llvm.Target.from_triple("x86_64-unknown-unknown")
+        tm = target.create_target_machine(
+            cpu='skylake-avx512',
+            features="+avx,+aes,+sahf,+pclmul,-xop,+crc32", opt=3)
+
+        pto = llvm.create_pipeline_tuning_options(speed_level, size_level)
+        return llvm.create_pass_builder(tm, pto)
 
     def pb(self, speed_level=0, size_level=0):
         tm = self.target_machine(jit=False)
@@ -3134,6 +3143,21 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         mpm.add_instruction_combine_pass()
         mpm.add_jump_threading_pass()
         mpm.add_refprune_pass()
+
+    def test_target(self):
+        pb = self.icelake_pass_builder(3, 0)
+        mpm = pb.getModulePassManager()
+        mod = llvm.parse_assembly("define void @foo() { entry: ret void }")
+        mpm.run(mod, pb)
+
+        # Check for target triple
+        self.assertIn('x86_64-unknown-unknown', str(mod))
+
+        # Check for target-cpu
+        self.assertIn('skylake-avx512', str(mod))
+
+        # Check for target-features
+        self.assertIn("+avx,+aes,+sahf,+pclmul,-xop,+crc32", str(mod))
 
 
 class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
