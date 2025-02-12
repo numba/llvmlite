@@ -15,7 +15,7 @@ on:
 jobs:
   win-64-build:
     name: win-64-build
-    runs-on: windows-2019
+    runs-on: windows-2022
     defaults:
       run:
         shell: bash -elx {0}
@@ -73,7 +73,7 @@ jobs:
   win-64-test:
     name: win-64-test
     needs: win-64-build
-    runs-on: windows-2019
+    runs-on: windows-2022
     defaults:
       run:
         shell: bash -elx {0}
