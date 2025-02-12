@@ -1,0 +1,38 @@
+on:
+  workflow_call:
+    inputs:
+      rebuild_llvmdev:
+        description: Rebuild llvmdev
+        required: true
+        type: boolean
+      platform:
+        description: Conda Platform
+        required: true
+        type: string
+      type:
+        description: Package type to build+test
+        required: true
+        type: string
+      recipe:
+        description: Recipe to build
+        required: true
+        type: string
+
+name: orchestrator
+
+jobs:
+  llvmdev:
+    if: ${{ inputs.rebuild_llvmdev }}
+    uses: ./.github/workflows/llvmdev_build.yml
+    with:
+      platform: ${{ inputs.platform }}
+      recipe: ${{ inputs.recipe }}
+
+  llvmlite:
+    needs: llvmdev
+    if: always()
+    uses: ./.github/workflows/llvmlite_build.yml
+    with:
+      llvmdev_run_id: ${{ inputs.rebuild_llvmdev && needs.llvmdev.outputs.run_id || '' }}
+      platform: ${{ inputs.platform }}
+      type: ${{ inputs.type }}

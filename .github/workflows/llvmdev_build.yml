@@ -1,24 +1,14 @@
 name: llvmdev
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/llvmdev_build.yml
-      - buildscripts/github/llvmdev_evaluate.py
-  label:
-    types: [created]
   workflow_dispatch:
     inputs:
       platform:
         description: Conda Platform
-        default: linux-64
+        default: win-64
         required: true
         type: choice
         options:
-          - linux-64
-          - linux-aarch64
-          - osx-64
-          - osx-arm64
           - win-64
       recipe:
         description: Recipe to build
@@ -28,52 +18,31 @@ on:
         options:
           - llvmdev
           - llvmdev_for_wheels
+  workflow_call:
+    inputs:
+      platform:
+        description: Conda Platform
+        required: true
+        type: string
+      recipe:
+        description: Recipe to build
+        required: true
+        type: string
+    outputs:
+      run_id:
+        description: The workflow run ID
+        value: ${{ jobs.build.outputs.run_id }}
 
-concurrency:
-  # Concurrency group that uses the workflow name and PR number if available
-  # or commit SHA as a fallback. If a new build is triggered under that
-  # concurrency group while a previous build is running it will be canceled.
-  # Repeated pushes to a PR will cancel all previous builds, while multiple
-  # merges to master will not cancel.
-  group: >-
-    ${{ github.workflow }}-
-    ${{ github.event.pull_request.number
-      || toJson(github.event.inputs)
-      || github.event.label.name
-      || github.sha }}
-  cancel-in-progress: true
+defaults:
+  run:
+    shell: bash -el {0}
 
 jobs:
-
-  check:
-    runs-on: ubuntu-24.04
-    outputs:
-      matrix: ${{ steps.evaluate.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Evaluate
-        id: evaluate
-        env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_LABEL_NAME: ${{ github.event.label.name }}
-          GITHUB_WORKFLOW_INPUT: ${{ toJson(github.event.inputs) }}
-        run: |
-          ./buildscripts/github/llvmdev_evaluate.py
-
   build:
-    needs: check
-    name: ${{ matrix.recipe }}-${{ matrix.platform }}
-    runs-on: ${{ matrix.runner }}
-    defaults:
-      run:
-        shell: bash -el {0}
-    strategy:
-      matrix: ${{fromJson(needs.check.outputs.matrix)}}
-      fail-fast: false
-
+    name: Build ${{ inputs.recipe }}
+    runs-on: windows-2019
+    outputs:
+      run_id: ${{ steps.get_run_id.outputs.run_id }}
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
@@ -96,19 +65,20 @@ jobs:
         run: |
           set -x
           mkdir "${CONDA_CHANNEL_DIR}"
-          conda build "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
+          conda build "./conda-recipes/${{ inputs.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Upload conda package
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.recipe }}_${{ matrix.platform }}
+          name: ${{ inputs.recipe }}_${{ inputs.platform }}
           path: conda_channel_dir
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
 
       - name: Get Workflow Run ID
+        id: get_run_id
         run: |
-          echo "Current workflow run ID: ${{ github.run_id }}"
           echo "Use this ID when triggering llvmlite workflow"
+          echo "run_id=${{ github.run_id }}" | tee -a "$GITHUB_OUTPUT"

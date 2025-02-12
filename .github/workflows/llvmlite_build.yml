@@ -1,0 +1,215 @@
+name: llvmlite
+
+on:
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: llvmdev workflow run ID (optional)
+        required: false
+        type: string
+      platform:
+        description: Conda Platform
+        default: win-64
+        required: true
+        type: choice
+        options:
+          - win-64
+      type:
+        description: Package type to build+test
+        default: conda
+        required: true
+        type: choice
+        options:
+          - conda
+          - wheel
+  workflow_call:
+    inputs:
+      llvmdev_run_id:
+        description: llvmdev workflow run ID
+        required: true
+        type: string
+      platform:
+        description: Conda Platform
+        required: true
+        type: string
+      type:
+        description: Package type to build+test
+        required: true
+        type: string
+
+env:
+  LOCAL_LLVMDEV_ARTIFACT_PATH: D:/a/llvmlite/llvmlite/llvmdev_conda_packages
+  FALLBACK_LLVMDEV_VERSION: '15'
+  CONDA_CHANNEL_NUMBA: numba
+  CONDA_CHANNEL_NUMBA_WHEELS: numba/label/win64_wheel
+  VALIDATION_PYTHON_VERSION: '3.12'
+  ARTIFACT_RETENTION_DAYS: 7
+
+defaults:
+  run:
+    shell: bash -el {0}
+
+jobs:
+  build:
+    name: Build llvmlite ${{ inputs.type }} ${{ matrix.python-version }}
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniconda
+        if: ${{ inputs.type == 'conda' }}
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: ''
+          run-post: false
+
+      - name: Setup Miniconda
+        if: ${{ inputs.type == 'wheel' }}
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+          run-post: false
+
+      - name: Download llvmdev Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev_${{ inputs.platform }}
+          path: llvmdev_conda_packages
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare build
+        run: |
+          set -x
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+              CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+          elif [ "${{ inputs.type }}" == "conda" ]; then
+              CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
+          else
+              CHAN="${{ env.CONDA_CHANNEL_NUMBA_WHEELS }}"
+          fi
+          echo "CHAN=$CHAN" | tee -a "$GITHUB_ENV"
+          mkdir artifacts
+
+      - name: Install dependencies
+        run: |
+          if [ "${{ inputs.type }}" == "conda" ]; then
+            conda install conda-build
+          else
+            conda install -c "$CHAN" "llvmdev=$FALLBACK_LLVMDEV_VERSION" cmake libxml2 python-build
+          fi
+
+      - name: Build ${{ inputs.type }}
+        run: |
+          if [ "${{ inputs.type }}" == "conda" ]; then
+            conda build --debug -c "$CHAN" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder=artifacts --no-test
+          else
+            python -m build && mv dist/*.whl artifacts/
+          fi
+
+      - name: Upload llvmlite ${{ inputs.type }} package
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-${{ inputs.platform }}-${{ inputs.type}}-${{ matrix.python-version }}
+          path: artifacts
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  validate:
+    name: Validate llvmlite ${{ inputs.type }} ${{ matrix.python-version }}
+    needs: build
+    if: ${{ inputs.type == 'wheel' }}
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+          run-post: false
+
+      - name: Install validation dependencies
+        run: |
+          conda install -c defaults py-lief wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-${{ inputs.platform }}-${{ inputs.type}}-${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          cd dist
+          for WHL_FILE in *.whl; do
+            wheel unpack "$WHL_FILE"
+            ../buildscripts/github/validate_win64_wheel.py llvmlite/binding/llvmlite.dll
+            twine check "$WHL_FILE"
+          done
+
+  test:
+    name: Test llvmlite ${{ inputs.type }} ${{ matrix.python-version }}
+    needs: build
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+      fail-fast: false
+    steps:
+      - name: Setup miniconda
+        if: ${{ inputs.type == 'conda' }}
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          run-post: false
+
+      - name: Setup Python
+        if: ${{ inputs.type == 'wheel' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download llvmlite artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-${{ inputs.platform }}-${{ inputs.type}}-${{ matrix.python-version }}
+          path: artifacts
+
+      - name: Install
+        run: |
+          if [ "${{ inputs.type }}" == "conda" ]; then
+            conda install conda-build
+          else
+            pip install dist/*.whl
+          fi
+
+      - name: Run tests
+        run: |
+          if [ "${{ inputs.type }}" == "conda" ]; then
+            conda build --test artifacts/${{ inputs.platform }}/llvmlite*.conda
+          else
+            python -m llvmlite.tests
+          fi

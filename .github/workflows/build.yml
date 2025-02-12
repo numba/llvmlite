@@ -1,0 +1,75 @@
+name: main
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/build.yml
+      - .github/workflows/build_orchestrator.yml
+      - .github/workflows/llvmdev_build.yml
+      - .github/workflows/llvmlite_build.yml
+      - buildscripts/github/**
+      - conda-recipes/**
+      - llvmlite/**
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Conda Platform
+        default: win-64
+        required: true
+        type: choice
+        options:
+          - win-64
+  label:
+    types: [created]
+
+concurrency:
+  # Concurrency group that uses the workflow name and PR number if available
+  # or commit SHA as a fallback. If a new build is triggered under that
+  # concurrency group while a previous build is running it will be canceled.
+  # Repeated pushes to a PR will cancel all previous builds, while multiple
+  # merges to master will not cancel.
+  group: >-
+    ${{ github.workflow }}-
+    ${{ github.event.pull_request.number
+      || toJson(github.event.inputs)
+      || github.event.label.name
+      || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    name: Generate matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+      - name: Generate
+        id: generate
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_LABEL_NAME: ${{ github.event.label.name }}
+          GITHUB_WORKFLOW_INPUT: ${{ toJson(github.event.inputs) }}
+        run: |
+          ./buildscripts/github/gen_matrix.py
+
+  orchestrator:
+    name: Orchestrate build
+    needs: matrix
+    strategy:
+      matrix:
+        include: ${{fromJson(needs.matrix.outputs.matrix)}}
+      fail-fast: false
+    uses: ./.github/workflows/build_orchestrator.yml
+    with:
+      rebuild_llvmdev: ${{ matrix.rebuild_llvmdev }}
+      platform: ${{ matrix.platform }}
+      recipe: ${{ matrix.recipe }}
+      type: ${{ matrix.type }}

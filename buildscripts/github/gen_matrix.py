@@ -8,6 +8,7 @@ from pathlib import Path
 event = os.environ.get("GITHUB_EVENT_NAME")
 label = os.environ.get("GITHUB_LABEL_NAME")
 inputs = os.environ.get("GITHUB_WORKFLOW_INPUT", "{}")
+changed_files = os.environ.get("ALL_CHANGED_FILES", "").split()
 
 runner_mapping = {
     "linux-64": "ubuntu-24.04",
@@ -16,28 +17,29 @@ runner_mapping = {
     "osx-arm64": "macos-14",
     "win-64": "windows-2019",
 }
+print(f"runner_mapping: {runner_mapping}")
 
 default_include = [
     {
-        "runner": runner_mapping["linux-64"],
-        "platform": "linux-64",
+        "runner": runner_mapping["win-64"],
+        "rebuild_llvmdev": False,
+        "platform": "win-64",
         "recipe": "llvmdev",
+        "type": "conda",
     },
     {
         "runner": runner_mapping["win-64"],
+        "rebuild_llvmdev": True,
         "platform": "win-64",
         "recipe": "llvmdev",
-    },
-    {
-        "runner": runner_mapping["win-64"],
-        "platform": "win-64",
-        "recipe": "llvmdev_for_wheel",
+        "type": "wheel",
     },
 ]
 
 print(
-    "Deciding what to do based on event: "
-    f"'{event}', label: '{label}', inputs: '{inputs}'"
+    f"Generationg matrix based on, event: '{event}', "
+    f"label: '{label}', inputs: '{inputs}' ",
+    f"changed_files: {changed_files}",
 )
 if event == "pull_request":
     print("pull_request detected")
@@ -51,14 +53,22 @@ elif event == "workflow_dispatch":
     include = [
         {
             "runner": runner_mapping[params.get("platform", "linux-64")],
-            "platform": params.get("platform", "linux-64"),
-            "recipe": params.get("recipe", "llvmdev"),
-        }
+            "rebuild_llvmdev": True,
+            "platform": params.get("platform", "win-64"),
+            "recipe": "llvmdev",
+            "type": "conda",
+        },
+        {
+            "runner": runner_mapping[params.get("platform", "linux-64")],
+            "rebuild_llvmdev": True,
+            "platform": params.get("platform", "win-64"),
+            "recipe": "llvmdev",
+            "type": "wheel",
+        },
     ]
 else:
     include = {}
 
-matrix = {"include": include}
-print(f"Emitting matrix:\n {json.dumps(matrix, indent=4)}")
+print(f"Emitting matrix:\n {json.dumps(include, indent=4)}")
 
-Path(os.environ["GITHUB_OUTPUT"]).write_text(f"matrix={json.dumps(matrix)}")
+Path(os.environ["GITHUB_OUTPUT"]).write_text(f"matrix={json.dumps(include)}")
