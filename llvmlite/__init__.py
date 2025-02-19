@@ -3,7 +3,7 @@ __version__ = get_versions()['version']
 del get_versions
 
 # FIXME: Remove me once typed pointers are no longer supported.
-# Let's enable opaque pointers unconditionally.
+# Opaque pointers unconditionally required for later LLVM versions
 opaque_pointers_enabled = True
 # We default to lazy opaque pointers being enabled, since they're needed in the
 # most common usage scenarios with  later LLVMs
