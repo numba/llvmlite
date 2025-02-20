@@ -2412,6 +2412,72 @@ class TestTypes(TestBase):
                 self.assertFalse(tp == other, (tp, other))
                 self.assertTrue(tp != other, (tp, other))
 
+    def test_ptr_comparisons(self):
+        # Create instances of:
+        #   * Opaque pointers.
+        #   * Typed pointers of i1's.
+        #   * Typed pointers of i8's.
+        # The choice of types for the typed pointers are not consequential -
+        # they just need to differ. Each pointer class has two instances, one
+        # in address space 0, another in address space 1.
+        ptrs = {
+            'op_a0': ir.PointerType(),
+            'op_a1': ir.PointerType(addrspace=1),
+            'tp_i1_a0': ir.PointerType(int1),
+            'tp_i1_a1': ir.PointerType(int1, addrspace=1),
+            'tp_i8_a0': ir.PointerType(int8),
+            'tp_i8_a1': ir.PointerType(int8, addrspace=1),
+        }
+
+        def assert_eq(ptr1, ptr2):
+            self.assertTrue(ptr1 == ptr2, (ptr1, ptr2))
+            self.assertTrue(ptr2 == ptr1, (ptr2, ptr1))
+
+            self.assertFalse(ptr1 != ptr2, (ptr1, ptr2))
+            self.assertFalse(ptr2 != ptr1, (ptr2, ptr1))
+
+        def assert_ne(ptr1, ptr2):
+            self.assertFalse(ptr1 == ptr2, (ptr1, ptr2))
+            self.assertFalse(ptr2 == ptr1, (ptr2, ptr1))
+
+            self.assertTrue(ptr1 != ptr2, (ptr1, ptr2))
+            self.assertTrue(ptr2 != ptr1, (ptr2, ptr1))
+
+        for ptr in ptrs.values():
+            # Compare the pointers against any non-pointer type.
+            for other in self.assorted_types():
+                if not isinstance(other, ir.PointerType):
+                    assert_ne(ptr, other)
+            # Compare the pointers against themselves.
+            assert_eq(ptr, ptr)
+
+        # Compare the pointers against each other.
+        # Opaque pointers are always equal, unless their address space differs.
+        # Typed pointers always differ, unless their pointee type and address
+        # space match.
+        assert_ne(ptrs['op_a0'], ptrs['op_a1'])
+        assert_eq(ptrs['op_a0'], ptrs['tp_i1_a0'])
+        assert_ne(ptrs['op_a0'], ptrs['tp_i1_a1'])
+        assert_eq(ptrs['op_a0'], ptrs['tp_i8_a0'])
+        assert_ne(ptrs['op_a0'], ptrs['tp_i8_a1'])
+        assert_ne(ptrs['op_a1'], ptrs['tp_i1_a0'])
+        assert_eq(ptrs['op_a1'], ptrs['tp_i1_a1'])
+        assert_ne(ptrs['op_a1'], ptrs['tp_i8_a0'])
+        assert_eq(ptrs['op_a1'], ptrs['tp_i8_a1'])
+        assert_ne(ptrs['tp_i1_a0'], ptrs['tp_i1_a1'])
+        assert_ne(ptrs['tp_i1_a0'], ptrs['tp_i8_a0'])
+        assert_ne(ptrs['tp_i1_a0'], ptrs['tp_i8_a1'])
+        assert_ne(ptrs['tp_i1_a1'], ptrs['tp_i8_a0'])
+        assert_ne(ptrs['tp_i1_a1'], ptrs['tp_i8_a1'])
+        assert_ne(ptrs['tp_i8_a0'], ptrs['tp_i8_a1'])
+
+    def test_ptr_intrinsic_name(self):
+        self.assertEqual(ir.PointerType().intrinsic_name, 'p0')
+        self.assertEqual(ir.PointerType(addrspace=1).intrinsic_name, 'p1')
+        # Note: Should this be adjusted based on the pointer mode?
+        self.assertEqual(ir.PointerType(int1).intrinsic_name, 'p0i1')
+        self.assertEqual(ir.PointerType(int1, 1).intrinsic_name, 'p1i1')
+
     def test_str(self):
         """
         Test the string representation of types.
