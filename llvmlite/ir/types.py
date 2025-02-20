@@ -4,7 +4,7 @@ Classes that are LLVM types
 
 import struct
 
-from llvmlite import lazy_opaque_pointers_enabled
+from llvmlite import ir_layer_typed_pointers_enabled
 from llvmlite.ir._utils import _StrCaching
 
 
@@ -159,7 +159,7 @@ class _TypedPointerType(PointerType):
         self.is_opaque = False
 
     def _to_string(self):
-        if lazy_opaque_pointers_enabled:
+        if ir_layer_typed_pointers_enabled:
             return "{0}*".format(self.pointee) if self.addrspace == 0 else \
                    "{0} addrspace({1})*".format(self.pointee, self.addrspace)
         return super(_TypedPointerType, self)._to_string()
