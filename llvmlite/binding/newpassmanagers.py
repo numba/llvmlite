@@ -207,11 +207,18 @@ class PipelineTuningOptions(ffi.ObjectRef):
     def _dispose(self):
         ffi.lib.LLVMPY_DisposePipelineTuningOptions(self)
 
+class PassInstrumentationCallbacks(ffi.ObjectRef):
+    def __init__(self):
+        super().__init__(ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksCreate())
+
+    def _dispose(self):
+        ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksDispose(self)
 
 class PassBuilder(ffi.ObjectRef):
 
     def __init__(self, tm, pto):
-        super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto))
+        self._pic = PassInstrumentationCallbacks()
+        super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto, self._pic))
         self._pto = pto
         self._tm = tm
 
@@ -340,9 +347,18 @@ ffi.lib.LLVMPY_DisposePipelineTuningOptions.argtypes = \
 
 ffi.lib.LLVMPY_CreatePassBuilder.restype = ffi.LLVMPassBuilderRef
 ffi.lib.LLVMPY_CreatePassBuilder.argtypes = [ffi.LLVMTargetMachineRef,
-                                             ffi.LLVMPipelineTuningOptionsRef,]
+                                             ffi.LLVMPipelineTuningOptionsRef,
+                                             ffi.LLVMPassInstrumentationCallbacks,]
 
 ffi.lib.LLVMPY_DisposePassBuilder.argtypes = [ffi.LLVMPassBuilderRef,]
+
+ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksCreate.restype = (
+    ffi.LLVMPassInstrumentationCallbacks
+)
+
+ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksDispose.argtypes = (
+    ffi.LLVMPassInstrumentationCallbacks,
+)
 
 # Pipeline builders
 

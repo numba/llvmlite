@@ -281,12 +281,23 @@ LLVMPY_DisposePipelineTuningOptions(LLVMPipelineTuningOptionsRef PTO) {
 
 // PB
 
+API_EXPORT(PassInstrumentationCallbacks *)
+LLVMPY_LLVMPassInstrumentationCallbacksCreate() {
+    return new PassInstrumentationCallbacks();
+}
+
+API_EXPORT(void)
+LLVMPY_LLVMPassInstrumentationCallbacksDispose(
+    PassInstrumentationCallbacks *PIC) {
+    delete PIC;
+}
+
 API_EXPORT(LLVMPassBuilderRef)
 LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TM,
-                         LLVMPipelineTuningOptionsRef PTO) {
+                         LLVMPipelineTuningOptionsRef PTO,
+                         PassInstrumentationCallbacks *PIC) {
     TargetMachine *target = llvm::unwrap(TM);
     PipelineTuningOptions *pt = llvm::unwrap(PTO);
-    PassInstrumentationCallbacks *PIC = new PassInstrumentationCallbacks();
 #if LLVM_VERSION_MAJOR < 16
     return llvm::wrap(new PassBuilder(target, *pt, None, PIC));
 #else
