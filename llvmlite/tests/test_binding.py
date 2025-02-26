@@ -3066,6 +3066,27 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         fpm.run(self.module().get_function("sum"), pb)
         pb.close()
 
+    def test_time_passes(self):
+        """Test pass timing reports for O3 and O0 optimization levels"""
+        def run_with_timing(speed_level):
+            mod = self.module()
+            pb = self.pb(speed_level=speed_level, size_level=0)
+            pb.set_time_passes(True)
+            mpm = pb.getModulePassManager()
+            mpm.run(mod, pb)
+            report = pb.report_and_reset_timings()
+            pb.set_time_passes(False)
+            pb.close()
+            return report
+
+        report_O3 = run_with_timing(3)
+        report_O0 = run_with_timing(0)
+
+        self.assertIsInstance(report_O3, str)
+        self.assertIsInstance(report_O0, str)
+        self.assertEqual(report_O3.count("Pass execution timing report"), 1)
+        self.assertEqual(report_O0.count("Pass execution timing report"), 1)
+
 
 class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
     def pm(self):

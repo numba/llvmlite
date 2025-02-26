@@ -1,4 +1,4 @@
-from ctypes import c_bool, c_int, c_size_t
+from ctypes import c_bool, c_int, c_size_t, c_char_p, POINTER
 from enum import IntFlag
 from llvmlite.binding import ffi
 
@@ -207,17 +207,30 @@ class PipelineTuningOptions(ffi.ObjectRef):
     def _dispose(self):
         ffi.lib.LLVMPY_DisposePipelineTuningOptions(self)
 
+
+class TimePassesHandler(ffi.ObjectRef):
+    def __init__(self):
+        super().__init__(ffi.lib.LLVMPY_CreateLLVMTimePassesHandler())
+
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeLLVMTimePassesHandler(self)
+
+
 class PassInstrumentationCallbacks(ffi.ObjectRef):
     def __init__(self):
-        super().__init__(ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksCreate())
+        super().__init__(
+            ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksCreate()
+        )
 
     def _dispose(self):
         ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksDispose(self)
+
 
 class PassBuilder(ffi.ObjectRef):
 
     def __init__(self, tm, pto):
         self._pic = PassInstrumentationCallbacks()
+        self._time_passes = TimePassesHandler()
         super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto, self._pic))
         self._pto = pto
         self._tm = tm
@@ -233,6 +246,29 @@ class PassBuilder(ffi.ObjectRef):
             ffi.lib.LLVMPY_buildFunctionSimplificationPipeline(
                 self, self._pto.speed_level, self._pto.size_level)
         )
+
+    def set_time_passes(self, enable):
+        """Enable or disable the pass timers.
+        Parameters
+        ----------
+        enable : bool
+            Set to True to enable the pass timers.
+            Set to False to disable the pass timers.
+        """
+        ffi.lib.LLVMPY_SetTimePassesNPM(self._time_passes, self._pic)
+
+    def report_and_reset_timings(self):
+        """Returns the pass timings report and resets the LLVM internal timers.
+        Pass timers are enabled by ``set_time_passes()``. If the timers are not
+        enabled, this function will return an empty string.
+        Returns
+        -------
+        res : str
+            LLVM generated timing report.
+        """
+        with ffi.OutputString() as buf:
+            ffi.lib.LLVMPY_ReportAndResetTimingsNPM(self._time_passes, buf)
+            return str(buf)
 
     def _dispose(self):
         ffi.lib.LLVMPY_DisposePassBuilder(self)
@@ -346,18 +382,36 @@ ffi.lib.LLVMPY_DisposePipelineTuningOptions.argtypes = \
 # PassBuilder
 
 ffi.lib.LLVMPY_CreatePassBuilder.restype = ffi.LLVMPassBuilderRef
-ffi.lib.LLVMPY_CreatePassBuilder.argtypes = [ffi.LLVMTargetMachineRef,
-                                             ffi.LLVMPipelineTuningOptionsRef,
-                                             ffi.LLVMPassInstrumentationCallbacks,]
+ffi.lib.LLVMPY_CreatePassBuilder.argtypes = [
+    ffi.LLVMTargetMachineRef,
+    ffi.LLVMPipelineTuningOptionsRef,
+    ffi.LLVMPassInstrumentationCallbacksRef,
+]
 
 ffi.lib.LLVMPY_DisposePassBuilder.argtypes = [ffi.LLVMPassBuilderRef,]
 
+ffi.lib.LLVMPY_CreateLLVMTimePassesHandler.restype = \
+    ffi.LLVMTimePassesHandlerRef
+
+ffi.lib.LLVMPY_DisposeLLVMTimePassesHandler.argtypes = [
+    ffi.LLVMTimePassesHandlerRef,]
+
+ffi.lib.LLVMPY_SetTimePassesNPM.argtypes = [
+    ffi.LLVMTimePassesHandlerRef,
+    ffi.LLVMPassInstrumentationCallbacksRef,
+]
+
+ffi.lib.LLVMPY_ReportAndResetTimingsNPM.argtypes = [
+    ffi.LLVMTimePassesHandlerRef,
+    POINTER(c_char_p),
+]
+
 ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksCreate.restype = (
-    ffi.LLVMPassInstrumentationCallbacks
+    ffi.LLVMPassInstrumentationCallbacksRef
 )
 
 ffi.lib.LLVMPY_LLVMPassInstrumentationCallbacksDispose.argtypes = (
-    ffi.LLVMPassInstrumentationCallbacks,
+    ffi.LLVMPassInstrumentationCallbacksRef,
 )
 
 # Pipeline builders
