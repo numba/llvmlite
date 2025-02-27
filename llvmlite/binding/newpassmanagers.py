@@ -247,13 +247,8 @@ class PassBuilder(ffi.ObjectRef):
                 self, self._pto.speed_level, self._pto.size_level)
         )
 
-    def set_time_passes(self, enable):
-        """Enable or disable the pass timers.
-        Parameters
-        ----------
-        enable : bool
-            Set to True to enable the pass timers.
-            Set to False to disable the pass timers.
+    def set_time_passes(self):
+        """Enable the pass timers.
         """
         ffi.lib.LLVMPY_SetTimePassesNPM(self._time_passes, self._pic)
 

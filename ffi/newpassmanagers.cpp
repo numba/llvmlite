@@ -315,7 +315,7 @@ API_EXPORT(void)
 LLVMPY_SetTimePassesNPM(LLVMTimePassesHandlerRef TimePasses,
                         LLVMPassInstrumentationCallbacksRef PIC) {
     TimePassesHandler *TP = llvm::unwrap(TimePasses);
-    TP->print();
+    TimePassesIsEnabled = true;
     TP->registerCallbacks(*llvm::unwrap(PIC));
 }
 
@@ -329,6 +329,7 @@ LLVMPY_ReportAndResetTimingsNPM(LLVMTimePassesHandlerRef TimePasses,
     TP->print();
     os.flush();
     *outmsg = LLVMPY_CreateString(os.str().c_str());
+    TimePassesIsEnabled = false;
 }
 
 API_EXPORT(LLVMPassBuilderRef)
