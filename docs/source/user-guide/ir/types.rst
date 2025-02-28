@@ -100,9 +100,10 @@ Atomic types
 Pointer Types
 =============
 
-llvmlite presently supports both *Typed Pointers* and *Opaque Pointers*. Typed
-Pointers are currently the default; Opaque Pointers will become the default in
-future, and support for Typed Pointers will be eventually be removed.
+The IR layer presently supports both *Typed Pointers* and *Opaque Pointers*.
+Typed Pointers are currently the default; Opaque Pointers will become the
+default in future, and support for Typed Pointers will be eventually be
+removed.
 
 .. note::
    Further details of the migration to Opaque Pointers are outlined in the
@@ -126,23 +127,25 @@ When Typed Pointers are enabled, the pointer type is represented using:
 
         The type pointed to.
 
-Opaque pointers can be enabled by setting the environment variable:
+Opaque Pointers can be enabled in the IR layer by setting the environment
+variable:
 
 .. code:: bash
 
-   LLVMLITE_ENABLE_OPAQUE_POINTERS=1
+   LLVMLITE_ENABLE_IR_LAYER_TYPED_POINTERS=0
 
-or by setting the ``opaque_pointers_enabled`` attribute after importing
+or by setting the ``ir_layer_typed_pointers_enabled`` attribute after importing
 llvmlite, but prior to using any of its functionality. For example:
 
 .. code:: python
 
    import llvmlite
-   llvmlite.opaque_pointers_enabled = True
+   llvmlite.ir_layer_typed_pointers_enabled = False
 
    # ... continue using llvmlite ...
 
-When Opaque Pointers are enabled, the pointer type is represented using:
+When Opaque Pointers are enabled (by disabling Typed Pointers), the pointer
+type is represented using:
 
 .. class:: PointerType(addrspace=0)
    :no-index:
