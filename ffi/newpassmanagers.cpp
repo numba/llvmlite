@@ -37,11 +37,6 @@ typedef OpaquePipelineTuningOptions *LLVMPipelineTuningOptionsRef;
 DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PipelineTuningOptions,
                                    LLVMPipelineTuningOptionsRef)
 
-struct OpaquePassInstrumentationCallbacks;
-typedef OpaquePassInstrumentationCallbacks *LLVMPassInstrumentationCallbacksRef;
-DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PassInstrumentationCallbacks,
-                                   LLVMPassInstrumentationCallbacksRef)
-
 struct OpaqueTimePassesHandler;
 typedef OpaqueTimePassesHandler *LLVMTimePassesHandlerRef;
 DEFINE_SIMPLE_CONVERSION_FUNCTIONS(TimePassesHandler, LLVMTimePassesHandlerRef)
@@ -290,17 +285,6 @@ LLVMPY_DisposePipelineTuningOptions(LLVMPipelineTuningOptionsRef PTO) {
 
 // PB
 
-API_EXPORT(LLVMPassInstrumentationCallbacksRef)
-LLVMPY_LLVMPassInstrumentationCallbacksCreate() {
-    return llvm::wrap(new PassInstrumentationCallbacks());
-}
-
-API_EXPORT(void)
-LLVMPY_LLVMPassInstrumentationCallbacksDispose(
-    LLVMPassInstrumentationCallbacksRef PICRef) {
-    delete llvm::unwrap(PICRef);
-}
-
 API_EXPORT(LLVMTimePassesHandlerRef)
 LLVMPY_CreateLLVMTimePassesHandler() {
     return llvm::wrap(new TimePassesHandler(true));
@@ -312,11 +296,12 @@ LLVMPY_DisposeLLVMTimePassesHandler(LLVMTimePassesHandlerRef TimePassesRef) {
 }
 
 API_EXPORT(void)
-LLVMPY_SetTimePassesNPM(LLVMTimePassesHandlerRef TimePassesRef,
-                        LLVMPassInstrumentationCallbacksRef PICRef) {
+LLVMPY_SetTimePassesNPM(LLVMPassBuilderRef PBRef, LLVMTimePassesHandlerRef TimePassesRef) {
     TimePassesHandler *TP = llvm::unwrap(TimePassesRef);
     TimePassesIsEnabled = true;
-    TP->registerCallbacks(*llvm::unwrap(PICRef));
+    PassBuilder *PB = llvm::unwrap(PBRef);
+    PassInstrumentationCallbacks *PIC = PB->getPassInstrumentationCallbacks();
+    TP->registerCallbacks(*PIC);
 }
 
 API_EXPORT(void)
@@ -334,11 +319,10 @@ LLVMPY_ReportAndResetTimingsNPM(LLVMTimePassesHandlerRef TimePassesRef,
 
 API_EXPORT(LLVMPassBuilderRef)
 LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TMRef,
-                         LLVMPipelineTuningOptionsRef PTORef,
-                         LLVMPassInstrumentationCallbacksRef PICRef) {
+                         LLVMPipelineTuningOptionsRef PTORef) {
     TargetMachine *TM = llvm::unwrap(TMRef);
     PipelineTuningOptions *PTO = llvm::unwrap(PTORef);
-    PassInstrumentationCallbacks *PIC = llvm::unwrap(PICRef);
+    PassInstrumentationCallbacks *PIC = new PassInstrumentationCallbacks();
 #if LLVM_VERSION_MAJOR < 16
     return llvm::wrap(new PassBuilder(TM, *PTO, None, PIC));
 #else
