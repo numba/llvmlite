@@ -339,7 +339,7 @@ LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TMRef,
     TargetMachine *TM = llvm::unwrap(TMRef);
     PipelineTuningOptions *PTO = llvm::unwrap(PTORef);
     PassInstrumentationCallbacks *PIC = llvm::unwrap(PICRef);
-#if VERSION_MAJOR < 16
+#if LLVM_VERSION_MAJOR < 16
     return llvm::wrap(new PassBuilder(TM, *PTO, None, PIC));
 #else
     return llvm::wrap(new PassBuilder(TM, *PTO, std::nullopt, PIC));
