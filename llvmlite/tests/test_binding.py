@@ -3071,10 +3071,10 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         def run_with_timing(speed_level):
             mod = self.module()
             pb = self.pb(speed_level=speed_level, size_level=0)
-            pb.set_time_passes()
+            pb.start_pass_timing()
             mpm = pb.getModulePassManager()
             mpm.run(mod, pb)
-            report = pb.report_and_reset_timings()
+            report = pb.finish_pass_timing()
             pb.close()
             return report
 
@@ -3091,7 +3091,7 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         pb = self.pb()
         mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
-        report = pb.report_and_reset_timings()
+        report = pb.finish_pass_timing()
         pb.close()
         self.assertFalse(report)
 

@@ -286,17 +286,19 @@ LLVMPY_DisposePipelineTuningOptions(LLVMPipelineTuningOptionsRef PTO) {
 // PB
 
 API_EXPORT(LLVMTimePassesHandlerRef)
-LLVMPY_CreateLLVMTimePassesHandler() {
-    return llvm::wrap(new TimePassesHandler(true));
+LLVMPY_CreateTimePassesHandler() {
+    bool enabled = true;
+    return llvm::wrap(new TimePassesHandler(enabled));
 }
 
 API_EXPORT(void)
-LLVMPY_DisposeLLVMTimePassesHandler(LLVMTimePassesHandlerRef TimePassesRef) {
+LLVMPY_DisposeTimePassesHandler(LLVMTimePassesHandlerRef TimePassesRef) {
     delete llvm::unwrap(TimePassesRef);
 }
 
 API_EXPORT(void)
-LLVMPY_SetTimePassesNPM(LLVMPassBuilderRef PBRef, LLVMTimePassesHandlerRef TimePassesRef) {
+LLVMPY_EnableTimePasses(LLVMPassBuilderRef PBRef,
+                        LLVMTimePassesHandlerRef TimePassesRef) {
     TimePassesHandler *TP = llvm::unwrap(TimePassesRef);
     TimePassesIsEnabled = true;
     PassBuilder *PB = llvm::unwrap(PBRef);
@@ -305,8 +307,8 @@ LLVMPY_SetTimePassesNPM(LLVMPassBuilderRef PBRef, LLVMTimePassesHandlerRef TimeP
 }
 
 API_EXPORT(void)
-LLVMPY_ReportAndResetTimingsNPM(LLVMTimePassesHandlerRef TimePassesRef,
-                                const char **outmsg) {
+LLVMPY_ReportAndDisableTimePasses(LLVMTimePassesHandlerRef TimePassesRef,
+                                  const char **outmsg) {
     std::string osbuf;
     raw_string_ostream os(osbuf);
     TimePassesHandler *TP = llvm::unwrap(TimePassesRef);
