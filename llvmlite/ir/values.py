@@ -705,13 +705,6 @@ class DIToken:
 
     Use this to wrap known constants, e.g. the DW_* enumerations.
     """
-    _instance = None
-
-    def __new__(cls, value):
-        if not cls._instance or cls._instance.value != value:
-            cls._instance = super().__new__(cls)
-            cls._instance.value = value
-        return cls._instance
 
     def __init__(self, value):
         self.value = value
