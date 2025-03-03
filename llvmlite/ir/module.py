@@ -82,7 +82,8 @@ class Module(object):
         an instruction.
         """
         operands = tuple(sorted(self._fix_di_operands(operands.items())))
-        key = (kind, operands, is_distinct)
+        str_op_key = tuple(sorted(self.str_ditok_operands(operands.items())))
+        key = (kind, str_op_key, is_distinct)
         if key not in self._metadatacache:
             n = len(self.metadata)
             di = values.DIValue(self, is_distinct, kind, operands, name=str(n))
