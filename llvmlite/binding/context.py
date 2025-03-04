@@ -1,7 +1,5 @@
 from llvmlite.binding import ffi
 
-from ctypes import c_bool
-
 
 def create_context():
     return ContextRef(
