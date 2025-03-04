@@ -101,7 +101,7 @@ Pointer Types
 =============
 
 The IR layer presently supports both *Typed Pointers* and *Opaque Pointers*.
-Support for Typed Pointers will be eventually be removed.
+Support for Typed Pointers will eventually be removed.
 
 .. note::
    Further details of the migration to Opaque Pointers are outlined in the
