@@ -538,8 +538,6 @@ class TestIR(TestBase):
             "size": 64,
             "encoding": ir.DIToken("DW_ATE_signed")
         })
-        strmod = str(mod)
-        print(strmod)
         self.assertIs(di1, di2)
         self.assertIs(di1, di4)
         self.assertIs(di1, di5)
