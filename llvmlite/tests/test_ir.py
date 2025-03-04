@@ -515,7 +515,7 @@ class TestIR(TestBase):
         })
         di5 = mod.add_debug_info("DIBasicType", {
             "name": "i8",
-             "size": 8,
+            "size": 8,
             "encoding": ir.DIToken("DW_ATE_unsigned")
         })
         di6 = mod.add_debug_info("DIBasicType", {
