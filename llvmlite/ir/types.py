@@ -4,10 +4,8 @@ Classes that are LLVM types
 
 import struct
 
+from llvmlite import ir_layer_typed_pointers_enabled
 from llvmlite.ir._utils import _StrCaching
-
-# FIXME: Remove me once typed pointers are no longer supported.
-from llvmlite import opaque_pointers_enabled
 
 
 def _wrapname(x):
@@ -145,8 +143,6 @@ class PointerType(Type):
         """
         Create from a llvmlite.binding.TypeRef
         """
-        if not opaque_pointers_enabled:
-            return _TypedPointerType.from_llvm(typeref, ir_ctx)
         return cls()
 
 
@@ -163,7 +159,7 @@ class _TypedPointerType(PointerType):
         self.is_opaque = False
 
     def _to_string(self):
-        if not opaque_pointers_enabled:
+        if ir_layer_typed_pointers_enabled:
             return "{0}*".format(self.pointee) if self.addrspace == 0 else \
                    "{0} addrspace({1})*".format(self.pointee, self.addrspace)
         return super(_TypedPointerType, self)._to_string()
@@ -189,17 +185,6 @@ class _TypedPointerType(PointerType):
     @property
     def intrinsic_name(self):
         return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
-
-    @classmethod
-    def from_llvm(cls, typeref, ir_ctx):
-        """
-        Create from a llvmlite.binding.TypeRef
-        """
-        assert not opaque_pointers_enabled
-        # opaque pointer will change this
-        [pointee] = typeref.elements
-        # addrspace is not handled
-        return cls(pointee.as_ir(ir_ctx=ir_ctx))
 
 
 class VoidType(Type):
