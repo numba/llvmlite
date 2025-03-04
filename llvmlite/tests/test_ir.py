@@ -490,6 +490,73 @@ class TestIR(TestBase):
                             '"foo")', strmod)
         self.assert_valid_ir(mod)
 
+    def test_debug_info_3(self):
+        # Identical DIBasicType metadata nodes should be merged
+        mod = self.module()
+        di1 = mod.add_debug_info("DIBasicType", {
+            "name": "i8",
+            "size": 8,
+            "encoding": ir.DIToken("DW_ATE_unsigned")
+        })
+        di2 = mod.add_debug_info("DIBasicType", {
+            "name": "i8",
+            "size": 8,
+            "encoding": ir.DIToken("DW_ATE_unsigned")
+        })
+        di3 = mod.add_debug_info("DIBasicType", {
+            "name": "i32",
+            "size": 32,
+            "encoding": ir.DIToken("DW_ATE_unsigned")
+        })
+        di4 = mod.add_debug_info("DIBasicType", {
+            "name": "i8",
+            "size": 8,
+            "encoding": ir.DIToken("DW_ATE_unsigned")
+        })
+        di5 = mod.add_debug_info("DIBasicType", {
+            "name": "i8",
+             "size": 8,
+            "encoding": ir.DIToken("DW_ATE_unsigned")
+        })
+        di6 = mod.add_debug_info("DIBasicType", {
+            "name": "i32",
+            "size": 32,
+            "encoding": ir.DIToken("DW_ATE_unsigned")
+        })
+        di7 = mod.add_debug_info("DIBasicType", {
+            "name": "i64",
+            "size": 64,
+            "encoding": ir.DIToken("DW_ATE_signed")
+        })
+        di8 = mod.add_debug_info("DIBasicType", {
+            "name": "i64",
+            "size": 64,
+            "encoding": ir.DIToken("DW_ATE_signed")
+        })
+        di9 = mod.add_debug_info("DIBasicType", {
+            "name": "i64",
+            "size": 64,
+            "encoding": ir.DIToken("DW_ATE_signed")
+        })
+        strmod = str(mod)
+        print(strmod)
+        self.assertIs(di1, di2)
+        self.assertIs(di1, di4)
+        self.assertIs(di1, di5)
+        self.assertIs(di3, di6)
+        self.assertIs(di7, di8)
+        self.assertIs(di7, di9)
+        self.assertEqual(len({di1, di2, di3, di4, di5, di6, di7, di8, di9}), 3)
+        # Check output
+        strmod = str(mod)
+        self.assert_ir_line('!0 = !DIBasicType(encoding: DW_ATE_unsigned, '
+                            'name: "i8", size: 8)', strmod)
+        self.assert_ir_line('!1 = !DIBasicType(encoding: DW_ATE_unsigned, '
+                            'name: "i32", size: 32)', strmod)
+        self.assert_ir_line('!2 = !DIBasicType(encoding: DW_ATE_signed, '
+                            'name: "i64", size: 64)', strmod)
+        self.assert_valid_ir(mod)
+
     def test_debug_info_gvar(self):
         # This test defines a module with a global variable named 'gvar'.
         # When the module is compiled and linked with a main function, gdb can
