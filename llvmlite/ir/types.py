@@ -138,8 +138,8 @@ class PointerType(Type):
             return "ptr"
 
     def __eq__(self, other):
-        return isinstance(other, PointerType) and \
-               self.addrspace == other.addrspace
+        return (isinstance(other, PointerType) and
+                self.addrspace == other.addrspace)
 
     def __hash__(self):
         return hash(PointerType)
@@ -181,8 +181,8 @@ class _TypedPointerType(PointerType):
         if isinstance(other, _TypedPointerType):
             return (self.pointee, self.addrspace) == (other.pointee,
                                                       other.addrspace)
-        return isinstance(other, PointerType) and \
-               self.addrspace == other.addrspace
+        return (isinstance(other, PointerType) and
+                self.addrspace == other.addrspace)
 
     def __hash__(self):
         return hash(_TypedPointerType)
