@@ -3091,9 +3091,30 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         pb = self.pb()
         mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
+        pb.start_pass_timing()
         report = pb.finish_pass_timing()
         pb.close()
         self.assertFalse(report)
+
+    def test_multiple_timers_error(self):
+        mod = self.module()
+        pb = self.pb()
+        pb.start_pass_timing()
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        pb.finish_pass_timing()
+        with self.assertRaises(RuntimeError):
+            pb.start_pass_timing()
+        pb.close()
+
+    def test_empty_report_error(self):
+        mod = self.module()
+        pb = self.pb()
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        with self.assertRaises(RuntimeError):
+            pb.finish_pass_timing()
+        pb.close()
 
 
 class TestNewModulePassManager(BaseTest, NewPassManagerMixin):

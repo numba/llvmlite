@@ -222,7 +222,7 @@ class PassBuilder(ffi.ObjectRef):
         super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto))
         self._pto = pto
         self._tm = tm
-        self._time_passes_handler = TimePassesHandler()
+        self._time_passes_handler = None
 
     def getModulePassManager(self):
         return ModulePassManager(
@@ -238,18 +238,32 @@ class PassBuilder(ffi.ObjectRef):
 
     def start_pass_timing(self):
         """Enable the pass timers.
+
+        Raises
+        ------
+        RuntimeError
+            If pass timing is already enabled.
         """
+        if self._time_passes_handler:
+            raise RuntimeError("Pass builder should only have one \
+                pass timer at a time")
+        self._time_passes_handler = TimePassesHandler()
         ffi.lib.LLVMPY_EnableTimePasses(self, self._time_passes_handler)
 
     def finish_pass_timing(self):
         """Returns the pass timings report and disables the LLVM internal
         timers. Pass timers are enabled by ``start_pass_timing()``. If the
         timers are not enabled, this function will return an empty string.
+
         Returns
         -------
         res : str
             LLVM generated timing report.
         """
+
+        if not self._time_passes_handler:
+            raise RuntimeError("Pass timing is not enabled")
+
         with ffi.OutputString() as buf:
             ffi.lib.LLVMPY_ReportAndDisableTimePasses(
                 self._time_passes_handler, buf)
