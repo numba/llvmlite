@@ -78,6 +78,11 @@ jobs:
       - name: Clone repository
         uses: actions/checkout@v4
 
+      - name: Setup platform-specific requirements
+        run: |
+          chmod +x ./buildscripts/github/setup_platform.sh
+          source ./buildscripts/github/setup_platform.sh "${{ matrix.platform }}"
+
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
