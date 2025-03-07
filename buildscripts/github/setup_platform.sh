@@ -20,20 +20,10 @@ case "${PLATFORM}" in
         echo "Verifying SDK checksum"
         shasum -c "${sdk_dir}/MacOSX10.10.sdk.checksum"
 
-        # Extract SDK
-        echo "Extracting SDK"
-        tar -xf MacOSX10.10.sdk.tar.xz
-
-        # Set environment variables
-        sdk_path="$(pwd)/MacOSX10.10.sdk"
-        export SDKROOT="${sdk_path}"
-        export CONDA_BUILD_SYSROOT="${sdk_path}"
-        export macos_min_version="10.10"
-        export CFLAGS="-isysroot ${sdk_path} ${CFLAGS:-}"
-        export CXXFLAGS="-isysroot ${sdk_path} ${CXXFLAGS:-}"
-        export LDFLAGS="-Wl,-syslibroot,${sdk_path} ${LDFLAGS:-}"
-        export CMAKE_OSX_SYSROOT="${sdk_path}"
-        export CMAKE_OSX_DEPLOYMENT_TARGET="10.10"
+        # Extract SDK to /opt
+        echo "Extracting SDK to /opt"
+        sudo mkdir -p /opt
+        sudo tar -xf MacOSX10.10.sdk.tar.xz -C /opt
         echo "macOS SDK setup complete"
         ;;
     "linux-64")
