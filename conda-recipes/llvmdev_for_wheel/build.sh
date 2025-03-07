@@ -83,11 +83,11 @@ ninja -j${CPU_COUNT}
 
 ninja install
 
-if [[ "${target_platform}" == "linux-64" || "${target_platform}" == "osx-64" ]]; then
-    export TEST_CPU_FLAG="-mcpu=haswell"
-else
-    export TEST_CPU_FLAG=""
-fi
+# if [[ "${target_platform}" == "linux-64" || "${target_platform}" == "osx-64" ]]; then
+#     export TEST_CPU_FLAG="-mcpu=haswell"
+# else
+#     export TEST_CPU_FLAG=""
+# fi
 
 if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
 
