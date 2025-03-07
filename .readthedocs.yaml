@@ -9,6 +9,8 @@ build:
   tools:
     python: "3.11"
   apt_packages:
+    - lld-15
+    - liblld-15-dev
     - llvm-15
   jobs:
     post_checkout:
