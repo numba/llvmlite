@@ -25,7 +25,7 @@ repos:
         args: [--mapping, '2', --offset, '2', --sequence, '4', --implicit_start]
         files: .pre-commit-config.yaml$
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.31.1
+    rev: 0.31.3
     hooks:
       - id: check-azure-pipelines
       - id: check-github-workflows
