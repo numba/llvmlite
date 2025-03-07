@@ -38,6 +38,11 @@ default_include = [
         "platform": "osx-64",
         "recipe": "llvmdev",
     },
+    {
+        "runner": runner_mapping["osx-64"],
+        "platform": "osx-64",
+        "recipe": "llvmdev_for_wheel",
+    },
 ]
 
 print(
