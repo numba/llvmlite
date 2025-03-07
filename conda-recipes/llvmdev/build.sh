@@ -4,18 +4,6 @@
 
 set -x
 
-# Setup macOS SDK if needed
-if [[ $(uname) == "Darwin" ]]; then
-    # The following is suggested in https://docs.conda.io/projects/conda-build/en/latest/resources/compiler-tools.html?highlight=SDK#macos-sdk
-    wget -q https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.10.sdk.tar.xz
-    shasum -c ./buildscripts/github/MacOSX10.10.sdk.checksum
-    tar -xf ./MacOSX10.10.sdk.tar.xz
-    SDK_PATH=`pwd`/MacOSX10.10.sdk
-    export SDKROOT=$SDK_PATH
-    export CONDA_BUILD_SYSROOT=$SDK_PATH
-    export macos_min_version=10.10
-fi
-
 # Make osx work like linux.
 sed -i.bak "s/NOT APPLE AND ARG_SONAME/ARG_SONAME/g" llvm/cmake/modules/AddLLVM.cmake
 sed -i.bak "s/NOT APPLE AND NOT ARG_SONAME/NOT ARG_SONAME/g" llvm/cmake/modules/AddLLVM.cmake
@@ -90,11 +78,11 @@ ninja -j${CPU_COUNT}
 
 ninja install
 
-# if [[ "${target_platform}" == "linux-64" || "${target_platform}" == "osx-64" ]]; then
-#     export TEST_CPU_FLAG="-mcpu=haswell"
-# else
-#     export TEST_CPU_FLAG=""
-# fi
+if [[ "${target_platform}" == "linux-64" || "${target_platform}" == "osx-64" ]]; then
+    export TEST_CPU_FLAG="-mcpu=haswell"
+else
+    export TEST_CPU_FLAG=""
+fi
 
 if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
 
