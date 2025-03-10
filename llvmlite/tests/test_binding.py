@@ -3103,7 +3103,7 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
         pb.finish_pass_timing()
-        with self.assertRaises(RuntimeError):
+        with self.assertRaisesRegex(RuntimeError, "only be done once"):
             pb.start_pass_timing()
         pb.close()
 
@@ -3112,7 +3112,7 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         pb = self.pb()
         mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaisesRegex(RuntimeError, "not enabled"):
             pb.finish_pass_timing()
         pb.close()
 

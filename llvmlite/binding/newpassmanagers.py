@@ -245,8 +245,7 @@ class PassBuilder(ffi.ObjectRef):
             If pass timing is already enabled.
         """
         if self._time_passes_handler:
-            raise RuntimeError("Pass builder should only have one \
-                pass timer at a time")
+            raise RuntimeError("Pass timing can only be done once")
         self._time_passes_handler = TimePassesHandler()
         ffi.lib.LLVMPY_EnableTimePasses(self, self._time_passes_handler)
 
