@@ -265,6 +265,21 @@ LLVMPY_CreateTargetMachineData(LLVMTargetMachineRef TM) {
         new llvm::DataLayout(llvm::unwrap(TM)->createDataLayout()));
 }
 
+API_EXPORT(const char *)
+LLVMPY_getTargetTriple(LLVMTargetMachineRef TM) {
+    return llvm::unwrap(TM)->getTargetTriple().getTriple().c_str();
+}
+
+API_EXPORT(const char *)
+LLVMPY_getTargetCPU(LLVMTargetMachineRef TM) {
+    return llvm::unwrap(TM)->getTargetCPU().data();
+}
+
+API_EXPORT(const char *)
+LLVMPY_getTargetFeatureString(LLVMTargetMachineRef TM) {
+    return llvm::unwrap(TM)->getTargetFeatureString().data();
+}
+
 API_EXPORT(void)
 LLVMPY_AddAnalysisPasses(LLVMTargetMachineRef TM, LLVMPassManagerRef PM) {
     LLVMAddAnalysisPasses(TM, PM);
