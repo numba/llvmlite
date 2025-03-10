@@ -88,6 +88,14 @@ and module pass managers:
       Return a populated :class:`FunctionPassManager` object based on PTO
       settings.
 
+.. method:: start_pass_timing()
+
+      Enable the pass timers.
+
+.. method:: finish_pass_timing()
+
+      Returns a string containing the LLVM-generated timing report and disables
+      the pass timers.
 
 The :class:`ModulePassManager` and :class:`FunctionPassManager` classes
 implement the module and function pass managers:
