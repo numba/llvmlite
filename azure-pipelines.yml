@@ -20,10 +20,10 @@ jobs:
         PYTHON: '3.13'
         CONDA_ENV: cienv
 
-      llvm16:
+      llvm17:
         PYTHON: '3.12'
         CONDA_ENV: cienv
-        LLVM: '16'
+        LLVM: '17'
 
       opaque_pointers:
         PYTHON: '3.12'
@@ -79,10 +79,10 @@ jobs:
         CONDA_ENV: cienv
         WHEEL: 'yes'
 
-      llvm16:
+      llvm17:
         PYTHON: '3.12'
         CONDA_ENV: cienv
-        LLVM: '16'
+        LLVM: '17'
 
       opaque_pointers:
         PYTHON: '3.12'

@@ -11,10 +11,10 @@ call activate %CONDA_ENV%
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 @rem Install llvmdev
-if "%LLVM%"=="16" (
-  set LLVMDEV_CHANNEL="conda-forge"
+if "%LLVM%"=="17" (
+  set LLVMDEV_CHANNEL="defaults"
 ) else (
-  set LLVMDEV_CHANNEL="numba"
+  set LLVMDEV_CHANNEL="conda-forge"
 )
 
 call conda install -y -q -c %LLVMDEV_CHANNEL% llvmdev="%LLVM%" libxml2
