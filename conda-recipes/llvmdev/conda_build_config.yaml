@@ -16,14 +16,5 @@ c_compiler:              # [win]
 cxx_compiler:            # [win]
   - vs2019               # [win]
 
-MACOSX_DEPLOYMENT_TARGET:
-  - 10.10                       # [osx and x86_64]
-
-macos_machine:
-  - x86_64-apple-darwin13.4.0   # [osx and x86_64]
-
-macos_min_version:
-  - 10.10                       # [osx and x86_64]
-
 CONDA_BUILD_SYSROOT:
   - /opt/MacOSX10.10.sdk        # [osx and x86_64]
