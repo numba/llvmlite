@@ -3049,6 +3049,56 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         fpm.run(self.module().get_function("sum"), pb)
         pb.close()
 
+    def test_time_passes(self):
+        """Test pass timing reports for O3 and O0 optimization levels"""
+        def run_with_timing(speed_level):
+            mod = self.module()
+            pb = self.pb(speed_level=speed_level, size_level=0)
+            pb.start_pass_timing()
+            mpm = pb.getModulePassManager()
+            mpm.run(mod, pb)
+            report = pb.finish_pass_timing()
+            pb.close()
+            return report
+
+        report_O3 = run_with_timing(3)
+        report_O0 = run_with_timing(0)
+
+        self.assertIsInstance(report_O3, str)
+        self.assertIsInstance(report_O0, str)
+        self.assertEqual(report_O3.count("Pass execution timing report"), 1)
+        self.assertEqual(report_O0.count("Pass execution timing report"), 1)
+
+    def test_empty_report(self):
+        mod = self.module()
+        pb = self.pb()
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        pb.start_pass_timing()
+        report = pb.finish_pass_timing()
+        pb.close()
+        self.assertFalse(report)
+
+    def test_multiple_timers_error(self):
+        mod = self.module()
+        pb = self.pb()
+        pb.start_pass_timing()
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        pb.finish_pass_timing()
+        with self.assertRaisesRegex(RuntimeError, "only be done once"):
+            pb.start_pass_timing()
+        pb.close()
+
+    def test_empty_report_error(self):
+        mod = self.module()
+        pb = self.pb()
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        with self.assertRaisesRegex(RuntimeError, "not enabled"):
+            pb.finish_pass_timing()
+        pb.close()
+
 
 class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
     def pm(self):
