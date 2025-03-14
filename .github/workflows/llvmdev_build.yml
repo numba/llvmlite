@@ -80,7 +80,6 @@ jobs:
 
       - name: Setup platform-specific requirements
         run: |
-          chmod +x ./buildscripts/github/setup_platform.sh
           source ./buildscripts/github/setup_platform.sh "${{ matrix.platform }}"
 
       - name: Setup Miniconda
