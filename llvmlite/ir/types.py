@@ -193,7 +193,9 @@ class _TypedPointerType(PointerType):
 
     @property
     def intrinsic_name(self):
-        return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
+        if ir_layer_typed_pointers_enabled:
+            return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
+        return super(_TypedPointerType, self).intrinsic_name
 
 
 class VoidType(Type):
