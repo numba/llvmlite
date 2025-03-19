@@ -2,10 +2,10 @@
 call activate %CONDA_ENV%
 
 if "%OPAQUE_POINTERS%"=="yes" (
-  set LLVMLITE_ENABLE_OPAQUE_POINTERS=1
-  echo "Testing with opaque pointers enabled"
+  set LLVMLITE_ENABLE_IR_LAYER_TYPED_POINTERS=0
+  echo "Testing with IR layer opaque pointers enabled"
 ) else (
-  echo "Testing with opaque pointers disabled"
+  echo "Testing with IR layer opaque pointers disabled"
 )
 
 python runtests.py -v

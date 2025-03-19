@@ -252,6 +252,10 @@ typedef OpaquePipelineTuningOptions *LLVMPipelineTuningOptionsRef;
 DEFINE_SIMPLE_CONVERSION_FUNCTIONS(PipelineTuningOptions,
                                    LLVMPipelineTuningOptionsRef)
 
+struct OpaqueTimePassesHandler;
+typedef OpaqueTimePassesHandler *LLVMTimePassesHandlerRef;
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(TimePassesHandler, LLVMTimePassesHandlerRef)
+
 static TargetMachine *unwrap(LLVMTargetMachineRef P) {
     return reinterpret_cast<TargetMachine *>(P);
 }
@@ -428,17 +432,53 @@ LLVMPY_DisposePipelineTuningOptions(LLVMPipelineTuningOptionsRef PTO) {
 
 // PB
 
-API_EXPORT(LLVMPassBuilderRef)
-LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TM,
-                         LLVMPipelineTuningOptionsRef PTO) {
-    TargetMachine *target = llvm::unwrap(TM);
-    PipelineTuningOptions *pt = llvm::unwrap(PTO);
-    PassInstrumentationCallbacks *PIC = new PassInstrumentationCallbacks();
-    return llvm::wrap(new PassBuilder(target, *pt, std::nullopt, PIC));
+API_EXPORT(LLVMTimePassesHandlerRef)
+LLVMPY_CreateTimePassesHandler() {
+    bool enabled = true;
+    return llvm::wrap(new TimePassesHandler(enabled));
 }
 
 API_EXPORT(void)
-LLVMPY_DisposePassBuilder(LLVMPassBuilderRef PB) { delete llvm::unwrap(PB); }
+LLVMPY_DisposeTimePassesHandler(LLVMTimePassesHandlerRef TimePassesRef) {
+    delete llvm::unwrap(TimePassesRef);
+}
+
+API_EXPORT(void)
+LLVMPY_EnableTimePasses(LLVMPassBuilderRef PBRef,
+                        LLVMTimePassesHandlerRef TimePassesRef) {
+    TimePassesHandler *TP = llvm::unwrap(TimePassesRef);
+    TimePassesIsEnabled = true;
+    PassBuilder *PB = llvm::unwrap(PBRef);
+    PassInstrumentationCallbacks *PIC = PB->getPassInstrumentationCallbacks();
+    TP->registerCallbacks(*PIC);
+}
+
+API_EXPORT(void)
+LLVMPY_ReportAndDisableTimePasses(LLVMTimePassesHandlerRef TimePassesRef,
+                                  const char **outmsg) {
+    std::string osbuf;
+    raw_string_ostream os(osbuf);
+    TimePassesHandler *TP = llvm::unwrap(TimePassesRef);
+    TP->setOutStream(os);
+    TP->print();
+    os.flush();
+    *outmsg = LLVMPY_CreateString(os.str().c_str());
+    TimePassesIsEnabled = false;
+}
+
+API_EXPORT(LLVMPassBuilderRef)
+LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TMRef,
+                         LLVMPipelineTuningOptionsRef PTORef) {
+    TargetMachine *TM = llvm::unwrap(TMRef);
+    PipelineTuningOptions *PTO = llvm::unwrap(PTORef);
+    PassInstrumentationCallbacks *PIC = new PassInstrumentationCallbacks();
+    return llvm::wrap(new PassBuilder(TM, *PTO, std::nullopt, PIC));
+}
+
+API_EXPORT(void)
+LLVMPY_DisposePassBuilder(LLVMPassBuilderRef PBRef) {
+    delete llvm::unwrap(PBRef);
+}
 
 static OptimizationLevel mapLevel(int speed_level, int size_level) {
     switch (size_level) {

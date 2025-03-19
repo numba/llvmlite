@@ -11,11 +11,7 @@ source deactivate
 set -v
 # Display root environment (for debugging)
 conda list
-# Clean up any left-over from a previous build
-# (note workaround for https://github.com/conda/conda/issues/2679:
-#  `conda env remove` issue)
-conda remove --all -q -y -n $CONDA_ENV
-# Scipy, CFFI, jinja2 and IPython are optional dependencies, but exercised in the test suite
+
 if [ "$PYTHON" == "pypy" ]; then
     conda create -c gmarkall -n $CONDA_ENV -q -y pypy
 else

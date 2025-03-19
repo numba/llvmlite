@@ -40,7 +40,7 @@ LLVMObjectFileRef = _make_opaque_ref("LLVMObjectFile")
 LLVMSectionIteratorRef = _make_opaque_ref("LLVMSectionIterator")
 LLVMOrcLLJITRef = _make_opaque_ref("LLVMOrcLLJITRef")
 LLVMOrcDylibTrackerRef = _make_opaque_ref("LLVMOrcDylibTrackerRef")
-
+LLVMTimePassesHandlerRef = _make_opaque_ref("LLVMTimePassesHandler")
 LLVMPipelineTuningOptionsRef = _make_opaque_ref("LLVMPipeLineTuningOptions")
 LLVMModulePassManagerRef = _make_opaque_ref("LLVMModulePassManager")
 LLVMFunctionPassManagerRef = _make_opaque_ref("LLVMFunctionPassManager")
@@ -212,7 +212,7 @@ def _importlib_resources_path_repl(package, resource):
 
 
 _importlib_resources_path = (_importlib_resources_path_repl
-                             if sys.version_info[:2] >= (3, 9)
+                             if sys.version_info[:2] >= (3, 10)
                              else _impres.path)
 
 

@@ -38,7 +38,7 @@ requirements:
     # requires libxml2
     - libxml2        # [win]
   run:
-    - python >=3.9
+    - python >=3.10
     - vs2015_runtime # [win]
     # osx has dynamically linked libstdc++
     - libcxx >=4.0.1 # [osx]

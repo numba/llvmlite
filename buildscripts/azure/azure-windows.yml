@@ -9,9 +9,6 @@ jobs:
   strategy:
     maxParallel: 11
     matrix:
-      py39:
-        PYTHON: '3.9'
-        CONDA_ENV: cienv
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
@@ -20,6 +17,9 @@ jobs:
         CONDA_ENV: cienv
       py312:
         PYTHON: '3.12'
+        CONDA_ENV: cienv
+      py313:
+        PYTHON: '3.13'
         CONDA_ENV: cienv
 
       llvm16:

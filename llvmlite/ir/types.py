@@ -4,6 +4,7 @@ Classes that are LLVM types
 
 import struct
 
+from llvmlite import ir_layer_typed_pointers_enabled
 from llvmlite.ir._utils import _StrCaching
 
 
@@ -51,6 +52,10 @@ class Type(_StrCaching):
         """
         llty = self._get_ll_global_value_type(target_data, context)
         return target_data.get_abi_size(llty)
+
+    def get_element_offset(self, target_data, ndx, context=None):
+        llty = self._get_ll_global_value_type(target_data, context)
+        return target_data.get_element_offset(llty, ndx)
 
     def get_abi_alignment(self, target_data, context=None):
         """
@@ -130,8 +135,16 @@ class PointerType(Type):
         else:
             return "ptr"
 
+    def __eq__(self, other):
+        return (isinstance(other, PointerType) and
+                self.addrspace == other.addrspace)
+
     def __hash__(self):
         return hash(PointerType)
+
+    @property
+    def intrinsic_name(self):
+        return 'p%d' % self.addrspace
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
@@ -154,6 +167,9 @@ class _TypedPointerType(PointerType):
         self.is_opaque = False
 
     def _to_string(self):
+        if ir_layer_typed_pointers_enabled:
+            return "{0}*".format(self.pointee) if self.addrspace == 0 else \
+                   "{0} addrspace({1})*".format(self.pointee, self.addrspace)
         return super(_TypedPointerType, self)._to_string()
 
     # This implements ``isOpaqueOrPointeeTypeEquals''.
@@ -161,7 +177,8 @@ class _TypedPointerType(PointerType):
         if isinstance(other, _TypedPointerType):
             return (self.pointee, self.addrspace) == (other.pointee,
                                                       other.addrspace)
-        return isinstance(other, PointerType)
+        return (isinstance(other, PointerType) and
+                self.addrspace == other.addrspace)
 
     def __hash__(self):
         return hash(_TypedPointerType)
@@ -176,17 +193,9 @@ class _TypedPointerType(PointerType):
 
     @property
     def intrinsic_name(self):
-        return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
-
-    @classmethod
-    def from_llvm(cls, typeref, ir_ctx):
-        """
-        Create from a llvmlite.binding.TypeRef
-        """
-        # opaque pointer will change this
-        [pointee] = typeref.elements
-        # addrspace is not handled
-        return cls(pointee.as_ir(ir_ctx=ir_ctx))
+        if ir_layer_typed_pointers_enabled:
+            return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
+        return super(_TypedPointerType, self).intrinsic_name
 
 
 class VoidType(Type):

@@ -15,6 +15,7 @@ except ImportError:
     pass
 
 import llvmlite
+llvmlite.ir_layer_typed_pointers_enabled = False
 
 import llvmlite.ir as ll
 import llvmlite.binding as llvm

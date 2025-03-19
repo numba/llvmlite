@@ -1,4 +1,5 @@
 import llvmlite
+llvmlite.ir_layer_typed_pointers_enabled = False
 
 import llvmlite.ir as ll
 
