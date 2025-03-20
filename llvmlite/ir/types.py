@@ -135,8 +135,16 @@ class PointerType(Type):
         else:
             return "ptr"
 
+    def __eq__(self, other):
+        return (isinstance(other, PointerType) and
+                self.addrspace == other.addrspace)
+
     def __hash__(self):
         return hash(PointerType)
+
+    @property
+    def intrinsic_name(self):
+        return 'p%d' % self.addrspace
 
     @classmethod
     def from_llvm(cls, typeref, ir_ctx):
@@ -169,7 +177,8 @@ class _TypedPointerType(PointerType):
         if isinstance(other, _TypedPointerType):
             return (self.pointee, self.addrspace) == (other.pointee,
                                                       other.addrspace)
-        return isinstance(other, PointerType)
+        return (isinstance(other, PointerType) and
+                self.addrspace == other.addrspace)
 
     def __hash__(self):
         return hash(_TypedPointerType)
@@ -184,7 +193,9 @@ class _TypedPointerType(PointerType):
 
     @property
     def intrinsic_name(self):
-        return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
+        if ir_layer_typed_pointers_enabled:
+            return 'p%d%s' % (self.addrspace, self.pointee.intrinsic_name)
+        return super(_TypedPointerType, self).intrinsic_name
 
 
 class VoidType(Type):
