@@ -12,9 +12,7 @@ import unittest
 from . import TestCase
 from llvmlite import ir
 from llvmlite import binding as llvm
-
-# FIXME: Remove me once typed pointers are no longer supported.
-from llvmlite import opaque_pointers_enabled
+from llvmlite import ir_layer_typed_pointers_enabled
 
 
 int1 = ir.IntType(1)
@@ -123,10 +121,9 @@ class TestBase(TestCase):
 
 class TestFunction(TestBase):
 
-    # FIXME: Remove `else' once TP are no longer supported.
     proto = \
         """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", ptr %".4")""" \
-        if opaque_pointers_enabled else \
+        if not ir_layer_typed_pointers_enabled else \
         """i32 @"my_func"(i32 %".1", i32 %".2", double %".3", i32* %".4")"""
 
     def test_declare(self):
@@ -146,8 +143,7 @@ class TestFunction(TestBase):
         pers = ir.Function(self.module(), tp_pers, '__gxx_personality_v0')
         func.attributes.personality = pers
         asm = self.descr(func).strip()
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(asm,
                              ("declare %s alwaysinline convergent optsize "
                               "alignstack(16) "
@@ -172,8 +168,7 @@ class TestFunction(TestBase):
         func.args[3].add_attribute("nonnull")
         func.return_value.add_attribute("noalias")
         asm = self.descr(func).strip()
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(asm,
                              """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", ptr nonnull align 4 %".4")"""  # noqa E501
                              )
@@ -284,8 +279,7 @@ class TestFunction(TestBase):
         assume = module.declare_intrinsic('llvm.assume')
         self.check_descr(self.descr(powi).strip(), """\
             declare double @"llvm.powi.f64"(double %".1", i32 %".2")""")
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_descr(self.descr(memset).strip(), """\
                 declare void @"llvm.memset.p0i8.i32"(ptr %".1", i8 %".2", i32 %".3", i1 %".4")""")  # noqa E501
             self.check_descr(self.descr(memcpy).strip(), """\
@@ -402,8 +396,7 @@ class TestIR(TestBase):
         # A null metadata (typed) value
         mod = self.module()
         mod.add_metadata([int32.as_pointer()(None)])
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assert_ir_line("!0 = !{ ptr null }", mod)
         else:
             self.assert_ir_line("!0 = !{ i32* null }", mod)
@@ -623,8 +616,7 @@ class TestGlobalValues(TestBase):
         with self.assertRaises(KeyError):
             mod.get_global('kkk')
         # Globals should have a useful repr()
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(repr(globdouble),
                              "<ir.GlobalVariable 'globdouble' of type 'ptr'>")
         else:
@@ -1027,7 +1019,7 @@ my_block:
         self.assertEqual(j.type, ir.VoidType())
         k = builder.load_atomic(c, ordering="seq_cst", align=4, name='k')
         self.assertEqual(k.type, int32)
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             ptr = ir.Constant(ir.PointerType(), None)
         else:
             ptr = ir.Constant(ir.PointerType(int32), None)
@@ -1041,8 +1033,7 @@ my_block:
         with self.assertRaises(TypeError) as cm:
             builder.store(b, e)
 
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(cm.exception),
                              "cannot store i32 to ptr: mismatching types")
             self.check_block(block, """\
@@ -1084,8 +1075,7 @@ my_block:
         c = builder.alloca(ir.PointerType(int32), name='c')
         d = builder.gep(c, [ir.Constant(int32, 5), a], name='d')
         self.assertEqual(d.type, ir.PointerType(int32))
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"c" = alloca ptr
@@ -1110,8 +1100,7 @@ my_block:
         d = builder.bitcast(a, ls.as_pointer(), name='d')
         e = builder.gep(d, [ir.Constant(int32, x) for x in [0, 3]], name='e')
         self.assertEqual(e.type, ir.PointerType(int8ptr))
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"d" = bitcast i32 %".1" to ptr
@@ -1137,8 +1126,7 @@ my_block:
         e = builder.gep(d, [ir.Constant(int32, x) for x in [0, 3]], name='e')
         self.assertEqual(e.type.addrspace, addrspace)
         self.assertEqual(e.type, ir.PointerType(int8ptr, addrspace=addrspace))
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"d" = bitcast i32 %".1" to ptr addrspace(4)
@@ -1157,8 +1145,7 @@ my_block:
         a, b = builder.function.args[:2]
         addrspace = 4
         c = builder.alloca(ir.PointerType(int32, addrspace=addrspace), name='c')
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(c.type), 'ptr')
         else:
             self.assertEqual(str(c.type), 'i32 addrspace(4)**')
@@ -1167,8 +1154,7 @@ my_block:
         self.assertEqual(d.type.addrspace, addrspace)
         e = builder.gep(d, [ir.Constant(int32, 10)], name='e')
         self.assertEqual(e.type.addrspace, addrspace)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"c" = alloca ptr addrspace(4)
@@ -1229,8 +1215,7 @@ my_block:
             # Replacement value has the wrong type
             builder.insert_value(c_inner, a, 1)
 
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"c" = extractvalue {i32, i1} {i32 4, i1 true}, 0
@@ -1278,8 +1263,7 @@ my_block:
         j = builder.inttoptr(i, ir.PointerType(int8), 'j')  # noqa F841
         k = builder.bitcast(a, flt, "k")  # noqa F841
         self.assertFalse(block.is_terminated)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"c" = trunc i32 %".1" to i8
@@ -1319,8 +1303,7 @@ my_block:
         c = builder.alloca(int32, name='c')
         d = builder.atomic_rmw('add', c, a, 'monotonic', 'd')
         self.assertEqual(d.type, int32)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"c" = alloca i32
@@ -1382,8 +1365,7 @@ my_block:
         indirectbr.add_destination(bb_1)
         indirectbr.add_destination(bb_2)
         self.assertTrue(block.is_terminated)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     indirectbr ptr blockaddress(@"my_func", %"b_1"), [label %"b_1", label %"b_2"]
@@ -1505,8 +1487,7 @@ my_block:
         a = builder.alloca(int32, name="a")
         b = builder.module.add_metadata(())
         builder.call(dbg_declare, (a, b, b))
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"a" = alloca i32
@@ -1536,8 +1517,7 @@ my_block:
                 2: 'noalias'
             }
         )
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block_regex(block, """\
             my_block:
                 %"retval" = alloca i32
@@ -1628,8 +1608,7 @@ my_block:
                 2: 'noalias'
             }
         )
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block_regex(block, """\
             my_block:
                 %"retval" = alloca i32
@@ -1658,8 +1637,7 @@ my_block:
         lp.add_clause(ir.FilterClause(ir.Constant(ir.ArrayType(
             int_typeinfo.type, 1), [int_typeinfo])))
         builder.resume(lp)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"lp" = landingpad {i32, ptr}
@@ -2346,8 +2324,7 @@ class TestBuilderMisc(TestBase):
         builder = ir.IRBuilder(block)
         builder.debug_metadata = builder.module.add_metadata([])
         builder.alloca(ir.PointerType(int32), name='c')
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.check_block(block, """\
                 my_block:
                     %"c" = alloca ptr, !dbg !0
@@ -2431,8 +2408,7 @@ class TestTypes(TestBase):
                          'i1 (float, ...)')
         self.assertEqual(str(ir.FunctionType(int1, (flt, dbl), var_arg=True)),
                          'i1 (float, double, ...)')
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(ir.PointerType(int32)), 'ptr')
             self.assertEqual(str(ir.PointerType(ir.PointerType(int32))), 'ptr')
         else:
@@ -2440,8 +2416,7 @@ class TestTypes(TestBase):
             self.assertEqual(str(ir.PointerType(ir.PointerType(int32))),
                              'i32**')
         self.assertEqual(str(ir.ArrayType(int1, 5)), '[5 x i1]')
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(ir.ArrayType(ir.PointerType(int1), 5)),
                              '[5 x ptr]')
             self.assertEqual(str(ir.PointerType(ir.ArrayType(int1, 5))), 'ptr')
@@ -2452,8 +2427,7 @@ class TestTypes(TestBase):
                              '[5 x i1]*')
         self.assertEqual(str(ir.LiteralStructType((int1,))), '{i1}')
         self.assertEqual(str(ir.LiteralStructType((int1, flt))), '{i1, float}')
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(ir.LiteralStructType((
                 ir.PointerType(int1), ir.LiteralStructType((int32, int8))))),
                 '{ptr, {i32, i8}}')
@@ -2751,8 +2725,7 @@ class TestConstant(TestBase):
         tp = ir.LiteralStructType((flt, int1))
         gv = ir.GlobalVariable(m, tp, "myconstant")
         c = gv.gep([ir.Constant(int32, x) for x in (0, 1)])
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(c),
                              'getelementptr ({float, i1}, ptr @"myconstant", i32 0, i32 1)')  # noqa E501
         else:
@@ -2766,8 +2739,7 @@ class TestConstant(TestBase):
 
         const_ptr = ir.Constant(tp.as_pointer(), None)
         c2 = const_ptr.gep([ir.Constant(int32, 0)])
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(c2),
                              'getelementptr ({float, i1}, ptr null, i32 0)')  # noqa E501
         else:
@@ -2784,8 +2756,7 @@ class TestConstant(TestBase):
         self.assertEqual(gv.addrspace, addrspace)
         c = gv.gep([ir.Constant(int32, x) for x in (0, 1)])
         self.assertEqual(c.type.addrspace, addrspace)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(c),
                              ('getelementptr ({float, i1}, ptr '
                               'addrspace(4) @"myconstant", i32 0, i32 1)'))
@@ -2819,8 +2790,7 @@ class TestConstant(TestBase):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
         c = gv.bitcast(int64.as_pointer())
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(c), 'bitcast (ptr @"myconstant" to ptr)')
         else:
             self.assertEqual(str(c), 'bitcast (i32* @"myconstant" to i64*)')
@@ -2848,8 +2818,7 @@ class TestConstant(TestBase):
 
         self.assertRaises(TypeError, one.ptrtoint, int64)
         self.assertRaises(TypeError, ptr.ptrtoint, flt)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(c), 'ptrtoint (ptr null to i32)')
         else:
             self.assertEqual(str(c), 'ptrtoint (i64* null to i32)')
@@ -2858,8 +2827,7 @@ class TestConstant(TestBase):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
         c = gv.ptrtoint(int64)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(c), 'ptrtoint (ptr @"myconstant" to i64)')
 
             self.assertRaisesRegex(
@@ -2890,8 +2858,7 @@ class TestConstant(TestBase):
 
         self.assertRaises(TypeError, one.inttoptr, int64)
         self.assertRaises(TypeError, pi.inttoptr, int64.as_pointer())
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
+        if not ir_layer_typed_pointers_enabled:
             self.assertEqual(str(c), 'inttoptr (i32 1 to ptr)')
         else:
             self.assertEqual(str(c), 'inttoptr (i32 1 to i64*)')
