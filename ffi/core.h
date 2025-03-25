@@ -31,13 +31,11 @@ LLVMPY_CreateByteString(const char *buf, size_t len);
 API_EXPORT(void)
 LLVMPY_DisposeString(const char *msg);
 
-// FIXME: Remove `enableOpaquePointers' once typed pointers are removed.
 API_EXPORT(LLVMContextRef)
-LLVMPY_GetGlobalContext(bool enableOpaquePointers);
+LLVMPY_GetGlobalContext();
 
-// FIXME: Remove `enableOpaquePointers' once typed pointers are removed.
 API_EXPORT(LLVMContextRef)
-LLVMPY_ContextCreate(bool enableOpaquePointers);
+LLVMPY_ContextCreate();
 
 } /* end extern "C" */
 

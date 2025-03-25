@@ -281,9 +281,9 @@ class TestFunction(TestBase):
             declare double @"llvm.powi.f64"(double %".1", i32 %".2")""")
         if not ir_layer_typed_pointers_enabled:
             self.check_descr(self.descr(memset).strip(), """\
-                declare void @"llvm.memset.p0i8.i32"(ptr %".1", i8 %".2", i32 %".3", i1 %".4")""")  # noqa E501
+                declare void @"llvm.memset.p0.i32"(ptr %".1", i8 %".2", i32 %".3", i1 %".4")""")  # noqa E501
             self.check_descr(self.descr(memcpy).strip(), """\
-                declare void @"llvm.memcpy.p0i8.p0i8.i32"(ptr %".1", ptr %".2", i32 %".3", i1 %".4")""")  # noqa E501
+                declare void @"llvm.memcpy.p0.p0.i32"(ptr %".1", ptr %".2", i32 %".3", i1 %".4")""")  # noqa E501
         else:
             self.check_descr(self.descr(memset).strip(), """\
                 declare void @"llvm.memset.p0i8.i32"(i8* %".1", i8 %".2", i32 %".3", i1 %".4")""")  # noqa E501
@@ -2451,9 +2451,12 @@ class TestTypes(TestBase):
     def test_ptr_intrinsic_name(self):
         self.assertEqual(ir.PointerType().intrinsic_name, 'p0')
         self.assertEqual(ir.PointerType(addrspace=1).intrinsic_name, 'p1')
-        # Note: Should this be adjusted based on the pointer mode?
-        self.assertEqual(ir.PointerType(int1).intrinsic_name, 'p0i1')
-        self.assertEqual(ir.PointerType(int1, 1).intrinsic_name, 'p1i1')
+        if not ir_layer_typed_pointers_enabled:
+            self.assertEqual(ir.PointerType(int1).intrinsic_name, 'p0')
+            self.assertEqual(ir.PointerType(int1, 1).intrinsic_name, 'p1')
+        else:
+            self.assertEqual(ir.PointerType(int1).intrinsic_name, 'p0i1')
+            self.assertEqual(ir.PointerType(int1, 1).intrinsic_name, 'p1i1')
 
     def test_str(self):
         """
