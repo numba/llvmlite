@@ -12,7 +12,7 @@ LDFLAGS := $(LDFLAGS) $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
 LIBS = $(LLVM_LIBS)
 INCLUDE = core.h
 OBJ = assembly.o bitcode.o core.o initfini.o module.o value.o \
-	  executionengine.o transforms.o passmanagers.o targets.o type.o dylib.o \
+	  executionengine.o targets.o type.o dylib.o \
 	  linker.o object_file.o custom_passes.o orcjit.o memorymanager.o newpassmanagers.o
 OUTPUT = libllvmlite.so
 

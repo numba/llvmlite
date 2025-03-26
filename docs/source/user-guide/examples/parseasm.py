@@ -1,7 +1,6 @@
 from llvmlite import binding as llvm
 from llvmlite import ir as lc
 
-llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()
 

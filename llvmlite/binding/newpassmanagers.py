@@ -1,4 +1,5 @@
-from ctypes import c_bool, c_int, c_size_t, c_char_p, POINTER
+from ctypes import c_bool, c_int, c_size_t, POINTER, Structure, byref, c_char_p
+from collections import namedtuple
 from enum import IntFlag
 from llvmlite.binding import ffi
 
@@ -17,6 +18,84 @@ def create_pass_builder(tm, pto):
 
 def create_pipeline_tuning_options(speed_level=2, size_level=0):
     return PipelineTuningOptions(speed_level, size_level)
+
+
+_prunestats = namedtuple('PruneStats',
+                         ('basicblock diamond fanout fanout_raise'))
+
+
+class PruneStats(_prunestats):
+    """ Holds statistics from reference count pruning.
+    """
+
+    def __add__(self, other):
+        if not isinstance(other, PruneStats):
+            msg = 'PruneStats can only be added to another PruneStats, got {}.'
+            raise TypeError(msg.format(type(other)))
+        return PruneStats(self.basicblock + other.basicblock,
+                          self.diamond + other.diamond,
+                          self.fanout + other.fanout,
+                          self.fanout_raise + other.fanout_raise)
+
+    def __sub__(self, other):
+        if not isinstance(other, PruneStats):
+            msg = ('PruneStats can only be subtracted from another PruneStats, '
+                   'got {}.')
+            raise TypeError(msg.format(type(other)))
+        return PruneStats(self.basicblock - other.basicblock,
+                          self.diamond - other.diamond,
+                          self.fanout - other.fanout,
+                          self.fanout_raise - other.fanout_raise)
+
+
+class _c_PruneStats(Structure):
+    _fields_ = [
+        ('basicblock', c_size_t),
+        ('diamond', c_size_t),
+        ('fanout', c_size_t),
+        ('fanout_raise', c_size_t)]
+
+
+def dump_refprune_stats(printout=False):
+    """ Returns a namedtuple containing the current values for the refop pruning
+    statistics. If kwarg `printout` is True the stats are printed to stderr,
+    default is False.
+    """
+
+    stats = _c_PruneStats(0, 0, 0, 0)
+    do_print = c_bool(printout)
+
+    ffi.lib.LLVMPY_DumpRefPruneStats(byref(stats), do_print)
+    return PruneStats(stats.basicblock, stats.diamond, stats.fanout,
+                      stats.fanout_raise)
+
+
+def set_time_passes(enable):
+    """Enable or disable the pass timers.
+
+    Parameters
+    ----------
+    enable : bool
+        Set to True to enable the pass timers.
+        Set to False to disable the pass timers.
+    """
+    ffi.lib.LLVMPY_SetTimePasses(c_bool(enable))
+
+
+def report_and_reset_timings():
+    """Returns the pass timings report and resets the LLVM internal timers.
+
+    Pass timers are enabled by ``set_time_passes()``. If the timers are not
+    enabled, this function will return an empty string.
+
+    Returns
+    -------
+    res : str
+        LLVM generated timing report.
+    """
+    with ffi.OutputString() as buf:
+        ffi.lib.LLVMPY_ReportAndResetTimings(buf)
+        return str(buf)
 
 
 class RefPruneSubpasses(IntFlag):
@@ -468,14 +547,13 @@ class PipelineTuningOptions(ffi.ObjectRef):
     def loop_unrolling(self, value):
         ffi.lib.LLVMPY_PTOSetLoopUnrolling(self, value)
 
-    # // FIXME: Available from llvm16
-    # @property
-    # def inlining_threshold(self):
-    #     return ffi.lib.LLVMPY_PTOGetInlinerThreshold(self)
+    @property
+    def inlining_threshold(self):
+        return ffi.lib.LLVMPY_PTOGetInlinerThreshold(self)
 
-    # @inlining_threshold.setter
-    # def inlining_threshold(self, value):
-    #     ffi.lib.LLVMPY_PTOSetInlinerThreshold(self, value)
+    @inlining_threshold.setter
+    def inlining_threshold(self, value):
+        ffi.lib.LLVMPY_PTOSetInlinerThreshold(self, value)
 
     def _dispose(self):
         ffi.lib.LLVMPY_DisposePipelineTuningOptions(self)
@@ -547,6 +625,8 @@ class PassBuilder(ffi.ObjectRef):
 
 # ============================================================================
 # FFI
+
+ffi.lib.LLVMPY_DumpRefPruneStats.argtypes = [POINTER(_c_PruneStats), c_bool]
 
 # ModulePassManager
 
@@ -910,6 +990,11 @@ ffi.lib.LLVMPY_PTOGetLoopUnrolling.argtypes = [
 
 ffi.lib.LLVMPY_PTOSetLoopUnrolling.argtypes = [
     ffi.LLVMPipelineTuningOptionsRef, c_bool]
+
+ffi.lib.LLVMPY_PTOGetInlinerThreshold.restype = c_int
+
+ffi.lib.LLVMPY_PTOSetInlinerThreshold.argtypes = [
+    ffi.LLVMPipelineTuningOptionsRef, c_int]
 
 ffi.lib.LLVMPY_DisposePipelineTuningOptions.argtypes = \
     [ffi.LLVMPipelineTuningOptionsRef,]

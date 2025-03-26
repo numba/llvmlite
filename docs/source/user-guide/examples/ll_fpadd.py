@@ -6,7 +6,6 @@ import llvmlite.binding as llvm
 
 
 # All these initializations are required for code generation!
-llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()  # yes, even this one
 

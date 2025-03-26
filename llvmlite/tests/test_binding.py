@@ -412,11 +412,11 @@ riscv_asm_ilp32 = [
     'addi\tsp, sp, -16',
     'sw\ta1, 8(sp)',
     'sw\ta2, 12(sp)',
-    'fld\tft0, 8(sp)',
-    'fmv.w.x\tft1, a0',
-    'fcvt.d.s\tft1, ft1',
-    'fadd.d\tft0, ft1, ft0',
-    'fsd\tft0, 8(sp)',
+    'fld\tfa5, 8(sp)',
+    'fmv.w.x\tfa4, a0',
+    'fcvt.d.s\tfa4, fa4',
+    'fadd.d\tfa5, fa4, fa5',
+    'fsd\tfa5, 8(sp)',
     'lw\ta0, 8(sp)',
     'lw\ta1, 12(sp)',
     'addi\tsp, sp, 16',
@@ -428,10 +428,10 @@ riscv_asm_ilp32f = [
     'addi\tsp, sp, -16',
     'sw\ta0, 8(sp)',
     'sw\ta1, 12(sp)',
-    'fld\tft0, 8(sp)',
-    'fcvt.d.s\tft1, fa0',
-    'fadd.d\tft0, ft1, ft0',
-    'fsd\tft0, 8(sp)',
+    'fld\tfa5, 8(sp)',
+    'fcvt.d.s\tfa4, fa0',
+    'fadd.d\tfa5, fa4, fa5',
+    'fsd\tfa5, 8(sp)',
     'lw\ta0, 8(sp)',
     'lw\ta1, 12(sp)',
     'addi\tsp, sp, 16',
@@ -440,8 +440,8 @@ riscv_asm_ilp32f = [
 
 
 riscv_asm_ilp32d = [
-    'fcvt.d.s\tft0, fa0',
-    'fadd.d\tfa0, ft0, fa1',
+    'fcvt.d.s\tfa5, fa0',
+    'fadd.d\tfa0, fa5, fa1',
     'ret'
 ]
 
@@ -651,7 +651,6 @@ attributes #1 = { argmemonly nofree nounwind willreturn }
 class BaseTest(TestCase):
 
     def setUp(self):
-        llvm.initialize()
         llvm.initialize_native_target()
         llvm.initialize_native_asmprinter()
         gc.collect()
@@ -897,7 +896,6 @@ class TestMisc(BaseTest):
         code = """if 1:
             from llvmlite import binding as llvm
 
-            llvm.initialize()
             llvm.initialize_native_target()
             llvm.initialize_native_asmprinter()
             llvm.initialize_all_targets()
@@ -919,7 +917,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = (15, 16)
+        valid = (17, 18, 19)
         self.assertIn(major, valid)
         self.assertIn(patch, range(8))
 
@@ -1741,7 +1739,7 @@ class TestValueRef(BaseTest):
 
     def test_function_attributes(self):
         ver = llvm.llvm_version_info[0]
-        readonly_attrs = [b'memory(read)' if ver == 16 else b'readonly']
+        readonly_attrs = [b'memory(read)' if ver > 15 else b'readonly']
         mod = self.module(asm_attributes)
         for func in mod.functions:
             attrs = list(func.attributes)
@@ -2235,11 +2233,6 @@ class TestTargetData(BaseTest):
 
 class TestTargetMachine(BaseTest):
 
-    def test_add_analysis_passes(self):
-        tm = self.target_machine(jit=False)
-        pm = llvm.create_module_pass_manager()
-        tm.add_analysis_passes(pm)
-
     def test_target_data_from_tm(self):
         tm = self.target_machine(jit=False)
         td = tm.target_data
@@ -2248,370 +2241,6 @@ class TestTargetMachine(BaseTest):
         # A global is a pointer, it has the ABI size of a pointer
         pointer_size = 4 if sys.maxsize < 2 ** 32 else 8
         self.assertEqual(td.get_abi_size(gv_i32.type), pointer_size)
-
-
-class TestPassManagerBuilder(BaseTest):
-
-    def pmb(self):
-        return llvm.PassManagerBuilder()
-
-    def test_old_api(self):
-        # Test the create_pass_manager_builder() factory function
-        pmb = llvm.create_pass_manager_builder()
-        pmb.inlining_threshold = 2
-        pmb.opt_level = 3
-
-    def test_close(self):
-        pmb = self.pmb()
-        pmb.close()
-        pmb.close()
-
-    def test_opt_level(self):
-        pmb = self.pmb()
-        self.assertIsInstance(pmb.opt_level, int)
-        for i in range(4):
-            pmb.opt_level = i
-            self.assertEqual(pmb.opt_level, i)
-
-    def test_size_level(self):
-        pmb = self.pmb()
-        self.assertIsInstance(pmb.size_level, int)
-        for i in range(4):
-            pmb.size_level = i
-            self.assertEqual(pmb.size_level, i)
-
-    def test_inlining_threshold(self):
-        pmb = self.pmb()
-        with self.assertRaises(NotImplementedError):
-            pmb.inlining_threshold
-        for i in (25, 80, 350):
-            pmb.inlining_threshold = i
-
-    def test_disable_unroll_loops(self):
-        pmb = self.pmb()
-        self.assertIsInstance(pmb.disable_unroll_loops, bool)
-        for b in (True, False):
-            pmb.disable_unroll_loops = b
-            self.assertEqual(pmb.disable_unroll_loops, b)
-
-    def test_loop_vectorize(self):
-        pmb = self.pmb()
-        self.assertIsInstance(pmb.loop_vectorize, bool)
-        for b in (True, False):
-            pmb.loop_vectorize = b
-            self.assertEqual(pmb.loop_vectorize, b)
-
-    def test_slp_vectorize(self):
-        pmb = self.pmb()
-        self.assertIsInstance(pmb.slp_vectorize, bool)
-        for b in (True, False):
-            pmb.slp_vectorize = b
-            self.assertEqual(pmb.slp_vectorize, b)
-
-    def test_populate_module_pass_manager(self):
-        pmb = self.pmb()
-        pm = llvm.create_module_pass_manager()
-        pmb.populate(pm)
-        pmb.close()
-        pm.close()
-
-    def test_populate_function_pass_manager(self):
-        mod = self.module()
-        pmb = self.pmb()
-        pm = llvm.create_function_pass_manager(mod)
-        pmb.populate(pm)
-        pmb.close()
-        pm.close()
-
-
-class PassManagerTestMixin(object):
-
-    def pmb(self):
-        pmb = llvm.create_pass_manager_builder()
-        pmb.opt_level = 2
-        pmb.inlining_threshold = 300
-        return pmb
-
-    def test_close(self):
-        pm = self.pm()
-        pm.close()
-        pm.close()
-
-
-class TestModulePassManager(BaseTest, PassManagerTestMixin):
-
-    def pm(self):
-        return llvm.create_module_pass_manager()
-
-    def test_run(self):
-        pm = self.pm()
-        self.pmb().populate(pm)
-        mod = self.module()
-        orig_asm = str(mod)
-        pm.run(mod)
-        opt_asm = str(mod)
-        # Quick check that optimizations were run, should get:
-        # define i32 @sum(i32 %.1, i32 %.2) local_unnamed_addr #0 {
-        # %.X = add i32 %.2, %.1
-        # ret i32 %.X
-        # }
-        # where X in %.X is 3 or 4
-        opt_asm_split = opt_asm.splitlines()
-        for idx, l in enumerate(opt_asm_split):
-            if l.strip().startswith('ret i32'):
-                toks = {'%.3', '%.4'}
-                for t in toks:
-                    if t in l:
-                        break
-                else:
-                    raise RuntimeError("expected tokens not found")
-                othertoken = (toks ^ {t}).pop()
-
-                self.assertIn("%.3", orig_asm)
-                self.assertNotIn(othertoken, opt_asm)
-                break
-        else:
-            raise RuntimeError("expected IR not found")
-
-    def test_run_with_remarks_successful_inline(self):
-        pm = self.pm()
-        pm.add_function_inlining_pass(70)
-        self.pmb().populate(pm)
-        mod = self.module(asm_inlineasm2)
-        (status, remarks) = pm.run_with_remarks(mod)
-        self.assertTrue(status)
-        # Inlining has happened?  The remark will tell us.
-        self.assertIn("Passed", remarks)
-        self.assertIn("inlineme", remarks)
-
-    def test_run_with_remarks_failed_inline(self):
-        pm = self.pm()
-        pm.add_function_inlining_pass(0)
-        self.pmb().populate(pm)
-        mod = self.module(asm_inlineasm3)
-        (status, remarks) = pm.run_with_remarks(mod)
-        self.assertTrue(status)
-
-        # Inlining has not happened?  The remark will tell us.
-        self.assertIn("Missed", remarks)
-        self.assertIn("inlineme", remarks)
-        self.assertIn("noinline function attribute", remarks)
-
-    def test_run_with_remarks_inline_filter_out(self):
-        pm = self.pm()
-        pm.add_function_inlining_pass(70)
-        self.pmb().populate(pm)
-        mod = self.module(asm_inlineasm2)
-        (status, remarks) = pm.run_with_remarks(mod, remarks_filter="nothing")
-        self.assertTrue(status)
-        self.assertEqual("", remarks)
-
-    def test_run_with_remarks_inline_filter_in(self):
-        pm = self.pm()
-        pm.add_function_inlining_pass(70)
-        self.pmb().populate(pm)
-        mod = self.module(asm_inlineasm2)
-        (status, remarks) = pm.run_with_remarks(mod, remarks_filter="inlin.*")
-        self.assertTrue(status)
-        self.assertIn("Passed", remarks)
-        self.assertIn("inlineme", remarks)
-
-
-class TestFunctionPassManager(BaseTest, PassManagerTestMixin):
-
-    def pm(self, mod=None):
-        mod = mod or self.module()
-        return llvm.create_function_pass_manager(mod)
-
-    def test_initfini(self):
-        pm = self.pm()
-        pm.initialize()
-        pm.finalize()
-
-    def test_run(self):
-        mod = self.module()
-        fn = mod.get_function("sum")
-        pm = self.pm(mod)
-        self.pmb().populate(pm)
-        mod.close()
-        orig_asm = str(fn)
-        pm.initialize()
-        pm.run(fn)
-        pm.finalize()
-        opt_asm = str(fn)
-        # Quick check that optimizations were run
-        self.assertIn("%.4", orig_asm)
-        self.assertNotIn("%.4", opt_asm)
-
-    def test_run_with_remarks(self):
-        mod = self.module(licm_asm)
-        fn = mod.get_function("licm")
-        pm = self.pm(mod)
-        pm.add_licm_pass()
-        self.pmb().populate(pm)
-        mod.close()
-
-        pm.initialize()
-        (ok, remarks) = pm.run_with_remarks(fn)
-        pm.finalize()
-        self.assertTrue(ok)
-        self.assertIn("Passed", remarks)
-        self.assertIn("licm", remarks)
-
-    def test_run_with_remarks_filter_out(self):
-        mod = self.module(licm_asm)
-        fn = mod.get_function("licm")
-        pm = self.pm(mod)
-        pm.add_licm_pass()
-        self.pmb().populate(pm)
-        mod.close()
-
-        pm.initialize()
-        (ok, remarks) = pm.run_with_remarks(fn, remarks_filter="nothing")
-        pm.finalize()
-        self.assertTrue(ok)
-        self.assertEqual("", remarks)
-
-    def test_run_with_remarks_filter_in(self):
-        mod = self.module(licm_asm)
-        fn = mod.get_function("licm")
-        pm = self.pm(mod)
-        pm.add_licm_pass()
-        self.pmb().populate(pm)
-        mod.close()
-
-        pm.initialize()
-        (ok, remarks) = pm.run_with_remarks(fn, remarks_filter="licm")
-        pm.finalize()
-        self.assertTrue(ok)
-        self.assertIn("Passed", remarks)
-        self.assertIn("licm", remarks)
-
-
-class TestPasses(BaseTest, PassManagerTestMixin):
-
-    def pm(self):
-        return llvm.create_module_pass_manager()
-
-    def test_populate(self):
-        llvm_ver = llvm.llvm_version_info[0]
-
-        pm = self.pm()
-        pm.add_target_library_info("") # unspecified target triple
-        pm.add_constant_merge_pass()
-        pm.add_dead_arg_elimination_pass()
-        pm.add_function_attrs_pass()
-        pm.add_function_inlining_pass(225)
-        pm.add_global_dce_pass()
-        pm.add_global_optimizer_pass()
-        pm.add_ipsccp_pass()
-        pm.add_dead_code_elimination_pass()
-        pm.add_cfg_simplification_pass()
-        pm.add_gvn_pass()
-        pm.add_instruction_combining_pass()
-        pm.add_licm_pass()
-        pm.add_sccp_pass()
-        pm.add_sroa_pass()
-        pm.add_type_based_alias_analysis_pass()
-        pm.add_basic_alias_analysis_pass()
-        pm.add_loop_rotate_pass()
-        pm.add_region_info_pass()
-        pm.add_scalar_evolution_aa_pass()
-        pm.add_aggressive_dead_code_elimination_pass()
-        pm.add_aa_eval_pass()
-        pm.add_always_inliner_pass()
-        pm.add_break_critical_edges_pass()
-        pm.add_dead_store_elimination_pass()
-        pm.add_reverse_post_order_function_attrs_pass()
-
-        if llvm_ver < 16:
-            pm.add_aggressive_instruction_combining_pass()
-
-        pm.add_internalize_pass()
-        pm.add_jump_threading_pass(7)
-        pm.add_lcssa_pass()
-        pm.add_loop_deletion_pass()
-        pm.add_loop_extractor_pass()
-        pm.add_single_loop_extractor_pass()
-        pm.add_loop_strength_reduce_pass()
-        pm.add_loop_simplification_pass()
-        pm.add_loop_unroll_pass()
-        pm.add_loop_unroll_and_jam_pass()
-        pm.add_lower_atomic_pass()
-        pm.add_lower_invoke_pass()
-        pm.add_lower_switch_pass()
-        pm.add_memcpy_optimization_pass()
-        pm.add_merge_functions_pass()
-        pm.add_merge_returns_pass()
-        pm.add_partial_inlining_pass()
-
-        if llvm_ver < 16:
-            pm.add_prune_exception_handling_pass()
-
-        pm.add_reassociate_expressions_pass()
-        pm.add_demote_register_to_memory_pass()
-        pm.add_sink_pass()
-        pm.add_strip_symbols_pass()
-        pm.add_strip_dead_debug_info_pass()
-        pm.add_strip_dead_prototypes_pass()
-        pm.add_strip_debug_declare_pass()
-        pm.add_strip_nondebug_symbols_pass()
-        pm.add_tail_call_elimination_pass()
-        pm.add_basic_aa_pass()
-        pm.add_dependence_analysis_pass()
-        pm.add_dot_call_graph_pass()
-        pm.add_dot_cfg_printer_pass()
-        pm.add_dot_dom_printer_pass()
-        pm.add_dot_postdom_printer_pass()
-        pm.add_globals_mod_ref_aa_pass()
-        pm.add_iv_users_pass()
-        pm.add_lazy_value_info_pass()
-        pm.add_lint_pass()
-        pm.add_module_debug_info_pass()
-        pm.add_refprune_pass()
-        pm.add_instruction_namer_pass()
-
-    @unittest.skipUnless(platform.machine().startswith("x86"), "x86 only")
-    def test_target_library_info_behavior(self):
-        """Test a specific situation that demonstrate TLI is affecting
-        optimization. See https://github.com/numba/numba/issues/8898.
-        """
-        def run(use_tli):
-            mod = llvm.parse_assembly(asm_tli_exp2)
-            target = llvm.Target.from_triple(mod.triple)
-            tm = target.create_target_machine()
-            pm = llvm.ModulePassManager()
-            tm.add_analysis_passes(pm)
-            if use_tli:
-                pm.add_target_library_info(mod.triple)
-            pm.add_instruction_combining_pass()
-            pm.run(mod)
-            return mod
-
-        # Run with TLI should suppress transformation of exp2 -> ldexpf
-        mod = run(use_tli=True)
-        self.assertIn("call float @llvm.exp2.f32", str(mod))
-
-        # Run without TLI will enable the transformation
-        mod = run(use_tli=False)
-        self.assertNotIn("call float @llvm.exp2.f32", str(mod))
-        self.assertIn("call float @ldexpf", str(mod))
-
-    def test_instruction_namer_pass(self):
-        asm = asm_inlineasm3.format(triple=llvm.get_default_triple())
-        mod = llvm.parse_assembly(asm)
-
-        # Run instnamer pass
-        pm = llvm.ModulePassManager()
-        pm.add_instruction_namer_pass()
-        pm.run(mod)
-
-        # Test that unnamed instructions are now named
-        func = mod.get_function('foo')
-        first_block = next(func.blocks)
-        instructions = list(first_block.instructions)
-        self.assertEqual(instructions[0].name, 'i')
-        self.assertEqual(instructions[1].name, 'i2')
 
 
 class TestDylib(BaseTest):
@@ -2880,31 +2509,6 @@ class TestObjectFile(BaseTest):
                 self.assertEqual(s.data().hex(), issue_632_text)
 
 
-class TestTimePasses(BaseTest):
-    def test_reporting(self):
-        mp = llvm.create_module_pass_manager()
-
-        pmb = llvm.create_pass_manager_builder()
-        pmb.opt_level = 3
-        pmb.populate(mp)
-
-        try:
-            llvm.set_time_passes(True)
-            mp.run(self.module())
-            mp.run(self.module())
-            mp.run(self.module())
-        finally:
-            report = llvm.report_and_reset_timings()
-            llvm.set_time_passes(False)
-
-        self.assertIsInstance(report, str)
-        self.assertEqual(report.count("Pass execution timing report"), 1)
-
-    def test_empty_report(self):
-        # Returns empty str if no data is collected
-        self.assertFalse(llvm.report_and_reset_timings())
-
-
 class TestLLVMLockCallbacks(BaseTest):
     def test_lock_callbacks(self):
         events = []
@@ -2921,7 +2525,7 @@ class TestLLVMLockCallbacks(BaseTest):
         # Check: events are initially empty
         self.assertFalse(events)
         # Call LLVM functions
-        llvm.create_module_pass_manager()
+        llvm.create_new_module_pass_manager()
         # Check: there must be at least one acq and one rel
         self.assertIn("acq", events)
         self.assertIn("rel", events)
@@ -2957,13 +2561,11 @@ class TestPipelineTuningOptions(BaseTest):
             pto.size_level = i
             self.assertEqual(pto.size_level, i)
 
-    # // FIXME: Available from llvm16
-    # def test_inlining_threshold(self):
-    #     pto = self.pto()
-    #     with self.assertRaises(NotImplementedError):
-    #         pto.inlining_threshold
-    #     for i in (25, 80, 350):
-    #         pto.inlining_threshold = i
+    def test_inlining_threshold(self):
+        pto = self.pto()
+        self.assertIsInstance(pto.inlining_threshold, int)
+        for i in (25, 80, 350):
+            pto.inlining_threshold = i
 
     def test_loop_interleaving(self):
         pto = self.pto()

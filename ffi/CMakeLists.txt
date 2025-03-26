@@ -44,8 +44,8 @@ endif()
 
 # Define our shared library
 add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
-            module.cpp value.cpp executionengine.cpp transforms.cpp type.cpp
-            passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
+            module.cpp value.cpp executionengine.cpp type.cpp
+            targets.cpp dylib.cpp linker.cpp object_file.cpp
             custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp)
 
 # Find the libraries that correspond to the LLVM components

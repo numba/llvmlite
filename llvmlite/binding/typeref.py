@@ -109,17 +109,6 @@ class TypeRef(ffi.ObjectRef):
             raise ValueError("Type {} doesn't contain elements.".format(self))
         return _TypeListIterator(ffi.lib.LLVMPY_ElementIter(self))
 
-    # FIXME: Remove me once typed pointers support is removed.
-    @property
-    def element_type(self):
-        """
-        Returns the pointed-to type. When the type is not a pointer,
-        raises exception.
-        """
-        if not self.is_pointer:
-            raise ValueError("Type {} is not a pointer".format(self))
-        return TypeRef(ffi.lib.LLVMPY_GetElementType(self))
-
     @property
     def element_count(self):
         """

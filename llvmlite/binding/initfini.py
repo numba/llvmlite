@@ -3,13 +3,6 @@ from ctypes import c_uint
 from llvmlite.binding import ffi
 
 
-def initialize():
-    """
-    Initialize the LLVM core.
-    """
-    ffi.lib.LLVMPY_InitializeCore()
-
-
 def initialize_all_targets():
     """
     Initialize all targets. Necessary before targets can be looked up

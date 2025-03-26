@@ -17,7 +17,6 @@
 #include "llvm/Analysis/Delinearization.h"
 #include "llvm/Analysis/DemandedBits.h"
 #include "llvm/Analysis/DependenceAnalysis.h"
-#include "llvm/Analysis/DivergenceAnalysis.h"
 #include "llvm/Analysis/DomPrinter.h"
 #include "llvm/Analysis/DominanceFrontier.h"
 #include "llvm/Analysis/FunctionPropertiesAnalysis.h"
@@ -57,6 +56,7 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/IRPrintingPasses.h"
 #include "llvm/IR/PassManager.h"
+#include <llvm/IR/PassTimingInfo.h>
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
@@ -155,7 +155,6 @@
 #include "llvm/Transforms/Scalar/LoopLoadElimination.h"
 #include "llvm/Transforms/Scalar/LoopPassManager.h"
 #include "llvm/Transforms/Scalar/LoopPredication.h"
-#include "llvm/Transforms/Scalar/LoopReroll.h"
 #include "llvm/Transforms/Scalar/LoopRotation.h"
 #include "llvm/Transforms/Scalar/LoopSimplifyCFG.h"
 #include "llvm/Transforms/Scalar/LoopSink.h"
@@ -293,13 +292,10 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
 
     PrintPassOptions PrintPassOpts;
 
-#if LLVM_VERSION_MAJOR < 16
-    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
-#else
     StandardInstrumentations SI(M->getContext(), DebugLogging, VerifyEach,
                                 PrintPassOpts);
-#endif
-    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+    // https://reviews.llvm.org/D146160
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &MAM);
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
@@ -351,13 +347,10 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     // TODO: Can expose this in ffi layer
     PrintPassOptions PrintPassOpts;
 
-#if LLVM_VERSION_MAJOR < 16
-    StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
-#else
     StandardInstrumentations SI(F->getContext(), DebugLogging, VerifyEach,
                                 PrintPassOpts);
-#endif
-    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+    // https://reviews.llvm.org/D146160
+    SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &MAM);
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
@@ -424,16 +417,15 @@ LLVMPY_PTOSetLoopUnrolling(LLVMPipelineTuningOptionsRef PTO, bool value) {
     llvm::unwrap(PTO)->LoopUnrolling = value;
 }
 
-// FIXME: Available from llvm16
-// API_EXPORT(int)
-// LLVMPY_PTOGetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO) {
-//     return llvm::unwrap(PTO)->InlinerThreshold;
-// }
+API_EXPORT(int)
+LLVMPY_PTOGetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO) {
+    return llvm::unwrap(PTO)->InlinerThreshold;
+}
 
-// API_EXPORT(void)
-// LLVMPY_PTOSetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO, bool value) {
-//     llvm::unwrap(PTO)->InlinerThreshold = value;
-// }
+API_EXPORT(void)
+LLVMPY_PTOSetInlinerThreshold(LLVMPipelineTuningOptionsRef PTO, bool value) {
+    llvm::unwrap(PTO)->InlinerThreshold = value;
+}
 
 API_EXPORT(void)
 LLVMPY_DisposePipelineTuningOptions(LLVMPipelineTuningOptionsRef PTO) {
@@ -482,11 +474,7 @@ LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TMRef,
     TargetMachine *TM = llvm::unwrap(TMRef);
     PipelineTuningOptions *PTO = llvm::unwrap(PTORef);
     PassInstrumentationCallbacks *PIC = new PassInstrumentationCallbacks();
-#if LLVM_VERSION_MAJOR < 16
-    return llvm::wrap(new PassBuilder(TM, *PTO, None, PIC));
-#else
     return llvm::wrap(new PassBuilder(TM, *PTO, std::nullopt, PIC));
-#endif
 }
 
 API_EXPORT(void)
