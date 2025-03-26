@@ -15,13 +15,12 @@ except ImportError:
     pass
 
 import llvmlite
-llvmlite.opaque_pointers_enabled = True
+llvmlite.ir_layer_typed_pointers_enabled = False
 
 import llvmlite.ir as ll
 import llvmlite.binding as llvm
 
 
-llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()
 

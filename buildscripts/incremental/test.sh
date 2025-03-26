@@ -10,10 +10,10 @@ set -v -e
 python --version
 
 if [ "$OPAQUE_POINTERS" == "yes" ]; then
-    export LLVMLITE_ENABLE_OPAQUE_POINTERS=1
-    echo "Testing with opaque pointers enabled"
+    export LLVMLITE_ENABLE_IR_LAYER_TYPED_POINTERS=0
+    echo "Testing with IR layer opaque pointers enabled"
 else
-    echo "Testing with opaque pointers disabled"
+    echo "Testing with IR layer opaque pointers disabled"
 fi
 
 if [ "$WHEEL" == "yes" ]; then

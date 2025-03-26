@@ -1,5 +1,5 @@
 import llvmlite
-llvmlite.opaque_pointers_enabled = True
+llvmlite.ir_layer_typed_pointers_enabled = False
 
 import llvmlite.ir as ll
 

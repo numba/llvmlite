@@ -155,11 +155,7 @@ void LlvmliteMemoryManager::reserveAllocationSpace(uintptr_t CodeSize,
     // Code alignment needs to be at least the stub alignment - however, we
     // don't have an easy way to get that here so as a workaround, we assume
     // it's 8, which is the largest value I observed across all platforms.
-#if LLVM_VERSION_MAJOR < 16
-    constexpr uint32_t StubAlign = 8;
-#else
     constexpr uint64_t StubAlign = 8;
-#endif
 
     CodeAlign = LLVMLITE_ALIGN(std::max(GET_ALIGN_VALUE(CodeAlign), StubAlign));
 
