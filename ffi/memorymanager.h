@@ -42,13 +42,8 @@ class __attribute__((visibility("default"))) ErrorInfoBase;
 #include <string>
 #include <system_error>
 
-#if LLVM_VERSION_MAJOR < 16
-#define LLVMLITE_ALIGN uint32_t
-#define GET_ALIGN_VALUE(align) align
-#else
 #define LLVMLITE_ALIGN Align
 #define GET_ALIGN_VALUE(align) align.value()
-#endif
 
 namespace llvm {
 

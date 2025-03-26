@@ -115,28 +115,17 @@ def get_host_cpu_name():
 llvm_version_major = llvm_version_info[0]
 
 
-if llvm_version_major >= 15:
-    _object_formats = {
-        0: "Unknown",
-        1: "COFF",
-        2: "DXContainer",
-        3: "ELF",
-        4: "GOFF",
-        5: "MachO",
-        6: "SPIRV",
-        7: "Wasm",
-        8: "XCOFF",
-    }
-else:
-    _object_formats = {
-        0: "Unknown",
-        1: "COFF",
-        2: "ELF",
-        3: "GOFF",
-        4: "MachO",
-        5: "Wasm",
-        6: "XCOFF",
-    }
+_object_formats = {
+    0: "Unknown",
+    1: "COFF",
+    2: "DXContainer",
+    3: "ELF",
+    4: "GOFF",
+    5: "MachO",
+    6: "SPIRV",
+    7: "Wasm",
+    8: "XCOFF",
+}
 
 
 def get_object_format(triple=None):

@@ -103,6 +103,7 @@ def case7():
 
 def case8():
     edges = {
+        "entry:": ["A"],
         "A": ["B", "C"],
         "B": ["C"],
         "C": [],

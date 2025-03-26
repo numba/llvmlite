@@ -15,7 +15,6 @@ import numpy as np
 faulthandler.enable()
 
 # All are required to initialize LLVM
-llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()
 

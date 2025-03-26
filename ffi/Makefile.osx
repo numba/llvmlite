@@ -7,7 +7,7 @@ LDFLAGS :=  $(LDFLAGS) $(EXPORT) $(LLVM_LDFLAGS)
 LIBS = $(LLVM_LIBS)
 INCLUDE = core.h
 SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
-	  executionengine.cpp transforms.cpp passmanagers.cpp targets.cpp type.cpp \
+	  executionengine.cpp targets.cpp type.cpp \
 	  dylib.cpp linker.cpp object_file.cpp custom_passes.cpp orcjit.cpp \
 	  memorymanager.cpp newpassmanagers.cpp
 OUTPUT = libllvmlite.dylib
