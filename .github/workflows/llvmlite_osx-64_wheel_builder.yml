@@ -1,0 +1,216 @@
+name: llvmlite_osx-64_wheel_builder
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/llvmlite_osx-64_wheel_builder.yml
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  LOCAL_LLVMDEV_ARTIFACT_PATH: ${{ github.workspace }}/llvmdev_conda_packages
+  FALLBACK_LLVMDEV_VERSION: "15"
+  CONDA_CHANNEL_NUMBA: numba/label/osx_wheel
+  VALIDATION_PYTHON_VERSION: "3.12"
+  ARTIFACT_RETENTION_DAYS: 7
+
+jobs:
+  osx-64-build:
+    name: osx-64-build
+    runs-on: macos-13
+    defaults:
+      run:
+        shell: bash -el {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+
+      - name: Download llvmdev Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev_osx-64
+          path: llvmdev_conda_packages
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install build dependencies
+        run: |
+          set -x
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+              CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+          else
+              CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
+          fi
+          conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
+      
+      - name: Build wheel
+        run: python -m build
+
+      - name: Fix macOS wheel library paths
+        run: |
+          cd dist
+          # Get the most recent wheel
+          whl=$(ls -t *.whl | head -n 1)
+          echo "Processing wheel: $whl"
+          
+          # Unpack the wheel
+          wheel unpack "$whl"
+          
+          # Get into the unpacked directory
+          target_dir=$(echo "$whl" | cut -d "-" -f1 -f2)
+          cd "$target_dir"
+          
+          # Find and fix dylib
+          target=$(find . -iname "libllvmlite.dylib")
+          echo "Found dylib at: $target"
+          
+          echo "=== BEFORE ==="
+          otool -L "$target"
+          
+          # Fix all @rpath libraries
+          install_name_tool -change "@rpath/libz.1.dylib" "/usr/lib/libz.1.dylib" "$target"
+          install_name_tool -change "@rpath/libc++.1.dylib" "/usr/lib/libc++.1.dylib" "$target"
+          install_name_tool -change "@rpath/libunwind.1.dylib" "/usr/lib/libunwind.1.dylib" "$target"
+          
+          echo "=== AFTER ==="
+          otool -L "$target"
+          
+          echo "=== Write back to wheel ==="
+          cd ..
+          wheel pack "$target_dir"
+          
+          echo "=== Final wheel filename ==="
+          ls -la "$whl"
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-osx-64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  osx-64-validate:
+    name: osx-64-validate
+    needs: osx-64-build
+    runs-on: macos-13
+    defaults:
+      run:
+        shell: bash -el {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+
+      - name: Install validation dependencies
+        run: conda install -c defaults wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-osx-64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          set -e  # Exit on any error
+          cd dist
+          
+          for WHL_FILE in *.whl; do
+            echo "=== Validating $WHL_FILE ==="
+            
+            # Check wheel structure
+            twine check "$WHL_FILE"
+            
+            # Check dylib paths
+            wheel unpack "$WHL_FILE"
+            WHEEL_DIR=$(echo "$WHL_FILE" | cut -d "-" -f1 -f2)
+            DYLIB=$(find "$WHEEL_DIR" -iname "libllvmlite.dylib")
+            
+            if [ -z "$DYLIB" ]; then
+              echo "Error: libllvmlite.dylib not found in $WHL_FILE"
+              exit 1
+            fi
+            
+            echo "=== Checking dynamic library dependencies ==="
+            otool -L "$DYLIB"
+            
+            # Verify library paths
+            LIBS=("libz.1.dylib" "libc++.1.dylib")
+            for LIB in "${LIBS[@]}"; do
+              if ! otool -L "$DYLIB" | grep -q "/usr/lib/$LIB"; then
+                echo "Error: $LIB path is incorrect in $WHL_FILE"
+                exit 1
+              fi
+            done
+          done
+
+  osx-64-test:
+    name: osx-64-test
+    needs: osx-64-build
+    runs-on: macos-13
+    defaults:
+      run:
+        shell: bash -el {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-osx-64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Install and test
+        run: |
+          # Get the Python executable path
+          PYTHON_PATH=$(which python${{ matrix.python-version }})
+          
+          # Install wheel and run tests
+          $PYTHON_PATH -m pip install -v dist/*.whl
+          $PYTHON_PATH -m llvmlite.tests
