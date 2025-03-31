@@ -100,6 +100,8 @@ jobs:
           echo "=== AFTER ==="
           otool -L "$target"
           
+          echo "=== $target_dir contents ==="
+          find . -ls
           echo "=== Write back to wheel ==="
           cd ..
           wheel pack "$target_dir"
@@ -210,6 +212,9 @@ jobs:
         run: |
           # Get the Python executable path
           PYTHON_PATH=$(which python${{ matrix.python-version }})
+          
+          echo "=== contents of dist ==="
+          ls -la dist
           
           # Install wheel and run tests
           $PYTHON_PATH -m pip install -v dist/*.whl
