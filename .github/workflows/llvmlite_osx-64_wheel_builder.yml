@@ -218,21 +218,6 @@ jobs:
           # Get the Python executable path
           PYTHON_PATH=$(which python${{ matrix.python-version }})
           
-          # Add Debugging: Check for libs in /usr/lib and try finding them elsewhere
-          echo "--- Checking for required libraries in /usr/lib (test environment) ---"
-          ls -l /usr/lib/libz.1.dylib /usr/lib/libc++.1.dylib /usr/lib/libunwind.1.dylib || echo "[Warning] One or more libraries not found directly in /usr/lib. Attempting find..."
-          
-          echo "--- Searching for libz.1.dylib ---"
-          find /usr /Library/Developer -name libz.1.dylib -ls 2>/dev/null || echo "[Info] libz.1.dylib not found via find in /usr or /Library/Developer"
-          
-          echo "--- Searching for libc++.1.dylib ---"
-          find /usr /Library/Developer -name libc++.1.dylib -ls 2>/dev/null || echo "[Info] libc++.1.dylib not found via find in /usr or /Library/Developer"
-
-          echo "--- Searching for libunwind.1.dylib ---"
-          find /usr /Library/Developer -name libunwind.1.dylib -ls 2>/dev/null || echo "[Info] libunwind.1.dylib not found via find in /usr or /Library/Developer"
-          
-          echo "--- End library check --- "
-          
           # Upgrade pip and install wheel
           $PYTHON_PATH -m pip install --upgrade pip wheel
 
