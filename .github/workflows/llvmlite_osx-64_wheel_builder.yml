@@ -73,8 +73,8 @@ jobs:
 
       - name: Fix macOS wheel library paths
         run: |
+          set -ex # Exit on error, print commands
           cd dist
-          # Get the most recent wheel
           whl=$(ls -t *.whl | head -n 1)
           echo "Processing wheel: $whl"
           
@@ -85,7 +85,7 @@ jobs:
           target_dir=$(echo "$whl" | cut -d "-" -f1 -f2)
           cd "$target_dir"
           
-          # Find and fix dylib
+          # Find the dylib
           target=$(find . -iname "libllvmlite.dylib")
           echo "Found dylib at: $target"
           
@@ -107,7 +107,7 @@ jobs:
           wheel pack "$target_dir"
           
           echo "=== Final wheel filename ==="
-          ls -la "$whl"
+          ls -la *.whl # List wheel in dist dir
 
       - name: Upload wheel
         uses: actions/upload-artifact@v4
@@ -213,9 +213,29 @@ jobs:
           # Get the Python executable path
           PYTHON_PATH=$(which python${{ matrix.python-version }})
           
-          echo "=== contents of dist ==="
-          ls -la dist
+          # Add Debugging: Check for libs in /usr/lib and try finding them elsewhere
+          echo "--- Checking for required libraries in /usr/lib (test environment) ---"
+          ls -l /usr/lib/libz.1.dylib /usr/lib/libc++.1.dylib /usr/lib/libunwind.1.dylib || echo "[Warning] One or more libraries not found directly in /usr/lib. Attempting find..."
           
+          echo "--- Searching for libz.1.dylib ---"
+          find /usr /Library/Developer -name libz.1.dylib -ls 2>/dev/null || echo "[Info] libz.1.dylib not found via find in /usr or /Library/Developer"
+          
+          echo "--- Searching for libc++.1.dylib ---"
+          find /usr /Library/Developer -name libc++.1.dylib -ls 2>/dev/null || echo "[Info] libc++.1.dylib not found via find in /usr or /Library/Developer"
+
+          echo "--- Searching for libunwind.1.dylib ---"
+          find /usr /Library/Developer -name libunwind.1.dylib -ls 2>/dev/null || echo "[Info] libunwind.1.dylib not found via find in /usr or /Library/Developer"
+          
+          echo "--- End library check --- "
+          
+          # Upgrade pip and install wheel
+          $PYTHON_PATH -m pip install --upgrade pip wheel
+
           # Install wheel and run tests
-          $PYTHON_PATH -m pip install -v dist/*.whl
+          cd dist
+          whl=$(ls -t *.whl | head -n 1)
+          echo "Using wheel: $whl"
+          $PYTHON_PATH -m pip install -v "$whl"
+          
+          # Run tests
           $PYTHON_PATH -m llvmlite.tests
