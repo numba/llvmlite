@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 3.5)
 
 # This will define the name of the solution file in the build directory
 project(llvmlite_ffi)
