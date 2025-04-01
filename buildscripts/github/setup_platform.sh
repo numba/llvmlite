@@ -18,7 +18,7 @@ case "${PLATFORM}" in
 
         # Verify checksum
         echo "Verifying SDK checksum"
-        shasum -c "${sdk_dir}/MacOSX10.10.sdk.checksum"
+        shasum -c "${sdk_dir}/MacOSX10.10.sdk.checksum" || exit 1
 
         # Extract SDK to /opt
         echo "Extracting SDK to /opt"
