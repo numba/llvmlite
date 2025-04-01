@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 PLATFORM=$1
 
