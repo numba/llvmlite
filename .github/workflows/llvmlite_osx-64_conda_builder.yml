@@ -31,7 +31,6 @@ jobs:
 
       - name: Setup platform-specific requirements
         run: |
-          chmod +x ./buildscripts/github/setup_platform.sh
           source ./buildscripts/github/setup_platform.sh "osx-64"
 
       - name: Setup Miniconda
