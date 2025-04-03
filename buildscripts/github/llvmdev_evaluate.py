@@ -33,6 +33,16 @@ default_include = [
         "platform": "win-64",
         "recipe": "llvmdev_for_wheel",
     },
+    {
+        "runner": runner_mapping["osx-64"],
+        "platform": "osx-64",
+        "recipe": "llvmdev",
+    },
+    {
+        "runner": runner_mapping["osx-64"],
+        "platform": "osx-64",
+        "recipe": "llvmdev_for_wheel",
+    },
 ]
 
 print(
