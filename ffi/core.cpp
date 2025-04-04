@@ -23,16 +23,14 @@ LLVMPY_DisposeString(const char *msg) { free(const_cast<char *>(msg)); }
 API_EXPORT(LLVMContextRef)
 LLVMPY_GetGlobalContext() {
     auto context = LLVMGetGlobalContext();
-    // FIXME: Remove with LLVM >= 17.
-    LLVMContextSetOpaquePointers(context, true);
+    // Opaque pointer support dropped https://reviews.llvm.org/D139441
     return context;
 }
 
 API_EXPORT(LLVMContextRef)
 LLVMPY_ContextCreate() {
     LLVMContextRef context = LLVMContextCreate();
-    // FIXME: Remove with LLVM >= 17.
-    LLVMContextSetOpaquePointers(context, true);
+    // Opaque pointer support dropped https://reviews.llvm.org/D139441
     return context;
 }
 
