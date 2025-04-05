@@ -26,7 +26,7 @@ env:
 jobs:
   win-64-build:
     name: win-64-build
-    runs-on: windows-2019
+    runs-on: windows-2022
     defaults:
       run:
         shell: bash -el {0}
@@ -84,7 +84,7 @@ jobs:
   win-64-validate:
     name: win-64-validate
     needs: win-64-build
-    runs-on: windows-2019
+    runs-on: windows-2022
     defaults:
       run:
         shell: bash -el {0}
@@ -125,7 +125,7 @@ jobs:
   win-64-test:
     name: win-64-test
     needs: win-64-validate
-    runs-on: windows-2019
+    runs-on: windows-2022
     defaults:
       run:
         shell: bash -el {0}
