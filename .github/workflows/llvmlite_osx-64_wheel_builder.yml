@@ -80,7 +80,7 @@ jobs:
         run: |
           set -ex # Exit on error, print commands
           cd dist
-          whl=$(ls -t *.whl | head -n 1)
+          whl=$(find . -maxdepth 1 -name '*.whl' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)
           echo "Processing wheel: $whl"
           
           # Unpack the wheel
@@ -112,7 +112,7 @@ jobs:
           wheel pack "$target_dir"
           
           echo "=== Final wheel filename ==="
-          ls -la *.whl # List wheel in dist dir
+          ls -la ./*.whl # List wheel in dist dir
 
       - name: Upload wheel
         uses: actions/upload-artifact@v4
@@ -223,7 +223,7 @@ jobs:
 
           # Install wheel and run tests
           cd dist
-          whl=$(ls -t *.whl | head -n 1)
+          whl=$(find . -maxdepth 1 -name '*.whl' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)
           echo "Using wheel: $whl"
           $PYTHON_PATH -m pip install -v "$whl"
           
