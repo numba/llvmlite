@@ -11,6 +11,11 @@ on:
         required: false
         type: string
 
+# Add concurrency control
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   osx-64-build:
     name: osx-64-build
