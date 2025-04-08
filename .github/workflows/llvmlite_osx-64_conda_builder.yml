@@ -78,6 +78,9 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      - name: Show Workflow Run ID
+        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+
   osx-64-test:
     name: osx-64-test
     needs: osx-64-build
