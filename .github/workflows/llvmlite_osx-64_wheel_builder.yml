@@ -80,7 +80,7 @@ jobs:
         run: |
           set -ex # Exit on error, print commands
           cd dist
-          whl=$(find . -maxdepth 1 -name '*.whl' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)
+          whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           echo "Processing wheel: $whl"
           
           # Unpack the wheel
@@ -223,7 +223,7 @@ jobs:
 
           # Install wheel and run tests
           cd dist
-          whl=$(find . -maxdepth 1 -name '*.whl' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)
+          whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           echo "Using wheel: $whl"
           $PYTHON_PATH -m pip install -v "$whl"
           
