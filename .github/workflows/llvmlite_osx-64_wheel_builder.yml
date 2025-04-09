@@ -60,7 +60,6 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          set -x
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
               CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
           else
@@ -78,7 +77,6 @@ jobs:
 
       - name: Fix macOS wheel library paths
         run: |
-          set -ex # Exit on error, print commands
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           echo "Processing wheel: $whl"
@@ -160,7 +158,6 @@ jobs:
 
       - name: Validate wheels
         run: |
-          set -e  # Exit on any error
           cd dist
           
           for WHL_FILE in *.whl; do
