@@ -66,10 +66,10 @@ jobs:
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
           conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
-      
+
       - name: Select Xcode 14.1
         run: sudo xcode-select -s /Applications/Xcode_14.1.0.app
-      
+
       - name: Build wheel
         env:
           MACOSX_DEPLOYMENT_TARGET: "13.0"
@@ -80,35 +80,35 @@ jobs:
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           echo "Processing wheel: $whl"
-          
+
           # Unpack the wheel
           wheel unpack "$whl"
-          
+
           # Get into the unpacked directory
           target_dir=$(echo "$whl" | cut -d "-" -f1 -f2)
           cd "$target_dir"
-          
+
           # Find the dylib
           target=$(find . -iname "libllvmlite.dylib")
           echo "Found dylib at: $target"
-          
+
           echo "=== BEFORE ==="
           otool -L "$target"
-          
+
           # Fix all @rpath libraries
           install_name_tool -change "@rpath/libz.1.dylib" "/usr/lib/libz.1.dylib" "$target"
           install_name_tool -change "@rpath/libc++.1.dylib" "/usr/lib/libc++.1.dylib" "$target"
           install_name_tool -change "@rpath/libunwind.1.dylib" "/usr/lib/libunwind.1.dylib" "$target"
-          
+
           echo "=== AFTER ==="
           otool -L "$target"
-          
+
           echo "=== $target_dir contents ==="
           find . -ls
           echo "=== Write back to wheel ==="
           cd ..
           wheel pack "$target_dir"
-          
+
           echo "=== Final wheel filename ==="
           ls -la ./*.whl # List wheel in dist dir
 
@@ -120,7 +120,7 @@ jobs:
           compression-level: 0
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: error
-      
+
       - name: Show Workflow Run ID
         run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
 
@@ -159,26 +159,26 @@ jobs:
       - name: Validate wheels
         run: |
           cd dist
-          
+
           for WHL_FILE in *.whl; do
             echo "=== Validating $WHL_FILE ==="
-            
+
             # Check wheel structure
             twine check "$WHL_FILE"
-            
+
             # Check dylib paths
             wheel unpack "$WHL_FILE"
             WHEEL_DIR=$(echo "$WHL_FILE" | cut -d "-" -f1 -f2)
             DYLIB=$(find "$WHEEL_DIR" -iname "libllvmlite.dylib")
-            
+
             if [ -z "$DYLIB" ]; then
               echo "Error: libllvmlite.dylib not found in $WHL_FILE"
               exit 1
             fi
-            
+
             echo "=== Checking dynamic library dependencies ==="
             otool -L "$DYLIB"
-            
+
             # Verify library paths
             LIBS=("libz.1.dylib" "libc++.1.dylib")
             for LIB in "${LIBS[@]}"; do
@@ -217,7 +217,7 @@ jobs:
         run: |
           # Get the Python executable path
           PYTHON_PATH=$(which python${{ matrix.python-version }})
-          
+
           # Upgrade pip and install wheel
           $PYTHON_PATH -m pip install --upgrade pip wheel
 
@@ -226,6 +226,6 @@ jobs:
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           echo "Using wheel: $whl"
           $PYTHON_PATH -m pip install -v "$whl"
-          
+
           # Run tests
           $PYTHON_PATH -m llvmlite.tests
