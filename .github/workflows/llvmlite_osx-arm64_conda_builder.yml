@@ -19,7 +19,7 @@ concurrency:
 jobs:
   osx-arm64-build:
     name: osx-arm64-build
-    runs-on: macos-13
+    runs-on: macos-14
     defaults:
       run:
         shell: bash -elx {0}
