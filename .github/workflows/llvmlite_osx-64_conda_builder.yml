@@ -19,7 +19,7 @@ concurrency:
 jobs:
   osx-64-build:
     name: osx-64-build
-    runs-on: macos-13
+    runs-on: macos-14
     defaults:
       run:
         shell: bash -elx {0}
@@ -84,7 +84,7 @@ jobs:
   osx-64-test:
     name: osx-64-test
     needs: osx-64-build
-    runs-on: macos-13
+    runs-on: macos-14
     defaults:
       run:
         shell: bash -elx {0}
