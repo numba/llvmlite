@@ -1,0 +1,214 @@
+name: llvmlite_osx-arm64_wheel_builder
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/llvmlite_osx-arm64_wheel_builder.yml
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  LOCAL_LLVMDEV_ARTIFACT_PATH: ${{ github.workspace }}/llvmdev_conda_packages
+  FALLBACK_LLVMDEV_VERSION: "15"
+  CONDA_CHANNEL_NUMBA: numba/label/osx_wheel
+  VALIDATION_PYTHON_VERSION: "3.12"
+  ARTIFACT_RETENTION_DAYS: 7
+
+jobs:
+  osx-arm64-build:
+    name: osx-arm64-build
+    runs-on: macos-14
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+
+      - name: Download llvmdev Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmdev_for_wheel_osx-arm64
+          path: llvmdev_conda_packages
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install build dependencies
+        run: |
+          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+              CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+          else
+              CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
+          fi
+          conda install -c "$CHAN" llvmdev="${{ env.FALLBACK_LLVMDEV_VERSION }}" python-build -y
+
+          # Hide libunwind to prevent it from being linked against during build
+          mkdir -p "$CONDA_PREFIX/lib/hide_unwind"
+          mv "$CONDA_PREFIX/lib/libunwind"*.dylib "$CONDA_PREFIX/lib/hide_unwind/" 2>/dev/null || true
+
+      - name: Build wheel
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "11.1"
+          LDFLAGS: "-v -Wl,-rpath,/usr/lib"
+        run: |
+          arch -arm64 python -m build --verbose --config-setting="--global-option=build_ext" --config-setting="--global-option=-v"
+
+      - name: Inspect wheel
+        run: |
+          mkdir -p wheel_contents && cd wheel_contents
+          python -m wheel unpack ../dist/*.whl
+          DYLIB=$(find . -iname "libllvmlite.dylib")
+          if [ -n "$DYLIB" ]; then
+            echo "Found dylib at: $DYLIB" && otool -L "$DYLIB"
+          else
+            echo "Error: libllvmlite.dylib not found in wheel"
+            exit 1
+          fi
+          cd .. && rm -rf wheel_contents
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvmlite-osx-arm64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+      - name: Show Workflow Run ID
+        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+
+  osx-arm64-validate:
+    name: osx-arm64-validate
+    needs: osx-arm64-build
+    runs-on: macos-14
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+
+      - name: Install validation dependencies
+        run: conda install -c defaults wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-osx-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          cd dist
+          twine check ./*.whl
+
+  osx-arm64-test:
+    name: osx-arm64-test
+    needs: osx-arm64-build
+    runs-on: macos-14
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-osx-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Install and test
+        run: |
+          PYTHON_PATH=$(which "python${{ matrix.python-version }}")
+          "$PYTHON_PATH" -m venv .venv && source .venv/bin/activate
+          python -m pip install --upgrade pip wheel
+          cd dist && python -m pip install -v ./*.whl
+          DYLIB_PATH=$(find "$(python -c "import llvmlite; print(llvmlite.__path__[0])")" -name "libllvmlite.dylib")
+          echo "Found dylib at: $DYLIB_PATH" && otool -L "$DYLIB_PATH"
+          python -m llvmlite.tests
+
+  osx-arm64-upload:
+    name: osx-arm64-upload
+    needs: osx-arm64-test
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          conda-remove-defaults: true
+          auto-update-conda: true
+          auto-activate-base: true
+
+      - name: Install anaconda-client
+        run: conda install -c anaconda anaconda-client
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: llvmlite-osx-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Upload wheel to Anaconda Cloud
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.NUMBA_CHANNEL_WHEEL_UPLOAD }}
+        run: |
+          cd dist
+          whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
+          echo "Uploading wheel: $whl"
+          anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"
