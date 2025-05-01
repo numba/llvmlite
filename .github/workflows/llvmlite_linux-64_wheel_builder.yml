@@ -76,8 +76,7 @@ jobs:
           docker run --rm \
             -v "$(pwd):/root/llvmlite" \
             quay.io/pypa/manylinux2014_x86_64 \
-            /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh \
-            "${{ env.MINICONDA_FILE }}" "${{ env.PYTHON_PATH }}"
+            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }}"
 
           # Create wheelhouse directory for artifact upload
           mkdir -p wheelhouse
