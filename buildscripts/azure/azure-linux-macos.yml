@@ -27,7 +27,6 @@ jobs:
         export PATH=$HOME/miniconda3/bin:$PATH
         echo "Setting up Conda environment"
         buildscripts/incremental/setup_conda_environment.sh
-        conda install -y setuptools
       displayName: 'Before Install'
 
     - script: |

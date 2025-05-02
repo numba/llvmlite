@@ -19,3 +19,6 @@ if "%LLVM%"=="16" (
 
 call conda install -y -q -c %LLVMDEV_CHANNEL% llvmdev="%LLVM%" libxml2
 if %errorlevel% neq 0 exit /b %errorlevel%
+
+call conda install -y -q setuptools
+if %errorlevel% neq 0 exit /b %errorlevel%

@@ -43,7 +43,6 @@ jobs:
     - script: |
         call C:\Miniconda3\Scripts\activate.bat
         call buildscripts\\incremental\\setup_conda_environment.cmd
-        conda install -y setuptools
       displayName: 'Before Install'
 
     - script: |
