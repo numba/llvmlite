@@ -37,3 +37,5 @@ fi
 
 # Install dependencies for code coverage (codecov.io)
 if [ "$RUN_COVERAGE" == "yes" ]; then $PIP_INSTALL codecov coveralls; fi
+
+$CONDA_INSTALL setuptools
