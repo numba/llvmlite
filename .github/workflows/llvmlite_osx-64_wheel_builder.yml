@@ -208,4 +208,4 @@ jobs:
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           echo "Uploading wheel: $whl"
-          anaconda -t $ANACONDA_API_TOKEN upload --force -u numba -l dev "$whl"
+          anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"
