@@ -67,6 +67,10 @@ jobs:
           fi
           conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
 
+          # Hide libunwind to prevent it from being linked against during build
+          mkdir -p "$CONDA_PREFIX/lib/hide_unwind"
+          mv "$CONDA_PREFIX/lib/libunwind"*.dylib "$CONDA_PREFIX/lib/hide_unwind/" 2>/dev/null || true
+
       - name: Select Xcode 14.1
         run: sudo xcode-select -s /Applications/Xcode_14.1.0.app
 
@@ -77,6 +81,7 @@ jobs:
 
       - name: Fix macOS wheel library paths
         run: |
+          python -m pip install wheel
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           bash "$GITHUB_WORKSPACE/buildscripts/github/patch_osx64_wheel.sh" "$whl"
