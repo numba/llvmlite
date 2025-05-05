@@ -96,7 +96,7 @@ jobs:
     vmImage: 'ubuntu-latest'
   steps:
   - script: |
-      set -elx
+      set -ex
       buildscripts/incremental/install_miniconda.sh
       export PATH=$HOME/miniconda3/bin:$PATH
       conda install -c conda-forge -y clang-format-20
