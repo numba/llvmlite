@@ -10,7 +10,6 @@ import llvmlite.binding as llvm
 faulthandler.enable()
 
 # All are required to initialize LLVM
-llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()
 
