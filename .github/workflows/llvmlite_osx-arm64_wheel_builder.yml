@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
         with:
           python-version: ${{ matrix.python-version }}
           conda-remove-defaults: true
@@ -119,7 +119,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
         with:
           python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
           conda-remove-defaults: true
@@ -188,7 +188,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
         with:
           python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
           conda-remove-defaults: true
