@@ -14,7 +14,7 @@ on:
 jobs:
   linux-arm64-build:
     name: linux-arm64-build
-    runs-on: ubuntu-24.04-arm64
+    runs-on: ubuntu-24.04-arm
     defaults:
       run:
         shell: bash -elx {0}
@@ -57,8 +57,8 @@ jobs:
               LLVMDEV_CHANNEL="numba"
           fi
           CONDA_CHANNEL_DIR="conda_channel_dir"
-          mkdir $CONDA_CHANNEL_DIR
-          conda build --debug -c "$LLVMDEV_CHANNEL" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder=$CONDA_CHANNEL_DIR --no-test
+          mkdir "$CONDA_CHANNEL_DIR"
+          conda build --debug -c "$LLVMDEV_CHANNEL" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder="$CONDA_CHANNEL_DIR" --no-test
 
       - name: Upload llvmlite conda package
         uses: actions/upload-artifact@v4
@@ -72,7 +72,7 @@ jobs:
   linux-arm64-test:
     name: linux-arm64-test
     needs: linux-arm64-build
-    runs-on: ubuntu-24.04-arm64
+    runs-on: ubuntu-24.04-arm
     defaults:
       run:
         shell: bash -elx {0}
