@@ -42,7 +42,7 @@ jobs:
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: llvmdev_for_wheel_linux-64
           path: llvmdev_conda_packages
@@ -132,7 +132,7 @@ jobs:
         run: conda install -c defaults wheel twine keyring rfc3986
 
       - name: Download llvmlite wheels
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: llvmlite-linux-64-py${{ matrix.python-version }}
           path: dist
@@ -165,7 +165,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Download llvmlite wheel
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: llvmlite-linux-64-py${{ matrix.python-version }}
           path: dist
@@ -222,7 +222,7 @@ jobs:
         run: conda install -c anaconda anaconda-client
 
       - name: Download llvmlite wheel
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: llvmlite-linux-64-py${{ matrix.python-version }}
           path: dist
