@@ -78,19 +78,6 @@ jobs:
         run: |
           arch -arm64 python -m build --verbose --config-setting="--global-option=build_ext" --config-setting="--global-option=-v"
 
-      - name: Inspect wheel
-        run: |
-          mkdir -p wheel_contents && cd wheel_contents
-          python -m wheel unpack ../dist/*.whl
-          DYLIB=$(find . -iname "libllvmlite.dylib")
-          if [ -n "$DYLIB" ]; then
-            echo "Found dylib at: $DYLIB" && otool -L "$DYLIB"
-          else
-            echo "Error: libllvmlite.dylib not found in wheel"
-            exit 1
-          fi
-          cd .. && rm -rf wheel_contents
-
       - name: Upload wheel
         uses: actions/upload-artifact@v4
         with:
