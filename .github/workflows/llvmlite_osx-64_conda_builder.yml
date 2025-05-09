@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
 
@@ -39,7 +39,7 @@ jobs:
           source ./buildscripts/github/setup_platform.sh "osx-64"
 
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
         with:
           auto-update-conda: true
           auto-activate-base: true
@@ -50,7 +50,7 @@ jobs:
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: llvmdev_osx-64
           path: llvmdev_conda_packages
@@ -70,7 +70,7 @@ jobs:
           conda build --debug -c "$LLVMDEV_CHANNEL" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder=$CONDA_CHANNEL_DIR --no-test
 
       - name: Upload llvmlite conda package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: llvmlite-osx-64-py${{ matrix.python-version }}
           path: conda_channel_dir
@@ -95,10 +95,10 @@ jobs:
 
     steps:
       - name: Setup miniconda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
 
       - name: Download llvmlite artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: llvmlite-osx-64-py${{ matrix.python-version }}
 
