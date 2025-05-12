@@ -4,6 +4,18 @@ Pass Timings
 
 .. currentmodule:: llvmlite.binding
 
+LLVM provides functionality to time optimization and analysis passes.
+
+New Pass Manager APIs
+=====================
+
+See :meth:`PassBuilder.start_pass_timing` and
+:meth:`PassBuilder.finish_pass_timing` in :doc:`optimization-passes`.
+
+Legacy Pass Manager APIs
+========================
+
+
 .. function:: set_time_passes(enable)
 
     Enable or disable the pass timers.

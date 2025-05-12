@@ -334,7 +334,7 @@ LLVMPY_AddLoopUnrollAndJamPass(LLVMPassManagerRef PM) {
 API_EXPORT(void)
 LLVMPY_AddLoopUnswitchPass(LLVMPassManagerRef PM, bool optimizeForSize,
                            bool hasBranchDivergence) {
-    unwrap(PM)->add(createSimpleLoopUnswitchLegacyPass(optimizeForSize));
+    unwrap(PM)->add(createSimpleLoopUnswitchLegacyPass(!optimizeForSize));
 }
 
 API_EXPORT(void)

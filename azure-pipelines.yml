@@ -3,11 +3,10 @@ jobs:
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: macOS
-    vmImage: macos-12
+    vmImage: macos-13
+    variables:
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
     matrix:
-      py39:
-        PYTHON: '3.9'
-        CONDA_ENV: cienv
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
@@ -16,6 +15,9 @@ jobs:
         CONDA_ENV: cienv
       py312:
         PYTHON: '3.12'
+        CONDA_ENV: cienv
+      py313:
+        PYTHON: '3.13'
         CONDA_ENV: cienv
 
       llvm16:
@@ -31,34 +33,35 @@ jobs:
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: Linux
-    vmImage: ubuntu-20.04
+    vmImage: ubuntu-24.04
     matrix:
-      py39:
-        PYTHON: '3.9'
-        CONDA_ENV: cienv
-        RUN_FLAKE8: yes
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
+        DIST_TEST: yes
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
         RUN_CLANG_FORMAT: yes
+        DIST_TEST: yes
       py312:
         PYTHON: '3.12'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
         RUN_CLANG_FORMAT: yes
+        DIST_TEST: yes
+      py313:
+        PYTHON: '3.13'
+        CONDA_ENV: cienv
+        RUN_FLAKE8: yes
+        RUN_CLANG_FORMAT: yes
+        DIST_TEST: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
 #         CONDA_ENV: cienv
-      py39_wheel:
-        PYTHON: '3.9'
-        CONDA_ENV: cienv
-        WHEEL: 'yes'
       py310_wheel:
         PYTHON: '3.10'
         CONDA_ENV: cienv
@@ -69,6 +72,10 @@ jobs:
         WHEEL: 'yes'
       py312_wheel:
         PYTHON: '3.12'
+        CONDA_ENV: cienv
+        WHEEL: 'yes'
+      py313_wheel:
+        PYTHON: '3.13'
         CONDA_ENV: cienv
         WHEEL: 'yes'
 
@@ -86,13 +93,3 @@ jobs:
   parameters:
     name: Windows
     vmImage: windows-2019
-
-- job: check_formatting
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-  - script: |
-      set -e
-      sudo apt install -y clang-format
-      clang-format -n -Werror ffi/*.cpp ffi/*.h
-    displayName: Check C++ formatting

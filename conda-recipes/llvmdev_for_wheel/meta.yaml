@@ -1,0 +1,81 @@
+# This file is a copy of ../llvmdev/meta.yaml with minor changes for wheel # building
+{% set shortversion = "15.0" %}
+{% set version = "15.0.7" %}
+{% set sha256_llvm = "8b5fcb24b4128cf04df1b0b9410ce8b1a729cb3c544e6da885d234280dedeac6" %}
+{% set build_number = "1" %}
+
+package:
+  name: llvmdev
+  version: {{ version }}
+
+source:
+  - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
+    sha256: {{ sha256_llvm }}
+    patches:
+    - ../llvm15-clear-gotoffsetmap.patch
+    - ../llvm15-remove-use-of-clonefile.patch
+    - ../llvm15-svml.patch
+    - ../compiler-rt-cfi-startproc-war.patch
+    - ../compiler-rt-macos-build.patch
+    # Patches from conda-forge needed for windows to build
+    # backport of zlib patches, can be dropped for vs15.0.3, see
+    # https://reviews.llvm.org/D135457 & https://reviews.llvm.org/D136065
+    - ../llvmdev/patches/0002-CMake-Fix-Findzstd-module-for-shared-DLL-on-Windows.patch
+    - ../llvmdev/patches/no-windows-symlinks.patch
+
+build:
+  number: {{ build_number }}
+  string: "manylinux"
+  script_env:
+    - CFLAGS        [linux]
+    - CXXFLAGS      [linux]
+    - PY_VCRUNTIME_REDIST
+  ignore_run_exports:
+    # Is static-linked
+    - xar
+
+requirements:
+  build:
+    # Do not use the compiler on linux
+    - {{ compiler('cxx') }}  # [not linux]
+    - cmake
+    - ninja
+    - python >=3
+    - libcxx      # it is not defined{{ cxx_compiler_version }}  # [osx]
+    - patch       # [not win]
+    - m2-patch    # [win]
+    - git         # [(linux and x86_64)]
+
+  host:
+    - libcxx    # it is not defined{{ cxx_compiler_version }}  # [osx]
+    - libffi    # [unix]
+    # # libxml2 supports a windows-only feature, see https://github.com/llvm/llvm-project/blob/llvmorg-17.0.6/llvm/include/llvm/WindowsManifest/WindowsManifestMerger.h
+    # - libxml2   # [win]
+    - zlib      # [not win]
+
+test:
+  # Unused test file
+  # files:
+  #   - numba-3016.ll
+  commands:
+    - $PREFIX/bin/llvm-config --libs                         # [not win]
+    - $PREFIX/bin/llc -version                               # [not win]
+
+    - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1        # [win]
+    - if not exist %LIBRARY_LIB%\\LLVMSupport.lib exit 1     # [win]
+
+    - test -f $PREFIX/include/llvm/Pass.h                    # [unix]
+    - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
+
+    - test -f $PREFIX/lib/libLLVMCore.a                      # [not win]
+
+    # LLD tests
+    - ld.lld --version                                       # [unix]
+    - lld-link /?                                            # [win]
+
+about:
+  home: http://llvm.org/
+  dev_url: https://github.com/llvm-mirror/llvm
+  license: NCSA
+  license_file: llvm/LICENSE.TXT
+  summary: Development headers and libraries for LLVM

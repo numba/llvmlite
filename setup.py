@@ -21,8 +21,10 @@ from distutils.spawn import spawn
 import os
 import sys
 
+import versioneer
 
-min_python_version = (3, 9)
+
+min_python_version = (3, 10)
 
 
 def _version_info_str(int_tuple):
@@ -41,9 +43,6 @@ def _guard_py_ver():
 
 
 _guard_py_ver()
-
-
-import versioneer
 
 versioneer.VCS = 'git'
 versioneer.versionfile_source = 'llvmlite/_version.py'
@@ -194,10 +193,10 @@ setup(name='llvmlite',
           "Operating System :: OS Independent",
           "Programming Language :: Python",
           "Programming Language :: Python :: 3",
-          "Programming Language :: Python :: 3.9",
-          "Programming Language :: Python :: 3.10",
+           "Programming Language :: Python :: 3.10",
           "Programming Language :: Python :: 3.11",
           "Programming Language :: Python :: 3.12",
+          "Programming Language :: Python :: 3.13",
           "Topic :: Software Development :: Code Generators",
           "Topic :: Software Development :: Compilers",
       ],

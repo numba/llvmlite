@@ -1,0 +1,244 @@
+name: llvmlite_linux-arm64_wheel_builder
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/llvmlite_linux-arm64_wheel_builder.yml
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  FALLBACK_LLVMDEV_VERSION: "15"
+  CONDA_CHANNEL_NUMBA: numba/label/manylinux2014_aarch64
+  VALIDATION_PYTHON_VERSION: "3.12"
+  ARTIFACT_RETENTION_DAYS: 7
+  MANYLINUX_IMAGE: "manylinux_2_28_aarch64"
+
+jobs:
+  linux-arm64-build:
+    name: linux-arm64-build-py${{ matrix.python-version }}
+    runs-on: ubuntu-24.04-arm
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Download llvmdev Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: llvmdev_for_wheel_linux-arm64
+          path: llvmdev_conda_packages
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
+        with:
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: true
+
+      - name: Map Python version
+        run: |
+          # Map Python version to manylinux path
+          case "${{ matrix.python-version }}" in
+            "3.10") echo "PYTHON_PATH=cp310-cp310" >> "$GITHUB_ENV" ;;
+            "3.11") echo "PYTHON_PATH=cp311-cp311" >> "$GITHUB_ENV" ;;
+            "3.12") echo "PYTHON_PATH=cp312-cp312" >> "$GITHUB_ENV" ;;
+            "3.13") echo "PYTHON_PATH=cp313-cp313" >> "$GITHUB_ENV" ;;
+            *) echo "Invalid Python version" && exit 1 ;;
+          esac
+
+          # Define Miniconda installer URL for ARM64
+          echo "MINICONDA_FILE=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh" >> "$GITHUB_ENV"
+
+      - name: Build wheel in manylinux container
+        run: |
+          # Run the build script in manylinux container using the existing script
+          docker run --rm \
+            -v "$(pwd):/root/llvmlite" \
+            quay.io/pypa/${{ env.MANYLINUX_IMAGE }} \
+            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }}"
+
+          # Create wheelhouse directory for artifact upload
+          mkdir -p wheelhouse
+
+          # The script creates output in a specific location based on architecture and Python version
+          WHEEL_DIR="docker_output/dist_aarch64_${{ env.PYTHON_PATH }}/wheelhouse"
+
+          echo "Available wheels in $WHEEL_DIR:"
+          find "$WHEEL_DIR" -type f -name "*.whl" -print
+
+          cp "$WHEEL_DIR"/*.whl wheelhouse/ || echo "Warning: No matching wheel found!"
+
+          echo "--- Final wheel for upload: ---"
+          find wheelhouse -type f -name "*.whl" -print
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: llvmlite-linux-arm64-py${{ matrix.python-version }}
+          path: wheelhouse/*.whl
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  linux-arm64-validate:
+    name: validate-py${{ matrix.python-version }}
+    needs: linux-arm64-build
+    runs-on: ubuntu-24.04-arm
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: true
+
+      - name: Install validation dependencies
+        run: conda install -c defaults wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: llvmlite-linux-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          cd dist
+          for WHL_FILE in *.whl; do
+            echo "=== Validating $WHL_FILE ==="
+            # Check wheel structure
+            twine check "$WHL_FILE"
+          done
+
+  linux-arm64-test:
+    name: test-py${{ matrix.python-version }}
+    needs: linux-arm64-build
+    runs-on: ubuntu-24.04-arm
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: llvmlite-linux-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Install and test
+        run: |
+          # Get the Python executable path
+          PYTHON_PATH=$(which python)
+
+          # Upgrade pip and install wheel
+          "${PYTHON_PATH}" -m pip install --upgrade pip wheel
+
+          # Install wheel
+          cd dist
+          # Look for wheel matching this python version
+          PY_TAG=$(python -c "import sys; print(f'cp{sys.version_info.major}{sys.version_info.minor}')")
+          # Use find instead of ls for better handling of non-alphanumeric filenames
+          whl=$(find . -type f -name "*${PY_TAG}*.whl" | sort | head -n 1)
+
+          if [ -z "$whl" ]; then
+            echo "ERROR: No matching wheel found for Python ${{ matrix.python-version }} (tag: $PY_TAG)"
+            find . -type f -name "*.whl" -print
+            exit 1
+          fi
+
+          echo "Using wheel: $whl"
+          "${PYTHON_PATH}" -m pip install -v "$whl"
+
+          # Run tests
+          "${PYTHON_PATH}" -m llvmlite.tests
+
+  linux-arm64-upload:
+    name: upload-py${{ matrix.python-version }}
+    needs: [linux-arm64-test, linux-arm64-validate]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04-arm
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: true
+
+      - name: Install anaconda-client
+        run: conda install -c anaconda anaconda-client
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: llvmlite-linux-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Upload wheel to Anaconda Cloud
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.NUMBA_CHANNEL_WHEEL_UPLOAD }}
+        run: |
+          cd dist
+          # Find appropriate wheel for Python version
+          PY_TAG="cp$(echo "${{ matrix.python-version }}" | tr -d '.')"
+          # Use find instead of ls for better handling of non-alphanumeric filenames
+          whl=$(find . -type f -name "*${PY_TAG}*.whl" | sort | head -n 1)
+
+          if [ -z "$whl" ]; then
+            echo "ERROR: No matching wheel found for Python ${{ matrix.python-version }}"
+            find . -type f -name "*.whl" -print
+            exit 1
+          fi
+
+          echo "Uploading wheel: $whl"
+          anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"
