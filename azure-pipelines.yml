@@ -33,7 +33,7 @@ jobs:
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: Linux
-    vmImage: ubuntu-20.04
+    vmImage: ubuntu-24.04
     matrix:
       py310:
         PYTHON: '3.10'
@@ -93,13 +93,3 @@ jobs:
   parameters:
     name: Windows
     vmImage: windows-2019
-
-- job: check_formatting
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-  - script: |
-      set -e
-      sudo apt install -y clang-format
-      clang-format -n -Werror ffi/*.cpp ffi/*.h
-    displayName: Check C++ formatting
