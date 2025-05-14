@@ -37,7 +37,7 @@ jobs:
           activate-environment: ""
 
       - name: Install conda-build
-        run: conda install -y conda-build
+        run: conda install conda-build
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
@@ -92,7 +92,7 @@ jobs:
 
       - name: Install conda-build and llvmlite
         run: |
-          conda install -y conda-build
+          conda install conda-build
 
       - name: Run tests
         run: conda build --test linux-aarch64/llvmlite*.conda

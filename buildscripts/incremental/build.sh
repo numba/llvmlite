@@ -50,7 +50,7 @@ fi
 set -v -e
 
 if [ "$WHEEL" == "yes" ]; then
-  conda install -y wheel
+  conda install wheel
   python setup.py bdist_wheel
   pip install dist/*.whl
 else
