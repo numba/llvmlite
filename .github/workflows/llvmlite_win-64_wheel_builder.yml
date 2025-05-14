@@ -17,7 +17,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  LOCAL_LLVMDEV_ARTIFACT_PATH: ${{ github.workspace }}/llvmdev_conda_packages
   FALLBACK_LLVMDEV_VERSION: "15"
   CONDA_CHANNEL_NUMBA: numba/label/win64_wheel
   VALIDATION_PYTHON_VERSION: "3.12"
@@ -63,7 +62,7 @@ jobs:
         run: |
           set -x
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+              CHAN="${{ github.workspace }}/llvmdev_conda_packages"
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
