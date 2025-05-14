@@ -84,7 +84,7 @@ jobs:
           python -m pip install wheel
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
-          bash "$GITHUB_WORKSPACE/buildscripts/github/patch_osx64_wheel.sh" "$whl"
+          bash "$GITHUB_WORKSPACE/buildscripts/github/patch_osx-64_wheel.sh" "$whl"
 
       - name: Upload wheel
         uses: actions/upload-artifact@v4
@@ -133,7 +133,7 @@ jobs:
       - name: Validate wheels
         run: |
           cd dist
-          bash "$GITHUB_WORKSPACE/buildscripts/github/validate_osx64_wheel.sh"
+          bash "$GITHUB_WORKSPACE/buildscripts/github/validate_osx-64_wheel.sh"
 
   osx-64-test:
     name: osx-64-test
