@@ -156,8 +156,8 @@ jobs:
 
           # Install wheel and run tests
           cd dist
-          # Windows compatible way to get the wheel file
-          whl=$(dir /b *.whl)
+          # Windows compatible way to get the wheel file using bash
+          whl=$(ls -1 *.whl)
           echo "Using wheel: $whl"
           python -m pip install "$whl"
 
