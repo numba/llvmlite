@@ -57,7 +57,7 @@ jobs:
       - name: Build llvmlite conda package
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              LLVMDEV_CHANNEL="file://$PWD/llvmdev_conda_packages"
+              LLVMDEV_CHANNEL="${{ github.workspace }}/llvmdev_conda_packages"
           else
               LLVMDEV_CHANNEL="numba"
           fi
@@ -98,7 +98,7 @@ jobs:
         with:
           name: llvmlite-osx-arm64-py${{ matrix.python-version }}
 
-      - name: Install conda-build and llvmlite
+      - name: Install conda-build
         run: |
           conda install conda-build
 
