@@ -16,7 +16,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  LOCAL_LLVMDEV_ARTIFACT_PATH: ${{ github.workspace }}/llvmdev_conda_packages
   FALLBACK_LLVMDEV_VERSION: "15"
   CONDA_CHANNEL_NUMBA: numba/label/osx_wheel
   VALIDATION_PYTHON_VERSION: "3.12"
@@ -61,14 +60,14 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+              CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
           conda install -c "$CHAN" llvmdev="${{ env.FALLBACK_LLVMDEV_VERSION }}" python-build -y
 
           # Hide libunwind to prevent it from being linked against during build
-          # On macOS, if libunwind.dylib from the llvmdev conda package gets linked, the resulting wheel 
+          # On macOS, if libunwind.dylib from the llvmdev conda package gets linked, the resulting wheel
           # will have a runtime dependency on @rpath/libunwind.1.dylib.
           # This breaks the wheel in clean environments, causing `OSError: Library not loaded: @rpath/libunwind.1.dylib`
           # refer for detailed logs: https://gist.github.com/swap357/94d468e192ef9f4b12657cef26bb8779
