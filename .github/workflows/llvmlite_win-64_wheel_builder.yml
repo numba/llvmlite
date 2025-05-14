@@ -151,20 +151,17 @@ jobs:
 
       - name: Install and test
         run: |
-          # Get the Python executable path
-          PYTHON_PATH=$(which python${{ matrix.python-version }})
-
           # Upgrade pip and install wheel
-          $PYTHON_PATH -m pip install --upgrade pip wheel
+          python -m pip install --upgrade pip wheel
 
           # Install wheel and run tests
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           echo "Using wheel: $whl"
-          $PYTHON_PATH -m pip install $whl
+          python -m pip install $whl
 
           # Run tests
-          $PYTHON_PATH -m llvmlite.tests
+          python -m llvmlite.tests
 
   win-64-upload:
     name: win-64-upload
