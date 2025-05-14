@@ -61,7 +61,7 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="file:///${{ github.workspace }}/llvmdev_conda_packages"
+              CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
@@ -119,7 +119,7 @@ jobs:
           cd dist
           for WHL_FILE in *.whl; do
             wheel unpack "$WHL_FILE"
-            python "$GITHUB_WORKSPACE"/buildscripts/github/validate_win64_wheel.py llvmlite/binding/llvmlite.dll
+            python "$GITHUB_WORKSPACE"/buildscripts/github/validate_win-64_wheel.py llvmlite/binding/llvmlite.dll
             twine check "$WHL_FILE"
           done
 
