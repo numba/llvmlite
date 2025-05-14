@@ -199,6 +199,6 @@ jobs:
           ANACONDA_API_TOKEN: ${{ secrets.NUMBA_CHANNEL_WHEEL_UPLOAD }}
         run: |
           cd dist
-          whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
+          whl=$(ls -1 ./*.whl)
           echo "Uploading wheel: $whl"
           anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"
