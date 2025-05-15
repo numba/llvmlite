@@ -554,6 +554,27 @@ LLVMPY_buildFunctionSimplificationPipeline(LLVMPassBuilderRef PBref,
     return llvm::wrap(FPM);
 }
 
+// TODO: From LLVM 16 SROA takes parameter whether to preserve cfg or not which
+// can be exposed in the Python API https://reviews.llvm.org/D138238
+API_EXPORT(void)
+LLVMPY_module_AddSROAPass(LLVMModulePassManagerRef MPM) {
+#if LLVM_VERSION_MAJOR < 16
+    llvm::unwrap(MPM)->addPass(createModuleToFunctionPassAdaptor(SROAPass()));
+#else
+    llvm::unwrap(MPM)->addPass(
+        createModuleToFunctionPassAdaptor(SROAPass(PreserveCFG = true)));
+#endif
+}
+
+API_EXPORT(void)
+LLVMPY_function_AddSROAPass(LLVMFunctionPassManagerRef FPM) {
+#if LLVM_VERSION_MAJOR < 16
+    llvm::unwrap(FPM)->addPass(SROAPass());
+#else
+    llvm::unwrap(FPM)->addPass(SROAPass(true));
+#endif
+}
+
 API_EXPORT(void)
 LLVMPY_module_AddModuleDebugInfoPrinterPass(LLVMModulePassManagerRef MPM) {
     llvm::unwrap(MPM)->addPass(ModuleDebugInfoPrinterPass(llvm::outs()));
@@ -592,31 +613,5 @@ LLVMPY_module_AddModuleDebugInfoPrinterPass(LLVMModulePassManagerRef MPM) {
         llvm::unwrap(FPM)->addPass(createFunctionToLoopPassAdaptor(NAME()));   \
     }
 #include "PASSREGISTRY.def"
-
-API_EXPORT(const char *)
-LLVMPY_getModuleLevelPasses() {
-    std::string module_passes;
-
-#define MODULE_PASS(NAME) module_passes = module_passes + " " + TOSTRING(NAME);
-#define FUNCTION_PASS(NAME)                                                    \
-    module_passes = module_passes + " " + TOSTRING(NAME);
-#define LOOP_PASS(NAME) module_passes = module_passes + " " + TOSTRING(NAME);
-#include "PASSREGISTRY.def"
-
-    return LLVMPY_CreateString(module_passes.c_str());
-}
-
-API_EXPORT(const char *)
-LLVMPY_getFunctionLevelPasses() {
-    std::string function_passes;
-
-#define FUNCTION_PASS(NAME)                                                    \
-    function_passes = function_passes + " " + TOSTRING(NAME);
-#define LOOP_PASS(NAME)                                                        \
-    function_passes = function_passes + " " + TOSTRING(NAME);
-#include "PASSREGISTRY.def"
-
-    return LLVMPY_CreateString(function_passes.c_str());
-}
 
 } // end extern "C"

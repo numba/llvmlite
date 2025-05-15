@@ -1,7 +1,6 @@
 from ctypes import c_bool, c_int, c_size_t, c_char_p, POINTER
 from enum import IntFlag
 from llvmlite.binding import ffi
-from llvmlite.binding.common import _decode_string
 
 
 def create_new_module_pass_manager():
@@ -26,18 +25,6 @@ class RefPruneSubpasses(IntFlag):
     FANOUT       = 0b0100    # noqa: E221
     FANOUT_RAISE = 0b1000
     ALL = PER_BB | DIAMOND | FANOUT | FANOUT_RAISE
-
-
-def get_module_level_passes():
-    passes = _decode_string(ffi.lib.LLVMPY_getModuleLevelPasses())
-    passes = [p for p in passes.split(' ') if len(p) > 0]
-    return passes
-
-
-def get_function_level_passes():
-    passes = _decode_string(ffi.lib.LLVMPY_getFunctionLevelPasses())
-    passes = [p for p in passes.split(' ') if len(p) > 0]
-    return passes
 
 
 class NewPassManager():
@@ -244,13 +231,11 @@ class NewPassManager():
         else:
             ffi.lib.LLVMPY_function_AddRegToMemPass(self)
 
-    # FIXME: SROA now takes parameter whether to preserve cfg or not
-    # https://reviews.llvm.org/D138238
-    # def add_sroa_pass(self):
-    #     if isinstance(self, ModulePassManager):
-    #         ffi.lib.LLVMPY_module_AddSROAPass(self)
-    #     else:
-    #         ffi.lib.LLVMPY_function_AddSROAPass(self)
+    def add_sroa_pass(self):
+        if isinstance(self, ModulePassManager):
+            ffi.lib.LLVMPY_module_AddSROAPass(self)
+        else:
+            ffi.lib.LLVMPY_function_AddSROAPass(self)
 
     def add_sinking_pass(self):
         if isinstance(self, ModulePassManager):
@@ -660,8 +645,8 @@ ffi.lib.LLVMPY_module_AddReassociatePass.argtypes = [
 ffi.lib.LLVMPY_module_AddRegToMemPass.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
-# ffi.lib.LLVMPY_module_AddSROAPass.argtypes = [
-#     ffi.LLVMModulePassManagerRef,]
+ffi.lib.LLVMPY_module_AddSROAPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
 
 ffi.lib.LLVMPY_module_AddSinkingPass.argtypes = [
     ffi.LLVMModulePassManagerRef,]
@@ -847,9 +832,8 @@ ffi.lib.LLVMPY_function_AddReassociatePass.argtypes = [
 ffi.lib.LLVMPY_function_AddRegToMemPass.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]
 
-# FIXME SROA is disabled
-# ffi.lib.LLVMPY_function_AddSROAPass.argtypes = [
-#     ffi.LLVMFunctionPassManagerRef, ]
+ffi.lib.LLVMPY_function_AddSROAPass.argtypes = [
+    ffi.LLVMFunctionPassManagerRef, ]
 
 ffi.lib.LLVMPY_function_AddSinkingPass.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]
@@ -951,6 +935,3 @@ ffi.lib.LLVMPY_buildFunctionSimplificationPipeline.restype = \
 
 ffi.lib.LLVMPY_buildFunctionSimplificationPipeline.argtypes = [
     ffi.LLVMPassBuilderRef, c_int, c_int]
-
-ffi.lib.LLVMPY_getFunctionLevelPasses.restype = c_char_p
-ffi.lib.LLVMPY_getModuleLevelPasses.restype = c_char_p

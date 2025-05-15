@@ -1,3 +1,5 @@
+# Demonstrates the printer and view passes in the new pass manager
+
 try:
     import faulthandler; faulthandler.enable()
 except ImportError:
@@ -80,6 +82,7 @@ pm.add_dom_only_printer_pass()
 pm.add_post_dom_printer_pass()
 pm.add_post_dom_only_printer_pass()
 pm.add_dom_only_printer_pass()
+# Uncomment the following to launch viewers as required
 # pm.add_post_dom_viewer_pass()
 # pm.add_dom_viewer_pass()
 # pm.add_post_dom_only_viewer_pass()
