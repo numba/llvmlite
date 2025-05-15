@@ -16,7 +16,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  LOCAL_LLVMDEV_ARTIFACT_PATH: ${{ github.workspace }}/llvmdev_conda_packages
   FALLBACK_LLVMDEV_VERSION: "15"
   CONDA_CHANNEL_NUMBA: numba/label/osx_wheel
   VALIDATION_PYTHON_VERSION: "3.12"
@@ -61,13 +60,17 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+              CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
           conda install -c "$CHAN" llvmdev="${{ env.FALLBACK_LLVMDEV_VERSION }}" python-build -y
 
           # Hide libunwind to prevent it from being linked against during build
+          # On macOS, if libunwind.dylib from the llvmdev conda package gets linked, the resulting wheel
+          # will have a runtime dependency on @rpath/libunwind.1.dylib.
+          # This breaks the wheel in clean environments, causing `OSError: Library not loaded: @rpath/libunwind.1.dylib`
+          # Please refer here for detailed logs: https://gist.github.com/swap357/94d468e192ef9f4b12657cef26bb8779
           mkdir -p "$CONDA_PREFIX/lib/hide_unwind"
           mv "$CONDA_PREFIX/lib/libunwind"*.dylib "$CONDA_PREFIX/lib/hide_unwind/" 2>/dev/null || true
 
@@ -77,19 +80,6 @@ jobs:
           LDFLAGS: "-v -Wl,-rpath,/usr/lib"
         run: |
           arch -arm64 python -m build --verbose --config-setting="--global-option=build_ext" --config-setting="--global-option=-v"
-
-      - name: Inspect wheel
-        run: |
-          mkdir -p wheel_contents && cd wheel_contents
-          python -m wheel unpack ../dist/*.whl
-          DYLIB=$(find . -iname "libllvmlite.dylib")
-          if [ -n "$DYLIB" ]; then
-            echo "Found dylib at: $DYLIB" && otool -L "$DYLIB"
-          else
-            echo "Error: libllvmlite.dylib not found in wheel"
-            exit 1
-          fi
-          cd .. && rm -rf wheel_contents
 
       - name: Upload wheel
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

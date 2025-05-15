@@ -16,7 +16,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  LOCAL_LLVMDEV_ARTIFACT_PATH: ${{ github.workspace }}/llvmdev_conda_packages
   FALLBACK_LLVMDEV_VERSION: "15"
   CONDA_CHANNEL_NUMBA: numba/label/osx_wheel
   VALIDATION_PYTHON_VERSION: "3.12"
@@ -61,56 +60,34 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="file:///${{ env.LOCAL_LLVMDEV_ARTIFACT_PATH }}"
+              CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
           conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
+
+          # Hide libunwind to prevent it from being linked against during build
+          # On macOS, if libunwind.dylib from the llvmdev conda package gets linked, the resulting wheel
+          # will have a runtime dependency on @rpath/libunwind.1.dylib.
+          # This breaks the wheel in clean environments, causing `OSError: Library not loaded: @rpath/libunwind.1.dylib`
+          # Please refer here for detailed logs: https://gist.github.com/swap357/94d468e192ef9f4b12657cef26bb8779
+          mkdir -p "$CONDA_PREFIX/lib/hide_unwind"
+          mv "$CONDA_PREFIX/lib/libunwind"*.dylib "$CONDA_PREFIX/lib/hide_unwind/" 2>/dev/null || true
 
       - name: Select Xcode 14.1
         run: sudo xcode-select -s /Applications/Xcode_14.1.0.app
 
       - name: Build wheel
         env:
-          MACOSX_DEPLOYMENT_TARGET: "13.0"
+          MACOSX_DEPLOYMENT_TARGET: "10.15"
         run: python -m build
 
       - name: Fix macOS wheel library paths
         run: |
+          python -m pip install wheel
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
-          echo "Processing wheel: $whl"
-
-          # Unpack the wheel
-          wheel unpack "$whl"
-
-          # Get into the unpacked directory
-          target_dir=$(echo "$whl" | cut -d "-" -f1 -f2)
-          cd "$target_dir"
-
-          # Find the dylib
-          target=$(find . -iname "libllvmlite.dylib")
-          echo "Found dylib at: $target"
-
-          echo "=== BEFORE ==="
-          otool -L "$target"
-
-          # Fix all @rpath libraries
-          install_name_tool -change "@rpath/libz.1.dylib" "/usr/lib/libz.1.dylib" "$target"
-          install_name_tool -change "@rpath/libc++.1.dylib" "/usr/lib/libc++.1.dylib" "$target"
-          install_name_tool -change "@rpath/libunwind.1.dylib" "/usr/lib/libunwind.1.dylib" "$target"
-
-          echo "=== AFTER ==="
-          otool -L "$target"
-
-          echo "=== $target_dir contents ==="
-          find . -ls
-          echo "=== Write back to wheel ==="
-          cd ..
-          wheel pack "$target_dir"
-
-          echo "=== Final wheel filename ==="
-          ls -la ./*.whl # List wheel in dist dir
+          bash "$GITHUB_WORKSPACE/buildscripts/github/patch_osx-64_wheel.sh" "$whl"
 
       - name: Upload wheel
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -159,35 +136,7 @@ jobs:
       - name: Validate wheels
         run: |
           cd dist
-
-          for WHL_FILE in *.whl; do
-            echo "=== Validating $WHL_FILE ==="
-
-            # Check wheel structure
-            twine check "$WHL_FILE"
-
-            # Check dylib paths
-            wheel unpack "$WHL_FILE"
-            WHEEL_DIR=$(echo "$WHL_FILE" | cut -d "-" -f1 -f2)
-            DYLIB=$(find "$WHEEL_DIR" -iname "libllvmlite.dylib")
-
-            if [ -z "$DYLIB" ]; then
-              echo "Error: libllvmlite.dylib not found in $WHL_FILE"
-              exit 1
-            fi
-
-            echo "=== Checking dynamic library dependencies ==="
-            otool -L "$DYLIB"
-
-            # Verify library paths
-            LIBS=("libz.1.dylib" "libc++.1.dylib")
-            for LIB in "${LIBS[@]}"; do
-              if ! otool -L "$DYLIB" | grep -q "/usr/lib/$LIB"; then
-                echo "Error: $LIB path is incorrect in $WHL_FILE"
-                exit 1
-              fi
-            done
-          done
+          bash "$GITHUB_WORKSPACE/buildscripts/github/validate_osx-64_wheel.sh"
 
   osx-64-test:
     name: osx-64-test
@@ -267,4 +216,4 @@ jobs:
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           echo "Uploading wheel: $whl"
-          anaconda -t $ANACONDA_API_TOKEN upload --force -u numba -l dev "$whl"
+          anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"
