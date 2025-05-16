@@ -51,3 +51,8 @@ auditwheel --verbose repair *.whl
 
 cd wheelhouse
 ls
+
+
+# Verify & Test
+pip install *.whl
+python -m llvmlite.tests -vb
