@@ -562,7 +562,7 @@ LLVMPY_module_AddSROAPass(LLVMModulePassManagerRef MPM) {
     llvm::unwrap(MPM)->addPass(createModuleToFunctionPassAdaptor(SROAPass()));
 #else
     llvm::unwrap(MPM)->addPass(
-        createModuleToFunctionPassAdaptor(SROAPass(PreserveCFG = true)));
+        createModuleToFunctionPassAdaptor(SROAPass(SROAOptions::PreserveCFG)));
 #endif
 }
 
@@ -571,7 +571,7 @@ LLVMPY_function_AddSROAPass(LLVMFunctionPassManagerRef FPM) {
 #if LLVM_VERSION_MAJOR < 16
     llvm::unwrap(FPM)->addPass(SROAPass());
 #else
-    llvm::unwrap(FPM)->addPass(SROAPass(true));
+    llvm::unwrap(FPM)->addPass(SROAPass(SROAOptions::PreserveCFG));
 #endif
 }
 
