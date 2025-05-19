@@ -59,8 +59,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build llvmlite conda package
-        env:
-          CONDA_BUILD_SYSROOT: /opt/MacOSX10.10.sdk
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
               LLVMDEV_CHANNEL="file://$PWD/llvmdev_conda_packages"
@@ -69,7 +67,7 @@ jobs:
           fi
           CONDA_CHANNEL_DIR="conda_channel_dir"
           mkdir $CONDA_CHANNEL_DIR
-          conda build --debug -c "$LLVMDEV_CHANNEL" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder=$CONDA_CHANNEL_DIR --no-test
+          conda build --debug -c "$LLVMDEV_CHANNEL" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder=$CONDA_CHANNEL_DIR --no-test --variants '{"CONDA_BUILD_SYSROOT": "/opt/MacOSX10.10.sdk"}'
 
       - name: Upload llvmlite conda package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
