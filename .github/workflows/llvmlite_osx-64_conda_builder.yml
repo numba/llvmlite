@@ -102,7 +102,7 @@ jobs:
         with:
           name: llvmlite-osx-64-py${{ matrix.python-version }}
 
-      - name: Install conda-build and llvmlite
+      - name: Install conda-build
         run: |
           conda install conda-build
 
