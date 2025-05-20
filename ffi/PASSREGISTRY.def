@@ -13,6 +13,7 @@ MODULE_PASS(GlobalDCEPass)
 MODULE_PASS(GlobalOptPass)
 MODULE_PASS(IPSCCPPass)
 MODULE_PASS(InternalizePass)
+MODULE_PASS(LoopExtractorPass)    // TODO: This can take a NumLoops parameter
 MODULE_PASS(MergeFunctionsPass)
 MODULE_PASS(PartialInlinerPass)
 MODULE_PASS(StripSymbolsPass)
@@ -72,6 +73,7 @@ FUNCTION_PASS(InstructionNamerPass)
 LOOP_PASS(LoopRotatePass)
 LOOP_PASS(LoopDeletionPass)
 LOOP_PASS(LoopStrengthReducePass)
+LOOP_PASS(LoopUnrollAndJamPass)
 #undef LOOP_PASS
 
 #ifndef CGSCC_PASS

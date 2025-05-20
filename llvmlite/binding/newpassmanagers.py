@@ -183,6 +183,12 @@ class NewPassManager():
         else:
             ffi.lib.LLVMPY_function_AddLoopSimplifyPass(self)
 
+    def add_loop_unroll_and_jam_pass(self):
+        if isinstance(self, ModulePassManager):
+            ffi.lib.LLVMPY_module_AddLoopUnrollAndJamPass(self)
+        else:
+            ffi.lib.LLVMPY_function_AddLoopUnrollAndJamPass(self)
+
     def add_sccp_pass(self):
         if isinstance(self, ModulePassManager):
             ffi.lib.LLVMPY_module_AddSCCPPass(self)
@@ -321,6 +327,9 @@ class ModulePassManager(ffi.ObjectRef, NewPassManager):
 
     def add_internalize_pass(self):
         ffi.lib.LLVMPY_module_AddInternalizePass(self)
+
+    def add_loop_extract_pass(self):
+        ffi.lib.LLVMPY_module_AddLoopExtractorPass(self)
 
     def add_merge_functions_pass(self):
         ffi.lib.LLVMPY_module_AddMergeFunctionsPass(self)
@@ -621,6 +630,9 @@ ffi.lib.LLVMPY_module_AddNewGVNPass.argtypes = [
 ffi.lib.LLVMPY_module_AddLoopSimplifyPass.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
+ffi.lib.LLVMPY_module_AddLoopUnrollAndJamPass.argtypes = [
+    ffi.LLVMModulePassManagerRef,]
+
 ffi.lib.LLVMPY_module_AddSCCPPass.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
@@ -691,6 +703,9 @@ ffi.lib.LLVMPY_module_AddIPSCCPPass.argtypes = [
     ffi.LLVMModulePassManagerRef, ]
 
 ffi.lib.LLVMPY_module_AddInternalizePass.argtypes = [
+    ffi.LLVMModulePassManagerRef, ]
+
+ffi.lib.LLVMPY_module_AddLoopExtractorPass.argtypes = [
     ffi.LLVMModulePassManagerRef, ]
 
 ffi.lib.LLVMPY_module_AddMergeFunctionsPass.argtypes = [
@@ -806,6 +821,9 @@ ffi.lib.LLVMPY_function_AddNewGVNPass.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]
 
 ffi.lib.LLVMPY_function_AddLoopSimplifyPass.argtypes = [
+    ffi.LLVMFunctionPassManagerRef, ]
+
+ffi.lib.LLVMPY_function_AddLoopUnrollAndJamPass.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]
 
 ffi.lib.LLVMPY_function_AddSCCPPass.argtypes = [
