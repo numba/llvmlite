@@ -13,7 +13,7 @@ cd build
 
 export CPU_COUNT=4
 
-CMAKE_ARGS="${CMAKE_ARGS} -DLLVM_ENABLE_PROJECTS=lld;libunwind;compiler-rt"
+CMAKE_ARGS="${CMAKE_ARGS} -DLLVM_ENABLE_PROJECTS=lld -DLLVM_ENABLE_RUNTIMES=libunwind;compiler-rt"
 
 if [[ "$target_platform" == "linux-64" ]]; then
   CMAKE_ARGS="${CMAKE_ARGS} -DLLVM_USE_INTEL_JITEVENTS=ON"
