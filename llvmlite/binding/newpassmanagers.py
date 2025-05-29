@@ -70,6 +70,11 @@ def dump_refprune_stats(printout=False):
                       stats.fanout_raise)
 
 
+# TODO: Rename and add tests for these
+# Although new pass manager has its own timing APIs, we still need to support
+# the legacy ones as LLVM backend still used the LegacyPassManager. These APIs
+# will be used to time the backend passes such as instruction selection,
+# regalloc, etc
 def set_time_passes(enable):
     """Enable or disable the pass timers.
 
@@ -627,6 +632,10 @@ class PassBuilder(ffi.ObjectRef):
 # FFI
 
 ffi.lib.LLVMPY_DumpRefPruneStats.argtypes = [POINTER(_c_PruneStats), c_bool]
+
+ffi.lib.LLVMPY_SetTimePasses.argtypes = [c_bool]
+
+ffi.lib.LLVMPY_ReportAndResetTimings.argtypes = [POINTER(c_char_p)]
 
 # ModulePassManager
 
