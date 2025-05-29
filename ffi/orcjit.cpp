@@ -198,8 +198,6 @@ LLVMPY_LLJIT_Link(std::shared_ptr<LLJIT> *lljit, const char *libraryName,
         ExecutorSymbolDef symbol(ExecutorAddr(imports[import_idx].address),
                                  JITSymbolFlags::Exported);
 
-        llvm::orc::SymbolMap sym_map;
-        sym_map[mangled] = symbol;
         auto error = dylib->define(absoluteSymbols({{mangled, symbol}}));
 
         if (error) {
