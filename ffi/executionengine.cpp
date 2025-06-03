@@ -8,10 +8,12 @@
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/ExecutionEngine/ObjectCache.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Object/Archive.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/ObjectFile.h"
+#include "llvm/Support/Errc.h"
 #include "llvm/Support/Memory.h"
-
+#include "llvm/Support/MemoryBuffer.h"
 #include <cstdio>
 #include <memory>
 
@@ -173,6 +175,35 @@ LLVMPY_MCJITAddObjectFile(LLVMExecutionEngineRef EE, LLVMObjectFileRef ObjF) {
 
     engine->addObjectFile(
         {std::move(binary_tuple.first), std::move(binary_tuple.second)});
+}
+
+API_EXPORT(int)
+LLVMPY_MCJITAddArchive(LLVMExecutionEngineRef EE, const char *ArchiveName,
+                       const char **OutError) {
+    using namespace llvm;
+    using namespace llvm::object;
+    auto engine = unwrap(EE);
+
+    auto ArBufOrErr = MemoryBuffer::getFile(ArchiveName);
+
+    if (!ArBufOrErr) {
+        std::error_code EC = ArBufOrErr.getError();
+        *OutError = LLVMPY_CreateString(EC.message().c_str());
+        return 1;
+    }
+
+    auto ArchiveOrError = Archive::create(ArBufOrErr.get()->getMemBufferRef());
+
+    if (!ArchiveOrError) {
+        LLVMErrorRef errorRef = wrap(ArchiveOrError.takeError());
+        *OutError = LLVMPY_CreateString(LLVMGetErrorMessage(errorRef));
+        return 1;
+    }
+
+    OwningBinary<object::Archive> owningBinaryArchive(
+        std::move(*ArchiveOrError), std::move(*ArBufOrErr));
+    engine->addArchive(std::move(owningBinaryArchive));
+    return 0;
 }
 
 //
