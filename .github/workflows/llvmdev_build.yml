@@ -100,7 +100,11 @@ jobs:
         run: |
           set -x
           mkdir "${CONDA_CHANNEL_DIR}"
-          conda build "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
+          VARIANTS_ARG=""
+          if [[ "${{ matrix.platform }}" == "osx-64" ]]; then
+            VARIANTS_ARG="--variants '{\"CONDA_BUILD_SYSROOT\": \"/opt/MacOSX10.10.sdk\"}'"
+          fi
+          conda build "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}" ${VARIANTS_ARG}
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Upload conda package
