@@ -12,8 +12,6 @@
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "llvm/IR/LegacyPassManager.h"
-
 #include "llvm/InitializePasses.h"
 #include "llvm/LinkAllPasses.h"
 
@@ -24,11 +22,6 @@
 #define DEBUG_PRINT 0
 
 using namespace llvm;
-
-namespace llvm {
-void initializeRefNormalizeLegacyPassPass(PassRegistry &Registry);
-void initializeRefPruneLegacyPassPass(PassRegistry &Registry);
-} // namespace llvm
 
 namespace llvm {
 struct OpaqueModulePassManager;
@@ -960,7 +953,7 @@ struct RefPrune {
                 auto name = dyn_cast<StoreInst>(&instruction)
                                 ->getPointerOperand()
                                 ->getName();
-                if (name.equals("excinfo") &&
+                if (name.compare("excinfo") == 0 &&
                     instruction.hasMetadata("numba_exception_output")) {
                     return true;
                 }
@@ -1192,83 +1185,20 @@ class RefNormalizePass : public PassInfoMixin<RefNormalizePass> {
     RefNormalizePass() = default;
 
     PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM) {
-        RefNormalize().runOnFunction(F);
+        if (RefNormalize().runOnFunction(F)) {
+            return PreservedAnalyses::none();
+        }
 
         return PreservedAnalyses::all();
     }
 };
-
-class RefNormalizeLegacyPass : public FunctionPass {
-  public:
-    static char ID;
-    RefNormalizeLegacyPass() : FunctionPass(ID) {
-        initializeRefNormalizeLegacyPassPass(*PassRegistry::getPassRegistry());
-    }
-
-    bool runOnFunction(Function &F) override {
-        return RefNormalize().runOnFunction(F);
-    };
-};
-
-class RefPruneLegacyPass : public FunctionPass {
-
-  public:
-    static char ID; // Pass identification, replacement for typeid
-    // The maximum number of nodes that the fanout pruners will look at.
-    size_t subgraph_limit;
-    Subpasses flags;
-    RefPruneLegacyPass(Subpasses flags = Subpasses::All,
-                       size_t subgraph_limit = -1)
-        : FunctionPass(ID), flags(flags), subgraph_limit(subgraph_limit) {
-        initializeRefPruneLegacyPassPass(*PassRegistry::getPassRegistry());
-    }
-
-    bool runOnFunction(Function &F) override {
-        auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-
-        auto &PDT =
-            getAnalysis<PostDominatorTreeWrapperPass>().getPostDomTree();
-
-        return RefPrune(DT, PDT, flags, subgraph_limit).runOnFunction(F);
-    };
-
-    /**
-     * getAnalysisUsage() LLVM plumbing for the pass
-     */
-    void getAnalysisUsage(AnalysisUsage &Info) const override {
-        Info.addRequired<DominatorTreeWrapperPass>();
-        Info.addRequired<PostDominatorTreeWrapperPass>();
-    }
-};
-
-char RefNormalizeLegacyPass::ID = 0;
-char RefPruneLegacyPass::ID = 0;
 
 size_t RefPrune::stats_per_bb = 0;
 size_t RefPrune::stats_diamond = 0;
 size_t RefPrune::stats_fanout = 0;
 size_t RefPrune::stats_fanout_raise = 0;
 
-INITIALIZE_PASS(RefNormalizeLegacyPass, "nrtRefNormalize",
-                "Normalize NRT refops", false, false)
-
-INITIALIZE_PASS_BEGIN(RefPruneLegacyPass, "nrtRefPruneLegacyPass",
-                      "Prune NRT refops", false, false)
-INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(PostDominatorTreeWrapperPass)
-
-INITIALIZE_PASS_END(RefPruneLegacyPass, "RefPruneLegacyPass",
-                    "Prune NRT refops", false, false)
-
 extern "C" {
-
-API_EXPORT(void)
-LLVMPY_AddLegacyRefPrunePass(LLVMPassManagerRef PM, int subpasses,
-                             size_t subgraph_limit) {
-    unwrap(PM)->add(new RefNormalizeLegacyPass());
-    unwrap(PM)->add(
-        new RefPruneLegacyPass((Subpasses)subpasses, subgraph_limit));
-}
 
 API_EXPORT(void)
 LLVMPY_AddRefPrunePass_module(LLVMModulePassManagerRef MPM, int subpasses,
