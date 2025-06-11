@@ -23,7 +23,6 @@ requirements:
     # build.sh deals with it!
     - {{ compiler('c') }}  # [not osx]
     - {{ compiler('cxx') }}  # [not osx]
-    - vs2022_{{ target_platform  }}    # [win]
     # The DLL build uses cmake on Windows
     - cmake          # [win]
     - make           # [unix]
@@ -32,14 +31,14 @@ requirements:
     - setuptools
     # On channel https://anaconda.org/numba/
     - llvmdev 15.*
-    - vs2022_runtime # [win]
+    - vs2015_runtime # [win]
     # llvmdev is built with libz compression support
     - zlib           # [unix]
     # requires libxml2
     - libxml2        # [win]
   run:
     - python >=3.10
-    - vs2022_runtime # [win]
+    - vs2015_runtime # [win]
     # osx has dynamically linked libstdc++
     - libcxx >=4.0.1 # [osx]
     - zlib

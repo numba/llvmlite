@@ -1,4 +1,3 @@
-
 name: llvmlite_win-64_conda_builder
 
 on:
@@ -41,6 +40,9 @@ jobs:
           auto-update-conda: true
           auto-activate-base: true
           activate-environment: ""
+
+      - name: Check available VS toolsets
+        run: ls -l "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/"
 
       - name: Install conda-build
         run: conda install conda-build
