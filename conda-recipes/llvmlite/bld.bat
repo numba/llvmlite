@@ -12,7 +12,7 @@ if "%ARCH%"=="32" (
     set CMAKE_GENERATOR_ARCH=x64
 )
 set CMAKE_GENERATOR=Visual Studio 17 2022
-set CMAKE_GENERATOR_TOOLKIT=v141
+set CMAKE_GENERATOR_TOOLKIT=v143
 
 @rem Ensure there are no build leftovers (CMake can complain)
 if exist ffi\build rmdir /S /Q ffi\build
