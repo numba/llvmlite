@@ -3,11 +3,11 @@ set CMAKE_PREFIX_PATH=%LIBRARY_PREFIX%
 
 @rem VS2022 uses a different naming convention for platforms than older version
 if "%ARCH%"=="32" (
-    @rem VS2019/2022:
+    @rem 2022:
     @rem set CMAKE_GENERATOR_ARCH=
     set CMAKE_GENERATOR_ARCH=Win32
 ) else (
-    @rem VS2019/2022
+    @rem 2022
     @rem set CMAKE_GENERATOR_ARCH=Win64
     set CMAKE_GENERATOR_ARCH=x64
 )
