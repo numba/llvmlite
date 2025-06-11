@@ -23,6 +23,7 @@ requirements:
     # build.sh deals with it!
     - {{ compiler('c') }}  # [not osx]
     - {{ compiler('cxx') }}  # [not osx]
+    - vs2022_{{ target_platform }} # [win]
     # The DLL build uses cmake on Windows
     - cmake          # [win]
     - make           # [unix]
