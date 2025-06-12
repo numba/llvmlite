@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.5)
 
 # This will define the name of the solution file in the build directory
@@ -28,6 +27,7 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 # for your compiler.
 
 include_directories(${LLVM_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
 # Look for SVML
