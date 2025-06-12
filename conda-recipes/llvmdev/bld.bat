@@ -2,7 +2,7 @@ REM base on https://github.com/AnacondaRecipes/llvmdev-feedstock/blob/master/rec
 echo on
 
 REM First, setup the VS2022 environment
-for /F "usebackq tokens=*" %%i in (`vswhere.exe -nologo -products * -version [17.0,18.0] -property installationPath`) do (
+for /F "usebackq tokens=*" %%i in (`vswhere.exe -nologo -products * -version "[17.0,18.0)" -property installationPath`) do (
   set "VSINSTALLDIR=%%i\\"
 )
 if not exist "%VSINSTALLDIR%" (
