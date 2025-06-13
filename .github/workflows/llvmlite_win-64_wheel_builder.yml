@@ -61,7 +61,7 @@ jobs:
       - name: Install build dependencies
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
+              CHAN="file:///${{ github.workspace }}/llvmdev_conda_packages"
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
