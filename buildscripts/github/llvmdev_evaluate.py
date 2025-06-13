@@ -14,7 +14,7 @@ runner_mapping = {
     "linux-aarch64": "ubuntu-24.04-arm",
     "osx-64": "macos-13",
     "osx-arm64": "macos-14",
-    "win-64": "windows-2019",
+    "win-64": "windows-2025",
 }
 
 default_include = [
