@@ -23,7 +23,7 @@ requirements:
     # build.sh deals with it!
     - {{ compiler('c') }}  # [not osx]
     - {{ compiler('cxx') }}  # [not osx]
-    - vs2015_{{ target_platform  }}    # [win]
+    - vs2022_{{ target_platform }} # [win]
     # The DLL build uses cmake on Windows
     - cmake          # [win]
     - make           # [unix]
@@ -42,8 +42,8 @@ requirements:
     - vs2015_runtime # [win]
     # osx has dynamically linked libstdc++
     - libcxx >=4.0.1 # [osx]
-    - zlib 
-    - zstd 
+    - zlib
+    - zstd
 
 test:
   imports:
