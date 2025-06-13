@@ -27,7 +27,6 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 # for your compiler.
 
 include_directories(${LLVM_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
 # Look for SVML
