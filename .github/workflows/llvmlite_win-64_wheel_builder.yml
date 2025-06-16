@@ -68,7 +68,7 @@ jobs:
           conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
 
       - name: Build wheel
-        run: python -m build
+        run: python -m build --wheel
 
       - name: Upload llvmlite wheel
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
