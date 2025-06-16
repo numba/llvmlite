@@ -79,8 +79,10 @@ def find_windows_generator():
         )
 
     generators.extend([
+        # use VS2022
+        ('Visual Studio 17 2022', ('x64' if is_64bit else 'Win32'), 'v143'),
         # use VS2019 to match how llvmdev is built
-        ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v142'),
+        # ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v142'),
         # # This is the generator configuration for VS2017
         # ('Visual Studio 15 2017' + (' Win64' if is_64bit else ''), None, None)
     ])
