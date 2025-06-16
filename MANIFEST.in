@@ -2,5 +2,5 @@ include *.rst setup.py runtests.py run_coverage.py LICENSE
 include versioneer.py
 include llvmlite/_version.py
 recursive-include examples *.py *.ll
-recursive-include ffi *.txt *.h *.cpp Makefile.* *.py
+recursive-include ffi *.txt *.h *.cpp *.def Makefile.* *.py
 global-exclude CMakeCache.txt

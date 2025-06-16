@@ -20,7 +20,7 @@ concurrency:
 jobs:
   win-64-build:
     name: win-64-build
-    runs-on: windows-2019
+    runs-on: windows-2025
     defaults:
       run:
         shell: bash -elx {0}
@@ -58,7 +58,7 @@ jobs:
       - name: Build llvmlite conda package
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              LLVMDEV_CHANNEL="file://${{ github.workspace }}/llvmdev_conda_packages"
+              LLVMDEV_CHANNEL="file:///${{ github.workspace }}/llvmdev_conda_packages"
           else
               LLVMDEV_CHANNEL="numba"
           fi
@@ -81,7 +81,7 @@ jobs:
   win-64-test:
     name: win-64-test
     needs: win-64-build
-    runs-on: windows-2019
+    runs-on: windows-2025
     defaults:
       run:
         shell: bash -elx {0}
