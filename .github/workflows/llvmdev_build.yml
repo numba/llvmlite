@@ -82,21 +82,20 @@ jobs:
         run: |
           source ./buildscripts/github/setup_platform.sh "${{ matrix.platform }}"
 
-      - name: Setup VS2022 environment (Windows only)
+      - name: Setup VS2022 environment
         if: runner.os == 'Windows'
+        shell: cmd
         run: |
-          # Find and setup VS2022 environment
-          $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vsPath = & $vsWhere -nologo -products * -version "[17.0,18.0)" -property installationPath
-          if (-not $vsPath) {
-            Write-Error "Could not find VS 2022"
-            exit 1
-          }
-          Write-Host "Found VS 2022 in $vsPath"
-
-          # Set essential environment variables for conda-build
-          echo "VSINSTALLDIR=$vsPath\" >> $env:GITHUB_ENV
-          echo "VCINSTALLDIR=$vsPath\VC\" >> $env:GITHUB_ENV
+          for /F "usebackq tokens=*" %%i in (`vswhere.exe -nologo -products * -version "[17.0,18.0)" -property installationPath`) do (
+            set "VSINSTALLDIR=%%i\\"
+          )
+          if not exist "%VSINSTALLDIR%" (
+            echo Could not find VS 2022
+            exit /B 1
+          )
+          echo Found VS 2022 in %VSINSTALLDIR%
+          call "%VSINSTALLDIR%VC\Auxiliary\Build\vcvarsall.bat" x64
+          echo VSINSTALLDIR=%VSINSTALLDIR% >> %GITHUB_ENV%
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
