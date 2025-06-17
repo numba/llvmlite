@@ -82,31 +82,6 @@ jobs:
         run: |
           source ./buildscripts/github/setup_platform.sh "${{ matrix.platform }}"
 
-      - name: Setup VS2022 environment
-        if: runner.os == 'Windows'
-        shell: cmd
-        run: |
-          for /F "usebackq tokens=*" %%i in (`vswhere.exe -nologo -products * -version "[17.0,18.0)" -property installationPath`) do (
-            set "VSINSTALLDIR=%%i\\"
-          )
-          if not exist "%VSINSTALLDIR%" (
-            echo Could not find VS 2022
-            exit /B 1
-          )
-          echo Found VS 2022 in %VSINSTALLDIR%
-          call "%VSINSTALLDIR%VC\Auxiliary\Build\vcvarsall.bat" x64
-          if %ERRORLEVEL% neq 0 (
-            echo Failed to setup VS2022 environment, trying without specific toolset
-            call "%VSINSTALLDIR%VC\Auxiliary\Build\vcvarsall.bat" x64 -no_logo
-          )
-          echo VSINSTALLDIR=%VSINSTALLDIR% >> %GITHUB_ENV%
-          echo PATH=%PATH% >> %GITHUB_ENV%
-          echo LIB=%LIB% >> %GITHUB_ENV%
-          echo LIBPATH=%LIBPATH% >> %GITHUB_ENV%
-          echo INCLUDE=%INCLUDE% >> %GITHUB_ENV%
-          echo CMAKE_C_COMPILER=cl.exe >> %GITHUB_ENV%
-          echo CMAKE_CXX_COMPILER=cl.exe >> %GITHUB_ENV%
-
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
         with:
