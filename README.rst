@@ -32,7 +32,7 @@ following approach:
 Why llvmlite
 ============
 
-The old llvmpy_  binding exposes a lot of LLVM APIs but the mapping of
+The old llvmpy_ binding exposes a lot of LLVM APIs but the mapping of
 C++-style memory management to Python is error prone. Numba_ and many JIT
 compilers do not need a full LLVM API.  Only the IR builder, optimizer,
 and JIT compiler APIs are necessary.
