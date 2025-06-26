@@ -162,6 +162,18 @@ class ExecutionEngine(ffi.ObjectRef):
 
         ffi.lib.LLVMPY_MCJITAddObjectFile(self, obj_file)
 
+    def add_archive(self, archive_file):
+        """
+        Add archive file to the jit. archive_file is a string
+        representing the file system path to the archive file.
+        """
+
+        with ffi.OutputString() as outerr:
+            res = ffi.lib.LLVMPY_MCJITAddArchive(self, archive_file.encode(),
+                                                 outerr)
+            if res:
+                raise RuntimeError(str(outerr))
+
     def set_object_cache(self, notify_func=None, getbuffer_func=None):
         """
         Set the object cache "notifyObjectCompiled" and "getBuffer"
@@ -293,6 +305,14 @@ ffi.lib.LLVMPY_MCJITAddObjectFile.argtypes = [
     ffi.LLVMExecutionEngineRef,
     ffi.LLVMObjectFileRef
 ]
+
+ffi.lib.LLVMPY_MCJITAddArchive.argtypes = [
+    ffi.LLVMExecutionEngineRef,
+    c_char_p,
+    POINTER(c_char_p)
+]
+
+ffi.lib.LLVMPY_MCJITAddArchive.restype = c_int
 
 
 class _ObjectCacheData(Structure):
