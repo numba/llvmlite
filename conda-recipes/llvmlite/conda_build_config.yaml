@@ -12,6 +12,6 @@ fortran_compiler_version:   # [linux]
   - 11                      # [linux and aarch64]
 
 c_compiler:              # [win]
-  - vs2019               # [win]
+  - vs2022               # [win]
 cxx_compiler:            # [win]
-  - vs2019               # [win]
+  - vs2022               # [win]
