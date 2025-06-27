@@ -203,8 +203,16 @@ def main_posix(kind, library_ext):
                    "building llvmlite.\n".format(out.strip()))
             raise RuntimeError(msg)
 
+    # Get LLVM static / dynamic linking flag (default to static linking)
+    libs_args = ["--system-libs", "--libs", "all"]
+    shared = os.environ.get("LLVMLITE_SHARED", "0")
+    if shared.upper() in {"1", "ON", "YES", "TRUE", "Y"}:
+        libs_args.append("--link-shared")
+    else:
+        libs_args.append("--link-static")
+
     # Get LLVM information for building
-    libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
+    libs = run_llvm_config(llvm_config, libs_args)
     # Normalize whitespace (trim newlines)
     os.environ['LLVM_LIBS'] = ' '.join(libs.split())
 

@@ -239,6 +239,9 @@ Compiling llvmlite
    work as expected. See also:
    :ref:`why llvmlite doesn’t always support the latest release(s) of LLVM<faq_supported_versions>`.
 
+#. If you wish to dynamically link with ``libLLVM``, then set the environment
+   variable :envvar:`LLVMLITE_SHARED` to ``1``. Your LLVM build must support
+   dynamic linking. By default llvmlite uses static linking.
 
 Installing
 ----------
