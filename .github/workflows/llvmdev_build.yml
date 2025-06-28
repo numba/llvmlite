@@ -127,6 +127,8 @@ jobs:
             "$MANYLINUX_IMAGE" \
             bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmdev.sh $MINICONDA_FILE"
 
+          sudo chown -R "$(id -u):$(id -g)" docker_output
+
           # The script outputs to docker_output/<platform>/*.conda
           # Move the package to the upload directory.
           mkdir -p "${CONDA_CHANNEL_DIR}"
