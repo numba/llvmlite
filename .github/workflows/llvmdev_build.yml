@@ -95,14 +95,6 @@ jobs:
           activate-environment: ''
           run-post: false
 
-      - name: Install conda-build
-        run: |
-          if [[ "${{ matrix.platform }}" == "linux-arm64" ]]; then
-            conda install -c defaults conda-build "py-lief<0.16"
-          else
-            conda install -c defaults conda-build
-          fi
-
       - name: Build and test conda package in manylinux - linux platforms
         if: (matrix.platform == 'linux-64' || matrix.platform == 'linux-arm64') && matrix.recipe == 'llvmdev_for_wheel'
         env:
@@ -134,6 +126,11 @@ jobs:
           mkdir -p "${CONDA_CHANNEL_DIR}"
           mv docker_output/*/*.conda "${CONDA_CHANNEL_DIR}/"
           ls -lah "${CONDA_CHANNEL_DIR}"
+
+      - name: Install conda-build
+        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-arm64') || matrix.recipe != 'llvmdev_for_wheel'
+        run: |
+          conda install -c defaults conda-build
 
       - name: Build and test conda package - non-linux platforms
         if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-arm64') || matrix.recipe != 'llvmdev_for_wheel'
