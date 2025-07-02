@@ -514,6 +514,23 @@ issue_632_elf = \
 issue_632_text = \
     "48c1e2204809c24889d048c1c03d4831d048b90120000480001070480fafc8"
 
+asm_lld_executable = r"""
+    ; exit(int exit_code)
+    define void @exit(i64 %exit_code) {
+        call i64 asm sideeffect "syscall",
+            "={rax},{rax},{rdi},~{rcx},~{r11},~{dirflag},~{fpsr},~{flags}"
+            ( i64 60          ; {rax} SYSCALL_EXIT
+            , i64 %exit_code  ; {rdi} exit_code
+            )
+        ret void
+    }
+
+    define void @_start() {
+        call void @exit(i64 42)
+        ret void
+    }
+    """
+
 
 asm_tli_exp2 = r"""
 ; ModuleID = '<lambda>'
@@ -3330,6 +3347,40 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         fpm.add_loop_strength_reduce_pass()
         fpm.add_loop_rotate_pass()
         fpm.add_refprune_pass()
+
+
+class TestLLD(BaseTest):
+    def target_machine(self, *, jit):
+        target = llvm.Target.from_default_triple()
+        return target.create_target_machine(jit=jit, force_elf=True)
+
+    def test_standalone_executable(self):
+        test_ir = """
+        ;ModuleID = <string>
+        target triple = "{triple}"
+
+        define void @_start() {{
+            %.3 = add i32 0, 12
+            ret void
+        }}
+        """
+        objfile = "test1.o"
+        binfile = "test1"
+        target_machine = self.target_machine(jit=False)
+        mod = self.module(test_ir)
+        mod.verify()
+        with open(objfile, "wb") as o:
+            o.write(target_machine.emit_object(mod))
+        print(llvm.lld.lld_auto(binfile, [objfile]))
+        system = platform.system()
+
+        if system == "Linux":
+            # has no standard file extension
+            self.assertTrue(os.path.exists(binfile))
+        elif system == "Windows":
+            self.assertTrue(os.path.exists(f"{binfile}.exe"))
+        elif system == "Darwin": # Macos
+            self.assertTrue(os.path.exists(f"{binfile}.app"))
 
 
 if __name__ == "__main__":
