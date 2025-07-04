@@ -12,9 +12,9 @@
 #   - 11                      # [linux and aarch64]
 
 c_compiler:              # [win]
-  - vs2019               # [win]
+  - vs2022              # [win]
 cxx_compiler:            # [win]
-  - vs2019               # [win]
+  - vs2022              # [win]
 
 MACOSX_SDK_VERSION:    # [osx and x86_64]
   - 10.12              # [osx and x86_64]

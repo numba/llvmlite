@@ -16,7 +16,7 @@ call activate %CONDA_ENV%
 @rem - https://github.com/conda-forge/llvmdev-feedstock/pull/223
 @rem - https://github.com/MicrosoftDocs/visualstudio-docs/issues/7774
 if "%LLVM%"=="16" (
-  call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat"
+  call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
   if %errorlevel% neq 0 exit /b %errorlevel%
 )
 

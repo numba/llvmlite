@@ -89,7 +89,7 @@ jobs:
 - template: buildscripts/azure/azure-windows.yml
   parameters:
     name: Windows
-    vmImage: windows-2019
+    vmImage: windows-2025
 
 - job: check_formatting
   pool:
