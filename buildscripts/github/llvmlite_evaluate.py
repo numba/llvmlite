@@ -33,8 +33,11 @@ print(
     "Deciding what to do based on event: "
     f"'{event}', label: '{label}', inputs: '{inputs}'"
 )
-if event == "pull_request":
-    print("pull_request detected")
+if event in ("pull_request", "push"):
+    # This condition is entered on pull requests and pushes. The controlling
+    # workflow is expected to filter push events to only the `main` branch.
+    # See `on.push.branches` in `.github/workflows/llvmlite_conda_builder.yml`.
+    print(f"{event} detected, running full build matrix.")
     include = default_include
 elif event == "label" and label == "build_llvmlite_on_gha":
     print("build label detected")
@@ -55,7 +58,8 @@ elif event == "workflow_dispatch":
 
     include = filtered_matrix
 else:
-    include = {}
+    # For any other events, produce an empty matrix.
+    include = []
 
 matrix = {"include": include}
 print(f"Emitting matrix:\n {json.dumps(matrix, indent=4)}")
