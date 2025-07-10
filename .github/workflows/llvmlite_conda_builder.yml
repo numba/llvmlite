@@ -1,6 +1,9 @@
 name: llvmlite_conda_builder
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     paths:
       - .github/workflows/llvmlite_conda_builder.yml
@@ -28,7 +31,8 @@ on:
 concurrency:
   group: >-
     ${{ github.workflow }}-
-    ${{ github.event.pull_request.number
+    ${{ (github.event_name == 'push' && github.ref)
+      || github.event.pull_request.number
       || toJson(github.event.inputs)
       || github.sha }}
   cancel-in-progress: true
