@@ -18,21 +18,29 @@ runner_mapping = {
 }
 
 default_include = [
+    # linux-64
     {
         "runner": runner_mapping["linux-64"],
         "platform": "linux-64",
         "recipe": "llvmdev",
     },
     {
-        "runner": runner_mapping["win-64"],
-        "platform": "win-64",
-        "recipe": "llvmdev",
-    },
-    {
-        "runner": runner_mapping["win-64"],
-        "platform": "win-64",
+        "runner": runner_mapping["linux-64"],
+        "platform": "linux-64",
         "recipe": "llvmdev_for_wheel",
     },
+    # linux-aarch64
+    {
+        "runner": runner_mapping["linux-aarch64"],
+        "platform": "linux-aarch64",
+        "recipe": "llvmdev",
+    },
+    {
+        "runner": runner_mapping["linux-aarch64"],
+        "platform": "linux-aarch64",
+        "recipe": "llvmdev_for_wheel",
+    },
+    # osx-64
     {
         "runner": runner_mapping["osx-64"],
         "platform": "osx-64",
@@ -41,6 +49,28 @@ default_include = [
     {
         "runner": runner_mapping["osx-64"],
         "platform": "osx-64",
+        "recipe": "llvmdev_for_wheel",
+    },
+    # osx-arm64
+    {
+        "runner": runner_mapping["osx-arm64"],
+        "platform": "osx-arm64",
+        "recipe": "llvmdev",
+    },
+    {
+        "runner": runner_mapping["osx-arm64"],
+        "platform": "osx-arm64",
+        "recipe": "llvmdev_for_wheel",
+    },
+    # win-64
+    {
+        "runner": runner_mapping["win-64"],
+        "platform": "win-64",
+        "recipe": "llvmdev",
+    },
+    {
+        "runner": runner_mapping["win-64"],
+        "platform": "win-64",
         "recipe": "llvmdev_for_wheel",
     },
 ]
@@ -58,13 +88,25 @@ elif event == "label" and label == "build_on_gha":
 elif event == "workflow_dispatch":
     print("workflow_dispatch detected")
     params = json.loads(inputs)
-    include = [
-        {
-            "runner": runner_mapping[params.get("platform", "linux-64")],
-            "platform": params.get("platform", "linux-64"),
-            "recipe": params.get("recipe", "llvmdev"),
-        }
-    ]
+    platform = params.get("platform", "all")
+    recipe = params.get("recipe", "all")
+
+    # Start with the full matrix
+    filtered_matrix = default_include
+
+    # Filter by platform if a specific one is chosen
+    if platform != "all":
+        filtered_matrix = [
+            item for item in filtered_matrix if item["platform"] == platform
+        ]
+
+    # Filter by recipe if a specific one is chosen
+    if recipe != "all":
+        filtered_matrix = [
+            item for item in filtered_matrix if item["recipe"] == recipe
+        ]
+
+    include = filtered_matrix
 else:
     include = {}
 
