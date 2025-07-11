@@ -1,15 +1,20 @@
-name: llvmlite_linux-arm64_wheel_builder
+name: llvmlite_linux-aarch64_wheel_builder
 
 on:
   pull_request:
     paths:
-      - .github/workflows/llvmlite_linux-arm64_wheel_builder.yml
+      - .github/workflows/llvmlite_linux-aarch64_wheel_builder.yml
   workflow_dispatch:
     inputs:
       llvmdev_run_id:
         description: 'llvmdev workflow run ID (optional)'
         required: false
         type: string
+      upload_wheel_to_anaconda:
+        description: 'Upload wheel to Anaconda Cloud - numba channel'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -23,8 +28,8 @@ env:
   MANYLINUX_IMAGE: "manylinux_2_28_aarch64"
 
 jobs:
-  linux-arm64-build:
-    name: linux-arm64-build-py${{ matrix.python-version }}
+  linux-aarch64-build:
+    name: linux-aarch64-build-py${{ matrix.python-version }}
     runs-on: ubuntu-24.04-arm
     defaults:
       run:
@@ -44,7 +49,7 @@ jobs:
         if: ${{ inputs.llvmdev_run_id != '' }}
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: llvmdev_for_wheel_linux-arm64
+          name: llvmdev_for_wheel_linux-aarch64
           path: llvmdev_conda_packages
           run-id: ${{ inputs.llvmdev_run_id }}
           repository: ${{ github.repository }}
@@ -96,15 +101,18 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: llvmlite-linux-arm64-py${{ matrix.python-version }}
+          name: llvmlite-linux-aarch64-py${{ matrix.python-version }}
           path: wheelhouse/*.whl
           compression-level: 0
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: error
 
-  linux-arm64-validate:
+      - name: Show Workflow Run ID
+        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+
+  linux-aarch64-validate:
     name: validate-py${{ matrix.python-version }}
-    needs: linux-arm64-build
+    needs: linux-aarch64-build
     runs-on: ubuntu-24.04-arm
     defaults:
       run:
@@ -131,7 +139,7 @@ jobs:
       - name: Download llvmlite wheels
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: llvmlite-linux-arm64-py${{ matrix.python-version }}
+          name: llvmlite-linux-aarch64-py${{ matrix.python-version }}
           path: dist
 
       - name: Validate wheels
@@ -143,9 +151,9 @@ jobs:
             twine check "$WHL_FILE"
           done
 
-  linux-arm64-test:
+  linux-aarch64-test:
     name: test-py${{ matrix.python-version }}
-    needs: linux-arm64-build
+    needs: linux-aarch64-build
     runs-on: ubuntu-24.04-arm
     defaults:
       run:
@@ -164,7 +172,7 @@ jobs:
       - name: Download llvmlite wheel
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: llvmlite-linux-arm64-py${{ matrix.python-version }}
+          name: llvmlite-linux-aarch64-py${{ matrix.python-version }}
           path: dist
 
       - name: Install and test
@@ -194,10 +202,10 @@ jobs:
           # Run tests
           "${PYTHON_PATH}" -m llvmlite.tests
 
-  linux-arm64-upload:
+  linux-aarch64-upload:
     name: upload-py${{ matrix.python-version }}
-    needs: [linux-arm64-test, linux-arm64-validate]
-    if: github.event_name == 'workflow_dispatch'
+    needs: [linux-aarch64-test, linux-aarch64-validate]
+    if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: ubuntu-24.04-arm
     defaults:
       run:
@@ -221,7 +229,7 @@ jobs:
       - name: Download llvmlite wheel
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: llvmlite-linux-arm64-py${{ matrix.python-version }}
+          name: llvmlite-linux-aarch64-py${{ matrix.python-version }}
           path: dist
 
       - name: Upload wheel to Anaconda Cloud
