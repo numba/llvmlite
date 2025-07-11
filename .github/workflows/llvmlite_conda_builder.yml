@@ -109,7 +109,7 @@ jobs:
       - name: Build llvmlite conda package
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              LLVMDEV_CHANNEL="file://${{ github.workspace }}/llvmdev_conda_packages"
+              LLVMDEV_CHANNEL="file:///${{ github.workspace }}/llvmdev_conda_packages"
           else
               LLVMDEV_CHANNEL="numba"
           fi
