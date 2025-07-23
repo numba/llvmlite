@@ -69,7 +69,8 @@ jobs:
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
-          conda install -c "$CHAN" llvmdev="${{ env.FALLBACK_LLVMDEV_VERSION }}" python-build -y
+          conda install -c "$CHAN" llvmdev="${{ env.FALLBACK_LLVMDEV_VERSION }}"
+          conda install -c defaults python-build
 
           # Hide libunwind to prevent it from being linked against during build
           # On macOS, if libunwind.dylib from the llvmdev conda package gets linked, the resulting wheel
