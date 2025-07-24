@@ -10,6 +10,11 @@ on:
         description: 'llvmdev workflow run ID (optional)'
         required: false
         type: string
+      upload_wheel_to_anaconda:
+        description: 'Upload wheel to Anaconda Cloud - numba channel'
+        required: false
+        type: boolean
+        default: false
 
 # Add concurrency control
 concurrency:
@@ -65,7 +70,8 @@ jobs:
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
-          conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
+          conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}
+          conda install -c defaults cmake libxml2 python-build
 
       - name: Build wheel
         run: python -m build
@@ -165,7 +171,7 @@ jobs:
   win-64-upload:
     name: win-64-upload
     needs: win-64-test
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: windows-2025
     defaults:
       run:

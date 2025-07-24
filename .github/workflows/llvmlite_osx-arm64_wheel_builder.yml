@@ -10,6 +10,11 @@ on:
         description: 'llvmdev workflow run ID (optional)'
         required: false
         type: string
+      upload_wheel_to_anaconda:
+        description: 'Upload wheel to Anaconda Cloud - numba channel'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -64,7 +69,8 @@ jobs:
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
-          conda install -c "$CHAN" llvmdev="${{ env.FALLBACK_LLVMDEV_VERSION }}" python-build -y
+          conda install -c "$CHAN" llvmdev="${{ env.FALLBACK_LLVMDEV_VERSION }}"
+          conda install -c defaults python-build
 
           # Hide libunwind to prevent it from being linked against during build
           # On macOS, if libunwind.dylib from the llvmdev conda package gets linked, the resulting wheel
@@ -167,7 +173,7 @@ jobs:
   osx-arm64-upload:
     name: osx-arm64-upload
     needs: osx-arm64-test
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: macos-14
     defaults:
       run:

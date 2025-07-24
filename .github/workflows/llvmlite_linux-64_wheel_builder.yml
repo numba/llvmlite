@@ -10,6 +10,11 @@ on:
         description: 'llvmdev workflow run ID (optional)'
         required: false
         type: string
+      upload_wheel_to_anaconda:
+        description: 'Upload wheel to Anaconda Cloud - numba channel'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -104,6 +109,9 @@ jobs:
           compression-level: 0
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: error
+
+      - name: Show Workflow Run ID
+        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
 
   linux-64-validate:
     name: validate-py${{ matrix.python-version }}
@@ -200,7 +208,7 @@ jobs:
   linux-64-upload:
     name: upload-py${{ matrix.python-version }}
     needs: [linux-64-test, linux-64-validate]
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: ubuntu-latest
     defaults:
       run:
