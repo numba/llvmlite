@@ -11,10 +11,11 @@ on:
     inputs:
       platform:
         description: Conda Platform
-        default: linux-64
+        default: all
         required: true
         type: choice
         options:
+          - all
           - linux-64
           - linux-aarch64
           - osx-64
@@ -22,10 +23,11 @@ on:
           - win-64
       recipe:
         description: Recipe to build
-        default: llvmdev
+        default: all
         required: true
         type: choice
         options:
+          - all
           - llvmdev
           - llvmdev_for_wheel
 
@@ -42,6 +44,9 @@ concurrency:
       || github.event.label.name
       || github.sha }}
   cancel-in-progress: true
+
+env:
+  ARTIFACT_RETENTION_DAYS: 7
 
 jobs:
 
@@ -90,16 +95,50 @@ jobs:
           activate-environment: ''
           run-post: false
 
-      - name: Install conda-build
-        run: |
-          conda install conda-build
-
-      - name: Build conda package
+      - name: Build and test conda package in manylinux - linux platforms
+        if: (matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64') && matrix.recipe == 'llvmdev_for_wheel'
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |
           set -x
-          mkdir "${CONDA_CHANNEL_DIR}"
+          # Set manylinux-specific variables
+          MANYLINUX_IMAGE=""
+          MINICONDA_FILE=""
+          if [[ "${{ matrix.platform }}" == "linux-64" ]]; then
+            MANYLINUX_IMAGE="quay.io/pypa/manylinux2014_x86_64"
+            MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+          elif [[ "${{ matrix.platform }}" == "linux-aarch64" ]]; then
+            MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64"
+            MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"
+          fi
+
+          echo "Building in manylinux container for ${{ matrix.platform }}"
+          mkdir -p docker_output
+          docker run --rm \
+            -v "$(pwd):/root/llvmlite" \
+            "$MANYLINUX_IMAGE" \
+            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmdev.sh $MINICONDA_FILE"
+
+          sudo chown -R "$(id -u):$(id -g)" docker_output
+
+          # The script outputs to docker_output/<platform>/*.conda
+          # Move the package to the upload directory.
+          mkdir -p "${CONDA_CHANNEL_DIR}"
+          mv docker_output/*/*.conda "${CONDA_CHANNEL_DIR}/"
+          ls -lah "${CONDA_CHANNEL_DIR}"
+
+      - name: Install conda-build
+        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
+        run: |
+          conda install -c defaults conda-build
+
+      - name: Build and test conda package - non-linux platforms
+        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
+        env:
+          CONDA_CHANNEL_DIR: conda_channel_dir
+        run: |
+          set -x
+          mkdir -p "${CONDA_CHANNEL_DIR}"
           EXTRA_ARGS=()
           if [[ "${{ matrix.platform }}" == "osx-64" ]]; then
             EXTRA_ARGS=(--variants '{"CONDA_BUILD_SYSROOT": "/opt/MacOSX10.10.sdk"}')
@@ -113,7 +152,7 @@ jobs:
           name: ${{ matrix.recipe }}_${{ matrix.platform }}
           path: conda_channel_dir
           compression-level: 0
-          retention-days: 7
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: error
 
       - name: Get Workflow Run ID

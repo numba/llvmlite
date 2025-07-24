@@ -16,5 +16,11 @@ c_compiler:              # [win]
 cxx_compiler:            # [win]
   - vs2022              # [win]
 
+c_compiler_version:         # [osx]
+  - 14                      # [osx]
+
+cxx_compiler_version:       # [osx]
+  - 14                      # [osx]
+
 MACOSX_SDK_VERSION:    # [osx and x86_64]
   - 10.12              # [osx and x86_64]
