@@ -919,7 +919,7 @@ class TestMisc(BaseTest):
         # one of these can be valid
         valid = (20,)
         self.assertIn(major, valid)
-        self.assertIn(patch, range(8))
+        self.assertIn(patch, range(9))
 
     def test_check_jit_execution(self):
         llvm.check_jit_execution()
@@ -2334,6 +2334,8 @@ class TestTypeParsing(BaseTest):
 
 
 class TestGlobalConstructors(TestMCJit):
+    @unittest.skipIf(platform.system() == "Darwin",
+                     "__cxa_atexit is broken on OSX in MCJIT")
     def test_global_ctors_dtors(self):
         # test issue #303
         # (https://github.com/numba/llvmlite/issues/303)
