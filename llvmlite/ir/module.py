@@ -42,6 +42,15 @@ class Module(object):
             fixed_ops.append((name, op))
         return fixed_ops
 
+    def str_ditok_operands(self, operands):
+        str_ops = []
+        for name, op in operands:
+            if name == 'encoding' and isinstance(op, values.DIToken):
+                # use string value instead of address of object
+                op = op.value
+            str_ops.append((name, op))
+        return str_ops
+
     def add_metadata(self, operands):
         """
         Add an unnamed metadata to the module with the given *operands*
@@ -73,7 +82,8 @@ class Module(object):
         an instruction.
         """
         operands = tuple(sorted(self._fix_di_operands(operands.items())))
-        key = (kind, operands, is_distinct)
+        str_op_key = tuple(sorted(self.str_ditok_operands(operands)))
+        key = (kind, str_op_key, is_distinct)
         if key not in self._metadatacache:
             n = len(self.metadata)
             di = values.DIValue(self, is_distinct, kind, operands, name=str(n))

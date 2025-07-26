@@ -7,9 +7,6 @@ import llvmlite.tests.refprune_proto as proto
 
 # TODO:: Get rid of Legacy tests once completely transitioned to NewPassManager
 
-# FIXME: Remove me once typed pointers are no longer supported.
-from llvmlite import opaque_pointers_enabled
-
 
 def _iterate_cases(generate_test):
     def wrap(fn):
@@ -259,21 +256,13 @@ define void @main(i8* %ptr) {
         mod, stats = self.check(self.per_bb_ir_2)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_incref(ptr %ptr)", str(mod))
-        else:
-            self.assertIn("call void @NRT_incref(i8* %ptr)", str(mod))
+        self.assertIn("call void @NRT_incref(ptr %ptr)", str(mod))
 
     def test_per_bb_2_legacy(self):
         mod, stats = self.check_legacy(self.per_bb_ir_2)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_incref(ptr %ptr)", str(mod))
-        else:
-            self.assertIn("call void @NRT_incref(i8* %ptr)", str(mod))
+        self.assertIn("call void @NRT_incref(ptr %ptr)", str(mod))
 
     per_bb_ir_3 = r"""
 define void @main(ptr %ptr, ptr %other) {
@@ -283,35 +272,19 @@ define void @main(ptr %ptr, ptr %other) {
     call void @NRT_decref(ptr %other)
     ret void
 }
-""" if opaque_pointers_enabled else r"""
-define void @main(i8* %ptr, i8* %other) {
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %other)
-    ret void
-}
 """
 
     def test_per_bb_3(self):
         mod, stats = self.check(self.per_bb_ir_3)
         self.assertEqual(stats.basicblock, 2)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
-        else:
-            self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
 
     def test_per_bb_3_legacy(self):
         mod, stats = self.check_legacy(self.per_bb_ir_3)
         self.assertEqual(stats.basicblock, 2)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
-        else:
-            self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
 
     per_bb_ir_4 = r"""
 ; reordered
@@ -323,37 +296,19 @@ define void @main(ptr %ptr, ptr %other) {
     call void @NRT_incref(ptr %ptr)
     ret void
 }
-""" if opaque_pointers_enabled else r"""
-; reordered
-define void @main(i8* %ptr, i8* %other) {
-    call void @NRT_incref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %ptr)
-    call void @NRT_decref(i8* %other)
-    call void @NRT_incref(i8* %ptr)
-    ret void
-}
 """
 
     def test_per_bb_4(self):
         mod, stats = self.check(self.per_bb_ir_4)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
-        else:
-            self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
 
     def test_per_bb_4_legacy(self):
         mod, stats = self.check_legacy(self.per_bb_ir_4)
         self.assertEqual(stats.basicblock, 4)
         # not pruned
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
-        else:
-            self.assertIn("call void @NRT_decref(i8* %other)", str(mod))
+        self.assertIn("call void @NRT_decref(ptr %other)", str(mod))
 
 
 class TestDiamond(BaseTestByIR):

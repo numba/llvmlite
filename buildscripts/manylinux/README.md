@@ -1,7 +1,7 @@
 # README: Building manylinux Wheels
 
 
-## Build llvmdev packages for manylinux
+## Build llvmdev conda packages for use during manylinux wheel building
 
 Run the script below to start docker off building `llvmdev` base from the current state of the source tree:
 

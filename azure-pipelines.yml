@@ -33,27 +33,28 @@ jobs:
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: Linux
-    vmImage: ubuntu-20.04
+    vmImage: ubuntu-24.04
     matrix:
       py310:
         PYTHON: '3.10'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
+        DIST_TEST: yes
       py311:
         PYTHON: '3.11'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
-        RUN_CLANG_FORMAT: yes
+        DIST_TEST: yes
       py312:
         PYTHON: '3.12'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
-        RUN_CLANG_FORMAT: yes
+        DIST_TEST: yes
       py313:
         PYTHON: '3.13'
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
-        RUN_CLANG_FORMAT: yes
+        DIST_TEST: yes
 # temporarily disabled
 #       pypy:
 #         PYTHON: pypy
@@ -88,14 +89,16 @@ jobs:
 - template: buildscripts/azure/azure-windows.yml
   parameters:
     name: Windows
-    vmImage: windows-2019
+    vmImage: windows-2025
 
 - job: check_formatting
   pool:
     vmImage: 'ubuntu-latest'
   steps:
   - script: |
-      set -e
-      sudo apt install -y clang-format
-      clang-format -n -Werror ffi/*.cpp ffi/*.h
+      set -ex
+      buildscripts/incremental/install_miniconda.sh
+      export PATH=$HOME/miniconda3/bin:$PATH
+      conda install -c conda-forge -y clang-format-20
+      clang-format-20 -n -Werror ffi/*.cpp ffi/*.h
     displayName: Check C++ formatting

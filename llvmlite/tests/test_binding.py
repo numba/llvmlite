@@ -18,9 +18,6 @@ from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
-# FIXME: Remove me once typed pointers are no longer supported.
-from llvmlite import opaque_pointers_enabled
-
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
@@ -735,13 +732,21 @@ class TestDependencies(BaseTest):
             self.fail("failed parsing dependencies? got %r" % (deps,))
         # Ensure all dependencies are expected
         allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
-                       'libgcc_s', 'libc', 'ld-linux', 'ld64'])
+                       'libgcc_s', 'libc', 'ld-linux', 'ld64', 'libzstd',
+                       'libstdc++'])
         if platform.python_implementation() == 'PyPy':
             allowed.add('libtinfo')
 
+        fails = []
         for dep in deps:
             if not dep.startswith('ld-linux-') and dep not in allowed:
-                self.fail("unexpected dependency %r in %r" % (dep, deps))
+                fails.append(dep)
+        if len(fails) == 1:
+            self.fail("unexpected dependency %r in %r" % (fails[0], deps))
+        elif len(fails) > 1:
+            self.fail("unexpected dependencies %r in %r" % (fails, deps))
+        else:
+            pass  # test passes
 
 
 class TestRISCVABI(BaseTest):
@@ -1664,12 +1669,7 @@ class TestValueRef(BaseTest):
         mod = self.module()
         st = mod.get_global_variable("glob_struct")
         self.assertTrue(st.type.is_pointer)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIsNotNone(re.match(r'ptr', str(st.type)))
-        else:
-            self.assertIsNotNone(re.match(r'%struct\.glob_type(\.[\d]+)?\*',
-                                          str(st.type)))
+        self.assertIsNotNone(re.match(r'ptr', str(st.type)))
         self.assertIsNotNone(re.match(
             r"%struct\.glob_type(\.[\d]+)? = type { i64, \[2 x i64\] }",
             str(st.global_value_type)))
@@ -1858,11 +1858,7 @@ class TestValueRef(BaseTest):
         inst = list(list(func.blocks)[0].instructions)[0]
         arg = list(inst.operands)[0]
         self.assertTrue(arg.is_constant)
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertEqual(arg.get_constant_value(), 'ptr null')
-        else:
-            self.assertEqual(arg.get_constant_value(), 'i64* null')
+        self.assertEqual(arg.get_constant_value(), 'ptr null')
 
     def test_incoming_phi_blocks(self):
         mod = self.module(asm_phi_blocks)
@@ -1967,12 +1963,7 @@ class TestTypeRef(BaseTest):
         self.assertTrue(func.type.is_pointer)
         with self.assertRaises(ValueError) as raises:
             func.type.is_function_vararg
-        # FIXME: Remove `else' once TP are no longer supported.
-        if opaque_pointers_enabled:
-            self.assertIn("Type ptr is not a function", str(raises.exception))
-        else:
-            self.assertIn("Type i32 (i32, i32)* is not a function",
-                          str(raises.exception))
+        self.assertIn("Type ptr is not a function", str(raises.exception))
 
     def test_function_typeref_as_ir(self):
         mod = self.module()
@@ -3075,6 +3066,56 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         fpm.run(self.module().get_function("sum"), pb)
         pb.close()
 
+    def test_time_passes(self):
+        """Test pass timing reports for O3 and O0 optimization levels"""
+        def run_with_timing(speed_level):
+            mod = self.module()
+            pb = self.pb(speed_level=speed_level, size_level=0)
+            pb.start_pass_timing()
+            mpm = pb.getModulePassManager()
+            mpm.run(mod, pb)
+            report = pb.finish_pass_timing()
+            pb.close()
+            return report
+
+        report_O3 = run_with_timing(3)
+        report_O0 = run_with_timing(0)
+
+        self.assertIsInstance(report_O3, str)
+        self.assertIsInstance(report_O0, str)
+        self.assertEqual(report_O3.count("Pass execution timing report"), 1)
+        self.assertEqual(report_O0.count("Pass execution timing report"), 1)
+
+    def test_empty_report(self):
+        mod = self.module()
+        pb = self.pb()
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        pb.start_pass_timing()
+        report = pb.finish_pass_timing()
+        pb.close()
+        self.assertFalse(report)
+
+    def test_multiple_timers_error(self):
+        mod = self.module()
+        pb = self.pb()
+        pb.start_pass_timing()
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        pb.finish_pass_timing()
+        with self.assertRaisesRegex(RuntimeError, "only be done once"):
+            pb.start_pass_timing()
+        pb.close()
+
+    def test_empty_report_error(self):
+        mod = self.module()
+        pb = self.pb()
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        with self.assertRaisesRegex(RuntimeError, "not enabled"):
+            pb.finish_pass_timing()
+        pb.close()
+
 
 class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
     def pm(self):
@@ -3135,13 +3176,66 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
 
     def test_add_passes(self):
         mpm = self.pm()
+        mpm.add_argument_promotion_pass()
+        mpm.add_post_order_function_attributes_pass()
         mpm.add_verifier()
+        mpm.add_constant_merge_pass()
+        mpm.add_dead_arg_elimination_pass()
+        mpm.add_dot_call_graph_printer_pass()
+        mpm.add_always_inliner_pass()
+        mpm.add_rpo_function_attrs_pass()
+        mpm.add_global_dead_code_eliminate_pass()
+        mpm.add_global_opt_pass()
+        mpm.add_ipsccp_pass()
+        mpm.add_internalize_pass()
+        mpm.add_loop_extract_pass()
+        mpm.add_merge_functions_pass()
+        mpm.add_partial_inliner_pass()
+        mpm.add_strip_symbols_pass()
+        mpm.add_strip_dead_debug_info_pass()
+        mpm.add_strip_dead_prototype_pass()
+        mpm.add_strip_debug_declare_pass()
+        mpm.add_strip_non_debug_symbols_pass()
         mpm.add_aa_eval_pass()
         mpm.add_simplify_cfg_pass()
         mpm.add_loop_unroll_pass()
-        mpm.add_loop_rotate_pass()
         mpm.add_instruction_combine_pass()
         mpm.add_jump_threading_pass()
+        mpm.add_cfg_printer_pass()
+        mpm.add_cfg_only_printer_pass()
+        mpm.add_dom_printer_pass()
+        mpm.add_dom_only_printer_pass()
+        mpm.add_post_dom_printer_pass()
+        mpm.add_post_dom_only_printer_pass()
+        mpm.add_dom_viewer_pass()
+        mpm.add_dom_only_printer_pass()
+        mpm.add_post_dom_viewer_pass()
+        mpm.add_post_dom_only_viewer_pass()
+        mpm.add_lint_pass()
+        mpm.add_aggressive_dce_pass()
+        mpm.add_break_critical_edges_pass()
+        mpm.add_dead_store_elimination_pass()
+        mpm.add_dead_code_elimination_pass()
+        mpm.add_aggressive_instcombine_pass()
+        mpm.add_lcssa_pass()
+        mpm.add_new_gvn_pass()
+        mpm.add_loop_simplify_pass()
+        mpm.add_loop_unroll_and_jam_pass()
+        mpm.add_sccp_pass()
+        mpm.add_lower_atomic_pass()
+        mpm.add_lower_invoke_pass()
+        mpm.add_lower_switch_pass()
+        mpm.add_mem_copy_opt_pass()
+        mpm.add_unify_function_exit_nodes_pass()
+        mpm.add_reassociate_pass()
+        mpm.add_register_to_memory_pass()
+        mpm.add_sroa_pass()
+        mpm.add_sinking_pass()
+        mpm.add_tail_call_elimination_pass()
+        mpm.add_instruction_namer_pass()
+        mpm.add_loop_deletion_pass()
+        mpm.add_loop_strength_reduce_pass()
+        mpm.add_loop_rotate_pass()
         mpm.add_refprune_pass()
 
 
@@ -3215,9 +3309,43 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         fpm.add_aa_eval_pass()
         fpm.add_simplify_cfg_pass()
         fpm.add_loop_unroll_pass()
-        fpm.add_loop_rotate_pass()
         fpm.add_instruction_combine_pass()
         fpm.add_jump_threading_pass()
+        fpm.add_cfg_printer_pass()
+        fpm.add_cfg_only_printer_pass()
+        fpm.add_dom_printer_pass()
+        fpm.add_dom_only_printer_pass()
+        fpm.add_post_dom_printer_pass()
+        fpm.add_post_dom_only_printer_pass()
+        fpm.add_dom_viewer_pass()
+        fpm.add_dom_only_printer_pass()
+        fpm.add_post_dom_viewer_pass()
+        fpm.add_post_dom_only_viewer_pass()
+        fpm.add_lint_pass()
+        fpm.add_aggressive_dce_pass()
+        fpm.add_break_critical_edges_pass()
+        fpm.add_dead_store_elimination_pass()
+        fpm.add_dead_code_elimination_pass()
+        fpm.add_aggressive_instcombine_pass()
+        fpm.add_lcssa_pass()
+        fpm.add_new_gvn_pass()
+        fpm.add_loop_simplify_pass()
+        fpm.add_loop_unroll_and_jam_pass()
+        fpm.add_sccp_pass()
+        fpm.add_lower_atomic_pass()
+        fpm.add_lower_invoke_pass()
+        fpm.add_lower_switch_pass()
+        fpm.add_mem_copy_opt_pass()
+        fpm.add_unify_function_exit_nodes_pass()
+        fpm.add_reassociate_pass()
+        fpm.add_register_to_memory_pass()
+        fpm.add_sroa_pass()
+        fpm.add_sinking_pass()
+        fpm.add_tail_call_elimination_pass()
+        fpm.add_instruction_namer_pass()
+        fpm.add_loop_deletion_pass()
+        fpm.add_loop_strength_reduce_pass()
+        fpm.add_loop_rotate_pass()
         fpm.add_refprune_pass()
 
 

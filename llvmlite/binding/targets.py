@@ -7,10 +7,6 @@ from llvmlite.binding.initfini import llvm_version_info
 from llvmlite.binding.common import _decode_string, _encode_string
 from collections import namedtuple
 
-# FIXME: Remove `opaque_pointers_enabled` once typed pointers are no longer
-# supported.
-from llvmlite import opaque_pointers_enabled
-
 Triple = namedtuple('Triple', ['Arch', 'SubArch', 'Vendor',
                                'OS', 'Env', 'ObjectFormat'])
 
@@ -201,30 +197,6 @@ class TargetData(ffi.ObjectRef):
         Get minimum ABI alignment of LLVM type *ty*.
         """
         return ffi.lib.LLVMPY_ABIAlignmentOfType(self, ty)
-
-    def get_pointee_abi_size(self, ty):
-        """
-        Get ABI size of pointee type of LLVM pointer type *ty*.
-        """
-        if opaque_pointers_enabled:
-            raise RuntimeError("Cannot get pointee type in opaque pointer "
-                               "mode.")
-        size = ffi.lib.LLVMPY_ABISizeOfElementType(self, ty)
-        if size == -1:
-            raise RuntimeError("Not a pointer type: %s" % (ty,))
-        return size
-
-    def get_pointee_abi_alignment(self, ty):
-        """
-        Get minimum ABI alignment of pointee type of LLVM pointer type *ty*.
-        """
-        if opaque_pointers_enabled:
-            raise RuntimeError("Cannot get pointee type in opaque pointer "
-                               "mode.")
-        size = ffi.lib.LLVMPY_ABIAlignmentOfElementType(self, ty)
-        if size == -1:
-            raise RuntimeError("Not a pointer type: %s" % (ty,))
-        return size
 
 
 RELOC = frozenset(['default', 'static', 'pic', 'dynamicnopic'])
@@ -443,16 +415,6 @@ ffi.lib.LLVMPY_OffsetOfElement.restype = c_longlong
 ffi.lib.LLVMPY_ABIAlignmentOfType.argtypes = [ffi.LLVMTargetDataRef,
                                               ffi.LLVMTypeRef]
 ffi.lib.LLVMPY_ABIAlignmentOfType.restype = c_longlong
-
-# FIXME: Remove me once typed pointers are no longer supported.
-ffi.lib.LLVMPY_ABISizeOfElementType.argtypes = [ffi.LLVMTargetDataRef,
-                                                ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_ABISizeOfElementType.restype = c_longlong
-
-# FIXME: Remove me once typed pointers are no longer supported.
-ffi.lib.LLVMPY_ABIAlignmentOfElementType.argtypes = [ffi.LLVMTargetDataRef,
-                                                     ffi.LLVMTypeRef]
-ffi.lib.LLVMPY_ABIAlignmentOfElementType.restype = c_longlong
 
 ffi.lib.LLVMPY_GetTargetFromTriple.argtypes = [c_char_p, POINTER(c_char_p)]
 ffi.lib.LLVMPY_GetTargetFromTriple.restype = ffi.LLVMTargetRef
