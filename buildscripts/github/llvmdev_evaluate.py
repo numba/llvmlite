@@ -85,8 +85,8 @@ if event == "pull_request":
 elif event == "label" and label == "build_on_gha":
     print("build label detected")
     include = default_include
-elif event == "workflow_dispatch":
-    print("workflow_dispatch detected")
+elif event in ("issue_comment", "workflow_dispatch"):
+    print(f"{event} detected")
     params = json.loads(inputs)
     platform = params.get("platform", "all")
     recipe = params.get("recipe", "all")

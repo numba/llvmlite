@@ -1,6 +1,8 @@
 name: llvmdev
 
 on:
+  issue_comment:
+    types: [created, edited]
   pull_request:
     paths:
       - .github/workflows/llvmdev_build.yml
@@ -54,22 +56,78 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.evaluate.outputs.matrix }}
+      pr_comment_trigger_ref: ${{ steps.cmd.outputs.ref }}
+      pr_comment_trigger_status: ${{ steps.validator.outputs.should_run }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.13'
+
+      - name: PR Comment Command Check
+        uses: github/command@v1
+        id: cmd
+        if: ${{ github.event_name == 'issue_comment' }}
+        with:
+          command: "/gha llvmdev"
+          reaction: "rocket"
+          allowed_contexts: pull_request
+          allow_forks: true
+          param_separator: " "
+
+      - name: Validate command
+        id: validator
+        if: ${{ github.event_name == 'issue_comment' && steps.cmd.outputs.continue == 'true' }}
+        run: |
+          SHOULD_RUN="true"
+          PARAMS_JSON="{}"
+          # Default values
+          PLATFORM="all"
+          RECIPE="all"
+
+          PARAMS=(${{ steps.cmd.outputs.params }})
+          echo "PARAMS: ${PARAMS[*]}"
+          for param in "${PARAMS[@]}"; do
+            case "$param" in
+              platform=*) PLATFORM="${param#*=}" ;;
+              recipe=*) RECIPE="${param#*=}" ;;
+            esac
+          done
+          PARAMS_JSON=$(printf '{"platform": "%s", "recipe": "%s"}' "$PLATFORM" "$RECIPE")
+          echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          echo "command_params_json=$PARAMS_JSON" >> "$GITHUB_OUTPUT"
+
+      - name: Post Success Comment for PR Comment Trigger
+        if: ${{ github.event_name == 'issue_comment' && steps.validator.outputs.should_run == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="llvmdev workflow triggered<br><br><pre>workflow id: ${{ github.run_id }}<br>details: $RUN_URL</pre>"
+          gh pr comment ${{ steps.cmd.outputs.issue_number }} --body "$BODY"
+
+      - name: Post Failure Comment for PR Comment Trigger
+        if: ${{ github.event_name == 'issue_comment' && steps.cmd.outputs.continue == 'true' && steps.validator.outputs.should_run != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="llvmdev workflow failed<br><br><pre>workflow id: ${{ github.run_id }}<br>details: $RUN_URL</pre>"
+          gh pr comment ${{ steps.cmd.outputs.issue_number }} --body "$BODY"
+
       - name: Evaluate
+        if: ${{ github.event_name != 'issue_comment' || steps.validator.outputs.should_run == 'true' }}
         id: evaluate
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_LABEL_NAME: ${{ github.event.label.name }}
-          GITHUB_WORKFLOW_INPUT: ${{ toJson(github.event.inputs) }}
+          GITHUB_WORKFLOW_INPUT: ${{ (github.event_name == 'issue_comment' && steps.validator.outputs.command_params_json) || toJson(github.event.inputs) }}
         run: |
           ./buildscripts/github/llvmdev_evaluate.py
 
   build:
     needs: check
+    if: ${{ (github.event_name == 'issue_comment' && needs.check.outputs.pr_comment_trigger_status == 'true') || github.event_name != 'issue_comment' }}
     name: ${{ matrix.recipe }}-${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
     defaults:
@@ -82,6 +140,8 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event_name == 'issue_comment' && needs.check.outputs.pr_comment_trigger_ref || github.ref }}
 
       - name: Setup platform-specific requirements
         run: |
