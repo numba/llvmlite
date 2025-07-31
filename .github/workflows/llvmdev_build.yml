@@ -69,7 +69,7 @@ jobs:
         # command is correct and if the issuer has the necessary permissions.
         # for more details see https://github.com/github/command
         # The workflow proceeds only if `steps.cmd.outputs.continue == 'true'`.
-        uses: github/command@v1
+        uses: github/command@v2
         id: cmd
         if: ${{ github.event_name == 'issue_comment' }}
         with:

@@ -65,7 +65,7 @@ jobs:
         # This step verifies and validates the trigger command. It checks if the
         # command is correct and if the issuer has the necessary permissions.
         # The workflow proceeds only if `steps.cmd.outputs.continue == 'true'`.
-        uses: github/command@v1
+        uses: github/command@v2
         id: cmd
         if: ${{ github.event_name == 'issue_comment' }}
         with:
