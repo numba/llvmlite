@@ -78,11 +78,13 @@ jobs:
 
       - name: Build wheel in manylinux container
         run: |
+          LLVMDEV_ARTIFACT_PATH="/root/llvmlite/llvmdev_conda_packages"
+
           # Run the build script in manylinux container using the existing script
           docker run --rm \
             -v "$(pwd):/root/llvmlite" \
             quay.io/pypa/${{ env.MANYLINUX_IMAGE }} \
-            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }}"
+            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }} $LLVMDEV_ARTIFACT_PATH"
 
           # Create wheelhouse directory for artifact upload
           mkdir -p wheelhouse
