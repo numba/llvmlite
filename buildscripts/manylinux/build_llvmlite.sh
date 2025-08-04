@@ -22,7 +22,7 @@ conda activate $envname
 # Install llvmdev
 
 if [ -n "$LLVMDEV_PKG_PATH" ] && [ -d "$LLVMDEV_PKG_PATH" ]; then
-    conda install -y -c "file://$LLVMDEV_PKG_PATH" llvmdev --no-deps
+    conda install -y "$LLVMDEV_PKG_PATH"/*.conda --no-deps
 else
     if [[ $(uname -m) == "aarch64" ]] ; then
         conda install -y numba/label/manylinux_2_28::llvmdev --no-deps
