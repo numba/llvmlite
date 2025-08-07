@@ -15,5 +15,7 @@ export PYTHONNOUSERSITE=1
 
 # This is Numba channel specific: enables static linking of stdlibc++
 export LLVMLITE_CXX_STATIC_LINK=1
+# This is Numba channel specific: declare this as a conda package
+export LLVMLITE_PACKAGE_FORMAT="conda"
 
 $PYTHON -m pip install --no-index --no-deps --no-build-isolation -vv -e .

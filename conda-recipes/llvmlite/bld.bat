@@ -1,3 +1,5 @@
+@rem This is Numba channel specific: declare this as a conda package
+set LLVMLITE_PACKAGE_FORMAT=conda
 
 @rem Let CMake know about the LLVM install path, for find_package()
 set CMAKE_PREFIX_PATH=%LIBRARY_PREFIX%
