@@ -1,7 +1,4 @@
 #include "core.h"
-#include <stdio.h>
-#include <stdlib.h>
-
 
 extern "C" {
 
@@ -27,7 +24,7 @@ LLVMPY_IsDynamicLLVMLinkageBuild(void) {
 #endif
 }
 
-API_EXPORT(const char * )
+API_EXPORT(const char *)
 LLVMPY_PackageFormat(void) {
 #ifndef LLVMLITE_PACKAGE_FORMAT
     return "unspecified";
@@ -37,8 +34,6 @@ LLVMPY_PackageFormat(void) {
     return "conda";
 #else
 #error "LLVMLITE_PACKAGE_FORMAT must be one of 'wheel' or 'conda'."
-    printf("Calling abort(), unreachable condition reached\n");
-    abort();
 #endif
 }
 
