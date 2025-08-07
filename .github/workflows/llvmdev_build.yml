@@ -5,6 +5,8 @@ on:
     paths:
       - .github/workflows/llvmdev_build.yml
       - buildscripts/github/llvmdev_evaluate.py
+      - conda-recipes/llvmdev/**
+      - conda-recipes/llvmdev_for_wheel/**
   label:
     types: [created]
   workflow_dispatch:

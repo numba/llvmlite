@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/llvmlite_conda_builder.yml
       - buildscripts/github/llvmlite_evaluate.py
+      - conda-recipes/llvmlite/**
   workflow_dispatch:
     inputs:
       llvmdev_run_id:
