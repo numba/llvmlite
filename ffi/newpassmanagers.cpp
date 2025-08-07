@@ -265,7 +265,6 @@ static TargetMachine *unwrap(LLVMTargetMachineRef P) {
 
 } // namespace llvm
 
-
 // C++ linkage
 static OptimizationLevel mapLevel(int speed_level, int size_level) {
     switch (size_level) {
@@ -295,7 +294,6 @@ static OptimizationLevel mapLevel(int speed_level, int size_level) {
         break;
     }
 }
-
 
 extern "C" {
 
@@ -525,7 +523,6 @@ API_EXPORT(void)
 LLVMPY_DisposePassBuilder(LLVMPassBuilderRef PBRef) {
     delete llvm::unwrap(PBRef);
 }
-
 
 API_EXPORT(LLVMModulePassManagerRef)
 LLVMPY_buildPerModuleDefaultPipeline(LLVMPassBuilderRef PBref, int speed_level,
