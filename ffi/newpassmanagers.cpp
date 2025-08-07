@@ -331,7 +331,7 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
     // needs to just redirect its print output to somewhere not visible to
     // users.
     if (TimePassesIsEnabled) {
-        TimePassesHandler& TP = SI.getTimePasses();
+        TimePassesHandler &TP = SI.getTimePasses();
         TP.setOutStream(os);
     }
 
@@ -400,7 +400,7 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
 
     if (TimePassesIsEnabled) {
-        TimePassesHandler& TP = SI.getTimePasses();
+        TimePassesHandler &TP = SI.getTimePasses();
         TP.setOutStream(os);
     }
 
