@@ -13,7 +13,7 @@ sourceroot=$(pwd)
 pyver=$2
 envname="llvmbase"
 outputdir="/root/llvmlite/docker_output"
-LLVMDEV_PKG_PATH=${3:-""}
+LLVMDEV_ARTIFACT_PATH=${3:-""}
 
 ls -l /opt/python/$pyver/bin
 
@@ -21,8 +21,8 @@ conda create -y -n $envname
 conda activate $envname
 # Install llvmdev
 
-if [ -n "$LLVMDEV_PKG_PATH" ] && [ -d "$LLVMDEV_PKG_PATH" ]; then
-    conda install -y "$LLVMDEV_PKG_PATH"/*.conda --no-deps
+if [ -n "$LLVMDEV_ARTIFACT_PATH" ] && [ -d "$LLVMDEV_ARTIFACT_PATH" ]; then
+    conda install -y "$LLVMDEV_ARTIFACT_PATH"/*.conda --no-deps
 else
     if [[ $(uname -m) == "aarch64" ]] ; then
         conda install -y numba/label/manylinux_2_28::llvmdev --no-deps
