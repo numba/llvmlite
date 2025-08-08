@@ -265,6 +265,36 @@ static TargetMachine *unwrap(LLVMTargetMachineRef P) {
 
 } // namespace llvm
 
+// C++ linkage
+static OptimizationLevel mapLevel(int speed_level, int size_level) {
+    switch (size_level) {
+    case 0:
+        switch (speed_level) {
+        case 0:
+            return OptimizationLevel::O0;
+        case 1:
+            return OptimizationLevel::O1;
+        case 2:
+            return OptimizationLevel::O2;
+        case 3:
+            return OptimizationLevel::O3;
+        default:
+            llvm_unreachable("Invalid optimization level");
+        }
+    case 1:
+        if (speed_level == 1)
+            return OptimizationLevel::Os;
+        llvm_unreachable("Invalid optimization level for size level 1");
+    case 2:
+        if (speed_level == 2)
+            return OptimizationLevel::Oz;
+        llvm_unreachable("Invalid optimization level for size level 2");
+    default:
+        llvm_unreachable("Invalid size level");
+        break;
+    }
+}
+
 extern "C" {
 
 // MPM
@@ -492,35 +522,6 @@ LLVMPY_CreatePassBuilder(LLVMTargetMachineRef TMRef,
 API_EXPORT(void)
 LLVMPY_DisposePassBuilder(LLVMPassBuilderRef PBRef) {
     delete llvm::unwrap(PBRef);
-}
-
-static OptimizationLevel mapLevel(int speed_level, int size_level) {
-    switch (size_level) {
-    case 0:
-        switch (speed_level) {
-        case 0:
-            return OptimizationLevel::O0;
-        case 1:
-            return OptimizationLevel::O1;
-        case 2:
-            return OptimizationLevel::O2;
-        case 3:
-            return OptimizationLevel::O3;
-        default:
-            llvm_unreachable("Invalid optimization level");
-        }
-    case 1:
-        if (speed_level == 1)
-            return OptimizationLevel::Os;
-        llvm_unreachable("Invalid optimization level for size level 1");
-    case 2:
-        if (speed_level == 2)
-            return OptimizationLevel::Oz;
-        llvm_unreachable("Invalid optimization level for size level 2");
-    default:
-        llvm_unreachable("Invalid size level");
-        break;
-    }
 }
 
 API_EXPORT(LLVMModulePassManagerRef)

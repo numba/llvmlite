@@ -37,8 +37,8 @@ static void destroyError(Error e) {
 class JITDylibTracker {
   public:
     std::shared_ptr<LLJIT> lljit;
-    IntrusiveRefCntPtr<llvm::orc::ResourceTracker> tracker;
     JITDylib &dylib;
+    IntrusiveRefCntPtr<llvm::orc::ResourceTracker> tracker;
     JITDylibTracker(std::shared_ptr<LLJIT> &lljit_, JITDylib &dylib_,
                     IntrusiveRefCntPtr<llvm::orc::ResourceTracker> &&tracker_)
         : lljit(lljit_), dylib(dylib_), tracker(tracker_) {}
