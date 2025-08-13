@@ -106,19 +106,47 @@ if(UNIX AND NOT APPLE)
 endif()
 
 
-# Deal with RTTI, ideally build without it, but allow use if needed.
-if(UNIX)
-    set(LLVMLITE_USE_RTTI_DEFAULT OFF)
-    option(LLVMLITE_USE_RTTI
-        "Build llvmlite with RTTI enabled (Unix systems), default is OFF"
-        ${LLVMLITE_USE_RTTI_DEFAULT})
+# RTTI handling: This is a little awkward, it's a 3-state variable so cannot be
+# an option. The states are user defined as ON or OFF, or user has not set so
+# inherit from LLVM.
+if(UNIX AND NOT APPLE)
+    string(TOLOWER "${LLVMLITE_USE_RTTI}" lowercase_LLVMLITE_USE_RTTI)
+    if(lowercase_LLVMLITE_USE_RTTI STREQUAL "on")
+        message(STATUS
+            "LLVMLITE_USE_RTTI override is set, RTTI is ON.")
+        set(LLVMLITE_USE_RTTI_FLAG ON)
+    elseif(lowercase_LLVMLITE_USE_RTTI STREQUAL "off")
+        message(STATUS
+            "LLVMLITE_USE_RTTI override is set, RTTI is OFF.")
+        set(LLVMLITE_USE_RTTI_FLAG OFF)
+    elseif(lowercase_LLVMLITE_USE_RTTI STREQUAL "")
+        if(DEFINED LLVM_ENABLE_RTTI)
+            message(STATUS
+            "LLVMLITE_USE_RTTI not set, inheriting RTTI flags from LLVM as: \
+${LLVM_ENABLE_RTTI}.")
+            set(LLVMLITE_USE_RTTI_FLAG ${LLVM_ENABLE_RTTI})
+        else()
+            message(FATAL_ERROR "Both LLVMLITE_USE_RTTI and LLVM_ENABLE_RTTI \
+                                 are not set, cannot inherit RTTI setting from \
+                                 LLVM, user must override by setting \
+                                 LLVMLITE_USE_RTTI")
+        endif()
+    else()
+        message(FATAL_ERROR "LLVMLITE_USE_RTTI is set to an unknown value:
+        ${LLVMLITE_USE_RTTI}.")
+    endif()
 
+    # unconditionally strip out -fno-rtti, it will be added to the target
+    # if needed
     set(FLAG_NO_RTTI "-fno-rtti")
-    if(LLVMLITE_USE_RTTI)
-        # strip out -fno-rtti if it's set as the user asked for it to be removed
-        string(REPLACE "${FLAG_NO_RTTI} " "" CMAKE_CXX_FLAGS
-               "${CMAKE_CXX_FLAGS}")
-        message(STATUS "If present -fno-rtti was removed from CXX_FLAGS")
+    set(OLD_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+    string(REPLACE "${FLAG_NO_RTTI} " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    if(LLVMLITE_USE_RTTI_FLAG)
+        if(NOT ${OLD_CMAKE_CXX_FLAGS} STREQUAL ${CMAKE_CXX_FLAGS})
+            message(STATUS "-fno-rtti was removed from CXXFLAGS.")
+        else()
+            message(STATUS "-fno-rtti is not in CXXFLAGS, nothing to do.")
+        endif()
     else()
         # check for the flag and add it unconditionally (adding it more than
         # once is "ok").
