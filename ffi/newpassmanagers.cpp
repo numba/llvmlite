@@ -323,6 +323,31 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
 
     PrintPassOptions PrintPassOpts;
 
+    // NOTE: The following are used to provide an alternative outstream to
+    // STDOUT and need to be declared ahead of instantiating the
+    // StandardInstrumentations instance as they need to have a lifetime that
+    // is longer than the StandardInstrumentations. See following notes for
+    // details:
+    //
+    // The reason for this is that a StandardInstrumentations instance (SI)
+    // contains a TimePassesHandler instance (TP), when the SI goes out of scope
+    // it triggers the TP member destructor, and this is defined so as to call
+    // `TP->print()` to trigger the side effect of draining the pass timing
+    // buffer and resetting the timers. This `print()` call will by default
+    // drain to stdout and so a buffer is provided in the following and set as
+    // the "out stream" for the TP so that any such printing isn't visible to
+    // the user. Independently of all this, if the user wants timing
+    // information, there is a managed TP instance along with code managing the
+    // state of information capturing available as part of the LLVMPY interface.
+    // This is independently registered and managed outside of the
+    // StandardInstrumentations system.
+    //
+    // Summary: the StandardInstrumentations TimePassesHandler instance isn't
+    // used by anything available to llvmlite users, and so its printing stuff
+    // is just being hidden.
+    std::string osbuf;
+    raw_string_ostream os(osbuf);
+
 #if LLVM_VERSION_MAJOR < 16
     StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
 #else
@@ -331,11 +356,21 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
 #endif
     SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
 
+    // If the timing information is required, this is handled elsewhere, the
+    // instance of the TimePassesHandler on the StandardInstrumentations object
+    // needs to just redirect its print output to somewhere not visible to
+    // users.
+    if (TimePassesIsEnabled) {
+        TimePassesHandler &TP = SI.getTimePasses();
+        TP.setOutStream(os);
+    }
+
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
     PB->registerCGSCCAnalyses(CGAM);
     PB->registerModuleAnalyses(MAM);
     PB->crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
     MPM->run(*M, MAM);
 }
 
@@ -381,6 +416,11 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
     // TODO: Can expose this in ffi layer
     PrintPassOptions PrintPassOpts;
 
+    // See note in LLVMPY_RunNewModulePassManager for what is going on with
+    // these variables and the call below to TP.setOutStream().
+    std::string osbuf;
+    raw_string_ostream os(osbuf);
+
 #if LLVM_VERSION_MAJOR < 16
     StandardInstrumentations SI(DebugLogging, VerifyEach, PrintPassOpts);
 #else
@@ -388,6 +428,11 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
                                 PrintPassOpts);
 #endif
     SI.registerCallbacks(*PB->getPassInstrumentationCallbacks(), &FAM);
+
+    if (TimePassesIsEnabled) {
+        TimePassesHandler &TP = SI.getTimePasses();
+        TP.setOutStream(os);
+    }
 
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
