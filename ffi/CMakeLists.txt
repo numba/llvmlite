@@ -63,13 +63,18 @@ else()
 endif()
 
 # Inherited from Makefile system, not tested on unsupported targets (BSD).
-if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD"
-   OR ${CMAKE_SYSTEM_NAME} MATCHES "NetBSD")
-    check_cxx_compiler_flag(-flto HAVE_FLTO)
-    if(NOT HAVE_FLTO)
-        message(FATAL_ERROR "-flto flag is not supported by the compiler")
+if(UNIX AND NOT APPLE)
+    set(LLVMLITE_FLTO_DEFAULT ON)
+    option(LLVMLITE_FLTO
+           "Enable LTO"
+           ${LLVMLITE_FLTO_DEFAULT})
+    if (LLVMLITE_FLTO)
+        check_cxx_compiler_flag(-flto HAVE_FLTO)
+        if(NOT HAVE_FLTO)
+            message(FATAL_ERROR "-flto flag is not supported by the compiler")
+        endif()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
 endif()
 
 # Define the shared library
@@ -188,7 +193,6 @@ else()
 endif()
 
 
-
 # Setup and report on linkage against LLVM libraries
 message(STATUS "LLVM target link libraries: ${llvm_libs}")
 target_link_libraries(llvmlite ${llvm_libs})
@@ -198,8 +202,15 @@ target_link_libraries(llvmlite ${llvm_libs})
 # TODO: these options are just set, they should really be tested for
 # suitability.
 if(UNIX AND NOT APPLE)
-   set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
-                "-flto -Wl,--exclude-libs,ALL -Wl,--no-undefined")
+    set(FORCED_LINK_FLAGS "-Wl,--exclude-libs,ALL -Wl,--no-undefined")
+    # If FLTO at compile time, it's also needed at link time. There's a good
+    # chance it's carried in the C++ flags and will appear in the driver link
+    # mode, but just to make sure.
+    if (LLVMLITE_FLTO)
+        STRING(APPEND FORCED_LINK_FLAGS " -flto")
+    endif()
+    set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
+                 "${FORCED_LINK_FLAGS}")
 elseif(APPLE)
 # On Darwin only include the LLVMPY symbols required and exclude
 # everything else.

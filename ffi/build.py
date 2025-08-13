@@ -35,7 +35,8 @@ def env_var_options_to_cmake_options():
     env_vars = {"LLVMLITE_PACKAGE_FORMAT": ("conda", "wheel"),
                 "LLVMLITE_USE_RTTI": bool,
                 "LLVMLITE_CXX_STATIC_LINK": bool,
-                "LLVMLITE_SHARED": bool}
+                "LLVMLITE_SHARED": bool,
+                "LLVMLITE_FLTO": bool}
 
     for env_var in env_vars.keys():
         env_value = os.environ.get(env_var, None)
