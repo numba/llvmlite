@@ -6,6 +6,7 @@ project(llvmlite_ffi)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CheckCXXCompilerFlag)
+include(CMakePushCheckState)
 # Work around llvm/llvm-project#83802 - LLVM's Findzstd.cmake uses variables
 # that require including `GNUInstallDirs`, but it does not include it itself.
 include(GNUInstallDirs)
@@ -218,12 +219,66 @@ else()
                         orcjit
                         AsmPrinter
                         AllTargetsCodeGens
-                        AllTargetsAsmParsers
-                        IntelJITEvents)
+                        AllTargetsAsmParsers)
+
+    # Test build specific components, it's not known a priori whether these
+    # components will exist in a given build. On some platforms the components
+    # may not exist for good reason, e.g. IntelJITEvents won't exist on an
+    # aarch64 build, and equally, a custom LLVM may have mangled out the
+    # building of optional components or a packager may have split the llvm
+    # build such that a component is declared as present but is actually missing
+    # because it is in another package. Essentially, there's no real way of
+    # knowing and so each component is probed to check whether the mapped
+    # libname library exists by virtue of attempting a link.
+
+    # NOTE: To future editors, if you are upgrading LLVM and struggling to link,
+    # it could be because some component used by llvmlite has been renamed or
+    # split into two or similar. To resolve this, run `nm` on all the archive
+    # files in the LLVM build and grep for the missing symbols or vtable or
+    # whatever the linker is complaining about. Then add the name of the
+    # component that contains the missing item to either the list above if it
+    # could reasonably exist in all builds, or the list below if it's likely
+    # just some builds have the "new" component. Typically the "component" is
+    # just the  name of the library without whatever the system considers as a
+    # libname and the "LLVM" prefix e.g. component IntelJITEvents corresponds to
+    # archive libLLVMIntelJITEvents.a. There are some "special"
+    # pseudo-components that have much broader expansions but it's unlikely
+    # these will be encountered.
+    set(LLVM_BUILD_SPECIFIC_COMPONENTS IntelJITEvents)
+
+    # This function checks for whether a specific LLVM component can be linked
+    function(check_optional_component COMPONENT CURRENT_COMPONENTS)
+        message(STATUS "Testing for LLVM component ${COMPONENT}")
+        cmake_push_check_state(RESET)
+        set(TEST_COMPONENT ${COMPONENT})
+        llvm_map_components_to_libnames(TEST_COMPONENT_LIB ${TEST_COMPONENT})
+        set(CMAKE_REQUIRED_LIBRARIES ${TEST_COMPONENT_LIB})
+        # Need a per-component name to make sure the cached value from previous
+        # run isn't reused, it also makes the STATUS output more clear.
+        set(TMP_HAVE_COMPONENT "HAVE_COMPONENT:${COMPONENT}")
+        check_cxx_source_compiles("int main(void){return 0;}"
+                                  ${TMP_HAVE_COMPONENT})
+        cmake_pop_check_state()
+        if (${TMP_HAVE_COMPONENT})
+            list(APPEND CURRENT_COMPONENTS ${TEST_COMPONENT})
+        endif()
+        # write back into caller scope
+        set(LLVM_COMPONENTS ${CURRENT_COMPONENTS} PARENT_SCOPE)
+    endfunction()
+
+    # check each build specific component, if it's available it will be added to
+    # LLVM_COMPONENTS.
+    foreach(COMPONENT IN LISTS LLVM_BUILD_SPECIFIC_COMPONENTS)
+        check_optional_component(${COMPONENT} "${LLVM_COMPONENTS}")
+    endforeach()
+
+    # Map known components to library names for linkage
     llvm_map_components_to_libnames(llvm_libs ${LLVM_COMPONENTS})
+    message(STATUS "LLVM_COMPONENTS: ${LLVM_COMPONENTS}")
     message(STATUS
     "LLVMLITE_SHARED is OFF, using static linkage against LLVM")
 endif()
+
 
 # If this is a static link to LLVM, bake in whether LLVM has assertions enabled.
 # 3 states, on, off, and unknown
