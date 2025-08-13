@@ -127,8 +127,8 @@ Things to "fix" it...
    an LLVM. If you have conda available you could use this to bootstrap the
    installation with a working ``llvm``/``llvmdev`` package. Learn more about
    compiling from source in the section on `Building manually`_ below.
-   and in particular note the use of the ``LLVM_CONFIG`` environment variable
-   for specifying where your LLVM install is.
+   and in particular note the use of the ``CMAKE_PREFIX_PATH`` environment
+   variable for specifying the location of your LLVM installation.
 
 What to be aware of when using a system provided LLVM package.
 ..............................................................
@@ -164,7 +164,7 @@ Before building, you must have the following:
 
 * On Linux:
 
-  * g++ (>= 4.8) and CMake_
+  * g++ (>= 4.8), CMake_ and ``make``
 
   * If building LLVM on Ubuntu, the linker may report an error
     if the development version of ``libedit`` is not installed. If
@@ -215,22 +215,34 @@ for details:
 Compiling llvmlite
 ------------------
 
+llvmlite uses CMake to build the library through which it interacts with LLVM.
+Below are some key points on how to configure and build llvmlite.
+
 #. To build the llvmlite C wrapper, which embeds a statically
    linked copy of the required subset of LLVM, run the following from the
    llvmlite source directory::
 
      python setup.py build
 
-#. If your LLVM is installed in a nonstandard location, set the
-   ``LLVM_CONFIG`` environment variable to the location of the
-   corresponding ``llvm-config`` or ``llvm-config.exe``
-   executable. This variable must persist into the installation
-   of llvmlite---for example, into a Python environment.
+#. If your LLVM is installed in a non-standard location, set the
+   ``CMAKE_PREFIX_PATH`` environment variable to the location of the
+   ``cmake`` directory corresponding to your LLVM installation. This directory
+   is typically called ``cmake`` and contains a directory named ``llvm`` which
+   in turn contains the file ``LLVMConfig.cmake``.
 
    EXAMPLE: If LLVM is installed in ``/opt/llvm/`` with the
-   ``llvm-config`` binary located at
-   ``/opt/llvm/bin/llvm-config``, set
-   ``LLVM_CONFIG=/opt/llvm/bin/llvm-config``.
+   ``LLVMConfig.cmake`` file located at
+   ``/opt/llvm/lib/cmake/llvm/LLVMConfig.cmake``, set
+   ``CMAKE_PREFIX_PATH=/opt/llvm/lib/cmake``.
+
+   The CMake build system is relatively tolerant to specifying too high a level
+   directory, so long as it can find ``LLVMConfig.cmake`` somewhere in the
+   specified ``CMAKE_PREFIX_PATH``. If it cannot find it, it will tell you.
+
+#. By default llvmlite will link statically against LLVM
+   (see :ref:`faq_why_static`). To override this and request linkage
+   against the LLVM dynamic library (typically named ``libLLVM``) set the
+   environment variable ``LLVMLITE_SHARED`` to non-zero.
 
 #. If you wish to build against an unsupported LLVM version, set the environment
    variable ``LLVMLITE_SKIP_LLVM_VERSION_CHECK`` to non-zero. Note that this is
@@ -238,6 +250,32 @@ Compiling llvmlite
    built in this manner is limited/it's entirely possible that llvmlite will not
    work as expected. See also:
    :ref:`why llvmlite doesn’t always support the latest release(s) of LLVM<faq_supported_versions>`.
+
+#. Linux/GNU GCC toolchain only: If you wish to statically link ``libstdc++``
+   into your library, then set the environment variable
+   ``LLVMLITE_CXX_STATIC_LINK`` to non-zero.
+
+#. Linux/GNU GCC toolchain only: By default llvmlite will enforce the use of the
+   same RTTI flags as the LLVM build against which it is linking. This can
+   be overridden by setting the environment variable ``LLVMLITE_USE_RTTI``
+   to either ``ON`` to use RTTI, or ``OFF`` to not use RTTI. This is not a
+   boolean flag as there are 3 states, ``ON``, ``OFF`` and not set, which is the
+   default so as to inherit from LLVM.
+
+#. Linux/GNU GCC toolchain only: By default llvmlite will use link-time
+   optimisation. It is known that there are bugs in some GCC variants on some
+   platforms in relation to this option. To prevent the use of link-time
+   optimisation set the environment variable ``LLVMLITE_FLTO`` to zero.
+
+#. Numba maintainers only: As part of QA for the packages shipped to PyPI and
+   on the Anaconda Numba channel, the environment variable
+   ``LLVMLITE_PACKAGE_FORMAT`` can be set to one of ``"conda"`` or ``"wheel"``
+   as appropriate depending on the output package type. This is baked into the
+   binary as a runtime discoverable value such that specific testing of e.g.
+   linkage can be performed with the knowledge of the package type. If the
+   llvmlite unit tests are failing in your package and you are not a Numba
+   maintainer, it might be worth checking that this environment variable hasn't
+   been copied in from e.g. llvmlite's public CI scripts by accident.
 
 
 Installing
@@ -261,9 +299,11 @@ Installing from sdist
 If you don't want to do any modifications to llvmlite itself,
 it's also possible to use ``pip`` to compile and install llvmlite
 from the latest released sdist package.
-You'll still need to point to your ``llvm-config`` if it's not in the ``PATH``:
+You'll still need to set the environment variable ``CMAKE_PREFIX_PATH`` to
+point to the directory containing your LLVM CMake configuration (see above
+notes on the environment variable):
 
-``LLVM_CONFIG=/path/to/llvm-config pip3 install llvmlite``
+``CMAKE_PREFIX_PATH=/path/to/LLVM/cmake/directory pip3 install llvmlite``
 
 This should work on any platform that runs Python and llvm.
 It has been observed to work on ``arm``, ``ppc64le``,
@@ -272,14 +312,14 @@ and also ``pypy3`` on ``arm``.
 x86 users will need to pass an extra flag (see
 `issue \#522 <https://github.com/numba/llvmlite/issues/522>`_):
 
-``LLVM_CONFIG=/path/to/llvm-config CXXFLAGS=-fPIC pip3 install llvmlite``
+``CMAKE_PREFIX_PATH=/path/to/LLVM/cmake/directory CXXFLAGS=-fPIC pip3 install llvmlite``
 
 This is known to work with ``pypy3`` on ``Linux x64``.
 
 It's also possible to force ``pip`` to rebuild ``llvmlite`` locally with
 a custom version of ``llvm`` :
 
-``LLVM_CONFIG=/path/to/custom/llvm-config CXXFLAGS=-fPIC pip3 install --no-binary :all: llvmlite``
+``CMAKE_PREFIX_PATH=/path/to/LLVM/cmake/directory CXXFLAGS=-fPIC pip3 install --no-binary :all: llvmlite``
 
 
 .. _CMake: http://www.cmake.org/
