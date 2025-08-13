@@ -17,6 +17,34 @@ find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
+# NOTE: Keep this in sync with the version that llvmlite is declared to support
+set(LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT 15)
+
+# Check LLVM version is supported or intentionally overridden.
+if (NOT DEFINED LLVM_VERSION_MAJOR)
+    message(FATAL_ERROR "LLVM CMake export does not define LLVM_VERSION_MAJOR")
+else()
+    if (LLVMLITE_SKIP_LLVM_VERSION_CHECK)
+        if (LLVM_VERSION_MAJOR EQUAL LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT)
+            message(WARNING
+            "LLVMLITE_SKIP_LLVM_VERSION_CHECK is set but the current version \
+            ${LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT} is supported!")
+        else()
+            message(WARNING
+            "LLVMLITE_SKIP_LLVM_VERSION_CHECK is set, build is against an \
+            unsupported version of LLVM (${LLVM_VERSION_MAJOR}). Supported \
+            version is ${LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT}.")
+        endif()
+    else()
+        if (NOT LLVM_VERSION_MAJOR EQUAL LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT)
+            message(FATAL_ERROR
+            "LLVM CMake export states LLVM version is ${LLVM_VERSION_MAJOR}, \
+            llvmlite only officially supports \
+            ${LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT}.")
+        endif()
+    endif()
+endif()
+
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 

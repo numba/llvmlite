@@ -36,7 +36,8 @@ def env_var_options_to_cmake_options():
                 "LLVMLITE_USE_RTTI": ("ON", "OFF", ""),
                 "LLVMLITE_CXX_STATIC_LINK": bool,
                 "LLVMLITE_SHARED": bool,
-                "LLVMLITE_FLTO": bool}
+                "LLVMLITE_FLTO": bool,
+                "LLVMLITE_SKIP_LLVM_VERSION_CHECK": bool,}
 
     for env_var in env_vars.keys():
         env_value = os.environ.get(env_var, None)
