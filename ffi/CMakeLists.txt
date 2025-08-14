@@ -214,7 +214,7 @@ else()
     # xref: https://bugs.llvm.org/show_bug.cgi?id=47003
     # This is a workaround based on knowing what is needed. Do not set llvm_libs
     # to the cached LLVM_AVAILABLE_LIBS, it may contain the dynamic `LLVM`
-    # library, see llvmlite#1234 (yes, it's #1234, not a placeholder).
+    # library, see https://github.com/numba/llvmlite/pull/1234 for discussion.
     set(LLVM_COMPONENTS mcjit
                         orcjit
                         AsmPrinter
