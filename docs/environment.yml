@@ -3,10 +3,13 @@ channels:
   - numba/label/dev
 dependencies:
   - python
-  - llvmdev =15
+  # pip for installing llvmlite itself
+  - pip
+  - llvmdev=15
   - cmake
   - make
-  - docutils ==0.16
-  - gcc_linux-64 =11
-  - gxx_linux-64 =11
+  - docutils==0.16
+  - gcc_linux-64=11
+  - gxx_linux-64=11
+  - sphinx_rtd_theme
 
