@@ -41,7 +41,6 @@ pip install setuptools
 python setup.py clean
 
 # Configure build via env vars
-export LLVMLITE_CXX_STATIC_LINK=1
 export LLVMLITE_PACKAGE_FORMAT="wheel"
 
 # Build wheel

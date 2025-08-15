@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 source activate $CONDA_ENV
 
@@ -48,7 +48,7 @@ if [[ "$(uname)" != "Darwin" ]]; then
 fi
 
 # Make sure any error below is reported as such
-set -v -e
+set -exv
 
 if [ "$WHEEL" == "yes" ]; then
   conda install wheel
