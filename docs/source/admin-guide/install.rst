@@ -218,6 +218,17 @@ Compiling llvmlite
 llvmlite uses CMake to build the library through which it interacts with LLVM.
 Below are some key points on how to configure and build llvmlite.
 
+.. note::
+   Historically llvmlite had two build systems, one based on using
+   ``llvm-config`` and ``make``, the other using ``CMake``. If you were
+   using the ``llvm-config`` and ``make`` based system you may have been
+   setting the environment variable ``LLVM_CONFIG`` to indicate the location
+   of the LLVM installation via the ``llvm-config`` binary. The ``CMake`` system
+   does not use ``llvm-config`` or ``LLVM_CONFIG``, it uses the ``CMake``
+   configuration that is exported by LLVM. To migrate, if the environment
+   variable ``LLVM_CONFIG`` was set it should be replaced with an appropriately
+   set ``CMAKE_PREFIX_PATH`` environment variable, see below for details.
+
 #. To build the llvmlite C wrapper, which embeds a statically
    linked copy of the required subset of LLVM, run the following from the
    llvmlite source directory::
@@ -235,9 +246,7 @@ Below are some key points on how to configure and build llvmlite.
    ``/opt/llvm/lib/cmake/llvm/LLVMConfig.cmake``, set
    ``CMAKE_PREFIX_PATH=/opt/llvm/lib/cmake``.
 
-   The CMake build system is relatively tolerant to specifying too high a level
-   directory, so long as it can find ``LLVMConfig.cmake`` somewhere in the
-   specified ``CMAKE_PREFIX_PATH``. If it cannot find it, it will tell you.
+   If ``CMake`` cannot find the configuration, it will tell you.
 
 #. By default llvmlite will link statically against LLVM
    (see :ref:`faq_why_static`). To override this and request linkage
@@ -255,17 +264,16 @@ Below are some key points on how to configure and build llvmlite.
    into your library, then set the environment variable
    ``LLVMLITE_CXX_STATIC_LINK`` to non-zero.
 
-#. Linux/GNU GCC toolchain only: By default llvmlite will enforce the use of the
-   same RTTI flags as the LLVM build against which it is linking. This can
-   be overridden by setting the environment variable ``LLVMLITE_USE_RTTI``
-   to either ``ON`` to use RTTI, or ``OFF`` to not use RTTI. This is not a
-   boolean flag as there are 3 states, ``ON``, ``OFF`` and not set, which is the
-   default so as to inherit from LLVM.
+#. Unix only: By default llvmlite will enforce the use of the same RTTI flags as
+   the LLVM build against which it is linking. This can be overridden by setting
+   the environment variable ``LLVMLITE_USE_RTTI`` to either ``ON`` to use RTTI,
+   or ``OFF`` to not use RTTI. This is not a boolean flag as there are 3 states,
+   ``ON``, ``OFF`` and not set, which is the default so as to inherit from LLVM.
 
-#. Linux/GNU GCC toolchain only: By default llvmlite will use link-time
-   optimisation. It is known that there are bugs in some GCC variants on some
-   platforms in relation to this option. To prevent the use of link-time
-   optimisation set the environment variable ``LLVMLITE_FLTO`` to zero.
+#. Unix only: By default llvmlite will use link-time optimisation. It is known
+   that there are bugs in some GCC variants on some platforms in relation to
+   this option. To prevent the use of link-time optimisation set the environment
+   variable ``LLVMLITE_FLTO`` to zero.
 
 #. Numba maintainers only: As part of QA for the packages shipped to PyPI and
    on the Anaconda Numba channel, the environment variable
