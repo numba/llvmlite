@@ -14,7 +14,9 @@ fi
 export PYTHONNOUSERSITE=1
 
 # This is Numba channel specific: enables static linking of stdlibc++
-export LLVMLITE_CXX_STATIC_LINK=1
+if [[ "$(uname)" != "Darwin" ]]; then
+    export LLVMLITE_CXX_STATIC_LINK=1
+fi
 # This is Numba channel specific: declare this as a conda package
 export LLVMLITE_PACKAGE_FORMAT="conda"
 
