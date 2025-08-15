@@ -33,8 +33,6 @@ fi
 # which happens in build.sh
 if [[ "$(uname)" == "Linux" ]]; then
     $CONDA_INSTALL gcc_linux-64 gxx_linux-64
-elif [[ "$(uname)" == "Darwin" ]]; then
-    $CONDA_INSTALL clang_osx-64 clangxx_osx-64
 fi
 
 # Install dependencies for code coverage (codecov.io)

@@ -42,8 +42,6 @@ if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     export MACOSX_DEPLOYMENT_TARGET
 fi
 
-export PYTHONNOUSERSITE=1
-
 # This is Numba channel specific: enables static linking of libstdc++
 if [[ "$(uname)" != "Darwin" ]]; then
   export LLVMLITE_CXX_STATIC_LINK=1
