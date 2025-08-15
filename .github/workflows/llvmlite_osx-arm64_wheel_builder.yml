@@ -83,6 +83,7 @@ jobs:
       - name: Build wheel
         env:
           MACOSX_DEPLOYMENT_TARGET: "11.1"
+          LLVMLITE_PACKAGE_FORMAT: "wheel"
           LDFLAGS: "-v -Wl,-rpath,/usr/lib"
         run: |
           arch -arm64 python -m build --verbose --config-setting="--global-option=build_ext" --config-setting="--global-option=-v"
@@ -161,10 +162,14 @@ jobs:
           path: dist
 
       - name: Install and test
+        env:
+          LLVMLITE_DIST_TEST: "1"
         run: |
           PYTHON_PATH=$(which "python${{ matrix.python-version }}")
           "$PYTHON_PATH" -m venv .venv && source .venv/bin/activate
           python -m pip install --upgrade pip wheel
+          echo "Installing lief for distribution testing"
+          python -m pip install -v lief
           cd dist && python -m pip install -v ./*.whl
           DYLIB_PATH=$(find "$(python -c "import llvmlite; print(llvmlite.__path__[0])")" -name "libllvmlite.dylib")
           echo "Found dylib at: $DYLIB_PATH" && otool -L "$DYLIB_PATH"

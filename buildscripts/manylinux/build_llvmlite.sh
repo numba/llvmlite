@@ -45,6 +45,9 @@ pip install setuptools
 # Clean up
 python setup.py clean
 
+# Configure build via env vars
+export LLVMLITE_PACKAGE_FORMAT="wheel"
+
 # Build wheel
 distdir=$outputdir/dist_$(uname -m)_$pyver
 rm -rf $distdir

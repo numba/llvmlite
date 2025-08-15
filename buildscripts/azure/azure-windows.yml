@@ -22,11 +22,6 @@ jobs:
         PYTHON: '3.13'
         CONDA_ENV: cienv
 
-      llvm16:
-        PYTHON: '3.12'
-        CONDA_ENV: cienv
-        LLVM: '16'
-
       opaque_pointers:
         PYTHON: '3.12'
         CONDA_ENV: cienv

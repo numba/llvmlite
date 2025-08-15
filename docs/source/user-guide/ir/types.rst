@@ -145,14 +145,14 @@ llvmlite, but prior to using any of its functionality. For example:
 Opaque Pointers can be created by using:
 
 .. class:: PointerType(addrspace=0)
-   :no-index:
+   :noindex:
 
    The type of pointers.
 
    Pointer types expose the following attribute:
 
    * .. attribute:: addrspace
-        :no-index:
+        :noindex:
 
         The pointer's address space number. This optional integer
         allows you to choose a non-default address space---the
