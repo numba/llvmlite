@@ -86,6 +86,7 @@ jobs:
       - name: Build wheel
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.15"
+          LLVMLITE_PACKAGE_FORMAT: "wheel"
         run: python -m build
 
       - name: Fix macOS wheel library paths
@@ -169,12 +170,17 @@ jobs:
           path: dist
 
       - name: Install and test
+        env:
+          LLVMLITE_DIST_TEST: "1"
         run: |
           # Get the Python executable path
           PYTHON_PATH=$(which python${{ matrix.python-version }})
 
           # Upgrade pip and install wheel
           $PYTHON_PATH -m pip install --upgrade pip wheel
+
+          echo "Installing lief for distribution testing"
+          $PYTHON_PATH -m pip install -v lief
 
           # Install wheel and run tests
           cd dist

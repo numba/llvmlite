@@ -179,6 +179,8 @@ jobs:
           path: dist
 
       - name: Install and test
+        env:
+          LLVMLITE_DIST_TEST: "1"
         run: |
           # Get the Python executable path
           PYTHON_PATH=$(which python)
@@ -198,6 +200,9 @@ jobs:
             find . -type f -name "*.whl" -print
             exit 1
           fi
+
+          echo "Installing lief for distribution testing"
+          "${PYTHON_PATH}" -m pip install -v lief
 
           echo "Using wheel: $whl"
           "${PYTHON_PATH}" -m pip install -v "$whl"
