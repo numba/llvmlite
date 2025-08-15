@@ -3399,8 +3399,7 @@ class TestBuild(TestCase):
                                                  "gcc_s",
                                                  "c",
                                                  "rt",
-                                                 "stdc++",
-                                                 "ld-linux-aarch64",]),
+                                                 "stdc++",]),
                                 }, # end linux
                       # NOTE: on windows, this includes a "capture what is
                       # present and known to work and make sure it doesn"t
@@ -3518,7 +3517,7 @@ class TestBuild(TestCase):
         self.assertEqual(info['llvm_linkage_type'], "static")
         # FIXME: This is currently incorrect, llvmdev 15 is not universally
         # built with assertions and it should be!
-        if sys.platform.startswith('windows'):
+        if sys.platform == 'win32':
             self.assertEqual(info['llvm_assertions_state'], "on")
         else:
             self.assertEqual(info['llvm_assertions_state'], "off")
