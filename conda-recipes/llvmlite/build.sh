@@ -20,4 +20,4 @@ fi
 # This is Numba channel specific: declare this as a conda package
 export LLVMLITE_PACKAGE_FORMAT="conda"
 
-$PYTHON -m pip install --no-index --no-deps --no-build-isolation -vv -e .
+$PYTHON -m pip install --no-index --no-deps --no-build-isolation -vv .

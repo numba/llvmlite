@@ -20,5 +20,5 @@ set CMAKE_GENERATOR_TOOLKIT=v143
 @rem Ensure there are no build leftovers (CMake can complain)
 if exist ffi\build rmdir /S /Q ffi\build
 
-%PYTHON% -m pip install --no-index --no-deps --no-build-isolation -vv -e .
+%PYTHON% -m pip install --no-index --no-deps --no-build-isolation -vv .
 if errorlevel 1 exit 1
