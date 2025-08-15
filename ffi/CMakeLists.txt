@@ -92,7 +92,7 @@ else()
 endif()
 
 # Inherited from Makefile system, not tested on unsupported targets (BSD).
-if(UNIX AND NOT APPLE)
+if(UNIX)
     set(LLVMLITE_FLTO_DEFAULT ON)
     option(LLVMLITE_FLTO
            "Enable LTO"
@@ -138,7 +138,7 @@ endif()
 # RTTI handling: This is a little awkward, it's a 3-state variable so cannot be
 # an option. The states are user defined as ON or OFF, or user has not set so
 # inherit from LLVM.
-if(UNIX AND NOT APPLE)
+if(UNIX)
     string(TOLOWER "${LLVMLITE_USE_RTTI}" lowercase_LLVMLITE_USE_RTTI)
     if(lowercase_LLVMLITE_USE_RTTI STREQUAL "on")
         message(STATUS
@@ -323,9 +323,12 @@ if(UNIX AND NOT APPLE)
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
                  "${FORCED_LINK_FLAGS}")
 elseif(APPLE)
-# On Darwin only include the LLVMPY symbols required and exclude
-# everything else.
-    set(LLVM_EXPORTED_SYMBOLS "-Wl,-exported_symbol,_LLVMPY_*")
+    # On Darwin only include the LLVMPY symbols required and exclude
+    # everything else.
+    set(FORCED_LINK_FLAGS "-Wl,-exported_symbol,_LLVMPY_*")
+    if (LLVMLITE_FLTO)
+        STRING(APPEND FORCED_LINK_FLAGS " -flto")
+    endif()
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
-                 "${LLVM_EXPORTED_SYMBOLS}")
+                 "${FORCED_LINK_FLAGS}")
 endif()
