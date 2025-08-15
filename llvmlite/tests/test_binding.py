@@ -3390,7 +3390,7 @@ class TestBuild(TestCase):
                                                "gcc_s",
                                                "c",
                                                "stdc++",
-                                               "ld-linux-x86-64"]),
+                                               "ld-linux-x86-64",]),
                                 "aarch64":  set(["pthread",
                                                  "z",
                                                  "dl",
@@ -3398,7 +3398,7 @@ class TestBuild(TestCase):
                                                  "gcc_s",
                                                  "c",
                                                  "stdc++",
-                                                 "ld-linux-aarch64"]),
+                                                 "ld-linux-aarch64",]),
                                 }, # end linux
                       # NOTE: on windows, this includes a "capture what is
                       # present and known to work and make sure it doesn"t
@@ -3407,7 +3407,7 @@ class TestBuild(TestCase):
                                                 "kernel32",
                                                 "msvcp140",
                                                 "vcruntime140",
-                                                "vcruntime140_1"
+                                                "vcruntime140_1",
                                                 "api-ms-win-crt-convert-l1-1-0",
                                                 "api-ms-win-crt-environment-l1-1-0", # noqa: E501
                                                 "api-ms-win-crt-heap-l1-1-0",
@@ -3422,13 +3422,13 @@ class TestBuild(TestCase):
                                                 "ole32",]), # also delayed
                                   }, # end windows
                       "darwin": {"x86_64": set(["llvmlite",
-                                                "system"
-                                                "z"
-                                                "c++"]),
+                                                "system",
+                                                "z",
+                                                "c++",]),
                                  "arm64": set(["llvmlite",
-                                               "system"
-                                               "z"
-                                               "c++"]),
+                                               "system",
+                                               "z",
+                                               "c++",]),
                                  },# end darwin
                       } # end wheel_expected
 
@@ -3440,7 +3440,7 @@ class TestBuild(TestCase):
                                                "gcc_s",
                                                "c",
                                                # "stdc++", conda has static c++
-                                               "ld-linux-x86-64"]),
+                                               "ld-linux-x86-64",]),
                                 "aarch64":  set(["pthread",
                                                  "z",
                                                  "zstd",
@@ -3449,7 +3449,7 @@ class TestBuild(TestCase):
                                                  "gcc_s",
                                                  "c",
                                                  # "stdc++", conda has static c++ # noqa: E501
-                                                 "ld-linux-aarch64"]),
+                                                 "ld-linux-aarch64",]),
                                 }, # end linux
                       # NOTE: on windows, this includes a "capture what is
                       # present and known to work and make sure it doesn"t
@@ -3459,7 +3459,7 @@ class TestBuild(TestCase):
                                                 "kernel32",
                                                 "msvcp140",
                                                 "vcruntime140",
-                                                "vcruntime140_1"
+                                                "vcruntime140_1",
                                                 "api-ms-win-crt-convert-l1-1-0",
                                                 "api-ms-win-crt-environment-l1-1-0", # noqa: E501
                                                 "api-ms-win-crt-heap-l1-1-0",
@@ -3474,15 +3474,15 @@ class TestBuild(TestCase):
                                                 "ole32",]), # also delayed
                                   }, # end windows
                       "darwin": {"x86_64": set(["llvmlite",
-                                                "system"
-                                                "z"
+                                                "system",
+                                                "z",
                                                 "zstd",
-                                                "c++"]),
+                                                "c++",]),
                                  "arm64": set(["llvmlite",
-                                               "system"
-                                               "z"
+                                               "system",
+                                               "z",
                                                "zstd",
-                                               "c++"]),
+                                               "c++",]),
                                  },# end darwin
                       } # end wheel_expected
 
