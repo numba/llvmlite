@@ -3389,6 +3389,7 @@ class TestBuild(TestCase):
                                                "m",
                                                "gcc_s",
                                                "c",
+                                               "rt",
                                                "stdc++",
                                                "ld-linux-x86-64",]),
                                 "aarch64":  set(["pthread",
@@ -3397,6 +3398,7 @@ class TestBuild(TestCase):
                                                  "m",
                                                  "gcc_s",
                                                  "c",
+                                                 "rt",
                                                  "stdc++",
                                                  "ld-linux-aarch64",]),
                                 }, # end linux
