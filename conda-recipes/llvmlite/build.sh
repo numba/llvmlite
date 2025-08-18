@@ -7,7 +7,7 @@ if [ -n "$MACOSX_DEPLOYMENT_TARGET" ]; then
     if [[ $build_platform == osx-arm64 ]]; then
         export MACOSX_DEPLOYMENT_TARGET=11.1
     else
-        export MACOSX_DEPLOYMENT_TARGET=10.15
+        export MACOSX_DEPLOYMENT_TARGET=10.10
     fi
 fi
 
