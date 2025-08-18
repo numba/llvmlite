@@ -106,38 +106,12 @@ if(UNIX)
     endif()
 endif()
 
-# Define the shared library
-add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
-            module.cpp value.cpp executionengine.cpp transforms.cpp type.cpp
-            passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
-            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp
-            config.cpp)
-
-
-# Determine whether libstdc++ should be statically linked (or not).
-# GNU g++ and presumably clang on non-apple systems can probably deal with this.
-if(UNIX AND NOT APPLE)
-    set(LLVMLITE_CXX_STATIC_LINK_DEFAULT OFF)
-    option(LLVMLITE_CXX_STATIC_LINK
-           "Enable C++ static linking in llvmlite (GNU Compilers)"
-           ${LLVMLITE_CXX_STATIC_LINK_DEFAULT})
-
-    # See if static libc++ is requested
-    if (LLVMLITE_CXX_STATIC_LINK)
-        check_cxx_compiler_flag(-static-libstdc++ HAVE_STATIC_LIBSTDCXX)
-        if(NOT HAVE_STATIC_LIBSTDCXX)
-            message(FATAL_ERROR "LLVMLITE_CXX_STATIC_LINK was requested but
-                    the compiler does not support the flag")
-        endif()
-        add_definitions(-DLLVMLITE_CXX_STATIC_LINK=1)
-        target_link_options(llvmlite PRIVATE -static-libstdc++)
-    endif()
-endif()
-
-
 # RTTI handling: This is a little awkward, it's a 3-state variable so cannot be
 # an option. The states are user defined as ON or OFF, or user has not set so
-# inherit from LLVM.
+# inherit from LLVM. This part removes the `-fno-rtti` option from
+# CMAKE_CXX_FLAGS if appropriate, `-fno-rtti` is then added back in later as
+# a flag on the compilation target if the compiler supports it and no-RTTI was
+# determined to be appropriate.
 if(UNIX)
     string(TOLOWER "${LLVMLITE_USE_RTTI}" lowercase_LLVMLITE_USE_RTTI)
     if(lowercase_LLVMLITE_USE_RTTI STREQUAL "on")
@@ -169,7 +143,10 @@ ${LLVM_ENABLE_RTTI}.")
     # if needed
     set(FLAG_NO_RTTI "-fno-rtti")
     set(OLD_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    string(REPLACE "${FLAG_NO_RTTI} " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    separate_arguments(CMAKE_CXX_FLAGS_AS_LIST UNIX_COMMAND
+                       "${CMAKE_CXX_FLAGS}")
+    list(FILTER CMAKE_CXX_FLAGS_AS_LIST EXCLUDE REGEX "^${FLAG_NO_RTTI}$")
+    string(JOIN " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS_AS_LIST})
     if(LLVMLITE_USE_RTTI_FLAG)
         if(NOT ${OLD_CMAKE_CXX_FLAGS} STREQUAL ${CMAKE_CXX_FLAGS})
             message(STATUS "-fno-rtti was removed from CXXFLAGS.")
@@ -177,17 +154,48 @@ ${LLVM_ENABLE_RTTI}.")
             message(STATUS "-fno-rtti is not in CXXFLAGS, nothing to do.")
         endif()
     else()
-        # check for the flag and add it unconditionally (adding it more than
-        # once is "ok").
+        # check the flag works.
         check_cxx_compiler_flag(${FLAG_NO_RTTI} HAVE_FNO_RTTI)
         if (NOT HAVE_FNO_RTTI)
             message(FATAL_ERROR
             "Compiler must support ${FLAG_NO_RTTI} option if it is requested")
         endif()
-        target_compile_options(llvmlite PRIVATE ${FLAG_NO_RTTI})
     endif()
 endif()
 
+# Define the shared library
+add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
+            module.cpp value.cpp executionengine.cpp transforms.cpp type.cpp
+            passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
+            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp
+            config.cpp)
+
+
+# Determine whether libstdc++ should be statically linked (or not).
+# GNU g++ and presumably clang on non-apple systems can probably deal with this.
+if(UNIX AND NOT APPLE)
+    set(LLVMLITE_CXX_STATIC_LINK_DEFAULT OFF)
+    option(LLVMLITE_CXX_STATIC_LINK
+           "Enable C++ static linking in llvmlite (GNU Compilers)"
+           ${LLVMLITE_CXX_STATIC_LINK_DEFAULT})
+
+    # See if static libc++ is requested
+    if (LLVMLITE_CXX_STATIC_LINK)
+        check_cxx_compiler_flag(-static-libstdc++ HAVE_STATIC_LIBSTDCXX)
+        if(NOT HAVE_STATIC_LIBSTDCXX)
+            message(FATAL_ERROR "LLVMLITE_CXX_STATIC_LINK was requested but
+                    the compiler does not support the flag")
+        endif()
+        add_definitions(-DLLVMLITE_CXX_STATIC_LINK=1)
+        target_link_options(llvmlite PRIVATE -static-libstdc++)
+    endif()
+endif()
+
+# Apply no-RTTI flag if RTTI use is off, must happen after target definition
+if(UNIX AND NOT LLVMLITE_USE_RTTI_FLAG)
+    message(STATUS "Applying no-RTTI flag to llvmlite target: ${FLAG_NO_RTTI}")
+    target_compile_options(llvmlite PRIVATE ${FLAG_NO_RTTI})
+endif()
 
 # Check if the LLVMLITE_SHARED build flag is set. Default is static. This option
 # is baked into the binary for testing purposes.
