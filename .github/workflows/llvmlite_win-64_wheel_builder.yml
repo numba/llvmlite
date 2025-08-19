@@ -74,6 +74,8 @@ jobs:
           conda install -c defaults cmake libxml2 python-build
 
       - name: Build wheel
+        env:
+          LLVMLITE_PACKAGE_FORMAT: "wheel"
         run: python -m build
 
       - name: Upload llvmlite wheel
@@ -154,9 +156,14 @@ jobs:
           path: dist
 
       - name: Install and test
+        env:
+          LLVMLITE_DIST_TEST: "1"
         run: |
           # Upgrade pip and install wheel
           python -m pip install --upgrade pip wheel
+
+          echo "Installing lief for distribution testing"
+          python -m pip install -v lief
 
           # Install wheel and run tests
           cd dist

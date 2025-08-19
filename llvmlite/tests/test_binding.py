@@ -23,6 +23,24 @@ if platform.machine() == 'armv7l':
     llvm.load_library_permanently('libgcc_s.so.1')
 
 
+is_conda_package = unittest.skipUnless(llvm.package_format == "conda",
+                                       ("conda package test only, have "
+                                        f"{llvm.package_format}"))
+is_wheel_package = unittest.skipUnless(llvm.package_format == "wheel",
+                                       ("wheel package test only, have "
+                                        f"{llvm.package_format}"))
+
+_HAVE_LIEF = False
+try:
+    import lief  # noqa: F401
+    _HAVE_LIEF = True
+except ImportError:
+    pass
+
+
+needs_lief = unittest.skipUnless(_HAVE_LIEF, "test needs py-lief package")
+
+
 def no_de_locale():
     cur = locale.setlocale(locale.LC_ALL)
     try:
@@ -3330,6 +3348,196 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         fpm.add_loop_strength_reduce_pass()
         fpm.add_loop_rotate_pass()
         fpm.add_refprune_pass()
+
+
+@unittest.skipUnless(os.environ.get('LLVMLITE_DIST_TEST'),
+                     "Distribution-specific test")
+@needs_lief
+class TestBuild(TestCase):
+    # These tests are for use by the Numba project maintainers to check that
+    # package builds for which they are responsible are producing artifacts in
+    # the expected way. If you are a package maintainer and these tests are
+    # running, they shouldn't be by default. The only way they will run is if
+    # the environment variable LLVMLITE_DIST_TEST is set. The things they are
+    # checking are based on how the Numba project maintainers want to ship the
+    # packages, this may be entirely different to how other maintainers wish to
+    # ship. Basically, don't enable these tests unless you are sure they are
+    # suitable for your use case.
+    #
+    # The llvmlite DSO is the foundation of Numba's JIT compiler stack and is
+    # also used by other similar projects. It has to link against LLVM as that
+    # is what provides the tooling to do e.g. IR generation and JIT compilation.
+    # There are various options surrounding how to build LLVM and then how to
+    # link it into llvmlite. There have been many occurences of surprising
+    # linkages, symbol collisions and various other issues.
+    #
+    # The following tests are designed to try and test out some of the more
+    # common combinations of package type and linkage.
+    #
+    # NOTE: For Numba project maintainers on packaging formats and expected
+    # linkage. The following dictionaries capture the state of linkage as of
+    # llvmlite release 0.44. This is not an indication that it is correct, just
+    # that this is what is present in practice and clearly "works" to a large
+    # degree by virtue of having fixed the few reported issues. If you need to
+    # modify these dictionaries based on new information, that's fine, just make
+    # sure that it is an understood action opposed to just capturing what
+    # happened!
+
+    wheel_expected = {"linux": {"x86_64": set(["pthread",
+                                               "z",
+                                               "dl",
+                                               "m",
+                                               "gcc_s",
+                                               "c",
+                                               "rt",
+                                               "stdc++",
+                                               "ld-linux-x86-64",]),
+                                "aarch64":  set(["pthread",
+                                                 "z",
+                                                 "dl",
+                                                 "m",
+                                                 "gcc_s",
+                                                 "c",
+                                                 "rt",
+                                                 "stdc++",]),
+                                }, # end linux
+                      # NOTE: on windows, this includes a "capture what is
+                      # present and known to work and make sure it doesn"t
+                      # change" approach.
+                      "windows": {"amd64": set(["advapi32",
+                                                "kernel32",
+                                                "msvcp140",
+                                                "vcruntime140",
+                                                "vcruntime140_1",
+                                                "api-ms-win-crt-convert-l1-1-0",
+                                                "api-ms-win-crt-environment-l1-1-0", # noqa: E501
+                                                "api-ms-win-crt-heap-l1-1-0",
+                                                "api-ms-win-crt-locale-l1-1-0",
+                                                "api-ms-win-crt-math-l1-1-0",
+                                                "api-ms-win-crt-runtime-l1-1-0",
+                                                "api-ms-win-crt-stdio-l1-1-0",
+                                                "api-ms-win-crt-string-l1-1-0",
+                                                "api-ms-win-crt-time-l1-1-0",
+                                                "api-ms-win-crt-utility-l1-1-0",
+                                                "shell32",  # this is delayed
+                                                "ole32",]), # also delayed
+                                  }, # end windows
+                      "darwin": {"x86_64": set(["llvmlite",
+                                                "system",
+                                                "z",
+                                                "c++",]),
+                                 "arm64": set(["llvmlite",
+                                               "system",
+                                               "z",
+                                               "c++",]),
+                                 },# end darwin
+                      } # end wheel_expected
+
+    conda_expected = {"linux": {"x86_64": set(["pthread",
+                                               "z",
+                                               "zstd",
+                                               "dl",
+                                               "m",
+                                               "gcc_s",
+                                               "c",
+                                               # "stdc++", conda has static c++
+                                               "ld-linux-x86-64",]),
+                                "aarch64":  set(["pthread",
+                                                 "z",
+                                                 "zstd",
+                                                 "dl",
+                                                 "m",
+                                                 "gcc_s",
+                                                 "c",
+                                                 # "stdc++", conda has static c++ # noqa: E501
+                                                 "ld-linux-aarch64",]),
+                                }, # end linux
+                      # NOTE: on windows, this includes a "capture what is
+                      # present and known to work and make sure it doesn"t
+                      # change" approach.
+                      "windows": {"amd64": set(["z",
+                                                "advapi32",
+                                                "kernel32",
+                                                "msvcp140",
+                                                "vcruntime140",
+                                                "vcruntime140_1",
+                                                "api-ms-win-crt-convert-l1-1-0",
+                                                "api-ms-win-crt-environment-l1-1-0", # noqa: E501
+                                                "api-ms-win-crt-heap-l1-1-0",
+                                                "api-ms-win-crt-locale-l1-1-0",
+                                                "api-ms-win-crt-math-l1-1-0",
+                                                "api-ms-win-crt-runtime-l1-1-0",
+                                                "api-ms-win-crt-stdio-l1-1-0",
+                                                "api-ms-win-crt-string-l1-1-0",
+                                                "api-ms-win-crt-time-l1-1-0",
+                                                "api-ms-win-crt-utility-l1-1-0",
+                                                "shell32",  # this is delayed
+                                                "ole32",]), # also delayed
+                                  }, # end windows
+                      "darwin": {"x86_64": set(["llvmlite",
+                                                "system",
+                                                "z",
+                                                "zstd",
+                                                "c++",]),
+                                 "arm64": set(["llvmlite",
+                                               "system",
+                                               "z",
+                                               "zstd",
+                                               "c++",]),
+                                 },# end darwin
+                      } # end wheel_expected
+
+    def check_linkage(self, info, package_type):
+        machine = platform.machine().lower()
+        os_name = platform.system().lower()
+
+        if package_type == "wheel":
+            expected = self.wheel_expected[os_name][machine]
+        elif package_type == "conda":
+            expected = self.conda_expected[os_name][machine]
+        else:
+            raise ValueError(f"Unexpected package type: {package_type}")
+
+        got = set(info["canonicalised_linked_libraries"])
+
+        try:
+            self.assertEqual(expected, got)
+        except AssertionError as e:
+            msg = ("Unexpected linkage encountered for libllvmlite:\n"
+                   f"Expected: {sorted(expected)}\n"
+                   f"     Got: {sorted(got)}\n\n"
+                   f"Difference: {set.symmetric_difference(expected, got)}\n"
+                   f"Only in Expected: {set.difference(expected, got)}\n"
+                   f"Only in Got: {set.difference(got, expected)}\n")
+            raise AssertionError(msg) from e
+
+    @is_wheel_package
+    def test_wheel_build(self):
+        info = llvm.config.get_sysinfo()
+        self.assertEqual(info['llvm_linkage_type'], "static")
+        # FIXME: This is currently incorrect, llvmdev 15 is not universally
+        # built with assertions and it should be!
+        if sys.platform == 'win32':
+            self.assertEqual(info['llvm_assertions_state'], "on")
+        else:
+            self.assertEqual(info['llvm_assertions_state'], "off")
+        self.check_linkage(info, "wheel")
+
+    @is_conda_package
+    def test_conda_build(self):
+        info = llvm.config.get_sysinfo()
+        self.assertEqual(info['llvm_linkage_type'], "static")
+
+        # FIXME: This is currently incorrect, llvmdev 15 is not universally
+        # built with assertions and it should be!
+        if sys.platform == 'win32':
+            self.assertEqual(info['llvm_assertions_state'], "on")
+        else:
+            self.assertEqual(info['llvm_assertions_state'], "off")
+
+        self.check_linkage(info, "conda")
+        if platform.system().lower() == "linux":
+            self.assertEqual(info['libstdcxx_linkage_type'], "static")
 
 
 if __name__ == "__main__":
