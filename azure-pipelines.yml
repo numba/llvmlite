@@ -19,12 +19,6 @@ jobs:
       py313:
         PYTHON: '3.13'
         CONDA_ENV: cienv
-
-      llvm16:
-        PYTHON: '3.12'
-        CONDA_ENV: cienv
-        LLVM: '16'
-
       opaque_pointers:
         PYTHON: '3.12'
         CONDA_ENV: cienv
@@ -55,10 +49,7 @@ jobs:
         CONDA_ENV: cienv
         RUN_FLAKE8: yes
         DIST_TEST: yes
-# temporarily disabled
-#       pypy:
-#         PYTHON: pypy
-#         CONDA_ENV: cienv
+
       py310_wheel:
         PYTHON: '3.10'
         CONDA_ENV: cienv
@@ -75,11 +66,6 @@ jobs:
         PYTHON: '3.13'
         CONDA_ENV: cienv
         WHEEL: 'yes'
-
-      llvm16:
-        PYTHON: '3.12'
-        CONDA_ENV: cienv
-        LLVM: '16'
 
       opaque_pointers:
         PYTHON: '3.12'

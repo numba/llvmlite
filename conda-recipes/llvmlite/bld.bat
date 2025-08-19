@@ -1,3 +1,5 @@
+@rem This is Numba channel specific: declare this as a conda package
+set LLVMLITE_PACKAGE_FORMAT=conda
 
 @rem Let CMake know about the LLVM install path, for find_package()
 set CMAKE_PREFIX_PATH=%LIBRARY_PREFIX%
@@ -18,5 +20,5 @@ set CMAKE_GENERATOR_TOOLKIT=v143
 @rem Ensure there are no build leftovers (CMake can complain)
 if exist ffi\build rmdir /S /Q ffi\build
 
-%PYTHON% setup.py install
+%PYTHON% -m pip install --no-index --no-deps --no-build-isolation -vv .
 if errorlevel 1 exit 1
