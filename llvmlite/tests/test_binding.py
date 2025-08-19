@@ -3528,9 +3528,12 @@ class TestBuild(TestCase):
         info = llvm.config.get_sysinfo()
         self.assertEqual(info['llvm_linkage_type'], "static")
 
-        # FIXME: This is currently incorrect, llvmdev 15 is not built with
-        # assertions and it should be!
-        self.assertEqual(info['llvm_assertions_state'], "off")
+        # FIXME: This is currently incorrect, llvmdev 15 is not universally
+        # built with assertions and it should be!
+        if sys.platform == 'win32':
+            self.assertEqual(info['llvm_assertions_state'], "on")
+        else:
+            self.assertEqual(info['llvm_assertions_state'], "off")
 
         self.check_linkage(info, "conda")
         if platform.system().lower() == "linux":
