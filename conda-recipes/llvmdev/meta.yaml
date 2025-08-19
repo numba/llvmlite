@@ -1,6 +1,6 @@
 {% set shortversion = "20.1" %}
-{% set version = "20.1.5" %}
-{% set sha256_llvm = "a069565cd1c6aee48ee0f36de300635b5781f355d7b3c96a28062d50d575fa3e" %}
+{% set version = "20.1.8" %}
+{% set sha256_llvm = "6898f963c8e938981e6c4a302e83ec5beb4630147c7311183cf61069af16333d" %}
 {% set build_number = "0" %}
 
 package:
