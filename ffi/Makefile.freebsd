@@ -3,8 +3,9 @@ CXX = clang++ -stdlib=libc++
 
 # -flto and --exclude-libs allow us to remove those parts of LLVM we don't use
 CXX_FLTO_FLAGS ?= -flto
-LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=ALL
+LD_FLTO_FLAGS ?= -flto -Wl,--exclude-libs=$(LLVM_EXCLUDE_LIB)
 
+ARCH := `uname -m`
 CXXFLAGS := $(CPPFLAGS) $(CXXFLAGS) $(LLVM_CXXFLAGS) $(CXX_FLTO_FLAGS)
 LDFLAGS := $(LDFLAGS) $(LLVM_LDFLAGS) $(LD_FLTO_FLAGS)
 LIBS = $(LLVM_LIBS)
@@ -15,10 +16,17 @@ SRC = assembly.cpp bitcode.cpp core.cpp initfini.cpp module.cpp value.cpp \
 	memorymanager.cpp newpassmanagers.cpp
 OUTPUT = libllvmlite.so
 
+ifneq ("$(wildcard $(LLVM_LIBDIR)/clang)","")
+    BUILTINS_ARCHIVE := $(LLVM_LIBDIR)/clang/*/lib/freebsd/libclang_rt.builtins-${ARCH}.a
+else
+    BUILTINS_ARCHIVE := $(LLVM_LIBDIR)/freebsd/libclang_rt.builtins-$(ARCH).a
+endif
+
 all: $(OUTPUT)
 
 $(OUTPUT): $(SRC) $(INCLUDE)
-	$(CXX) -shared $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS)
+	$(CXX) -shared $(CXXFLAGS) $(SRC) -o $(OUTPUT) $(LDFLAGS) $(LIBS) \
+		-Wl,--whole-archive ${BUILTINS_ARCHIVE} -Wl,--no-whole-archive
 
 clean:
-	rm -rf test
+	rm -rf test $(OUTPUT) $(OBJ)
