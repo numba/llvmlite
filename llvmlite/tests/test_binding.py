@@ -3455,7 +3455,7 @@ class TestBuild(TestCase):
                       # NOTE: on windows, this includes a "capture what is
                       # present and known to work and make sure it doesn"t
                       # change" approach.
-                      "windows": {"amd64": set(["zlib",
+                      "windows": {"amd64": set(["z",
                                                 "advapi32",
                                                 "kernel32",
                                                 "msvcp140",
