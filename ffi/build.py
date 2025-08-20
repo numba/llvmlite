@@ -188,16 +188,14 @@ def main_posix(kind, library_ext):
     else:
         (version, _) = out.split('.', 1)
         version = int(version)
-        if version == 20:
-            pass
-        elif version > 20:
+        if version > 20:
             msg = ("WARNING: Building llvmlite with LLVM version > 20 ({!r}) "
                    "is untested and may result in problems. Be sure to set "
                    "LLVM_CONFIG to the right executable path.\nRead the "
                    "documentation at http://llvmlite.pydata.org/ for more "
                    "information about building llvmlite.\n".format(version))
             show_warning(msg)
-        else:
+        elif version < 20:
             msg = (f"Building llvmlite requires LLVM 20, got {version!r}. "
                    "Be sure to set LLVM_CONFIG to the right executable "
                    "path.\nRead the documentation at "
