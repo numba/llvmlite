@@ -10,7 +10,6 @@
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
-#include "llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderGDB.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/MemoryBuffer.h"
@@ -95,13 +94,13 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
             /* FIXME(LLVM16): In newer LLVM versions, there is a simple
              * EnableDebugSupport flag on the builder and we don't need to do
              * any of this. */
-            if (triple.getObjectFormat() == Triple::ELF ||
-                triple.getObjectFormat() == Triple::MachO) {
-                linkingLayer->addPlugin(
-                    std::make_unique<orc::GDBJITDebugInfoRegistrationPlugin>(
-                        ExecutorAddr::fromPtr(
-                            &llvm_orc_registerJITLoaderGDBWrapper)));
-            }
+            //  if (triple.getObjectFormat() == Triple::ELF ||
+            //     triple.getObjectFormat() == Triple::MachO) {
+            //     linkingLayer->addPlugin(
+            //         std::make_unique<orc::GDBJITDebugInfoRegistrationPlugin>(
+            //             ExecutorAddr::fromPtr(
+            //                 &llvm_orc_registerJITLoaderGDBWrapper)));
+            // }
             if (triple.isOSBinFormatCOFF()) {
                 linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
                     true);
