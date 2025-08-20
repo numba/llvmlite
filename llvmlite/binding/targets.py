@@ -7,6 +7,10 @@ from llvmlite.binding.initfini import llvm_version_info
 from llvmlite.binding.common import _decode_string, _encode_string
 from collections import namedtuple
 
+# import for backward compatible API, `has_svml` is now in config module.
+from llvmlite.binding.config import _has_svml as has_svml  # noqa: F401
+
+
 Triple = namedtuple('Triple', ['Arch', 'SubArch', 'Vendor',
                                'OS', 'Env', 'ObjectFormat'])
 
@@ -348,16 +352,6 @@ class TargetMachine(ffi.ObjectRef):
             return str(out)
 
 
-def has_svml():
-    """
-    Returns True if SVML was enabled at FFI support compile time.
-    """
-    if ffi.lib.LLVMPY_HasSVMLSupport() == 0:
-        return False
-    else:
-        return True
-
-
 # ============================================================================
 # FFI
 
@@ -466,6 +460,3 @@ ffi.lib.LLVMPY_CreateTargetMachineData.argtypes = [
     ffi.LLVMTargetMachineRef,
 ]
 ffi.lib.LLVMPY_CreateTargetMachineData.restype = ffi.LLVMTargetDataRef
-
-ffi.lib.LLVMPY_HasSVMLSupport.argtypes = []
-ffi.lib.LLVMPY_HasSVMLSupport.restype = c_int

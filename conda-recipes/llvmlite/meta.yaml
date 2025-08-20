@@ -13,19 +13,13 @@ build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   script_env:
     - PY_VCRUNTIME_REDIST
-    - LLVMLITE_SHARED
-    - LLVMLITE_USE_CMAKE
 
 requirements:
   build:
-    # We cannot do this on macOS as the llvm-config from the
-    # toolchain conflicts with the same from llvmdev, the
-    # build.sh deals with it!
-    - {{ compiler('c') }}  # [not osx]
-    - {{ compiler('cxx') }}  # [not osx]
-    - vs2015_{{ target_platform  }}    # [win]
-    # The DLL build uses cmake on Windows
-    - cmake          # [win]
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - vs2022_{{ target_platform  }}    # [win]
+    - cmake
     - make           # [unix]
   host:
     - python
@@ -42,10 +36,12 @@ requirements:
     - vs2015_runtime # [win]
     # osx has dynamically linked libstdc++
     - libcxx >=4.0.1 # [osx]
-    - zlib 
-    - zstd 
+    - zlib
+    - zstd
 
 test:
+  requires:
+    - py-lief
   imports:
     - llvmlite
     - llvmlite.binding

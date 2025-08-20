@@ -10,6 +10,11 @@ on:
         description: 'llvmdev workflow run ID (optional)'
         required: false
         type: string
+      upload_wheel_to_anaconda:
+        description: 'Upload wheel to Anaconda Cloud - numba channel'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -35,12 +40,12 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
 
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
+        uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
         with:
           python-version: ${{ matrix.python-version }}
           conda-remove-defaults: true
@@ -49,7 +54,7 @@ jobs:
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: llvmdev_for_wheel_osx-64
           path: llvmdev_conda_packages
@@ -64,7 +69,8 @@ jobs:
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
-          conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }} cmake libxml2 python-build
+          conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}
+          conda install -c defaults cmake libxml2 python-build
 
           # Hide libunwind to prevent it from being linked against during build
           # On macOS, if libunwind.dylib from the llvmdev conda package gets linked, the resulting wheel
@@ -80,6 +86,7 @@ jobs:
       - name: Build wheel
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.15"
+          LLVMLITE_PACKAGE_FORMAT: "wheel"
         run: python -m build
 
       - name: Fix macOS wheel library paths
@@ -114,10 +121,10 @@ jobs:
       fail-fast: false
     steps:
       - name: Clone repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
+        uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
         with:
           python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
           conda-remove-defaults: true
@@ -128,7 +135,7 @@ jobs:
         run: conda install -c defaults wheel twine keyring rfc3986
 
       - name: Download llvmlite wheels
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: llvmlite-osx-64-py${{ matrix.python-version }}
           path: dist
@@ -157,18 +164,23 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Download llvmlite wheel
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: llvmlite-osx-64-py${{ matrix.python-version }}
           path: dist
 
       - name: Install and test
+        env:
+          LLVMLITE_DIST_TEST: "1"
         run: |
           # Get the Python executable path
           PYTHON_PATH=$(which python${{ matrix.python-version }})
 
           # Upgrade pip and install wheel
           $PYTHON_PATH -m pip install --upgrade pip wheel
+
+          echo "Installing lief for distribution testing"
+          $PYTHON_PATH -m pip install -v lief
 
           # Install wheel and run tests
           cd dist
@@ -182,7 +194,7 @@ jobs:
   osx-64-upload:
     name: osx-64-upload
     needs: osx-64-test
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: macos-13
     defaults:
       run:
@@ -193,7 +205,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
+        uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
         with:
           python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
           conda-remove-defaults: true
@@ -204,7 +216,7 @@ jobs:
         run: conda install -c anaconda anaconda-client
 
       - name: Download llvmlite wheel
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: llvmlite-osx-64-py${{ matrix.python-version }}
           path: dist

@@ -264,15 +264,6 @@ LLVMPY_DisposeMemoryBuffer(LLVMMemoryBufferRef MB) {
     return LLVMDisposeMemoryBuffer(MB);
 }
 
-API_EXPORT(int)
-LLVMPY_HasSVMLSupport(void) {
-#ifdef HAVE_SVML
-    return 1;
-#else
-    return 0;
-#endif
-}
-
 API_EXPORT(void)
 LLVMPY_AddTargetLibraryInfoPass(LLVMPassManagerRef PM, const char *TripleStr) {
     using namespace llvm;

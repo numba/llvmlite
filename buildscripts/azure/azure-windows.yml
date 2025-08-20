@@ -22,11 +22,6 @@ jobs:
         PYTHON: '3.13'
         CONDA_ENV: cienv
 
-      llvm16:
-        PYTHON: '3.12'
-        CONDA_ENV: cienv
-        LLVM: '16'
-
       opaque_pointers:
         PYTHON: '3.12'
         CONDA_ENV: cienv
@@ -36,6 +31,9 @@ jobs:
 
     - powershell: |
         $wc = New-Object net.webclient
+        # Add User-Agent header to prevent 403 Forbidden error when downloading Miniconda
+        # Some servers block requests without proper User-Agent headers
+        $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36")
         $wc.Downloadfile("https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe", "Miniconda3-latest-Windows-x86_64.exe")
         Start-Process "Miniconda3-latest-Windows-x86_64.exe" "/S /D=C:\Miniconda3" -Wait
       displayName: 'Install miniconda'

@@ -5,21 +5,78 @@ Build script for the shared library providing the C ABI bridge to LLVM.
 
 from __future__ import print_function
 
-from ctypes.util import find_library
-import re
-import multiprocessing
 import os
 import subprocess
 import shutil
 import sys
 import tempfile
+import warnings
 
 
 here_dir = os.path.abspath(os.path.dirname(__file__))
 build_dir = os.path.join(here_dir, 'build')
 target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 
+
 is_64bit = sys.maxsize >= 2**32
+
+
+def env_var_options_to_cmake_options():
+    # This is not ideal, it exists to put env var options into CMake. Whilst it
+    # is possible to pass options through setuptools/distutils etc, this is not
+    # ideal either esp as the packaging system could do with an overhaul to meet
+    # modern standards. Also, adding these as options to the CMake configuration
+    # opposed to getting CMake to parse the env vars means that in the future it
+    # is easier to extract the `ffi` library as a `libllvmlite` package such
+    # that it can be built against multiple LLVM versions using a CMake
+    # driven toolchain.
+    cmake_options = []
+
+    env_vars = {"LLVMLITE_PACKAGE_FORMAT": ("conda", "wheel"),
+                "LLVMLITE_USE_RTTI": ("ON", "OFF", ""),
+                "LLVMLITE_CXX_STATIC_LINK": bool,
+                "LLVMLITE_SHARED": bool,
+                "LLVMLITE_FLTO": bool,
+                "LLVMLITE_SKIP_LLVM_VERSION_CHECK": bool,}
+
+    for env_var in env_vars.keys():
+        env_value = os.environ.get(env_var, None)
+        if env_value is not None:
+            expected_value = env_vars[env_var]
+            if expected_value is bool:
+                if env_value.lower() in ("true",  "on", "yes", "1", "y"):
+                    cmake_options.append(f"-D{env_var}=ON")
+                elif env_value.lower() in ("false",  "off", "no", "0", "n", ""):
+                    cmake_options.append(f"-D{env_var}=OFF")
+                else:
+                    msg = ("Unexpected value found for build configuration "
+                           f"environment variable '{env_var}={env_value}', "
+                           "expected a boolean or unset.")
+                    raise ValueError(msg)
+            else:
+                if env_value in expected_value:
+                    cmake_options.append(f"-D{env_var}={env_value}")
+                elif env_value == "":
+                    # empty is fine
+                    pass
+                else:
+                    msg = ("Unexpected value found for build configuration "
+                           f"environment variable '{env_var}={env_value}', "
+                           f"expected one of {expected_value} or unset.")
+                    raise ValueError(msg)
+
+    # Are there any `LLVMLITE_` prefixed env vars which are unused? (perhaps a
+    # spelling mistake/typo)
+    llvmlite_env_vars = set(k for k in os.environ.keys()
+                            if k.startswith("LLVMLITE_"))
+    unknown_env_vars = llvmlite_env_vars - set(env_vars.keys())
+    if unknown_env_vars:
+        msg = "Unknown LLVMLITE_ prefixed environment variables found:\n"
+        msg += "\n".join([f"- {x}" for x in unknown_env_vars])
+        msg += "\nIs this intended?"
+        warnings.warn(msg)
+
+    return cmake_options
 
 
 def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
@@ -30,34 +87,14 @@ def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     if toolkit is not None:
         args += ['-T', toolkit]
     args.append(cmake_dir)
+    cmake_options = env_var_options_to_cmake_options()
+    args += cmake_options
     try:
         os.chdir(build_dir)
         print('Running:', ' '.join(args))
         subprocess.check_call(args)
     finally:
         os.chdir(old_dir)
-
-
-def run_llvm_config(llvm_config, args):
-    cmd = [llvm_config] + args
-    p = subprocess.Popen(cmd,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    out = out.decode()
-    err = err.decode()
-    rc = p.wait()
-    if rc != 0:
-        raise RuntimeError("Command %s returned with code %d; stderr follows:\n%s\n"
-                           % (cmd, rc, err))
-    return out
-
-
-def show_warning(message):
-    header = ' * '.join(("WARNING",) * 8)
-    blk = '=' * 80
-    warning = f'{blk}\n{header}\n{blk}'
-    print(f"{warning}\n{message}\n{warning}")
 
 
 def find_windows_generator():
@@ -79,7 +116,9 @@ def find_windows_generator():
         )
 
     generators.extend([
-        # use VS2019 to match how llvmdev is built
+        # use VS2022 first
+        ('Visual Studio 17 2022', ('x64' if is_64bit else 'Win32'), 'v143'),
+        # try VS2019 next
         ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v142'),
         # # This is the generator configuration for VS2017
         # ('Visual Studio 15 2017' + (' Win64' if is_64bit else ''), None, None)
@@ -96,7 +135,7 @@ def find_windows_generator():
             return generator
         finally:
             shutil.rmtree(build_dir)
-    raise RuntimeError("No compatible cmake generator installed on this machine")
+    raise RuntimeError("No compatible CMake generator could be found.")
 
 
 def remove_msvc_whole_program_optimization():
@@ -131,127 +170,26 @@ def main_windows():
     shutil.copy(os.path.join(build_dir, config, 'llvmlite.dll'), target_dir)
 
 
-def main_posix_cmake(kind, library_ext):
+def main_posix(library_ext):
     generator = 'Unix Makefiles'
     config = 'Release'
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
     try_cmake(here_dir, build_dir, generator)
-    subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
-    shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext), target_dir)
-
-def main_posix(kind, library_ext):
-    if os.environ.get("LLVMLITE_USE_CMAKE", "0") == "1":
-        return main_posix_cmake(kind, library_ext)
-
-    os.chdir(here_dir)
-    # Check availability of llvm-config
-    llvm_config = os.environ.get('LLVM_CONFIG', 'llvm-config')
-    print("LLVM version... ", end='')
-    sys.stdout.flush()
-    try:
-        out = subprocess.check_output([llvm_config, '--version'])
-    except FileNotFoundError:
-        msg = ("Could not find a `llvm-config` binary. There are a number of "
-               "reasons this could occur, please see: "
-               "https://llvmlite.readthedocs.io/en/latest/admin-guide/"
-               "install.html#using-pip for help.")
-        # Raise from None, this is to hide the file not found for llvm-config
-        # as this tends to cause users to install an LLVM which may or may not
-        # work. Redirect instead to some instructions about how to deal with
-        # this issue.
-        raise RuntimeError(msg) from None
-    except (OSError, subprocess.CalledProcessError) as e:
-        raise RuntimeError("%s failed executing, please point LLVM_CONFIG "
-                           "to the path for llvm-config" % (llvm_config,))
-
-    out = out.decode('latin1')
-    print(out)
-
-    # See if the user is overriding the version check, this is unsupported
-    try:
-        _ver_check_skip = os.environ.get("LLVMLITE_SKIP_LLVM_VERSION_CHECK", 0)
-        skipcheck = int(_ver_check_skip)
-    except ValueError as e:
-        msg = ('If set, the environment variable '
-               'LLVMLITE_SKIP_LLVM_VERSION_CHECK should be an integer, got '
-               '"{}".')
-        raise ValueError(msg.format(_ver_check_skip)) from e
-
-    if skipcheck:
-        # user wants to use an unsupported version, warn about doing this...
-        msg = ("The LLVM version check for supported versions has been "
-               "overridden.\nThis is unsupported behaviour, llvmlite may not "
-               "work as intended.\nRequested LLVM version: {}".format(
-                   out.strip()))
-        show_warning(msg)
-    else:
-        (version, _) = out.split('.', 1)
-        version = int(version)
-        if version > 20:
-            msg = ("WARNING: Building llvmlite with LLVM version > 20 ({!r}) "
-                   "is untested and may result in problems. Be sure to set "
-                   "LLVM_CONFIG to the right executable path.\nRead the "
-                   "documentation at http://llvmlite.pydata.org/ for more "
-                   "information about building llvmlite.\n".format(version))
-            show_warning(msg)
-        elif version < 20:
-            msg = (f"Building llvmlite requires LLVM 20, got {version!r}. "
-                   "Be sure to set LLVM_CONFIG to the right executable "
-                   "path.\nRead the documentation at "
-                   "http://llvmlite.pydata.org/ for more information about "
-                   "building llvmlite.\n")
-            raise RuntimeError(msg)
-
-    # Get LLVM information for building
-    libs = run_llvm_config(llvm_config, "--system-libs --libs all".split())
-    # Normalize whitespace (trim newlines)
-    os.environ['LLVM_LIBS'] = ' '.join(libs.split())
-
-    cxxflags = run_llvm_config(llvm_config, ["--cxxflags"])
-    # on OSX cxxflags has null bytes at the end of the string, remove them
-    cxxflags = cxxflags.replace('\0', '')
-    cxxflags = cxxflags.split() + ['-fno-rtti', '-g']
-
-    # look for SVML
-    include_dir = run_llvm_config(llvm_config, ['--includedir']).strip()
-    svml_indicator = os.path.join(include_dir, 'llvm', 'IR', 'SVML.inc')
-    if os.path.isfile(svml_indicator):
-        cxxflags = cxxflags + ['-DHAVE_SVML']
-        print('SVML detected')
-    else:
-        print('SVML not detected')
-
-    os.environ['LLVM_CXXFLAGS'] = ' '.join(cxxflags)
-
-    ldflags = run_llvm_config(llvm_config, ["--ldflags"])
-    os.environ['LLVM_LDFLAGS'] = ldflags.strip()
-    # static link libstdc++ for portability
-    if int(os.environ.get('LLVMLITE_CXX_STATIC_LINK', 0)):
-        os.environ['CXX_STATIC_LINK'] = "-static-libstdc++"
-
-    makefile = "Makefile.%s" % (kind,)
-    try:
-        default_makeopts = "-j%d" % (multiprocessing.cpu_count(),)
-    except NotImplementedError:
-        default_makeopts = ""
-    makeopts = os.environ.get('LLVMLITE_MAKEOPTS', default_makeopts).split()
-    subprocess.check_call(['make', '-f', makefile] + makeopts)
-    shutil.copy('libllvmlite' + library_ext, target_dir)
+    cmd = ['cmake', '--build', build_dir, "--parallel", '--config', config]
+    subprocess.check_call(cmd)
+    shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext),
+                target_dir)
 
 
 def main():
+    ELF_systems = ('linux', 'gnu', 'freebsd', 'openbsd', 'netbsd')
     if sys.platform == 'win32':
         main_windows()
-    elif sys.platform.startswith(('linux', 'gnu')):
-        # Linux and GNU-based OSes (e.g. GNU/Hurd), using the same Makefile
-        main_posix('linux', '.so')
-    elif sys.platform.startswith(('freebsd','openbsd')):
-        main_posix('freebsd', '.so')
-    elif sys.platform.startswith('netbsd'):
-        main_posix('netbsd', '.so')
+    elif sys.platform.startswith(ELF_systems):
+        main_posix('.so')
     elif sys.platform == 'darwin':
-        main_posix('osx', '.dylib')
+        main_posix('.dylib')
     else:
         raise RuntimeError("unsupported platform: %r" % (sys.platform,))
 
