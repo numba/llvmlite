@@ -320,7 +320,7 @@ create and configure a :class:`PassManagerBuilder`.
      <https://github.com/numba/llvmlite/blob/main/ffi/custom_passes.cpp>`_ pass.
 
 .. class:: ModulePassManager()
-   :no-index:
+   :noindex:
 
    Create a new pass manager to run optimization passes on a
    module.
@@ -328,7 +328,7 @@ create and configure a :class:`PassManagerBuilder`.
    The ``run`` method is available:
 
    .. method:: run(module)
-      :no-index:
+      :noindex:
 
       Run optimization passes on the
       *module*, a :class:`ModuleRef` instance.
@@ -337,7 +337,7 @@ create and configure a :class:`PassManagerBuilder`.
       to the module. Otherwise returns ``False``.
 
 .. class:: FunctionPassManager(module)
-   :no-index:
+   :noindex:
 
    Create a new pass manager to run optimization passes on a
    function of the given *module*, a :class:`ModuleRef` instance.
@@ -353,7 +353,7 @@ create and configure a :class:`PassManagerBuilder`.
         Run all the initializers of the optimization passes.
 
    * .. method:: run(function)
-        :no-index:
+        :noindex:
 
         Run optimization passes on *function*, a
         :class:`ValueRef` instance.

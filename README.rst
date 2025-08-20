@@ -5,9 +5,6 @@ llvmlite
 .. image:: https://dev.azure.com/numba/numba/_apis/build/status/numba.llvmlite?branchName=main
    :target: https://dev.azure.com/numba/numba/_build/latest?definitionId=2&branchName=main
    :alt: Azure Pipelines
-.. image:: https://codeclimate.com/github/numba/llvmlite/badges/gpa.svg
-   :target: https://codeclimate.com/github/numba/llvmlite
-   :alt: Code Climate
 .. image:: https://coveralls.io/repos/github/numba/llvmlite/badge.svg
    :target: https://coveralls.io/github/numba/llvmlite
    :alt: Coveralls.io

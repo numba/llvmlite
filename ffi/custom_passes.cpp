@@ -186,17 +186,15 @@ struct RefPrune {
     static const size_t FANOUT_RECURSE_DEPTH = 15;
     typedef SmallSet<BasicBlock *, FANOUT_RECURSE_DEPTH> SmallBBSet;
 
-    // The maximum number of nodes that the fanout pruners will look at.
-    size_t subgraph_limit;
-
+    DominatorTree &DT;
+    PostDominatorTree &PDT;
     /**
      * Enum for setting which subpasses to run, there is no interdependence.
      */
-
     Subpasses flags;
 
-    DominatorTree &DT;
-    PostDominatorTree &PDT;
+    // The maximum number of nodes that the fanout pruners will look at.
+    size_t subgraph_limit;
 
     RefPrune(DominatorTree &DT, PostDominatorTree &PDT,
              Subpasses flags = Subpasses::All, size_t subgraph_limit = -1)
@@ -1215,8 +1213,8 @@ class RefPruneLegacyPass : public FunctionPass {
   public:
     static char ID; // Pass identification, replacement for typeid
     // The maximum number of nodes that the fanout pruners will look at.
-    size_t subgraph_limit;
     Subpasses flags;
+    size_t subgraph_limit;
     RefPruneLegacyPass(Subpasses flags = Subpasses::All,
                        size_t subgraph_limit = -1)
         : FunctionPass(ID), flags(flags), subgraph_limit(subgraph_limit) {

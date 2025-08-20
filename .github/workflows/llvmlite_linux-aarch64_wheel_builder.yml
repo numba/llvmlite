@@ -41,13 +41,13 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: llvmdev_for_wheel_linux-aarch64
           path: llvmdev_conda_packages
@@ -78,11 +78,13 @@ jobs:
 
       - name: Build wheel in manylinux container
         run: |
+          LLVMDEV_ARTIFACT_PATH="/root/llvmlite/llvmdev_conda_packages"
+
           # Run the build script in manylinux container using the existing script
           docker run --rm \
             -v "$(pwd):/root/llvmlite" \
             quay.io/pypa/${{ env.MANYLINUX_IMAGE }} \
-            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }}"
+            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }} $LLVMDEV_ARTIFACT_PATH"
 
           # Create wheelhouse directory for artifact upload
           mkdir -p wheelhouse
@@ -123,7 +125,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Clone repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
@@ -137,7 +139,7 @@ jobs:
         run: conda install -c defaults wheel twine keyring rfc3986
 
       - name: Download llvmlite wheels
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: llvmlite-linux-aarch64-py${{ matrix.python-version }}
           path: dist
@@ -170,12 +172,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Download llvmlite wheel
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: llvmlite-linux-aarch64-py${{ matrix.python-version }}
           path: dist
 
       - name: Install and test
+        env:
+          LLVMLITE_DIST_TEST: "1"
         run: |
           # Get the Python executable path
           PYTHON_PATH=$(which python)
@@ -195,6 +199,9 @@ jobs:
             find . -type f -name "*.whl" -print
             exit 1
           fi
+
+          echo "Installing lief for distribution testing"
+          "${PYTHON_PATH}" -m pip install -v lief
 
           echo "Using wheel: $whl"
           "${PYTHON_PATH}" -m pip install -v "$whl"
@@ -227,7 +234,7 @@ jobs:
         run: conda install -c anaconda anaconda-client
 
       - name: Download llvmlite wheel
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: llvmlite-linux-aarch64-py${{ matrix.python-version }}
           path: dist
