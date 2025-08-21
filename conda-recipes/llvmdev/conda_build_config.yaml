@@ -16,4 +16,7 @@ cxx_compiler:            # [win]
   - vs2022               # [win]
 
 MACOSX_SDK_VERSION:    # [osx and x86_64]
-  - 10.12              # [osx and x86_64]
+  - 10.15              # [osx and x86_64]
+
+CONDA_BUILD_SYSROOT:
+  - /opt/MacOSX10.15.sdk        # [osx and x86_64]
