@@ -2,12 +2,15 @@ parameters:
   name: ''
   vmImage: ''
   matrix: []
+  variables: {}
 
 
 jobs:
 - job: ${{ parameters.name }}
-  pool: 
+  pool:
     vmImage: ${{ parameters.vmImage }}
+  variables:
+    ${{ parameters.variables }}
   strategy:
     maxParallel: 11
     matrix:
