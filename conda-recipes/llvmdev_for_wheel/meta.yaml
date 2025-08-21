@@ -12,16 +12,16 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
-    - ../llvm15-clear-gotoffsetmap.patch
-    - ../llvm15-remove-use-of-clonefile.patch
-    - ../llvm15-svml.patch
-    - ../compiler-rt-cfi-startproc-war.patch
-    - ../compiler-rt-macos-build.patch
+    # - ../llvm15-clear-gotoffsetmap.patch
+    # - ../llvm15-remove-use-of-clonefile.patch
+    # - ../llvm15-svml.patch
+    # - ../compiler-rt-cfi-startproc-war.patch
+    # - ../compiler-rt-macos-build.patch
     # Patches from conda-forge needed for windows to build
     # backport of zlib patches, can be dropped for vs15.0.3, see
     # https://reviews.llvm.org/D135457 & https://reviews.llvm.org/D136065
-    - ../llvmdev/patches/0002-CMake-Fix-Findzstd-module-for-shared-DLL-on-Windows.patch
-    - ../llvmdev/patches/no-windows-symlinks.patch
+    # - ../llvmdev/patches/0002-CMake-Fix-Findzstd-module-for-shared-DLL-on-Windows.patch
+    # - ../llvmdev/patches/no-windows-symlinks.patch
 
 build:
   number: {{ build_number }}
