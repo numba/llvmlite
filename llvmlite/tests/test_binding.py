@@ -3059,6 +3059,7 @@ class TestBuild(TestCase):
                       # present and known to work and make sure it doesn"t
                       # change" approach.
                       "windows": {"amd64": set(["z",
+                                                "zstd",
                                                 "advapi32",
                                                 "kernel32",
                                                 "ntdll",
