@@ -3060,6 +3060,7 @@ class TestBuild(TestCase):
                       "windows": {"amd64": set(["z",
                                                 "advapi32",
                                                 "kernel32",
+                                                "ntdll",
                                                 "msvcp140",
                                                 "vcruntime140",
                                                 "vcruntime140_1",
