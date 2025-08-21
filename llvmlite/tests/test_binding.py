@@ -7,16 +7,81 @@ import locale
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import unittest
 from contextlib import contextmanager
-from tempfile import mkstemp
+from tempfile import mkstemp, mkdtemp
+from pathlib import Path
 
 from llvmlite import ir
 from llvmlite import binding as llvm
 from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
+from setuptools._distutils.ccompiler import new_compiler
+from setuptools._distutils.sysconfig import customize_compiler
+import functools
+
+
+@contextmanager
+def _gentmpfile(suffix):
+    # windows locks the tempfile so use a tempdir + file, see
+    # https://github.com/numba/numba/issues/3304
+    try:
+        tmpdir = mkdtemp()
+        ntf = open(os.path.join(tmpdir, "temp%s" % suffix), 'wt')
+        yield ntf
+    finally:
+        try:
+            ntf.close()
+            os.remove(ntf)
+        except Exception:
+            pass
+        else:
+            os.rmdir(tmpdir)
+
+
+@contextmanager
+def _gentmpfiles2(suffix):
+    try:
+        tmpdir = mkdtemp()
+        ntf1 = open(os.path.join(tmpdir, "temp1%s" % suffix), 'wt')
+        ntf2 = open(os.path.join(tmpdir, "temp2%s" % suffix), 'wt')
+        yield ntf1, ntf2, tmpdir
+    finally:
+        try:
+            ntf1.close()
+            ntf2.close()
+            os.remove(ntf1.name)
+            os.remove(ntf2.name)
+        except Exception:
+            pass
+        else:
+            shutil.rmtree(tmpdir)
+
+
+@functools.lru_cache(maxsize=1)
+def external_compiler_works():
+    """
+    Returns True if the "external compiler" bound in setuptools._distutil
+    is present and working, False otherwise.
+    """
+    compiler = new_compiler()
+    customize_compiler(compiler)
+    for suffix in ['.c', '.cxx']:
+        try:
+            with _gentmpfile(suffix) as ntf:
+                simple_c = "int main(void) { return 0; }"
+                ntf.write(simple_c)
+                ntf.flush()
+                ntf.close()
+                # *output_dir* is set to avoid the compiler putting temp files
+                # in the current directory.
+                compiler.compile([ntf.name], output_dir=Path(ntf.name).anchor)
+        except Exception: # likely CompileError or file system issue
+            return False
+    return True
 
 # arvm7l needs extra ABI symbols to link successfully
 if platform.machine() == 'armv7l':
@@ -2896,6 +2961,99 @@ class TestObjectFile(BaseTest):
             if s.is_text():
                 self.assertEqual(len(s.data()), 31)
                 self.assertEqual(s.data().hex(), issue_632_text)
+
+
+# Skip this test on Windows due to the fact that
+# the /GL cross-module optimization has the side-effect
+# of removing external symbols in this test case.
+#
+# The /GL option is used when compiling and 'debug=0' (default)
+# is provided on the the c.compile method invocation.
+#
+# Setting 'debug=1' preserves the debug information but
+# the jit.add_archive command fails because the llvm
+# libraries do not recognize the library object file format
+# and generate the error:
+#
+# LLVM ERROR: Incompatible object format
+#
+# Although the llvm libraries does not recognize the library
+# format, it  is recognized by the Windows dumpbin command.
+# so this appears to be a bug in the llvm libraries
+#@unittest.skipIf(sys.platform.startswith('win32'),
+#                 "Windows and LLVM static library issues")
+class TestArchiveFile(BaseTest):
+    mod_archive_asm = """
+        ;ModuleID = <string>
+        target triple = "{triple}"
+
+        declare i32 @multiply_accumulate(i32 %0, i32 %1, i32 %2)
+        declare i32 @multiply_subtract(i32 %0, i32 %1, i32 %2)
+    """
+
+    def test_add_archive(self):
+        # macOS and Python 3.9 on the Anaconda CI has been configured
+        # incorrectly and has an issue with ocating llvm-ar
+        # which is used to create the static library.
+        if sys.platform.startswith('darwin') and sys.version_info.major == 3 \
+                and sys.version_info.minor == 9:
+            self.skipTest("Test fails in bad macOS/python 3.9 environment")
+
+        if not external_compiler_works():
+            self.skipTest("External compiler does not work")
+
+        with _gentmpfiles2(".c") as (f1, f2, temp_dir):
+            target_machine = self.target_machine(jit=False)
+
+            jit = llvm.create_mcjit_compiler(
+                self.module(self.mod_archive_asm),
+                target_machine
+            )
+
+            c = new_compiler()
+            customize_compiler(c)
+
+            code1 = "int multiply_accumulate(int a, int b, int c) " \
+                    "{return (a * b) + c;}"
+            code2 = "int multiply_subtract(int a, int b, int c) " \
+                    "{return (a * b) - c;}"
+
+            f1.write(code1)
+            f2.write(code2)
+            f1.flush()
+            f2.flush()
+            f1.close()
+            f2.close()
+
+            objects = c.compile([f1.name, f2.name], output_dir=temp_dir,
+                                debug=True)
+
+            library_name = "foo"
+            c.create_static_lib(objects, library_name, output_dir=temp_dir)
+
+            platform_library_name = c.library_filename(library_name)
+            static_library_name = os.path.join(temp_dir,
+                                               platform_library_name)
+
+            jit.add_archive(static_library_name)
+
+            mac_func_addr = jit.get_function_address('multiply_accumulate')
+            self.assertTrue(mac_func_addr)
+
+            mac_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(mac_func_addr)
+
+            msub_func_addr = jit.get_function_address('multiply_subtract')
+            self.assertTrue(msub_func_addr)
+
+            msub_func = CFUNCTYPE(c_int, c_int, c_int, c_int)(msub_func_addr)
+
+            self.assertEqual(mac_func(10, 10, 20), 120)
+            self.assertEqual(msub_func(10, 10, 20), 80)
+
+            del jit
+            os.remove(static_library_name)
+            for file in objects:
+                os.remove(Path(file))
 
 
 class TestTimePasses(BaseTest):
