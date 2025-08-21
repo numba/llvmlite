@@ -2468,7 +2468,12 @@ class TestObjectFile(BaseTest):
         has_text_and_data = False
         last_address = -1
         for s in obj.sections():
-            if s.is_text() and len(s.data()) > 0 and s.address() is not None and last_address < s.address():
+            if (
+                s.is_text()
+                and len(s.data()) > 0
+                and s.address() is not None
+                and last_address < s.address()
+            ):
                 has_text_and_data = True
                 last_address = s.address()
                 break
