@@ -22,12 +22,19 @@ set +v
 source activate $CONDA_ENV
 set -v
 
-# Install llvmdev (separate channel, for now)
-if [ "$LLVM" == "16" ]; then
-    $CONDA_INSTALL -c conda-forge llvmdev="16"
-else
-    $CONDA_INSTALL -c numba llvmdev="15.*"
-fi
+# Install llvmdev (select channel/version by LLVM variable)
+case "$LLVM" in
+    "16")
+        $CONDA_INSTALL -c conda-forge llvmdev="16"
+        ;;
+    "20")
+        $CONDA_INSTALL -c numba/label/llvm20 llvmdev="20.*"
+        ;;
+    *)
+        # Default to legacy 15 for older CI contexts
+        $CONDA_INSTALL -c numba llvmdev="15.*"
+        ;;
+esac
 
 # Install the compiler toolchain, for osx, bootstrapping needed
 # which happens in build.sh

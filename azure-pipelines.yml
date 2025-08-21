@@ -6,6 +6,7 @@ jobs:
     vmImage: macos-13
     variables:
       MACOSX_DEPLOYMENT_TARGET: '11.0'
+      LLVM: '20'
     matrix:
       py310:
         PYTHON: '3.10'
@@ -28,6 +29,8 @@ jobs:
   parameters:
     name: Linux
     vmImage: ubuntu-24.04
+    variables:
+      LLVM: '20'
     matrix:
       py310:
         PYTHON: '3.10'
@@ -76,6 +79,8 @@ jobs:
   parameters:
     name: Windows
     vmImage: windows-2025
+    variables:
+      LLVM: '20'
 
 - job: check_formatting
   pool:
