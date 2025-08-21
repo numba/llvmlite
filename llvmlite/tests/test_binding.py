@@ -3008,6 +3008,7 @@ class TestBuild(TestCase):
                       # change" approach.
                       "windows": {"amd64": set(["advapi32",
                                                 "kernel32",
+                                                "ntdll",
                                                 "msvcp140",
                                                 "vcruntime140",
                                                 "vcruntime140_1",
