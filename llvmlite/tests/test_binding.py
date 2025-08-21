@@ -3117,25 +3117,14 @@ class TestBuild(TestCase):
     def test_wheel_build(self):
         info = llvm.config.get_sysinfo()
         self.assertEqual(info['llvm_linkage_type'], "static")
-        # FIXME: This is currently incorrect, llvmdev 15 is not universally
-        # built with assertions and it should be!
-        if sys.platform == 'win32':
-            self.assertEqual(info['llvm_assertions_state'], "on")
-        else:
-            self.assertEqual(info['llvm_assertions_state'], "off")
+        self.assertEqual(info['llvm_assertions_state'], "on")
         self.check_linkage(info, "wheel")
 
     @is_conda_package
     def test_conda_build(self):
         info = llvm.config.get_sysinfo()
         self.assertEqual(info['llvm_linkage_type'], "static")
-
-        # FIXME: This is currently incorrect, llvmdev 15 is not universally
-        # built with assertions and it should be!
-        if sys.platform == 'win32':
-            self.assertEqual(info['llvm_assertions_state'], "on")
-        else:
-            self.assertEqual(info['llvm_assertions_state'], "off")
+        self.assertEqual(info['llvm_assertions_state'], "on")
 
         self.check_linkage(info, "conda")
         if platform.system().lower() == "linux":
