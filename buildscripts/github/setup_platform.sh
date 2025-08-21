@@ -13,17 +13,17 @@ case "${PLATFORM}" in
         mkdir -p "${sdk_dir}"
 
         # Download SDK
-        echo "Downloading MacOSX10.10.sdk.tar.xz"
-        wget -q https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.10.sdk.tar.xz
+        echo "Downloading MacOSX10.15.sdk.tar.xz"
+        wget -q https://github.com/phracker/MacOSX-SDKs/releases/download/10.15/MacOSX10.15.sdk.tar.xz
 
         # Verify checksum
         echo "Verifying SDK checksum"
-        shasum -c "${sdk_dir}/MacOSX10.10.sdk.checksum" || exit 1
+        shasum -c "${sdk_dir}/MacOSX10.15.sdk.checksum" || exit 1
 
         # Extract SDK to /opt
         echo "Extracting SDK to /opt"
         sudo mkdir -p /opt
-        sudo tar -xf MacOSX10.10.sdk.tar.xz -C /opt
+        sudo tar -xf MacOSX10.15.sdk.tar.xz -C /opt
         echo "macOS SDK setup complete"
         ;;
     *)
