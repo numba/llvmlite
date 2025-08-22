@@ -82,48 +82,47 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
                 .setFeatures(template_tm->getTargetFeatureString())
                 .setOptions(template_tm->Options));
     }
-    builder.setObjectLinkingLayerCreator([=](llvm::orc::ExecutionSession
-                                                 &session,
-                                             const llvm::Triple &triple)
-                                             -> std::unique_ptr<
-                                                 llvm::orc::ObjectLayer> {
-        if (useJitLink) {
-            auto linkingLayer =
-                std::make_unique<llvm::orc::ObjectLinkingLayer>(session);
+    builder.setObjectLinkingLayerCreator(
+        [=](llvm::orc::ExecutionSession &session, const llvm::Triple &triple)
+            -> std::unique_ptr<llvm::orc::ObjectLayer> {
+            if (useJitLink) {
+                auto linkingLayer =
+                    std::make_unique<llvm::orc::ObjectLinkingLayer>(session);
 
-            /* FIXME(LLVM16): In newer LLVM versions, there is a simple
-             * EnableDebugSupport flag on the builder and we don't need to do
-             * any of this. */
-            //  if (triple.getObjectFormat() == Triple::ELF ||
-            //     triple.getObjectFormat() == Triple::MachO) {
-            //     linkingLayer->addPlugin(
-            //         std::make_unique<orc::GDBJITDebugInfoRegistrationPlugin>(
-            //             ExecutorAddr::fromPtr(
-            //                 &llvm_orc_registerJITLoaderGDBWrapper)));
-            // }
-            if (triple.isOSBinFormatCOFF()) {
-                linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
-                    true);
-                linkingLayer->setAutoClaimResponsibilityForObjectSymbols(true);
-            }
-            return linkingLayer;
-        } else {
-            auto linkingLayer =
-                std::make_unique<llvm::orc::RTDyldObjectLinkingLayer>(
-                    session, []() {
-                        return std::make_unique<llvm::SectionMemoryManager>();
-                    });
-            if (triple.isOSBinFormatCOFF()) {
-                linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
-                    true);
-                linkingLayer->setAutoClaimResponsibilityForObjectSymbols(true);
-            }
-            linkingLayer->registerJITEventListener(
-                *llvm::JITEventListener::createGDBRegistrationListener());
+                /* FIXME(LLVM16): In newer LLVM versions, there is a simple
+                 * EnableDebugSupport flag on the builder and we don't need to
+                 * do any of this. */
+                //  if (triple.getObjectFormat() == Triple::ELF ||
+                //     triple.getObjectFormat() == Triple::MachO) {
+                //     linkingLayer->addPlugin(
+                //         std::make_unique<orc::GDBJITDebugInfoRegistrationPlugin>(
+                //             ExecutorAddr::fromPtr(
+                //                 &llvm_orc_registerJITLoaderGDBWrapper)));
+                // }
+                if (triple.isOSBinFormatCOFF()) {
+                    linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
+                        true);
+                    linkingLayer->setAutoClaimResponsibilityForObjectSymbols(
+                        true);
+                }
+                return linkingLayer;
+            } else {
+                auto linkingLayer = std::make_unique<
+                    llvm::orc::RTDyldObjectLinkingLayer>(session, []() {
+                    return std::make_unique<llvm::SectionMemoryManager>();
+                });
+                if (triple.isOSBinFormatCOFF()) {
+                    linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
+                        true);
+                    linkingLayer->setAutoClaimResponsibilityForObjectSymbols(
+                        true);
+                }
+                linkingLayer->registerJITEventListener(
+                    *llvm::JITEventListener::createGDBRegistrationListener());
 
-            return linkingLayer;
-        }
-    });
+                return linkingLayer;
+            }
+        });
 
     auto jit = builder.create();
 
