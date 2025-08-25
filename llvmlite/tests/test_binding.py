@@ -922,6 +922,11 @@ class TestMisc(BaseTest):
             """
         subprocess.check_call([sys.executable, "-c", code])
 
+    def test_deprecated_init(self):
+        regex = r"llvmlite.binding.initialize\(\) is deprecated"
+        with self.assertRaisesRegex(RuntimeError, expected_regex=regex):
+            llvm.initialize()
+
     def test_set_option(self):
         # We cannot set an option multiple times (LLVM would exit() the
         # process), so run the code in a subprocess.
