@@ -92,8 +92,6 @@ jobs:
         with:
           auto-update-conda: true
           auto-activate-base: true
-          activate-environment: cibuild
-          python-version: '3.12'
 
       - name: Install conda-build
         run: conda install conda-build
@@ -145,9 +143,6 @@ jobs:
     steps:
       - name: Setup miniconda
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
-        with:
-          activate-environment: cibuild
-          python-version: '3.12'
 
       - name: Download llvmlite artifact
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
