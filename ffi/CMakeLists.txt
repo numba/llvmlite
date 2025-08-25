@@ -224,6 +224,7 @@ else()
     # library, see https://github.com/numba/llvmlite/pull/1234 for discussion.
     set(LLVM_COMPONENTS mcjit
                         orcjit
+                        OrcDebugging
                         AsmPrinter
                         AllTargetsCodeGens
                         AllTargetsAsmParsers)
