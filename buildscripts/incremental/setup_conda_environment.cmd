@@ -11,5 +11,5 @@ call activate %CONDA_ENV%
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 @rem Install llvmdev 20
-call conda install -y -q -c numba/label/llvm20 llvmdev="20.*" libxml2
+call conda install -y -q -c numba/label/dev llvmdev=20 libxml2
 if %errorlevel% neq 0 exit /b %errorlevel%
