@@ -3,6 +3,25 @@ from ctypes import c_uint
 from llvmlite.binding import ffi
 
 
+def initialize():
+    """
+    Initialize the LLVM core (deprecated).
+
+    This function is deprecated and will raise an error when called.
+    LLVM initialization is now handled automatically and no longer
+    requires explicit initialization calls.
+
+    Raises:
+        RuntimeError: Always raised as this function is no longer needed.
+    """
+    raise RuntimeError(
+        "llvmlite.binding.initialize() is deprecated and will be removed. "
+        "LLVM initialization is now handled automatically. "
+        "Please remove calls to this function from your code and check for "
+        "other behavioral changes that may have occurred due to LLVM updates."
+    )
+
+
 def initialize_all_targets():
     """
     Initialize all targets. Necessary before targets can be looked up

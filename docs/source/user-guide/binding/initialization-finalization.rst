@@ -10,6 +10,14 @@ You only need to call these functions once per process invocation.
 
      Initialize the LLVM core.
 
+     **Deprecated.** Initialize the LLVM core.
+
+     This function is deprecated and will raise a RuntimeError when
+     called. LLVM initialization is now handled automatically and no longer
+     requires explicit initialization calls. Remove calls to this function and
+     check for other behavioral changes that may have occurred due to LLVM
+     updates.
+
 * .. function:: initialize_all_targets()
 
      Initialize all targets. Must be called before targets can
