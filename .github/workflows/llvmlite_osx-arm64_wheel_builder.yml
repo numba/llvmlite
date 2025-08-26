@@ -97,6 +97,20 @@ jobs:
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: error
 
+      - name: Build sdist [once - py3.10]
+        if: ${{ matrix.python-version == '3.10' }}
+        run: arch -arm64 python -m build --sdist
+
+      - name: Upload sdist (once with python 3.10)
+        if: ${{ matrix.python-version == '3.10' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: llvmlite-sdist
+          path: dist/*.tar.gz
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
       - name: Show Workflow Run ID
         run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
 
