@@ -112,6 +112,7 @@ Pull-Requests:
 * PR `#1262 <https://github.com/numba/llvmlite/pull/1262>`_: llvmdev-20 recipe fixes (`swap357 <https://github.com/swap357>`_)
 * PR `#1266 <https://github.com/numba/llvmlite/pull/1266>`_: update compatability matrix in the `README.rst` to reflect LLVM 20 (`esc <https://github.com/esc>`_)
 * PR `#1267 <https://github.com/numba/llvmlite/pull/1267>`_: adding llvm20 docs (`esc <https://github.com/esc>`_)
+* PR `#1269 <https://github.com/numba/llvmlite/pull/1269>`_: add sdist build and upload steps on wheel workflow (`swap357 <https://github.com/swap357>`_)
 
 Authors:
 
