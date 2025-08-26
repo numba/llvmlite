@@ -17,10 +17,10 @@ cxx_compiler:            # [win]
   - vs2022              # [win]
 
 c_compiler_version:         # [osx]
-  - 14                      # [osx]
+  - 19                      # [osx]
 
 cxx_compiler_version:       # [osx]
-  - 14                      # [osx]
+  - 19                      # [osx]
 
 MACOSX_SDK_VERSION:    # [osx and x86_64]
   - 10.15              # [osx and x86_64]
