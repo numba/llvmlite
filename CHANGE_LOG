@@ -1,5 +1,5 @@
-v0.45.0 (Aug 26, 2025)
-----------------------
+v0.45.0-rc1 (Aug 26, 2025)
+--------------------------
 
 This release of llvmlite introduces support for LLVM 20. For more information
 about the state of the support, please see: https://llvmlite.readthedocs.io/en/latest/user-guide/llvm20.html
