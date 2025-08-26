@@ -7,9 +7,9 @@ LLVM 20
 As of version 0.45 llvmlite supports LLVM 20. The build system has been updated
 to use solely CMake, with added granularity about what is being consumed in
 linkage, and additional build options. The llvmlite FFI binary exposes some of
-these build options such that they can be queried at runtime. This was done to
-with view of making sure that the new 100% public GHA based build system is
-producing artefacts with the expected configurations and linkages. If you are
+these build options such that they can be queried at runtime. This was done
+with a view of making sure that the new 100% public GHA based build system is
+producing artifacts with the expected configurations and linkages. If you are
 building packages or locally using a custom LLVM with llvmlite, the
 installation documentation contains information about these options and how to
 use the new CMake system.
@@ -43,14 +43,14 @@ Known material issues with LLVM 20
 ==================================
 
 #. Intel SVML is currently unsupported. The patch from LLVM 15 did not apply
-   cleanly and fixing it was non-trivial, it is hoped  that this can be
+   cleanly and fixing it was non-trivial. It is hoped that this can be
    resolved in the future.
 
 #. There is an issue with calling global constructors/destructors from MCJIT on
    OSX platforms the result of which is that calling an execution engine’s
-   run_static_constructors method will result in an assertion error or a
+   ``run_static_constructors`` method will result in an assertion error or a
    segmentation fault depending on whether LLVM has assertions enabled. The
-   cause of this is that the use of ``__mod_term_func`` has been deprecated which
+   cause of this is that the use of ``__mod_term_func`` has been deprecated, which
    means that LLVM now emits a ``__cxa_atexit`` call in the constructor to
    schedule the execution of destructors, see
    https://github.com/llvm/llvm-project/commit/22570bac694396514fff18dec926558951643fa6.
@@ -61,12 +61,12 @@ Known material issues with LLVM 20
    it instead, by which time the JIT library has been destroyed, the result of
    which is typically a segmentation fault due to ``__cxa_atexit`` accessing an
    invalid address). Multiple workarounds were tried by “faking” various
-   missing parts, but the effect it has is a lot of complexity to seemingly
-   push the problem to some other area, it needs fixing at the LLVM level.
+   missing parts, but the effect was a lot of complexity that seemingly
+   push the problem to some other area. It needs fixing at the LLVM level.
 
 #. The toolchain version used to compile LLVM and llvmlite needs to be the same
    in both builds. When using the Anaconda/conda-forge distribution toolchains,
-   the result of using inconsistent versions is typically segmentation fault.
+   the result of using inconsistent versions is typically a segmentation fault.
    It is suspected that this issue arises due to minor ABI differences but
    investigation has not gone further than figuring out that the version
    difference across the packages was the cause of the problem. An example of
