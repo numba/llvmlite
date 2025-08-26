@@ -8,3 +8,4 @@ User guide
    ir/index
    binding/index
    deprecation.rst
+   llvm20.rst
