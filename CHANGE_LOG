@@ -1,6 +1,9 @@
 v0.45.0 (Aug 26, 2025)
 ----------------------
 
+This release of llvmlite introduces support for LLVM 20. For more information
+about the state of the support, please see: https://llvmlite.readthedocs.io/en/latest/user-guide/llvm20.html
+
 Pull-Requests:
 
 * PR `#1091 <https://github.com/numba/llvmlite/pull/1091>`_: [NPM] Add hooks for llvm passes in llvmlite (`gmarkall <https://github.com/gmarkall>`_ `yashssh <https://github.com/yashssh>`_)
