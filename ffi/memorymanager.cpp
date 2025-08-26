@@ -129,23 +129,20 @@ bool LlvmliteMemoryManager::hasSpace(const MemoryGroup &MemGroup,
     return false;
 }
 
-void LlvmliteMemoryManager::reserveAllocationSpace(uintptr_t CodeSize,
-                                                   LLVMLITE_ALIGN CodeAlign,
-                                                   uintptr_t RODataSize,
-                                                   LLVMLITE_ALIGN RODataAlign,
-                                                   uintptr_t RWDataSize,
-                                                   LLVMLITE_ALIGN RWDataAlign) {
+void LlvmliteMemoryManager::reserveAllocationSpace(
+    uintptr_t CodeSize, Align CodeAlign, uintptr_t RODataSize,
+    Align RODataAlign, uintptr_t RWDataSize, Align RWDataAlign) {
     LLVM_DEBUG(
         dbgs()
         << "\nLlvmliteMemoryManager::reserveAllocationSpace() request:\n\n");
     LLVM_DEBUG(dbgs() << "Code size / align: " << format_hex(CodeSize, 2, true)
-                      << " / " << GET_ALIGN_VALUE(CodeAlign) << "\n");
+                      << " / " << CodeAlign.value() << "\n");
     LLVM_DEBUG(dbgs() << "ROData size / align: "
                       << format_hex(RODataSize, 2, true) << " / "
-                      << GET_ALIGN_VALUE(RODataAlign) << "\n");
+                      << RODataAlign.value() << "\n");
     LLVM_DEBUG(dbgs() << "RWData size / align: "
                       << format_hex(RWDataSize, 2, true) << " / "
-                      << GET_ALIGN_VALUE(RWDataAlign) << "\n");
+                      << RWDataAlign.value() << "\n");
 
     if (CodeSize == 0 && RODataSize == 0 && RWDataSize == 0) {
         LLVM_DEBUG(dbgs() << "No memory requested - returning early.\n");
@@ -155,31 +152,25 @@ void LlvmliteMemoryManager::reserveAllocationSpace(uintptr_t CodeSize,
     // Code alignment needs to be at least the stub alignment - however, we
     // don't have an easy way to get that here so as a workaround, we assume
     // it's 8, which is the largest value I observed across all platforms.
-#if LLVM_VERSION_MAJOR < 16
-    constexpr uint32_t StubAlign = 8;
-#else
     constexpr uint64_t StubAlign = 8;
-#endif
 
-    CodeAlign = LLVMLITE_ALIGN(std::max(GET_ALIGN_VALUE(CodeAlign), StubAlign));
+    CodeAlign = Align(std::max(CodeAlign.value(), StubAlign));
 
     // ROData and RWData may not need to be aligned to the StubAlign, but the
     // stub alignment seems like a reasonable (if slightly arbitrary) minimum
     // alignment for them that should not cause any issues on all (i.e. 64-bit)
     // platforms.
-    RODataAlign =
-        LLVMLITE_ALIGN(std::max(GET_ALIGN_VALUE(RODataAlign), StubAlign));
-    RWDataAlign =
-        LLVMLITE_ALIGN(std::max(GET_ALIGN_VALUE(RWDataAlign), StubAlign));
+    RODataAlign = Align(std::max(RODataAlign.value(), StubAlign));
+    RWDataAlign = Align(std::max(RWDataAlign.value(), StubAlign));
 
     // Get space required for each section. Use the same calculation as
     // allocateSection because we need to be able to satisfy it.
     uintptr_t RequiredCodeSize =
-        alignTo(CodeSize, CodeAlign) + GET_ALIGN_VALUE(CodeAlign);
+        alignTo(CodeSize, CodeAlign) + CodeAlign.value();
     uintptr_t RequiredRODataSize =
-        alignTo(RODataSize, RODataAlign) + GET_ALIGN_VALUE(RODataAlign);
+        alignTo(RODataSize, RODataAlign) + RODataAlign.value();
     uintptr_t RequiredRWDataSize =
-        alignTo(RWDataSize, RWDataAlign) + GET_ALIGN_VALUE(RWDataAlign);
+        alignTo(RWDataSize, RWDataAlign) + RWDataAlign.value();
     uint64_t TotalSize =
         RequiredCodeSize + RequiredRODataSize + RequiredRWDataSize;
 

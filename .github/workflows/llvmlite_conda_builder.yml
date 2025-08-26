@@ -92,7 +92,6 @@ jobs:
         with:
           auto-update-conda: true
           auto-activate-base: true
-          activate-environment: ""
 
       - name: Install conda-build
         run: conda install conda-build
@@ -112,7 +111,7 @@ jobs:
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
               LLVMDEV_CHANNEL="file:///${{ github.workspace }}/llvmdev_conda_packages"
           else
-              LLVMDEV_CHANNEL="numba"
+              LLVMDEV_CHANNEL="numba/label/dev"
           fi
           CONDA_CHANNEL_DIR="conda_channel_dir"
           mkdir $CONDA_CHANNEL_DIR

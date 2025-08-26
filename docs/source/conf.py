@@ -301,7 +301,7 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
-    'llvm': ('http://llvm.org/releases/15.0.0/docs', None),
+    'llvm': ('https://releases.llvm.org/20.1.0/docs', None),
     }
 
 nitpicky = True

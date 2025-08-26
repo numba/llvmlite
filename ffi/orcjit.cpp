@@ -5,12 +5,11 @@
 
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/ExecutionEngine/Orc/Core.h"
-#include "llvm/ExecutionEngine/Orc/DebuggerSupportPlugin.h"
+#include "llvm/ExecutionEngine/Orc/Debugging/DebuggerSupportPlugin.h"
 #include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
-#include "llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderGDB.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/MemoryBuffer.h"
@@ -83,48 +82,47 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
                 .setFeatures(template_tm->getTargetFeatureString())
                 .setOptions(template_tm->Options));
     }
-    builder.setObjectLinkingLayerCreator([=](llvm::orc::ExecutionSession
-                                                 &session,
-                                             const llvm::Triple &triple)
-                                             -> std::unique_ptr<
-                                                 llvm::orc::ObjectLayer> {
-        if (useJitLink) {
-            auto linkingLayer =
-                std::make_unique<llvm::orc::ObjectLinkingLayer>(session);
+    builder.setObjectLinkingLayerCreator(
+        [=](llvm::orc::ExecutionSession &session, const llvm::Triple &triple)
+            -> std::unique_ptr<llvm::orc::ObjectLayer> {
+            if (useJitLink) {
+                auto linkingLayer =
+                    std::make_unique<llvm::orc::ObjectLinkingLayer>(session);
 
-            /* TODO(LLVM16): In newer LLVM versions, there is a simple
-             * EnableDebugSupport flag on the builder and we don't need to do
-             * any of this. */
-            if (triple.getObjectFormat() == Triple::ELF ||
-                triple.getObjectFormat() == Triple::MachO) {
-                linkingLayer->addPlugin(
-                    std::make_unique<orc::GDBJITDebugInfoRegistrationPlugin>(
-                        ExecutorAddr::fromPtr(
-                            &llvm_orc_registerJITLoaderGDBWrapper)));
-            }
-            if (triple.isOSBinFormatCOFF()) {
-                linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
-                    true);
-                linkingLayer->setAutoClaimResponsibilityForObjectSymbols(true);
-            }
-            return linkingLayer;
-        } else {
-            auto linkingLayer =
-                std::make_unique<llvm::orc::RTDyldObjectLinkingLayer>(
-                    session, []() {
-                        return std::make_unique<llvm::SectionMemoryManager>();
-                    });
-            if (triple.isOSBinFormatCOFF()) {
-                linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
-                    true);
-                linkingLayer->setAutoClaimResponsibilityForObjectSymbols(true);
-            }
-            linkingLayer->registerJITEventListener(
-                *llvm::JITEventListener::createGDBRegistrationListener());
+                /* FIXME(LLVM16): In newer LLVM versions, there is a simple
+                 * EnableDebugSupport flag on the builder and we don't need to
+                 * do any of this. */
+                //  if (triple.getObjectFormat() == Triple::ELF ||
+                //     triple.getObjectFormat() == Triple::MachO) {
+                //     linkingLayer->addPlugin(
+                //         std::make_unique<orc::GDBJITDebugInfoRegistrationPlugin>(
+                //             ExecutorAddr::fromPtr(
+                //                 &llvm_orc_registerJITLoaderGDBWrapper)));
+                // }
+                if (triple.isOSBinFormatCOFF()) {
+                    linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
+                        true);
+                    linkingLayer->setAutoClaimResponsibilityForObjectSymbols(
+                        true);
+                }
+                return linkingLayer;
+            } else {
+                auto linkingLayer = std::make_unique<
+                    llvm::orc::RTDyldObjectLinkingLayer>(session, []() {
+                    return std::make_unique<llvm::SectionMemoryManager>();
+                });
+                if (triple.isOSBinFormatCOFF()) {
+                    linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
+                        true);
+                    linkingLayer->setAutoClaimResponsibilityForObjectSymbols(
+                        true);
+                }
+                linkingLayer->registerJITEventListener(
+                    *llvm::JITEventListener::createGDBRegistrationListener());
 
-            return linkingLayer;
-        }
-    });
+                return linkingLayer;
+            }
+        });
 
     auto jit = builder.create();
 
@@ -195,8 +193,9 @@ LLVMPY_LLJIT_Link(std::shared_ptr<LLJIT> *lljit, const char *libraryName,
     for (size_t import_idx = 0; import_idx < imports_length; import_idx++) {
         SymbolStringPtr mangled =
             (*lljit)->mangleAndIntern(imports[import_idx].name);
-        JITEvaluatedSymbol symbol(imports[import_idx].address,
-                                  JITSymbolFlags::Exported);
+        ExecutorSymbolDef symbol(ExecutorAddr(imports[import_idx].address),
+                                 JITSymbolFlags::Exported);
+
         auto error = dylib->define(absoluteSymbols({{mangled, symbol}}));
 
         if (error) {

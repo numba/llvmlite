@@ -19,7 +19,7 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 # NOTE: Keep this in sync with the version that llvmlite is declared to support
-set(LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT 15)
+set(LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT 20)
 
 # Check LLVM version is supported or intentionally overridden.
 if (NOT DEFINED LLVM_VERSION_MAJOR)
@@ -164,11 +164,10 @@ ${LLVM_ENABLE_RTTI}.")
 endif()
 
 # Define the shared library
-add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
-            module.cpp value.cpp executionengine.cpp transforms.cpp type.cpp
-            passmanagers.cpp targets.cpp dylib.cpp linker.cpp object_file.cpp
-            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp
-            config.cpp)
+add_library(llvmlite SHARED assembly.cpp bitcode.cpp config.cpp core.cpp initfini.cpp
+            module.cpp value.cpp executionengine.cpp type.cpp
+            targets.cpp dylib.cpp linker.cpp object_file.cpp
+            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp)
 
 
 # Determine whether libstdc++ should be statically linked (or not).
@@ -225,6 +224,7 @@ else()
     # library, see https://github.com/numba/llvmlite/pull/1234 for discussion.
     set(LLVM_COMPONENTS mcjit
                         orcjit
+                        OrcDebugging
                         AsmPrinter
                         AllTargetsCodeGens
                         AllTargetsAsmParsers)

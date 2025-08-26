@@ -21,8 +21,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FALLBACK_LLVMDEV_VERSION: "15"
-  CONDA_CHANNEL_NUMBA: numba/label/manylinux2014_x86_64
+  FALLBACK_LLVMDEV_VERSION: "20"
+  CONDA_CHANNEL_NUMBA: numba/label/llvm20-wheel
   VALIDATION_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
   MANYLINUX_IMAGE: "manylinux2014_x86_64"

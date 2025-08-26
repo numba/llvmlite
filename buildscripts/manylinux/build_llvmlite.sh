@@ -24,14 +24,7 @@ conda activate $envname
 if [ -n "$LLVMDEV_ARTIFACT_PATH" ] && [ -d "$LLVMDEV_ARTIFACT_PATH" ]; then
     conda install -y "$LLVMDEV_ARTIFACT_PATH"/llvmdev-*.conda --no-deps
 else
-    if [[ $(uname -m) == "aarch64" ]] ; then
-        conda install -y numba/label/manylinux_2_28::llvmdev --no-deps
-    elif [[ $(uname -m) == "x86_64" ]] ; then
-        conda install -y numba/label/manylinux_2_17::llvmdev --no-deps
-    else
-        echo "Error: Unsupported architecture: $(uname -m)"
-        exit 1
-    fi
+    conda install -y -c numba/label/llvm20-wheel llvmdev=20 --no-deps
 fi
 
 # Prepend builtin Python Path

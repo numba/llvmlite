@@ -6,7 +6,7 @@ parameters:
 
 jobs:
 - job: ${{ parameters.name }}
-  pool: 
+  pool:
     vmImage: ${{ parameters.vmImage }}
   strategy:
     maxParallel: 11

@@ -10,7 +10,6 @@ from ctypes import CFUNCTYPE, POINTER, c_double
 import llvmlite.binding as llvm
 import numpy as np
 
-llvm.initialize()
 llvm.initialize_native_target()
 llvm.initialize_native_asmprinter()  # yes, even this one
 
