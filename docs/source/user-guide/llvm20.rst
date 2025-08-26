@@ -62,7 +62,7 @@ Known material issues with LLVM 20
    which is typically a segmentation fault due to ``__cxa_atexit`` accessing an
    invalid address). Multiple workarounds were tried by “faking” various
    missing parts, but the effect was a lot of complexity that seemingly
-   push the problem to some other area. It needs fixing at the LLVM level.
+   pushes the problem to some other area. It needs fixing at the LLVM level.
 
 #. The toolchain version used to compile LLVM and llvmlite needs to be the same
    in both builds. When using the Anaconda/conda-forge distribution toolchains,
