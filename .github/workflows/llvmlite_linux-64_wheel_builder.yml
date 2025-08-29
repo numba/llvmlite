@@ -29,7 +29,7 @@ env:
 
 jobs:
   linux-64-build:
-    name: linux-64-build-py${{ matrix.python-version }}
+    name: linux-64-build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -116,7 +116,7 @@ jobs:
         run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
 
   linux-64-validate:
-    name: validate-py${{ matrix.python-version }}
+    name: linux-64-validate
     needs: linux-64-build
     runs-on: ubuntu-latest
     defaults:
@@ -157,7 +157,7 @@ jobs:
           done
 
   linux-64-test:
-    name: test-py${{ matrix.python-version }}
+    name: linux-64-test
     needs: linux-64-build
     runs-on: ubuntu-latest
     defaults:
@@ -213,7 +213,7 @@ jobs:
           "${PYTHON_PATH}" -m llvmlite.tests
 
   linux-64-upload:
-    name: upload-py${{ matrix.python-version }}
+    name: linux-64-upload
     needs: [linux-64-test, linux-64-validate]
     if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: ubuntu-latest

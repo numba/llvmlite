@@ -29,7 +29,7 @@ env:
 
 jobs:
   linux-aarch64-build:
-    name: linux-aarch64-build-py${{ matrix.python-version }}
+    name: linux-aarch64-build
     runs-on: ubuntu-24.04-arm
     defaults:
       run:
@@ -113,7 +113,7 @@ jobs:
         run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
 
   linux-aarch64-validate:
-    name: validate-py${{ matrix.python-version }}
+    name: linux-aarch64-validate
     needs: linux-aarch64-build
     runs-on: ubuntu-24.04-arm
     defaults:
@@ -154,7 +154,7 @@ jobs:
           done
 
   linux-aarch64-test:
-    name: test-py${{ matrix.python-version }}
+    name: linux-aarch64-test
     needs: linux-aarch64-build
     runs-on: ubuntu-24.04-arm
     defaults:
@@ -210,7 +210,7 @@ jobs:
           "${PYTHON_PATH}" -m llvmlite.tests
 
   linux-aarch64-upload:
-    name: upload-py${{ matrix.python-version }}
+    name: linux-aarch64-upload
     needs: [linux-aarch64-test, linux-aarch64-validate]
     if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: ubuntu-24.04-arm
