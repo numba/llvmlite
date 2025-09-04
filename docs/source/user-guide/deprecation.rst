@@ -15,6 +15,11 @@ provided.
 Deprecation of Typed Pointers
 =============================
 
+.. note:: Typed pointers support has been removed as llvmlite now uses LLVM 20,
+          which dropped support for typed pointers. All pointer operations now 
+          use opaque pointers. See the migration guide below for updating 
+          existing code.
+
 The use of Typed Pointers is deprecated, and :ref:`Opaque Pointers
 <pointer-types>` will be the default (and eventually required) in a future
 llvmlite version.
@@ -53,7 +58,7 @@ required by the user.
 Schedule
 --------
 
-- In llvmlite 0.45, support for Typed Pointers in the binding layer will be
+- In llvmlite 0.45, support for Typed Pointers in the binding layer was
   removed. The IR layer will still use Typed Pointers by default.
 - In a future version of llvmlite (>= 0.46), the IR layer will use Opaque
   Pointers by default.
