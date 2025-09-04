@@ -10,6 +10,35 @@ for their deprecation and reasoning behind the changes, along with examples, is
 provided.
 
 
+Deprecation of LLVM initialization
+==================================
+
+A breaking change has occurred with the upgrade to LLVM 20.
+Initialization of LLVM core is now automatic, and ``llvm.binding.initialize()`` 
+will raise a ``RuntimeError`` with a suitable message.
+LLVM 20 includes many behavior changes that may break user code
+or expectations. This hard error warns users of such potential breakage.
+
+Reason for deprecation
+----------------------
+
+This is an unscheduled deprecation due to removal of the underlying API in LLVM 20.
+
+
+Schedule
+--------
+
+- In llvmlite 0.45, ``llvm.binding.initialize()`` will raise a hard error to 
+  notify users of the breaking change. 
+- In llvmlite 0.46, ``llvm.binding.initialize()`` will be removed.
+
+
+Recommendations
+---------------
+
+Simply remove ``llvm.binding.initialize()``.
+
+
 .. _deprecation-of-typed-pointers:
 
 Deprecation of Typed Pointers
