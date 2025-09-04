@@ -18,6 +18,7 @@ Initialization of LLVM core is now automatic, and ``llvm.binding.initialize()``
 will raise a ``RuntimeError`` with a suitable message.
 LLVM 20 includes many behavior changes that may break user code
 or expectations. This hard error warns users of such potential breakage.
+See :ref:`llvm20` for more details on LLVM 20 changes.
 
 Reason for deprecation
 ----------------------
