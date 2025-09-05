@@ -17,7 +17,7 @@ runner_mapping = {
     "win-64": "windows-2025",
 }
 
-python_versions = ["3.10", "3.11", "3.12", "3.13"]
+python_versions = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 default_include = []

@@ -35,7 +35,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
 
     steps:
@@ -47,10 +47,15 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version != '3.14' && matrix.python-version || '3.12' }}
           conda-remove-defaults: true
           auto-update-conda: true
           auto-activate-base: true
+
+      - name: Install Python 3.14
+        if: matrix.python-version == '3.14'
+        run: |
+          conda install -c ad-testing/label/py314 -c defaults python=${{ matrix.python-version }} -y
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
@@ -70,7 +75,8 @@ jobs:
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
           fi
           conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}
-          conda install -c defaults cmake libxml2 python-build
+          conda install -c defaults cmake libxml2
+          python -m pip install --upgrade pip build
 
           # Hide libunwind to prevent it from being linked against during build
           # On macOS, if libunwind.dylib from the llvmdev conda package gets linked, the resulting wheel
@@ -91,7 +97,7 @@ jobs:
 
       - name: Fix macOS wheel library paths
         run: |
-          python -m pip install wheel
+          python -m pip install --upgrade wheel
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           bash "$GITHUB_WORKSPACE/buildscripts/github/patch_osx-64_wheel.sh" "$whl"
@@ -117,7 +123,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
     steps:
       - name: Clone repository
@@ -154,7 +160,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
 
     steps:
@@ -162,6 +168,7 @@ jobs:
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
 
       - name: Download llvmlite wheel
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
@@ -179,8 +186,14 @@ jobs:
           # Upgrade pip and install wheel
           $PYTHON_PATH -m pip install --upgrade pip wheel
 
-          echo "Installing lief for distribution testing"
-          $PYTHON_PATH -m pip install -v lief
+          # Skip lief installation for Python 3.14 as it fails to build/install
+          # This condition can be removed once lief supports Python 3.14
+          if [ "${{ matrix.python-version }}" != "3.14" ]; then
+            echo "Installing lief for distribution testing"
+            $PYTHON_PATH -m pip install -v lief
+          else
+            echo "skipping lief installation for Python 3.14"
+          fi
 
           # Install wheel and run tests
           cd dist
@@ -201,7 +214,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
     steps:
       - name: Setup Miniconda
