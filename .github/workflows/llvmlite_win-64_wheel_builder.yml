@@ -48,11 +48,15 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version != '3.14' && matrix.python-version || '3.12' }}
           conda-remove-defaults: true
           auto-update-conda: true
           auto-activate-base: true
-          channels: ${{ matrix.python-version == '3.14' && 'ad-testing/label/py314' || '' }}
+
+      - name: Install Python 3.14
+        if: matrix.python-version == '3.14'
+        run: |
+          conda install -c ad-testing/label/py314 -c defaults python=${{ matrix.python-version }} -y
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
