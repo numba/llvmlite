@@ -52,6 +52,7 @@ jobs:
           conda-remove-defaults: true
           auto-update-conda: true
           auto-activate-base: true
+          channels: ${{ matrix.python-version == '3.14' && 'ad-testing/label/py314' || '' }}
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
