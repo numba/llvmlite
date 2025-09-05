@@ -97,7 +97,7 @@ jobs:
 
       - name: Fix macOS wheel library paths
         run: |
-          python -m pip install wheel
+          python -m pip install --upgrade wheel
           cd dist
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           bash "$GITHUB_WORKSPACE/buildscripts/github/patch_osx-64_wheel.sh" "$whl"
