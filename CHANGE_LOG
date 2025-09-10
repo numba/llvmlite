@@ -1,4 +1,4 @@
-v0.45.0-rc1 (Aug 26, 2025)
+v0.45.0rc2 (Sept 10, 2025)
 --------------------------
 
 This release of llvmlite introduces support for LLVM 20. For more information
@@ -112,7 +112,11 @@ Pull-Requests:
 * PR `#1262 <https://github.com/numba/llvmlite/pull/1262>`_: llvmdev-20 recipe fixes (`swap357 <https://github.com/swap357>`_)
 * PR `#1266 <https://github.com/numba/llvmlite/pull/1266>`_: update compatability matrix in the `README.rst` to reflect LLVM 20 (`esc <https://github.com/esc>`_)
 * PR `#1267 <https://github.com/numba/llvmlite/pull/1267>`_: adding llvm20 docs (`esc <https://github.com/esc>`_)
+* PR `#1268 <https://github.com/numba/llvmlite/pull/1268>`_: Release 0.45: `CHANGE_LOG` (`esc <https://github.com/esc>`_)
 * PR `#1269 <https://github.com/numba/llvmlite/pull/1269>`_: add sdist build and upload steps on wheel workflow (`swap357 <https://github.com/swap357>`_)
+* PR `#1274 <https://github.com/numba/llvmlite/pull/1274>`_: GHA/ standardize job names on workflows for linux builds (`swap357 <https://github.com/swap357>`_)
+* PR `#1276 <https://github.com/numba/llvmlite/pull/1276>`_: Fix build-string on llvmdev_for_wheels conda recipe (`swap357 <https://github.com/swap357>`_)
+* PR `#1278 <https://github.com/numba/llvmlite/pull/1278>`_: Update deprecation page (`sklam <https://github.com/sklam>`_)
 
 Authors:
 
