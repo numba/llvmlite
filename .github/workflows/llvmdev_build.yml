@@ -20,6 +20,7 @@ on:
           - all
           - linux-64
           - linux-aarch64
+          - linux-s390x
           - osx-64
           - osx-arm64
           - win-64
@@ -98,7 +99,7 @@ jobs:
           run-post: false
 
       - name: Build and test conda package in manylinux - linux platforms
-        if: (matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64') && matrix.recipe == 'llvmdev_for_wheel'
+        if: (matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64' || matrix.platform == 'linux-s390x') && matrix.recipe == 'llvmdev_for_wheel'
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |
@@ -112,6 +113,9 @@ jobs:
           elif [[ "${{ matrix.platform }}" == "linux-aarch64" ]]; then
             MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64"
             MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"
+          elif [[ "${{ matrix.platform }}" == "linux-s390x" ]]; then
+            MANYLINUX_IMAGE="https://quay.io/repository/pypa/manylinux2014_s390x"
+            MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-s390x.sh"
           fi
 
           echo "Building in manylinux container for ${{ matrix.platform }}"
@@ -130,12 +134,12 @@ jobs:
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Install conda-build
-        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
+        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64' && matrix.platform != 'linux-s390x') || matrix.recipe != 'llvmdev_for_wheel'
         run: |
           conda install -c defaults conda-build
 
       - name: Build and test conda package - non-linux platforms
-        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
+        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64' && matrix.platform != 'linux-s390x') || matrix.recipe != 'llvmdev_for_wheel'
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |
