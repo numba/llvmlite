@@ -1,5 +1,5 @@
-v0.45.0rc2 (Sept 10, 2025)
---------------------------
+v0.45.0 (Sept 17, 2025)
+-----------------------
 
 This release of llvmlite introduces support for LLVM 20. For more information
 about the state of the support and breaking changes, please see: https://llvmlite.readthedocs.io/en/latest/user-guide/llvm20.html
@@ -117,6 +117,8 @@ Pull-Requests:
 * PR `#1274 <https://github.com/numba/llvmlite/pull/1274>`_: GHA/ standardize job names on workflows for linux builds (`swap357 <https://github.com/swap357>`_)
 * PR `#1276 <https://github.com/numba/llvmlite/pull/1276>`_: Fix build-string on llvmdev_for_wheels conda recipe (`swap357 <https://github.com/swap357>`_)
 * PR `#1278 <https://github.com/numba/llvmlite/pull/1278>`_: Update deprecation page (`sklam <https://github.com/sklam>`_)
+* PR `#1287 <https://github.com/numba/llvmlite/pull/1287>`_: change-log for 0.45.0 FINAL (`esc <https://github.com/esc>`_)
+* PR `#1289 <https://github.com/numba/llvmlite/pull/1289>`_: use explicit channel specification for llvmdev=20 installation (`swap357 <https://github.com/swap357>`_ `esc <https://github.com/esc>`_)
 
 Authors:
 
