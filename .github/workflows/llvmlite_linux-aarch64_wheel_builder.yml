@@ -55,13 +55,6 @@ jobs:
           repository: ${{ github.repository }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
-        with:
-          auto-update-conda: true
-          auto-activate-base: true
-          activate-environment: true
-
       - name: Map Python version
         run: |
           # Map Python version to manylinux path
