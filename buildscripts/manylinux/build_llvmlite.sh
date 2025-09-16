@@ -24,7 +24,7 @@ conda activate $envname
 if [ -n "$LLVMDEV_ARTIFACT_PATH" ] && [ -d "$LLVMDEV_ARTIFACT_PATH" ]; then
     conda install -y "$LLVMDEV_ARTIFACT_PATH"/llvmdev-*.conda --no-deps
 else
-    conda install -y -c numba/label/llvm20-wheel llvmdev=20 --no-deps
+    conda install -y -c defaults numba/label/llvm20-wheel::llvmdev=20 --no-deps
 fi
 
 # Prepend builtin Python Path
