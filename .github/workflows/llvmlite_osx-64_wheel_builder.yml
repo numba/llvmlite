@@ -66,10 +66,11 @@ jobs:
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
               CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
+              conda install -c defaults -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
+              conda install -c defaults "${CHAN}"::llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}
           fi
-          conda install -c "$CHAN" llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}
           conda install -c defaults cmake libxml2 python-build
 
           # Hide libunwind to prevent it from being linked against during build
