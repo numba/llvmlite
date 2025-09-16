@@ -69,6 +69,8 @@ jobs:
     needs: check
     name: ${{ matrix.platform }}-py${{ matrix.python-version }}-build
     runs-on: ${{ matrix.runner }}
+    env:
+      EXTRA_CHANNELS: ${{ matrix.python-version == '3.14' && '-c ad-testing/label/py314' || '' }}
     defaults:
       run:
         shell: bash -elx {0}
@@ -115,7 +117,8 @@ jobs:
           fi
           CONDA_CHANNEL_DIR="conda_channel_dir"
           mkdir $CONDA_CHANNEL_DIR
-          conda build --debug -c "$LLVMDEV_CHANNEL" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder=$CONDA_CHANNEL_DIR --no-test
+          # shellcheck disable=SC2086
+          conda build --debug -c "$LLVMDEV_CHANNEL" ${EXTRA_CHANNELS} -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder="${CONDA_CHANNEL_DIR}" --no-test
 
       - name: Upload llvmlite conda package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -133,6 +136,8 @@ jobs:
     name: ${{ matrix.platform }}-py${{ matrix.python-version }}-test
     needs: [check, build]
     runs-on: ${{ matrix.runner }}
+    env:
+      EXTRA_CHANNELS: ${{ matrix.python-version == '3.14' && '-c ad-testing/label/py314' || '' }}
     defaults:
       run:
         shell: bash -elx {0}
@@ -153,4 +158,6 @@ jobs:
         run: conda install conda-build
 
       - name: Run tests
-        run: conda build --test ${{ matrix.platform }}/llvmlite*.conda
+        run: |
+          # shellcheck disable=SC2086
+          conda build --test ${EXTRA_CHANNELS} ${{ matrix.platform }}/llvmlite*.conda

@@ -17,17 +17,89 @@ runner_mapping = {
     "win-64": "windows-2025",
 }
 
-python_versions = ["3.10", "3.11", "3.12", "3.13"]
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+default_include = [
+    # linux-64
+    {"runner": runner_mapping["linux-64"],
+     "platform": "linux-64",
+     "python-version": "3.10"},
+    {"runner": runner_mapping["linux-64"],
+     "platform": "linux-64",
+     "python-version": "3.11"},
+    {"runner": runner_mapping["linux-64"],
+     "platform": "linux-64",
+     "python-version": "3.12"},
+    {"runner": runner_mapping["linux-64"],
+     "platform": "linux-64",
+     "python-version": "3.13"},
+    {"runner": runner_mapping["linux-64"],
+     "platform": "linux-64",
+     "python-version": "3.14"},
 
-default_include = []
-for platform in platforms:
-    for python_version in python_versions:
-        default_include.append({
-            "runner": runner_mapping[platform],
-            "platform": platform,
-            "python-version": python_version,
-        })
+    # linux-aarch64
+    {"runner": runner_mapping["linux-aarch64"],
+     "platform": "linux-aarch64",
+     "python-version": "3.10"},
+    {"runner": runner_mapping["linux-aarch64"],
+     "platform": "linux-aarch64",
+     "python-version": "3.11"},
+    {"runner": runner_mapping["linux-aarch64"],
+     "platform": "linux-aarch64",
+     "python-version": "3.12"},
+    {"runner": runner_mapping["linux-aarch64"],
+     "platform": "linux-aarch64",
+     "python-version": "3.13"},
+    {"runner": runner_mapping["linux-aarch64"],
+     "platform": "linux-aarch64",
+     "python-version": "3.14"},
+
+    # osx-64
+    {"runner": runner_mapping["osx-64"],
+     "platform": "osx-64",
+     "python-version": "3.10"},
+    {"runner": runner_mapping["osx-64"],
+     "platform": "osx-64",
+     "python-version": "3.11"},
+    {"runner": runner_mapping["osx-64"],
+     "platform": "osx-64",
+     "python-version": "3.12"},
+    {"runner": runner_mapping["osx-64"],
+     "platform": "osx-64",
+     "python-version": "3.13"},
+
+    # osx-arm64
+    {"runner": runner_mapping["osx-arm64"],
+     "platform": "osx-arm64",
+     "python-version": "3.10"},
+    {"runner": runner_mapping["osx-arm64"],
+     "platform": "osx-arm64",
+     "python-version": "3.11"},
+    {"runner": runner_mapping["osx-arm64"],
+     "platform": "osx-arm64",
+     "python-version": "3.12"},
+    {"runner": runner_mapping["osx-arm64"],
+     "platform": "osx-arm64",
+     "python-version": "3.13"},
+    {"runner": runner_mapping["osx-arm64"],
+     "platform": "osx-arm64",
+     "python-version": "3.14"},
+
+    # win-64
+    {"runner": runner_mapping["win-64"],
+     "platform": "win-64",
+     "python-version": "3.10"},
+    {"runner": runner_mapping["win-64"],
+     "platform": "win-64",
+     "python-version": "3.11"},
+    {"runner": runner_mapping["win-64"],
+     "platform": "win-64",
+     "python-version": "3.12"},
+    {"runner": runner_mapping["win-64"],
+     "platform": "win-64",
+     "python-version": "3.13"},
+    {"runner": runner_mapping["win-64"],
+     "platform": "win-64",
+     "python-version": "3.14"},
+]
 
 print(
     "Deciding what to do based on event: "
