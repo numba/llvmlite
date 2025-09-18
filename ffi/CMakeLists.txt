@@ -91,21 +91,6 @@ else()
 '${LLVMLITE_PACKAGE_FORMAT}', expect one of 'conda' or 'wheel'.")
 endif()
 
-# Inherited from Makefile system, not tested on unsupported targets (BSD).
-if(UNIX)
-    set(LLVMLITE_FLTO_DEFAULT ON)
-    option(LLVMLITE_FLTO
-           "Enable LTO"
-           ${LLVMLITE_FLTO_DEFAULT})
-    if (LLVMLITE_FLTO)
-        check_cxx_compiler_flag(-flto HAVE_FLTO)
-        if(NOT HAVE_FLTO)
-            message(FATAL_ERROR "-flto flag is not supported by the compiler")
-        endif()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
-    endif()
-endif()
-
 # RTTI handling: This is a little awkward, it's a 3-state variable so cannot be
 # an option. The states are user defined as ON or OFF, or user has not set so
 # inherit from LLVM. This part removes the `-fno-rtti` option from
@@ -195,6 +180,24 @@ if(UNIX AND NOT LLVMLITE_USE_RTTI_FLAG)
     message(STATUS "Applying no-RTTI flag to llvmlite target: ${FLAG_NO_RTTI}")
     target_compile_options(llvmlite PRIVATE ${FLAG_NO_RTTI})
 endif()
+
+# Check for LTO / IPO
+set(LLVMLITE_LTO_DEFAULT ON)
+option(LLVMLITE_LTO "Enable LTO" ${LLVMLITE_LTO_DEFAULT})
+
+if(LLVMLITE_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT LLVMLITE_HAVE_LTO OUTPUT output)
+    if(LLVMLITE_HAVE_LTO)
+        message(STATUS "Enabling interprocedural optimization (LTO)")
+        set_property(TARGET llvmlite PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    else()
+        message(WARNING "IPO/LTO is not supported: ${output}")
+    endif()
+else()
+    message(STATUS "IPO/LTO is disabled")
+endif()
+
 
 # Check if the LLVMLITE_SHARED build flag is set. Default is static. This option
 # is baked into the binary for testing purposes.
@@ -317,26 +320,17 @@ message(STATUS "LLVM target link libraries: ${llvm_libs}")
 target_link_libraries(llvmlite ${llvm_libs})
 
 
-# -flto and --exclude-libs allow removal of unused parts of LLVM
+# --exclude-libs allow removal of unused parts of LLVM
 # TODO: these options are just set, they should really be tested for
 # suitability.
 if(UNIX AND NOT APPLE)
     set(FORCED_LINK_FLAGS "-Wl,--exclude-libs,ALL -Wl,--no-undefined")
-    # If FLTO at compile time, it's also needed at link time. There's a good
-    # chance it's carried in the C++ flags and will appear in the driver link
-    # mode, but just to make sure.
-    if (LLVMLITE_FLTO)
-        STRING(APPEND FORCED_LINK_FLAGS " -flto")
-    endif()
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
                  "${FORCED_LINK_FLAGS}")
 elseif(APPLE)
     # On Darwin only include the LLVMPY symbols required and exclude
     # everything else.
     set(FORCED_LINK_FLAGS "-Wl,-exported_symbol,_LLVMPY_*")
-    if (LLVMLITE_FLTO)
-        STRING(APPEND FORCED_LINK_FLAGS " -flto")
-    endif()
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
                  "${FORCED_LINK_FLAGS}")
 endif()
