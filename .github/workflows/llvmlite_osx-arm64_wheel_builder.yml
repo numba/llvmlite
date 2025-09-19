@@ -66,10 +66,11 @@ jobs:
         run: |
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
               CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
+              conda install -c defaults -c "$CHAN" "llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
           else
               CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
+              conda install -c defaults "${CHAN}::llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
           fi
-          conda install -c "$CHAN" llvmdev="${{ env.FALLBACK_LLVMDEV_VERSION }}"
           conda install -c defaults python-build
 
           # Hide libunwind to prevent it from being linked against during build
@@ -93,6 +94,20 @@ jobs:
         with:
           name: llvmlite-osx-arm64-py${{ matrix.python-version }}
           path: dist/*.whl
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+      - name: Build sdist [once - py3.10]
+        if: ${{ matrix.python-version == '3.10' }}
+        run: arch -arm64 python -m build --sdist
+
+      - name: Upload sdist (once with python 3.10)
+        if: ${{ matrix.python-version == '3.10' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: llvmlite-sdist
+          path: dist/*.tar.gz
           compression-level: 0
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: error
