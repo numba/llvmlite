@@ -3,7 +3,7 @@ jobs:
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: macOS
-    vmImage: macos-15
+    vmImage: macos-14-arm64
     variables:
       MACOSX_DEPLOYMENT_TARGET: '11.0'
     matrix:
