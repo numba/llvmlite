@@ -14,10 +14,6 @@ jobs:
       ${{ insert }}: ${{ parameters.matrix }}
 
   steps:
-    - bash: |
-        sudo xcode-select -s /Applications/Xcode_14.2.app/Contents/Developer
-      condition: eq('${{ parameters.name }}', 'macOS')
-      displayName: 'Set macOS build environment (Xcode 14.2)'
 
     - script: |
         set -e
