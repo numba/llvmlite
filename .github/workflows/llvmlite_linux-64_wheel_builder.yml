@@ -36,7 +36,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
 
     steps:
@@ -70,6 +70,7 @@ jobs:
             "3.11") echo "PYTHON_PATH=cp311-cp311" >> "$GITHUB_ENV" ;;
             "3.12") echo "PYTHON_PATH=cp312-cp312" >> "$GITHUB_ENV" ;;
             "3.13") echo "PYTHON_PATH=cp313-cp313" >> "$GITHUB_ENV" ;;
+            "3.14") echo "PYTHON_PATH=cp314-cp314" >> "$GITHUB_ENV" ;;
             *) echo "Invalid Python version" && exit 1 ;;
           esac
 
@@ -124,7 +125,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
     steps:
       - name: Clone repository
@@ -165,7 +166,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
 
     steps:
@@ -222,7 +223,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
     steps:
       - name: Setup Miniconda
