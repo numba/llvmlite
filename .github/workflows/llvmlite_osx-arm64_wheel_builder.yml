@@ -35,7 +35,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
 
     steps:
@@ -129,7 +129,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
     steps:
       - name: Clone repository
@@ -166,7 +166,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
 
     steps:
@@ -174,6 +174,7 @@ jobs:
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
 
       - name: Download llvmlite wheel
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
@@ -205,7 +206,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       fail-fast: false
     steps:
       - name: Setup Miniconda
