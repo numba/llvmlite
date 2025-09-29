@@ -73,11 +73,19 @@ jobs:
               conda install -c defaults "${CHAN}::llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
           fi
           conda install -c defaults cmake libxml2 python-build
+          pip install delvewheel
 
       - name: Build wheel
         env:
           LLVMLITE_PACKAGE_FORMAT: "wheel"
         run: python -m build
+
+      - name: Repair wheel with delvewheel
+        run: |
+          mkdir -p wheel_temp
+          mv dist/*.whl wheel_temp/
+          python -m delvewheel repair --analyze-existing -w dist wheel_temp/*.whl
+          ls -l dist
 
       - name: Upload llvmlite wheel
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
