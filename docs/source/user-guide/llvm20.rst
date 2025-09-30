@@ -28,8 +28,25 @@ Specific changes due to LLVM 20/build system update
    :ref:`legacy pass manager migration guide <passes-migration-guide>` for details
    on migrating from the legacy API to the new pass manager.
 
-#. Initialisation of LLVM core is now automatic, ``llvm.binding.initialize()``
-   will now raise a ``RuntimeError`` with a suitable message.
+#. Initialization of LLVM core is now automatic. Calling ``llvm.binding.initialize()``
+   will now raise a ``RuntimeError`` with a message indicating that initialization
+   is no longer required.
+
+   For code that needs to support both older and newer versions of llvmlite,
+   you can use version-conditional initialization::
+
+      import llvmlite
+      import llvmlite.binding as llvm
+
+      # Check llvmlite version to determine if initialization is needed
+      version = [int(p) for p in llvmlite.__version__.split('.')[:2]]
+
+      if version < [0, 45]:
+          # Older versions require explicit initialization
+          llvm.initialize()
+      # No initialization needed for version 0.45+
+
+   .. Code above is adapted from https://github.com/numba/llvmlite/issues/1261#issuecomment-3324513084
 
 #. The wheel builds and conda packages on the ``numba`` channel are built
    against an LLVM that has assertions enabled.
