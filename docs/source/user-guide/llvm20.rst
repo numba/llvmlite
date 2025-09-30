@@ -1,8 +1,8 @@
 .. _llvm20:
 
-=======
-LLVM 20
-=======
+========================
+LLVM 20 (llvmlite 0.45+)
+========================
 
 As of version 0.45 llvmlite supports LLVM 20. The build system has been updated
 to use solely CMake, with added granularity about what is being consumed in
@@ -28,25 +28,9 @@ Specific changes due to LLVM 20/build system update
    :ref:`legacy pass manager migration guide <passes-migration-guide>` for details
    on migrating from the legacy API to the new pass manager.
 
-#. Initialization of LLVM core is now automatic. Calling ``llvm.binding.initialize()``
+#. Initialization of LLVM core is now automatic. Calling :func:`llvmlite.binding.initialize`
    will now raise a ``RuntimeError`` with a message indicating that initialization
-   is no longer required.
-
-   For code that needs to support both older and newer versions of llvmlite,
-   you can use version-conditional initialization::
-
-      import llvmlite
-      import llvmlite.binding as llvm
-
-      # Check llvmlite version to determine if initialization is needed
-      version = [int(p) for p in llvmlite.__version__.split('.')[:2]]
-
-      if version < [0, 45]:
-          # Older versions require explicit initialization
-          llvm.initialize()
-      # No initialization needed for version 0.45+
-
-   .. Code above is adapted from https://github.com/numba/llvmlite/issues/1261#issuecomment-3324513084
+   is no longer required. See the API documentation for details.
 
 #. The wheel builds and conda packages on the ``numba`` channel are built
    against an LLVM that has assertions enabled.
