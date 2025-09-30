@@ -23,8 +23,10 @@ Specific changes due to LLVM 20/build system update
    llvmlite APIs typically retain the types in the API and simply erase them
    during code generation.
 
-#. The “LLVM legacy pass manager” has been removed along with associated APIs,
-   the “LLVM new pass manager” APIs replace these.
+#. The "LLVM legacy pass manager" has been removed along with associated APIs,
+   the "LLVM new pass manager" APIs replace these. See the
+   :ref:`legacy pass manager migration guide <passes-migration-guide>` for details
+   on migrating from the legacy API to the new pass manager.
 
 #. Initialisation of LLVM core is now automatic, ``llvm.binding.initialize()``
    will now raise a ``RuntimeError`` with a suitable message.

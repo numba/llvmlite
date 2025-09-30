@@ -13,16 +13,16 @@ passes are managed by a pass manager. There are two kinds of pass managers:
 * :class:`ModulePassManager`, for optimizations that work on
   whole modules.
 
-llvmlite provides bindings for LLVM's *New* and *Legacy* pass managers, which
-have slightly different APIs and behaviour. The differences between them and the
-motivations for the New Pass Manager are outlined in the `LLVM Blog post on the
-New Pass Manager
+llvmlite provides bindings for LLVM's *New Pass Manager*. Prior to llvmlite 0.45
+(LLVM 20), llvmlite also supported the *Legacy Pass Manager*, which had a
+different API and behavior. The differences between them and the motivations
+for the New Pass Manager are outlined in the `LLVM Blog post on the New Pass Manager
 <https://blog.llvm.org/posts/2021-03-26-the-new-pass-manager/>`_.
 
-In a future version of llvmlite, likely coinciding with a minimum LLVM version
-requirement of 17, support for the Legacy Pass Manager will be removed. It is
-recommended that new code using llvmlite uses the New Pass Manager, and existing
-code using the Legacy Pass Manager be updated to use the New Pass Manager.
+As of llvmlite 0.45 (LLVM 20), support for the Legacy Pass Manager has been
+removed. All code should now use the New Pass Manager APIs documented below.
+For users migrating from the legacy API, see the :ref:`passes-migration-guide`
+later in this document.
 
 
 New Pass Manager APIs
@@ -30,6 +30,10 @@ New Pass Manager APIs
 
 To manage the optimization attributes we first need to instantiate a
 :class:`PipelineTuningOptions` instance:
+
+.. function:: create_pipeline_tuning_options(speed_level=2, size_level=0)
+
+   Create a :class:`PipelineTuningOptions` instance.
 
 .. class:: PipelineTuningOptions(speed_level=2, size_level=0)
    
@@ -63,16 +67,20 @@ To manage the optimization attributes we first need to instantiate a
 
         The level of optimization for size, as an integer between 0 and 2.
 
-.. FIXME: Available from llvm16
-.. * .. attribute:: inlining_threshold
-
-..      The integer threshold for inlining one function into
-..      another. The higher the number, the more likely that
-..      inlining will occur. This attribute is write-only.
-
+   * .. attribute:: inlining_threshold
+   
+        The integer threshold for inlining one function into
+        another. The higher the number, the more likely that
+        inlining will occur. This attribute is write-only.
+   
 
 We also need a :class:`PassBuilder` object to manage the respective function
 and module pass managers:
+
+.. function:: create_pass_builder(tm, pto)
+
+   Create a :class:`PassBuilder` instance that uses the given :class:`TargetMachine`
+   (*tm*) and :class:`PipelineTuningOptions` (*pto*) instances.
 
 .. class:: PassBuilder(target_machine, pipeline_tuning_options)
    
@@ -184,11 +192,88 @@ The ``add_*`` methods supported by both pass manager classes are:
 
 .. currentmodule:: llvmlite.binding
 
-Legacy Pass Manager APIs
-========================
+Example Usage of New API
+------------------------
 
-To instantiate either of these pass managers, you first need to
-create and configure a :class:`PassManagerBuilder`.
+Here's a complete example showing how to use the New Pass Manager APIs:
+
+.. literalinclude:: ../../../../examples/newpassmanagers.py
+   :caption: examples/newpassmanagers.py
+
+
+.. _passes-migration-guide:
+
+Legacy API Migration Guide
+==========================
+
+As of llvmlite 0.45 (LLVM 20), the legacy pass manager API has been removed.
+This section provides a migration guide comparing the New Pass Manager API
+with the removed legacy API to help users understand the differences and
+migrate existing code:
+
+.. list-table:: Pass Manager API Comparison
+   :header-rows: 1
+   :widths: 50 50
+
+   * - **New Pass Manager**
+     - **Legacy Pass Manager**
+   * - .. code-block:: python
+
+          # Setup
+          pto = create_pipeline_tuning_options(
+              speed_level=2, size_level=0)
+          pto.loop_vectorization = True
+          pass_builder = create_pass_builder(
+              target_machine, pto)
+
+     - .. code-block:: python
+
+          # Setup
+          pmb = PassManagerBuilder()
+          pmb.opt_level = 2
+          pmb.size_level = 0
+          pmb.loop_vectorize = True
+
+   * - .. code-block:: python
+
+          # Module optimization
+          mpm = pass_builder.getModulePassManager()
+          mpm.run(module, pass_builder)
+
+     - .. code-block:: python
+
+          # Module optimization
+          mpm = ModulePassManager()
+          pmb.populate(mpm)
+          mpm.run(module)
+
+   * - .. code-block:: python
+
+          # Function optimization
+          fpm = pass_builder.getFunctionPassManager()
+          fpm.run(function, pass_builder)
+
+     - .. code-block:: python
+
+          # Function optimization
+          fpm = FunctionPassManager(module)
+          pmb.populate(fpm)
+          fpm.initialize()
+          fpm.run(function)
+          fpm.finalize()
+
+
+Legacy Pass Manager APIs (Removed)
+========================================================
+
+.. warning::
+   The Legacy Pass Manager API has been removed as of llvmlite 0.45 (LLVM 20).
+   This documentation is kept for reference purposes only. New code should use
+   the New Pass Manager API documented above.
+
+The legacy API required creating and configuring a :class:`PassManagerBuilder`
+to instantiate pass managers. This approach has been superseded by the factory
+functions and direct class instantiation provided by the New Pass Manager.
 
 .. class:: PassManagerBuilder()
 
@@ -360,3 +445,4 @@ create and configure a :class:`PassManagerBuilder`.
 
         Returns ``True`` if the optimizations made any
         modification to the module. Otherwise returns ``False``.
+
