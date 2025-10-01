@@ -3116,6 +3116,11 @@ class TestBuild(TestCase):
             raise ValueError(f"Unexpected package type: {package_type}")
 
         got = set(info["canonicalised_linked_libraries"])
+        # Normalize delvewheel-bundled MSVCP hashed name (e.g. msvcp140-<hash>)
+        got = {
+            ("msvcp140" if lib.startswith("msvcp140") else lib)
+            for lib in got
+        }
 
         try:
             self.assertEqual(expected, got)
