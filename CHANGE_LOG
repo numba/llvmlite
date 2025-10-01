@@ -1,3 +1,18 @@
+v0.45.1 (October 01, 2025)
+--------------------------
+
+The is a patch release to fix an issue with `Windows wheels <https://github.com/numba/llvmlite/issues/1297>`_.
+
+Pull-Requests:
+
+* PR `#1307 <https://github.com/numba/llvmlite/pull/1307>`_: GHA/win-64 add delvewheel repair to bundle ``msvcp140.dll`` (`swap357 <https://github.com/swap357>`_)
+* PR `#1310 <https://github.com/numba/llvmlite/pull/1310>`_: Change-log 0.45.1 (`esc <https://github.com/esc>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `swap357 <https://github.com/swap357>`_
+
 v0.45.0 (Sept 17, 2025)
 -----------------------
 
