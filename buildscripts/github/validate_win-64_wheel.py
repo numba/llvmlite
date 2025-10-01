@@ -5,6 +5,9 @@ for path in pathlib.Path(".").rglob("**/*.dll"):
     print("path", path)
     dll = lief.PE.parse(str(path))
 
+    if path.name.lower().startswith("msvcp140"):
+        continue
+
     if hasattr(dll, "delay_imports"):
         delay_imports = {x.name for x in dll.delay_imports}
         print("Delay imports:", delay_imports)
@@ -15,6 +18,8 @@ for path in pathlib.Path(".").rglob("**/*.dll"):
 
     imports = {x.name for x in dll.imports}
     print("Regular imports:", imports)
+    # Normalize delvewheel-mangled MSVCP import (e.g. msvcp140-<hash>.dll)
+    imports = {("MSVCP140.dll" if name.lower().startswith("msvcp140") else name) for name in imports}
     expected_imports = {
         "ADVAPI32.dll",
         "KERNEL32.dll",
