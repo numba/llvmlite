@@ -6,6 +6,7 @@ project(llvmlite_ffi)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 include(CheckCXXCompilerFlag)
+include(CheckCXXSourceCompiles)
 include(CMakePushCheckState)
 # Work around llvm/llvm-project#83802 - LLVM's Findzstd.cmake uses variables
 # that require including `GNUInstallDirs`, but it does not include it itself.
@@ -17,6 +18,20 @@ find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+# This function checks if the CXX compiler supports
+# compiler flag `--fvisibility=hidden` and the
+# function annotation `__attribute__((visibility("default")))`.
+function(check_cxx_compiler_supports_fvisibility_and_attribute_visibility)
+    set(CMAKE_REQUIRED_FLAGS "-fvisibility=hidden")
+    set(SOURCE_CODE [=[
+        __attribute__((visibility("default"))) int api_function() { return 0; }
+        int main() { return 0; }
+        ]=])
+   check_cxx_source_compiles("${SOURCE_CODE}" CXX_COMPILER_SUPPORTS_FVISIBILITY_AND_ATTRIBUTE_VISIBILITY)
+   # propagate result to caller
+   set(CXX_COMPILER_SUPPORTS_FVISIBILITY_AND_ATTRIBUTE_VISIBILITY ${CXX_COMPILER_SUPPORTS_FVISIBILITY_AND_ATTRIBUTE_VISIBILITY} PARENT_SCOPE)
+endfunction()
 
 # NOTE: Keep this in sync with the version that llvmlite is declared to support
 set(LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT 20)
@@ -316,6 +331,11 @@ endif()
 message(STATUS "LLVM target link libraries: ${llvm_libs}")
 target_link_libraries(llvmlite ${llvm_libs})
 
+check_cxx_compiler_supports_fvisibility_and_attribute_visibility()
+if(CXX_COMPILER_SUPPORTS_FVISIBILITY_AND_ATTRIBUTE_VISIBILITY)
+    target_compile_definitions(llvmlite PRIVATE HAVE_ATTRIBUTE_VISIBILITY)
+    set_target_properties(llvmlite PROPERTIES CXX_VISIBILITY_PRESET hidden)
+endif()
 
 # -flto and --exclude-libs allow removal of unused parts of LLVM
 # TODO: these options are just set, they should really be tested for
