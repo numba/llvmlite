@@ -16,8 +16,6 @@
 
 #if defined(HAVE_DECLSPEC_DLL)
 #define API_EXPORT(RTYPE) __declspec(dllexport) RTYPE
-#elif defined(HAVE_ATTRIBUTE_VISIBILITY)
-#define API_EXPORT(RTYPE) __attribute__((visibility("default"))) RTYPE
 #else
 #define API_EXPORT(RTYPE) RTYPE
 #endif
