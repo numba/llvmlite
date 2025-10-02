@@ -332,6 +332,12 @@ if(UNIX AND NOT APPLE)
     if (LLVMLITE_FLTO)
         STRING(APPEND FORCED_LINK_FLAGS " -flto")
     endif()
+    if(NOT LLVMLITE_SHARED)
+        # If LLVM is statically linked, we specify -Bsymbolic to prevent
+        # that LLVM symbols can be interposed upon by previously
+        # loaded shared objects that export LLVM symbols.
+        STRING(APPEND FORCED_LINK_FLAGS " -Wl,-Bsymbolic")
+    endif()
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
                  "${FORCED_LINK_FLAGS}")
 elseif(APPLE)
