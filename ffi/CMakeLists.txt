@@ -13,6 +13,11 @@ include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# Preset function visibility to hidden, API functions
+# are annotated explicitly to use 'default' visibility.
+set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
+set(CMAKE_C_VISIBILITY_PRESET "hidden")
+
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -315,7 +320,6 @@ endif()
 # Setup and report on linkage against LLVM libraries
 message(STATUS "LLVM target link libraries: ${llvm_libs}")
 target_link_libraries(llvmlite ${llvm_libs})
-
 
 # -flto and --exclude-libs allow removal of unused parts of LLVM
 # TODO: these options are just set, they should really be tested for
