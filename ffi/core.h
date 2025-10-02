@@ -17,7 +17,8 @@
 #if defined(HAVE_DECLSPEC_DLL)
 #define API_EXPORT(RTYPE) __declspec(dllexport) RTYPE
 #else
-#define API_EXPORT(RTYPE) RTYPE
+// Non-windows: use visibility attributes.
+#define API_EXPORT(RTYPE) __attribute__((visibility("default"))) RTYPE
 #endif
 
 extern "C" {
