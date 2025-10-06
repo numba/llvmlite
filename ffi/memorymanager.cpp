@@ -171,8 +171,6 @@ void LlvmliteMemoryManager::reserveAllocationSpace(
         alignTo(RODataSize, RODataAlign) + RODataAlign.value();
     uintptr_t RequiredRWDataSize =
         alignTo(RWDataSize, RWDataAlign) + RWDataAlign.value();
-    uint64_t TotalSize =
-        RequiredCodeSize + RequiredRODataSize + RequiredRWDataSize;
 
     if (hasSpace(CodeMem, RequiredCodeSize) &&
         hasSpace(RODataMem, RequiredRODataSize) &&
@@ -201,7 +199,7 @@ void LlvmliteMemoryManager::reserveAllocationSpace(
     uintptr_t RequiredSize =
         RequiredCodeSize + RequiredRODataSize + RequiredRWDataSize;
 
-    LLVM_DEBUG(dbgs() << "Reserving " << format_hex(TotalSize, 2, true)
+    LLVM_DEBUG(dbgs() << "Reserving " << format_hex(RequiredSize, 2, true)
                       << " bytes\n");
 
     std::error_code ec;
