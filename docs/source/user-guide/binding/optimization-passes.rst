@@ -215,9 +215,17 @@ migrate existing code:
    :header-rows: 1
    :widths: 50 50
 
-   * - **New Pass Manager**
-     - **Legacy Pass Manager**
+   * - **Legacy Pass Manager**
+     - **New Pass Manager**
    * - .. code-block:: python
+
+          # Setup
+          pmb = PassManagerBuilder()
+          pmb.opt_level = 2
+          pmb.size_level = 0
+          pmb.loop_vectorize = True
+
+     - .. code-block:: python
 
           # Setup
           pto = create_pipeline_tuning_options(
@@ -226,34 +234,20 @@ migrate existing code:
           pass_builder = create_pass_builder(
               target_machine, pto)
 
-     - .. code-block:: python
-
-          # Setup
-          pmb = PassManagerBuilder()
-          pmb.opt_level = 2
-          pmb.size_level = 0
-          pmb.loop_vectorize = True
-
    * - .. code-block:: python
-
-          # Module optimization
-          mpm = pass_builder.getModulePassManager()
-          mpm.run(module, pass_builder)
-
-     - .. code-block:: python
 
           # Module optimization
           mpm = ModulePassManager()
           pmb.populate(mpm)
           mpm.run(module)
 
-   * - .. code-block:: python
-
-          # Function optimization
-          fpm = pass_builder.getFunctionPassManager()
-          fpm.run(function, pass_builder)
-
      - .. code-block:: python
+
+          # Module optimization
+          mpm = pass_builder.getModulePassManager()
+          mpm.run(module, pass_builder)
+
+   * - .. code-block:: python
 
           # Function optimization
           fpm = FunctionPassManager(module)
@@ -261,6 +255,12 @@ migrate existing code:
           fpm.initialize()
           fpm.run(function)
           fpm.finalize()
+
+     - .. code-block:: python
+
+          # Function optimization
+          fpm = pass_builder.getFunctionPassManager()
+          fpm.run(function, pass_builder)
 
 
 Legacy Pass Manager APIs (Removed)
