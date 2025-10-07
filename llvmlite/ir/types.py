@@ -127,8 +127,8 @@ class PointerType(Type):
             return super().__new__(_TypedPointerType)
         return super(PointerType, cls).__new__(cls)
 
-    def __init__(self, __pointee=None, addrspace=0):
-        assert __pointee is None or type(__pointee) is PointerType
+    def __init__(self, pointee=None, addrspace=0):
+        assert pointee is None or type(pointee) is PointerType
         self.addrspace = addrspace
 
     def _to_string(self):
