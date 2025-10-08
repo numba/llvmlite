@@ -277,7 +277,7 @@ static OptimizationLevel mapLevel(int speed_level, int size_level) {
             llvm_unreachable("Invalid optimization level");
         }
     case 1:
-        if (speed_level == 1)
+        if (speed_level == 2)
             return OptimizationLevel::Os;
         llvm_unreachable("Invalid optimization level for size level 1");
     case 2:
