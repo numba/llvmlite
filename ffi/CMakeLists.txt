@@ -13,6 +13,11 @@ include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# Preset function visibility to hidden, API functions
+# are annotated explicitly to use 'default' visibility.
+set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
+set(CMAKE_C_VISIBILITY_PRESET "hidden")
+
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -316,7 +321,6 @@ endif()
 message(STATUS "LLVM target link libraries: ${llvm_libs}")
 target_link_libraries(llvmlite ${llvm_libs})
 
-
 # -flto and --exclude-libs allow removal of unused parts of LLVM
 # TODO: these options are just set, they should really be tested for
 # suitability.
@@ -327,6 +331,12 @@ if(UNIX AND NOT APPLE)
     # mode, but just to make sure.
     if (LLVMLITE_FLTO)
         STRING(APPEND FORCED_LINK_FLAGS " -flto")
+    endif()
+    if(NOT LLVMLITE_SHARED)
+        # If LLVM is statically linked, we specify -Bsymbolic to prevent
+        # that LLVM symbols can be interposed upon by previously
+        # loaded shared objects that export LLVM symbols.
+        STRING(APPEND FORCED_LINK_FLAGS " -Wl,-Bsymbolic")
     endif()
     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
                  "${FORCED_LINK_FLAGS}")
