@@ -136,7 +136,7 @@ jobs:
         run: |
           set -x
           mkdir -p "${CONDA_CHANNEL_DIR}"
-          conda build "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
+          conda build -c defaults "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Upload conda package
