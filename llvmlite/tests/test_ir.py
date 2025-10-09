@@ -2513,6 +2513,62 @@ class TestTypes(TestBase):
         assert_ne(ptrs['tp_i1_a1'], ptrs['tp_i8_a1'])
         assert_ne(ptrs['tp_i8_a0'], ptrs['tp_i8_a1'])
 
+    def test_pointers(self):
+        # Basic opaque pointers.
+        ptr = ir.PointerType()
+        ptr2 = ir.PointerType(addrspace=2)
+
+        self.assertTrue(ptr.is_opaque)
+        self.assertTrue(ptr2.is_opaque)
+
+        self.assertEqual(str(ptr), "ptr")
+        self.assertEqual(str(ptr2), "ptr addrspace(2)")
+
+        # Pointers of opaque pointers (necessarily opaque pointers).
+        ptr_ptr = ptr.as_pointer()
+        ptr2_ptr = ptr2.as_pointer()
+        ptr2_ptr3 = ptr2.as_pointer(addrspace=3)
+
+        self.assertTrue(ptr_ptr.is_opaque)
+        self.assertTrue(ptr2_ptr.is_opaque)
+        self.assertTrue(ptr2_ptr3.is_opaque)
+
+        self.assertEqual(str(ptr_ptr), "ptr")
+        self.assertEqual(str(ptr2_ptr), "ptr")
+        self.assertEqual(str(ptr2_ptr3), "ptr addrspace(3)")
+
+        # Basic typed pointers.
+        tptr = ir.IntType(32).as_pointer()
+        tptr2 = ir.IntType(32).as_pointer(addrspace=2)
+
+        self.assertTrue(not tptr.is_opaque)
+        self.assertTrue(not tptr2.is_opaque)
+
+        if ir_layer_typed_pointers_enabled:
+            self.assertEqual(str(tptr), "i32*")
+            self.assertEqual(str(tptr2), "i32 addrspace(2)*")
+        else:
+            self.assertEqual(str(tptr), "ptr")
+            self.assertEqual(str(tptr2), "ptr addrspace(2)")
+
+        # Pointers of typed pointers (necessarily typed pointers).
+        tptr_ptr = tptr.as_pointer()
+        tptr2_ptr = tptr2.as_pointer()
+        tptr2_ptr3 = tptr2.as_pointer(addrspace=3)
+
+        self.assertTrue(not tptr_ptr.is_opaque)
+        self.assertTrue(not tptr2_ptr.is_opaque)
+        self.assertTrue(not tptr2_ptr3.is_opaque)
+
+        if ir_layer_typed_pointers_enabled:
+            self.assertEqual(str(tptr_ptr), "i32**")
+            self.assertEqual(str(tptr2_ptr), "i32 addrspace(2)**")
+            self.assertEqual(str(tptr2_ptr3), "i32 addrspace(2)* addrspace(3)*")
+        else:
+            self.assertEqual(str(tptr_ptr), "ptr")
+            self.assertEqual(str(tptr2_ptr), "ptr")
+            self.assertEqual(str(tptr2_ptr3), "ptr addrspace(3)")
+
     def test_ptr_intrinsic_name(self):
         self.assertEqual(ir.PointerType().intrinsic_name, 'p0')
         self.assertEqual(ir.PointerType(addrspace=1).intrinsic_name, 'p1')
