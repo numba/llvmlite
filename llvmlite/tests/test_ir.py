@@ -548,6 +548,47 @@ class TestIR(TestBase):
                             'name: "i64", size: 64)', strmod)
         self.assert_valid_ir(mod)
 
+    def test_debug_info_4(self):
+        # Typed constant as output value of debug info fields
+        mod = self.module()
+        # Create base types first
+        di_base_i32 = mod.add_debug_info("DIBasicType", {
+            "name": "int32",
+            "size": 32,
+            "encoding": ir.DIToken("DW_ATE_signed")
+        })
+        di_base_i8 = mod.add_debug_info("DIBasicType", {
+            "name": "int8",
+            "size": 8,
+            "encoding": ir.DIToken("DW_ATE_signed")
+        })
+        # Create debug info nodes with typed constants
+        di1 = mod.add_debug_info("DIDerivedType", {
+            "tag": ir.DIToken("DW_TAG_member"),
+            "name": "field_i32",
+            "baseType": di_base_i32,
+            "size": 32,
+            "extraData": ir.IntType(32)(1)
+        })
+        di2 = mod.add_debug_info("DIDerivedType", {
+            "tag": ir.DIToken("DW_TAG_member"),
+            "name": "field_i8",
+            "baseType": di_base_i8,
+            "size": 8,
+            "extraData": ir.IntType(8)(2)
+        })
+        # Check output
+        strmod = str(mod)
+        self.assert_ir_line('!0 = !DIBasicType(encoding: DW_ATE_signed, '
+                            'name: "int32", size: 32)', strmod)
+        self.assert_ir_line('!1 = !DIBasicType(encoding: DW_ATE_signed, '
+                            'name: "int8", size: 8)', strmod)
+        self.assert_ir_line('!2 = !DIDerivedType(baseType: !0, extraData: i32 1, '
+                            'name: "field_i32", size: 32, tag: DW_TAG_member)', strmod)
+        self.assert_ir_line('!3 = !DIDerivedType(baseType: !1, extraData: i8 2, '
+                            'name: "field_i8", size: 8, tag: DW_TAG_member)', strmod)
+        self.assert_valid_ir(mod)
+
     def test_debug_info_gvar(self):
         # This test defines a module with a global variable named 'gvar'.
         # When the module is compiled and linked with a main function, gdb can
