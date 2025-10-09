@@ -18,6 +18,22 @@ You only need to call these functions once per process invocation.
      check for other behavioral changes that may have occurred due to LLVM
      updates.
 
+     For code that needs to support both older and newer versions of llvmlite,
+     you can use version-conditional initialization::
+
+          import llvmlite
+          import llvmlite.binding as llvm
+
+          # Check llvmlite version to determine if initialization is needed
+          version = [int(p) for p in llvmlite.__version__.split('.')[:2]]
+
+          if version < [0, 45]:
+               # Older versions require explicit initialization
+               llvm.initialize()
+          # No initialization needed for version 0.45+
+
+     .. Code above is adapted from https://github.com/numba/llvmlite/issues/1261#issuecomment-3324513084
+
 * .. function:: initialize_all_targets()
 
      Initialize all targets. Must be called before targets can

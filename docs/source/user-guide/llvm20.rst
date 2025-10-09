@@ -1,8 +1,8 @@
 .. _llvm20:
 
-=======
-LLVM 20
-=======
+========================
+LLVM 20 (llvmlite 0.45+)
+========================
 
 As of version 0.45 llvmlite supports LLVM 20. The build system has been updated
 to use solely CMake, with added granularity about what is being consumed in
@@ -23,11 +23,14 @@ Specific changes due to LLVM 20/build system update
    llvmlite APIs typically retain the types in the API and simply erase them
    during code generation.
 
-#. The “LLVM legacy pass manager” has been removed along with associated APIs,
-   the “LLVM new pass manager” APIs replace these.
+#. The "LLVM legacy pass manager" has been removed along with associated APIs,
+   the "LLVM new pass manager" APIs replace these. See the
+   :ref:`legacy pass manager migration guide <passes-migration-guide>` for details
+   on migrating from the legacy API to the new pass manager.
 
-#. Initialisation of LLVM core is now automatic, ``llvm.binding.initialize()``
-   will now raise a ``RuntimeError`` with a suitable message.
+#. Initialization of LLVM core is now automatic. Calling :func:`llvmlite.binding.initialize`
+   will now raise a ``RuntimeError`` with a message indicating that initialization
+   is no longer required. See the API documentation for details.
 
 #. The wheel builds and conda packages on the ``numba`` channel are built
    against an LLVM that has assertions enabled.
