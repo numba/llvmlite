@@ -563,14 +563,14 @@ class TestIR(TestBase):
             "encoding": ir.DIToken("DW_ATE_signed")
         })
         # Create debug info nodes with typed constants
-        di1 = mod.add_debug_info("DIDerivedType", {
+        mod.add_debug_info("DIDerivedType", {
             "tag": ir.DIToken("DW_TAG_member"),
             "name": "field_i32",
             "baseType": di_base_i32,
             "size": 32,
             "extraData": ir.IntType(32)(1)
         })
-        di2 = mod.add_debug_info("DIDerivedType", {
+        mod.add_debug_info("DIDerivedType", {
             "tag": ir.DIToken("DW_TAG_member"),
             "name": "field_i8",
             "baseType": di_base_i8,
@@ -583,10 +583,12 @@ class TestIR(TestBase):
                             'name: "int32", size: 32)', strmod)
         self.assert_ir_line('!1 = !DIBasicType(encoding: DW_ATE_signed, '
                             'name: "int8", size: 8)', strmod)
-        self.assert_ir_line('!2 = !DIDerivedType(baseType: !0, extraData: i32 1, '
-                            'name: "field_i32", size: 32, tag: DW_TAG_member)', strmod)
-        self.assert_ir_line('!3 = !DIDerivedType(baseType: !1, extraData: i8 2, '
-                            'name: "field_i8", size: 8, tag: DW_TAG_member)', strmod)
+        self.assert_ir_line(
+            '!2 = !DIDerivedType(baseType: !0, extraData: i32 1, '
+            'name: "field_i32", size: 32, tag: DW_TAG_member)', strmod)
+        self.assert_ir_line(
+            '!3 = !DIDerivedType(baseType: !1, extraData: i8 2, '
+            'name: "field_i8", size: 8, tag: DW_TAG_member)', strmod)
         self.assert_valid_ir(mod)
 
     def test_debug_info_gvar(self):
