@@ -83,7 +83,7 @@ jobs:
 
       - name: Build wheel
         env:
-          MACOSX_DEPLOYMENT_TARGET: "11.1"
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
           LLVMLITE_PACKAGE_FORMAT: "wheel"
           LDFLAGS: "-v -Wl,-rpath,/usr/lib"
         run: |
