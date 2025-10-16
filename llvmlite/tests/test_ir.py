@@ -633,7 +633,7 @@ class TestIR(TestBase):
         asm = ir.InlineAsm(asmty, "mov $1, $2", "=r,r", side_effect=True)
         builder.call(asm, [int32(123)])
         builder.ret_void()
-        pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r" ( i32 123 )'
+        pat = 'call i32 asm sideeffect "mov $1, $2", "=r,r"( i32 123 )'
         self.assertInText(pat, str(mod))
         self.assert_valid_ir(mod)
 

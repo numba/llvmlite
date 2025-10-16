@@ -765,7 +765,7 @@ class InlineAsm(object):
 
     def descr(self, buf):
         sideeffect = 'sideeffect' if self.side_effect else ''
-        fmt = 'asm {sideeffect} "{asm}", "{constraint}"\n'
+        fmt = 'asm {sideeffect} "{asm}", "{constraint}"'
         buf.append(fmt.format(sideeffect=sideeffect, asm=self.asm,
                               constraint=self.constraint))
 
