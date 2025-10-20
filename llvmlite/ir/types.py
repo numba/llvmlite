@@ -122,11 +122,13 @@ class PointerType(Type):
 
     # Factory to create typed or opaque pointers based on `pointee'.
     def __new__(cls, pointee=None, addrspace=0):
-        if cls is PointerType and pointee is not None:
+        if cls is PointerType and pointee is not None and \
+           type(pointee) is not PointerType:
             return super().__new__(_TypedPointerType)
         return super(PointerType, cls).__new__(cls)
 
-    def __init__(self, addrspace=0):
+    def __init__(self, pointee=None, addrspace=0):
+        assert pointee is None or type(pointee) is PointerType
         self.addrspace = addrspace
 
     def _to_string(self):
@@ -160,8 +162,8 @@ class _TypedPointerType(PointerType):
     """
 
     def __init__(self, pointee, addrspace=0):
-        super(_TypedPointerType, self).__init__(addrspace)
-        assert pointee is not None
+        super(_TypedPointerType, self).__init__(None, addrspace)
+        assert pointee is not None and type(pointee) is not PointerType
         assert not isinstance(pointee, VoidType)
         self.pointee = pointee
         self.is_opaque = False
