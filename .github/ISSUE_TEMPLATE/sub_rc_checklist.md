@@ -26,6 +26,7 @@ Lastly see the notes below for hints and details.
 
 * [ ] Merge to `releaseX.Y`.
     * [ ] "remaining Pull-Requests from milestone".
+    * [ ] Cherry-pick any needed CI hot-fixes from `main`.
 * [ ] Update `CHANGE_LOG` in a PR targeting `releaseX.Y`.
 * [ ] Test `HEAD` of release branch on GHA (pre-tag testing).
 * [ ] Test `HEAD` of release branch on conda-forge.
