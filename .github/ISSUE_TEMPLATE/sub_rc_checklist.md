@@ -33,7 +33,9 @@ Lastly see the notes below for hints and details.
 * [ ] Annotated tag `vX.Y.Z` on release branch (`llvmlite` tags DO have a `v` prefix).
 * [ ] Build conda packages and wheels on GHA.
 * [ ] Upload conda packages and wheels.
-* [ ] Verify conda packages and wheels have arrived.
+* [ ] Verify conda packages and wheels have arrived
+    * [ ] conda packages in `numba/label/main` on anaconda.org
+    * [ ] wheels as a new version on PyPi
 * [ ] Verify ReadTheDocs build.
 * [ ] Send RC/FINAL announcement email / post announcement to discourse group.
 * [ ] Post link to Twitter and Mastodon and anywhere else that is appropriate.
