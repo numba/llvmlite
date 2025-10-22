@@ -26,10 +26,10 @@ Lastly see the notes below for hints and details.
 * [ ] Merge to `main`.
     * [ ] "remaining Pull-Requests from milestone".
 * In case of an LLVM upgrade:
-    * [ ] Check if the compatability matrix in the `README.rst` needs updating.
+    * [ ] Check if the compatibility matrix in the `README.rst` needs updating.
     * [ ] Check if the inter-sphinx link in `llvmlite/docs/source/conf.py`
           needs an update.
-    * [ ] Create a PR targetting `main` (and have it reviewed and merged)
+    * [ ] Create a PR targeting `main` (and have it reviewed and merged)
           should any of the above apply.
 * [ ] Create X.Y release branch `releaseX.Y`
     * [ ] Update `CHANGE_LOG` in a PR targeting the release branch.
@@ -56,7 +56,7 @@ Lastly see the notes below for hints and details.
 
 ### Notes
 
-* The releae branch is created before updating the change-log. You can use the
+* The release branch is created before updating the change-log. You can use the
   following command to initialize the release branch with an empty commit.
   ```
   gh commit --allow-empty "initialize releaseX.Y"  # replace X.Y
