@@ -744,6 +744,10 @@ class DIValue(NamedValue):
                 strvalue = '"{}"'.format(_escape_string(value))
             elif isinstance(value, int):
                 strvalue = str(value)
+            elif isinstance(value, Constant):
+                # Support for typed constants (e.g., i32 1, i8 2)
+                # This calls Constant._to_string() which formats as "type value"
+                strvalue = str(value)
             elif isinstance(value, NamedValue):
                 strvalue = value.get_reference()
             else:
