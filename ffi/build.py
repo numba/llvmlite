@@ -89,6 +89,13 @@ def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
     args.append(cmake_dir)
     cmake_options = env_var_options_to_cmake_options()
     args += cmake_options
+    # Handle conda build/conda-style toolchain. These toolchains ship an `ar`
+    # and a `ranlib` under a different name, and then export these as cmake
+    # compatible `-D` defines in the `CMAKE_ARGS` env var. OSX and Linux both
+    # have this, the following fetches this variable from the environment and
+    # wires it through to cmake.
+    CMAKE_ARGS = [x for x in os.environ.get("CMAKE_ARGS", "").split(' ') if x]
+    args += CMAKE_ARGS
     try:
         os.chdir(build_dir)
         print('Running:', ' '.join(args))
@@ -138,28 +145,7 @@ def find_windows_generator():
     raise RuntimeError("No compatible CMake generator could be found.")
 
 
-def remove_msvc_whole_program_optimization():
-    """Remove MSVC whole-program optimization flags.
-    This workaround a segfault issue on windows.
-    Note: conda-build is known to enable the `-GL` flag.
-    """
-    def drop_gl(flags):
-        try:
-            flags.remove('-GL')
-        except ValueError:
-            pass
-        else:
-            print(f"removed '-GL' flag in {flags}")
-    cflags = os.environ.get('CFLAGS', '').split(' ')
-    cxxflags = os.environ.get('CXXFLAGS', '').split(' ')
-    drop_gl(cflags)
-    drop_gl(cxxflags)
-    os.environ['CFLAGS'] = ' '.join(cflags)
-    os.environ['CXXFLAGS'] = ' '.join(cxxflags)
-
-
 def main_windows():
-    remove_msvc_whole_program_optimization()
     generator = find_windows_generator()
     config = 'Release'
     if not os.path.exists(build_dir):
