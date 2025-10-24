@@ -150,7 +150,8 @@ struct RefNormalize {
                 for (CallInst *decref : to_be_moved) {
                     // move the decref to a location prior to the block
                     // terminator and set mutated.
-                    decref->moveBefore(bb.getTerminator());
+                    auto term = bb.getTerminator();
+                    decref->moveBefore(term->getIterator());
                     mutated |= true;
                 }
             }
