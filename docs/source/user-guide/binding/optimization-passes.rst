@@ -36,7 +36,7 @@ To manage the optimization attributes we first need to instantiate a
    Create a :class:`PipelineTuningOptions` instance.
 
 .. class:: PipelineTuningOptions(speed_level=2, size_level=0)
-   
+
    Creates a new PipelineTuningOptions object.
 
    The following writable attributes are available, whose default values depend
@@ -68,11 +68,11 @@ To manage the optimization attributes we first need to instantiate a
         The level of optimization for size, as an integer between 0 and 2.
 
    * .. attribute:: inlining_threshold
-   
+
         The integer threshold for inlining one function into
         another. The higher the number, the more likely that
         inlining will occur. This attribute is write-only.
-   
+
 
 We also need a :class:`PassBuilder` object to manage the respective function
 and module pass managers:
@@ -83,16 +83,16 @@ and module pass managers:
    (*tm*) and :class:`PipelineTuningOptions` (*pto*) instances.
 
 .. class:: PassBuilder(target_machine, pipeline_tuning_options)
-   
+
    A pass builder that uses the given :class:`TargetMachine` and
    :class:`PipelineTuningOptions` instances.
 
    .. method:: getModulePassManager()
-    
+
       Return a populated :class:`ModulePassManager` object based on PTO settings.
 
    .. method:: getFunctionPassManager()
-    
+
       Return a populated :class:`FunctionPassManager` object based on PTO
       settings.
 
@@ -118,7 +118,7 @@ implement the module and function pass managers:
       <https://llvm.org/docs/Passes.html#verify-module-verifier>`_ pass.
 
    .. method:: run(module, passbuilder)
-    
+
       Run optimization passes on *module*, a :class:`ModuleRef` instance.
 
 
@@ -127,7 +127,7 @@ implement the module and function pass managers:
    A pass manager for running optimization passes on an LLVM function.
 
    .. method:: run(function, passbuilder)
-  
+
       Run optimization passes on *function*, a :class:`ValueRef` instance.
 
 
@@ -264,7 +264,7 @@ migrate existing code:
 
 
 Legacy Pass Manager APIs (Removed)
-========================================================
+==================================
 
 .. warning::
    The Legacy Pass Manager API has been removed as of llvmlite 0.45 (LLVM 20).
