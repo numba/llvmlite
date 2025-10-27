@@ -8,11 +8,9 @@ You only need to call these functions once per process invocation.
 
 * .. function:: initialize()
 
-     Initialize the LLVM core.
-
      **Deprecated.** Initialize the LLVM core.
 
-     This function is deprecated and will raise a RuntimeError when
+     This function is deprecated and will raise a :class:`RuntimeError` when
      called. LLVM initialization is now handled automatically and no longer
      requires explicit initialization calls. Remove calls to this function and
      check for other behavioral changes that may have occurred due to LLVM
@@ -75,4 +73,4 @@ You only need to call these functions once per process invocation.
 
      Since LLVM is statically linked into the ``llvmlite`` DLL,
      this is guaranteed to represent the true LLVM version in use.
-     
+
