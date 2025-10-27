@@ -253,6 +253,11 @@ Below are some key points on how to configure and build llvmlite.
    against the LLVM dynamic library (typically named ``libLLVM``) set the
    environment variable ``LLVMLITE_SHARED`` to non-zero.
 
+#. By default llvmlite will use link-time optimisation. It is known that there
+   are bugs in some GCC variants on some platforms in relation to this option.
+   To prevent the use of link-time optimisation set the environment
+   variable ``LLVMLITE_LTO`` to zero.
+
 #. If you wish to build against an unsupported LLVM version, set the environment
    variable ``LLVMLITE_SKIP_LLVM_VERSION_CHECK`` to non-zero. Note that this is
    useful for e.g. testing new versions of llvmlite, but support for llvmlite
@@ -269,11 +274,6 @@ Below are some key points on how to configure and build llvmlite.
    the environment variable ``LLVMLITE_USE_RTTI`` to either ``ON`` to use RTTI,
    or ``OFF`` to not use RTTI. This is not a boolean flag as there are 3 states,
    ``ON``, ``OFF`` and not set, which is the default so as to inherit from LLVM.
-
-#. Unix only: By default llvmlite will use link-time optimisation. It is known
-   that there are bugs in some GCC variants on some platforms in relation to
-   this option. To prevent the use of link-time optimisation set the environment
-   variable ``LLVMLITE_FLTO`` to zero.
 
 #. Numba maintainers only: As part of QA for the packages shipped to PyPI and
    on the Anaconda Numba channel, the environment variable
