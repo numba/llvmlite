@@ -24,6 +24,7 @@ on:
           - all
           - linux-64
           - linux-aarch64
+          - linux-s390x
           - osx-arm64
           - win-64
 
