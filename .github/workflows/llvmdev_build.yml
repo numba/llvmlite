@@ -103,10 +103,10 @@ jobs:
           MINICONDA_FILE=""
           if [[ "${{ matrix.platform }}" == "linux-64" ]]; then
             MANYLINUX_IMAGE="quay.io/pypa/manylinux2014_x86_64"
-            MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+            MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-x86_64.sh"
           elif [[ "${{ matrix.platform }}" == "linux-aarch64" ]]; then
             MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64"
-            MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"
+            MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-aarch64.sh"
           fi
 
           echo "Building in manylinux container for ${{ matrix.platform }}"
