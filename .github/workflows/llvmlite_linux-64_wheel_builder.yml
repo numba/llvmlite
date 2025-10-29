@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/llvmlite_linux-64_wheel_builder.yml
+      - buildscripts/manylinux/build_llvmlite.sh
   workflow_dispatch:
     inputs:
       llvmdev_run_id:
