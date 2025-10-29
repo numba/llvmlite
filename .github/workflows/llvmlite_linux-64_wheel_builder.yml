@@ -25,7 +25,7 @@ env:
   CONDA_CHANNEL_NUMBA: numba/label/llvm20-wheel
   VALIDATION_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
-  MANYLINUX_IMAGE: "manylinux2014_x86_64"
+  MANYLINUX_IMAGE: "manylinux_2_28_x86_64:2025.09.19-1"
 
 jobs:
   linux-64-build:
