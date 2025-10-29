@@ -68,7 +68,7 @@ jobs:
           esac
 
           # Define Miniconda installer URL for ARM64
-          echo "MINICONDA_FILE=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh" >> "$GITHUB_ENV"
+          echo "MINICONDA_FILE=https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-aarch64.sh" >> "$GITHUB_ENV"
 
       - name: Build wheel in manylinux container
         run: |
