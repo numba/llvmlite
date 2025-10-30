@@ -29,7 +29,7 @@ env:
 jobs:
   osx-arm64-build:
     name: osx-arm64-build
-    runs-on: macos-14
+    runs-on: macos-15
     defaults:
       run:
         shell: bash -elx {0}
@@ -117,7 +117,7 @@ jobs:
   osx-arm64-validate:
     name: osx-arm64-validate
     needs: osx-arm64-build
-    runs-on: macos-14
+    runs-on: macos-15
     defaults:
       run:
         shell: bash -elx {0}
@@ -153,7 +153,7 @@ jobs:
   osx-arm64-test:
     name: osx-arm64-test
     needs: osx-arm64-build
-    runs-on: macos-14
+    runs-on: macos-15
     defaults:
       run:
         shell: bash -elx {0}
@@ -193,7 +193,7 @@ jobs:
     name: osx-arm64-upload
     needs: osx-arm64-test
     if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
-    runs-on: macos-14
+    runs-on: macos-15
     defaults:
       run:
         shell: bash -elx {0}
