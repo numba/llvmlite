@@ -115,19 +115,32 @@ class _lib_wrapper(object):
         self._lock = _LLVMLock()
 
     def _load_lib(self):
+        test_sym = "LLVMPY_GetVersionInfo"
         try:
+            mod_name = __name__.rpartition(".")[0]
+            lib_name = get_library_name()
             with _suppress_cleanup_errors(_importlib_resources_path(
-                    __name__.rpartition(".")[0],
-                    get_library_name())) as lib_path:
+                                          mod_name, lib_name)) as lib_path:
                 self._lib_handle = ctypes.CDLL(str(lib_path))
                 # Check that we can look up expected symbols.
-                _ = self._lib_handle.LLVMPY_GetVersionInfo()
-        except (OSError, AttributeError) as e:
+                getattr(self._lib_handle, test_sym)()
+        except OSError:
             # OSError may be raised if the file cannot be opened, or is not
             # a shared library.
-            # AttributeError is raised if LLVMPY_GetVersionInfo does not
+            msg = (f"Could not find/load shared object file '{lib_name}' "
+                   f"from resource location: '{mod_name}'. This could mean "
+                   "that the library literally cannot be found, but may also "
+                   "mean that the permissions are incorrect or that a "
+                   "dependecy of/a symbol in the library could not be "
+                   "resolved.")
+            raise OSError(msg) from None
+        except AttributeError:
+            # AttributeError is raised if the test_sym symbol does not
             # exist.
-            raise OSError("Could not find/load shared object file") from e
+            msg = ("During testing of symbol lookup, the symbol "
+                   f"'{test_sym}' could not be found in the library "
+                   f"'{self._lib_handle._name}'")
+            raise OSError(msg) from None
 
     @property
     def _lib(self):
