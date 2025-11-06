@@ -1,4 +1,4 @@
-include *.rst setup.py runtests.py run_coverage.py LICENSE
+include *.rst setup.py runtests.py run_coverage.py LICENSE LICENSE.thirdparty
 include versioneer.py
 include llvmlite/_version.py
 recursive-include examples *.py *.ll
