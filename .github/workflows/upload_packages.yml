@@ -195,6 +195,12 @@ jobs:
           name: conda-packages
           path: conda_packages
 
+      - name: Download wheels artifact
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: wheels
+          path: dist
+
       - name: List conda packages to publish
         run: |
           echo "=== Conda packages to publish ==="
@@ -204,12 +210,31 @@ jobs:
           find conda_packages -type f -name "*.conda" | wc -l
           echo ""
 
+      - name: List wheels to publish
+        run: |
+          echo "=== Wheels to publish ==="
+          find dist -type f -name "*.whl" -print | sort
+          echo ""
+          echo "=== Total wheels ==="
+          find dist -type f -name "*.whl" | wc -l
+          echo ""
+
       - name: Publish conda packages to Anaconda.org
         env:
           ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_ORG_GITHUB_LLVMLITE_UPLOAD }}
         run: |
-          echo "Publishing to: ${{ env.ANACONDA_USER }}/label/${{ env.ANACONDA_LABEL }}"
+          echo "Publishing conda packages to: ${{ env.ANACONDA_USER }}/label/${{ env.ANACONDA_LABEL }}"
           find conda_packages -name "*.conda" -type f | while read -r pkg; do
+            echo "Uploading: $pkg"
+            anaconda -t "$ANACONDA_API_TOKEN" upload --force -u ${{ env.ANACONDA_USER }} -l ${{ env.ANACONDA_LABEL }} "$pkg"
+          done
+
+      - name: Publish wheels to Anaconda.org
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_ORG_GITHUB_LLVMLITE_UPLOAD }}
+        run: |
+          echo "Publishing wheels to: ${{ env.ANACONDA_USER }}/label/${{ env.ANACONDA_LABEL }}"
+          find dist -name "*.whl" -type f | while read -r pkg; do
             echo "Uploading: $pkg"
             anaconda -t "$ANACONDA_API_TOKEN" upload --force -u ${{ env.ANACONDA_USER }} -l ${{ env.ANACONDA_LABEL }} "$pkg"
           done
