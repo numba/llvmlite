@@ -116,31 +116,32 @@ class _lib_wrapper(object):
 
     def _load_lib(self):
         test_sym = "LLVMPY_GetVersionInfo"
-        try:
-            mod_name = __name__.rpartition(".")[0]
-            lib_name = get_library_name()
-            with _suppress_cleanup_errors(_importlib_resources_path(
-                                          mod_name, lib_name)) as lib_path:
+        mod_name = __name__.rpartition(".")[0]
+        lib_name = get_library_name()
+
+        with _suppress_cleanup_errors(_importlib_resources_path(
+                                      mod_name, lib_name)) as lib_path:
+            try:
                 self._lib_handle = ctypes.CDLL(str(lib_path))
                 # Check that we can look up expected symbols.
                 getattr(self._lib_handle, test_sym)()
-        except OSError:
-            # OSError may be raised if the file cannot be opened, or is not
-            # a shared library.
-            msg = (f"Could not find/load shared object file '{lib_name}' "
-                   f"from resource location: '{mod_name}'. This could mean "
-                   "that the library literally cannot be found, but may also "
-                   "mean that the permissions are incorrect or that a "
-                   "dependecy of/a symbol in the library could not be "
-                   "resolved.")
-            raise OSError(msg) from None
-        except AttributeError:
-            # AttributeError is raised if the test_sym symbol does not
-            # exist.
-            msg = ("During testing of symbol lookup, the symbol "
-                   f"'{test_sym}' could not be found in the library "
-                   f"'{self._lib_handle._name}'")
-            raise OSError(msg) from None
+            except OSError:
+                # OSError may be raised if the file cannot be opened, or is not
+                # a shared library.
+                msg = (f"Could not find/load shared object file '{lib_name}' "
+                       f"from resource location: '{mod_name}'. This could mean "
+                       "that the library literally cannot be found, but may "
+                       "also mean that the permissions are incorrect or that a "
+                       "dependency of/a symbol in the library could not be "
+                       "resolved.")
+                raise OSError(msg)
+            except AttributeError:
+                # AttributeError is raised if the test_sym symbol does not
+                # exist.
+                msg = ("During testing of symbol lookup, the symbol "
+                       f"'{test_sym}' could not be found in the library "
+                       f"'{lib_path}'")
+                raise OSError(msg)
 
     @property
     def _lib(self):
@@ -153,11 +154,12 @@ class _lib_wrapper(object):
         try:
             return self._fntab[name]
         except KeyError:
-            # Lazily wraps new functions as they are requested
-            cfn = getattr(self._lib, name)
-            wrapped = _lib_fn_wrapper(self._lock, cfn)
-            self._fntab[name] = wrapped
-            return wrapped
+            pass
+        # Lazily wraps new functions as they are requested
+        cfn = getattr(self._lib, name)
+        wrapped = _lib_fn_wrapper(self._lock, cfn)
+        self._fntab[name] = wrapped
+        return wrapped
 
     @property
     def _name(self):
