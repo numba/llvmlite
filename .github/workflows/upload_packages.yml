@@ -17,13 +17,6 @@ on:
         required: false
         type: boolean
         default: false
-  push:
-    branches:
-      - gha/upload_packages_workflow
-    paths:
-      - '.github/workflows/upload_packages.yml'
-      - 'buildscripts/github/find_workflow_runs.py'
-      - 'buildscripts/github/download_artifacts.py'
 
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.tag || github.sha }}
@@ -50,9 +43,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Use input tag or default to 'gha/upload_packages_workflow' for push trigger testing
-          TAG="${{ inputs.tag || 'gha/upload_packages_workflow' }}"
-          # output results to stdout in shell variable format
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            echo "Error: tag input is required"
+            exit 1
+          fi
           output=$(./buildscripts/github/find_workflow_runs.py \
             --tag "$TAG" \
             --repo ${{ github.repository }} \
