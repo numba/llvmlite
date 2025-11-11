@@ -23,8 +23,9 @@ source activate $CONDA_ENV
 set -v
 
 # Install llvmdev 20 and compiler toolchain for linux
+# 
 if [[ "$(uname)" == "Linux" ]]; then
-    $CONDA_INSTALL numba/label/dev::llvmdev=20 gcc_linux-64 gxx_linux-64
+    $CONDA_INSTALL numba/label/dev::llvmdev=20 gcc_linux-64=11 gxx_linux-64=11
 else
     $CONDA_INSTALL numba/label/dev::llvmdev=20
 fi
