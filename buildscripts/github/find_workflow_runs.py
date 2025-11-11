@@ -102,8 +102,8 @@ def main():
     )
     parser.add_argument(
         '--repo',
-        default=os.environ.get('GITHUB_REPOSITORY', 'numba/llvmlite'),
-        help='Repository in format owner/repo (default: GITHUB_REPOSITORY env var or numba/llvmlite)'
+        default=os.environ.get('GITHUB_REPOSITORY', ''),
+        help='Repository in format owner/repo (default: GITHUB_REPOSITORY env var)'
     )
     parser.add_argument(
         '--token',
@@ -120,6 +120,8 @@ def main():
 
     if not args.tag:
         parser.error("TAG is required (via --tag or TAG env var)")
+    if not args.repo:
+        parser.error("Repository is required (via --repo or GITHUB_REPOSITORY env var)")
     if not args.token:
         parser.error("GitHub token is required (via --token or GH_TOKEN/GITHUB_TOKEN env var)")
 

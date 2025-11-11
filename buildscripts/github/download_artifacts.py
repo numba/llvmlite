@@ -91,7 +91,7 @@ def download_artifact(artifact_name, artifact_id, repo, token, output_dir):
             env=env,
             capture_output=True
         )
-        
+
         # Write the binary output to file
         with open(zip_path, 'wb') as f:
             f.write(result.stdout)
@@ -129,8 +129,8 @@ def main():
     )
     parser.add_argument(
         '--repo',
-        default=os.environ.get('GITHUB_REPOSITORY', 'numba/llvmlite'),
-        help='Repository in format owner/repo (default: GITHUB_REPOSITORY env var or numba/llvmlite)'
+        default=os.environ.get('GITHUB_REPOSITORY', ''),
+        help='Repository in format owner/repo (default: GITHUB_REPOSITORY env var)'
     )
     parser.add_argument(
         '--token',
@@ -145,6 +145,8 @@ def main():
 
     args = parser.parse_args()
 
+    if not args.repo:
+        parser.error("Repository is required (via --repo or GITHUB_REPOSITORY env var)")
     if not args.token:
         parser.error("GitHub token is required (via --token or GH_TOKEN/GITHUB_TOKEN env var)")
 
