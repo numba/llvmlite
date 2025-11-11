@@ -34,7 +34,7 @@ jobs:
     name: Find Workflow Runs
     runs-on: ubuntu-latest
     outputs:
-      conda_run_id: ${{ steps.find-runs.outputs.conda_run_id }}
+      conda_run_ids: ${{ steps.find-runs.outputs.conda_run_ids }}
       wheel_run_ids: ${{ steps.find-runs.outputs.wheel_run_ids }}
     steps:
       - name: Checkout repository
@@ -56,7 +56,8 @@ jobs:
           output=$(./buildscripts/github/find_workflow_runs.py \
             --tag "$TAG" \
             --repo ${{ github.repository }} \
-            --token "${{ secrets.GITHUB_TOKEN }}")
+            --token "${{ secrets.GITHUB_TOKEN }}" \
+            --config ./buildscripts/github/workflow_groups.json)
           echo "$output" >> $GITHUB_OUTPUT
 
   download-artifacts:
@@ -78,7 +79,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./buildscripts/github/download_artifacts.py \
-            --run-ids ${{ needs.find-workflow-runs.outputs.conda_run_id }} \
+            --run-ids ${{ needs.find-workflow-runs.outputs.conda_run_ids }} \
             --repo ${{ github.repository }} \
             --token "${{ secrets.GITHUB_TOKEN }}" \
             --output-dir conda_packages

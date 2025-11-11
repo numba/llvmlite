@@ -1,0 +1,14 @@
+{
+  "workflows": {
+    "conda": [
+      "llvmlite_conda_builder.yml"
+    ],
+    "wheel": [
+      "llvmlite_linux-64_wheel_builder.yml",
+      "llvmlite_linux-aarch64_wheel_builder.yml",
+      "llvmlite_osx-arm64_wheel_builder.yml",
+      "llvmlite_win-64_wheel_builder.yml"
+    ]
+  }
+}
+
