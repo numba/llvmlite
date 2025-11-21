@@ -49,6 +49,14 @@ Lastly see the notes below for hints and details.
 ### Post Release Tasks:
 
 * [ ] Tag X.Y+1.0dev0 to start new development cycle on `main`.
+* [ ] Build conda packages and wheels on GHA using `vX.Y+1.0dev0` tag.
+* [ ] Upload packages for dev tag to anaconda.org dev label:
+  ```
+  gh workflow run .github/workflows/upload_packages.yml \
+    --field tag="vX.Y+1.0dev0" \
+    --field anaconda_label="dev"
+  ```
+  Note: This uploads packages and wheels to anaconda.org dev label only (no copy to main, no PyPI upload).
 * [ ] Update release checklist template with any additional bullet points that
       may have arisen during the release.
 * [ ] Close milestone (and then close this release issue).
@@ -94,24 +102,69 @@ the root of your local llvmlite clone as present working directory.
   # This launches all wheel builds:
   ls --color=never -1 .github/workflows/llvmlite_*_wheel_builder* | while read line ; do echo $line && gh workflow run $line --ref X ; done ;
   ```
-* Downloading all jobs
-  ```
-  gh run list | cut -f7 | head -6 | while read line ; do gh download $line ; done ;
-  ```
-  This assumes:
-    * No jobs have run in the meantime, first 6 jobs are what we are interested
-      in.
-    * `cut -7` will list the Workflow IDs
-* You can then use `ls` or `find` (or `tree` or whatever you like) to view the
-  downloaded files. There should be one for each python for each platform for
-  wheels and conda packages and one `llvmlite-sdist/*.gz` file. For example
-  0.45.0 supported 4 Python version and 5 platforms, so GHA produced:
-  4 * 5 * 2 + 1 = 41 artifacts.
 
 ### Uploading Notes
 
 There are two artifact repositories that packages need to be uploaded to
 anaconda.org and pypi.org.
+
+* Automated Upload
+
+Use the automated upload workflow to handle all uploads:
+
+```
+gh workflow run .github/workflows/upload_packages.yml \
+  --field tag="vX.Y.Zrc1" \
+  --field anaconda_label="dev" \
+  --field copy_conda_to_main="true" \
+  --field publish_to_pypi="true"
+```
+
+Replace `vX.Y.Zrc1` with the actual tag (e.g., `v0.46.0rc1`). This workflow will:
+* Find all successful conda and wheel build runs for the given tag
+* Download artifacts (conda packages and wheels) from those runs
+* Upload conda packages and wheels to anaconda.org (dev label)
+* Copy conda packages to main label (if `copy_conda_to_main` is true)
+* Publish wheels to PyPI (if `publish_to_pypi` is true)
+
+Monitor the workflow run in the GitHub Actions tab to verify successful completion.
+
+* Manual Upload (Fallback)
+
+If the automated workflow is unavailable, use these manual steps:
+
+* Find and download artifacts from workflow runs:
+  * First, find successful workflow runs for the tag (replace `vX.Y.Zrc1` with actual tag):
+    ```
+    export TAG="vX.Y.Zrc1"
+    export GITHUB_REPOSITORY="numba/llvmlite"
+    export GH_TOKEN="your_github_token"
+    
+    OUTPUT=$(./buildscripts/github/find_workflow_runs.py \
+      --tag "$TAG" \
+      --repo "$GITHUB_REPOSITORY" \
+      --token "$GH_TOKEN" \
+      --config ./buildscripts/github/workflow_groups.json)
+    
+    # Extract run IDs from output
+    eval "$OUTPUT"
+    ```
+  * Download conda packages:
+    ```
+    ./buildscripts/github/download_artifacts.py \
+      --run-ids $conda_run_ids \
+      --repo "$GITHUB_REPOSITORY" \
+      --token "$GH_TOKEN" \
+      --output-dir conda_packages
+    ```
+  * Download wheels:
+    ```
+    ./buildscripts/github/download_artifacts.py \
+      --run-ids $wheel_run_ids \
+      --repo "$GITHUB_REPOSITORY" \
+      --token "$GH_TOKEN" \
+      --output-dir dist
+    ```
 
 * Upload to anaconda.org.
   * This uses the command line tool `anaconda` which can be installed using
