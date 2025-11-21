@@ -49,6 +49,14 @@ Lastly see the notes below for hints and details.
 ### Post Release Tasks:
 
 * [ ] Tag X.Y+1.0dev0 to start new development cycle on `main`.
+* [ ] Build conda packages and wheels on GHA using `vX.Y+1.0dev0` tag.
+* [ ] Upload packages for dev tag to anaconda.org dev label:
+  ```
+  gh workflow run .github/workflows/upload_packages.yml \
+    --field tag="vX.Y+1.0dev0" \
+    --field anaconda_label="dev"
+  ```
+  Note: This uploads packages and wheels to anaconda.org dev label only (no copy to main, no PyPI upload).
 * [ ] Update release checklist template with any additional bullet points that
       may have arisen during the release.
 * [ ] Close milestone (and then close this release issue).
