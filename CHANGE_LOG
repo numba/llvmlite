@@ -43,6 +43,7 @@ Pull-Requests:
 * PR `#1358 <https://github.com/numba/llvmlite/pull/1358>`_: Pin gcc/gxx to 11 (`sklam <https://github.com/sklam>`_)
 * PR `#1359 <https://github.com/numba/llvmlite/pull/1359>`_: update macos image version from `macos-13` to `macos-15` on azure ci (`swap357 <https://github.com/swap357>`_)
 * PR `#1360 <https://github.com/numba/llvmlite/pull/1360>`_: chore(deps): update pre-commit hook python-jsonschema/check-jsonschema to v0.35.0 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1376 <https://github.com/numba/llvmlite/pull/1376>`_: update changelog for 0.46.0 (`swap357 <https://github.com/swap357>`_)
 
 Authors:
 
