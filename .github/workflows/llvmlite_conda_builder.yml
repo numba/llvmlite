@@ -90,7 +90,7 @@ jobs:
           auto-activate-base: true
 
       - name: Install conda-build
-        run: conda install conda-build
+        run: conda install conda-build "conda-libmamba-solver<25.11"
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
@@ -153,7 +153,7 @@ jobs:
           name: llvmlite-${{ matrix.platform }}-py${{ matrix.python-version }}
 
       - name: Install conda-build
-        run: conda install conda-build
+        run: conda install conda-build "conda-libmamba-solver<25.11"
 
       - name: Run tests
         run: |
