@@ -1,3 +1,65 @@
+v0.46.0 (December 8, 2025)
+--------------------------
+
+Highlights of this release include:
+
+- Official support for Python 3.14.
+- CMake IPO (Interprocedural Optimization) support.
+- Fix for LLVM symbol visibility to prevent unwanted symbol export.
+- Support for typed constants in debug info metadata.
+- Improved error handling for FFI binding errors and missing CMake.
+- Documentation for migrating from older llvmlite versions (<0.45).
+
+Pull-Requests:
+
+* PR `#1309 <https://github.com/numba/llvmlite/pull/1309>`_: Add docs for migrating from older llvmlite (<0.45) (`sklam <https://github.com/sklam>`_ `esc <https://github.com/esc>`_)
+* PR `#1311 <https://github.com/numba/llvmlite/pull/1311>`_: GHA/ cleanup on python 3.14 official support (`swap357 <https://github.com/swap357>`_)
+* PR `#1313 <https://github.com/numba/llvmlite/pull/1313>`_: Merge pull request #1310 from esc/change-log-0.45.1 (`esc <https://github.com/esc>`_)
+* PR `#1314 <https://github.com/numba/llvmlite/pull/1314>`_: [FIX] Hide non-API symbols when CXX compiler supports GNUC style visibility controls to prevent LLVM symbol export and interposition (`domcharrier <https://github.com/domcharrier>`_)
+* PR `#1316 <https://github.com/numba/llvmlite/pull/1316>`_: Prevent creating typed pointers of opaque pointers. (`rj-jesus <https://github.com/rj-jesus>`_)
+* PR `#1317 <https://github.com/numba/llvmlite/pull/1317>`_: Correct debug message text (`eric-wieser <https://github.com/eric-wieser>`_)
+* PR `#1320 <https://github.com/numba/llvmlite/pull/1320>`_: chore(deps): update dependency python to 3.14 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1321 <https://github.com/numba/llvmlite/pull/1321>`_: Fix OptimizationLevel mapping for Os (`yashssh <https://github.com/yashssh>`_)
+* PR `#1322 <https://github.com/numba/llvmlite/pull/1322>`_: update release checklists (`esc <https://github.com/esc>`_)
+* PR `#1323 <https://github.com/numba/llvmlite/pull/1323>`_: Consolidate conda installs on azure environment setup script (`swap357 <https://github.com/swap357>`_)
+* PR `#1325 <https://github.com/numba/llvmlite/pull/1325>`_: fix `llvmdev_for_wheel` linux builds (`swap357 <https://github.com/swap357>`_)
+* PR `#1326 <https://github.com/numba/llvmlite/pull/1326>`_: [FEA] Add support for typed constant in debug info metadata emission. (`jiel-nv <https://github.com/jiel-nv>`_)
+* PR `#1327 <https://github.com/numba/llvmlite/pull/1327>`_: Update pre-commit hook rhysd/actionlint to v1.7.8 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1329 <https://github.com/numba/llvmlite/pull/1329>`_: Update pre-commit hook python-jsonschema/check-jsonschema to v0.34.1 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1332 <https://github.com/numba/llvmlite/pull/1332>`_: GHA/ fix llvmlite `osx-arm64` wheel build tag (`swap357 <https://github.com/swap357>`_)
+* PR `#1333 <https://github.com/numba/llvmlite/pull/1333>`_: InlineAsm: fix formatting (`gmarkall <https://github.com/gmarkall>`_)
+* PR `#1334 <https://github.com/numba/llvmlite/pull/1334>`_: CMake IPO support. (`stuartarchibald <https://github.com/stuartarchibald>`_ `tiran <https://github.com/tiran>`_)
+* PR `#1335 <https://github.com/numba/llvmlite/pull/1335>`_: Fix use of deprecated LLVM API. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#1336 <https://github.com/numba/llvmlite/pull/1336>`_: Fix dummy CMake project. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#1339 <https://github.com/numba/llvmlite/pull/1339>`_: chore(deps): update github artifact actions (major) (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1340 <https://github.com/numba/llvmlite/pull/1340>`_: fix syntax in docs (`esc <https://github.com/esc>`_)
+* PR `#1341 <https://github.com/numba/llvmlite/pull/1341>`_: fix/ remove 'conda-remove-defaults' option from `setup-miniconda` (`swap357 <https://github.com/swap357>`_)
+* PR `#1345 <https://github.com/numba/llvmlite/pull/1345>`_: gha/add upload_packages workflow (`swap357 <https://github.com/swap357>`_)
+* PR `#1346 <https://github.com/numba/llvmlite/pull/1346>`_: gha/ pin `miniconda` installers for manylinux builds (`swap357 <https://github.com/swap357>`_)
+* PR `#1350 <https://github.com/numba/llvmlite/pull/1350>`_: update license metadata (`esc <https://github.com/esc>`_)
+* PR `#1353 <https://github.com/numba/llvmlite/pull/1353>`_: chore(deps): update pre-commit hook pre-commit/mirrors-clang-format to v21.1.5 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1354 <https://github.com/numba/llvmlite/pull/1354>`_: Improve error handling on FFI binding error (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#1355 <https://github.com/numba/llvmlite/pull/1355>`_: Improve error handling when CMake is not found. (`stuartarchibald <https://github.com/stuartarchibald>`_)
+* PR `#1358 <https://github.com/numba/llvmlite/pull/1358>`_: Pin gcc/gxx to 11 (`sklam <https://github.com/sklam>`_)
+* PR `#1359 <https://github.com/numba/llvmlite/pull/1359>`_: update macos image version from `macos-13` to `macos-15` on azure ci (`swap357 <https://github.com/swap357>`_)
+* PR `#1360 <https://github.com/numba/llvmlite/pull/1360>`_: chore(deps): update pre-commit hook python-jsonschema/check-jsonschema to v0.35.0 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1376 <https://github.com/numba/llvmlite/pull/1376>`_: update changelog for 0.46.0 (`swap357 <https://github.com/swap357>`_)
+
+Authors:
+
+* `domcharrier <https://github.com/domcharrier>`_
+* `eric-wieser <https://github.com/eric-wieser>`_
+* `esc <https://github.com/esc>`_
+* `gmarkall <https://github.com/gmarkall>`_
+* `jiel-nv <https://github.com/jiel-nv>`_
+* `renovate[bot] <https://github.com/apps/renovate>`_
+* `rj-jesus <https://github.com/rj-jesus>`_
+* `sklam <https://github.com/sklam>`_
+* `stuartarchibald <https://github.com/stuartarchibald>`_
+* `swap357 <https://github.com/swap357>`_
+* `tiran <https://github.com/tiran>`_
+* `yashssh <https://github.com/yashssh>`_
+
 v0.45.1 (October 01, 2025)
 --------------------------
 
