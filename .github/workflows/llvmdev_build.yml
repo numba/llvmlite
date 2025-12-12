@@ -87,6 +87,7 @@ jobs:
       - name: Free up disk space
         if: matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64'
         run: |
+          echo "Disk space before cleanup:" && df -h /
           # Removes pre-installed packages, frees ~20GB
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
@@ -96,6 +97,7 @@ jobs:
           sudo rm -rf /usr/share/swift
           sudo apt-get clean
           docker system prune -af || true
+          echo "Disk space after cleanup:" && df -h /
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
