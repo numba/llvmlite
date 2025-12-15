@@ -203,7 +203,7 @@ def main():
                 sys.exit(1)
 
     print(
-        "\n All artifacts downloaded successfully",
+        "\nAll artifacts downloaded successfully",
         file=sys.stderr
     )
 
