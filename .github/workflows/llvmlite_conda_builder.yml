@@ -94,7 +94,7 @@ jobs:
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: llvmdev_${{ matrix.platform }}
           path: llvmdev_conda_packages
@@ -119,7 +119,7 @@ jobs:
           conda build --debug -c "${LLVMDEV_CHANNEL}" "${extra_args[@]}" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder="${CONDA_CHANNEL_DIR}" --no-test
 
       - name: Upload llvmlite conda package
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: llvmlite-${{ matrix.platform }}-py${{ matrix.python-version }}
           path: conda_channel_dir
@@ -148,7 +148,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
 
       - name: Download llvmlite artifact
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: llvmlite-${{ matrix.platform }}-py${{ matrix.python-version }}
 
