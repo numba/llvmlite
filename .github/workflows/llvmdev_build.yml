@@ -22,6 +22,7 @@ on:
           - linux-aarch64
           - osx-arm64
           - win-64
+          - win-arm64
       recipe:
         description: Recipe to build
         default: all
@@ -100,6 +101,7 @@ jobs:
           echo "Disk space after cleanup:" && df -h /
 
       - name: Setup Miniconda
+        if: matrix.platform != 'win-arm64' 
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
         with:
           auto-update-conda: true
@@ -140,12 +142,12 @@ jobs:
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Install conda-build
-        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
+        if: ((matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel') && matrix.platform != 'win-arm64' 
         run: |
           conda install -c defaults conda-build
 
       - name: Build and test conda package - non-linux platforms
-        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
+        if: ((matrix.platform !='linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel') && matrix.platform != 'win-arm64' 
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |
@@ -154,7 +156,19 @@ jobs:
           conda build -c defaults "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
 
+      - name: Build LLVM package - Windows ARM64 platform
+        if: matrix.platform == 'win-arm64' 
+        shell: cmd
+        env:
+          ARTIFACT_DIR: llvm_arm64_artifact
+        run: |
+          call buildscripts\windows_arm64\bld_llvm_winarm64.bat
+          if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+          mkdir "%ARTIFACT_DIR%"
+          xcopy /E /I /Y llvm-arm64-install "%ARTIFACT_DIR%\llvm-arm64-install"
+
       - name: Upload conda package
+        if: matrix.platform != 'win-arm64'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ${{ matrix.recipe }}_${{ matrix.platform }}
@@ -162,6 +176,16 @@ jobs:
           compression-level: 0
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
           if-no-files-found: error
+          
+      - name: Upload Windows ARM64 LLVM artifacts
+        if: matrix.platform == 'win-arm64'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: llvm_${{ matrix.platform }}
+          path: llvm_arm64_artifact
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error      
 
       - name: Get Workflow Run ID
         run: |

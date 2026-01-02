@@ -25,7 +25,6 @@ for path in pathlib.Path(".").rglob("**/*.dll"):
         "KERNEL32.dll",
         "MSVCP140.dll",
         "VCRUNTIME140.dll",
-        "VCRUNTIME140_1.dll",
         "api-ms-win-crt-convert-l1-1-0.dll",
         "api-ms-win-crt-environment-l1-1-0.dll",
         "api-ms-win-crt-heap-l1-1-0.dll",
@@ -38,6 +37,9 @@ for path in pathlib.Path(".").rglob("**/*.dll"):
         "api-ms-win-crt-utility-l1-1-0.dll",
         "ntdll.dll",
     }
+    # VCRUNTIME140_1.dll is not required for Windows ARM64
+    if "VCRUNTIME140_1.dll" in imports:
+        expected_imports.add("VCRUNTIME140_1.dll")
     assert imports == expected_imports, (
         f"Unexpected imports: {imports - expected_imports}\n"
         f"Missing imports: {expected_imports - imports}"

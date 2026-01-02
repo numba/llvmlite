@@ -1,0 +1,218 @@
+name: llvmlite_win-arm64_wheel_builder
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/llvmlite_win-arm64_wheel_builder.yml
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+      upload_wheel_to_anaconda:
+        description: 'Upload wheel to Anaconda Cloud - numba channel'
+        required: false
+        type: boolean
+        default: false
+
+# Add concurrency control
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  VALIDATION_PYTHON_VERSION: "3.12"
+  ARTIFACT_RETENTION_DAYS: 7
+
+jobs:
+  win-arm64-build:
+    name: win-arm64-build
+    runs-on: windows-11-arm
+    defaults:
+      run:
+        shell: cmd
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Download llvmdev Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: llvm_win-arm64
+          path: llvm_install
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache vcpkg installed packages
+        uses: actions/cache@v4
+        with:
+          path: C:\vcpkg\installed
+          key: vcpkg-installed-windows-arm64-static-v1
+          restore-keys: |
+            vcpkg-installed-windows-arm64-static
+
+      - name: Install build dependencies
+        env:
+          VCPKG_DIR: C:\vcpkg 
+        run: |
+          "%VCPKG_DIR%\vcpkg.exe" install zlib:arm64-windows-static zstd:arm64-windows-static libxml2:arm64-windows-static 
+          python -m pip install build wheel setuptools delvewheel
+
+      - name: Build wheel
+        env:
+          CMAKE_ARGS: -DCMAKE_PREFIX_PATH=C:\vcpkg\installed\arm64-windows-static
+          LLVM_DIR: ${{ github.workspace }}\llvm_install\llvm-arm64-install\lib\cmake\llvm
+          LLVMLITE_PACKAGE_FORMAT: "wheel"
+        run: python -m build --wheel --no-isolation
+
+      - name: Repair wheel with delvewheel
+        run: |
+          if not exist wheel_temp mkdir wheel_temp
+          move dist\*.whl wheel_temp\
+          python -m delvewheel repair --analyze-existing -w dist wheel_temp\*.whl
+          dir dist
+
+      - name: Upload llvmlite wheel
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: llvmlite-win-arm64-py${{ matrix.python-version }}
+          path: dist/*.whl
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+      - name: Show Workflow Run ID
+        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+
+  win-arm64-validate:
+    name: win-arm64-validate
+    needs: win-arm64-build
+    runs-on: windows-11-arm
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Install validation dependencies
+        run: python -m pip install lief wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: llvmlite-win-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          cd dist
+          for WHL_FILE in *.whl; do
+            wheel unpack "$WHL_FILE"
+            python "$GITHUB_WORKSPACE"/buildscripts/github/validate_win-64_wheel.py llvmlite/binding/llvmlite.dll
+            twine check "$WHL_FILE"
+          done
+
+  win-arm64-test:
+    name: win-arm64-test
+    needs: win-arm64-validate
+    runs-on: windows-11-arm
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        # LIEF does not provide 3.14 Win-ARM64 wheels 
+        python-version: ["3.11", "3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: llvmlite-win-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Install and test
+        env:
+          LLVMLITE_DIST_TEST: "1"
+        run: |
+          # Upgrade pip and install wheel
+          python -m pip install --upgrade pip wheel
+
+          echo "Installing lief for distribution testing"
+          python -m pip install -v lief
+
+          # Install wheel and run tests
+          cd dist
+          # Windows compatible way to get the wheel file using bash
+          whl=$(ls -1 ./*.whl)
+          echo "Using wheel: $whl"
+          python -m pip install "$whl"
+
+          # Run tests
+          python -m llvmlite.tests
+
+  win-arm64-upload:
+    name: win-arm64-upload
+    needs: win-arm64-test
+    if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+      fail-fast: false
+    steps:
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          auto-update-conda: true
+          auto-activate-base: true
+
+      - name: Install anaconda-client
+        run: conda install -c anaconda anaconda-client
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: llvmlite-win-arm64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Upload wheel to Anaconda Cloud
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.NUMBA_CHANNEL_WHEEL_UPLOAD }}
+        run: |
+          cd dist
+          whl=$(ls -1 ./*.whl)
+          echo "Uploading wheel: $whl"
+          anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"
