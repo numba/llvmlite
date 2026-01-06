@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - .github/workflows/llvmlite_osx-arm64_wheel_builder.yml
+  schedule:
+    - cron: '30 6 * * 6'  # Saturday 6:30 AM UTC
   workflow_dispatch:
     inputs:
       llvmdev_run_id:
