@@ -2218,9 +2218,9 @@ class TestTarget(BaseTest):
                                  Vendor="unknown", OS="wasi",
                                  Env="unknown", ObjectFormat="Wasm")),
             ("aarch64-pc-windows-msvc",
-            llvm.targets.Triple(Arch="aarch64", SubArch='',
-                                Vendor="pc", OS="windows",
-                                Env="msvc", ObjectFormat="COFF")),
+             llvm.targets.Triple(Arch="aarch64", SubArch='',
+                                 Vendor="pc", OS="windows",
+                                 Env="msvc", ObjectFormat="COFF")),
         ]
 
         for case in cases:
