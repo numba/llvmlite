@@ -37,7 +37,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
       fail-fast: false
 
     steps:
@@ -49,7 +49,6 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
         with:
-          python-version: ${{ matrix.python-version }}
           auto-update-conda: true
           auto-activate-base: true
 
@@ -65,6 +64,12 @@ jobs:
 
       - name: Install build dependencies
         run: |
+          if [[ "${{ matrix.python-version }}" == *t ]]; then
+              PY_VER=${{ matrix.python-version }}
+              conda install -c conda-forge python-freethreading="${PY_VER%t}"
+          else
+              conda install -c defaults python="${{ matrix.python-version }}"
+          fi
           if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
               CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
               conda install -c defaults -c "$CHAN" "llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
@@ -125,7 +130,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
       fail-fast: false
     steps:
       - name: Clone repository
@@ -161,7 +166,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
       fail-fast: false
 
     steps:
@@ -185,7 +190,10 @@ jobs:
           "$PYTHON_PATH" -m venv .venv && source .venv/bin/activate
           python -m pip install --upgrade pip wheel
           echo "Installing lief for distribution testing"
-          python -m pip install -v lief
+          # TODO: make unconditional when PyLIEF ships free-threaded wheels
+          if [[ "${{ matrix.python-version }}" != *t ]]; then
+              python -m pip install -v lief
+          fi
           cd dist && python -m pip install -v ./*.whl
           DYLIB_PATH=$(find "$(python -c "import llvmlite; print(llvmlite.__path__[0])")" -name "libllvmlite.dylib")
           echo "Found dylib at: $DYLIB_PATH" && otool -L "$DYLIB_PATH"
@@ -201,7 +209,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
       fail-fast: false
     steps:
       - name: Setup Miniconda
