@@ -53,7 +53,7 @@ jobs:
         if: ${{ inputs.llvmdev_run_id != '' }}
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
-          name: llvmdev_for_wheel-win-arm64
+          name: llvmdev_for_wheel_win-arm64
           path: llvm_install
           run-id: ${{ inputs.llvmdev_run_id }}
           repository: ${{ github.repository }}
