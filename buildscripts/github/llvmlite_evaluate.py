@@ -130,9 +130,9 @@ print(
     "Deciding what to do based on event: "
     f"'{event}', label: '{label}', inputs: '{inputs}'"
 )
-if event in ("pull_request", "push"):
-    # This condition is entered on pull requests and pushes. The controlling
-    # workflow is expected to filter push events to only the `main` branch.
+if event in ("pull_request", "push", "schedule"):
+    # This condition is entered on pull requests, pushes, and scheduled runs.
+    # The controlling workflow filters push events to only the `main` branch.
     # See `on.push.branches` in `.github/workflows/llvmlite_conda_builder.yml`.
     print(f"{event} detected, running full build matrix.")
     include = default_include
