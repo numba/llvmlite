@@ -823,12 +823,17 @@ class IRBuilder(object):
         self._set_terminator(swt)
         return swt
 
+    def add_pred(self, block):
+        if self.basic_block not in block.predecessors:
+            block.predecessors.append(self.basic_block)
+
     def branch(self, target):
         """
         Unconditional branch to *target*.
         """
         br = instructions.Branch(self.block, "br", [target])
         self._set_terminator(br)
+        self.add_pred(target)
         return br
 
     def cbranch(self, cond, truebr, falsebr):
@@ -838,6 +843,8 @@ class IRBuilder(object):
         br = instructions.ConditionalBranch(self.block, "br",
                                             [cond, truebr, falsebr])
         self._set_terminator(br)
+        self.add_pred(truebr)
+        self.add_pred(falsebr)
         return br
 
     def branch_indirect(self, addr):
