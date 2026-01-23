@@ -118,10 +118,15 @@ class LlvmliteInstall(install):
 class LlvmliteClean(clean):
     """Custom clean command to tidy up the project root."""
     def run(self):
-        clean.run(self)
+        super().run()
         path = os.path.join(here_dir, 'llvmlite.egg-info')
         if os.path.isdir(path):
             remove_tree(path, dry_run=self.dry_run)
+        # remove ffi/build
+        path = os.path.join(here_dir, 'ffi', 'build')
+        if os.path.isdir(path):
+            remove_tree(path, dry_run=self.dry_run)
+        # remove all __pycache__
         if not self.dry_run:
             self._rm_walk()
 
@@ -134,8 +139,8 @@ class LlvmliteClean(clean):
                 remove_tree(path, dry_run=self.dry_run)
             else:
                 for fname in files:
-                    if (fname.endswith('.pyc') or fname.endswith('.so')
-                            or fname.endswith('.o')):
+                    suffixes = ('.pyc', '.o', '.so', '.dylib', '.dll')
+                    if any(fname.endswith(suffix) for suffix in suffixes):
                         fpath = os.path.join(path, fname)
                         os.remove(fpath)
                         log.info("removing '%s'", fpath)
