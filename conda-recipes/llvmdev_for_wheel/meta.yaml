@@ -1,7 +1,7 @@
 # This file is a copy of ../llvmdev/meta.yaml with minor changes for wheel # building
-{% set shortversion = "20.1" %}
-{% set version = "20.1.8" %}
-{% set sha256_llvm = "6898f963c8e938981e6c4a302e83ec5beb4630147c7311183cf61069af16333d" %}
+{% set shortversion = "21.1" %}
+{% set version = "21.1.8" %}
+{% set sha256_llvm = "4633a23617fa31a3ea51242586ea7fb1da7140e426bd62fc164261fe036aa142" %}
 {% set build_number = "1" %}
 
 package:
