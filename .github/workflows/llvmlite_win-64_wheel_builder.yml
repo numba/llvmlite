@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - .github/workflows/llvmlite_win-64_wheel_builder.yml
-      - buildscripts/github/validate_win-64_wheel.py
       - setup.py
       - versioneer.py
   schedule:
@@ -108,49 +107,9 @@ jobs:
       - name: Show Workflow Run ID
         run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
 
-  win-64-validate:
-    name: win-64-validate
-    needs: win-64-build
-    runs-on: windows-2025
-    defaults:
-      run:
-        shell: bash -elx {0}
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
-      fail-fast: false
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@fc2d68f6413eb2d87b895e92f8584b5b94a10167 # v3.3.0
-        with:
-          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
-          auto-update-conda: true
-          auto-activate-base: true
-
-      - name: Install validation dependencies
-        run: conda install -c defaults py-lief wheel twine keyring rfc3986
-
-      - name: Download llvmlite wheels
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-        with:
-          name: llvmlite-win-64-py${{ matrix.python-version }}
-          path: dist
-
-      - name: Validate wheels
-        run: |
-          cd dist
-          for WHL_FILE in *.whl; do
-            wheel unpack "$WHL_FILE"
-            python "$GITHUB_WORKSPACE"/buildscripts/github/validate_win-64_wheel.py llvmlite/binding/llvmlite.dll
-            twine check "$WHL_FILE"
-          done
-
   win-64-test:
     name: win-64-test
-    needs: win-64-validate
+    needs: win-64-build
     runs-on: windows-2025
     defaults:
       run:
@@ -177,8 +136,14 @@ jobs:
         env:
           LLVMLITE_DIST_TEST: "1"
         run: |
-          # Upgrade pip and install wheel
-          python -m pip install --upgrade pip wheel
+          # Upgrade pip and install wheel, twine
+          python -m pip install --upgrade pip wheel twine
+
+          # Install wheel and run tests
+          cd dist
+          # Windows compatible way to get the wheel file using bash
+          whl=$(ls -1 ./*.whl)
+          twine check "$whl"
 
           echo "Installing lief for distribution testing"
           # TODO: make unconditional when PyLIEF ships free-threaded wheels
@@ -186,10 +151,6 @@ jobs:
               python -m pip install -v lief
           fi
 
-          # Install wheel and run tests
-          cd dist
-          # Windows compatible way to get the wheel file using bash
-          whl=$(ls -1 ./*.whl)
           echo "Using wheel: $whl"
           python -m pip install "$whl"
 
