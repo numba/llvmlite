@@ -54,8 +54,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'llvmlite'
-copyright = '2015, Continuum Analytics'
-author = 'Continuum Analytics'
+copyright = '2014, Anaconda Inc.'
+author = 'Numba Developers'
 
 if os.environ.get('READTHEDOCS'):
     # RTD replaces the last update date.  So we need to hack it in here.
@@ -237,7 +237,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   (master_doc, 'llvmlite.tex', 'llvmlite Documentation',
-   'Continuum Analytics', 'manual'),
+   'Anaconda Inc.', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

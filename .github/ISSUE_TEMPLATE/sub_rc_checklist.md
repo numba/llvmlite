@@ -37,8 +37,8 @@ Lastly see the notes below for hints and details.
     * [ ] conda packages in `numba/label/main` on anaconda.org
     * [ ] wheels as a new version on PyPi
 * [ ] Verify ReadTheDocs build.
+* [ ] Create Github release at https://github.com/numba/llvmlite/releases using the tag.
 * [ ] Send RC/FINAL announcement email / post announcement to discourse group.
-* [ ] Post link to Twitter and Mastodon and anywhere else that is appropriate.
 
 ### Post release
 
