@@ -1,3 +1,46 @@
+v0.47.0rc1 (March 11, 2026)
+---------------------------
+
+Highlights of this release include:
+
+- Support for Python 3.14t (free-threaded) wheel builds.
+
+Pull-Requests:
+
+* PR `#569 <https://github.com/numba/llvmlite/pull/569>`_: clean ffi/build with setup.py clean (`ARF1 <https://github.com/ARF1>`_ `gmarkall <https://github.com/gmarkall>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1351 <https://github.com/numba/llvmlite/pull/1351>`_: Add 3.14t wheel builds by skipping PyLIEF install (`ngoldbaum <https://github.com/ngoldbaum>`_)
+* PR `#1356 <https://github.com/numba/llvmlite/pull/1356>`_: gha/scheduled testing (`swap357 <https://github.com/swap357>`_)
+* PR `#1362 <https://github.com/numba/llvmlite/pull/1362>`_: chore(deps): update dependency python to 3.14 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1364 <https://github.com/numba/llvmlite/pull/1364>`_: CHANGE_LOG for `0.46.0rc1` (`swap357 <https://github.com/swap357>`_)
+* PR `#1369 <https://github.com/numba/llvmlite/pull/1369>`_: chore(deps): update actions/checkout action to v6 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1371 <https://github.com/numba/llvmlite/pull/1371>`_: update first release checklist template post `v0.46.0rc1` (`swap357 <https://github.com/swap357>`_)
+* PR `#1372 <https://github.com/numba/llvmlite/pull/1372>`_: chore(deps): update actions/setup-python action to v6.1.0 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1374 <https://github.com/numba/llvmlite/pull/1374>`_: remove pre-commit (`esc <https://github.com/esc>`_)
+* PR `#1379 <https://github.com/numba/llvmlite/pull/1379>`_: Cherry pick 0.46.0 (`swap357 <https://github.com/swap357>`_)
+* PR `#1381 <https://github.com/numba/llvmlite/pull/1381>`_: fix ci buildscripts for flake8 errors (`swap357 <https://github.com/swap357>`_)
+* PR `#1382 <https://github.com/numba/llvmlite/pull/1382>`_: update release checklist (`swap357 <https://github.com/swap357>`_)
+* PR `#1383 <https://github.com/numba/llvmlite/pull/1383>`_: gha/fix llvmdev build disk space issue  (`swap357 <https://github.com/swap357>`_)
+* PR `#1384 <https://github.com/numba/llvmlite/pull/1384>`_: chore(deps): update github artifact actions (major) (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1386 <https://github.com/numba/llvmlite/pull/1386>`_: enable py-lief test dependency for py314 on llvmlite recipe (`swap357 <https://github.com/swap357>`_)
+* PR `#1391 <https://github.com/numba/llvmlite/pull/1391>`_: fix llvmlite_evaluate.py for scheduled events (`swap357 <https://github.com/swap357>`_)
+* PR `#1392 <https://github.com/numba/llvmlite/pull/1392>`_: chore(deps): update conda-incubator/setup-miniconda action to v3.3.0 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1394 <https://github.com/numba/llvmlite/pull/1394>`_: chore(deps): update actions/setup-python action to v6.2.0 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1395 <https://github.com/numba/llvmlite/pull/1395>`_: chore(deps): update actions/checkout action to v6.0.2 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1398 <https://github.com/numba/llvmlite/pull/1398>`_: Update the old pass manager APIs in examples (`gmarkall <https://github.com/gmarkall>`_ `yashssh <https://github.com/yashssh>`_)
+* PR `#1400 <https://github.com/numba/llvmlite/pull/1400>`_: Update setup.py to use setuptools (`solkaz <https://github.com/solkaz>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1403 <https://github.com/numba/llvmlite/pull/1403>`_: chore(deps): update github artifact actions (major) (`renovate[bot] <https://github.com/apps/renovate>`_)
+
+Authors:
+
+* `ARF1 <https://github.com/ARF1>`_
+* `esc <https://github.com/esc>`_
+* `gmarkall <https://github.com/gmarkall>`_
+* `ngoldbaum <https://github.com/ngoldbaum>`_
+* `renovate[bot] <https://github.com/apps/renovate>`_
+* `solkaz <https://github.com/solkaz>`_
+* `swap357 <https://github.com/swap357>`_
+* `yashssh <https://github.com/yashssh>`_
+
 v0.46.0 (December 8, 2025)
 --------------------------
 
