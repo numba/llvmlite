@@ -46,7 +46,10 @@ def get_artifacts_for_run(run_id, repo, token):
             if line:
                 artifacts.append(json.loads(line))
 
-        print(f"Found {len(artifacts)} artifacts for run {run_id}", file=sys.stderr)
+        print(
+            f"Found {len(artifacts)} artifacts for run {run_id}",
+            file=sys.stderr
+        )
         return artifacts
 
     except subprocess.CalledProcessError as e:
@@ -109,7 +112,10 @@ def download_artifact(artifact_name, artifact_id, repo, token, output_dir):
         return True
 
     except subprocess.CalledProcessError as e:
-        print(f"ERROR: Failed to download {artifact_name}: {e}", file=sys.stderr)
+        print(
+            f"ERROR: Failed to download {artifact_name}: {e}",
+            file=sys.stderr
+        )
         if e.stderr:
             print(f"stderr: {e.stderr}", file=sys.stderr)
         if e.stdout:
@@ -130,12 +136,18 @@ def main():
     parser.add_argument(
         '--repo',
         default=os.environ.get('GITHUB_REPOSITORY', ''),
-        help='Repository in format owner/repo (default: GITHUB_REPOSITORY env var)'
+        help=(
+            'Repository in format owner/repo '
+            '(default: GITHUB_REPOSITORY env var)'
+        )
     )
     parser.add_argument(
         '--token',
         default=os.environ.get('GH_TOKEN', os.environ.get('GITHUB_TOKEN', '')),
-        help='GitHub token for API authentication (default: GH_TOKEN or GITHUB_TOKEN env var)'
+        help=(
+            'GitHub token for API authentication '
+            '(default: GH_TOKEN or GITHUB_TOKEN env var)'
+        )
     )
     parser.add_argument(
         '--output-dir',
@@ -146,18 +158,31 @@ def main():
     args = parser.parse_args()
 
     if not args.repo:
-        parser.error("Repository is required (via --repo or GITHUB_REPOSITORY env var)")
+        parser.error(
+            "Repository is required "
+            "(via --repo or GITHUB_REPOSITORY env var)"
+        )
     if not args.token:
-        parser.error("GitHub token is required (via --token or GH_TOKEN/GITHUB_TOKEN env var)")
+        parser.error(
+            "GitHub token is required "
+            "(via --token or GH_TOKEN/GITHUB_TOKEN env var)"
+        )
 
-    print(f"=== Downloading artifacts from {len(args.run_ids)} workflow runs ===", file=sys.stderr)
+    print(
+        f"=== Downloading artifacts from {len(args.run_ids)} "
+        f"workflow runs ===",
+        file=sys.stderr
+    )
 
     for run_id in args.run_ids:
         print(f"\n--- Processing run ID: {run_id} ---", file=sys.stderr)
         artifacts = get_artifacts_for_run(run_id, args.repo, args.token)
 
         if not artifacts:
-            print(f"\nERROR: No artifacts found for run ID {run_id}", file=sys.stderr)
+            print(
+                f"\nERROR: No artifacts found for run ID {run_id}",
+                file=sys.stderr
+            )
             sys.exit(1)
 
         for artifact in artifacts:
@@ -170,11 +195,18 @@ def main():
             )
 
             if not success:
-                print(f"\nERROR: Failed to download artifact '{artifact['name']}'", file=sys.stderr)
+                print(
+                    f"\nERROR: Failed to download artifact "
+                    f"'{artifact['name']}'",
+                    file=sys.stderr
+                )
                 sys.exit(1)
 
-    print(f"\n All artifacts downloaded successfully", file=sys.stderr)
+    print(
+        "\nAll artifacts downloaded successfully",
+        file=sys.stderr
+    )
+
 
 if __name__ == "__main__":
     main()
-

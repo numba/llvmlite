@@ -19,14 +19,15 @@ mod.verify()
 print(repr(mod))
 print(mod)
 
-with llvm.create_module_pass_manager() as pm:
-    with llvm.create_pass_manager_builder() as pmb:
-        pmb.populate(pm)
-    pm.run(mod)
+tm = llvm.Target.from_default_triple().create_target_machine()
+pto = llvm.create_pipeline_tuning_options()
+
+with llvm.create_new_module_pass_manager() as pm:
+    pb = llvm.create_pass_builder(tm, pto)
+    pm.run(mod, pb)
 
 print(mod)
 
-tm = llvm.Target.from_default_triple().create_target_machine()
 ee = llvm.create_mcjit_compiler(mod, tm)
 func = mod.get_function("foo")
 print(func, ee.get_function_address("foo"))

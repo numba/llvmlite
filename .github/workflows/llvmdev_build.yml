@@ -57,8 +57,8 @@ jobs:
     outputs:
       matrix: ${{ steps.evaluate.outputs.matrix }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.14'
       - name: Evaluate
@@ -83,7 +83,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Free up disk space
         if: matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64'
@@ -101,8 +101,8 @@ jobs:
           echo "Disk space after cleanup:" && df -h /
 
       - name: Setup Miniconda
-        if: matrix.platform != 'win-arm64' 
-        uses: conda-incubator/setup-miniconda@835234971496cad1653abb28a638a281cf32541f # v3.2.0
+        if: matrix.platform != 'win-arm64'
+        uses: conda-incubator/setup-miniconda@fc2d68f6413eb2d87b895e92f8584b5b94a10167 # v3.3.0
         with:
           auto-update-conda: true
           auto-activate-base: true
@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload conda package
         if: matrix.platform != 'win-arm64'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ matrix.recipe }}_${{ matrix.platform }}
           path: conda_channel_dir

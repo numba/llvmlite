@@ -80,22 +80,20 @@ print("-- parse assembly:", t4-t3)
 
 print(llmod)
 
-pmb = llvm.create_pass_manager_builder()
-pmb.opt_level = 2
-pm = llvm.create_module_pass_manager()
-pmb.populate(pm)
+target_machine = llvm.Target.from_default_triple().create_target_machine()
+pto = llvm.create_pipeline_tuning_options(speed_level=2)
+pb = llvm.create_pass_builder(target_machine, pto)
+pm = pb.getModulePassManager()
 
 t5 = time()
 
-pm.run(llmod)
+pm.run(llmod, pb)
 
 t6 = time()
 
 print("-- optimize:", t6-t5)
 
 t7 = time()
-
-target_machine = llvm.Target.from_default_triple().create_target_machine()
 
 with llvm.create_mcjit_compiler(llmod, target_machine) as ee:
     ee.finalize_object()
