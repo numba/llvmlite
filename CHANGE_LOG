@@ -29,6 +29,7 @@ Pull-Requests:
 * PR `#1398 <https://github.com/numba/llvmlite/pull/1398>`_: Update the old pass manager APIs in examples (`gmarkall <https://github.com/gmarkall>`_ `yashssh <https://github.com/yashssh>`_)
 * PR `#1400 <https://github.com/numba/llvmlite/pull/1400>`_: Update setup.py to use setuptools (`solkaz <https://github.com/solkaz>`_ `swap357 <https://github.com/swap357>`_)
 * PR `#1403 <https://github.com/numba/llvmlite/pull/1403>`_: chore(deps): update github artifact actions (major) (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1412 <https://github.com/numba/llvmlite/pull/1412>`_: update CHANGE_LOG for v0.47.0 (`swap357 <https://github.com/swap357>`_)
 
 Authors:
 
