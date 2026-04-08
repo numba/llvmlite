@@ -113,47 +113,6 @@ jobs:
       - name: Show Workflow Run ID
         run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
 
-  linux-aarch64-validate:
-    name: linux-aarch64-validate
-    needs: linux-aarch64-build
-    runs-on: ubuntu-24.04-arm
-    defaults:
-      run:
-        shell: bash -elx {0}
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
-      fail-fast: false
-    steps:
-      - name: Clone repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@fc2d68f6413eb2d87b895e92f8584b5b94a10167 # v3.3.0
-        with:
-          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
-          auto-update-conda: true
-          auto-activate-base: true
-          activate-environment: true
-
-      - name: Install validation dependencies
-        run: conda install -c defaults wheel twine keyring rfc3986
-
-      - name: Download llvmlite wheels
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: llvmlite-linux-aarch64-py${{ matrix.python-version }}
-          path: dist
-
-      - name: Validate wheels
-        run: |
-          cd dist
-          for WHL_FILE in *.whl; do
-            echo "=== Validating $WHL_FILE ==="
-            # Check wheel structure
-            twine check "$WHL_FILE"
-          done
-
   linux-aarch64-test:
     name: linux-aarch64-test
     needs: linux-aarch64-build
@@ -186,8 +145,8 @@ jobs:
           # Get the Python executable path
           PYTHON_PATH=$(which python)
 
-          # Upgrade pip and install wheel
-          "${PYTHON_PATH}" -m pip install --upgrade pip wheel
+          # Upgrade pip and install wheel, twine
+          "${PYTHON_PATH}" -m pip install --upgrade pip wheel twine
 
           # Install wheel
           cd dist
@@ -201,6 +160,8 @@ jobs:
             find . -type f -name "*.whl" -print
             exit 1
           fi
+
+          twine check "$whl"
 
           echo "Installing lief for distribution testing"
           # TODO: make unconditional when PyLIEF ships free-threaded wheels
@@ -216,7 +177,7 @@ jobs:
 
   linux-aarch64-upload:
     name: linux-aarch64-upload
-    needs: [linux-aarch64-test, linux-aarch64-validate]
+    needs: linux-aarch64-test
     if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: ubuntu-24.04-arm
     defaults:
