@@ -12,15 +12,22 @@ import shutil
 import sys
 import tempfile
 import warnings
-
+import platform
 
 here_dir = os.path.abspath(os.path.dirname(__file__))
 build_dir = os.path.join(here_dir, 'build')
 target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
 
-
-is_64bit = sys.maxsize >= 2**32
-
+is_windows = sys.platform == "win32"
+is_arm64 = False
+is_64bit = False
+if is_windows:
+    machine = platform.machine().lower()
+    if machine in ("arm64", "aarch64"):
+        is_arm64 = True
+    elif machine in ("amd64", "x86_64"):
+        is_64bit = True
+        
 
 def env_var_options_to_cmake_options():
     # This is not ideal, it exists to put env var options into CMake. Whilst it
@@ -146,15 +153,22 @@ def find_windows_generator():
         generators.append(
             (env_generator, env_arch, env_toolkit)
         )
+    if is_arm64:
+        arch = "ARM64"
+    elif is_64bit:
+        arch = "x64"
+    else:
+        arch = "Win32"
 
     generators.extend([
         # use VS2022 first
-        ('Visual Studio 17 2022', ('x64' if is_64bit else 'Win32'), 'v143'),
+        ('Visual Studio 17 2022', arch, 'v143'),
         # try VS2019 next
-        ('Visual Studio 16 2019', ('x64' if is_64bit else 'Win32'), 'v142'),
+        ('Visual Studio 16 2019', arch, 'v142'),
         # # This is the generator configuration for VS2017
         # ('Visual Studio 15 2017' + (' Win64' if is_64bit else ''), None, None)
     ])
+
     for generator in generators:
         build_dir = tempfile.mkdtemp()
         print("Trying generator %r" % (generator,))
