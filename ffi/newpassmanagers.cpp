@@ -24,11 +24,9 @@
 #include "llvm/Analysis/IRSimilarityIdentifier.h"
 #include "llvm/Analysis/IVUsers.h"
 #include "llvm/Analysis/InlineAdvisor.h"
-#include "llvm/Analysis/InlineSizeEstimatorAnalysis.h"
 #include "llvm/Analysis/InstCount.h"
 #include "llvm/Analysis/LazyCallGraph.h"
 #include "llvm/Analysis/LazyValueInfo.h"
-#include "llvm/Analysis/Lint.h"
 #include "llvm/Analysis/LoopAccessAnalysis.h"
 #include "llvm/Analysis/LoopCacheAnalysis.h"
 #include "llvm/Analysis/LoopInfo.h"
@@ -106,9 +104,7 @@
 #include "llvm/Transforms/Instrumentation/DataFlowSanitizer.h"
 #include "llvm/Transforms/Instrumentation/GCOVProfiler.h"
 #include "llvm/Transforms/Instrumentation/HWAddressSanitizer.h"
-#include "llvm/Transforms/Instrumentation/InstrOrderFile.h"
 #include "llvm/Transforms/Instrumentation/InstrProfiling.h"
-#include "llvm/Transforms/Instrumentation/MemProfiler.h"
 #include "llvm/Transforms/Instrumentation/MemorySanitizer.h"
 #include "llvm/Transforms/Instrumentation/PGOInstrumentation.h"
 #include "llvm/Transforms/Instrumentation/SanitizerCoverage.h"
@@ -277,12 +273,14 @@ static OptimizationLevel mapLevel(int speed_level, int size_level) {
             llvm_unreachable("Invalid optimization level");
         }
     case 1:
+        // FIXME: sizeLevel should be removed just like LLVM
+        // Os/Oz removed from OptimizationLevel (LLVM PR #191363); match Clang using O2.
         if (speed_level == 2)
-            return OptimizationLevel::Os;
+            return OptimizationLevel::O2;
         llvm_unreachable("Invalid optimization level for size level 1");
     case 2:
         if (speed_level == 2)
-            return OptimizationLevel::Oz;
+            return OptimizationLevel::O2;
         llvm_unreachable("Invalid optimization level for size level 2");
     default:
         llvm_unreachable("Invalid size level");

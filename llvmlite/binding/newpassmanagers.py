@@ -213,12 +213,6 @@ class NewPassManager():
         else:
             ffi.lib.LLVMPY_function_AddPostDomOnlyViewer(self)
 
-    def add_lint_pass(self):
-        if isinstance(self, ModulePassManager):
-            ffi.lib.LLVMPY_module_AddLintPass(self)
-        else:
-            ffi.lib.LLVMPY_function_AddLintPass(self)
-
     def add_aggressive_dce_pass(self):
         if isinstance(self, ModulePassManager):
             ffi.lib.LLVMPY_module_AddADCEPass(self)
@@ -692,9 +686,6 @@ ffi.lib.LLVMPY_module_AddPostDomViewer.argtypes = [
 ffi.lib.LLVMPY_module_AddPostDomOnlyViewer.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
-ffi.lib.LLVMPY_module_AddLintPass.argtypes = [
-    ffi.LLVMModulePassManagerRef,]
-
 ffi.lib.LLVMPY_module_AddADCEPass.argtypes = [
     ffi.LLVMModulePassManagerRef,]
 
@@ -883,9 +874,6 @@ ffi.lib.LLVMPY_function_AddPostDomViewer.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]
 
 ffi.lib.LLVMPY_function_AddPostDomOnlyViewer.argtypes = [
-    ffi.LLVMFunctionPassManagerRef, ]
-
-ffi.lib.LLVMPY_function_AddLintPass.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ]
 
 ffi.lib.LLVMPY_function_AddADCEPass.argtypes = [
