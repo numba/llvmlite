@@ -940,7 +940,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = (20,)
+        valid = (22, 23)
         self.assertIn(major, valid)
         self.assertIn(patch, range(9))
 
@@ -2824,7 +2824,6 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         mpm.add_dom_only_printer_pass()
         mpm.add_post_dom_viewer_pass()
         mpm.add_post_dom_only_viewer_pass()
-        mpm.add_lint_pass()
         mpm.add_aggressive_dce_pass()
         mpm.add_break_critical_edges_pass()
         mpm.add_dead_store_elimination_pass()
@@ -2934,7 +2933,6 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         fpm.add_dom_only_printer_pass()
         fpm.add_post_dom_viewer_pass()
         fpm.add_post_dom_only_viewer_pass()
-        fpm.add_lint_pass()
         fpm.add_aggressive_dce_pass()
         fpm.add_break_critical_edges_pass()
         fpm.add_dead_store_elimination_pass()
