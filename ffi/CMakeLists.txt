@@ -24,7 +24,7 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 # NOTE: Keep this in sync with the version that llvmlite is declared to support
-set(LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT 23)
+set(LLVMLITE_SUPPORTED_LLVM_VERSION_DEFAULT 22)
 
 # Check LLVM version is supported or intentionally overridden.
 if (NOT DEFINED LLVM_VERSION_MAJOR)
