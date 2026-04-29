@@ -166,4 +166,4 @@ jobs:
           else
             extra_args=()
           fi
-          conda-build --test "${extra_args[@]}" "${{ matrix.platform }}"/llvmlite*.conda
+          conda-build --test "${extra_args[@]}" -c defaults "${{ matrix.platform }}"/llvmlite*.conda
