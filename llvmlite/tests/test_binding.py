@@ -1636,7 +1636,8 @@ class TestValueRef(BaseTest):
     def test_add_function_attribute(self):
         mod = self.module()
         fn = mod.get_function("sum")
-        fn.add_function_attribute("nocapture")
+        # FIXME: Remove other uses of "nocapture" from llvmlite codebase.
+        fn.add_function_attribute("noinline")
         with self.assertRaises(ValueError) as raises:
             fn.add_function_attribute("zext")
         self.assertEqual(str(raises.exception), "no such attribute 'zext'")

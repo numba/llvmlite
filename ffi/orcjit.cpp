@@ -83,9 +83,8 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
                 .setOptions(template_tm->Options));
     }
     builder.setObjectLinkingLayerCreator(
-        [=](llvm::orc::ExecutionSession &session,
-            jitlink::JITLinkMemoryManager &MemMgr)
-            -> std::unique_ptr<llvm::orc::ObjectLayer> {
+        [=](llvm::orc::ExecutionSession &session)
+            -> llvm::Expected<std::unique_ptr<llvm::orc::ObjectLayer>> {
             auto triple = session.getTargetTriple();
             if (useJitLink) {
                 auto linkingLayer =
