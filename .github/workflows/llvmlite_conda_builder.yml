@@ -120,8 +120,7 @@ jobs:
           else
             extra_args=()
           fi
-          conda-build --debug -c "${LLVMDEV_CHANNEL}" "${extra_args[@]}" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder="${CONDA_CHANNEL_DIR}" --no-test
-
+          conda-build --debug --channel-priority strict -c "${LLVMDEV_CHANNEL}" "${extra_args[@]}" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder="${CONDA_CHANNEL_DIR}" --no-test
       - name: Upload llvmlite conda package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
