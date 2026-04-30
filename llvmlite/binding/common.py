@@ -7,7 +7,7 @@ def _encode_string(s):
 
 
 def _decode_string(b):
-    return b.decode('utf-8')
+    return b.decode('utf-8', errors='replace')
 
 
 _encode_string.__doc__ = """Encode a string for use by LLVM."""
