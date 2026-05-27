@@ -26,8 +26,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FALLBACK_LLVMDEV_VERSION: "20"
-  CONDA_CHANNEL_NUMBA: numba/label/llvm20-wheel
+  FALLBACK_LLVMDEV_VERSION: "22"
+  CONDA_CHANNEL_NUMBA: numba/label/llvm_wheel
   VALIDATION_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
 
