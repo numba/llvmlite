@@ -487,6 +487,34 @@ define double @foo(i32 %i, double %j) optnone noinline {
 }
 """
 
+# A strided store loop used to test that optsize/minsize suppress
+# auto-vectorisation.
+#
+# At O3 without size attributes LLVM splats i16 42 into a vector and emits
+# vector stores (the scalar "store i16 42" disappears from the IR).  With
+# optsize or minsize the vectoriser is inhibited and the scalar store is
+# preserved, so "store i16 42" remains present in the optimised output.
+asm_optsize_loop = r"""
+    ; ModuleID = '<string>'
+
+    define void @stride1(ptr noalias %B, i32 %BStride) {{
+    entry:
+        br label %for.body
+
+    for.body:
+        %iv = phi i32 [ %iv.next, %for.body ], [ 0, %entry ]
+        %mulB = mul nsw i32 %iv, %BStride
+        %gepOfB = getelementptr inbounds i16, ptr %B, i32 %mulB
+        store i16 42, ptr %gepOfB, align 4
+        %iv.next = add nuw nsw i32 %iv, 1
+        %exitcond = icmp eq i32 %iv.next, 1025
+        br i1 %exitcond, label %for.end, label %for.body
+
+    for.end:
+        ret void
+    }}
+    """
+
 asm_declaration = r"""
 declare void @test_declare(i32* )
 """
@@ -1642,6 +1670,18 @@ class TestValueRef(BaseTest):
             fn.add_function_attribute("zext")
         self.assertEqual(str(raises.exception), "no such attribute 'zext'")
 
+    def test_add_function_attribute_optsize(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        fn.add_function_attribute("optsize")
+        self.assertIn(b"optsize", list(fn.attributes))
+
+    def test_add_function_attribute_minsize(self):
+        mod = self.module()
+        fn = mod.get_function("sum")
+        fn.add_function_attribute("minsize")
+        self.assertIn(b"minsize", list(fn.attributes))
+
     def test_module(self):
         mod = self.module()
         glob = mod.get_global_variable("glob")
@@ -2583,13 +2623,6 @@ class TestPipelineTuningOptions(BaseTest):
             pto.speed_level = i
             self.assertEqual(pto.speed_level, i)
 
-    def test_size_level(self):
-        pto = self.pto()
-        self.assertIsInstance(pto.size_level, int)
-        for i in range(3):
-            pto.size_level = i
-            self.assertEqual(pto.size_level, i)
-
     def test_inlining_threshold(self):
         pto = self.pto()
         self.assertIsInstance(pto.inlining_threshold, int)
@@ -2631,22 +2664,12 @@ class TestPipelineTuningOptions(BaseTest):
         with self.assertRaises(ValueError):
             pto.speed_level = -1
 
-    def test_size_level_constraints(self):
-        pto = self.pto()
-        with self.assertRaises(ValueError):
-            pto.size_level = 3
-        with self.assertRaises(ValueError):
-            pto.speed_level = -1
-        with self.assertRaises(ValueError):
-            pto.speed_level = 3
-            pto.size_level = 2
-
 
 class NewPassManagerMixin(object):
 
-    def pb(self, speed_level=0, size_level=0):
+    def pb(self, speed_level=0):
         tm = self.target_machine(jit=False)
-        pto = llvm.create_pipeline_tuning_options(speed_level, size_level)
+        pto = llvm.create_pipeline_tuning_options(speed_level)
         pb = llvm.create_pass_builder(tm, pto)
         return pb
 
@@ -2659,7 +2682,7 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
 
     def test_pto(self):
         tm = self.target_machine(jit=False)
-        pto = llvm.create_pipeline_tuning_options(3, 0)
+        pto = llvm.create_pipeline_tuning_options(3)
         pto.inlining_threshold = 2
         pto.loop_interleaving = True
         pto.loop_vectorization = True
@@ -2684,7 +2707,7 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
         """Test pass timing reports for O3 and O0 optimization levels"""
         def run_with_timing(speed_level):
             mod = self.module()
-            pb = self.pb(speed_level=speed_level, size_level=0)
+            pb = self.pb(speed_level=speed_level)
             pb.start_pass_timing()
             mpm = pb.getModulePassManager()
             mpm.run(mod, pb)
@@ -2738,7 +2761,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
     def run_o_n(self, level):
         mod = self.module()
         orig_asm = str(mod)
-        pb = self.pb(speed_level=level, size_level=0)
+        pb = self.pb(speed_level=level)
         mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
         optimized_asm = str(mod)
@@ -2770,7 +2793,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         self.assertNotIn("%.3", optimized_asm)
 
     def test_optnone(self):
-        pb = self.pb(speed_level=3, size_level=0)
+        pb = self.pb(speed_level=3)
         orig_asm = str(asm_alloca_optnone.replace("optnone ", ""))
         mod = llvm.parse_assembly(orig_asm)
         mpm = pb.getModulePassManager()
@@ -2787,6 +2810,38 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         optimized_asm_optnone = str(mod)
         self.assertIn("alloca", orig_asm_optnone)
         self.assertIn("alloca", optimized_asm_optnone)
+
+    def test_optsize_minsize(self):
+        pb = self.pb(speed_level=3)
+
+        # Without optsize: O3 vectorises the loop
+        mod = self.module(asm_optsize_loop)
+        mpm = pb.getModulePassManager()
+        mpm.run(mod, pb)
+        optimized = str(mod)
+        self.assertIn("vector.body", optimized)
+
+        # With optsize: vectorisation is suppressed
+        mod_optsize = self.module(asm_optsize_loop)
+        fn = mod_optsize.get_function("stride1")
+        fn.add_function_attribute("optsize")
+        self.assertIn(b"optsize", list(fn.attributes))
+        mpm2 = pb.getModulePassManager()
+        mpm2.run(mod_optsize, pb)
+        optimized_optsize = str(mod_optsize)
+        self.assertIn("optsize", optimized_optsize)
+        self.assertNotIn("vector.body", optimized_optsize)
+
+        # With minsize: vectorisation is suppressed
+        mod_minsize = self.module(asm_optsize_loop)
+        fn = mod_minsize.get_function("stride1")
+        fn.add_function_attribute("minsize")
+        self.assertIn(b"minsize", list(fn.attributes))
+        mpm3 = pb.getModulePassManager()
+        mpm3.run(mod_minsize, pb)
+        optimized_minsize = str(mod_minsize)
+        self.assertIn("minsize", optimized_minsize)
+        self.assertNotIn("vector.body", optimized_minsize)
 
     def test_add_passes(self):
         mpm = self.pm()
@@ -2864,7 +2919,7 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         mod = self.module()
         fun = mod.get_function("sum")
         orig_asm = str(fun)
-        pb = self.pb(speed_level=level, size_level=0)
+        pb = self.pb(speed_level=level)
         fpm = pb.getFunctionPassManager()
         fpm.run(fun, pb)
         optimized_asm = str(fun)
@@ -2881,7 +2936,7 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
         self.assertIn("%.4", optimized_asm)
 
     def test_optnone(self):
-        pb = self.pb(speed_level=3, size_level=0)
+        pb = self.pb(speed_level=3)
         orig_asm = str(asm_alloca_optnone.replace("optnone ", ""))
         fun = llvm.parse_assembly(orig_asm).get_function("foo")
         fpm = pb.getFunctionPassManager()

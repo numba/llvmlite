@@ -257,34 +257,18 @@ static TargetMachine *unwrap(LLVMTargetMachineRef P) {
 } // namespace llvm
 
 // C++ linkage
-static OptimizationLevel mapLevel(int speed_level, int size_level) {
-    switch (size_level) {
+static OptimizationLevel mapLevel(int speed_level) {
+    switch (speed_level) {
     case 0:
-        switch (speed_level) {
-        case 0:
-            return OptimizationLevel::O0;
-        case 1:
-            return OptimizationLevel::O1;
-        case 2:
-            return OptimizationLevel::O2;
-        case 3:
-            return OptimizationLevel::O3;
-        default:
-            llvm_unreachable("Invalid optimization level");
-        }
+        return OptimizationLevel::O0;
     case 1:
-        // FIXME: sizeLevel should be removed just like LLVM
-        // Os/Oz removed from OptimizationLevel (LLVM PR #191363); match Clang using O2.
-        if (speed_level == 2)
-            return OptimizationLevel::O2;
-        llvm_unreachable("Invalid optimization level for size level 1");
+        return OptimizationLevel::O1;
     case 2:
-        if (speed_level == 2)
-            return OptimizationLevel::O2;
-        llvm_unreachable("Invalid optimization level for size level 2");
+        return OptimizationLevel::O2;
+    case 3:
+        return OptimizationLevel::O3;
     default:
-        llvm_unreachable("Invalid size level");
-        break;
+        llvm_unreachable("Invalid optimization level");
     }
 }
 
@@ -566,11 +550,11 @@ LLVMPY_DisposePassBuilder(LLVMPassBuilderRef PBRef) {
 }
 
 API_EXPORT(LLVMModulePassManagerRef)
-LLVMPY_buildPerModuleDefaultPipeline(LLVMPassBuilderRef PBref, int speed_level,
-                                     int size_level) {
+LLVMPY_buildPerModuleDefaultPipeline(LLVMPassBuilderRef PBref,
+                                     int speed_level) {
 
     PassBuilder *PB = llvm::unwrap(PBref);
-    OptimizationLevel OL = mapLevel(speed_level, size_level);
+    OptimizationLevel OL = mapLevel(speed_level);
 
     // FIXME: No need to explicitly take care of O0 from LLVM 17
     if (OL == OptimizationLevel::O0) {
@@ -584,10 +568,10 @@ LLVMPY_buildPerModuleDefaultPipeline(LLVMPassBuilderRef PBref, int speed_level,
 
 API_EXPORT(LLVMFunctionPassManagerRef)
 LLVMPY_buildFunctionSimplificationPipeline(LLVMPassBuilderRef PBref,
-                                           int speed_level, int size_level) {
+                                           int speed_level) {
 
     PassBuilder *PB = llvm::unwrap(PBref);
-    OptimizationLevel OL = mapLevel(speed_level, size_level);
+    OptimizationLevel OL = mapLevel(speed_level);
     if (OL == OptimizationLevel::O0)
         return llvm::wrap(new FunctionPassManager());
 
