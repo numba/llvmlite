@@ -13,12 +13,13 @@ provided.
 Deprecation of LLVM initialization
 ==================================
 
-A breaking change has occurred with the upgrade to LLVM 20.
+A breaking change occurred with the upgrade to LLVM 20 in llvmlite 0.45.
 Initialization of LLVM core is now automatic, and ``llvm.binding.initialize()`` 
 will raise a ``RuntimeError`` with a suitable message.
-LLVM 20 includes many behavior changes that may break user code
+LLVM 20 included many behavior changes that may break user code
 or expectations. This hard error warns users of such potential breakage.
-See :ref:`llvm20` for more details on LLVM 20 changes.
+See :ref:`llvm20` for details on the LLVM 20 upgrade (llvmlite 0.45--0.47)
+and :ref:`llvm22` for the LLVM 22 upgrade (llvmlite 0.48+).
 
 Reason for deprecation
 ----------------------
@@ -45,10 +46,10 @@ Simply remove ``llvm.binding.initialize()``.
 Deprecation of Typed Pointers
 =============================
 
-.. note:: Typed pointers support has been removed as llvmlite now uses LLVM 20,
-          which dropped support for typed pointers. All pointer operations now 
-          use opaque pointers. See the migration guide below for updating 
-          existing code.
+.. note:: Typed pointers support has been removed as llvmlite uses LLVM 20 or
+          later (0.45+), which dropped support for typed pointers. All pointer
+          operations now use opaque pointers. See the migration guide below for
+          updating existing code.
 
 The use of Typed Pointers is deprecated, and :ref:`Opaque Pointers
 <pointer-types>` will be the default (and eventually required) in a future
