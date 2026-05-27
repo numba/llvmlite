@@ -940,7 +940,7 @@ class TestMisc(BaseTest):
     def test_version(self):
         major, minor, patch = llvm.llvm_version_info
         # one of these can be valid
-        valid = (22, 23)
+        valid = (22,)
         self.assertIn(major, valid)
         self.assertIn(patch, range(9))
 
