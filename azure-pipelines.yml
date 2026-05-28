@@ -1,29 +1,5 @@
 jobs:
-# Mac and Linux use the same template with different matrixes
-- template: buildscripts/azure/azure-linux-macos.yml
-  parameters:
-    name: macOS
-    vmImage: macos-15
-    variables:
-      MACOSX_DEPLOYMENT_TARGET: '11.0'
-    matrix:
-      py310:
-        PYTHON: '3.10'
-        CONDA_ENV: cienv
-      py311:
-        PYTHON: '3.11'
-        CONDA_ENV: cienv
-      py312:
-        PYTHON: '3.12'
-        CONDA_ENV: cienv
-      py313:
-        PYTHON: '3.13'
-        CONDA_ENV: cienv
-      opaque_pointers:
-        PYTHON: '3.12'
-        CONDA_ENV: cienv
-        OPAQUE_POINTERS: yes
-
+# Linux uses azure-linux-macos.yml (shared template name; macOS/osx-64 removed)
 - template: buildscripts/azure/azure-linux-macos.yml
   parameters:
     name: Linux
