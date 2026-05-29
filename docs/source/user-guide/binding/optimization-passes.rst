@@ -197,6 +197,28 @@ Here's a complete example showing how to use the New Pass Manager APIs:
    :caption: examples/newpassmanagers.py
 
 
+Optimizing for size
+-------------------
+
+Size optimization is expressed through per-function attributes rather than a
+pipeline-level option.
+
+To request size optimization, add the ``optsize`` (``-Os``) or ``minsize``
+(``-Oz``) attribute to the relevant functions before running the pipeline:
+
+.. code-block:: python
+
+   fn = module.get_function("my_func")
+   fn.add_function_attribute("optsize")   # or "minsize" for -Oz
+
+   pto = create_pipeline_tuning_options(speed_level=2)
+   pass_builder = create_pass_builder(target_machine, pto)
+   pass_builder.getModulePassManager().run(module, pass_builder)
+
+With ``optsize``/``minsize`` set, size-increasing transforms such as loop
+vectorization are inhibited for those functions.
+
+
 .. _passes-migration-guide:
 
 Legacy API Migration Guide
