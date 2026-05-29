@@ -49,6 +49,9 @@ concurrency:
 env:
   ARTIFACT_RETENTION_DAYS: 7
 
+permissions:
+  contents: read
+
 jobs:
 
   check:
@@ -57,6 +60,8 @@ jobs:
       matrix: ${{ steps.evaluate.outputs.matrix }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.14'
@@ -83,6 +88,8 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Free up disk space
         if: matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64'
@@ -111,20 +118,21 @@ jobs:
         if: (matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64') && matrix.recipe == 'llvmdev_for_wheel'
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
+          MATRIX_PLATFORM: ${{ matrix.platform }}
         run: |
           set -x
           # Set manylinux-specific variables
           MANYLINUX_IMAGE=""
           MINICONDA_FILE=""
-          if [[ "${{ matrix.platform }}" == "linux-64" ]]; then
+          if [[ "${MATRIX_PLATFORM}" == "linux-64" ]]; then
             MANYLINUX_IMAGE="quay.io/pypa/manylinux2014_x86_64"
             MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-x86_64.sh"
-          elif [[ "${{ matrix.platform }}" == "linux-aarch64" ]]; then
+          elif [[ "${MATRIX_PLATFORM}" == "linux-aarch64" ]]; then
             MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64"
             MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-aarch64.sh"
           fi
 
-          echo "Building in manylinux container for ${{ matrix.platform }}"
+          echo "Building in manylinux container for ${MATRIX_PLATFORM}"
           mkdir -p docker_output
           docker run --rm \
             -v "$(pwd):/root/llvmlite" \
@@ -148,10 +156,11 @@ jobs:
         if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
+          MATRIX_RECIPE: ${{ matrix.recipe }}
         run: |
           set -x
           mkdir -p "${CONDA_CHANNEL_DIR}"
-          conda-build -c defaults "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
+          conda-build -c defaults "./conda-recipes/${MATRIX_RECIPE}" "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Upload conda package

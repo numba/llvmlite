@@ -31,10 +31,16 @@ env:
   VALIDATION_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
 
+permissions:
+  contents: read
+
 jobs:
   osx-arm64-build:
     name: osx-arm64-build
     runs-on: macos-14
+    permissions:
+      contents: read
+      actions: read  # download llvmdev artifact from another workflow run
     defaults:
       run:
         shell: bash -elx {0}
@@ -48,6 +54,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@8ee1f361103df19b6f8c8655fd3967a8ecb162d5 # v4.0.1
@@ -66,6 +73,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install build dependencies
+        env:
+          LLVMDEV_RUN_ID: ${{ inputs.llvmdev_run_id }}
         run: |
           if [[ "${{ matrix.python-version }}" == *t ]]; then
               PY_VER=${{ matrix.python-version }}
@@ -73,7 +82,7 @@ jobs:
           else
               conda install -c defaults python="${{ matrix.python-version }}"
           fi
-          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
+          if [ -n "$LLVMDEV_RUN_ID" ]; then
               CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
               conda install -c defaults -c "$CHAN" "llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
           else
@@ -138,6 +147,8 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@8ee1f361103df19b6f8c8655fd3967a8ecb162d5 # v4.0.1
