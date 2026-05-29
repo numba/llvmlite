@@ -487,14 +487,9 @@ define double @foo(i32 %i, double %j) optnone noinline {
 }
 """
 
-# A strided store loop used to test that optsize/minsize suppress
-# auto-vectorisation.
-#
-# At O3 without size attributes LLVM splats i16 42 into a vector and emits
-# vector stores (the scalar "store i16 42" disappears from the IR).  With
-# optsize or minsize the vectoriser is inhibited and the scalar store is
-# preserved, so "store i16 42" remains present in the optimised output.
-asm_optsize_loop = r"""
+# A strided store loop: at O3 LLVM emits a "vector.body" block; optsize/minsize
+# inhibit the vectoriser so no "vector.body" is created.
+asm_vectorize = r"""
     ; ModuleID = '<string>'
 
     define void @stride1(ptr noalias %B, i32 %BStride) {{
@@ -2815,14 +2810,14 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         pb = self.pb(speed_level=3)
 
         # Without optsize: O3 vectorises the loop
-        mod = self.module(asm_optsize_loop)
+        mod = self.module(asm_vectorize)
         mpm = pb.getModulePassManager()
         mpm.run(mod, pb)
         optimized = str(mod)
         self.assertIn("vector.body", optimized)
 
         # With optsize: vectorisation is suppressed
-        mod_optsize = self.module(asm_optsize_loop)
+        mod_optsize = self.module(asm_vectorize)
         fn = mod_optsize.get_function("stride1")
         fn.add_function_attribute("optsize")
         self.assertIn(b"optsize", list(fn.attributes))
@@ -2833,7 +2828,7 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
         self.assertNotIn("vector.body", optimized_optsize)
 
         # With minsize: vectorisation is suppressed
-        mod_minsize = self.module(asm_optsize_loop)
+        mod_minsize = self.module(asm_vectorize)
         fn = mod_minsize.get_function("stride1")
         fn.add_function_attribute("minsize")
         self.assertIn(b"minsize", list(fn.attributes))
