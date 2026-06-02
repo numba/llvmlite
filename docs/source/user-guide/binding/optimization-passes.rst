@@ -197,6 +197,8 @@ Here's a complete example showing how to use the New Pass Manager APIs:
    :caption: examples/newpassmanagers.py
 
 
+.. _optimizing-for-size:
+
 Optimizing for size
 -------------------
 

@@ -13,6 +13,14 @@ If you are upgrading from llvmlite 0.47 or earlier on LLVM 20, read
 :ref:`llvm20` for background on the 0.45 migration, then review the notes
 below for LLVM 22.
 
+Size optimization flags removed
+===============================
+
+LLVM 22 removes the ``Os`` and ``Oz`` size optimization levels from
+``OptimizationLevel``. Size optimization is now expressed through the
+per-function ``optsize`` and ``minsize`` attributes instead. See
+:ref:`optimizing-for-size` for how to request size optimization in llvmlite.
+
 .. _llvm22-known-material-issues:
 
 Known material issues with LLVM 22
