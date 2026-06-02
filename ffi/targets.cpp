@@ -180,10 +180,18 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
     else { // catches "jitdefault" and not set, as per LLVM 5, needed for MCJIT
         // fall through, use model based on bitness
         int bits = sizeof(void *);
-        if (bits == 4)
+        if (bits == 4) {
             cm = CodeModel::Small;
-        else
-            cm = CodeModel::Large;
+        } else {
+            llvm::Triple TT(Triple);
+            // Set the CodeModel::Small for Windows ARM64 in JIT mode,
+            // since with large code model LLVM generating 4 MOV instructions, and
+            // Windows doesn't support relocating these long branch (4 MOVs).
+            if (TT.isAArch64() && TT.isOSWindows())
+                cm = CodeModel::Small;
+            else
+                cm = CodeModel::Large;
+        }
     }
 
     // llvm::Optional removed in llvm17
