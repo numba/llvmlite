@@ -11,7 +11,16 @@ if not exist "%VSINSTALLDIR%" (
 )
 
 echo "Found VS 2022 in %VSINSTALLDIR%"
-call "%VSINSTALLDIR%VC\\Auxiliary\\Build\\vcvarsall.bat" x64
+
+REM ARCH is set by conda-build (e.g., "64" for x64, "arm64" for ARM64)
+if "%ARCH%"=="arm64" (
+    set "VCVARS_ARCH=arm64"
+) else (
+    set "VCVARS_ARCH=x64"
+)
+
+echo "Building for architecture: %VCVARS_ARCH%"
+call "%VSINSTALLDIR%VC\\Auxiliary\\Build\\vcvarsall.bat" %VCVARS_ARCH%
 
 mkdir build
 cd build
@@ -20,6 +29,12 @@ REM remove GL flag for now
 set "CXXFLAGS=-MD"
 set "CC=cl.exe"
 set "CXX=cl.exe"
+
+if "%ARCH%"=="arm64" (
+    set "LLVM_ENABLE_PROJECTS=lld"
+) else (
+    set "LLVM_ENABLE_PROJECTS=lld;compiler-rt"
+)
 
 cmake -G "Ninja" ^
     -DCMAKE_BUILD_TYPE="Release" ^
@@ -40,7 +55,7 @@ cmake -G "Ninja" ^
     -DLLVM_BUILD_LLVM_C_DYLIB=no ^
     -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly ^
     -DCMAKE_POLICY_DEFAULT_CMP0111=NEW ^
-    -DLLVM_ENABLE_PROJECTS:STRING=lld;compiler-rt ^
+    -DLLVM_ENABLE_PROJECTS:STRING=%LLVM_ENABLE_PROJECTS% ^
     -DLLVM_ENABLE_ASSERTIONS=ON ^
     -DLLVM_ENABLE_DIA_SDK=OFF ^
     -DCOMPILER_RT_BUILD_BUILTINS=ON ^
