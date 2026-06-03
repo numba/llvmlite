@@ -52,7 +52,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up conda-standalone
-        uses: conda-incubator/setup-conda-standalone@18545a35fdf222190f61c631201efdf86dd05982 # main
+        uses: conda-incubator/setup-conda-standalone@00a34805e93a8b640aee5f8a20e8f481ad77e3b4 # v0.1.0
         with:
           channel: ${{ env.WIN_ARM64_CONDA_CHANNEL }}
           destination-directory: ${{ runner.temp }}/conda-standalone
