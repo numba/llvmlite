@@ -446,7 +446,7 @@ API_EXPORT(void)
 LLVMPY_AddFunctionAttr(LLVMValueRef Fn, unsigned AttrKind) {
     LLVMContextRef ctx = LLVMGetModuleContext(LLVMGetGlobalParent(Fn));
     LLVMAttributeRef attr_ref = LLVMCreateEnumAttribute(ctx, AttrKind, 0);
-    LLVMAddAttributeAtIndex(Fn, LLVMAttributeReturnIndex, attr_ref);
+    LLVMAddAttributeAtIndex(Fn, LLVMAttributeFunctionIndex, attr_ref);
 }
 
 API_EXPORT(int)

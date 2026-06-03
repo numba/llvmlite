@@ -24,7 +24,7 @@ class PassManagerMixin():
     def pb(self):
         llvm.initialize_native_target()
         tm = llvm.Target.from_default_triple().create_target_machine()
-        pto = llvm.create_pipeline_tuning_options(speed_level=0, size_level=0)
+        pto = llvm.create_pipeline_tuning_options(speed_level=0)
         return llvm.create_pass_builder(tm, pto)
 
 
