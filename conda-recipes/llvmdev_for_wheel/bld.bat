@@ -31,6 +31,8 @@ set "CC=cl.exe"
 set "CXX=cl.exe"
 
 if "%ARCH%"=="arm64" (
+    REM compiler-rt excluded for win-arm64 (as of 2026-06-03):
+    REM Build fails in aarch64/fp_mode.c and cpu_model/aarch64.c with MSVC
     set "LLVM_ENABLE_PROJECTS=lld"
 ) else (
     set "LLVM_ENABLE_PROJECTS=lld;compiler-rt"
