@@ -1,3 +1,33 @@
+v0.48.0rc1 (June 4, 2026)
+-------------------------
+
+This release of llvmlite introduces support for LLVM 22. For more information
+about the state of the support and breaking changes, please see: https://llvmlite.readthedocs.io/en/latest/user-guide/llvm22.html
+
+Pull-Requests:
+
+* PR `#1406 <https://github.com/numba/llvmlite/pull/1406>`_: update changelog for `0.47.0rc1` (`swap357 <https://github.com/swap357>`_)
+* PR `#1407 <https://github.com/numba/llvmlite/pull/1407>`_: chore(deps): update actions/download-artifact action to v8.0.1 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1408 <https://github.com/numba/llvmlite/pull/1408>`_: chore(deps): pin pypa/gh-action-pypi-publish action to ed0c539 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1409 <https://github.com/numba/llvmlite/pull/1409>`_: CI: fix upload workflow (`swap357 <https://github.com/swap357>`_)
+* PR `#1413 <https://github.com/numba/llvmlite/pull/1413>`_: Cherry pick 0.47.0 (`swap357 <https://github.com/swap357>`_)
+* PR `#1415 <https://github.com/numba/llvmlite/pull/1415>`_: Update pypa/gh-action-pypi-publish digest to cef2210 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1416 <https://github.com/numba/llvmlite/pull/1416>`_: Update actions/upload-artifact action to v7.0.1 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1418 <https://github.com/numba/llvmlite/pull/1418>`_: Update conda-incubator/setup-miniconda action to v4 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1419 <https://github.com/numba/llvmlite/pull/1419>`_: upgrade llvmdev to 22.1.0 (`swap357 <https://github.com/swap357>`_)
+* PR `#1420 <https://github.com/numba/llvmlite/pull/1420>`_: refactor: conda build command on GHA workflows (`swap357 <https://github.com/swap357>`_ `esc <https://github.com/esc>`_)
+* PR `#1421 <https://github.com/numba/llvmlite/pull/1421>`_: upgrade llvmlite to llvm22 (`swap357 <https://github.com/swap357>`_ `yashssh <https://github.com/yashssh>`_)
+* PR `#1424 <https://github.com/numba/llvmlite/pull/1424>`_: CI: remove osx-64 from azure pipelines testing (`swap357 <https://github.com/swap357>`_)
+* PR `#1426 <https://github.com/numba/llvmlite/pull/1426>`_: CI: add gha workflow to build llvmdev on win-arm64 (`swap357 <https://github.com/swap357>`_)
+* PR `#1430 <https://github.com/numba/llvmlite/pull/1430>`_: update README to document support for LLVM 22 on v0.48.0 (`swap357 <https://github.com/swap357>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `renovate[bot] <https://github.com/apps/renovate>`_
+* `swap357 <https://github.com/swap357>`_
+* `yashssh <https://github.com/yashssh>`_
+
 v0.47.0 (March 31, 2026)
 ------------------------
 
