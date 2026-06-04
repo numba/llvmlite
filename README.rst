@@ -54,7 +54,7 @@ Key Benefits
 Compatibility
 =============
 
-llvmlite has been tested with Python 3.10 -- 3.13 and is likely to work with
+llvmlite has been tested with Python 3.10 -- 3.14 and is likely to work with
 greater versions.
 
 As of version 0.48.0, llvmlite requires LLVM 22.x.x on all architectures
