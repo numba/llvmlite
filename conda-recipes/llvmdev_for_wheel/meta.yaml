@@ -2,7 +2,7 @@
 {% set shortversion = "22.1" %}
 {% set version = "22.1.0" %}
 {% set sha256_llvm = "25d2e2adc4356d758405dd885fcfd6447bce82a90eb78b6b87ce0934bd077173" %}
-{% set build_number = "1" %}
+{% set build_number = "0" %}
 
 package:
   name: llvmdev
