@@ -79,14 +79,15 @@ Using ``pip``
 
 The Numba maintainers ship binary wheels:
 
-  * Numba wheels (``x86*`` architectures)
-  * llvmlite wheels (``x86*`` architectures)
+  * Numba wheels
+  * llvmlite wheels
 
 Note that the llvmlite wheels are statically linked against LLVM, as per the
 conda packages on the Numba channel. This mitigates the need for a LLVM based
-binary wheel. Note also that this, as of version 0.36, does not include the
-``aarch64`` architectures, for example installation on a Raspberry Pi is not
-supported.
+binary wheel. Binary wheels are published for ``x86_64`` Linux, ``aarch64`` Linux,
+``arm64`` macOS, and Windows.  Platforms without a matching wheel (for
+example Raspberry Pi on older manylinux baselines) may still need to build
+from source.
 
 The Numba maintainers ship an ``sdist`` for:
 
@@ -125,8 +126,9 @@ Things to "fix" it...
 
 3. Otherwise: you will probably need to build from source, this means providing
    an LLVM. If you have conda available you could use this to bootstrap the
-   installation with a working ``llvm``/``llvmdev`` package. Learn more about
-   compiling from source in the section on `Building manually`_ below.
+   installation with a working ``llvmdev`` package from the
+   ``numba/label/llvm`` channel (see `Compiling LLVM`_ below). Learn more about
+   compiling from source in the section on `Building manually`_ below,
    and in particular note the use of the ``CMAKE_PREFIX_PATH`` environment
    variable for specifying the location of your LLVM installation.
 
