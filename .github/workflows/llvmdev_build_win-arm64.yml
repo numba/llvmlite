@@ -55,13 +55,14 @@ jobs:
         uses: conda-incubator/setup-conda-standalone@00a34805e93a8b640aee5f8a20e8f481ad77e3b4 # v0.1.0
         with:
           channel: ${{ env.WIN_ARM64_CONDA_CHANNEL }}
+          conda-standalone-version: 26.3.2.post1
           destination-directory: ${{ runner.temp }}/conda-standalone
 
       - name: Install conda-build
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" --yes conda-build
+            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main --yes conda-build
           echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
