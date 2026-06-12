@@ -36,11 +36,10 @@ target_machine = target.create_target_machine()
 
 # NEW PASS MANAGER API:
 # Create pipeline tuning options with optimization settings
-pto = llvm.create_pipeline_tuning_options(speed_level=2, size_level=0)
+pto = llvm.create_pipeline_tuning_options(speed_level=2)
 # LEGACY EQUIVALENT:
 # pmb = llvm.PassManagerBuilder()
 # pmb.opt_level = 2
-# pmb.size_level = 0
 
 # Optionally customize the tuning options
 pto.loop_vectorization = True

@@ -211,6 +211,12 @@ The ValueRef class
 
         The value is a constant.
 
+   * .. method:: add_function_attribute(attr)
+
+        Add an attribute to this value, where *attr* is a string such as
+        ``"optsize"``, ``"minsize"`` or ``"noinline"``. Only valid for
+        function values.
+
    * .. method:: get_constant_value(self, signed_int=False, round_fp=False)
 
         Return the constant value, either as a literal (for example, int

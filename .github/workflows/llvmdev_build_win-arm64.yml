@@ -1,0 +1,92 @@
+name: llvmdev-win-arm64
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/llvmdev_build_win-arm64.yml
+      - conda-recipes/llvmdev/**
+      - conda-recipes/llvmdev_for_wheel/**
+  label:
+    types: [created]
+  workflow_dispatch:
+
+concurrency:
+  # Concurrency group that uses the workflow name and PR number if available
+  # or commit SHA as a fallback. If a new build is triggered under that
+  # concurrency group while a previous build is running it will be canceled.
+  # Repeated pushes to a PR will cancel all previous builds, while multiple
+  # merges to master will not cancel.
+  group: >-
+    ${{ github.workflow }}-
+    ${{ github.event.pull_request.number
+      || toJson(github.event.inputs)
+      || github.event.label.name
+      || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  ARTIFACT_RETENTION_DAYS: 7
+  # win-arm64 has no Miniconda installer, so the base environment is
+  # bootstrapped from conda-standalone using the win-arm64 native channel.
+  WIN_ARM64_CONDA_CHANNEL: bootstrap-win-arm64-round-2-native
+
+jobs:
+
+  build:
+    name: ${{ matrix.recipe }}-win-arm64
+    runs-on: windows-11-arm
+    defaults:
+      run:
+        shell: bash -el {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: [llvmdev, llvmdev_for_wheel]
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up conda-standalone
+        uses: conda-incubator/setup-conda-standalone@00a34805e93a8b640aee5f8a20e8f481ad77e3b4 # v0.1.0
+        with:
+          channel: ${{ env.WIN_ARM64_CONDA_CHANNEL }}
+          conda-standalone-version: 26.3.2.post1
+          destination-directory: ${{ runner.temp }}/conda-standalone
+
+      - name: Install conda-build
+        run: |
+          export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
+          "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
+            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main --yes conda-build
+          echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
+          echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
+          echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
+          echo "${CONDA_PREFIX}/Library/bin" >> "${GITHUB_PATH}"
+
+      - name: Build and test conda package - non-linux platforms
+        env:
+          CONDA_CHANNEL_DIR: conda_channel_dir
+        run: |
+          mkdir -p "${CONDA_CHANNEL_DIR}"
+          conda-build -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main \
+            "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
+          ls -lah "${CONDA_CHANNEL_DIR}"
+
+      - name: Upload conda package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.recipe }}_win-arm64
+          path: conda_channel_dir
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+      - name: Get Workflow Run ID
+        run: |
+          echo "Current workflow run ID: ${{ github.run_id }}"
+          echo "Use this ID when triggering llvmlite workflow"

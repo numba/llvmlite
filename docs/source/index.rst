@@ -64,10 +64,15 @@ feature release. Therefore, each llvmlite version is targeted to
 a specific LLVM feature version and works across all given bugfix
 releases of that version.
 
-EXAMPLE: Llvmlite 0.12.0 works with LLVM 3.8.0 and 3.8.1, but
-it does not work with LLVM 3.7.0 or 3.9.0.
-
 Numba's requirements determine which LLVM version is supported.
+
+The Python and LLVM version requirements and historical compatibility
+table below are maintained in ``README.rst`` and included here to avoid
+duplication.
+
+.. include:: ../../README.rst
+   :start-line: 56
+   :end-line: 85
 
 API stability
 =============
