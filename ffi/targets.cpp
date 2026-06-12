@@ -142,8 +142,8 @@ LLVMPY_GetTargetDescription(LLVMTargetRef T) {
 }
 
 API_EXPORT(LLVMTargetMachineRef)
-LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
-                           const char *Features, int OptLevel,
+LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *TripleStr,
+                           const char *CPU, const char *Features, int OptLevel,
                            const char *RelocModel, const char *CodeModel,
                            int PrintMC, int JIT, const char *ABIName) {
     using namespace llvm;
@@ -202,8 +202,8 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *Triple, const char *CPU,
 
     bool jit = JIT;
 
-    return wrap(unwrap(T)->createTargetMachine(Triple, CPU, Features, opt, rm,
-                                               cm, cgol, jit));
+    return wrap(unwrap(T)->createTargetMachine(
+        llvm::Triple(TripleStr), CPU, Features, opt, rm, cm, cgol, jit));
 }
 
 API_EXPORT(void)

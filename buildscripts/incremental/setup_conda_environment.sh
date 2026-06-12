@@ -22,12 +22,12 @@ set +v
 source activate $CONDA_ENV
 set -v
 
-# Install llvmdev 20 and compiler toolchain for linux
-# 
+# Install llvmdev 22 and compiler toolchain for linux
+#
 if [[ "$(uname)" == "Linux" ]]; then
-    $CONDA_INSTALL numba/label/dev::llvmdev=20 gcc_linux-64=11 gxx_linux-64=11
+    $CONDA_INSTALL numba/label/llvm::llvmdev=22 gcc_linux-64=11 gxx_linux-64=11
 else
-    $CONDA_INSTALL numba/label/dev::llvmdev=20
+    $CONDA_INSTALL numba/label/llvm::llvmdev=22
 fi
 
 # Install dependencies for code coverage (codecov.io)

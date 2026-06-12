@@ -31,16 +31,16 @@ New Pass Manager APIs
 To manage the optimization attributes we first need to instantiate a
 :class:`PipelineTuningOptions` instance:
 
-.. function:: create_pipeline_tuning_options(speed_level=2, size_level=0)
+.. function:: create_pipeline_tuning_options(speed_level=2)
 
    Create a :class:`PipelineTuningOptions` instance.
 
-.. class:: PipelineTuningOptions(speed_level=2, size_level=0)
+.. class:: PipelineTuningOptions(speed_level=2)
 
    Creates a new PipelineTuningOptions object.
 
    The following writable attributes are available, whose default values depend
-   on the initial setting of the speed and size optimization levels:
+   on the initial setting of the optimization level:
 
    * .. attribute:: loop_interleaving
 
@@ -62,10 +62,6 @@ To manage the optimization attributes we first need to instantiate a
    * .. attribute:: speed_level
 
         The level of optimization for speed, as an integer between 0 and 3.
-
-   * .. attribute:: size_level
-
-        The level of optimization for size, as an integer between 0 and 2.
 
    * .. attribute:: inlining_threshold
 
@@ -201,6 +197,30 @@ Here's a complete example showing how to use the New Pass Manager APIs:
    :caption: examples/newpassmanagers.py
 
 
+.. _optimizing-for-size:
+
+Optimizing for size
+-------------------
+
+Size optimization is expressed through per-function attributes rather than a
+pipeline-level option.
+
+To request size optimization, add the ``optsize`` (``-Os``) or ``minsize``
+(``-Oz``) attribute to the relevant functions before running the pipeline:
+
+.. code-block:: python
+
+   fn = module.get_function("my_func")
+   fn.add_function_attribute("optsize")   # or "minsize" for -Oz
+
+   pto = create_pipeline_tuning_options(speed_level=2)
+   pass_builder = create_pass_builder(target_machine, pto)
+   pass_builder.getModulePassManager().run(module, pass_builder)
+
+With ``optsize``/``minsize`` set, size-increasing transforms such as loop
+vectorization are inhibited for those functions.
+
+
 .. _passes-migration-guide:
 
 Legacy API Migration Guide
@@ -222,14 +242,13 @@ migrate existing code:
           # Setup
           pmb = PassManagerBuilder()
           pmb.opt_level = 2
-          pmb.size_level = 0
           pmb.loop_vectorize = True
 
      - .. code-block:: python
 
           # Setup
           pto = create_pipeline_tuning_options(
-              speed_level=2, size_level=0)
+              speed_level=2)
           pto.loop_vectorization = True
           pass_builder = create_pass_builder(
               target_machine, pto)
@@ -307,11 +326,6 @@ functions and direct class instantiation provided by the New Pass Manager.
 
         The general optimization level, as an integer between 0
         and 3.
-
-   * .. attribute:: size_level
-
-        Whether and how much to optimize for size, as an integer
-        between 0 and 2.
 
    * .. attribute:: slp_vectorize
 

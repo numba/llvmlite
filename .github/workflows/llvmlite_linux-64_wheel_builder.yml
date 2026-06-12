@@ -27,8 +27,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FALLBACK_LLVMDEV_VERSION: "20"
-  CONDA_CHANNEL_NUMBA: numba/label/llvm20-wheel
+  FALLBACK_LLVMDEV_VERSION: "22"
+  CONDA_CHANNEL_NUMBA: numba/label/llvm_wheel
   VALIDATION_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
   MANYLINUX_IMAGE: "manylinux2014_x86_64"
@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
 
@@ -105,7 +105,7 @@ jobs:
           find wheelhouse -type f -name "*.whl" -print
 
       - name: Upload wheel
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: llvmlite-linux-64-py${{ matrix.python-version }}
           path: wheelhouse/*.whl
@@ -192,7 +192,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@fc2d68f6413eb2d87b895e92f8584b5b94a10167 # v3.3.0
+        uses: conda-incubator/setup-miniconda@8ee1f361103df19b6f8c8655fd3967a8ecb162d5 # v4.0.1
         with:
           python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
           auto-update-conda: true

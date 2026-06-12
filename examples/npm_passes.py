@@ -15,7 +15,7 @@ llvm.initialize_native_asmprinter()
 
 # Module to optimize
 strmod = """
-define i32 @foo3(i32* noalias nocapture readonly %src) {
+define i32 @foo3(i32* noalias captures(none) readonly %src) {
 entry:
   br label %loop.header
 
