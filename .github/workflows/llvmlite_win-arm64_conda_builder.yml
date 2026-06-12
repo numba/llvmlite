@@ -10,11 +10,10 @@ on:
       - versioneer.py
   workflow_dispatch:
     inputs:
-      upload_conda_to_anaconda:
-        description: 'Upload conda package to Anaconda Cloud (swap357 channel)'
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
         required: false
-        type: boolean
-        default: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -67,12 +66,13 @@ jobs:
           echo "${CONDA_PREFIX}/Library/bin" >> "${GITHUB_PATH}"
 
       - name: Download llvmdev artifact
-        if: env.LLVMDEV_RUN_ID != ''
+        if: ${{ inputs.llvmdev_run_id != '' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: llvmdev_win-arm64
           path: llvmdev_channel
-          run-id: ${{ env.LLVMDEV_RUN_ID }}
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build llvmlite conda package
@@ -150,46 +150,3 @@ jobs:
           conda-build --test \
             -c "${LLVMDEV_CHANNEL}" -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main \
             conda_channel_dir/win-arm64/llvmlite-*.conda
-
-  win-arm64-upload:
-    name: win-arm64-upload-py${{ matrix.python-version }}
-    needs: win-arm64-test
-    if: github.event_name == 'workflow_dispatch' && inputs.upload_conda_to_anaconda
-    runs-on: windows-11-arm
-    defaults:
-      run:
-        shell: bash -elx {0}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.14"]
-
-    steps:
-      - name: Set up conda-standalone
-        uses: conda-incubator/setup-conda-standalone@00a34805e93a8b640aee5f8a20e8f481ad77e3b4 # v0.1.0
-        with:
-          channel: ${{ env.WIN_ARM64_CONDA_CHANNEL }}
-          conda-standalone-version: 26.3.2.post1
-          destination-directory: ${{ runner.temp }}/conda-standalone
-
-      - name: Install anaconda-client
-        run: |
-          export CONDA_PREFIX="${RUNNER_TEMP}/conda-upload-env"
-          "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" -c main anaconda-client
-          echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
-          echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
-
-      - name: Download llvmlite conda package
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: llvmlite-win-arm64-conda-py${{ matrix.python-version }}
-          path: conda_channel_dir
-
-      - name: Upload conda package to Anaconda Cloud
-        env:
-          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
-        run: |
-          pkg=$(ls -1 conda_channel_dir/win-arm64/llvmlite-*.conda)
-          echo "Uploading conda package: $pkg"
-          anaconda -t "$ANACONDA_API_TOKEN" upload --force -u swap357 "$pkg"
