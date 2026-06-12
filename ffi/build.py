@@ -169,8 +169,12 @@ def find_windows_generator():
         )
 
     generators.extend([
-        # use VS2022 first
-        ('Visual Studio 17 2022', arch, 'v143'),
+        # use VS2026 first, with the v143 toolset: llvmdev packages are
+        # built with MSVC v14.44 (v143), and VS2026 ships a v143
+        # compatibility toolset alongside its native v14.5x
+        ('Visual Studio 18 2026', ('x64' if is_64bit else 'Win32'), 'v143'),
+        # try VS2022 next
+        ('Visual Studio 17 2022', ('x64' if is_64bit else 'Win32'), 'v143'),
         # try VS2019 next
         ('Visual Studio 16 2019', arch, 'v142'),
         # # This is the generator configuration for VS2017

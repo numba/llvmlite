@@ -16,7 +16,10 @@ if "%ARCH%"=="32" (
     @rem set CMAKE_GENERATOR_ARCH=Win64
     set CMAKE_GENERATOR_ARCH=x64
 )
-set CMAKE_GENERATOR=Visual Studio 17 2022
+@rem v143 toolset for ABI parity with llvmdev (built with MSVC v14.44);
+@rem VS2026 ships it as a compatibility component.
+@rem ffi/build.py falls back to VS2022/VS2019 if this generator is absent.
+set CMAKE_GENERATOR=Visual Studio 18 2026
 set CMAKE_GENERATOR_TOOLKIT=v143
 
 @rem Ensure there are no build leftovers (CMake can complain)
