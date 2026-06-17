@@ -11,6 +11,7 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
+    # Drop on LLVM upgrade that carries PR #204347 (LLVM 23)
     - ../llvm22-aarch64-windows-target-detection.patch
     # - ../llvm15-remove-use-of-clonefile.patch
     # - ../llvm15-svml.patch
