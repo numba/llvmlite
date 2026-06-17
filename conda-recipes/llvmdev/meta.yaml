@@ -11,6 +11,7 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
+    - ../llvm22-aarch64-windows-target-detection.patch
     # - ../llvm15-remove-use-of-clonefile.patch
     # - ../llvm15-svml.patch
     # - ../compiler-rt-cfi-startproc-war.patch
@@ -52,12 +53,15 @@ requirements:
 test:
   files:
     - numba-3016.ll
+    - ../test-frame-record-win-arm64.ll
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
     - $PREFIX/bin/llc -version                               # [not win]
 
     - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1        # [win]
     - if not exist %LIBRARY_LIB%\\LLVMSupport.lib exit 1     # [win]
+
+    - llc ../test-frame-record-win-arm64.ll                  # [win and arm64]
 
     - test -f $PREFIX/include/llvm/Pass.h                    # [unix]
     - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]
