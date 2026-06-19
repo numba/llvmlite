@@ -1,9 +1,12 @@
 [AArch64] Fix Windows target detection in FrameLowering
 
-Adapted from llvm/llvm-project PR #204347 to apply on the LLVM 22.1.0 release
-tree, where TargetMachine::getMCAsmInfo() still returns a pointer (the upstream
-PR targets main, where it returns a reference). The functional change and the
-upstream comment are kept verbatim; only the removed line uses ->.
+Adapted from LLVM upstream commit c327ab359a959de2e4241a5fcda409958f2c0d11 (PR #204347):
+https://github.com/llvm/llvm-project/commit/c327ab359a959de2e4241a5fcda409958f2c0d11
+
+Applied on the LLVM 22.1.0 release tree, where TargetMachine::getMCAsmInfo() still
+returns a pointer (the upstream commit targets main, where it returns a reference).
+The functional change and the upstream comment are kept verbatim; only the removed
+line uses ->.
 
 For aarch64-pc-windows-msvc-elf we would use the Windows callee-save list in
 AArch64RegisterInfo::getCalleeSavedRegs(), but FrameLowering would handle this

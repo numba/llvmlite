@@ -1,4 +1,6 @@
-; From llvm/llvm-project PR #204347. llvmdev is built with assertions,
+; From LLVM upstream commit c327ab359a959de2e4241a5fcda409958f2c0d11 (PR #204347):
+; https://github.com/llvm/llvm-project/commit/c327ab359a959de2e4241a5fcda409958f2c0d11
+; llvmdev is built with assertions,
 ; so the recipe runs the built llc on this and the unpatched backend aborts.
 
 ; This test uses a Windows triple with ELF binaries. This triple does not use
