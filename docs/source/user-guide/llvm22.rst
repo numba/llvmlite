@@ -1,51 +1,33 @@
-.. _llvm20:
+.. _llvm22:
 
 ========================
-LLVM 20 (llvmlite 0.45+)
+LLVM 22 (llvmlite 0.48+)
 ========================
 
-.. note:: llvmlite 0.48.0 and later use LLVM 22; see :ref:`llvm22`.
+As of version 0.48 llvmlite supports LLVM 22. This release upgrades the LLVM
+toolchain from LLVM 20 (llvmlite 0.45--0.47). The CMake-based build system,
+static linking defaults, and packaging layout introduced in :ref:`llvm20` are
+unchanged.
 
-As of version 0.45 llvmlite supports LLVM 20. The build system has been updated
-to use solely CMake, with added granularity about what is being consumed in
-linkage, and additional build options. The llvmlite FFI binary exposes some of
-these build options such that they can be queried at runtime. This was done
-with a view of making sure that the new 100% public GHA based build system is
-producing artifacts with the expected configurations and linkages. If you are
-building packages or locally using a custom LLVM with llvmlite, the
-installation documentation contains information about these options and how to
-use the new CMake system.
+If you are upgrading from llvmlite 0.47 or earlier on LLVM 20, read
+:ref:`llvm20` for background on the 0.45 migration, then review the notes
+below for LLVM 22.
 
-.. _llvm20-build-system:
+Size optimization flags removed
+===============================
 
-Specific changes due to LLVM 20/build system update
-===================================================
+LLVM 22 removes the ``Os`` and ``Oz`` size optimization levels from
+``OptimizationLevel``. Size optimization is now expressed through the
+per-function ``optsize`` and ``minsize`` attributes instead. See
+:ref:`optimizing-for-size` for how to request size optimization in llvmlite.
 
-#. All pointers emitted during code generation are now opaque, however,
-   llvmlite APIs typically retain the types in the API and simply erase them
-   during code generation.
+.. _llvm22-known-material-issues:
 
-#. The "LLVM legacy pass manager" has been removed along with associated APIs,
-   the "LLVM new pass manager" APIs replace these. See the
-   :ref:`legacy pass manager migration guide <passes-migration-guide>` for details
-   on migrating from the legacy API to the new pass manager.
-
-#. Initialization of LLVM core is now automatic. Calling :func:`llvmlite.binding.initialize`
-   will now raise a ``RuntimeError`` with a message indicating that initialization
-   is no longer required. See the API documentation for details.
-
-#. The wheel builds and conda packages on the ``numba`` channel are built
-   against an LLVM that has assertions enabled.
-
-#. Moved to a single CMake based build system, static linking to LLVM is now
-   default. This upgrade should make it easier for packagers of llvmlite, there
-   is one build system with minimal variation across platforms and it uses the
-   minimal required link libraries.
-
-.. _llvm20-known-material-issues:
-
-Known material issues with LLVM 20
+Known material issues with LLVM 22
 ==================================
+
+The following issues were known with LLVM 20 and may still apply on LLVM 22;
+please report regressions or fixes on the issue tracker.
 
 #. Intel SVML is currently unsupported. The patch from LLVM 15 did not apply
    cleanly and fixing it was non-trivial. It is hoped that this can be

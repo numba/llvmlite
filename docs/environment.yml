@@ -1,11 +1,12 @@
 name: rtd
 channels:
-  - numba/label/dev
+  - numba/label/llvm
+  - defaults
 dependencies:
   - python
   # pip for installing llvmlite itself
   - pip
-  - llvmdev=20
+  - llvmdev=22
   - cmake
   - make
   - docutils==0.16

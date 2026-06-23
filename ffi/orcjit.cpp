@@ -83,8 +83,9 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
                 .setOptions(template_tm->Options));
     }
     builder.setObjectLinkingLayerCreator(
-        [=](llvm::orc::ExecutionSession &session, const llvm::Triple &triple)
-            -> std::unique_ptr<llvm::orc::ObjectLayer> {
+        [=](llvm::orc::ExecutionSession &session)
+            -> llvm::Expected<std::unique_ptr<llvm::orc::ObjectLayer>> {
+            auto triple = session.getTargetTriple();
             if (useJitLink) {
                 auto linkingLayer =
                     std::make_unique<llvm::orc::ObjectLinkingLayer>(session);
@@ -108,9 +109,10 @@ LLVMPY_CreateLLJITCompiler(LLVMTargetMachineRef tm, bool suppressErrors,
                 return linkingLayer;
             } else {
                 auto linkingLayer = std::make_unique<
-                    llvm::orc::RTDyldObjectLinkingLayer>(session, []() {
-                    return std::make_unique<llvm::SectionMemoryManager>();
-                });
+                    llvm::orc::RTDyldObjectLinkingLayer>(
+                    session, [](const llvm::MemoryBuffer &) {
+                        return std::make_unique<llvm::SectionMemoryManager>();
+                    });
                 if (triple.isOSBinFormatCOFF()) {
                     linkingLayer->setOverrideObjectFlagsWithResponsibilityFlags(
                         true);

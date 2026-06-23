@@ -10,6 +10,6 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 call activate %CONDA_ENV%
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-@rem Install llvmdev 20
-call conda install -y -c defaults numba/label/dev::llvmdev=20 libxml2
+@rem Install llvmdev 22
+call conda install -y -c defaults numba/label/llvm::llvmdev=22 libxml2
 if %errorlevel% neq 0 exit /b %errorlevel%
