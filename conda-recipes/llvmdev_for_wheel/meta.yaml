@@ -67,6 +67,11 @@ test:
     - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1        # [win]
     - if not exist %LIBRARY_LIB%\\LLVMSupport.lib exit 1     # [win]
 
+    # Regression check for the AArch64 Windows frame-record fix
+    # (https://github.com/llvm/llvm-project/issues/204060).
+    # Only catches the bug on an assertion-enabled LLVM (this recipe is one):
+    # the unpatched backend aborts here. A release/no-assertions LLVM exits 0
+    # and silently emits a corrupted frame record, so the test would pass.
     - llc ../test-frame-record-win-arm64.ll                  # [win and arm64]
 
     - test -f $PREFIX/include/llvm/Pass.h                    # [unix]
