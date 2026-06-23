@@ -1,0 +1,31 @@
+[AArch64] Fix Windows target detection in FrameLowering
+
+Adapted from LLVM upstream commit c327ab359a959de2e4241a5fcda409958f2c0d11 (PR #204347):
+https://github.com/llvm/llvm-project/commit/c327ab359a959de2e4241a5fcda409958f2c0d11
+
+Applied on the LLVM 22.1.0 release tree, where TargetMachine::getMCAsmInfo() still
+returns a pointer (the upstream commit targets main, where it returns a reference).
+The functional change and the upstream comment are kept verbatim; only the removed
+line uses ->.
+
+For aarch64-pc-windows-msvc-elf we would use the Windows callee-save list in
+AArch64RegisterInfo::getCalleeSavedRegs(), but FrameLowering would handle this
+like Linux, and fail to invalidate the (x29, x28) pairing.
+
+This patch switches back to using AArch64Subtarget::isTargetWindows(), which
+aligns with getCalleeSavedRegs().
+
+diff --git a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
+--- a/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
++++ b/llvm/lib/Target/AArch64/AArch64FrameLowering.cpp
+@@ -384,5 +384,9 @@
+ }
+
+ static bool isTargetWindows(const MachineFunction &MF) {
+-  return MF.getTarget().getMCAsmInfo()->usesWindowsCFI();
++  // TODO: Should this include targets like UEFI (which use Windows CFI)?
++  // Note: Currently, there is not AArch64 support for UEFI. The value returned
++  // here must align with UsesWinAAPCS (as determined by getCalleeSavedRegs())
++  // so we use invalidateWindowsRegisterPairing() where appropriate.
++  return MF.getSubtarget<AArch64Subtarget>().isTargetWindows();
+ }
