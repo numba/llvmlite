@@ -157,7 +157,8 @@ endif()
 add_library(llvmlite SHARED assembly.cpp bitcode.cpp config.cpp core.cpp initfini.cpp
             module.cpp value.cpp executionengine.cpp type.cpp
             targets.cpp dylib.cpp linker.cpp object_file.cpp
-            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp)
+            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp
+            neworcjit.cpp)
 
 
 # Determine whether libstdc++ should be statically linked (or not).
