@@ -183,7 +183,7 @@ LLVMPY_CreateTargetMachine(LLVMTargetRef T, const char *TripleStr,
         if (bits == 4) {
             cm = CodeModel::Small;
         } else {
-            llvm::Triple TT(Triple);
+            llvm::Triple TT(TripleStr);
             // Set the CodeModel::Small for Windows ARM64 in JIT mode,
             // since with large code model LLVM generating 4 MOV instructions, and
             // Windows doesn't support relocating these long branch (4 MOVs).
