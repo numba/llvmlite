@@ -1,5 +1,5 @@
-v0.48.0rc1 (June 4, 2026)
--------------------------
+v0.48.0 (June 30, 2026)
+-----------------------
 
 This release of llvmlite introduces support for LLVM 22. For more information
 about the state of the support and breaking changes, please see: https://llvmlite.readthedocs.io/en/latest/user-guide/llvm22.html
