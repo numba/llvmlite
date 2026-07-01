@@ -21,6 +21,8 @@ Pull-Requests:
 * PR `#1426 <https://github.com/numba/llvmlite/pull/1426>`_: CI: add gha workflow to build llvmdev on win-arm64 (`swap357 <https://github.com/swap357>`_)
 * PR `#1430 <https://github.com/numba/llvmlite/pull/1430>`_: update README to document support for LLVM 22 on v0.48.0 (`swap357 <https://github.com/swap357>`_)
 * PR `#1432 <https://github.com/numba/llvmlite/pull/1432>`_: update changelog for `0.48.0rc1` (`swap357 <https://github.com/swap357>`_)
+* PR `#1434 <https://github.com/numba/llvmlite/pull/1434>`_: CI: fix llvmdev recipe and workflow for `win-arm64` (`swap357 <https://github.com/swap357>`_)
+* PR `#1437 <https://github.com/numba/llvmlite/pull/1437>`_: update build scripts to support Visual Studio 2026 (`swap357 <https://github.com/swap357>`_)
 * PR `#1446 <https://github.com/numba/llvmlite/pull/1446>`_: update CHANGE_LOG for v0.48.0 final release (`swap357 <https://github.com/swap357>`_)
 
 Authors:

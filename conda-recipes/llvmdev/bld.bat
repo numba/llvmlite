@@ -1,16 +1,16 @@
 REM base on https://github.com/AnacondaRecipes/llvmdev-feedstock/blob/master/recipe/bld.bat
 echo on
 
-REM First, setup the VS2022 environment
-for /F "usebackq tokens=*" %%i in (`vswhere.exe -nologo -products * -version "[17.0,18.0)" -property installationPath`) do (
+REM First, setup the VS environment (VS2022 or VS2026)
+for /F "usebackq tokens=*" %%i in (`vswhere.exe -nologo -products * -version "[17.0,19.0)" -property installationPath`) do (
   set "VSINSTALLDIR=%%i\\"
 )
 if not exist "%VSINSTALLDIR%" (
-  echo "Could not find VS 2022"
+  echo "Could not find VS 2022 or VS 2026"
   exit /B 1
 )
 
-echo "Found VS 2022 in %VSINSTALLDIR%"
+echo "Found VS in %VSINSTALLDIR%"
 
 REM ARCH is set by conda-build (e.g., "64" for x64, "arm64" for ARM64)
 if "%ARCH%"=="arm64" (
@@ -20,7 +20,10 @@ if "%ARCH%"=="arm64" (
 )
 
 echo "Building for architecture: %VCVARS_ARCH%"
-call "%VSINSTALLDIR%VC\\Auxiliary\\Build\\vcvarsall.bat" %VCVARS_ARCH%
+REM Pin MSVC v14.44 (v143): the vs2022 activation package and llvmlite's
+REM link step are v14.44; VS2026 would otherwise default to v14.5x, and
+REM v14.5x objects cannot be linked by a v14.44 toolset.
+call "%VSINSTALLDIR%VC\\Auxiliary\\Build\\vcvarsall.bat" %VCVARS_ARCH% -vcvars_ver=14.44
 
 mkdir build
 cd build
