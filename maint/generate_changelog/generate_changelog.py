@@ -10,9 +10,9 @@ Prints to stdout by default; pass ``--write`` to prepend the section to
 or ``gh auth token``.
 
 Examples:
-  python generate_changelog.py
-  python generate_changelog.py --write
-  python generate_changelog.py --start v0.47.0 --repo numba/llvmlite
+  python maint/generate_changelog/generate_changelog.py
+  python maint/generate_changelog/generate_changelog.py --write
+  python maint/generate_changelog/generate_changelog.py --start v0.47.0 --repo numba/llvmlite
 """
 
 import os
