@@ -29,6 +29,7 @@ concurrency:
 env:
   FALLBACK_LLVMDEV_VERSION: "22"
   CONDA_CHANNEL_NUMBA: numba/label/llvm_wheel
+  BUILD_PYTHON_VERSION: "3.12"
   VALIDATION_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
 
@@ -39,10 +40,6 @@ jobs:
     defaults:
       run:
         shell: bash -elx {0}
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
-      fail-fast: false
 
     steps:
       - name: Clone repository
@@ -59,7 +56,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.BUILD_PYTHON_VERSION }}
           allow-prereleases: true
 
       - name: Download llvmdev Artifact
@@ -99,7 +96,7 @@ jobs:
       - name: Upload llvmlite wheel
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: llvmlite-win-64-py${{ matrix.python-version }}
+          name: llvmlite-win-64
           path: dist/*.whl
           compression-level: 0
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
@@ -115,10 +112,6 @@ jobs:
     defaults:
       run:
         shell: bash -elx {0}
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
-      fail-fast: false
     steps:
       - name: Clone repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -136,7 +129,7 @@ jobs:
       - name: Download llvmlite wheels
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: llvmlite-win-64-py${{ matrix.python-version }}
+          name: llvmlite-win-64
           path: dist
 
       - name: Validate wheels
@@ -170,7 +163,7 @@ jobs:
       - name: Download llvmlite wheel
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: llvmlite-win-64-py${{ matrix.python-version }}
+          name: llvmlite-win-64
           path: dist
 
       - name: Install and test
@@ -201,10 +194,6 @@ jobs:
     defaults:
       run:
         shell: bash -elx {0}
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
-      fail-fast: false
     steps:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
@@ -219,7 +208,7 @@ jobs:
       - name: Download llvmlite wheel
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: llvmlite-win-64-py${{ matrix.python-version }}
+          name: llvmlite-win-64
           path: dist
 
       - name: Upload wheel to Anaconda Cloud
