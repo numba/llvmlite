@@ -179,6 +179,10 @@ if bdist_wheel is not None:
             # The build isn't platform-independent
             self.root_is_pure = False
 
+        def get_tag(self):
+            _, _, plat = bdist_wheel.get_tag(self)
+            return 'py3', 'none', plat
+
     cmdclass.update({'bdist_wheel': LLvmliteBDistWheel})
 
 # A stub C-extension to make bdist_wheel build an arch dependent build
