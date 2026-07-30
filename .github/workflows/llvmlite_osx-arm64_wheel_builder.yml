@@ -45,7 +45,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
@@ -138,7 +138,7 @@ jobs:
 
     steps:
       - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
@@ -160,11 +160,8 @@ jobs:
           whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
           twine check "$whl"
           echo "Installing lief for distribution testing"
-          # TODO: make unconditional when PyLIEF ships free-threaded wheels
-          if [[ "${{ matrix.python-version }}" != *t ]]; then
-              python -m pip install -v lief
-          fi
-          python -m pip install -v "$whl"
+          python -m pip install -v lief
+          cd dist && python -m pip install -v ./*.whl
           DYLIB_PATH=$(find "$(python -c "import llvmlite; print(llvmlite.__path__[0])")" -name "libllvmlite.dylib")
           echo "Found dylib at: $DYLIB_PATH" && otool -L "$DYLIB_PATH"
           python -m llvmlite.tests

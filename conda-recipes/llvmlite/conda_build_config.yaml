@@ -14,3 +14,7 @@ c_compiler:              # [win]
   - vs2022               # [win]
 cxx_compiler:            # [win]
   - vs2022               # [win]
+
+target_platform:
+  - win-64               # [win and not arm64]
+  - win-arm64            # [win and arm64]

@@ -20,7 +20,7 @@ def create_mcjit_compiler(module, target_machine, use_lmm=None):
     systems, ``False`` otherwise).
     """
     if use_lmm is None:
-        use_lmm = platform.machine() in ('arm64', 'aarch64')
+        use_lmm = platform.machine().lower() in ('arm64', 'aarch64')
 
     with ffi.OutputString() as outerr:
         engine = ffi.lib.LLVMPY_CreateMCJITCompiler(

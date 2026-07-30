@@ -11,6 +11,8 @@ source:
   - url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
     sha256: {{ sha256_llvm }}
     patches:
+    # Drop on LLVM upgrade that carries PR #204347 (LLVM 23)
+    - ../llvm22-aarch64-windows-target-detection.patch
     # - ../llvm15-remove-use-of-clonefile.patch
     # - ../llvm15-svml.patch
     # - ../compiler-rt-cfi-startproc-war.patch
@@ -52,12 +54,20 @@ requirements:
 test:
   files:
     - numba-3016.ll
+    - ../test-frame-record-win-arm64.ll
   commands:
     - $PREFIX/bin/llvm-config --libs                         # [not win]
     - $PREFIX/bin/llc -version                               # [not win]
 
     - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1        # [win]
     - if not exist %LIBRARY_LIB%\\LLVMSupport.lib exit 1     # [win]
+
+    # Regression check for the AArch64 Windows frame-record fix
+    # (https://github.com/llvm/llvm-project/issues/204060).
+    # Only catches the bug on an assertion-enabled LLVM (this recipe is one):
+    # the unpatched backend aborts here. A release/no-assertions LLVM exits 0
+    # and silently emits a corrupted frame record, so the test would pass.
+    - llc ../test-frame-record-win-arm64.ll                  # [win and arm64]
 
     - test -f $PREFIX/include/llvm/Pass.h                    # [unix]
     - test -f $PREFIX/lib/libLLVMSupport.a                   # [unix]

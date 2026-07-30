@@ -9,6 +9,8 @@ if "%ARCH%"=="32" (
     @rem VS2022:
     @rem set CMAKE_GENERATOR_ARCH=
     set CMAKE_GENERATOR_ARCH=Win32
+) else if "%ARCH%"=="arm64" (
+    set CMAKE_GENERATOR_ARCH=ARM64
 ) else (
     @rem VS2022
     @rem set CMAKE_GENERATOR_ARCH=Win64
