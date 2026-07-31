@@ -161,7 +161,7 @@ jobs:
           twine check "$whl"
           echo "Installing lief for distribution testing"
           python -m pip install -v lief
-          cd dist && python -m pip install -v ./*.whl
+          python -m pip install -v "$whl"
           DYLIB_PATH=$(find "$(python -c "import llvmlite; print(llvmlite.__path__[0])")" -name "libllvmlite.dylib")
           echo "Found dylib at: $DYLIB_PATH" && otool -L "$DYLIB_PATH"
           python -m llvmlite.tests
