@@ -348,11 +348,19 @@ Conversions
 
 * .. method:: IRBuilder.ptrtoint(value, typ, name='')
 
-     Convert pointer *value* to integer type *typ*.
+     Cast pointer to integer:
+          name = (typ) value
+
+     Warning: Since LLVM22, this is affected by changing pointer provenance
+     behavior. See docs :ref:`llvm22-pointer-provenance`.
 
 * .. method:: IRBuilder.inttoptr(value, typ, name='')
 
-     Convert integer *value* to pointer type *typ*.
+     Cast integer to pointer:
+          name = (typ) value
+
+     Warning: Since LLVM22, this is affected by changing pointer provenance
+     behavior. See docs :ref:`llvm22-pointer-provenance`.
 
 * .. method:: IRBuilder.bitcast(value, typ, name='')
 

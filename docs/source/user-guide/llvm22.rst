@@ -21,6 +21,26 @@ LLVM 22 removes the ``Os`` and ``Oz`` size optimization levels from
 per-function ``optsize`` and ``minsize`` attributes instead. See
 :ref:`optimizing-for-size` for how to request size optimization in llvmlite.
 
+
+.. _llvm22-pointer-provenance:
+
+Pointer Provenance
+===================
+
+In LLVM 22, we found that using ``inttoptr`` and/or ``ptrtoint`` exposes
+current uncertainty in LLVM's pointer provenance design:
+
+    LLVM currently ignores the fact that ptrtoint has an (exposure)
+    side-effect
+
+(from `This Year in LLVM 2025
+<https://www.npopov.com/2026/01/31/This-year-in-LLVM-2025.html#ptrtoaddr>`_)
+
+A `numba issue
+<https://github.com/numba/numba/issues/10695#issuecomment-4984483266>`_
+demonstrates undefined behavior arising after optimization passes. We
+advise users to avoid ``inttoptr`` and ``ptrtoint`` in general.
+
 .. _llvm22-known-material-issues:
 
 Known material issues with LLVM 22
