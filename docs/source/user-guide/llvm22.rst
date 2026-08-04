@@ -30,7 +30,7 @@ Pointer Provenance
 In LLVM 22, ``inttoptr`` and ``ptrtoint`` use exposes current uncertainty
 in LLVM's pointer provenance design:
 
-    LLVM currently ignores the fact that ptrtoint has an (exposure)
+    LLVM currently ignores the fact that ``ptrtoint`` has an (exposure)
     side-effect
 
 (from `This Year in LLVM 2025
@@ -52,10 +52,10 @@ computed via integer round-trip instead of ``getelementptr``:
     %addr      = inttoptr i64 %addr_i to ptr     ; provenance nominally restored
     %val       = load double, ptr %addr
 
-The IR above is legal per `LangRef <https://llvm.org/docs/LangRef.html#pointer-aliasing-rules>`_, 
-``inttoptr`` result is defined to be based on all pointer
-values contributing to the integer. However, During loop
-unrolling, ``SCEVExpander`` cannot recover a real base pointer from the
+The IR above is legal per the `LangRef <https://llvm.org/docs/LangRef.html#pointer-aliasing-rules>`_, 
+the ``inttoptr`` result is defined to be based on all pointer
+values contributing to the integer. However, during loop
+unrolling, the ``SCEVExpander`` pass cannot recover a real base pointer from the
 integer expression and rematerializes the address on ``ptr null``:
 
 .. code-block:: llvm
@@ -63,14 +63,15 @@ integer expression and rematerializes the address on ``ptr null``:
     %addr = getelementptr i8, ptr null, i64 %offset
     %val  = load double, ptr %addr
 
-A load off a null-based pointer is poison/undefined behavior. This caused 
+A load from a null-based pointer is poison/undefined behavior. This causes 
 unexpected behavior and miscompilation in the Numba case.
 
-This issue is not Numba-specific. 
-This loop-unroll-driven null-gep case is the observed failure mode. 
-Other similar passes may trigger equivalent provenance loss through
-``inttoptr``/``ptrtoint``. Avoid ``inttoptr`` and ``ptrtoint``
-whenever possible; use gep-based address computation instead.
+This loop-unroll-driven null-GEP case is the observed failure mode,
+though this issue is not Numba specific. It is also possible that 
+other similar passes may trigger equivalent provenance loss through
+``inttoptr``/``ptrtoint``. To avoid this issue, it is best to avoid using
+``inttoptr`` and ``ptrtoint`` whenever possible; use GEP-based
+address computation instead.
 
 .. _llvm22-known-material-issues:
 
