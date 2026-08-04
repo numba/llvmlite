@@ -723,8 +723,8 @@ class IRBuilder(object):
         Cast pointer to integer:
             name = (typ) value
 
-        Warning: Since LLVM 22, this is affected by changes in pointer provenance
-        behavior. See docs :ref:`llvm22-pointer-provenance`.
+        Warning: Since LLVM 22, this is affected by changes in pointer
+        provenance behavior. See docs :ref:`llvm22-pointer-provenance`.
         """
 
     @_castop('inttoptr')
@@ -733,8 +733,8 @@ class IRBuilder(object):
         Cast integer to pointer:
             name = (typ) value
 
-        Warning: Since LLVM 22, this is affected by changes in pointer provenance
-        behavior. See docs :ref:`llvm22-pointer-provenance`.
+        Warning: Since LLVM 22, this is affected by changes in pointer
+        provenance behavior. See docs :ref:`llvm22-pointer-provenance`.
         """
 
     #
