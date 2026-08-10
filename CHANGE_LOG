@@ -1,5 +1,5 @@
-v0.49.0rc1 (July 22, 2026)
---------------------------
+v0.49.0 (August 10, 2026)
+-------------------------
 
 Highlights of this release include:
 
@@ -21,6 +21,7 @@ Pull-Requests:
 * PR `#1450 <https://github.com/numba/llvmlite/pull/1450>`_: Cherry pick 0.48 (`sklam <https://github.com/sklam>`_ `swap357 <https://github.com/swap357>`_)
 * PR `#1452 <https://github.com/numba/llvmlite/pull/1452>`_: Update pypa/gh-action-pypi-publish digest to ba38be9 (`renovate[bot] <https://github.com/apps/renovate>`_)
 * PR `#1453 <https://github.com/numba/llvmlite/pull/1453>`_: Update actions/setup-python action to v7 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1457 <https://github.com/numba/llvmlite/pull/1457>`_: update changelog for `0.49.0rc1` (`swap357 <https://github.com/swap357>`_)
 
 Authors:
 
