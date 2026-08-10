@@ -7,7 +7,7 @@ Highlights of this release include:
 - Fix for invalid fixup errors on Windows ARM64.
 - Warnings on ``ptrtoint``/``inttoptr`` for LLVM 22 pointer provenance
   issues that can cause miscompilation; prefer GEP-based address computation.
-  See: https://llvmlite.readthedocs.io/en/latest/user-guide/llvm22.html#pointer-provenance
+  See: https://llvmlite.readthedocs.io/en/v0.49.0/user-guide/llvm22.html#pointer-provenance
 
 Pull-Requests:
 
