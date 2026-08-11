@@ -23,6 +23,8 @@ conda activate $envname
 
 if [ -n "$LLVMDEV_ARTIFACT_PATH" ] && [ -d "$LLVMDEV_ARTIFACT_PATH" ]; then
     conda install -y "$LLVMDEV_ARTIFACT_PATH"/llvmdev-*.conda --no-deps
+elif [ -n "$CONDA_CHANNEL_NUMBA" ]; then
+    conda install -y -c defaults "${CONDA_CHANNEL_NUMBA}"::llvmdev=22
 else
     conda install -y -c defaults numba/label/llvm_wheel::llvmdev=22 --no-deps
 fi

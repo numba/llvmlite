@@ -15,4 +15,9 @@ else
 fi
 conda activate buildenv
 conda list
+# Add conda-forge to top of the channels list, it's necessary for RISC-V
+conda config --show channels
+if [[ "$(uname -m)" == "riscv64" ]]; then
+    conda config --add channels conda-forge
+fi
 conda-build -c defaults /root/llvmlite/conda-recipes/llvmdev_for_wheel --output-folder=/root/llvmlite/docker_output
