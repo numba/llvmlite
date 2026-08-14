@@ -1,3 +1,42 @@
+v0.49.0 (August 11, 2026)
+-------------------------
+
+Highlights of this release include:
+
+- Support for Windows ARM64 (`win-arm64`) conda packages and wheels.
+- Fix for invalid fixup errors on Windows ARM64.
+- Warnings on ``ptrtoint``/``inttoptr`` for LLVM 22 pointer provenance
+  issues that can cause miscompilation; prefer GEP-based address computation.
+  See: https://llvmlite.readthedocs.io/en/v0.49.0/user-guide/llvm22.html#pointer-provenance
+
+Pull-Requests:
+
+* PR `#1427 <https://github.com/numba/llvmlite/pull/1427>`_: Fix invalid fixup errors on Windows ARM64 (`gmarkall <https://github.com/gmarkall>`_ `MugundanMCW <https://github.com/MugundanMCW>`_)
+* PR `#1428 <https://github.com/numba/llvmlite/pull/1428>`_: Update actions/checkout action to v6.0.3 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1433 <https://github.com/numba/llvmlite/pull/1433>`_: update installation doc llvm channel references (`swap357 <https://github.com/swap357>`_)
+* PR `#1435 <https://github.com/numba/llvmlite/pull/1435>`_: Add `win-arm64` support for llvmlite (`MugundanMCW <https://github.com/MugundanMCW>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1438 <https://github.com/numba/llvmlite/pull/1438>`_: Update actions/checkout action to v6.0.3 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1439 <https://github.com/numba/llvmlite/pull/1439>`_: Add LLVM FrameLowering patch to llvmdev recipes (`swap357 <https://github.com/swap357>`_)
+* PR `#1440 <https://github.com/numba/llvmlite/pull/1440>`_: Update actions/checkout action to v7 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1442 <https://github.com/numba/llvmlite/pull/1442>`_: FIX: llvmlite win-arm64 wheel builder llvmdev channel (`swap357 <https://github.com/swap357>`_)
+* PR `#1443 <https://github.com/numba/llvmlite/pull/1443>`_: Update actions/setup-python action to v6.3.0 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1447 <https://github.com/numba/llvmlite/pull/1447>`_: add GHA CI changes onto release0.48 (`swap357 <https://github.com/swap357>`_)
+* PR `#1450 <https://github.com/numba/llvmlite/pull/1450>`_: Cherry pick 0.48 (`sklam <https://github.com/sklam>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1452 <https://github.com/numba/llvmlite/pull/1452>`_: Update pypa/gh-action-pypi-publish digest to ba38be9 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1453 <https://github.com/numba/llvmlite/pull/1453>`_: Update actions/setup-python action to v7 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1457 <https://github.com/numba/llvmlite/pull/1457>`_: update changelog for `0.49.0rc1` (`swap357 <https://github.com/swap357>`_)
+* PR `#1465 <https://github.com/numba/llvmlite/pull/1465>`_: Add warnings on pointer provenance in docs. (`sklam <https://github.com/sklam>`_)
+* PR `#1468 <https://github.com/numba/llvmlite/pull/1468>`_: update changelog for `0.49.0` (`swap357 <https://github.com/swap357>`_)
+* PR `#1469 <https://github.com/numba/llvmlite/pull/1469>`_: Merge pull request #1465 from sklam/iss/ptr_provenance (`sklam <https://github.com/sklam>`_)
+
+Authors:
+
+* `gmarkall <https://github.com/gmarkall>`_
+* `MugundanMCW <https://github.com/MugundanMCW>`_
+* `renovate[bot] <https://github.com/apps/renovate>`_
+* `sklam <https://github.com/sklam>`_
+* `swap357 <https://github.com/swap357>`_
+
 v0.48.0 (June 30, 2026)
 -----------------------
 
