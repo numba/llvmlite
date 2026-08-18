@@ -14,6 +14,7 @@ source:
     patches:
     # Drop on LLVM upgrade that carries PR #204347 (LLVM 23)
     - ../llvm22-aarch64-windows-target-detection.patch
+    - ../llvm22-aarch64-oryon-sched-model.patch
     # - ../llvm15-clear-gotoffsetmap.patch
     # - ../llvm15-remove-use-of-clonefile.patch
     # - ../llvm15-svml.patch
