@@ -6,9 +6,9 @@
 Run the script below to start docker off building `llvmdev` base from the current state of the source tree:
 
 - x86_64 linux: `./buildscripts/manylinux/docker_run_x64.sh build_llvmdev.sh`
-    - uses manylinux2014 image for glibc 2.17+: `pypa.io/pypa/manylinux2014_x86_64`
+    - uses manylinux_2_28 image for glibc 2.28+: `quay.io/pypa/manylinux_2_28_x86_64`
 - aarch64 linux: `./buildscripts/manylinux/docker_run_aarch64.sh build_llvmdev.sh`
-    - uses manylinux_2_28 image for glibc 2.28+: `pypa.io/pypa/manylinux_2_28_aarch64`
+    - uses manylinux_2_28 image for glibc 2.28+: `quay.io/pypa/manylinux_2_28_aarch64`
 
 The conda packages will be stored into `<llvmlite_source_root>/docker_output`
 
