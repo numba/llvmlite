@@ -181,10 +181,7 @@ jobs:
           python -m pip install --upgrade pip wheel
 
           echo "Installing lief for distribution testing"
-          # TODO: make unconditional when PyLIEF ships free-threaded wheels
-          if [[ "${{ matrix.python-version }}" != *t ]]; then
-              python -m pip install -v lief
-          fi
+          python -m pip install -v lief
 
           # Install wheel and run tests
           cd dist

@@ -205,10 +205,7 @@ jobs:
           fi
 
           echo "Installing lief for distribution testing"
-          # TODO: make unconditional when PyLIEF ships free-threaded wheels
-          if [[ "${{ matrix.python-version }}" != *t ]]; then
-              "${PYTHON_PATH}" -m pip install -v lief
-          fi
+          "${PYTHON_PATH}" -m pip install -v lief
 
           echo "Using wheel: $whl"
           "${PYTHON_PATH}" -m pip install -v "$whl"
