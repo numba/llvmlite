@@ -32,7 +32,7 @@ env:
 jobs:
   win-arm64-build:
     name: win-arm64-build-py${{ matrix.python-version }}
-    runs-on: windows-11-arm
+    runs-on: windows-11-vs2026-arm
     defaults:
       run:
         shell: bash -elx {0}
@@ -112,7 +112,7 @@ jobs:
   win-arm64-test:
     name: win-arm64-test-py${{ matrix.python-version }}
     needs: win-arm64-build
-    runs-on: windows-11-arm
+    runs-on: windows-11-vs2026-arm
     defaults:
       run:
         shell: bash -elx {0}

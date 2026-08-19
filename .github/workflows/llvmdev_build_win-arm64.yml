@@ -37,7 +37,7 @@ jobs:
 
   build:
     name: ${{ matrix.recipe }}-win-arm64
-    runs-on: windows-11-arm
+    runs-on: windows-11-vs2026-arm
     defaults:
       run:
         shell: bash -el {0}
