@@ -41,6 +41,16 @@ python setup.py clean
 # Configure build via env vars
 export LLVMLITE_PACKAGE_FORMAT="wheel"
 
+# Set C++ ABI based on architecture
+# x86_64 llvmdev used manylinux2014 image, which uses old ABI, 
+# aarch64 uses manylinux_2_28 image, which uses new ABI
+# llvmlite now uses manylinux_2_28 image for both architectures, which uses new ABI
+ARCH=$(uname -m)
+if [ "$ARCH" = "x86_64" ]; then
+    # set old ABI for x86_64
+    export CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0 ${CXXFLAGS}"
+fi
+
 # Build wheel
 distdir=$outputdir/dist_$(uname -m)_$pyver
 rm -rf $distdir
