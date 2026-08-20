@@ -43,7 +43,7 @@ requirements:
 
 test:
   requires:
-    - py-lief
+    - py-lief # [py<315]
   imports:
     - llvmlite
     - llvmlite.binding

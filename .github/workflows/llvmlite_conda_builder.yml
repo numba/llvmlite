@@ -73,7 +73,8 @@ jobs:
     name: ${{ matrix.platform }}-py${{ matrix.python-version }}-build
     runs-on: ${{ matrix.runner }}
     env:
-      EXTRA_CHANNELS: ''
+      # Python 3.15 is temporarily on ad-testing until it lands in defaults
+      EXTRA_CHANNELS: ${{ matrix.python-version == '3.15' && '-c ad-testing/label/py315' || '' }}
     defaults:
       run:
         shell: bash -elx {0}
@@ -139,7 +140,8 @@ jobs:
     needs: [check, build]
     runs-on: ${{ matrix.runner }}
     env:
-      EXTRA_CHANNELS: ''
+      # Python 3.15 is temporarily on ad-testing until it lands in defaults
+      EXTRA_CHANNELS: ${{ matrix.python-version == '3.15' && '-c ad-testing/label/py315' || '' }}
     defaults:
       run:
         shell: bash -elx {0}

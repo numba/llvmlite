@@ -43,6 +43,11 @@ default_include = [
         "platform": "linux-64",
         "python-version": "3.14"
     },
+    {
+        "runner": runner_mapping["linux-64"],
+        "platform": "linux-64",
+        "python-version": "3.15"
+    },
 
     # linux-aarch64
     {
@@ -69,6 +74,11 @@ default_include = [
         "runner": runner_mapping["linux-aarch64"],
         "platform": "linux-aarch64",
         "python-version": "3.14"
+    },
+    {
+        "runner": runner_mapping["linux-aarch64"],
+        "platform": "linux-aarch64",
+        "python-version": "3.15"
     },
 
     # osx-arm64
@@ -97,6 +107,11 @@ default_include = [
         "platform": "osx-arm64",
         "python-version": "3.14"
     },
+    {
+        "runner": runner_mapping["osx-arm64"],
+        "platform": "osx-arm64",
+        "python-version": "3.15"
+    },
 
     # win-64
     {
@@ -123,6 +138,11 @@ default_include = [
         "runner": runner_mapping["win-64"],
         "platform": "win-64",
         "python-version": "3.14"
+    },
+    {
+        "runner": runner_mapping["win-64"],
+        "platform": "win-64",
+        "python-version": "3.15"
     },
 ]
 
