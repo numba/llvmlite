@@ -38,16 +38,13 @@ jobs:
   win-arm64-build:
     name: win-arm64-build-py${{ matrix.python-version }}
     runs-on: windows-11-arm
-    env:
-      # Python 3.15 is temporarily on ad-testing until it lands in defaults
-      EXTRA_CHANNELS: ${{ matrix.python-version == '3.15' && '-c ad-testing/label/py315' || '' }}
     defaults:
       run:
         shell: bash -elx {0}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - name: Clone repository
@@ -82,15 +79,10 @@ jobs:
           # Free-threaded builds ship as python-freethreading on conda-forge.
           if [[ "${PY_VER}" == *t ]]; then
             PY_SPEC="python-freethreading=${PY_VER%t}"
-            FT_CHANNEL="-c conda-forge"
+            EXTRA_CHANNEL="-c conda-forge"
           else
             PY_SPEC="python=${PY_VER}"
-            FT_CHANNEL=""
-          fi
-          if [ -n "${EXTRA_CHANNELS}" ]; then
-            extra_args=(${EXTRA_CHANNELS})
-          else
-            extra_args=()
+            EXTRA_CHANNEL=""
           fi
           if [ -d llvmdev_channel/win-arm64 ]; then
             LLVMDEV_SRC="-c ${GITHUB_WORKSPACE}/llvmdev_channel"
@@ -98,7 +90,7 @@ jobs:
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            ${LLVMDEV_SRC} -c "${WIN_ARM64_CONDA_CHANNEL}" "${extra_args[@]}" ${FT_CHANNEL} \
+            ${LLVMDEV_SRC} -c "${WIN_ARM64_CONDA_CHANNEL}" ${EXTRA_CHANNEL} \
             -c m2-winarm64 -c main \
             "${PY_SPEC}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" cmake libxml2 setuptools pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
@@ -142,16 +134,13 @@ jobs:
     name: win-arm64-test-py${{ matrix.python-version }}
     needs: win-arm64-build
     runs-on: windows-11-arm
-    env:
-      # Python 3.15 is temporarily on ad-testing until it lands in defaults
-      EXTRA_CHANNELS: ${{ matrix.python-version == '3.15' && '-c ad-testing/label/py315' || '' }}
     defaults:
       run:
         shell: bash -elx {0}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - name: Set up conda-standalone
@@ -169,18 +158,13 @@ jobs:
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-test-env"
           if [[ "${PY_VER}" == *t ]]; then
             PY_SPEC="python-freethreading=${PY_VER%t}"
-            FT_CHANNEL="-c conda-forge"
+            EXTRA_CHANNEL="-c conda-forge"
           else
             PY_SPEC="python=${PY_VER}"
-            FT_CHANNEL=""
-          fi
-          if [ -n "${EXTRA_CHANNELS}" ]; then
-            extra_args=(${EXTRA_CHANNELS})
-          else
-            extra_args=()
+            EXTRA_CHANNEL=""
           fi
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" "${extra_args[@]}" ${FT_CHANNEL} -c main \
+            -c "${WIN_ARM64_CONDA_CHANNEL}" ${EXTRA_CHANNEL} -c main \
             "${PY_SPEC}" pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -213,7 +197,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - name: Set up conda-standalone
