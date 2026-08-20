@@ -40,7 +40,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
       fail-fast: false
 
     steps:
@@ -54,6 +54,8 @@ jobs:
         with:
           auto-update-conda: true
           auto-activate-base: true
+          # Python 3.15 is temporarily on ad-testing until it lands in defaults
+          channels: ${{ startsWith(matrix.python-version, '3.15') && 'ad-testing/label/py315,defaults' || 'defaults' }}
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
@@ -69,7 +71,13 @@ jobs:
         run: |
           if [[ "${{ matrix.python-version }}" == *t ]]; then
               PY_VER=${{ matrix.python-version }}
-              conda install -c conda-forge python-freethreading="${PY_VER%t}"
+              if [[ "$PY_VER" == 3.15* ]]; then
+                  conda install -c ad-testing/label/py315 -c defaults python-freethreading="${PY_VER%t}"
+              else
+                  conda install -c conda-forge python-freethreading="${PY_VER%t}"
+              fi
+          elif [[ "${{ matrix.python-version }}" == "3.15" ]]; then
+              conda install -c ad-testing/label/py315 -c defaults python=3.15
           else
               conda install -c defaults python="${{ matrix.python-version }}"
           fi
@@ -133,7 +141,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
       fail-fast: false
     steps:
       - name: Clone repository
@@ -169,7 +177,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
       fail-fast: false
 
     steps:
@@ -209,7 +217,7 @@ jobs:
         shell: bash -elx {0}
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
       fail-fast: false
     steps:
       - name: Setup Miniconda
