@@ -32,7 +32,7 @@ env:
 jobs:
   win-arm64-build:
     name: win-arm64-build-py${{ matrix.python-version }}
-    runs-on: windows-11-arm
+    runs-on: windows-11-vs2026-arm
     defaults:
       run:
         shell: bash -elx {0}
@@ -59,7 +59,7 @@ jobs:
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main --yes conda-build
+            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c defaults --yes conda-build
           echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -81,7 +81,6 @@ jobs:
           PY_MATRIX: ${{ matrix.python-version }}
         run: |
           mkdir -p "${CONDA_CHANNEL_DIR}"
-          conda config --set channel_priority strict
           if [ -d llvmdev_channel/win-arm64 ]; then
             LLVMDEV_SRC="-c ${GITHUB_WORKSPACE}/llvmdev_channel"
           else
@@ -89,7 +88,7 @@ jobs:
           fi
           # bld.bat selects the ARM64 CMake generator when ARCH==arm64.
           conda-build --no-test \
-            ${LLVMDEV_SRC} -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main \
+            ${LLVMDEV_SRC} -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c defaults \
             --python="${PY_MATRIX}" \
             ./conda-recipes/llvmlite "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
@@ -112,7 +111,7 @@ jobs:
   win-arm64-test:
     name: win-arm64-test-py${{ matrix.python-version }}
     needs: win-arm64-build
-    runs-on: windows-11-arm
+    runs-on: windows-11-vs2026-arm
     defaults:
       run:
         shell: bash -elx {0}
@@ -133,7 +132,7 @@ jobs:
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main --yes conda-build
+            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c defaults --yes conda-build
           echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -148,5 +147,5 @@ jobs:
       - name: Test llvmlite conda package
         run: |
           conda-build --test \
-            -c "${LLVMDEV_CHANNEL}" -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main \
+            -c "${LLVMDEV_CHANNEL}" -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c defaults \
             conda_channel_dir/win-arm64/llvmlite-*.conda
