@@ -81,7 +81,6 @@ jobs:
           PY_MATRIX: ${{ matrix.python-version }}
         run: |
           mkdir -p "${CONDA_CHANNEL_DIR}"
-          "${CONDA_EXE}" config --set channel_priority strict
           "${CONDA_EXE}" config --add pinned_packages 'defaults::cmake'
           if [ -d llvmdev_channel/win-arm64 ]; then
             LLVMDEV_SRC="-c ${GITHUB_WORKSPACE}/llvmdev_channel"
@@ -148,7 +147,6 @@ jobs:
 
       - name: Test llvmlite conda package
         run: |
-          "${CONDA_EXE}" config --set channel_priority strict
           conda-build --test \
             -c "${LLVMDEV_CHANNEL}" -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c defaults \
             conda_channel_dir/win-arm64/llvmlite-*.conda

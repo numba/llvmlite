@@ -73,7 +73,6 @@ jobs:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |
           mkdir -p "${CONDA_CHANNEL_DIR}"
-          "${CONDA_EXE}" config --set channel_priority strict
           "${CONDA_EXE}" config --add pinned_packages 'defaults::cmake'
           conda-build -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c defaults \
             "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
