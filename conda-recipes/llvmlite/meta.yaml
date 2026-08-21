@@ -19,7 +19,7 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - vs2022_{{ target_platform  }}    # [win]
-    - cmake
+    - defaults::cmake
     - make           # [unix]
   host:
     - python
