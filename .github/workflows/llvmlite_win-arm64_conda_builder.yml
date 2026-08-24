@@ -81,8 +81,6 @@ jobs:
           PY_MATRIX: ${{ matrix.python-version }}
         run: |
           mkdir -p "${CONDA_CHANNEL_DIR}"
-          conda config --set channel_priority strict
-          conda config --add pinned_packages 'defaults::cmake'
           if [ -d llvmdev_channel/win-arm64 ]; then
             LLVMDEV_SRC="-c ${GITHUB_WORKSPACE}/llvmdev_channel"
           else
