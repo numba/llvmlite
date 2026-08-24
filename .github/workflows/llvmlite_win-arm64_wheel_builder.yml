@@ -89,6 +89,7 @@ jobs:
           else
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
+          "${CONDA_EXE}" config --add pinned_packages 'defaults::cmake'
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
             ${LLVMDEV_SRC} -c "${WIN_ARM64_CONDA_CHANNEL}" ${EXTRA_CHANNEL} \
             -c m2-winarm64 -c defaults \
