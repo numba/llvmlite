@@ -91,7 +91,7 @@ jobs:
           fi
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
             ${LLVMDEV_SRC} -c "${WIN_ARM64_CONDA_CHANNEL}" ${EXTRA_CHANNEL} \
-            -c m2-winarm64 -c main \
+            -c m2-winarm64 -c defaults \
             "${PY_SPEC}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" cmake libxml2 setuptools pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -164,7 +164,7 @@ jobs:
             EXTRA_CHANNEL=""
           fi
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" ${EXTRA_CHANNEL} -c main \
+            -c "${WIN_ARM64_CONDA_CHANNEL}" ${EXTRA_CHANNEL} -c defaults \
             "${PY_SPEC}" pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -211,7 +211,7 @@ jobs:
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-upload-env"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" -c main anaconda-client
+            -c "${WIN_ARM64_CONDA_CHANNEL}" -c defaults anaconda-client
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
 

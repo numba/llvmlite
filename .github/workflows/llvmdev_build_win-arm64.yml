@@ -62,7 +62,7 @@ jobs:
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main --yes conda-build
+            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c defaults --yes conda-build
           echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -73,7 +73,7 @@ jobs:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |
           mkdir -p "${CONDA_CHANNEL_DIR}"
-          conda-build -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main \
+          conda-build -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c defaults \
             "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
 
