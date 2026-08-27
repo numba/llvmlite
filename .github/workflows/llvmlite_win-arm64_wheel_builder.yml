@@ -93,11 +93,10 @@ jobs:
           else
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
-          "${CONDA_EXE}" config --add pinned_packages 'pkgs/main::cmake'
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
             ${LLVMDEV_SRC} -c "${BOOTSTRAP_CHANNEL}" ${EXTRA_CHANNEL} \
             -c "${M2_CHANNEL}" -c "${PKGS_MAIN}" \
-            "${PY_SPEC}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" cmake libxml2 setuptools pip
+            "${PY_SPEC}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" "cmake>=4.2" libxml2 setuptools pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Library/bin" >> "${GITHUB_PATH}"
