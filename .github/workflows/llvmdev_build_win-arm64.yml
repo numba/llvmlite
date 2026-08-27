@@ -32,12 +32,15 @@ env:
   # win-arm64 has no Miniconda installer, so the base environment is
   # bootstrapped from conda-standalone using the win-arm64 native channel.
   WIN_ARM64_CONDA_CHANNEL: bootstrap-win-arm64-round-2-native
+  BOOTSTRAP_CHANNEL: https://conda.anaconda.org/bootstrap-win-arm64-round-2-native
+  M2_CHANNEL: https://conda.anaconda.org/m2-winarm64
+  PKGS_MAIN: https://repo.anaconda.com/pkgs/main
 
 jobs:
 
   build:
     name: ${{ matrix.recipe }}-win-arm64
-    runs-on: windows-11-arm
+    runs-on: windows-11-vs2026-arm
     defaults:
       run:
         shell: bash -el {0}
@@ -62,7 +65,7 @@ jobs:
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
-            -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main --yes conda-build
+            -c "${BOOTSTRAP_CHANNEL}" -c "${M2_CHANNEL}" -c "${PKGS_MAIN}" --yes conda-build
           echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -73,7 +76,7 @@ jobs:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |
           mkdir -p "${CONDA_CHANNEL_DIR}"
-          conda-build -c "${WIN_ARM64_CONDA_CHANNEL}" -c m2-winarm64 -c main \
+          conda-build -c "${BOOTSTRAP_CHANNEL}" -c "${M2_CHANNEL}" -c "${PKGS_MAIN}" \
             "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
 
