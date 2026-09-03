@@ -35,6 +35,10 @@ Available Python installations (`<pyver>`) are:
 - cp311-cp311
 - cp312-cp312
 - cp313-cp313
+- cp314-cp314
+- cp314-cp314t
+- cp315-cp315
+- cp315-cp315t
 
 
 Reference: https://github.com/pypa/manylinux
