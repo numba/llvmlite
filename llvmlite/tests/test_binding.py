@@ -742,6 +742,7 @@ class TestDependencies(BaseTest):
         # Parse library dependencies
         lib_pat = re.compile(r'^([+-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
         deps = set()
+        musl = False
         for line in out.decode().splitlines():
             parts = line.split()
             if parts and parts[0] == 'NEEDED':
@@ -749,9 +750,15 @@ class TestDependencies(BaseTest):
                 m = lib_pat.match(dep)
                 if len(parts) != 2 or not m:
                     self.fail("invalid NEEDED line: %r" % (line,))
-                deps.add(m.group(1))
+                name = m.group(1)
+                if name.startswith('libc.musl-'):
+                    musl = True
+                    name = 'libc'
+                deps.add(name)
         # Sanity check that our dependencies were parsed ok
-        if 'libc' not in deps or 'libpthread' not in deps:
+        # musl implements the pthread API inside libc itself
+        required = {'libc'} if musl else {'libc', 'libpthread'}
+        if not required.issubset(deps):
             self.fail("failed parsing dependencies? got %r" % (deps,))
         # Ensure all dependencies are expected
         allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
