@@ -52,7 +52,8 @@ else()
 endif()
 
 include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND "${LLVM_DEFINITIONS}")
+add_definitions(${LLVM_DEFINITIONS_LIST})
 
 # Check for presence of the SVML patch in the LLVM build
 set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS})
