@@ -12,6 +12,7 @@ Highlights of this release include:
 Pull-Requests:
 
 * PR `#1454 <https://github.com/numba/llvmlite/pull/1454>`_: Update actions/checkout action to v7.0.1 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1459 <https://github.com/numba/llvmlite/pull/1459>`_: Add `win-arm64` workflows to upload config (`swap357 <https://github.com/swap357>`_)
 * PR `#1462 <https://github.com/numba/llvmlite/pull/1462>`_: remove skipping `lief` installation on GHA wheel workflows test env (`swap357 <https://github.com/swap357>`_)
 * PR `#1463 <https://github.com/numba/llvmlite/pull/1463>`_: CI: add python-3.15 and 3.15t to wheel build and test matrices (`swap357 <https://github.com/swap357>`_)
 * PR `#1464 <https://github.com/numba/llvmlite/pull/1464>`_: Update pypa/gh-action-pypi-publish digest to dc37677 (`renovate[bot] <https://github.com/apps/renovate>`_)
