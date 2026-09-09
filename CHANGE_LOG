@@ -1,3 +1,42 @@
+v0.50.0 (TBD)
+-------------
+
+Highlights of this release include:
+
+- Official support for Python 3.15 and 3.15t wheels.
+- Expanded ``win-arm64`` Python support to 3.12--3.14.
+- All Linux wheels (x86_64 and aarch64) are now tagged to be compatible
+  with GLIBC >= 2.27.
+- LLVM 22 AArch64 Oryon scheduling-model patch in ``llvmdev`` recipes.
+
+Pull-Requests:
+
+* PR `#1454 <https://github.com/numba/llvmlite/pull/1454>`_: Update actions/checkout action to v7.0.1 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1459 <https://github.com/numba/llvmlite/pull/1459>`_: Add `win-arm64` workflows to upload config (`swap357 <https://github.com/swap357>`_)
+* PR `#1462 <https://github.com/numba/llvmlite/pull/1462>`_: remove skipping `lief` installation on GHA wheel workflows test env (`swap357 <https://github.com/swap357>`_)
+* PR `#1463 <https://github.com/numba/llvmlite/pull/1463>`_: CI: add python-3.15 and 3.15t to wheel build and test matrices (`swap357 <https://github.com/swap357>`_)
+* PR `#1464 <https://github.com/numba/llvmlite/pull/1464>`_: Update pypa/gh-action-pypi-publish digest to dc37677 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1466 <https://github.com/numba/llvmlite/pull/1466>`_: CI: expand `win-arm64` py-version matrix to cover python 3.11-3.14 (`swap357 <https://github.com/swap357>`_)
+* PR `#1470 <https://github.com/numba/llvmlite/pull/1470>`_: Cherry pick 0.49 (`sklam <https://github.com/sklam>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1471 <https://github.com/numba/llvmlite/pull/1471>`_: CI: upgrade manylinux image to `manylinux_2_28` for llvmdev builds (`swap357 <https://github.com/swap357>`_)
+* PR `#1472 <https://github.com/numba/llvmlite/pull/1472>`_: Patch CompleteModel in AArch64 Oryon scheduling model (`MugundanMCW <https://github.com/MugundanMCW>`_)
+* PR `#1473 <https://github.com/numba/llvmlite/pull/1473>`_: CI: test win-arm64 on windows-11-vs2026-arm preview (`swap357 <https://github.com/swap357>`_)
+* PR `#1475 <https://github.com/numba/llvmlite/pull/1475>`_: Fixup remaining references to 3.15 (`esc <https://github.com/esc>`_)
+* PR `#1476 <https://github.com/numba/llvmlite/pull/1476>`_: CI: upgrade `macos` GHA runner image from v14 to v26 (`renovate[bot] <https://github.com/apps/renovate>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1477 <https://github.com/numba/llvmlite/pull/1477>`_: CI: drop Python 3.11 from the win-arm64 matrix (`swap357 <https://github.com/swap357>`_)
+* PR `#1478 <https://github.com/numba/llvmlite/pull/1478>`_: CI: upgrade `manylinux` image to `manylinux_2_28` for llvmlite builds (`swap357 <https://github.com/swap357>`_)
+* PR `#1480 <https://github.com/numba/llvmlite/pull/1480>`_: fix: <command-line>: error: token '=' is not valid in preprocessor expressions (`strophy <https://github.com/strophy>`_)
+* PR `#1482 <https://github.com/numba/llvmlite/pull/1482>`_: Add python 3.14 and 3.15 to available installations list (`swap357 <https://github.com/swap357>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `MugundanMCW <https://github.com/MugundanMCW>`_
+* `renovate[bot] <https://github.com/apps/renovate>`_
+* `sklam <https://github.com/sklam>`_
+* `strophy <https://github.com/strophy>`_
+* `swap357 <https://github.com/swap357>`_
+
 v0.49.0 (August 11, 2026)
 -------------------------
 
