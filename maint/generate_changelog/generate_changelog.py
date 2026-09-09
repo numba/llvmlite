@@ -2,8 +2,9 @@
 """Generate a release CHANGE_LOG section for llvmlite.
 
 Auto-detects the latest ``vX.Y.0dev0`` tag as the start point, lists the
-merged PRs since then (skipping any already in ``CHANGE_LOG``), and credits
-every author including ``Co-authored-by:`` trailers.
+merged PRs from that tag through ``HEAD`` (start inclusive; skipping any
+already in ``CHANGE_LOG``), and credits every author including
+``Co-authored-by:`` trailers.
 
 Prints to stdout by default; pass ``--write`` to prepend the section to
 ``CHANGE_LOG``. Token comes from ``--token``, ``$GITHUB_TOKEN``/``$GH_TOKEN``,
@@ -42,10 +43,13 @@ def detect_start():
 
 
 def merged_pr_numbers(start):
+    # Inclusive start: vX.Y.0dev0 is the first merge of the cycle
+    # (A..B is exclusive on A, so also parse the start commit).
     log = sh("git", "log", f"{start}..HEAD", "--oneline",
              "--grep", "Merge pull request")
-    nums = {int(m.group(1)) for line in log.split("\n")
-            if (m := re.search(r"#(\d+)", line))}
+    start_msg = sh("git", "log", "-1", "--oneline", start)
+    nums = {int(m.group(1)) for line in (log + "\n" + start_msg).split("\n")
+            if (m := re.search(r"Merge pull request #(\d+)", line))}
     return sorted(nums)
 
 
