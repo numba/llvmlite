@@ -1,0 +1,264 @@
+name: llvmlite_linux-riscv64_wheel_builder
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/llvmlite_linux-riscv64_wheel_builder.yml
+      - buildscripts/manylinux/build_llvmlite.sh
+      - buildscripts/manylinux/prepare_miniconda.sh
+      - setup.py
+      - versioneer.py
+  schedule:
+    - cron: '30 6 * * 6'  # Saturday 6:30 AM UTC
+  workflow_dispatch:
+    inputs:
+      llvmdev_run_id:
+        description: 'llvmdev workflow run ID (optional)'
+        required: false
+        type: string
+      upload_wheel_to_anaconda:
+        description: 'Upload wheel to Anaconda Cloud - numba channel'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  FALLBACK_LLVMDEV_VERSION: "22"
+  CONDA_CHANNEL_NUMBA: conda-forge
+  VALIDATION_PYTHON_VERSION: "3.14"
+  ARTIFACT_RETENTION_DAYS: 7
+  MANYLINUX_IMAGE: "manylinux_2_39_riscv64"
+
+jobs:
+  linux-riscv64-build:
+    name: linux-riscv64-build
+    runs-on: ubuntu-24.04-riscv
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.14", "3.14t", "3.15", "3.15t"]
+      fail-fast: false
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Download llvmdev Artifact
+        if: ${{ inputs.llvmdev_run_id != '' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: llvmdev_for_wheel_linux-riscv64
+          path: llvmdev_conda_packages
+          run-id: ${{ inputs.llvmdev_run_id }}
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Map Python version
+        run: |
+          # Map Python version to manylinux path
+          case "${{ matrix.python-version }}" in
+            "3.10") echo "PYTHON_PATH=cp310-cp310" >> "$GITHUB_ENV" ;;
+            "3.11") echo "PYTHON_PATH=cp311-cp311" >> "$GITHUB_ENV" ;;
+            "3.12") echo "PYTHON_PATH=cp312-cp312" >> "$GITHUB_ENV" ;;
+            "3.13") echo "PYTHON_PATH=cp313-cp313" >> "$GITHUB_ENV" ;;
+            "3.14") echo "PYTHON_PATH=cp314-cp314" >> "$GITHUB_ENV" ;;
+            "3.14t") echo "PYTHON_PATH=cp314-cp314t" >> "$GITHUB_ENV" ;;
+            "3.15") echo "PYTHON_PATH=cp315-cp315" >> "$GITHUB_ENV" ;;
+            "3.15t") echo "PYTHON_PATH=cp315-cp315t" >> "$GITHUB_ENV" ;;
+            *) echo "Invalid Python version" && exit 1 ;;
+          esac
+
+          # Define Miniconda installer URL for RISC-V
+          echo "MINICONDA_FILE=https://github.com/conda-forge/miniforge/releases/download/26.7.2-0/Miniforge3-26.7.2-0-Linux-riscv64.sh" >> "$GITHUB_ENV"
+
+      - name: Build wheel in manylinux container
+        run: |
+          LLVMDEV_ARTIFACT_PATH="/root/llvmlite/llvmdev_conda_packages"
+
+          # Run the build script in manylinux container using the existing script
+          docker run --rm \
+            -e CONDA_CHANNEL_NUMBA="${{ env.CONDA_CHANNEL_NUMBA }}" \
+            -v "$(pwd):/root/llvmlite" \
+            quay.io/pypa/${{ env.MANYLINUX_IMAGE }} \
+            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }} $LLVMDEV_ARTIFACT_PATH"
+
+          # Create wheelhouse directory for artifact upload
+          mkdir -p wheelhouse
+
+          # The script creates output in a specific location based on architecture and Python version
+          WHEEL_DIR="docker_output/dist_riscv64_${{ env.PYTHON_PATH }}/wheelhouse"
+
+          echo "Available wheels in $WHEEL_DIR:"
+          find "$WHEEL_DIR" -type f -name "*.whl" -print
+
+          cp "$WHEEL_DIR"/*.whl wheelhouse/ || echo "Warning: No matching wheel found!"
+
+          echo "--- Final wheel for upload: ---"
+          find wheelhouse -type f -name "*.whl" -print
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: llvmlite-linux-riscv64-py${{ matrix.python-version }}
+          path: wheelhouse/*.whl
+          compression-level: 0
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+      - name: Show Workflow Run ID
+        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+
+  linux-riscv64-validate:
+    name: linux-riscv64-validate
+    needs: linux-riscv64-build
+    runs-on: ubuntu-24.04-riscv
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.14", "3.14t", "3.15", "3.15t"]
+      fail-fast: false
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@8ee1f361103df19b6f8c8655fd3967a8ecb162d5 # v4.0.1
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: true
+
+      - name: Install validation dependencies
+        run: conda install -c defaults wheel twine keyring rfc3986
+
+      - name: Download llvmlite wheels
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: llvmlite-linux-riscv64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Validate wheels
+        run: |
+          cd dist
+          for WHL_FILE in *.whl; do
+            echo "=== Validating $WHL_FILE ==="
+            # Check wheel structure
+            twine check "$WHL_FILE"
+          done
+
+  linux-riscv64-test:
+    name: linux-riscv64-test
+    needs: linux-riscv64-build
+    runs-on: ubuntu-24.04-riscv
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.14", "3.14t", "3.15", "3.15t"]
+      fail-fast: false
+
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: llvmlite-linux-riscv64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Install and test
+        env:
+          LLVMLITE_DIST_TEST: "1"
+        run: |
+          # Get the Python executable path
+          PYTHON_PATH=$(which python)
+
+          # Upgrade pip and install wheel
+          "${PYTHON_PATH}" -m pip install --upgrade pip wheel
+
+          # Install wheel
+          cd dist
+          # Look for wheel matching this python version
+          PY_TAG=$(python -c "import sys; print(f'cp{sys.version_info.major}{sys.version_info.minor}')")
+          # Use find instead of ls for better handling of non-alphanumeric filenames
+          whl=$(find . -type f -name "*${PY_TAG}*.whl" | sort | head -n 1)
+
+          if [ -z "$whl" ]; then
+            echo "ERROR: No matching wheel found for Python ${{ matrix.python-version }} (tag: $PY_TAG)"
+            find . -type f -name "*.whl" -print
+            exit 1
+          fi
+
+          echo "Installing lief for distribution testing"
+          "${PYTHON_PATH}" -m pip install -v lief
+
+          echo "Using wheel: $whl"
+          "${PYTHON_PATH}" -m pip install -v "$whl"
+
+          # Run tests
+          "${PYTHON_PATH}" -m llvmlite.tests
+
+  linux-riscv64-upload:
+    name: linux-riscv64-upload
+    needs: [linux-riscv64-test, linux-riscv64-validate]
+    if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
+    runs-on: ubuntu-24.04-riscv
+    defaults:
+      run:
+        shell: bash -elx {0}
+    strategy:
+      matrix:
+        python-version: ["3.14", "3.14t", "3.15", "3.15t"]
+      fail-fast: false
+    steps:
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@8ee1f361103df19b6f8c8655fd3967a8ecb162d5 # v4.0.1
+        with:
+          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: true
+
+      - name: Install anaconda-client
+        run: conda install -c anaconda anaconda-client
+
+      - name: Download llvmlite wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: llvmlite-linux-riscv64-py${{ matrix.python-version }}
+          path: dist
+
+      - name: Upload wheel to Anaconda Cloud
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.NUMBA_CHANNEL_WHEEL_UPLOAD }}
+        run: |
+          cd dist
+          # Find appropriate wheel for Python version
+          PY_TAG="cp$(echo "${{ matrix.python-version }}" | tr -d '.')"
+          # Use find instead of ls for better handling of non-alphanumeric filenames
+          whl=$(find . -type f -name "*${PY_TAG}*.whl" | sort | head -n 1)
+
+          if [ -z "$whl" ]; then
+            echo "ERROR: No matching wheel found for Python ${{ matrix.python-version }}"
+            find . -type f -name "*.whl" -print
+            exit 1
+          fi
+
+          echo "Uploading wheel: $whl"
+          anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"

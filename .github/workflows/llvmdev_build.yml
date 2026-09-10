@@ -20,6 +20,7 @@ on:
           - all
           - linux-64
           - linux-aarch64
+          - linux-riscv64
           - osx-arm64
           - win-64
       recipe:
@@ -73,6 +74,7 @@ jobs:
     needs: check
     name: ${{ matrix.recipe }}-${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.timeout || 360 }}
     defaults:
       run:
         shell: bash -el {0}
@@ -85,7 +87,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Free up disk space
-        if: matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64'
+        if: matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64' || matrix.platform == 'linux-riscv64'
         run: |
           echo "Disk space before cleanup:" && df -h /
           # Removes pre-installed packages, frees ~20GB
@@ -100,15 +102,16 @@ jobs:
           echo "Disk space after cleanup:" && df -h /
 
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@8ee1f361103df19b6f8c8655fd3967a8ecb162d5 # v4.0.1
+        uses: luhenry/setup-miniconda@riscv64
         with:
           auto-update-conda: true
           auto-activate-base: true
           activate-environment: ''
           run-post: false
+          miniforge-version: ${{ matrix.miniforge-version }}
 
       - name: Build and test conda package in manylinux - linux platforms
-        if: (matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64') && matrix.recipe == 'llvmdev_for_wheel'
+        if: (matrix.platform == 'linux-64' || matrix.platform == 'linux-aarch64' || matrix.platform == 'linux-riscv64') && matrix.recipe == 'llvmdev_for_wheel'
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |
@@ -122,6 +125,9 @@ jobs:
           elif [[ "${{ matrix.platform }}" == "linux-aarch64" ]]; then
             MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64:2026.08.08-1"
             MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-aarch64.sh"
+          elif [[ "${{ matrix.platform }}" == "linux-riscv64" ]]; then
+            MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_39_riscv64"
+            MINICONDA_FILE="https://github.com/conda-forge/miniforge/releases/download/26.7.2-0/Miniforge3-26.7.2-0-Linux-riscv64.sh"
           fi
 
           echo "Building in manylinux container for ${{ matrix.platform }}"
@@ -140,12 +146,12 @@ jobs:
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Install conda-build
-        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
+        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64' && matrix.platform != 'linux-riscv64') || matrix.recipe != 'llvmdev_for_wheel'
         run: |
           conda install -c defaults conda-build
 
       - name: Build and test conda package - non-linux platforms
-        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64') || matrix.recipe != 'llvmdev_for_wheel'
+        if: (matrix.platform != 'linux-64' && matrix.platform != 'linux-aarch64' && matrix.platform != 'linux-riscv64') || matrix.recipe != 'llvmdev_for_wheel'
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
         run: |

@@ -12,6 +12,7 @@ inputs = os.environ.get("GITHUB_WORKFLOW_INPUT", "{}")
 runner_mapping = {
     "linux-64": "ubuntu-24.04",
     "linux-aarch64": "ubuntu-24.04-arm",
+    "linux-riscv64": "ubuntu-24.04-riscv",
     "osx-arm64": "macos-26",
     "win-64": "windows-2025",
 }
@@ -38,6 +39,21 @@ default_include = [
         "runner": runner_mapping["linux-aarch64"],
         "platform": "linux-aarch64",
         "recipe": "llvmdev_for_wheel",
+    },
+    # linux-riscv64
+    {
+        "runner": runner_mapping["linux-riscv64"],
+        "platform": "linux-riscv64",
+        "recipe": "llvmdev",
+        "miniforge-version": "latest", # Use Miniforge since Miniconda does not provide a riscv64 build
+        "timeout": 1440,
+    },
+    {
+        "runner": runner_mapping["linux-riscv64"],
+        "platform": "linux-riscv64",
+        "recipe": "llvmdev_for_wheel",
+        "miniforge-version": "latest", # Use Miniforge since Miniconda does not provide a riscv64 build
+        "timeout": 1440,
     },
     # osx-arm64
     {
