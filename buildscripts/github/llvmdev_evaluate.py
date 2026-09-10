@@ -46,12 +46,14 @@ default_include = [
         "platform": "linux-riscv64",
         "recipe": "llvmdev",
         "miniforge-version": "latest", # Use Miniforge since Miniconda does not provide a riscv64 build
+        "timeout": 1440,
     },
     {
         "runner": runner_mapping["linux-riscv64"],
         "platform": "linux-riscv64",
         "recipe": "llvmdev_for_wheel",
         "miniforge-version": "latest", # Use Miniforge since Miniconda does not provide a riscv64 build
+        "timeout": 1440,
     },
     # osx-arm64
     {

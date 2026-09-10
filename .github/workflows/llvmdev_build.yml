@@ -74,6 +74,7 @@ jobs:
     needs: check
     name: ${{ matrix.recipe }}-${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.timeout || 360 }}
     defaults:
       run:
         shell: bash -el {0}
