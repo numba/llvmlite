@@ -1052,6 +1052,13 @@ class ArgumentAttributes(AttributeSet):
         'zeroext': False,
     })
 
+    _range_re = re.compile(r'range\([^()]+\)\Z')
+
+    def add(self, name):
+        if name not in self._known and not self._range_re.fullmatch(name):
+            raise ValueError('unknown attr {!r} for {}'.format(name, self))
+        return super(AttributeSet, self).add(name)
+
     def __init__(self, args=()):
         self._align = 0
         self._dereferenceable = 0
