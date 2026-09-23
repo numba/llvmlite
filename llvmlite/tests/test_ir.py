@@ -162,6 +162,7 @@ class TestFunction(TestBase):
         # Now with parameter attributes
         func = self.function()
         func.args[0].add_attribute("zeroext")
+        func.args[0].add_attribute("range(i32 0, 10)")
         func.args[1].attributes.dereferenceable = 5
         func.args[1].attributes.dereferenceable_or_null = 10
         func.args[3].attributes.align = 4
@@ -170,12 +171,14 @@ class TestFunction(TestBase):
         asm = self.descr(func).strip()
         if not ir_layer_typed_pointers_enabled:
             self.assertEqual(asm,
-                             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", ptr nonnull align 4 %".4")"""  # noqa E501
+                             """declare noalias i32 @"my_func"(i32 range(i32 0, 10) zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", ptr nonnull align 4 %".4")"""  # noqa E501
                              )
         else:
             self.assertEqual(asm,
-                             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", i32* nonnull align 4 %".4")"""  # noqa E501
+                             """declare noalias i32 @"my_func"(i32 range(i32 0, 10) zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", i32* nonnull align 4 %".4")"""  # noqa E501
                              )
+        with self.assertRaises(ValueError):
+            func.args[0].add_attribute("range(i32 0, 10")
         # Check pickling
         self.assert_pickle_correctly(func)
 
