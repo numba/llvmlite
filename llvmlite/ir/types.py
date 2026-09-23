@@ -336,7 +336,7 @@ def _as_float(value):
     """
     Truncate to single-precision float.
     """
-    return struct.unpack('f', struct.pack('f', value))[0]
+    return struct.unpack('f', struct.pack('f', float(value)))[0]
 
 
 def _as_half(value):
@@ -344,7 +344,7 @@ def _as_half(value):
     Truncate to half-precision float.
     """
     try:
-        return struct.unpack('e', struct.pack('e', value))[0]
+        return struct.unpack('e', struct.pack('e', float(value)))[0]
     except struct.error:
         # 'e' only added in Python 3.6+
         return _as_float(value)
