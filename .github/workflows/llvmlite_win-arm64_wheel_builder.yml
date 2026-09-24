@@ -33,8 +33,6 @@ env:
   # win-arm64 has no Miniconda installer, so the base environment is
   # bootstrapped from conda-standalone using the win-arm64 native channel.
   WIN_ARM64_CONDA_CHANNEL: bootstrap-win-arm64-round-2-native
-  BOOTSTRAP_CHANNEL: https://conda.anaconda.org/bootstrap-win-arm64-round-2-native
-  M2_CHANNEL: https://conda.anaconda.org/m2-winarm64
   PKGS_MAIN: https://repo.anaconda.com/pkgs/main
   CONDA_FORGE: https://conda.anaconda.org/conda-forge
 
@@ -94,8 +92,8 @@ jobs:
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            ${LLVMDEV_SRC} -c "${BOOTSTRAP_CHANNEL}" ${EXTRA_CHANNEL} \
-            -c "${M2_CHANNEL}" -c "${PKGS_MAIN}" \
+            ${LLVMDEV_SRC} ${EXTRA_CHANNEL} \
+            -c "${PKGS_MAIN}" \
             "${PY_SPEC}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" "cmake>=4.2" libxml2 setuptools pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -168,7 +166,7 @@ jobs:
             EXTRA_CHANNEL=""
           fi
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            -c "${BOOTSTRAP_CHANNEL}" ${EXTRA_CHANNEL} -c "${PKGS_MAIN}" \
+            ${EXTRA_CHANNEL} -c "${PKGS_MAIN}" \
             "${PY_SPEC}" pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -215,7 +213,7 @@ jobs:
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-upload-env"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            -c "${BOOTSTRAP_CHANNEL}" -c "${PKGS_MAIN}" anaconda-client
+            -c "${PKGS_MAIN}" anaconda-client
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
 
