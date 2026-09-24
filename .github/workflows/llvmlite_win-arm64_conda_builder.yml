@@ -88,6 +88,7 @@ jobs:
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
           # bld.bat selects the ARM64 CMake generator when ARCH==arm64.
+          conda config --set channel_priority strict
           conda-build --no-test \
             ${LLVMDEV_SRC} -c "${PKGS_MAIN}" \
             --python="${PY_MATRIX}" \
@@ -147,6 +148,7 @@ jobs:
 
       - name: Test llvmlite conda package
         run: |
+          conda config --set channel_priority strict
           conda-build --test \
             -c "${LLVMDEV_CHANNEL}" -c "${PKGS_MAIN}" \
             conda_channel_dir/win-arm64/llvmlite-*.conda
