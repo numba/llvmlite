@@ -52,7 +52,7 @@ env:
 jobs:
 
   check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       matrix: ${{ steps.evaluate.outputs.matrix }}
     steps:
