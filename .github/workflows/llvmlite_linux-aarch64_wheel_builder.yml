@@ -36,7 +36,7 @@ env:
 jobs:
   linux-aarch64-build:
     name: linux-aarch64-build
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     defaults:
       run:
         shell: bash -elx {0}
@@ -118,7 +118,7 @@ jobs:
   linux-aarch64-validate:
     name: linux-aarch64-validate
     needs: linux-aarch64-build
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     defaults:
       run:
         shell: bash -elx {0}
@@ -159,7 +159,7 @@ jobs:
   linux-aarch64-test:
     name: linux-aarch64-test
     needs: linux-aarch64-build
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     defaults:
       run:
         shell: bash -elx {0}
@@ -217,7 +217,7 @@ jobs:
     name: linux-aarch64-upload
     needs: [linux-aarch64-test, linux-aarch64-validate]
     if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     defaults:
       run:
         shell: bash -elx {0}
