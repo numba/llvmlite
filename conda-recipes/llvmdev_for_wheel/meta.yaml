@@ -46,7 +46,8 @@ requirements:
     - python >=3
     - libcxx      # it is not defined{{ cxx_compiler_version }}  # [osx]
     - patch       # [not win]
-    - m2-patch    # [win]
+    - m2-patch    # [win and not arm64]
+    - msys2-patch # [win and arm64]
     - git         # [(linux and x86_64)]
 
   host:
