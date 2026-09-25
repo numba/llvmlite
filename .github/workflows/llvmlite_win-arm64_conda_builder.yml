@@ -28,8 +28,6 @@ env:
   # win-arm64 has no Miniconda installer, so the base environment is
   # bootstrapped from conda-standalone using the win-arm64 native channel.
   WIN_ARM64_CONDA_CHANNEL: bootstrap-win-arm64-round-2-native
-  BOOTSTRAP_CHANNEL: https://conda.anaconda.org/bootstrap-win-arm64-round-2-native
-  M2_CHANNEL: https://conda.anaconda.org/m2-winarm64
   PKGS_MAIN: https://repo.anaconda.com/pkgs/main
 
 jobs:
@@ -62,7 +60,7 @@ jobs:
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
-            -c "${BOOTSTRAP_CHANNEL}" -c "${M2_CHANNEL}" -c "${PKGS_MAIN}" --yes conda-build
+            -c "${PKGS_MAIN}" --yes conda-build
           echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -90,8 +88,9 @@ jobs:
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
           # bld.bat selects the ARM64 CMake generator when ARCH==arm64.
+          conda config --set channel_priority strict
           conda-build --no-test \
-            ${LLVMDEV_SRC} -c "${BOOTSTRAP_CHANNEL}" -c "${M2_CHANNEL}" -c "${PKGS_MAIN}" \
+            ${LLVMDEV_SRC} -c "${PKGS_MAIN}" \
             --python="${PY_MATRIX}" \
             ./conda-recipes/llvmlite "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
@@ -135,7 +134,7 @@ jobs:
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
-            -c "${BOOTSTRAP_CHANNEL}" -c "${M2_CHANNEL}" -c "${PKGS_MAIN}" --yes conda-build
+            -c "${PKGS_MAIN}" --yes conda-build
           echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
@@ -149,6 +148,7 @@ jobs:
 
       - name: Test llvmlite conda package
         run: |
+          conda config --set channel_priority strict
           conda-build --test \
-            -c "${LLVMDEV_CHANNEL}" -c "${BOOTSTRAP_CHANNEL}" -c "${M2_CHANNEL}" -c "${PKGS_MAIN}" \
+            -c "${LLVMDEV_CHANNEL}" -c "${PKGS_MAIN}" \
             conda_channel_dir/win-arm64/llvmlite-*.conda
