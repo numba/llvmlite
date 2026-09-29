@@ -30,6 +30,7 @@ Pull-Requests:
 * PR `#1484 <https://github.com/numba/llvmlite/pull/1484>`_: update changelog for v0.50.0 (`swap357 <https://github.com/swap357>`_)
 * PR `#1491 <https://github.com/numba/llvmlite/pull/1491>`_: CI: remove bootstrap conda channels on `win-arm64` workflows (`swap357 <https://github.com/swap357>`_)
 * PR `#1492 <https://github.com/numba/llvmlite/pull/1492>`_: Cherry pick `win-arm64` CI fix to `release0.50` (`swap357 <https://github.com/swap357>`_)
+* PR `#1496 <https://github.com/numba/llvmlite/pull/1496>`_: CHANGE_LOG update for 0.50.0 final release (`swap357 <https://github.com/swap357>`_)
 
 Authors:
 
