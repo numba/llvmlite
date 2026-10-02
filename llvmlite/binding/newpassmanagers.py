@@ -12,8 +12,8 @@ def create_new_function_pass_manager():
     return FunctionPassManager()
 
 
-def create_pass_builder(tm, pto):
-    return PassBuilder(tm, pto)
+def create_pass_builder(tm, pto, vector_library=None):
+    return PassBuilder(tm, pto, vector_library)
 
 
 def create_pipeline_tuning_options(speed_level=2):
@@ -119,9 +119,11 @@ class NewPassManager():
 
     def run(self,IR, pb):
         if isinstance(self, ModulePassManager):
-            ffi.lib.LLVMPY_RunNewModulePassManager(self, IR, pb)
+            ffi.lib.LLVMPY_RunNewModulePassManager(
+                self, IR, pb, pb._vector_library)
         else:
-            ffi.lib.LLVMPY_RunNewFunctionPassManager(self, IR, pb)
+            ffi.lib.LLVMPY_RunNewFunctionPassManager(
+                self, IR, pb, pb._vector_library)
 
     def add_aa_eval_pass(self):
         if isinstance(self, ModulePassManager):
@@ -553,11 +555,20 @@ class TimePassesHandler(ffi.ObjectRef):
 
 class PassBuilder(ffi.ObjectRef):
 
-    def __init__(self, tm, pto):
+    def __init__(self, tm, pto, vector_library=None):
         super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto))
         self._pto = pto
         self._tm = tm
         self._time_passes_handler = None
+        self._vector_library = -1
+        if vector_library is not None:
+            if not isinstance(vector_library, str):
+                raise TypeError("vector_library must be a string or None")
+            if '\0' not in vector_library:
+                self._vector_library = ffi.lib.LLVMPY_ParseVectorLibrary(
+                    vector_library.encode('utf-8'))
+            if self._vector_library == -1:
+                raise ValueError(f"Unknown vector library: {vector_library!r}")
 
     def getModulePassManager(self):
         return ModulePassManager(
@@ -622,7 +633,7 @@ ffi.lib.LLVMPY_CreateNewModulePassManager.restype = ffi.LLVMModulePassManagerRef
 
 ffi.lib.LLVMPY_RunNewModulePassManager.argtypes = [
     ffi.LLVMModulePassManagerRef, ffi.LLVMModuleRef,
-    ffi.LLVMPassBuilderRef,]
+    ffi.LLVMPassBuilderRef, c_int,]
 
 ffi.lib.LLVMPY_module_AddVerifierPass.argtypes = [ffi.LLVMModulePassManagerRef,]
 ffi.lib.LLVMPY_module_AddAAEvaluator.argtypes = [ffi.LLVMModulePassManagerRef,]
@@ -814,7 +825,7 @@ ffi.lib.LLVMPY_CreateNewFunctionPassManager.restype = \
 
 ffi.lib.LLVMPY_RunNewFunctionPassManager.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ffi.LLVMValueRef,
-    ffi.LLVMPassBuilderRef,]
+    ffi.LLVMPassBuilderRef, c_int,]
 
 ffi.lib.LLVMPY_function_AddAAEvaluator.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]
@@ -982,6 +993,9 @@ ffi.lib.LLVMPY_DisposePipelineTuningOptions.argtypes = \
     [ffi.LLVMPipelineTuningOptionsRef,]
 
 # PassBuilder
+
+ffi.lib.LLVMPY_ParseVectorLibrary.argtypes = [c_char_p]
+ffi.lib.LLVMPY_ParseVectorLibrary.restype = c_int
 
 ffi.lib.LLVMPY_CreatePassBuilder.restype = ffi.LLVMPassBuilderRef
 ffi.lib.LLVMPY_CreatePassBuilder.argtypes = [
