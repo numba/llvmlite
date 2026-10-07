@@ -4,6 +4,12 @@ from enum import IntFlag
 from llvmlite.binding import ffi
 
 
+VECTOR_LIBRARIES = (
+    'none', 'accelerate', 'darwin_libsystem_m', 'libmvec', 'massv',
+    'svml', 'sleefgnuabi', 'armpl', 'amdlibm',
+)
+
+
 def create_new_module_pass_manager():
     return ModulePassManager()
 
@@ -564,9 +570,12 @@ class PassBuilder(ffi.ObjectRef):
         if vector_library is not None:
             if not isinstance(vector_library, str):
                 raise TypeError("vector_library must be a string or None")
-            if '\0' not in vector_library:
-                self._vector_library = ffi.lib.LLVMPY_ParseVectorLibrary(
-                    vector_library.encode('utf-8'))
+            if vector_library not in VECTOR_LIBRARIES:
+                raise ValueError(
+                    f"Unknown vector library: {vector_library!r}; "
+                    f"valid options are {', '.join(VECTOR_LIBRARIES)}")
+            self._vector_library = ffi.lib.LLVMPY_ParseVectorLibrary(
+                vector_library.encode('utf-8'))
             if self._vector_library == -1:
                 raise ValueError(f"Unknown vector library: {vector_library!r}")
 

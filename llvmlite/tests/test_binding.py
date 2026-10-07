@@ -2649,9 +2649,13 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
     def test_invalid_vector_library(self):
         with self.target_machine(jit=False) as tm, \
              llvm.create_pipeline_tuning_options() as pto:
+            for name in llvm.VECTOR_LIBRARIES:
+                with self.subTest(name=name), \
+                     llvm.create_pass_builder(tm, pto, name):
+                    pass
             for name in ('unknown', 'accelerate\0other'):
                 with self.subTest(name=name), \
-                     self.assertRaisesRegex(ValueError, 'Unknown vector'):
+                     self.assertRaisesRegex(ValueError, 'valid options are'):
                     llvm.create_pass_builder(tm, pto, name)
             with self.assertRaisesRegex(TypeError, 'string or None'):
                 llvm.create_pass_builder(tm, pto, True)
