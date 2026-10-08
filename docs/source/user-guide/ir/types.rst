@@ -91,13 +91,24 @@ Atomic types
 .. class:: X86FP80Type()
 
    The LLVM ``x86_fp80`` type for 80-bit extended-precision floating-point
-   numbers.  This adds IR-level type and instruction support, not support for
-   calling convention (ABI) handling or Numba's ``longdouble`` type.
+   numbers. This type can be used in function signatures, arithmetic
+   instructions and LLVM intrinsics.
 
-   Constants can be written using LLVM's ``0xK`` format followed by exactly
-   20 hexadecimal digits, or ``None`` to generate a zero initializer.
-   Conversion of arbitrary Python floating-point values to 80-bit constants
-   is not supported.
+   Constants must be specified as ``0xK`` followed by exactly 20 hexadecimal
+   digits. Hexadecimal digits are case-insensitive and normalised to upper
+   case. ``None`` represents a zero initialiser, and :data:`Undefined`
+   represents an undefined value. Python floating-point constants are not
+   accepted. Although every Python ``float`` is exactly representable in
+   ``x86_fp80``, conversion to the ``0xK`` encoding is not implemented. A
+   Python ``float`` has already been rounded to binary64 precision.
+
+   .. warning::
+
+      Only x86 targets support lowering ``x86_fp80`` operations. LLVM IR
+      parsing and verification can succeed on other targets even when the
+      target backend cannot generate code for them; attempting code
+      generation may terminate the process. This IR type alone does not
+      provide calling-convention support or NumPy ``longdouble`` support.
 
 
 .. class:: VoidType()
