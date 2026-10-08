@@ -88,6 +88,17 @@ Atomic types
 
    The type of double-precision, floating-point, real numbers.
 
+.. class:: X86FP80Type()
+
+   The LLVM ``x86_fp80`` type for 80-bit extended-precision floating-point
+   numbers.  This adds IR-level type and instruction support, not support for
+   calling convention (ABI) handling or Numba's ``longdouble`` type.
+
+   Constants can be written using LLVM's ``0xK`` format followed by exactly
+   20 hexadecimal digits, or ``None`` to generate a zero initializer.
+   Conversion of arbitrary Python floating-point values to 80-bit constants
+   is not supported.
+
 
 .. class:: VoidType()
 

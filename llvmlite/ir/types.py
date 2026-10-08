@@ -2,6 +2,7 @@
 Classes that are LLVM types
 """
 
+import re
 import struct
 
 from llvmlite import ir_layer_typed_pointers_enabled
@@ -430,7 +431,27 @@ class DoubleType(_BaseFloatType):
         return _format_double(value)
 
 
-for _cls in (HalfType, FloatType, DoubleType):
+class X86FP80Type(_BaseFloatType):
+    """
+    The x86 80-bit extended-precision floating-point type.
+
+    Numerical constants must use LLVM's 0xK hexadecimal representation;
+    Python floating-point values cannot represent the full precision.
+    """
+    intrinsic_name = 'f80'
+
+    def __str__(self):
+        return 'x86_fp80'
+
+    def format_constant(self, value):
+        if (isinstance(value, str) and
+                re.fullmatch(r'0xK[0-9a-fA-F]{20}', value)):
+            return value
+        raise TypeError("x86_fp80 constants require an LLVM '0xK' hexadecimal "
+                        "literal with 20 digits (or None for zero)")
+
+
+for _cls in (HalfType, FloatType, DoubleType, X86FP80Type):
     _cls._create_instance()
 
 
