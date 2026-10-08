@@ -96,7 +96,7 @@ Atomic types
 
    Constants must be specified as ``0xK`` followed by exactly 20 hexadecimal
    digits. Hexadecimal digits are case-insensitive and normalised to upper
-   case. ``None`` represents a zero initialiser, and :data:`Undefined`
+   case. ``None`` represents a zero initialiser, and ``Undefined``
    represents an undefined value. Python floating-point constants are not
    accepted. Although every Python ``float`` is exactly representable in
    ``x86_fp80``, conversion to the ``0xK`` encoding is not implemented. A
