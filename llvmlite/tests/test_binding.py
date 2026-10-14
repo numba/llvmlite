@@ -2623,6 +2623,39 @@ class NewPassManagerMixin(object):
 
 class TestPassBuilder(BaseTest, NewPassManagerMixin):
 
+    def test_vector_library(self):
+        asm = '''
+        declare float @sinf(float)
+        define float @f(float %x) {
+            %y = call float @sinf(float %x)
+            ret float %y
+        }
+        '''
+        with self.target_machine(jit=False) as tm, \
+             llvm.create_pipeline_tuning_options(3) as pto, \
+             llvm.create_pass_builder(tm, pto, 'accelerate') as accelerate, \
+             llvm.create_pass_builder(tm, pto, 'none') as none, \
+             llvm.create_pass_builder(tm, pto) as default:
+            for pb, expected in ((accelerate, True), (none, False),
+                                 (default, False), (accelerate, True)):
+                with self.subTest(expected=expected), \
+                     llvm.parse_assembly(asm) as mod, \
+                     pb.getModulePassManager() as pm:
+                    mod.triple = tm.triple
+                    pm.run(mod, pb)
+                    mod.verify()
+                    self.assertEqual('(vsinf)' in str(mod), expected)
+
+    def test_invalid_vector_library(self):
+        with self.target_machine(jit=False) as tm, \
+             llvm.create_pipeline_tuning_options() as pto:
+            for name in ('unknown', 'accelerate\0other'):
+                with self.subTest(name=name), \
+                     self.assertRaisesRegex(ValueError, 'Unknown vector'):
+                    llvm.create_pass_builder(tm, pto, name)
+            with self.assertRaisesRegex(TypeError, 'string or None'):
+                llvm.create_pass_builder(tm, pto, True)
+
     def test_close(self):
         pb = self.pb()
         pb.close()
