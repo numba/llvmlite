@@ -162,6 +162,7 @@ class TestFunction(TestBase):
         # Now with parameter attributes
         func = self.function()
         func.args[0].add_attribute("zeroext")
+        func.args[0].attributes.range = (0, 10)
         func.args[1].attributes.dereferenceable = 5
         func.args[1].attributes.dereferenceable_or_null = 10
         func.args[3].attributes.align = 4
@@ -170,14 +171,77 @@ class TestFunction(TestBase):
         asm = self.descr(func).strip()
         if not ir_layer_typed_pointers_enabled:
             self.assertEqual(asm,
-                             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", ptr nonnull align 4 %".4")"""  # noqa E501
+                             """declare noalias i32 @"my_func"(i32 zeroext range(i32 0, 10) %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", ptr nonnull align 4 %".4")"""  # noqa E501
                              )
         else:
             self.assertEqual(asm,
-                             """declare noalias i32 @"my_func"(i32 zeroext %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", i32* nonnull align 4 %".4")"""  # noqa E501
+                             """declare noalias i32 @"my_func"(i32 zeroext range(i32 0, 10) %".1", i32 dereferenceable(5) dereferenceable_or_null(10) %".2", double %".3", i32* nonnull align 4 %".4")"""  # noqa E501
                              )
+        with self.assertRaises(ValueError):
+            func.args[0].add_attribute("range(i32 0, 10")
         # Check pickling
         self.assert_pickle_correctly(func)
+
+    def test_range_attribute(self):
+        for typ in (int8, int32, int64, ir.VectorType(int32, 4)):
+            for bounds in ((0, 10), (-10, 10), (10, 0), (0, 0)):
+                with self.subTest(typ=typ, bounds=bounds):
+                    module = self.module()
+                    func = ir.Function(module, ir.FunctionType(typ, [typ]),
+                                       name="range_func")
+                    self.assertIsNone(func.args[0].attributes.range)
+                    func.args[0].attributes.range = bounds
+                    func.return_value.attributes.range = bounds
+                    builder = ir.IRBuilder(func.append_basic_block())
+                    builder.ret(func.args[0])
+                    scalar = typ.element if isinstance(typ, ir.VectorType) \
+                        else typ
+                    attr = "range({0} {1}, {2})".format(scalar, *bounds)
+                    self.assertEqual(str(module).count(attr), 2)
+                    llvm.parse_assembly(str(module)).verify()
+                    self.assert_pickle_correctly(func)
+                    func.args[0].attributes.range = None
+                    self.assertNotIn("range(", str(func.args[0]))
+
+    def test_call_range_attribute(self):
+        module = self.module()
+        typ = ir.FunctionType(int32, [int32])
+        callee = ir.Function(module, typ, name="callee")
+        caller = ir.Function(module, typ, name="caller")
+        builder = ir.IRBuilder(caller.append_basic_block())
+        call = builder.call(callee, [caller.args[0]],
+                            arg_attrs={0: ["noundef"]})
+        call.arg_attributes[0].range = (0, 10)
+        builder.ret(call)
+        self.assertIn('i32 noundef range(i32 0, 10) %".1"', str(call))
+        llvm.parse_assembly(str(module)).verify()
+
+    def test_invalid_range_attribute(self):
+        func = self.function()
+        attrs = func.args[0].attributes
+        for bounds in ((0,), (0, 1, 2), [0, 10], "range(i32 0, 10)",
+                       (0.0, 10), (0, "10"), (False, 10)):
+            with self.subTest(bounds=bounds):
+                with self.assertRaises(TypeError):
+                    attrs.range = bounds
+        with self.assertRaises(ValueError):
+            attrs.range = (10, 10)
+        for bounds in ((0, 1 << 32), (-(1 << 31) - 1, 0),
+                       (-1, (1 << 32) - 1)):
+            with self.subTest(bounds=bounds):
+                attrs.range = bounds
+                with self.assertRaises(ValueError):
+                    str(func.args[0])
+        for typ in (int32.as_pointer(), dbl, ir.VectorType(dbl, 4)):
+            with self.subTest(typ=typ):
+                module = self.module()
+                f = ir.Function(module, ir.FunctionType(ir.VoidType(), [typ]),
+                                name="invalid")
+                f.args[0].attributes.range = (0, 10)
+                with self.assertRaises(TypeError):
+                    str(f)
+        with self.assertRaises(ValueError):
+            attrs.add("range(i32 0, 10)")
 
     def test_function_metadata(self):
         # Now with function metadata

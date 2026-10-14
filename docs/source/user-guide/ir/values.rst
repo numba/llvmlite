@@ -263,6 +263,25 @@ A :ref:`module` consists mostly of values.
       Add an argument attribute to this argument. *attr* is a
       Python string.
 
+   .. attribute:: attributes.range
+
+      A pair of Python integer bounds ``(lower, upper)`` describing the
+      half-open range ``[lower, upper)``. Set it to ``None`` (the default)
+      to omit the attribute. For example::
+
+         function.args[0].attributes.range = (0, 10)
+
+      Only integer and integer-vector arguments support this attribute.
+      The bounds may be signed or unsigned integers representable in the
+      scalar integer type. Wrapping ranges are allowed; equal bounds are
+      only allowed for ``(0, 0)``, LLVM's empty range. The argument type and
+      bounds' bit width are checked when rendering IR.
+
+      The same property is available on ``function.return_value.attributes``
+      and on call-site argument attributes (``call.arg_attributes[index]``).
+      Values outside the range become poison, as specified by LLVM.
+
+
 .. class:: Block
 
    A :ref:`basic block`.  Do not instantiate or mutate this type
