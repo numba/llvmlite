@@ -179,6 +179,17 @@ class TestFunction(TestBase):
         # Check pickling
         self.assert_pickle_correctly(func)
 
+    def test_function_nofree_nosync_attributes(self):
+        for attribute in ('nofree', 'nosync'):
+            with self.subTest(attribute=attribute):
+                module = self.module()
+                func = self.function(module)
+                func.attributes.add(attribute)
+                self.assertEqual(self.descr(func).strip(),
+                                 f'declare {self.proto} {attribute}')
+                llvm.parse_assembly(str(module)).verify()
+                self.assert_pickle_correctly(func)
+
     def test_function_metadata(self):
         # Now with function metadata
         module = self.module()
