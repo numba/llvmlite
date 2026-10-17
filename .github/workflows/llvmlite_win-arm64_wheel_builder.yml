@@ -30,9 +30,6 @@ env:
   FALLBACK_LLVMDEV_VERSION: "22"
   ARTIFACT_RETENTION_DAYS: 7
   LLVMDEV_CHANNEL: https://conda.anaconda.org/numba/label/llvm_wheel
-  # win-arm64 has no Miniconda installer, so the base environment is
-  # bootstrapped from conda-standalone using the win-arm64 native channel.
-  WIN_ARM64_CONDA_CHANNEL: bootstrap-win-arm64-round-2-native
   PKGS_MAIN: https://repo.anaconda.com/pkgs/main
   CONDA_FORGE: https://conda.anaconda.org/conda-forge
 
@@ -55,12 +52,13 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Set up conda-standalone
-        uses: conda-incubator/setup-conda-standalone@00a34805e93a8b640aee5f8a20e8f481ad77e3b4 # v0.1.0
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
         with:
-          channel: ${{ env.WIN_ARM64_CONDA_CHANNEL }}
-          conda-standalone-version: 26.3.2.post1
-          destination-directory: ${{ runner.temp }}/conda-standalone
+          architecture: arm64
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: ""
 
       - name: Download llvmdev artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
@@ -77,7 +75,6 @@ jobs:
           PY_MATRIX: ${{ matrix.python-version }}
         run: |
           PY_VER="${PY_MATRIX}"
-          export CONDA_PREFIX="${RUNNER_TEMP}/conda-build-env"
           # Free-threaded builds ship as python-freethreading on conda-forge.
           if [[ "${PY_VER}" == *t ]]; then
             PY_SPEC="python-freethreading=${PY_VER%t}"
@@ -91,13 +88,10 @@ jobs:
           else
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
-          "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
+          conda install --yes \
             ${LLVMDEV_SRC} ${EXTRA_CHANNEL} \
             -c "${PKGS_MAIN}" \
             "${PY_SPEC}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" "cmake>=4.2" libxml2 setuptools pip
-          echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
-          echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
-          echo "${CONDA_PREFIX}/Library/bin" >> "${GITHUB_PATH}"
           # Let CMake find the LLVM install shipped by llvmdev.
           echo "CMAKE_PREFIX_PATH=${CONDA_PREFIX}/Library" >> "${GITHUB_ENV}"
 
@@ -145,19 +139,19 @@ jobs:
         python-version: ["3.12", "3.13", "3.14"]
 
     steps:
-      - name: Set up conda-standalone
-        uses: conda-incubator/setup-conda-standalone@00a34805e93a8b640aee5f8a20e8f481ad77e3b4 # v0.1.0
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
         with:
-          channel: ${{ env.WIN_ARM64_CONDA_CHANNEL }}
-          conda-standalone-version: 26.3.2.post1
-          destination-directory: ${{ runner.temp }}/conda-standalone
+          architecture: arm64
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: ""
 
       - name: Create test environment
         env:
           PY_MATRIX: ${{ matrix.python-version }}
         run: |
           PY_VER="${PY_MATRIX}"
-          export CONDA_PREFIX="${RUNNER_TEMP}/conda-test-env"
           if [[ "${PY_VER}" == *t ]]; then
             PY_SPEC="python-freethreading=${PY_VER%t}"
             EXTRA_CHANNEL="-c ${CONDA_FORGE}"
@@ -165,11 +159,9 @@ jobs:
             PY_SPEC="python=${PY_VER}"
             EXTRA_CHANNEL=""
           fi
-          "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
+          conda install --yes \
             ${EXTRA_CHANNEL} -c "${PKGS_MAIN}" \
             "${PY_SPEC}" pip
-          echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
-          echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
 
       - name: Download llvmlite wheel
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -202,20 +194,16 @@ jobs:
         python-version: ["3.12", "3.13", "3.14"]
 
     steps:
-      - name: Set up conda-standalone
-        uses: conda-incubator/setup-conda-standalone@00a34805e93a8b640aee5f8a20e8f481ad77e3b4 # v0.1.0
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
         with:
-          channel: ${{ env.WIN_ARM64_CONDA_CHANNEL }}
-          conda-standalone-version: 26.3.2.post1
-          destination-directory: ${{ runner.temp }}/conda-standalone
+          architecture: arm64
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: ""
 
       - name: Install anaconda-client
-        run: |
-          export CONDA_PREFIX="${RUNNER_TEMP}/conda-upload-env"
-          "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            -c "${PKGS_MAIN}" anaconda-client
-          echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
-          echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
+        run: conda install -c "${PKGS_MAIN}" anaconda-client
 
       - name: Download llvmlite wheel
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
