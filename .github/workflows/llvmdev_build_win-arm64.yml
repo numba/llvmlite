@@ -29,9 +29,6 @@ permissions:
 
 env:
   ARTIFACT_RETENTION_DAYS: 7
-  # win-arm64 has no Miniconda installer, so the base environment is
-  # bootstrapped from conda-standalone using the win-arm64 native channel.
-  WIN_ARM64_CONDA_CHANNEL: bootstrap-win-arm64-round-2-native
   PKGS_MAIN: https://repo.anaconda.com/pkgs/main
 
 jobs:
@@ -52,22 +49,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up conda-standalone
-        uses: conda-incubator/setup-conda-standalone@00a34805e93a8b640aee5f8a20e8f481ad77e3b4 # v0.1.0
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
         with:
-          channel: ${{ env.WIN_ARM64_CONDA_CHANNEL }}
-          conda-standalone-version: 26.3.2.post1
-          destination-directory: ${{ runner.temp }}/conda-standalone
+          architecture: arm64
+          auto-update-conda: true
+          auto-activate-base: true
+          activate-environment: ""
 
       - name: Install conda-build
-        run: |
-          export CONDA_PREFIX="${RUNNER_TEMP}/conda-base"
-          "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" \
-            -c "${PKGS_MAIN}" --yes conda-build
-          echo "CONDA_PREFIX=${CONDA_PREFIX}" >> "${GITHUB_ENV}"
-          echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
-          echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
-          echo "${CONDA_PREFIX}/Library/bin" >> "${GITHUB_PATH}"
+        run: conda install -c "${PKGS_MAIN}" --yes conda-build
 
       - name: Build and test conda package - non-linux platforms
         env:
