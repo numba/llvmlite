@@ -90,7 +90,12 @@ jobs:
         run: |
           mkdir -p wheel_temp
           mv dist/*.whl wheel_temp/
-          python -m delvewheel repair --analyze-existing -w dist wheel_temp/*.whl
+          
+          # delvewheel skips vcruntime140/vcruntime140_1 only for cp3XX/abi3
+          # tags, because CPython already ships them.
+          # https://github.com/adang1345/delvewheel/blob/fef2cb8d92c234437213f9bf4281035fc13858f1/delvewheel/_dll_list.py#L48-L57
+          python -m delvewheel repair --analyze-existing --exclude "vcruntime140.dll;vcruntime140_1.dll" -w dist wheel_temp/*.whl
+          
           ls -l dist
 
       - name: Upload llvmlite wheel
