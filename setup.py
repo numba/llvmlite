@@ -181,7 +181,8 @@ if bdist_wheel is not None:
 
         def get_tag(self):
             _, _, plat = bdist_wheel.get_tag(self)
-            return 'py3', 'none', plat
+            python_tag = f'py{min_python_version[0]}{min_python_version[1]}'
+            return python_tag, 'none', plat
 
     cmdclass.update({'bdist_wheel': LLvmliteBDistWheel})
 
