@@ -36,7 +36,6 @@ env:
   # bootstrapped from conda-standalone using the win-arm64 native channel.
   WIN_ARM64_CONDA_CHANNEL: bootstrap-win-arm64-round-2-native
   PKGS_MAIN: https://repo.anaconda.com/pkgs/main
-  CONDA_FORGE: https://conda.anaconda.org/conda-forge
 
 jobs:
   win-arm64-build:
@@ -71,27 +70,17 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create build environment
-        env:
-          PY_VER: ${{ env.BUILD_PYTHON_VERSION }}
         run: |
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-build-env"
-          # Free-threaded builds ship as python-freethreading on conda-forge.
-          if [[ "${PY_VER}" == *t ]]; then
-            PY_SPEC="python-freethreading=${PY_VER%t}"
-            EXTRA_CHANNEL="-c ${CONDA_FORGE}"
-          else
-            PY_SPEC="python=${PY_VER}"
-            EXTRA_CHANNEL=""
-          fi
           if [ -d llvmdev_channel/win-arm64 ]; then
             LLVMDEV_SRC="-c ${GITHUB_WORKSPACE}/llvmdev_channel"
           else
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            ${LLVMDEV_SRC} ${EXTRA_CHANNEL} \
+            ${LLVMDEV_SRC} \
             -c "${PKGS_MAIN}" \
-            "${PY_SPEC}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" "cmake>=4.2" libxml2 setuptools pip
+            "python=${BUILD_PYTHON_VERSION}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" "cmake>=4.2" libxml2 setuptools pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Library/bin" >> "${GITHUB_PATH}"
@@ -158,18 +147,9 @@ jobs:
         env:
           PY_MATRIX: ${{ matrix.python-version }}
         run: |
-          PY_VER="${PY_MATRIX}"
           export CONDA_PREFIX="${RUNNER_TEMP}/conda-test-env"
-          if [[ "${PY_VER}" == *t ]]; then
-            PY_SPEC="python-freethreading=${PY_VER%t}"
-            EXTRA_CHANNEL="-c ${CONDA_FORGE}"
-          else
-            PY_SPEC="python=${PY_VER}"
-            EXTRA_CHANNEL=""
-          fi
           "${CONDA_EXE}" create --prefix "${CONDA_PREFIX}" --yes \
-            ${EXTRA_CHANNEL} -c "${PKGS_MAIN}" \
-            "${PY_SPEC}" pip
+            -c "${PKGS_MAIN}" "python=${PY_MATRIX}" pip
           echo "${CONDA_PREFIX}" >> "${GITHUB_PATH}"
           echo "${CONDA_PREFIX}/Scripts" >> "${GITHUB_PATH}"
 
