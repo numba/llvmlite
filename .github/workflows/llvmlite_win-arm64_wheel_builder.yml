@@ -124,7 +124,7 @@ jobs:
           echo "Workflow Run ID: ${RUN_ID}"
 
   win-arm64-test:
-    name: win-arm64-test-py${{ matrix.python-version }}
+    name: win-arm64-test
     needs: win-arm64-build
     runs-on: windows-11-vs2026-arm
     defaults:
