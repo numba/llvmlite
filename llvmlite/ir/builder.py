@@ -143,7 +143,8 @@ def _triop_intrinsic(opname):
                         c.type))
             elif not isinstance(
                     a.type,
-                    (types.HalfType, types.FloatType, types.DoubleType)):
+                    (types.HalfType, types.FloatType, types.DoubleType,
+                     types.X86FP80Type)):
                 raise TypeError(
                     "expected an floating point type, got %s" %
                     a.type)

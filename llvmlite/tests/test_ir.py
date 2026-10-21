@@ -3,9 +3,12 @@ IR Construction Tests
 """
 
 import copy
+import ctypes
 import itertools
 import pickle
+import platform
 import re
+import sys
 import textwrap
 import unittest
 
@@ -23,6 +26,7 @@ int64 = ir.IntType(64)
 hlf = ir.HalfType()
 flt = ir.FloatType()
 dbl = ir.DoubleType()
+fp80 = ir.X86FP80Type()
 
 
 class TestBase(TestCase):
@@ -2062,6 +2066,41 @@ insert_block:
                 ret float %"fma"
             """)  # noqa E501
 
+    def test_fma_x86_fp80(self):
+        mod = self.module()
+        fn = ir.Function(mod, ir.FunctionType(fp80, [fp80] * 3),
+                         name='fma_x86_fp80')
+        builder = ir.IRBuilder(fn.append_basic_block('entry'))
+        value = builder.fma(*fn.args)
+        builder.ret(value)
+        self.assertIn('llvm.fma.f80', str(mod))
+        self.assert_valid_ir(mod)
+
+    def test_x86_fp80_arithmetic_and_intrinsics(self):
+        mod = self.module()
+        fn = ir.Function(mod, ir.FunctionType(fp80, [fp80, fp80, dbl]),
+                         name='x86_fp80_ops')
+        builder = ir.IRBuilder(fn.append_basic_block('entry'))
+        a, b, d = fn.args
+        result = builder.fdiv(builder.fmul(builder.fsub(builder.fadd(a, b), b),
+                                           a), b)
+        cond = builder.fcmp_ordered('<', result, b)
+        narrowed = builder.fptrunc(result, dbl)
+        widened = builder.fpext(narrowed, fp80)
+        selected = builder.select(cond, widened, builder.fpext(d, fp80))
+        sqrt = mod.declare_intrinsic('llvm.sqrt', [fp80])
+        builder.ret(builder.call(sqrt, [selected]))
+        self.assertIn('llvm.sqrt.f80', str(mod))
+        for op in ('fadd', 'fsub', 'fmul', 'fdiv', 'fcmp',
+                   'fptrunc', 'fpext'):
+            self.assertIn(op, str(mod))
+        llmod = llvm.parse_assembly(str(mod))
+        llmod.verify()
+        fnty = llmod.get_function('x86_fp80_ops').global_value_type
+        self.assertIs(fnty.get_function_return().as_ir(ir.Context()), fp80)
+        self.assertIs(fnty.get_function_parameters()[0].as_ir(ir.Context()),
+                      fp80)
+
     def test_fma_wrongtype(self):
         block = self.block(name='my_block')
         builder = ir.IRBuilder(block)
@@ -2473,7 +2512,7 @@ class TestTypes(TestBase):
             ir.FunctionType(int1, (int8, int8)), ir.FunctionType(int1, (int8,)),
             ir.FunctionType(int1, (int8,), var_arg=True),
             ir.FunctionType(int8, (int8,)),
-            int1, int8, int32, flt, dbl,
+            int1, int8, int32, flt, dbl, fp80,
             ir.ArrayType(flt, 5), ir.ArrayType(dbl, 5), ir.ArrayType(dbl, 4),
             ir.LiteralStructType((int1, int8)), ir.LiteralStructType((int8,
                                                                       int1)),
@@ -2741,6 +2780,7 @@ class TestTypes(TestBase):
         check(int8, 1)
         check(int32, 4)
         check(int64, 8)
+        check(fp80, 16)
         check(ir.ArrayType(int8, 5), 5)
         check(ir.ArrayType(int32, 5), 20)
         check(ir.LiteralStructType((dbl, flt, flt)), 16)
@@ -2753,6 +2793,7 @@ class TestTypes(TestBase):
         check(int8, (1, 2, 4))
         check(int32, (4,))
         check(int64, (8,))
+        check(fp80, (16,))
         check(ir.ArrayType(int8, 5), (1, 2, 4))
         check(ir.ArrayType(int32, 5), (4,))
         check(ir.LiteralStructType((dbl, flt, flt)), (8,))
@@ -2830,6 +2871,34 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'double undef')
         c = ir.Constant(dbl, None)
         self.assertEqual(str(c), 'double 0.0')
+
+    def test_x86_fp80_constants(self):
+        one = '0xK3FFF8000000000000000'
+        c = ir.Constant(fp80, one)
+        self.assertEqual(str(c), 'x86_fp80 ' + one)
+        lower = ir.Constant(fp80, '0xK3fff8000000000000000')
+        self.assertEqual(c, lower)
+        self.assertEqual(hash(c), hash(lower))
+        self.assertEqual(c.constant, one)
+        self.assertEqual(str(ir.Constant(fp80, None)),
+                         'x86_fp80 zeroinitializer')
+        self.assertEqual(str(ir.Constant(fp80, ir.Undefined)),
+                         'x86_fp80 undef')
+
+        for bad in (1.0, 1, 0, False):
+            with self.subTest(value=bad), self.assertRaises(TypeError):
+                ir.Constant(fp80, bad)  # Must fail at construction time
+        for bad in ('0.0', 'nan', 'Inf', '0xK123', '0xK' + 'A' * 19,
+                    '0xK' + 'A' * 21, '0xK' + 'Z' * 20):
+            with self.subTest(value=bad), self.assertRaises(ValueError):
+                ir.Constant(fp80, bad)
+
+        mod = self.module()
+        glob = ir.GlobalVariable(mod, fp80, 'one')
+        glob.initializer = c
+        zero = ir.GlobalVariable(mod, fp80, 'zero')
+        zero.initializer = ir.Constant(fp80, None)
+        self.assert_valid_ir(mod)
 
     def test_reals_special_values(self):
         # Inf/-Inf/NaN passed as strings must format for all float types,
@@ -3186,6 +3255,56 @@ class TestConstant(TestBase):
             expected = 'fcmp ' + cond + (' (float 0x3ff0000000000000,'
                                          ' float 0x4000000000000000)')
             self.assertEqual(actual, expected)
+
+
+@unittest.skipUnless(
+    (sys.platform.startswith('linux') and
+     platform.machine().lower() in ('x86_64', 'amd64') and
+     sys.byteorder == 'little' and
+     ctypes.sizeof(ctypes.c_longdouble) == 16),
+    'requires little-endian Linux x86-64 with 80-bit C long double')
+class TestX86FP80JIT(TestBase):
+
+    def test_constant_and_extended_precision(self):
+        # Use pointers to long double rather than FFI calls returning long
+        # double, which ctypes can convert to a lower-precision Python float.
+        llvm.initialize_native_target()
+        llvm.initialize_native_asmprinter()
+        mod = self.module()
+        mod.triple = llvm.get_default_triple()
+        fn = ir.Function(mod, ir.FunctionType(ir.VoidType(),
+                         [ir.PointerType(), ir.PointerType()]),
+                         name='add_one')
+        builder = ir.IRBuilder(fn.append_basic_block('entry'))
+        addend = builder.load(fn.args[1], typ=fp80)
+        one = ir.Constant(fp80, '0xK3FFF8000000000000000')
+        builder.store(builder.fadd(one, addend), fn.args[0])
+        builder.ret_void()
+        llmod = llvm.parse_assembly(str(mod))
+        llmod.verify()
+        tm = llvm.Target.from_default_triple().create_target_machine()
+        with llvm.create_mcjit_compiler(llmod, tm) as engine:
+            engine.finalize_object()
+            addr = engine.get_function_address('add_one')
+            self.assertNotEqual(addr, 0)
+            callback = ctypes.CFUNCTYPE(
+                None, ctypes.POINTER(ctypes.c_longdouble),
+                ctypes.POINTER(ctypes.c_longdouble))(addr)
+            out = ctypes.c_longdouble()
+            zero = ctypes.c_longdouble(0.0)
+            callback(ctypes.byref(out), ctypes.byref(zero))
+            raw = ctypes.string_at(ctypes.byref(out), 10)
+            self.assertEqual(int.from_bytes(raw[:8], 'little'),
+                             0x8000000000000000)
+            self.assertEqual(int.from_bytes(raw[8:], 'little'), 0x3FFF)
+
+            small = ctypes.c_longdouble(2.0 ** -60)
+            callback(ctypes.byref(out), ctypes.byref(small))
+            raw = ctypes.string_at(ctypes.byref(out), 10)
+            # The +8 in the significand is invisible to ordinary float64.
+            self.assertEqual(int.from_bytes(raw[:8], 'little'),
+                             0x8000000000000008)
+            self.assertEqual(int.from_bytes(raw[8:], 'little'), 0x3FFF)
 
 
 class TestTransforms(TestBase):
