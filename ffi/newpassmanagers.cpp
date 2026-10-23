@@ -373,7 +373,7 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
 
     if (VecLib >= 0) {
         TargetLibraryInfoImpl TLII(M->getTargetTriple(),
-                                  static_cast<VectorLibrary>(VecLib));
+                                   static_cast<VectorLibrary>(VecLib));
         FAM.registerPass([&] { return TargetLibraryAnalysis(TLII); });
     }
     PB->registerLoopAnalyses(LAM);
@@ -446,7 +446,7 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
 
     if (VecLib >= 0) {
         TargetLibraryInfoImpl TLII(F->getParent()->getTargetTriple(),
-                                  static_cast<VectorLibrary>(VecLib));
+                                   static_cast<VectorLibrary>(VecLib));
         FAM.registerPass([&] { return TargetLibraryAnalysis(TLII); });
     }
     PB->registerLoopAnalyses(LAM);
