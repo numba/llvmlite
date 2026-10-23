@@ -2646,6 +2646,15 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
                     mod.verify()
                     self.assertEqual('(vsinf)' in str(mod), expected)
 
+    def test_function_pass_manager_with_vector_library(self):
+        with self.target_machine(jit=False) as tm, \
+             llvm.create_pipeline_tuning_options(3) as pto, \
+             llvm.create_pass_builder(tm, pto, 'accelerate') as pb, \
+             self.module() as mod, \
+             pb.getFunctionPassManager() as pm:
+            pm.run(mod.get_function('sum'), pb)
+            mod.verify()
+
     def test_invalid_vector_library(self):
         with self.target_machine(jit=False) as tm, \
              llvm.create_pipeline_tuning_options() as pto:
