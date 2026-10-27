@@ -1100,6 +1100,9 @@ class ArgumentAttributes(AttributeSet):
     @range.setter
     def range(self, val):
         if val is not None:
+            # LLVM's LLParser::parseRangeAttr requires two integer bounds and
+            # allows equal bounds only for the empty range (0, 0):
+            # https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0/llvm/lib/AsmParser/LLParser.cpp#L3153-L3193
             if not isinstance(val, tuple) or len(val) != 2:
                 raise TypeError("range must be a pair of integer bounds")
             if not all(type(bound) is int for bound in val):
@@ -1124,6 +1127,8 @@ class ArgumentAttributes(AttributeSet):
                 raise TypeError("range requires an integer or integer vector")
             lower, upper = self.range
             bits = scalar_type.width
+            # parseRangeAttr also checks the bit width before comparing the
+            # bounds as bit patterns, regardless of their signedness.
             if not all(-(1 << (bits - 1)) <= bound < (1 << bits)
                        for bound in self.range):
                 raise ValueError("range bounds do not fit the integer type")
