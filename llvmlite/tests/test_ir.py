@@ -1379,6 +1379,7 @@ my_block:
         fd = builder.uitofp(g, flt, 'fd')  # noqa F841
         fe = builder.sitofp(h, dbl, 'fe')  # noqa F841
         i = builder.ptrtoint(ptr, int32, 'i')
+        i2 = builder.ptrtoaddr(ptr, int32, 'i2')  # noqa F841
         j = builder.inttoptr(i, ir.PointerType(int8), 'j')  # noqa F841
         k = builder.bitcast(a, flt, "k")  # noqa F841
         self.assertFalse(block.is_terminated)
@@ -1395,6 +1396,7 @@ my_block:
                     %"fd" = uitofp i32 %"g" to float
                     %"fe" = sitofp i8 %"h" to double
                     %"i" = ptrtoint ptr %".4" to i32
+                    %"i2" = ptrtoaddr ptr %".4" to i32
                     %"j" = inttoptr i32 %"i" to ptr
                     %"k" = bitcast i32 %".1" to float
                 """)
@@ -1411,6 +1413,7 @@ my_block:
                     %"fd" = uitofp i32 %"g" to float
                     %"fe" = sitofp i8 %"h" to double
                     %"i" = ptrtoint i32* %".4" to i32
+                    %"i2" = ptrtoaddr i32* %".4" to i32
                     %"j" = inttoptr i32 %"i" to i8*
                     %"k" = bitcast i32 %".1" to float
                 """)
@@ -3103,6 +3106,46 @@ class TestConstant(TestBase):
             TypeError,
             r"can only call ptrtoint\(\) on pointer type, not 'i32'",
             c2.ptrtoint,
+            int64)
+
+    def test_ptrtoaddr_1(self):
+        ptr = ir.Constant(int64.as_pointer(), None)
+        one = ir.Constant(int32, 1)
+        c = ptr.ptrtoaddr(int32)
+
+        self.assertRaises(TypeError, one.ptrtoaddr, int64)
+        self.assertRaises(TypeError, ptr.ptrtoaddr, flt)
+        if not ir_layer_typed_pointers_enabled:
+            self.assertEqual(str(c), 'ptrtoaddr (ptr null to i32)')
+        else:
+            self.assertEqual(str(c), 'ptrtoaddr (i64* null to i32)')
+
+    def test_ptrtoaddr_2(self):
+        m = self.module()
+        gv = ir.GlobalVariable(m, int32, "myconstant")
+        c = gv.ptrtoaddr(int64)
+        if not ir_layer_typed_pointers_enabled:
+            self.assertEqual(str(c), 'ptrtoaddr (ptr @"myconstant" to i64)')
+
+            self.assertRaisesRegex(
+                TypeError,
+                r"can only ptrtoaddr\(\) to integer type, not 'ptr'",
+                gv.ptrtoaddr,
+                int64.as_pointer())
+        else:
+            self.assertEqual(str(c), 'ptrtoaddr (i32* @"myconstant" to i64)')
+
+            self.assertRaisesRegex(
+                TypeError,
+                r"can only ptrtoaddr\(\) to integer type, not 'i64\*'",
+                gv.ptrtoaddr,
+                int64.as_pointer())
+
+        c2 = ir.Constant(int32, 0)
+        self.assertRaisesRegex(
+            TypeError,
+            r"can only call ptrtoaddr\(\) on pointer type, not 'i32'",
+            c2.ptrtoaddr,
             int64)
 
     def test_inttoptr(self):
