@@ -3040,6 +3040,48 @@ class TestConstant(TestBase):
         c = ir.Constant(flt, 1).fpext(dbl)
         self.assertEqual(str(c), 'fpext (float 0x3ff0000000000000 to double)')
 
+    def test_addrspacecast(self):
+        m = self.module()
+        gv = ir.GlobalVariable(m, int32, "myconstant", addrspace=1)
+        target_ty = int32.as_pointer(addrspace=2)
+        c = gv.addrspacecast(target_ty)
+        if not ir_layer_typed_pointers_enabled:
+            self.assertEqual(
+                str(c),
+                'addrspacecast (ptr addrspace(1) @"myconstant" to ptr addrspace(2))'
+            )
+        else:
+            self.assertEqual(
+                str(c),
+                'addrspacecast (i32 addrspace(1)* @"myconstant" to i32 addrspace(2)*)'
+            )
+
+        # Same type returns self
+        self.assertIs(gv.addrspacecast(gv.type), gv)
+
+        # Same address space with different pointee type raises ValueError
+        if ir_layer_typed_pointers_enabled:
+            self.assertRaisesRegex(
+                ValueError,
+                r"addrspacecast must change address space, got 1 for both",
+                gv.addrspacecast,
+                int64.as_pointer(addrspace=1))
+
+        # Non-pointer source raises TypeError
+        c2 = ir.Constant(int32, 42)
+        self.assertRaisesRegex(
+            TypeError,
+            r"can only call addrspacecast\(\) on pointer type, not 'i32'",
+            c2.addrspacecast,
+            target_ty)
+
+        # Non-pointer target raises TypeError
+        self.assertRaisesRegex(
+            TypeError,
+            r"can only addrspacecast\(\) to pointer type, not 'i32'",
+            gv.addrspacecast,
+            int32)
+
     def test_bitcast(self):
         m = self.module()
         gv = ir.GlobalVariable(m, int32, "myconstant")
