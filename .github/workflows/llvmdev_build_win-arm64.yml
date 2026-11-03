@@ -58,7 +58,7 @@ jobs:
           activate-environment: ""
 
       - name: Install conda-build
-        run: conda install -c "${PKGS_MAIN}" --yes conda-build
+        run: conda install -c "${PKGS_MAIN}" conda-build
 
       - name: Build and test conda package - non-linux platforms
         env:

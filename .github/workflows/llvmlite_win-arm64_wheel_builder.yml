@@ -74,7 +74,7 @@ jobs:
           else
             LLVMDEV_SRC="-c ${LLVMDEV_CHANNEL}"
           fi
-          conda install --yes \
+          conda install \
             ${LLVMDEV_SRC} \
             -c "${PKGS_MAIN}" \
             "python=${BUILD_PYTHON_VERSION}" "llvmdev=${FALLBACK_LLVMDEV_VERSION}" "cmake>=4.2" libxml2 setuptools pip
