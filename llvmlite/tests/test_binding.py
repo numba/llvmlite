@@ -2010,6 +2010,11 @@ class TestTypeRef(BaseTest):
 
         makers['double'] = maker_double
 
+        def maker_x86_fp80():
+            yield ir.X86FP80Type()
+
+        makers['x86_fp80'] = maker_x86_fp80
+
         def maker_integer():
             yield ir.IntType(32)
 
