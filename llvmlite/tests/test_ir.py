@@ -190,6 +190,19 @@ class TestFunction(TestBase):
                 llvm.parse_assembly(str(module)).verify()
                 self.assert_pickle_correctly(func)
 
+    def test_function_additional_attributes(self):
+        attrs = ('mustprogress', 'willreturn', 'nocallback',
+                 'speculatable', 'writeonly')
+        for attribute in attrs:
+            with self.subTest(attribute=attribute):
+                module = self.module()
+                func = self.function(module)
+                func.attributes.add(attribute)
+                self.assertEqual(self.descr(func).strip(),
+                                 f'declare {self.proto} {attribute}')
+                llvm.parse_assembly(str(module)).verify()
+                self.assert_pickle_correctly(func)
+
     def test_function_metadata(self):
         # Now with function metadata
         module = self.module()
