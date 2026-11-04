@@ -1,5 +1,87 @@
-v0.48.0rc1 (June 4, 2026)
+v0.50.0 (September 29, 2026)
+----------------------------
+
+Highlights of this release include:
+
+- Official support for Python 3.15 and 3.15t wheels.
+- Expanded ``win-arm64`` Python support to 3.12--3.14.
+- All Linux wheels (x86_64 and aarch64) are now tagged to be compatible
+  with GLIBC >= 2.27.
+- LLVM 22 AArch64 Oryon scheduling-model patch in ``llvmdev`` recipes.
+
+Pull-Requests:
+
+* PR `#1454 <https://github.com/numba/llvmlite/pull/1454>`_: Update actions/checkout action to v7.0.1 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1459 <https://github.com/numba/llvmlite/pull/1459>`_: Add `win-arm64` workflows to upload config (`swap357 <https://github.com/swap357>`_)
+* PR `#1462 <https://github.com/numba/llvmlite/pull/1462>`_: remove skipping `lief` installation on GHA wheel workflows test env (`swap357 <https://github.com/swap357>`_)
+* PR `#1463 <https://github.com/numba/llvmlite/pull/1463>`_: CI: add python-3.15 and 3.15t to wheel build and test matrices (`swap357 <https://github.com/swap357>`_)
+* PR `#1464 <https://github.com/numba/llvmlite/pull/1464>`_: Update pypa/gh-action-pypi-publish digest to dc37677 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1466 <https://github.com/numba/llvmlite/pull/1466>`_: CI: expand `win-arm64` py-version matrix to cover python 3.11-3.14 (`swap357 <https://github.com/swap357>`_)
+* PR `#1470 <https://github.com/numba/llvmlite/pull/1470>`_: Cherry pick 0.49 (`sklam <https://github.com/sklam>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1471 <https://github.com/numba/llvmlite/pull/1471>`_: CI: upgrade manylinux image to `manylinux_2_28` for llvmdev builds (`swap357 <https://github.com/swap357>`_)
+* PR `#1472 <https://github.com/numba/llvmlite/pull/1472>`_: Patch CompleteModel in AArch64 Oryon scheduling model (`MugundanMCW <https://github.com/MugundanMCW>`_)
+* PR `#1473 <https://github.com/numba/llvmlite/pull/1473>`_: CI: test win-arm64 on windows-11-vs2026-arm preview (`swap357 <https://github.com/swap357>`_)
+* PR `#1475 <https://github.com/numba/llvmlite/pull/1475>`_: Fixup remaining references to 3.15 (`esc <https://github.com/esc>`_)
+* PR `#1476 <https://github.com/numba/llvmlite/pull/1476>`_: CI: upgrade `macos` GHA runner image from v14 to v26 (`renovate[bot] <https://github.com/apps/renovate>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1477 <https://github.com/numba/llvmlite/pull/1477>`_: CI: drop Python 3.11 from the win-arm64 matrix (`swap357 <https://github.com/swap357>`_)
+* PR `#1478 <https://github.com/numba/llvmlite/pull/1478>`_: CI: upgrade `manylinux` image to `manylinux_2_28` for llvmlite builds (`swap357 <https://github.com/swap357>`_)
+* PR `#1480 <https://github.com/numba/llvmlite/pull/1480>`_: fix: <command-line>: error: token '=' is not valid in preprocessor expressions (`strophy <https://github.com/strophy>`_)
+* PR `#1482 <https://github.com/numba/llvmlite/pull/1482>`_: Add python 3.14 and 3.15 to available installations list (`swap357 <https://github.com/swap357>`_)
+* PR `#1484 <https://github.com/numba/llvmlite/pull/1484>`_: update changelog for v0.50.0 (`swap357 <https://github.com/swap357>`_)
+* PR `#1491 <https://github.com/numba/llvmlite/pull/1491>`_: CI: remove bootstrap conda channels on `win-arm64` workflows (`swap357 <https://github.com/swap357>`_)
+* PR `#1492 <https://github.com/numba/llvmlite/pull/1492>`_: Cherry pick `win-arm64` CI fix to `release0.50` (`swap357 <https://github.com/swap357>`_)
+* PR `#1496 <https://github.com/numba/llvmlite/pull/1496>`_: CHANGE_LOG update for 0.50.0 final release (`swap357 <https://github.com/swap357>`_)
+
+Authors:
+
+* `esc <https://github.com/esc>`_
+* `MugundanMCW <https://github.com/MugundanMCW>`_
+* `renovate[bot] <https://github.com/apps/renovate>`_
+* `sklam <https://github.com/sklam>`_
+* `strophy <https://github.com/strophy>`_
+* `swap357 <https://github.com/swap357>`_
+
+v0.49.0 (August 11, 2026)
 -------------------------
+
+Highlights of this release include:
+
+- Support for Windows ARM64 (`win-arm64`) conda packages and wheels.
+- Fix for invalid fixup errors on Windows ARM64.
+- Warnings on ``ptrtoint``/``inttoptr`` for LLVM 22 pointer provenance
+  issues that can cause miscompilation; prefer GEP-based address computation.
+  See: https://llvmlite.readthedocs.io/en/v0.49.0/user-guide/llvm22.html#pointer-provenance
+
+Pull-Requests:
+
+* PR `#1427 <https://github.com/numba/llvmlite/pull/1427>`_: Fix invalid fixup errors on Windows ARM64 (`gmarkall <https://github.com/gmarkall>`_ `MugundanMCW <https://github.com/MugundanMCW>`_)
+* PR `#1428 <https://github.com/numba/llvmlite/pull/1428>`_: Update actions/checkout action to v6.0.3 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1433 <https://github.com/numba/llvmlite/pull/1433>`_: update installation doc llvm channel references (`swap357 <https://github.com/swap357>`_)
+* PR `#1435 <https://github.com/numba/llvmlite/pull/1435>`_: Add `win-arm64` support for llvmlite (`MugundanMCW <https://github.com/MugundanMCW>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1438 <https://github.com/numba/llvmlite/pull/1438>`_: Update actions/checkout action to v6.0.3 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1439 <https://github.com/numba/llvmlite/pull/1439>`_: Add LLVM FrameLowering patch to llvmdev recipes (`swap357 <https://github.com/swap357>`_)
+* PR `#1440 <https://github.com/numba/llvmlite/pull/1440>`_: Update actions/checkout action to v7 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1442 <https://github.com/numba/llvmlite/pull/1442>`_: FIX: llvmlite win-arm64 wheel builder llvmdev channel (`swap357 <https://github.com/swap357>`_)
+* PR `#1443 <https://github.com/numba/llvmlite/pull/1443>`_: Update actions/setup-python action to v6.3.0 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1447 <https://github.com/numba/llvmlite/pull/1447>`_: add GHA CI changes onto release0.48 (`swap357 <https://github.com/swap357>`_)
+* PR `#1450 <https://github.com/numba/llvmlite/pull/1450>`_: Cherry pick 0.48 (`sklam <https://github.com/sklam>`_ `swap357 <https://github.com/swap357>`_)
+* PR `#1452 <https://github.com/numba/llvmlite/pull/1452>`_: Update pypa/gh-action-pypi-publish digest to ba38be9 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1453 <https://github.com/numba/llvmlite/pull/1453>`_: Update actions/setup-python action to v7 (`renovate[bot] <https://github.com/apps/renovate>`_)
+* PR `#1457 <https://github.com/numba/llvmlite/pull/1457>`_: update changelog for `0.49.0rc1` (`swap357 <https://github.com/swap357>`_)
+* PR `#1465 <https://github.com/numba/llvmlite/pull/1465>`_: Add warnings on pointer provenance in docs. (`sklam <https://github.com/sklam>`_)
+* PR `#1468 <https://github.com/numba/llvmlite/pull/1468>`_: update changelog for `0.49.0` (`swap357 <https://github.com/swap357>`_)
+* PR `#1469 <https://github.com/numba/llvmlite/pull/1469>`_: Merge pull request #1465 from sklam/iss/ptr_provenance (`sklam <https://github.com/sklam>`_)
+
+Authors:
+
+* `gmarkall <https://github.com/gmarkall>`_
+* `MugundanMCW <https://github.com/MugundanMCW>`_
+* `renovate[bot] <https://github.com/apps/renovate>`_
+* `sklam <https://github.com/sklam>`_
+* `swap357 <https://github.com/swap357>`_
+
+v0.48.0 (June 30, 2026)
+-----------------------
 
 This release of llvmlite introduces support for LLVM 22. For more information
 about the state of the support and breaking changes, please see: https://llvmlite.readthedocs.io/en/latest/user-guide/llvm22.html
@@ -20,6 +102,10 @@ Pull-Requests:
 * PR `#1424 <https://github.com/numba/llvmlite/pull/1424>`_: CI: remove osx-64 from azure pipelines testing (`swap357 <https://github.com/swap357>`_)
 * PR `#1426 <https://github.com/numba/llvmlite/pull/1426>`_: CI: add gha workflow to build llvmdev on win-arm64 (`swap357 <https://github.com/swap357>`_)
 * PR `#1430 <https://github.com/numba/llvmlite/pull/1430>`_: update README to document support for LLVM 22 on v0.48.0 (`swap357 <https://github.com/swap357>`_)
+* PR `#1432 <https://github.com/numba/llvmlite/pull/1432>`_: update changelog for `0.48.0rc1` (`swap357 <https://github.com/swap357>`_)
+* PR `#1434 <https://github.com/numba/llvmlite/pull/1434>`_: CI: fix llvmdev recipe and workflow for `win-arm64` (`swap357 <https://github.com/swap357>`_)
+* PR `#1437 <https://github.com/numba/llvmlite/pull/1437>`_: update build scripts to support Visual Studio 2026 (`swap357 <https://github.com/swap357>`_)
+* PR `#1446 <https://github.com/numba/llvmlite/pull/1446>`_: update CHANGE_LOG for v0.48.0 final release (`swap357 <https://github.com/swap357>`_)
 
 Authors:
 

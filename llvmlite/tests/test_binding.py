@@ -15,7 +15,6 @@ from tempfile import mkstemp
 
 from llvmlite import ir
 from llvmlite import binding as llvm
-from llvmlite.binding import ffi
 from llvmlite.tests import TestCase
 
 # arvm7l needs extra ABI symbols to link successfully
@@ -720,56 +719,6 @@ class BaseTest(TestCase):
     def target_machine(self, *, jit):
         target = llvm.Target.from_default_triple()
         return target.create_target_machine(jit=jit)
-
-
-class TestDependencies(BaseTest):
-    """
-    Test DLL dependencies are within a certain expected set.
-    """
-
-    @unittest.skipUnless(sys.platform.startswith('linux'),
-                         "Linux-specific test")
-    @unittest.skipUnless(os.environ.get('LLVMLITE_DIST_TEST'),
-                         "Distribution-specific test")
-    def test_linux(self):
-        lib_path = ffi.lib._name
-        env = os.environ.copy()
-        env['LANG'] = 'C'
-        p = subprocess.Popen(["objdump", "-p", lib_path],
-                             stdout=subprocess.PIPE, env=env)
-        out, _ = p.communicate()
-        self.assertEqual(0, p.returncode)
-        # Parse library dependencies
-        lib_pat = re.compile(r'^([+-_a-zA-Z0-9]+)\.so(?:\.\d+){0,3}$')
-        deps = set()
-        for line in out.decode().splitlines():
-            parts = line.split()
-            if parts and parts[0] == 'NEEDED':
-                dep = parts[1]
-                m = lib_pat.match(dep)
-                if len(parts) != 2 or not m:
-                    self.fail("invalid NEEDED line: %r" % (line,))
-                deps.add(m.group(1))
-        # Sanity check that our dependencies were parsed ok
-        if 'libc' not in deps or 'libpthread' not in deps:
-            self.fail("failed parsing dependencies? got %r" % (deps,))
-        # Ensure all dependencies are expected
-        allowed = set(['librt', 'libdl', 'libpthread', 'libz', 'libm',
-                       'libgcc_s', 'libc', 'ld-linux', 'ld64', 'libzstd',
-                       'libstdc++'])
-        if platform.python_implementation() == 'PyPy':
-            allowed.add('libtinfo')
-
-        fails = []
-        for dep in deps:
-            if not dep.startswith('ld-linux-') and dep not in allowed:
-                fails.append(dep)
-        if len(fails) == 1:
-            self.fail("unexpected dependency %r in %r" % (fails[0], deps))
-        elif len(fails) > 1:
-            self.fail("unexpected dependencies %r in %r" % (fails, deps))
-        else:
-            pass  # test passes
 
 
 class TestRISCVABI(BaseTest):

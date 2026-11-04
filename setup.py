@@ -179,6 +179,11 @@ if bdist_wheel is not None:
             # The build isn't platform-independent
             self.root_is_pure = False
 
+        def get_tag(self):
+            _, _, plat = bdist_wheel.get_tag(self)
+            python_tag = f'py{min_python_version[0]}{min_python_version[1]}'
+            return python_tag, 'none', plat
+
     cmdclass.update({'bdist_wheel': LLvmliteBDistWheel})
 
 # A stub C-extension to make bdist_wheel build an arch dependent build
@@ -211,6 +216,7 @@ setup(name='llvmlite',
           "Programming Language :: Python :: 3.12",
           "Programming Language :: Python :: 3.13",
           "Programming Language :: Python :: 3.14",
+          "Programming Language :: Python :: 3.15",
           "Topic :: Software Development :: Code Generators",
           "Topic :: Software Development :: Compilers",
       ],

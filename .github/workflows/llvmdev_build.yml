@@ -55,16 +55,16 @@ permissions:
 jobs:
 
   check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       matrix: ${{ steps.evaluate.outputs.matrix }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: '3.14'
+          python-version: '3.15'
       - name: Evaluate
         id: evaluate
         env:
@@ -87,7 +87,7 @@ jobs:
 
     steps:
       - name: Clone repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -107,7 +107,7 @@ jobs:
           echo "Disk space after cleanup:" && df -h /
 
       - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@8ee1f361103df19b6f8c8655fd3967a8ecb162d5 # v4.0.1
+        uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
         with:
           auto-update-conda: true
           auto-activate-base: true
@@ -125,10 +125,10 @@ jobs:
           MANYLINUX_IMAGE=""
           MINICONDA_FILE=""
           if [[ "${MATRIX_PLATFORM}" == "linux-64" ]]; then
-            MANYLINUX_IMAGE="quay.io/pypa/manylinux2014_x86_64"
+            MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_x86_64:2026.08.08-1"
             MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-x86_64.sh"
           elif [[ "${MATRIX_PLATFORM}" == "linux-aarch64" ]]; then
-            MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64"
+            MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64:2026.08.08-1"
             MINICONDA_FILE="https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-aarch64.sh"
           fi
 
@@ -164,7 +164,7 @@ jobs:
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Upload conda package
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.recipe }}_${{ matrix.platform }}
           path: conda_channel_dir

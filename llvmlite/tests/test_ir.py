@@ -179,6 +179,17 @@ class TestFunction(TestBase):
         # Check pickling
         self.assert_pickle_correctly(func)
 
+    def test_function_nofree_nosync_attributes(self):
+        for attribute in ('nofree', 'nosync'):
+            with self.subTest(attribute=attribute):
+                module = self.module()
+                func = self.function(module)
+                func.attributes.add(attribute)
+                self.assertEqual(self.descr(func).strip(),
+                                 f'declare {self.proto} {attribute}')
+                llvm.parse_assembly(str(module)).verify()
+                self.assert_pickle_correctly(func)
+
     def test_function_metadata(self):
         # Now with function metadata
         module = self.module()
@@ -2807,7 +2818,6 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'i1 0')
 
     def test_reals(self):
-        # XXX Test NaNs and infs
         c = ir.Constant(flt, 1.5)
         self.assertEqual(str(c), 'float 0x3ff8000000000000')
         c = ir.Constant(flt, -1.5)
@@ -2820,6 +2830,17 @@ class TestConstant(TestBase):
         self.assertEqual(str(c), 'double undef')
         c = ir.Constant(dbl, None)
         self.assertEqual(str(c), 'double 0.0')
+
+    def test_reals_special_values(self):
+        # Inf/-Inf/NaN passed as strings must format for all float types,
+        # not just double (issue #833).
+        for ty, prefix in ((hlf, 'half'), (flt, 'float'), (dbl, 'double')):
+            self.assertEqual(str(ir.Constant(ty, 'Inf')),
+                             '%s 0x7ff0000000000000' % prefix)
+            self.assertEqual(str(ir.Constant(ty, '-Inf')),
+                             '%s 0xfff0000000000000' % prefix)
+            self.assertEqual(str(ir.Constant(ty, 'nan')),
+                             '%s 0x7ff8000000000000' % prefix)
 
     def test_arrays(self):
         c = ir.Constant(ir.ArrayType(int32, 3), (c32(5), c32(6), c32(4)))

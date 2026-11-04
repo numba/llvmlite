@@ -30,11 +30,14 @@ the Numba_ development channel on `Anaconda Cloud <https://anaconda.org/numba>`_
 
     conda install -c numba/label/dev llvmlite
 
+Development releases of binary wheels are available from the Numba development
+package index::
+
+    pip install -i https://pypi.anaconda.org/numba/label/dev/simple --pre llvmlite
+
 Binary wheels are also available for installation from PyPI_::
 
     pip install llvmlite
-
-Development releases of binary wheels are not made available.
 
 Contrary to what might be expected, the llvmlite packages built by the Numba
 maintainers do *not* use any LLVM shared libraries that may be present on the

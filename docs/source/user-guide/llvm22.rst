@@ -21,6 +21,58 @@ LLVM 22 removes the ``Os`` and ``Oz`` size optimization levels from
 per-function ``optsize`` and ``minsize`` attributes instead. See
 :ref:`optimizing-for-size` for how to request size optimization in llvmlite.
 
+
+.. _llvm22-pointer-provenance:
+
+Pointer Provenance
+===================
+
+In LLVM 22, ``inttoptr`` and ``ptrtoint`` use exposes current uncertainty
+in LLVM's pointer provenance design:
+
+    LLVM currently ignores the fact that ``ptrtoint`` has an (exposure)
+    side-effect
+
+(from `This Year in LLVM 2025
+<https://www.npopov.com/2026/01/31/This-year-in-LLVM-2025.html#ptrtoaddr>`_)
+
+
+Reproducing pattern
+--------------------
+
+A `numba issue
+<https://github.com/numba/numba/issues/10695#issuecomment-4984483266>`_
+demonstrates the resulting undefined behavior. Pattern: pointer address
+computed via integer round-trip instead of ``getelementptr``:
+
+.. code-block:: llvm
+
+    %base_i    = ptrtoint ptr %base to i64      ; provenance lost
+    %addr_i    = add i64 %base_i, %offset
+    %addr      = inttoptr i64 %addr_i to ptr     ; provenance nominally restored
+    %val       = load double, ptr %addr
+
+The IR above is legal per the `LangRef <https://llvm.org/docs/LangRef.html#pointer-aliasing-rules>`_, 
+the ``inttoptr`` result is defined to be based on all pointer
+values contributing to the integer. However, during loop
+unrolling, the ``SCEVExpander`` pass cannot recover a real base pointer from the
+integer expression and rematerializes the address on ``ptr null``:
+
+.. code-block:: llvm
+
+    %addr = getelementptr i8, ptr null, i64 %offset
+    %val  = load double, ptr %addr
+
+A load from a null-based pointer is poison/undefined behavior. This causes 
+unexpected behavior and miscompilation in the Numba case.
+
+This loop-unroll-driven null-GEP case is the observed failure mode,
+though this issue is not Numba specific. It is also possible that 
+other similar passes may trigger equivalent provenance loss through
+``inttoptr``/``ptrtoint``. To avoid this issue, it is best to avoid using
+``inttoptr`` and ``ptrtoint`` whenever possible; use GEP-based
+address computation instead.
+
 .. _llvm22-known-material-issues:
 
 Known material issues with LLVM 22

@@ -1,0 +1,13 @@
+diff --git a/llvm/lib/Target/AArch64/AArch64SchedOryon.td b/llvm/lib/Target/AArch64/AArch64SchedOryon.td
+index 435eaf99c617..9fb685283829 100644
+--- a/llvm/lib/Target/AArch64/AArch64SchedOryon.td
++++ b/llvm/lib/Target/AArch64/AArch64SchedOryon.td
+@@ -21,7 +21,7 @@ def OryonModel : SchedMachineModel {
+   let MispredictPenalty     =  13; // 13 cycles for mispredicted branch.
+   let LoopMicroOpBufferSize =   16; // Oryon-1 does not have loop micro op buffer, we enable this pseudo value to allow for aggressive unrolling based on runtime TC.
+   let PostRAScheduler       =   1; // Using PostRA sched.
+-  let CompleteModel         =   1;
++  let CompleteModel         =   0;
+ 
+   list<Predicate> UnsupportedFeatures = !listconcat(SVEUnsupported.F,
+                                                     SMEUnsupported.F,

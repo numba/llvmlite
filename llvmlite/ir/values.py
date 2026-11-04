@@ -884,9 +884,9 @@ class FunctionAttributes(AttributeSet):
     _known = frozenset([
         'argmemonly', 'alwaysinline', 'builtin', 'cold', 'convergent',
         'inaccessiblememonly', 'inaccessiblemem_or_argmemonly', 'inlinehint',
-        'jumptable', 'minsize', 'naked', 'nobuiltin', 'noduplicate',
+        'jumptable', 'minsize', 'naked', 'nobuiltin', 'noduplicate', 'nofree',
         'noimplicitfloat', 'noinline', 'nonlazybind', 'norecurse',
-        'noredzone', 'noreturn', 'nounwind', 'optnone', 'optsize',
+        'noredzone', 'noreturn', 'nosync', 'nounwind', 'optnone', 'optsize',
         'readnone', 'readonly', 'returns_twice', 'sanitize_address',
         'sanitize_memory', 'sanitize_thread', 'ssp',
         'sspreg', 'sspstrong', 'uwtable'])
