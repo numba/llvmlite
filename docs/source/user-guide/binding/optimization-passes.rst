@@ -73,15 +73,21 @@ To manage the optimization attributes we first need to instantiate a
 We also need a :class:`PassBuilder` object to manage the respective function
 and module pass managers:
 
-.. function:: create_pass_builder(tm, pto)
+.. function:: create_pass_builder(tm, pto, vector_library=None)
 
    Create a :class:`PassBuilder` instance that uses the given :class:`TargetMachine`
-   (*tm*) and :class:`PipelineTuningOptions` (*pto*) instances.
+   (*tm*) and :class:`PipelineTuningOptions` (*pto*) instances. The optional
+   *vector_library* selects LLVM's vector math library mappings. Valid names are
+   ``none``, ``accelerate``, ``darwin_libsystem_m``, ``libmvec``, ``massv``,
+   ``svml``, ``sleefgnuabi``, ``armpl``, or ``amdlibm``. The default ``None``
+   leaves LLVM's default library analysis in place; ``none`` explicitly selects
+   no vector library.
 
-.. class:: PassBuilder(target_machine, pipeline_tuning_options)
+.. class:: PassBuilder(target_machine, pipeline_tuning_options, vector_library=None)
 
    A pass builder that uses the given :class:`TargetMachine` and
-   :class:`PipelineTuningOptions` instances.
+   :class:`PipelineTuningOptions` instances. *vector_library* has the same
+   meaning as in :func:`create_pass_builder`.
 
    .. method:: getModulePassManager()
 
@@ -195,6 +201,49 @@ Here's a complete example showing how to use the New Pass Manager APIs:
 
 .. literalinclude:: ../../../../examples/newpassmanagers.py
    :caption: examples/newpassmanagers.py
+
+
+Selecting a vector math library
+-------------------------------
+
+The optional ``vector_library`` argument supplies LLVM with mappings from
+scalar math functions to library functions. For example, the ``accelerate``
+mapping can replace a scalar ``sinf`` call with ``vsinf`` during optimization:
+
+.. code-block:: python
+
+   from llvmlite import binding as llvm
+
+   llvm.initialize_native_target()
+   llvm.initialize_native_asmprinter()
+
+   source = """
+   declare float @sinf(float)
+
+   define float @f(float %x) {
+   entry:
+       %y = call float @sinf(float %x)
+       ret float %y
+   }
+   """
+
+   with llvm.Target.from_default_triple().create_target_machine() as tm, \
+           llvm.create_pipeline_tuning_options(speed_level=3) as pto, \
+           llvm.create_pass_builder(tm, pto, vector_library="accelerate") as pb, \
+           llvm.parse_assembly(source) as module:
+       module.triple = tm.triple
+       with pb.getModulePassManager() as pm:
+           pm.run(module, pb)
+       module.verify()
+       print(module)  # Inspect the optimized IR for a call to vsinf.
+
+This example inspects IR only; it does not run the generated code. Selecting a
+mapping does not load the library or guarantee loop vectorization. To execute
+generated calls, the corresponding symbols must be available at runtime, for
+example through :func:`load_library_permanently`, and the library must match
+the target platform and required numerical behavior. Availability also depends
+on the LLVM build: in particular, Intel SVML is currently unsupported with
+LLVM 22 (see :doc:`../llvm22`).
 
 
 .. _optimizing-for-size:
@@ -459,4 +508,3 @@ functions and direct class instantiation provided by the New Pass Manager.
 
         Returns ``True`` if the optimizations made any
         modification to the module. Otherwise returns ``False``.
-
