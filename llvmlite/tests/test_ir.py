@@ -179,6 +179,20 @@ class TestFunction(TestBase):
         # Check pickling
         self.assert_pickle_correctly(func)
 
+    def test_argument_nocapture_memory_attributes(self):
+        func = self.function()
+        func.args[0].add_attribute("nocapture")
+        func.args[0].add_attribute("readonly")
+        func.args[1].add_attribute("writeonly")
+        func.args[2].add_attribute("readnone")
+        func.return_value.add_attribute("noundef")
+        asm = self.descr(func).strip()
+        self.assertIn("nocapture readonly", asm)
+        self.assertIn("writeonly", asm)
+        self.assertIn("readnone", asm)
+        self.assertIn("noundef", asm)
+        self.assert_pickle_correctly(func)
+
     def test_function_nofree_nosync_attributes(self):
         for attribute in ('nofree', 'nosync'):
             with self.subTest(attribute=attribute):
@@ -2139,15 +2153,19 @@ insert_block:
             'inreg',
             'nest',
             'noalias',
+            'nocapture',
             'nofree',
             'nonnull',
             'noundef',
             'preallocated',
+            'readnone',
+            'readonly',
             'returned',
             'signext',
             'swiftasync',
             'swifterror',
             'swiftself',
+            'writeonly',
             'zeroext',
         ):
             # If this parses, we emitted the right byval attribute format
