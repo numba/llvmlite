@@ -35,10 +35,16 @@ env:
   PYTHON_PATH: "cp312-cp312"
   MINICONDA_FILE: "https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-x86_64.sh"
 
+permissions:
+  contents: read
+
 jobs:
   linux-64-build:
     name: linux-64-build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read  # download llvmdev artifact from another workflow run
     defaults:
       run:
         shell: bash -elx {0}
@@ -48,6 +54,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
@@ -66,14 +73,14 @@ jobs:
           # Run the build script in manylinux container using the existing script
           docker run --rm \
             -v "$(pwd):/root/llvmlite" \
-            quay.io/pypa/${{ env.MANYLINUX_IMAGE }} \
-            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }} $LLVMDEV_ARTIFACT_PATH"
+            "quay.io/pypa/${MANYLINUX_IMAGE}" \
+            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${MINICONDA_FILE} ${PYTHON_PATH} $LLVMDEV_ARTIFACT_PATH"
 
           # Create wheelhouse directory for artifact upload
           mkdir -p wheelhouse
 
           # The script creates output in a specific location based on architecture and Python version
-          WHEEL_DIR="docker_output/dist_x86_64_${{ env.PYTHON_PATH }}/wheelhouse"
+          WHEEL_DIR="docker_output/dist_x86_64_${PYTHON_PATH}/wheelhouse"
 
           # List wheels to debug
           echo "Available wheels in $WHEEL_DIR:"
@@ -108,6 +115,8 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
