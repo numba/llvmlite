@@ -4,6 +4,9 @@ from enum import IntFlag
 from llvmlite.binding import ffi
 
 
+# Vector library names used for validation and error messages.
+# Keep in sync with the exact strings accepted by
+# LLVMPY_ParseVectorLibrary in ffi/newpassmanagers.cpp.
 VECTOR_LIBRARIES = (
     'none', 'accelerate', 'darwin_libsystem_m', 'libmvec', 'massv',
     'svml', 'sleefgnuabi', 'armpl', 'amdlibm',
