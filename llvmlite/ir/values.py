@@ -339,6 +339,21 @@ class _ConstOpMixin(object):
         Floating-point upcast to a more precise type.
         """
 
+    @_castop('addrspacecast')
+    def addrspacecast(self, typ):
+        """
+        Pointer cast to a different address space.
+        """
+        if not isinstance(self.type, types.PointerType):
+            msg = "can only call addrspacecast() on pointer type, not '%s'"
+            raise TypeError(msg % (self.type,))
+        if not isinstance(typ, types.PointerType):
+            raise TypeError("can only addrspacecast() to pointer type, not '%s'"
+                            % (typ,))
+        if self.type.addrspace == typ.addrspace and self.type != typ:
+            msg = "addrspacecast must change address space, got %s for both"
+            raise ValueError(msg % (typ.addrspace,))
+
     @_castop('bitcast')
     def bitcast(self, typ):
         """
