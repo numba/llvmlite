@@ -241,9 +241,14 @@ This example inspects IR only; it does not run the generated code. Selecting a
 mapping does not load the library or guarantee loop vectorization. To execute
 generated calls, the corresponding symbols must be available at runtime, for
 example through :func:`load_library_permanently`, and the library must match
-the target platform and required numerical behavior. Availability also depends
-on the LLVM build: in particular, Intel SVML is currently unsupported with
-LLVM 22 (see :doc:`../llvm22`).
+the target platform and required numerical behavior.
+
+.. note::
+
+   This restores Intel SVML support via ``vector_library="svml"``, but is
+   limited to LLVM's upstream mappings (``TLI_DEFINE_SVML_VECFUNCS`` in
+   `VecFuncs.def
+   <https://github.com/llvm/llvm-project/blob/release/22.x/llvm/include/llvm/Analysis/VecFuncs.def>`_).
 
 
 .. _optimizing-for-size:
