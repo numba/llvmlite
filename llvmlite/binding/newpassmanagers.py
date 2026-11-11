@@ -131,8 +131,7 @@ class NewPassManager():
             ffi.lib.LLVMPY_RunNewModulePassManager(
                 self, IR, pb, pb._vector_library)
         else:
-            ffi.lib.LLVMPY_RunNewFunctionPassManager(
-                self, IR, pb, pb._vector_library)
+            ffi.lib.LLVMPY_RunNewFunctionPassManager(self, IR, pb)
 
     def add_aa_eval_pass(self):
         if isinstance(self, ModulePassManager):
@@ -837,7 +836,7 @@ ffi.lib.LLVMPY_CreateNewFunctionPassManager.restype = \
 
 ffi.lib.LLVMPY_RunNewFunctionPassManager.argtypes = [
     ffi.LLVMFunctionPassManagerRef, ffi.LLVMValueRef,
-    ffi.LLVMPassBuilderRef, c_int,]
+    ffi.LLVMPassBuilderRef,]
 
 ffi.lib.LLVMPY_function_AddAAEvaluator.argtypes = [
     ffi.LLVMFunctionPassManagerRef,]

@@ -77,7 +77,8 @@ and module pass managers:
 
    Create a :class:`PassBuilder` instance that uses the given :class:`TargetMachine`
    (*tm*) and :class:`PipelineTuningOptions` (*pto*) instances. The optional
-   *vector_library* selects LLVM's vector math library mappings. Valid names are
+   *vector_library* selects LLVM's vector math library mappings for module
+   pass-manager runs; function pass-manager runs are unaffected. Valid names are
    ``none``, ``accelerate``, ``darwin_libsystem_m``, ``libmvec``, ``massv``,
    ``svml``, ``sleefgnuabi``, ``armpl``, or ``amdlibm``. The default ``None``
    leaves LLVM's default library analysis in place; ``none`` explicitly selects

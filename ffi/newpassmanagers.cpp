@@ -405,8 +405,7 @@ LLVMPY_CreateNewFunctionPassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
-                                 LLVMValueRef FRef, LLVMPassBuilderRef PBRef,
-                                 int VecLib) {
+                                 LLVMValueRef FRef, LLVMPassBuilderRef PBRef) {
 
     FunctionPassManager *FPM = llvm::unwrap(FPMRef);
     Function *F = reinterpret_cast<Function *>(FRef);
@@ -444,11 +443,6 @@ LLVMPY_RunNewFunctionPassManager(LLVMFunctionPassManagerRef FPMRef,
         TP.setOutStream(os);
     }
 
-    if (VecLib >= 0) {
-        TargetLibraryInfoImpl TLII(F->getParent()->getTargetTriple(),
-                                   static_cast<VectorLibrary>(VecLib));
-        FAM.registerPass([&] { return TargetLibraryAnalysis(TLII); });
-    }
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
     PB->registerCGSCCAnalyses(CGAM);
