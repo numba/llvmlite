@@ -103,7 +103,7 @@ jobs:
           if-no-files-found: error
 
       - name: Show Workflow Run ID
-        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+        run: 'echo "Workflow Run ID: ${GITHUB_RUN_ID}"'
 
   linux-64-validate:
     name: linux-64-validate
@@ -172,6 +172,7 @@ jobs:
       - name: Install and test
         env:
           LLVMLITE_DIST_TEST: "1"
+          MATRIX_PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
           # Get the Python executable path
           PYTHON_PATH=$(which python)
@@ -185,7 +186,7 @@ jobs:
           whl=$(find . -type f -name "*py310-none*.whl" | sort | head -n 1)
 
           if [ -z "$whl" ]; then
-            echo "ERROR: No py310-none wheel found for Python ${{ matrix.python-version }}"
+            echo "ERROR: No py310-none wheel found for Python ${MATRIX_PYTHON_VERSION}"
             find . -type f -name "*.whl" -print
             exit 1
           fi

@@ -63,7 +63,7 @@ jobs:
           fi
           output=$(./buildscripts/github/find_workflow_runs.py \
             --tag "$TAG" \
-            --repo ${{ github.repository }} \
+            --repo "$GITHUB_REPOSITORY" \
             --token "$GH_TOKEN" \
             --config ./buildscripts/github/workflow_groups.json)
           echo "$output" >> $GITHUB_OUTPUT
@@ -94,7 +94,7 @@ jobs:
         run: |
           ./buildscripts/github/download_artifacts.py \
             --run-ids ${CONDA_RUN_IDS} \
-            --repo ${{ github.repository }} \
+            --repo "$GITHUB_REPOSITORY" \
             --token "$GH_TOKEN" \
             --output-dir conda_packages
 
@@ -105,7 +105,7 @@ jobs:
         run: |
           ./buildscripts/github/download_artifacts.py \
             --run-ids ${WHEEL_RUN_IDS} \
-            --repo ${{ github.repository }} \
+            --repo "$GITHUB_REPOSITORY" \
             --token "$GH_TOKEN" \
             --output-dir dist
 

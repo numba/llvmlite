@@ -81,11 +81,11 @@ jobs:
           LLVMDEV_RUN_ID: ${{ inputs.llvmdev_run_id }}
         run: |
           if [ -n "$LLVMDEV_RUN_ID" ]; then
-              CHAN="file:///${{ github.workspace }}/llvmdev_conda_packages"
-              conda install -c defaults -c "$CHAN" "llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
+              CHAN="file:///${GITHUB_WORKSPACE}/llvmdev_conda_packages"
+              conda install -c defaults -c "$CHAN" "llvmdev=${FALLBACK_LLVMDEV_VERSION}"
           else
-              CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
-              conda install -c defaults "${CHAN}::llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
+              CHAN="${CONDA_CHANNEL_NUMBA}"
+              conda install -c defaults "${CHAN}::llvmdev=${FALLBACK_LLVMDEV_VERSION}"
           fi
           conda install -c defaults cmake libxml2
           python -m pip install build wheel setuptools delvewheel
@@ -117,7 +117,7 @@ jobs:
           if-no-files-found: error
 
       - name: Show Workflow Run ID
-        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+        run: 'echo "Workflow Run ID: ${GITHUB_RUN_ID}"'
 
   win-64-validate:
     name: win-64-validate

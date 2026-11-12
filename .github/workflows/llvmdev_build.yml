@@ -174,5 +174,5 @@ jobs:
 
       - name: Get Workflow Run ID
         run: |
-          echo "Current workflow run ID: ${{ github.run_id }}"
+          echo "Current workflow run ID: ${GITHUB_RUN_ID}"
           echo "Use this ID when triggering llvmlite workflow"
