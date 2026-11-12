@@ -160,7 +160,8 @@ jobs:
       name: testpypi
       url: https://test.pypi.org/p/llvmlite
     permissions:
-      id-token: write
+      # https://docs.pypi.org/trusted-publishers/using-a-publisher/
+      id-token: write  # required for OIDC publishing; for details see above
 
     steps:
       - name: Download wheels artifact
@@ -191,7 +192,8 @@ jobs:
       name: pypi
       url: https://pypi.org/p/llvmlite
     permissions:
-      id-token: write
+      # https://docs.pypi.org/trusted-publishers/using-a-publisher/
+      id-token: write  # required for OIDC publishing; for details see above
 
     steps:
       - name: Download wheels artifact
