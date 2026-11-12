@@ -55,6 +55,7 @@ permissions:
 jobs:
 
   check:
+    name: Evaluate build matrix
     runs-on: ubuntu-26.04
     outputs:
       matrix: ${{ steps.evaluate.outputs.matrix }}
