@@ -357,12 +357,6 @@ class NewPassManager():
         else:
             ffi.lib.LLVMPY_function_AddLoopRotatePass(self)
 
-    def _dispose(self):
-        if isinstance(self, ModulePassManager):
-            ffi.lib.LLVMPY_DisposeNewModulePassManger(self)
-        else:
-            ffi.lib.LLVMPY_DisposeNewFunctionPassManger(self)
-
 
 class ModulePassManager(ffi.ObjectRef, NewPassManager):
 
@@ -370,6 +364,9 @@ class ModulePassManager(ffi.ObjectRef, NewPassManager):
         if ptr is None:
             ptr = ffi.lib.LLVMPY_CreateNewModulePassManager()
         super().__init__(ptr)
+
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeNewModulePassManger(self)
 
     def add_verifier(self):
         ffi.lib.LLVMPY_module_AddVerifierPass(self)
@@ -461,6 +458,9 @@ class FunctionPassManager(ffi.ObjectRef, NewPassManager):
         if ptr is None:
             ptr = ffi.lib.LLVMPY_CreateNewFunctionPassManager()
         super().__init__(ptr)
+
+    def _dispose(self):
+        ffi.lib.LLVMPY_DisposeNewFunctionPassManger(self)
 
     # Non-standard LLVM passes
     def add_refprune_pass(self, subpasses_flags=RefPruneSubpasses.ALL,
