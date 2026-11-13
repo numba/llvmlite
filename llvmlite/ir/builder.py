@@ -727,6 +727,16 @@ class IRBuilder(object):
         provenance behavior. See docs :ref:`llvm22-pointer-provenance`.
         """
 
+    @_castop('ptrtoaddr')
+    def ptrtoaddr(self, value, typ, name=''):
+        """
+        Convert pointer to address (integer):
+            name = (typ) value
+
+        Unlike ptrtoint, ptrtoaddr strips pointer provenance.
+        Introduced in LLVM 22.
+        """
+
     @_castop('inttoptr')
     def inttoptr(self, value, typ, name=''):
         """
