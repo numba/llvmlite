@@ -63,10 +63,11 @@ jobs:
       - name: Build and test conda package - non-linux platforms
         env:
           CONDA_CHANNEL_DIR: conda_channel_dir
+          MATRIX_RECIPE: ${{ matrix.recipe }}
         run: |
           mkdir -p "${CONDA_CHANNEL_DIR}"
           conda-build -c "${PKGS_MAIN}" \
-            "./conda-recipes/${{ matrix.recipe }}" "--output-folder=${CONDA_CHANNEL_DIR}"
+            "./conda-recipes/${MATRIX_RECIPE}" "--output-folder=${CONDA_CHANNEL_DIR}"
           ls -lah "${CONDA_CHANNEL_DIR}"
 
       - name: Upload conda package
@@ -80,5 +81,5 @@ jobs:
 
       - name: Get Workflow Run ID
         run: |
-          echo "Current workflow run ID: ${{ github.run_id }}"
+          echo "Current workflow run ID: ${GITHUB_RUN_ID}"
           echo "Use this ID when triggering llvmlite workflow"

@@ -33,10 +33,16 @@ env:
   VALIDATION_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
 
+permissions:
+  contents: read
+
 jobs:
   win-64-build:
     name: win-64-build
     runs-on: windows-2025
+    permissions:
+      contents: read
+      actions: read  # download llvmdev artifact from another workflow run
     defaults:
       run:
         shell: bash -elx {0}
@@ -46,6 +52,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
@@ -70,13 +77,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install build dependencies
+        env:
+          LLVMDEV_RUN_ID: ${{ inputs.llvmdev_run_id }}
         run: |
-          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="file:///${{ github.workspace }}/llvmdev_conda_packages"
-              conda install -c defaults -c "$CHAN" "llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
+          if [ -n "$LLVMDEV_RUN_ID" ]; then
+              CHAN="file:///${GITHUB_WORKSPACE}/llvmdev_conda_packages"
+              conda install -c defaults -c "$CHAN" "llvmdev=${FALLBACK_LLVMDEV_VERSION}"
           else
-              CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
-              conda install -c defaults "${CHAN}::llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
+              CHAN="${CONDA_CHANNEL_NUMBA}"
+              conda install -c defaults "${CHAN}::llvmdev=${FALLBACK_LLVMDEV_VERSION}"
           fi
           conda install -c defaults cmake libxml2
           python -m pip install build wheel setuptools delvewheel
@@ -108,7 +117,7 @@ jobs:
           if-no-files-found: error
 
       - name: Show Workflow Run ID
-        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+        run: 'echo "Workflow Run ID: ${GITHUB_RUN_ID}"'
 
   win-64-validate:
     name: win-64-validate
@@ -120,6 +129,8 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
@@ -196,6 +207,7 @@ jobs:
     needs: win-64-test
     if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: windows-2025
+    environment: anaconda
     defaults:
       run:
         shell: bash -elx {0}

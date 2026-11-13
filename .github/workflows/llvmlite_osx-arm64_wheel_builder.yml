@@ -32,10 +32,16 @@ env:
   VALIDATION_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
 
+permissions:
+  contents: read
+
 jobs:
   osx-arm64-build:
     name: osx-arm64-build
     runs-on: macos-26
+    permissions:
+      contents: read
+      actions: read  # download llvmdev artifact from another workflow run
     defaults:
       run:
         shell: bash -elx {0}
@@ -45,6 +51,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
@@ -63,14 +70,16 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install build dependencies
+        env:
+          LLVMDEV_RUN_ID: ${{ inputs.llvmdev_run_id }}
         run: |
-          conda install -c defaults python="${{ env.BUILD_PYTHON_VERSION }}"
-          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              CHAN="file://${{ github.workspace }}/llvmdev_conda_packages"
-              conda install -c defaults -c "$CHAN" "llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
+          conda install -c defaults "python=${BUILD_PYTHON_VERSION}"
+          if [ -n "$LLVMDEV_RUN_ID" ]; then
+              CHAN="file://${GITHUB_WORKSPACE}/llvmdev_conda_packages"
+              conda install -c defaults -c "$CHAN" "llvmdev=${FALLBACK_LLVMDEV_VERSION}"
           else
-              CHAN="${{ env.CONDA_CHANNEL_NUMBA }}"
-              conda install -c defaults "${CHAN}::llvmdev=${{ env.FALLBACK_LLVMDEV_VERSION }}"
+              CHAN="${CONDA_CHANNEL_NUMBA}"
+              conda install -c defaults "${CHAN}::llvmdev=${FALLBACK_LLVMDEV_VERSION}"
           fi
           python -m pip install build wheel setuptools
 
@@ -112,7 +121,7 @@ jobs:
           if-no-files-found: error
 
       - name: Show Workflow Run ID
-        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+        run: 'echo "Workflow Run ID: ${GITHUB_RUN_ID}"'
 
   osx-arm64-validate:
     name: osx-arm64-validate
@@ -124,6 +133,8 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
@@ -174,8 +185,9 @@ jobs:
       - name: Install and test
         env:
           LLVMLITE_DIST_TEST: "1"
+          MATRIX_PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
-          PYTHON_PATH=$(which "python${{ matrix.python-version }}")
+          PYTHON_PATH=$(which "python${MATRIX_PYTHON_VERSION}")
           "$PYTHON_PATH" -m venv .venv && source .venv/bin/activate
           python -m pip install --upgrade pip wheel
           echo "Installing lief for distribution testing"
@@ -190,6 +202,7 @@ jobs:
     needs: osx-arm64-test
     if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: macos-26
+    environment: anaconda
     defaults:
       run:
         shell: bash -elx {0}

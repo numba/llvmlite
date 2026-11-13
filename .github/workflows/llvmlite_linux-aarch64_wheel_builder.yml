@@ -35,10 +35,16 @@ env:
   PYTHON_PATH: "cp312-cp312"
   MINICONDA_FILE: "https://repo.anaconda.com/miniconda/Miniconda3-py311_24.9.2-0-Linux-aarch64.sh"
 
+permissions:
+  contents: read
+
 jobs:
   linux-aarch64-build:
     name: linux-aarch64-build
     runs-on: ubuntu-26.04-arm
+    permissions:
+      contents: read
+      actions: read  # download llvmdev artifact from another workflow run
     defaults:
       run:
         shell: bash -elx {0}
@@ -48,6 +54,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Download llvmdev Artifact
         if: ${{ inputs.llvmdev_run_id != '' }}
@@ -66,14 +73,14 @@ jobs:
           # Run the build script in manylinux container using the existing script
           docker run --rm \
             -v "$(pwd):/root/llvmlite" \
-            quay.io/pypa/${{ env.MANYLINUX_IMAGE }} \
-            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${{ env.MINICONDA_FILE }} ${{ env.PYTHON_PATH }} $LLVMDEV_ARTIFACT_PATH"
+            "quay.io/pypa/${MANYLINUX_IMAGE}" \
+            bash -c "git config --global --add safe.directory /root/llvmlite && /root/llvmlite/buildscripts/manylinux/build_llvmlite.sh ${MINICONDA_FILE} ${PYTHON_PATH} $LLVMDEV_ARTIFACT_PATH"
 
           # Create wheelhouse directory for artifact upload
           mkdir -p wheelhouse
 
           # The script creates output in a specific location based on architecture and Python version
-          WHEEL_DIR="docker_output/dist_aarch64_${{ env.PYTHON_PATH }}/wheelhouse"
+          WHEEL_DIR="docker_output/dist_aarch64_${PYTHON_PATH}/wheelhouse"
 
           echo "Available wheels in $WHEEL_DIR:"
           find "$WHEEL_DIR" -type f -name "*.whl" -print
@@ -93,7 +100,7 @@ jobs:
           if-no-files-found: error
 
       - name: Show Workflow Run ID
-        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+        run: 'echo "Workflow Run ID: ${GITHUB_RUN_ID}"'
 
   linux-aarch64-validate:
     name: linux-aarch64-validate
@@ -105,6 +112,8 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
@@ -160,6 +169,7 @@ jobs:
       - name: Install and test
         env:
           LLVMLITE_DIST_TEST: "1"
+          MATRIX_PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
           # Get the Python executable path
           PYTHON_PATH=$(which python)
@@ -173,7 +183,7 @@ jobs:
           whl=$(find . -type f -name "*py310-none*.whl" | sort | head -n 1)
 
           if [ -z "$whl" ]; then
-            echo "ERROR: No py310-none wheel found for Python ${{ matrix.python-version }}"
+            echo "ERROR: No py310-none wheel found for Python ${MATRIX_PYTHON_VERSION}"
             find . -type f -name "*.whl" -print
             exit 1
           fi
@@ -192,6 +202,7 @@ jobs:
     needs: [linux-aarch64-test, linux-aarch64-validate]
     if: github.event_name == 'workflow_dispatch' && inputs.upload_wheel_to_anaconda
     runs-on: ubuntu-26.04-arm
+    environment: anaconda
     defaults:
       run:
         shell: bash -elx {0}
