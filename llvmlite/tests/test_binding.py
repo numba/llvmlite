@@ -2716,6 +2716,8 @@ class TestNewModulePassManager(BaseTest, NewPassManagerMixin):
 
     def test_close(self):
         mpm = self.pm()
+        # Must override ObjectRef's no-op disposer.
+        self.assertIsNot(type(mpm)._dispose, llvm.ffi.ObjectRef._dispose)
         mpm.close()
 
     def test_run_o3(self):
@@ -2860,6 +2862,8 @@ class TestNewFunctionPassManager(BaseTest, NewPassManagerMixin):
 
     def test_close(self):
         fpm = self.pm()
+        # Must override ObjectRef's no-op disposer.
+        self.assertIsNot(type(fpm)._dispose, llvm.ffi.ObjectRef._dispose)
         fpm.close()
 
     def run_o_n(self, level):

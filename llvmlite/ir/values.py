@@ -1056,6 +1056,7 @@ class ArgumentAttributes(AttributeSet):
         self._align = 0
         self._dereferenceable = 0
         self._dereferenceable_or_null = 0
+        self._range = None
         super(ArgumentAttributes, self).__init__(args)
 
     def _expand(self, name, typ):
@@ -1092,6 +1093,24 @@ class ArgumentAttributes(AttributeSet):
         assert isinstance(val, int) and val >= 0
         self._dereferenceable_or_null = val
 
+    @property
+    def range(self):
+        return self._range
+
+    @range.setter
+    def range(self, val):
+        if val is not None:
+            # LLVM's LLParser::parseRangeAttr requires two integer bounds and
+            # allows equal bounds only for the empty range (0, 0):
+            # https://github.com/llvm/llvm-project/blob/llvmorg-22.1.0/llvm/lib/AsmParser/LLParser.cpp#L3153-L3193
+            if not isinstance(val, tuple) or len(val) != 2:
+                raise TypeError("range must be a pair of integer bounds")
+            if not all(type(bound) is int for bound in val):
+                raise TypeError("range bounds must be integers")
+            if val[0] == val[1] and val != (0, 0):
+                raise ValueError("equal range bounds must be (0, 0)")
+        self._range = val
+
     def _to_list(self, typ):
         attrs = super()._to_list(typ)
         if self.align:
@@ -1101,6 +1120,22 @@ class ArgumentAttributes(AttributeSet):
         if self.dereferenceable_or_null:
             dref = 'dereferenceable_or_null({0:d})'
             attrs.append(dref.format(self.dereferenceable_or_null))
+        if self.range is not None:
+            scalar_type = typ.element if isinstance(typ, types.VectorType) \
+                else typ
+            if not isinstance(scalar_type, types.IntType):
+                raise TypeError("range requires an integer or integer vector")
+            lower, upper = self.range
+            bits = scalar_type.width
+            # parseRangeAttr also checks the bit width before comparing the
+            # bounds as bit patterns, regardless of their signedness.
+            if not all(-(1 << (bits - 1)) <= bound < (1 << bits)
+                       for bound in self.range):
+                raise ValueError("range bounds do not fit the integer type")
+            if lower != upper and (lower - upper) % (1 << bits) == 0:
+                raise ValueError("range bounds must have distinct bit patterns")
+            attrs.append('range({0} {1}, {2})'.format(
+                scalar_type, lower, upper))
         return attrs
 
 

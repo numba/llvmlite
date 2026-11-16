@@ -44,13 +44,19 @@ concurrency:
 env:
   ARTIFACT_RETENTION_DAYS: 7
 
+permissions:
+  contents: read
+
 jobs:
   check:
+    name: Evaluate build matrix
     runs-on: ubuntu-26.04
     outputs:
       matrix: ${{ steps.evaluate.outputs.matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.15'
@@ -72,6 +78,9 @@ jobs:
     needs: check
     name: ${{ matrix.platform }}-py${{ matrix.python-version }}-build
     runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      actions: read  # download llvmdev artifact from another workflow run
     env:
       # Python 3.15 is temporarily on ad-testing until it lands in defaults
       EXTRA_CHANNELS: ${{ matrix.python-version == '3.15' && '-c ad-testing/label/py315' || '' }}
@@ -87,6 +96,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
@@ -108,9 +118,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build llvmlite conda package
+        env:
+          LLVMDEV_RUN_ID: ${{ inputs.llvmdev_run_id }}
+          MATRIX_PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
-          if [ "${{ inputs.llvmdev_run_id }}" != "" ]; then
-              LLVMDEV_CHANNEL="file:///${{ github.workspace }}/llvmdev_conda_packages"
+          if [ -n "$LLVMDEV_RUN_ID" ]; then
+              LLVMDEV_CHANNEL="file:///${GITHUB_WORKSPACE}/llvmdev_conda_packages"
           else
               LLVMDEV_CHANNEL="numba/label/llvm"
           fi
@@ -122,7 +135,7 @@ jobs:
             extra_args=()
           fi
           conda config --set channel_priority strict
-          conda-build --debug -c "${LLVMDEV_CHANNEL}" "${extra_args[@]}" -c defaults --python=${{ matrix.python-version }} conda-recipes/llvmlite --output-folder="${CONDA_CHANNEL_DIR}" --no-test
+          conda-build --debug -c "${LLVMDEV_CHANNEL}" "${extra_args[@]}" -c defaults --python="${MATRIX_PYTHON_VERSION}" conda-recipes/llvmlite --output-folder="${CONDA_CHANNEL_DIR}" --no-test
       - name: Upload llvmlite conda package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -133,7 +146,7 @@ jobs:
           if-no-files-found: error
 
       - name: Show Workflow Run ID
-        run: "echo \"Workflow Run ID: ${{ github.run_id }}\""
+        run: 'echo "Workflow Run ID: ${GITHUB_RUN_ID}"'
 
   test:
     name: ${{ matrix.platform }}-py${{ matrix.python-version }}-test
@@ -162,10 +175,12 @@ jobs:
         run: conda install conda-build
 
       - name: Run tests
+        env:
+          MATRIX_PLATFORM: ${{ matrix.platform }}
         run: |
           if [ -n "${EXTRA_CHANNELS}" ]; then
             extra_args=(${EXTRA_CHANNELS})
           else
             extra_args=()
           fi
-          conda-build --test "${extra_args[@]}" -c defaults "${{ matrix.platform }}"/llvmlite*.conda
+          conda-build --test "${extra_args[@]}" -c defaults "${MATRIX_PLATFORM}"/llvmlite*.conda
