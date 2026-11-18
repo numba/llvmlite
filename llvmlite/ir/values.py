@@ -381,6 +381,21 @@ class _ConstOpMixin(object):
             raise TypeError("can only ptrtoint() to integer type, not '%s'"
                             % (typ,))
 
+    @_castop('ptrtoaddr')
+    def ptrtoaddr(self, typ):
+        """
+        Convert pointer to address (integer).
+
+        Unlike ptrtoint, ptrtoaddr strips pointer provenance.
+        Introduced in LLVM 22.
+        """
+        if not isinstance(self.type, types.PointerType):
+            msg = "can only call ptrtoaddr() on pointer type, not '%s'"
+            raise TypeError(msg % (self.type,))
+        if not isinstance(typ, types.IntType):
+            raise TypeError("can only ptrtoaddr() to integer type, not '%s'"
+                            % (typ,))
+
     @_castop('inttoptr')
     def inttoptr(self, typ):
         """
