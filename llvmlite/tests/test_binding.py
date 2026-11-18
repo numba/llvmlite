@@ -2665,6 +2665,10 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
                 'armpl': 'armpl_vsinq_f32',
             },
         }
+        cpus = {
+            'x86_64-unknown-linux-gnu': 'x86-64',
+            'aarch64-unknown-linux-gnu': 'generic',
+        }
         llvm.initialize_all_targets()
         llvm.initialize_all_asmprinters()
         for triple, libraries in symbols.items():
@@ -2674,7 +2678,7 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
                 self.skipTest(f"target unsupported by linked LLVM: {e}")
             for name, symbol in libraries.items():
                 with self.subTest(triple=triple, vector_library=name), \
-                     target.create_target_machine() as tm, \
+                     target.create_target_machine(cpus[triple]) as tm, \
                      llvm.create_pipeline_tuning_options(3) as pto, \
                      llvm.create_pass_builder(
                          tm, pto, vector_library=name) as pb, \
