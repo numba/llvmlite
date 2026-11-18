@@ -1,6 +1,5 @@
 #include "core.h"
 #include "llvm-c/TargetMachine.h"
-#include "llvm/ADT/StringSwitch.h"
 #include "llvm/Analysis/AliasAnalysisEvaluator.h"
 #include "llvm/Analysis/AliasSetTracker.h"
 #include "llvm/Analysis/AssumptionCache.h"
@@ -273,23 +272,33 @@ static OptimizationLevel mapLevel(int speed_level) {
     }
 }
 
+// Vector library names and their VectorLibrary enum. Keep in sync with LLVM:
+// https://github.com/llvm/llvm-project/blob/4434dabb69916856b824f68a64b029c67175e532/llvm/include/llvm/IR/SystemLibraries.h#L20-L30
+struct VectorLibraryEntry {
+    StringRef Name;
+    VectorLibrary Library;
+};
+
+static const VectorLibraryEntry VectorLibraries[] = {
+    {"none", VectorLibrary::NoLibrary},
+    {"accelerate", VectorLibrary::Accelerate},
+    {"darwin_libsystem_m", VectorLibrary::DarwinLibSystemM},
+    {"libmvec", VectorLibrary::LIBMVEC},
+    {"massv", VectorLibrary::MASSV},
+    {"svml", VectorLibrary::SVML},
+    {"sleefgnuabi", VectorLibrary::SLEEFGNUABI},
+    {"armpl", VectorLibrary::ArmPL},
+    {"amdlibm", VectorLibrary::AMDLIBM},
+};
+
 extern "C" {
 
 API_EXPORT(int)
 LLVMPY_ParseVectorLibrary(const char *Name) {
-    auto Library =
-        StringSwitch<std::optional<VectorLibrary>>(Name)
-            .Case("none", VectorLibrary::NoLibrary)
-            .Case("accelerate", VectorLibrary::Accelerate)
-            .Case("darwin_libsystem_m", VectorLibrary::DarwinLibSystemM)
-            .Case("libmvec", VectorLibrary::LIBMVEC)
-            .Case("massv", VectorLibrary::MASSV)
-            .Case("svml", VectorLibrary::SVML)
-            .Case("sleefgnuabi", VectorLibrary::SLEEFGNUABI)
-            .Case("armpl", VectorLibrary::ArmPL)
-            .Case("amdlibm", VectorLibrary::AMDLIBM)
-            .Default(std::nullopt);
-    return Library ? static_cast<int>(*Library) : -1;
+    for (size_t I = 0; I < std::size(VectorLibraries); ++I)
+        if (VectorLibraries[I].Name == Name)
+            return I;
+    return -1;
 }
 
 API_EXPORT(void)
@@ -371,9 +380,13 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
         TP.setOutStream(os);
     }
 
-    if (VecLib >= 0) {
+    // Register the TargetLibraryAnalysis for the selected vector library.
+    // VecLib is an index into VectorLibraries, -1 means no vector library
+    // was selected.
+    if (VecLib >= 0 &&
+        static_cast<size_t>(VecLib) < std::size(VectorLibraries)) {
         TargetLibraryInfoImpl TLII(M->getTargetTriple(),
-                                   static_cast<VectorLibrary>(VecLib));
+                                   VectorLibraries[VecLib].Library);
         FAM.registerPass([&] { return TargetLibraryAnalysis(TLII); });
     }
     PB->registerLoopAnalyses(LAM);
