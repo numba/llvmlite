@@ -73,18 +73,18 @@ To manage the optimization attributes we first need to instantiate a
 We also need a :class:`PassBuilder` object to manage the respective function
 and module pass managers:
 
-.. function:: create_pass_builder(tm, pto, vector_library=None)
+.. function:: create_pass_builder(tm, pto, *, vector_library=None)
 
    Create a :class:`PassBuilder` instance that uses the given :class:`TargetMachine`
    (*tm*) and :class:`PipelineTuningOptions` (*pto*) instances. The optional
-   *vector_library* selects LLVM's vector math library mappings for module
+   keyword-only *vector_library* selects LLVM's vector math library mappings for module
    pass-manager runs; function pass-manager runs are unaffected. Valid names are
    ``none``, ``accelerate``, ``darwin_libsystem_m``, ``libmvec``, ``massv``,
    ``svml``, ``sleefgnuabi``, ``armpl``, or ``amdlibm``. The default ``None``
    leaves LLVM's default library analysis in place; ``none`` explicitly selects
    no vector library.
 
-.. class:: PassBuilder(target_machine, pipeline_tuning_options, vector_library=None)
+.. class:: PassBuilder(target_machine, pipeline_tuning_options, *, vector_library=None)
 
    A pass builder that uses the given :class:`TargetMachine` and
    :class:`PipelineTuningOptions` instances. *vector_library* has the same
@@ -208,8 +208,9 @@ Selecting a vector math library
 -------------------------------
 
 The optional ``vector_library`` argument supplies LLVM with mappings from
-scalar math functions to library functions. For example, the ``accelerate``
-mapping can replace a scalar ``sinf`` call with ``vsinf`` during optimization:
+scalar math functions to vector library functions. For example, with the
+``accelerate`` mapping the loop vectorizer can replace ``llvm.sin.f32`` calls
+in a loop with calls to ``vsinf``:
 
 .. code-block:: python
 
@@ -219,12 +220,23 @@ mapping can replace a scalar ``sinf`` call with ``vsinf`` during optimization:
    llvm.initialize_native_asmprinter()
 
    source = """
-   declare float @sinf(float)
+   declare float @llvm.sin.f32(float)
 
-   define float @f(float %x) {
+   define void @f(ptr noalias %dst, ptr noalias %src, i64 %n) {
    entry:
-       %y = call float @sinf(float %x)
-       ret float %y
+       br label %loop
+   loop:
+       %i = phi i64 [ 0, %entry ], [ %next, %loop ]
+       %p = getelementptr inbounds float, ptr %src, i64 %i
+       %x = load float, ptr %p
+       %y = call float @llvm.sin.f32(float %x)
+       %q = getelementptr inbounds float, ptr %dst, i64 %i
+       store float %y, ptr %q
+       %next = add nuw i64 %i, 1
+       %done = icmp eq i64 %next, %n
+       br i1 %done, label %exit, label %loop
+   exit:
+       ret void
    }
    """
 
@@ -236,7 +248,7 @@ mapping can replace a scalar ``sinf`` call with ``vsinf`` during optimization:
        with pb.getModulePassManager() as pm:
            pm.run(module, pb)
        module.verify()
-       print(module)  # Inspect the optimized IR for a call to vsinf.
+       print(module)  # Contains: call <4 x float> @vsinf(<4 x float> ...)
 
 This example inspects IR only; it does not run the generated code. Selecting a
 mapping does not load the library or guarantee loop vectorization. To execute
