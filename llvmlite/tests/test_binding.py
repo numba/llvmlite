@@ -2675,7 +2675,9 @@ class TestPassBuilder(BaseTest, NewPassManagerMixin):
             try:
                 target = llvm.Target.from_triple(triple)
             except RuntimeError as e:
-                self.skipTest(f"target unsupported by linked LLVM: {e}")
+                with self.subTest(triple=triple):
+                    self.skipTest(f"target unsupported by linked LLVM: {e}")
+                continue
             for name, symbol in libraries.items():
                 with self.subTest(triple=triple, vector_library=name), \
                      target.create_target_machine(cpus[triple]) as tm, \
