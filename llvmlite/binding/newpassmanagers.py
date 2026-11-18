@@ -21,8 +21,8 @@ def create_new_function_pass_manager():
     return FunctionPassManager()
 
 
-def create_pass_builder(tm, pto, vector_library=None):
-    return PassBuilder(tm, pto, vector_library)
+def create_pass_builder(tm, pto, *, vector_library=None):
+    return PassBuilder(tm, pto, vector_library=vector_library)
 
 
 def create_pipeline_tuning_options(speed_level=2):
@@ -563,7 +563,7 @@ class TimePassesHandler(ffi.ObjectRef):
 
 class PassBuilder(ffi.ObjectRef):
 
-    def __init__(self, tm, pto, vector_library=None):
+    def __init__(self, tm, pto, *, vector_library=None):
         super().__init__(ffi.lib.LLVMPY_CreatePassBuilder(tm, pto))
         self._pto = pto
         self._tm = tm
