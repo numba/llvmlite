@@ -157,7 +157,12 @@ jobs:
           "$PYTHON_PATH" -m venv .venv && source .venv/bin/activate
           python -m pip install --upgrade pip wheel twine
           cd dist
-          whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
+          wheels=(./*.whl)
+          if [ "${#wheels[@]}" -ne 1 ] || [ ! -f "${wheels[0]}" ]; then
+            echo "ERROR: Expected exactly one wheel in dist"
+            exit 1
+          fi
+          whl="${wheels[0]}"
           twine check "$whl"
           echo "Installing lief for distribution testing"
           python -m pip install -v lief
@@ -197,6 +202,11 @@ jobs:
           ANACONDA_API_TOKEN: ${{ secrets.NUMBA_CHANNEL_WHEEL_UPLOAD }}
         run: |
           cd dist
-          whl=$(stat -f "%m %N" ./*.whl | sort -n | tail -n 1 | cut -d' ' -f2-)
+          wheels=(./*.whl)
+          if [ "${#wheels[@]}" -ne 1 ] || [ ! -f "${wheels[0]}" ]; then
+            echo "ERROR: Expected exactly one wheel in dist"
+            exit 1
+          fi
+          whl="${wheels[0]}"
           echo "Uploading wheel: $whl"
           anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"

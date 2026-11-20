@@ -152,8 +152,12 @@ jobs:
 
           # Install wheel and run tests
           cd dist
-          # Windows compatible way to get the wheel file using bash
-          whl=$(ls -1 ./*.whl)
+          wheels=(./*.whl)
+          if [ "${#wheels[@]}" -ne 1 ] || [ ! -f "${wheels[0]}" ]; then
+            echo "ERROR: Expected exactly one wheel in dist"
+            exit 1
+          fi
+          whl="${wheels[0]}"
           twine check "$whl"
 
           echo "Installing lief for distribution testing"
@@ -196,6 +200,11 @@ jobs:
           ANACONDA_API_TOKEN: ${{ secrets.NUMBA_CHANNEL_WHEEL_UPLOAD }}
         run: |
           cd dist
-          whl=$(ls -1 ./*.whl)
+          wheels=(./*.whl)
+          if [ "${#wheels[@]}" -ne 1 ] || [ ! -f "${wheels[0]}" ]; then
+            echo "ERROR: Expected exactly one wheel in dist"
+            exit 1
+          fi
+          whl="${wheels[0]}"
           echo "Uploading wheel: $whl"
           anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"
