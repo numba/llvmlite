@@ -149,7 +149,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           cd dist
-          whl=$(ls -1 ./*.whl)
+          wheels=(./*.whl)
+          if [ "${#wheels[@]}" -ne 1 ] || [ ! -f "${wheels[0]}" ]; then
+            echo "ERROR: Expected exactly one wheel in dist"
+            exit 1
+          fi
+          whl="${wheels[0]}"
           echo "Using wheel: $whl"
           python -m pip install "$whl"
           python -m llvmlite.tests
@@ -187,6 +192,11 @@ jobs:
           ANACONDA_API_TOKEN: ${{ secrets.NUMBA_CHANNEL_WHEEL_UPLOAD }}
         run: |
           cd dist
-          whl=$(ls -1 ./*.whl)
+          wheels=(./*.whl)
+          if [ "${#wheels[@]}" -ne 1 ] || [ ! -f "${wheels[0]}" ]; then
+            echo "ERROR: Expected exactly one wheel in dist"
+            exit 1
+          fi
+          whl="${wheels[0]}"
           echo "Uploading wheel: $whl"
           anaconda -t "$ANACONDA_API_TOKEN" upload --force -u numba -l dev "$whl"
