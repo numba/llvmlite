@@ -272,7 +272,34 @@ static OptimizationLevel mapLevel(int speed_level) {
     }
 }
 
+// Vector library names and their VectorLibrary enum. Keep in sync with LLVM:
+// https://github.com/llvm/llvm-project/blob/4434dabb69916856b824f68a64b029c67175e532/llvm/include/llvm/IR/SystemLibraries.h#L20-L30
+struct VectorLibraryEntry {
+    StringRef Name;
+    VectorLibrary Library;
+};
+
+static const VectorLibraryEntry VectorLibraries[] = {
+    {"none", VectorLibrary::NoLibrary},
+    {"accelerate", VectorLibrary::Accelerate},
+    {"darwin_libsystem_m", VectorLibrary::DarwinLibSystemM},
+    {"libmvec", VectorLibrary::LIBMVEC},
+    {"massv", VectorLibrary::MASSV},
+    {"svml", VectorLibrary::SVML},
+    {"sleefgnuabi", VectorLibrary::SLEEFGNUABI},
+    {"armpl", VectorLibrary::ArmPL},
+    {"amdlibm", VectorLibrary::AMDLIBM},
+};
+
 extern "C" {
+
+API_EXPORT(int)
+LLVMPY_ParseVectorLibrary(const char *Name) {
+    for (size_t I = 0; I < std::size(VectorLibraries); ++I)
+        if (VectorLibraries[I].Name == Name)
+            return I;
+    return -1;
+}
 
 API_EXPORT(void)
 LLVMPY_SetTimePasses(bool enable) { TimePassesIsEnabled = enable; }
@@ -295,7 +322,8 @@ LLVMPY_CreateNewModulePassManager() {
 
 API_EXPORT(void)
 LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
-                               LLVMModuleRef mod, LLVMPassBuilderRef PBRef) {
+                               LLVMModuleRef mod, LLVMPassBuilderRef PBRef,
+                               int VecLib) {
 
     ModulePassManager *MPM = llvm::unwrap(MPMRef);
     Module *M = llvm::unwrap(mod);
@@ -352,6 +380,15 @@ LLVMPY_RunNewModulePassManager(LLVMModulePassManagerRef MPMRef,
         TP.setOutStream(os);
     }
 
+    // Register the TargetLibraryAnalysis for the selected vector library.
+    // VecLib is an index into VectorLibraries, -1 means no vector library
+    // was selected.
+    if (VecLib >= 0 &&
+        static_cast<size_t>(VecLib) < std::size(VectorLibraries)) {
+        TargetLibraryInfoImpl TLII(M->getTargetTriple(),
+                                   VectorLibraries[VecLib].Library);
+        FAM.registerPass([&] { return TargetLibraryAnalysis(TLII); });
+    }
     PB->registerLoopAnalyses(LAM);
     PB->registerFunctionAnalyses(FAM);
     PB->registerCGSCCAnalyses(CGAM);

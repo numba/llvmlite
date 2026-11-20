@@ -2623,6 +2623,102 @@ class NewPassManagerMixin(object):
 
 class TestPassBuilder(BaseTest, NewPassManagerMixin):
 
+    def test_vector_library(self):
+        asm = '''
+        declare float @llvm.sin.f32(float)
+        define void @f(ptr noalias %dst, ptr noalias %src, i64 %n) {
+        entry:
+            br label %loop
+        loop:
+            %i = phi i64 [ 0, %entry ], [ %next, %loop ]
+            %p = getelementptr inbounds float, ptr %src, i64 %i
+            %x = load float, ptr %p
+            %y = call float @llvm.sin.f32(float %x)
+            %q = getelementptr inbounds float, ptr %dst, i64 %i
+            store float %y, ptr %q
+            %next = add nuw i64 %i, 1
+            %done = icmp eq i64 %next, %n
+            br i1 %done, label %exit, label %loop
+        exit:
+            ret void
+        }
+        '''
+        # Vector function expected for llvm.sin.f32 with each vector library,
+        # refer to VecFuncs.def in LLVM. The triples are fixed because the
+        # mappings depend on the target.
+        symbols = {
+            'x86_64-unknown-linux-gnu': {
+                None: 'llvm.sin.v4f32',
+                'none': 'llvm.sin.v4f32',
+                'accelerate': 'vsinf',
+                'darwin_libsystem_m': '_simd_sin_f4',
+                'libmvec': '_ZGVbN4v_sinf',
+                'massv': '__sinf4',
+                'svml': '__svml_sinf4',
+                'amdlibm': 'amd_vrs4_sinf',
+            },
+            'aarch64-unknown-linux-gnu': {
+                None: 'llvm.sin.v2f32',
+                'none': 'llvm.sin.v2f32',
+                'libmvec': '_ZGVnN4v_sinf',
+                'sleefgnuabi': '_ZGVnN4v_sinf',
+                'armpl': 'armpl_vsinq_f32',
+            },
+        }
+        cpus = {
+            'x86_64-unknown-linux-gnu': 'x86-64',
+            'aarch64-unknown-linux-gnu': 'generic',
+        }
+        llvm.initialize_all_targets()
+        llvm.initialize_all_asmprinters()
+        for triple, libraries in symbols.items():
+            try:
+                target = llvm.Target.from_triple(triple)
+            except RuntimeError as e:
+                with self.subTest(triple=triple):
+                    self.skipTest(f"target unsupported by linked LLVM: {e}")
+                continue
+            for name, symbol in libraries.items():
+                with self.subTest(triple=triple, vector_library=name), \
+                     target.create_target_machine(cpus[triple]) as tm, \
+                     llvm.create_pipeline_tuning_options(3) as pto, \
+                     llvm.create_pass_builder(
+                         tm, pto, vector_library=name) as pb, \
+                     llvm.parse_assembly(asm) as mod, \
+                     pb.getModulePassManager() as pm:
+                    mod.triple = triple
+                    pm.run(mod, pb)
+                    mod.verify()
+
+                    # Checking that the loop calls the vector function.
+                    # This produces the following IR, with svml on x86-64:
+                    #   %2 = tail call <4 x float> @__svml_sinf4(<4 x float> %wide.load)  # noqa E501
+                    # with no vector library on AArch64:
+                    #   %1 = tail call <2 x float> @llvm.sin.v2f32(<2 x float> %wide.load)  # noqa E501
+                    # with libmvec on AArch64:
+                    #   %2 = tail call aarch64_vector_pcs <4 x float> @_ZGVnN4v_sinf(<4 x float> %wide.load)  # noqa E501
+                    # with armpl on AArch64:
+                    #   %2 = tail call aarch64_vector_pcs <4 x float> @armpl_vsinq_f32(<4 x float> %wide.load)  # noqa E501
+                    # The aarch64_vector_pcs calling convention is only there
+                    # for libmvec and armpl on AArch64.
+                    self.assertRegex(
+                        str(mod),
+                        rf'call (\w+ )?<\d+ x float> @{re.escape(symbol)}\(')
+
+    def test_invalid_vector_library(self):
+        with self.target_machine(jit=False) as tm, \
+             llvm.create_pipeline_tuning_options() as pto:
+            for name in llvm.VECTOR_LIBRARIES:
+                with self.subTest(name=name), \
+                     llvm.create_pass_builder(tm, pto, vector_library=name):
+                    pass
+            for name in ('unknown', 'accelerate\0other'):
+                with self.subTest(name=name), \
+                     self.assertRaisesRegex(ValueError, 'valid options are'):
+                    llvm.create_pass_builder(tm, pto, vector_library=name)
+            with self.assertRaisesRegex(TypeError, 'string or None'):
+                llvm.create_pass_builder(tm, pto, vector_library=True)
+
     def test_close(self):
         pb = self.pb()
         pb.close()

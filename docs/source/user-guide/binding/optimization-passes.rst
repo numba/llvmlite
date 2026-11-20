@@ -73,15 +73,22 @@ To manage the optimization attributes we first need to instantiate a
 We also need a :class:`PassBuilder` object to manage the respective function
 and module pass managers:
 
-.. function:: create_pass_builder(tm, pto)
+.. function:: create_pass_builder(tm, pto, *, vector_library=None)
 
    Create a :class:`PassBuilder` instance that uses the given :class:`TargetMachine`
-   (*tm*) and :class:`PipelineTuningOptions` (*pto*) instances.
+   (*tm*) and :class:`PipelineTuningOptions` (*pto*) instances. The optional
+   keyword-only *vector_library* selects LLVM's vector math library mappings for module
+   pass-manager runs; function pass-manager runs are unaffected. Valid names are
+   ``none``, ``accelerate``, ``darwin_libsystem_m``, ``libmvec``, ``massv``,
+   ``svml``, ``sleefgnuabi``, ``armpl``, or ``amdlibm``. The default ``None``
+   leaves LLVM's default library analysis in place; ``none`` explicitly selects
+   no vector library.
 
-.. class:: PassBuilder(target_machine, pipeline_tuning_options)
+.. class:: PassBuilder(target_machine, pipeline_tuning_options, *, vector_library=None)
 
    A pass builder that uses the given :class:`TargetMachine` and
-   :class:`PipelineTuningOptions` instances.
+   :class:`PipelineTuningOptions` instances. *vector_library* has the same
+   meaning as in :func:`create_pass_builder`.
 
    .. method:: getModulePassManager()
 
@@ -195,6 +202,66 @@ Here's a complete example showing how to use the New Pass Manager APIs:
 
 .. literalinclude:: ../../../../examples/newpassmanagers.py
    :caption: examples/newpassmanagers.py
+
+
+Selecting a vector math library
+-------------------------------
+
+The optional ``vector_library`` argument supplies LLVM with mappings from
+scalar math functions to vector library functions. For example, with the
+``accelerate`` mapping the loop vectorizer can replace ``llvm.sin.f32`` calls
+in a loop with calls to ``vsinf``:
+
+.. code-block:: python
+
+   from llvmlite import binding as llvm
+
+   llvm.initialize_native_target()
+   llvm.initialize_native_asmprinter()
+
+   source = """
+   declare float @llvm.sin.f32(float)
+
+   define void @f(ptr noalias %dst, ptr noalias %src, i64 %n) {
+   entry:
+       br label %loop
+   loop:
+       %i = phi i64 [ 0, %entry ], [ %next, %loop ]
+       %p = getelementptr inbounds float, ptr %src, i64 %i
+       %x = load float, ptr %p
+       %y = call float @llvm.sin.f32(float %x)
+       %q = getelementptr inbounds float, ptr %dst, i64 %i
+       store float %y, ptr %q
+       %next = add nuw i64 %i, 1
+       %done = icmp eq i64 %next, %n
+       br i1 %done, label %exit, label %loop
+   exit:
+       ret void
+   }
+   """
+
+   with llvm.Target.from_default_triple().create_target_machine() as tm, \
+           llvm.create_pipeline_tuning_options(speed_level=3) as pto, \
+           llvm.create_pass_builder(tm, pto, vector_library="accelerate") as pb, \
+           llvm.parse_assembly(source) as module:
+       module.triple = tm.triple
+       with pb.getModulePassManager() as pm:
+           pm.run(module, pb)
+       module.verify()
+       print(module)  # Contains: call <4 x float> @vsinf(<4 x float> ...)
+
+This example inspects IR only; it does not run the generated code. Selecting a
+mapping does not load the library or guarantee loop vectorization. To execute
+generated calls, the corresponding symbols must be available at runtime, for
+example through :func:`load_library_permanently`, and the library must match
+the target platform and required numerical behavior.
+
+.. note::
+
+   This restores Intel SVML support via ``vector_library="svml"``, but is
+   limited to LLVM's upstream mappings (``TLI_DEFINE_SVML_VECFUNCS`` in
+   `VecFuncs.def
+   <https://github.com/llvm/llvm-project/blob/release/22.x/llvm/include/llvm/Analysis/VecFuncs.def>`_).
 
 
 .. _optimizing-for-size:
@@ -459,4 +526,3 @@ functions and direct class instantiation provided by the New Pass Manager.
 
         Returns ``True`` if the optimizations made any
         modification to the module. Otherwise returns ``False``.
-
