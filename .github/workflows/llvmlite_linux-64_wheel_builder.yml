@@ -29,7 +29,7 @@ concurrency:
 env:
   FALLBACK_LLVMDEV_VERSION: "22"
   CONDA_CHANNEL_NUMBA: numba/label/llvm_wheel
-  VALIDATION_PYTHON_VERSION: "3.12"
+  UPLOAD_PYTHON_VERSION: "3.12"
   ARTIFACT_RETENTION_DAYS: 7
   MANYLINUX_IMAGE: "manylinux_2_28_x86_64:2026.08.08-1"
   PYTHON_PATH: "cp312-cp312"
@@ -176,7 +176,7 @@ jobs:
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
         with:
-          python-version: ${{ env.VALIDATION_PYTHON_VERSION }}
+          python-version: ${{ env.UPLOAD_PYTHON_VERSION }}
           auto-update-conda: true
           auto-activate-base: true
           activate-environment: true
