@@ -147,7 +147,10 @@ jobs:
         env:
           LLVMLITE_DIST_TEST: "1"
         run: |
-          python -m pip install --upgrade pip
+          # Upgrade pip and install wheel, twine
+          python -m pip install --upgrade pip wheel twine
+
+          # Install wheel and run tests
           cd dist
           wheels=(./*.whl)
           if [ "${#wheels[@]}" -ne 1 ] || [ ! -f "${wheels[0]}" ]; then
@@ -155,8 +158,15 @@ jobs:
             exit 1
           fi
           whl="${wheels[0]}"
+          twine check "$whl"
+
+          echo "Installing lief for distribution testing"
+          python -m pip install -v lief
+
           echo "Using wheel: $whl"
           python -m pip install "$whl"
+
+          # Run tests
           python -m llvmlite.tests
 
   win-arm64-upload:
