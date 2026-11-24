@@ -36,6 +36,7 @@ _TypeKindToIRType = {
     TypeKind.half: ir.HalfType,
     TypeKind.float: ir.FloatType,
     TypeKind.double: ir.DoubleType,
+    TypeKind.x86_fp80: ir.X86FP80Type,
     TypeKind.integer: ir.IntType,
     TypeKind.function: ir.FunctionType,
     TypeKind.pointer: ir.PointerType,
